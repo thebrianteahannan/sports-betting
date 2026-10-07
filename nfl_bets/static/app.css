@@ -179,6 +179,8 @@ section.plan {
 }
 .chalk h2 { font-size: 1.2rem; margin-bottom: 0.4rem; }
 .chalk .aim { font-family: var(--sport); color: var(--gold); margin: 0 0 0.35rem; max-width: 70ch; }
+.chalk .when { font-family: var(--sport); color: var(--gold); margin: 0 0 0.45rem; max-width: 70ch; }
+.chalk .when:empty { display: none; }
 .live-note {
   font-family: var(--sport);
   letter-spacing: 0.04em;

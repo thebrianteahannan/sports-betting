@@ -36,6 +36,7 @@ def build_parlays(game: dict[str, Any]) -> dict[str, Any]:
     }
     for card in cards.values():
         card["live"] = live
+        card["kickoff"] = str(game.get("kickoff") or "")
     return cards
 
 

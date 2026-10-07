@@ -66,6 +66,7 @@ function dropMiss(text) {
 
 function legItem(leg) {
   const bits = [];
+  if (leg.kickoff) bits.push(`${when(leg.kickoff)} ET`);
   if (leg.have != null && leg.have !== "") bits.push(leg.have);
   if (leg.result && leg.result !== "open") bits.push(leg.result);
   else if (leg.have != null && leg.have !== "") bits.push("so far");
@@ -94,6 +95,7 @@ function renderFeatured(prefix, best, heading, aim) {
   }
   $(`${prefix}-aim`).textContent = aim;
   $(`${prefix}-title`).textContent = heading;
+  $(`${prefix}-when`).textContent = eventClock(best.card, best.legs);
   if (!best.legs.length) {
     $(`${prefix}-copy`).textContent = best.empty || "Nothing left to bet on today's slate.";
     $(`${prefix}-legs`).innerHTML = "";
@@ -160,6 +162,20 @@ function bestBet(board) {
   return candidates[0] || null;
 }
 
+function eventClock(card, legs) {
+  const stamps = [];
+  const add = (iso) => {
+    if (iso && !stamps.includes(iso)) stamps.push(iso);
+  };
+  if (card) add(card.kickoff);
+  (legs || (card && card.legs) || []).forEach((leg) => add(leg.kickoff));
+  ((card && card.groups) || []).forEach((group) => {
+    (group.legs || []).forEach((leg) => add(leg.kickoff));
+  });
+  stamps.sort();
+  return stamps.map((iso) => `${when(iso)} ET`).join(" · ");
+}
+
 function pctWords(legs) {
   const bits = legs.map((leg) => String(leg.pct || "").trim()).filter(Boolean);
   if (bits.length < 2) return bits[0] || "listed below";
@@ -209,6 +225,7 @@ function renderParlay(id, card) {
   const game = card.game ? `${card.game}. ` : "";
   $(`${id}-aim`).textContent = card.goal || "";
   $(`${id}-title`).textContent = card.title || "";
+  $(`${id}-when`).textContent = eventClock(card);
   $(`${id}-copy`).textContent = dropMiss(`${game}${card.copy || ""}`);
   const groups = card.groups || [];
   $(`${id}-legs`).innerHTML = groups.length

@@ -64,6 +64,7 @@ def build_cross_four(games: list[dict]) -> dict | None:
                 "runner": leg["runner"],
                 "label": leg["label"],
                 "odds": leg["odds"],
+                "kickoff": leg.get("kickoff") or "",
                 "pct": f"{implied_prob(leg['odds']) * 100:.1f}%",
             }
             for leg in combo
