@@ -1,10 +1,4 @@
-"""Two football parlays from the same FanDuel prop board.
-
-Near -180 stacks prices from -400 to -700 until the parlay is about -180.
-Four at 85% picks four small player lines, each priced near an 85% chance.
-The combined number is the regular parlay: multiply the decimal odds.
-A same-game ticket on FanDuel can differ, because those legs move together.
-"""
+"""Parlay cards from one FanDuel board. Every leg label names the stat."""
 
 from __future__ import annotations
 
@@ -14,6 +8,7 @@ from typing import Any
 
 from nfl_bets.hedge import american_decimal, implied_prob
 from nfl_bets.http_util import get_json
+from nfl_bets.labels import label as _label
 
 _AK = "FhMFpcPWXMeyZxOx"
 _LOW = -700
@@ -452,28 +447,6 @@ def _key(market: str, market_id: str) -> str:
 def _prop(market: str) -> bool:
     head = market.split(" - ", 1)[0]
     return " - " in market and "Alternate" not in head
-
-
-def _kind(market: str) -> str:
-    text = market.lower()
-    if "reception" in text:
-        return "receptions"
-    if "rush" in text:
-        return "rushing"
-    if "pass" in text:
-        return "passing"
-    if "receiv" in text:
-        return "receiving"
-    return ""
-
-
-def _label(market: str, runner: str) -> str:
-    if runner.lower() in {"over", "under"} or runner[:4].lower() in {"over", "unde"}:
-        return f"{market}: {runner}"
-    kind = _kind(market)
-    if kind and kind not in runner.lower() and re.search(r"yards?", runner, re.I):
-        return re.sub(r"yards?", f"{kind} yards", runner, count=1, flags=re.I)
-    return runner
 
 
 def _american(runner: dict[str, Any]) -> int | None:
