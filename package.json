@@ -1,0 +1,13 @@
+{
+  "name": "sports-betting-desk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Betting desk. The Mac writes FanDuel prices to Supabase. This Node app serves the site.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

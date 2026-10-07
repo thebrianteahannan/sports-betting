@@ -1,0 +1,29 @@
+# NFL betting desk — FanDuel prices only.
+#
+#   docker compose up -d --build
+#   open http://localhost:8793
+#
+# Port 8793 stays off the fantasy stack (8788–8792).
+# The bank and line history live in ./output.
+
+services:
+  nfl-bets:
+    build: .
+    image: nfl-bets:latest
+    container_name: nfl-bets
+    restart: unless-stopped
+    command: ["sh", "/app/nfl_bets/loop.sh"]
+    ports:
+      - "8793:8793"
+    env_file:
+      - .env
+    environment:
+      NFL_BETS_PORT: "8793"
+      NFL_BETS_BIND: "0.0.0.0"
+      NFL_BETS_INTERVAL_SECONDS: "600"
+      NFL_BETS_BANK_START: "20"
+      NFL_BETS_OUT_DIR: /data/nfl_bets
+      TZ: America/New_York
+    volumes:
+      - ./nfl_bets:/app/nfl_bets
+      - ./output:/data/nfl_bets

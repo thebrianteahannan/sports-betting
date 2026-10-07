@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Betting desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/app.css?v=17"/>
+</head>
+<body>
+<div class="grid-bg" aria-hidden="true"></div>
+<div class="aurora" aria-hidden="true"></div>
+<div class="scan" aria-hidden="true"></div>
+<header class="top">
+  <div>
+    <p class="kicker">FanDuel prices</p>
+    <h1 id="page-title">Today's bets</h1>
+  </div>
+  <div class="top-actions">
+    <a class="ghost link" href="/subscription.pdf">Go-live plan</a>
+  </div>
+</header>
+<p class="lede" id="lede">Loading FanDuel.</p>
+<p class="banner" id="banner" hidden></p>
+<nav class="tabs">
+  <button type="button" class="tab on" data-tab="today">Today's bets</button>
+  <button type="button" class="tab" data-tab="open">Open</button>
+  <button type="button" class="tab" data-tab="wins" id="tab-wins">Wins</button>
+  <button type="button" class="tab" data-tab="losses">Losses</button>
+  <button type="button" class="tab" data-tab="pushes" id="tab-pushes" hidden>Pushes</button>
+</nav>
+<div class="pane" id="pane-today">
+<section class="chalk best" id="best" hidden>
+  <p class="live-note" id="best-live" hidden></p>
+  <p class="aim" id="best-aim"></p>
+  <h2 id="best-title">Today's Best Bet</h2>
+  <p id="best-copy"></p>
+  <ol id="best-legs"></ol>
+  <p class="quiet" id="best-note"></p>
+  <p class="pick-save" id="best-save"></p>
+</section>
+<section class="chalk best week" id="week" hidden>
+  <p class="live-note" id="week-live" hidden></p>
+  <p class="aim" id="week-aim"></p>
+  <h2 id="week-title">Bet of the Week</h2>
+  <p id="week-copy"></p>
+  <ol id="week-legs"></ol>
+  <p class="quiet" id="week-note"></p>
+  <p class="pick-save" id="week-save"></p>
+</section>
+<p class="quiet bets-note">Same price is not the same job. A -550 on 5 receiving yards and a -550 on a score are different bets. These cards name the stat. Four prices near 85% multiply to about a coin flip.</p>
+<section class="chalk" id="chalk" hidden>
+  <p class="aim" id="chalk-aim"></p>
+  <h2 id="chalk-title"></h2>
+  <p id="chalk-copy"></p>
+  <ol id="chalk-legs"></ol>
+  <p class="quiet" id="chalk-note"></p>
+</section>
+<section class="chalk four" id="four" hidden>
+  <p class="aim" id="four-aim"></p>
+  <h2 id="four-title"></h2>
+  <p id="four-copy"></p>
+  <ol id="four-legs"></ol>
+  <p class="quiet" id="four-note"></p>
+</section>
+<section class="chalk plus" id="plus" hidden>
+  <p class="aim" id="plus-aim"></p>
+  <h2 id="plus-title"></h2>
+  <p id="plus-copy"></p>
+  <ol id="plus-legs"></ol>
+  <p class="quiet" id="plus-note"></p>
+</section>
+<section class="chalk hits" id="hits" hidden>
+  <p class="aim" id="hits-aim"></p>
+  <h2 id="hits-title"></h2>
+  <p id="hits-copy"></p>
+  <ol id="hits-legs"></ol>
+  <p class="quiet" id="hits-note"></p>
+</section>
+<section class="tracked" id="tracked">
+  <h2>Picks I'm tracking</h2>
+  <p class="quiet" id="tracked-score"></p>
+  <div id="tracked-list"></div>
+</section>
+</div>
+<div class="pane" id="pane-open" hidden>
+<section class="tracked">
+  <h2>Open bets</h2>
+  <p class="quiet" id="open-score"></p>
+  <div id="open-list"></div>
+</section>
+</div>
+<div class="pane" id="pane-wins" hidden>
+<section class="tracked">
+  <h2>Wins</h2>
+  <p class="quiet" id="wins-score"></p>
+  <div id="wins-list"></div>
+</section>
+</div>
+<div class="pane" id="pane-losses" hidden>
+<section class="tracked">
+  <h2>Losses</h2>
+  <p class="quiet" id="losses-score"></p>
+  <div id="losses-list"></div>
+</section>
+</div>
+<div class="pane" id="pane-pushes" hidden>
+<section class="tracked">
+  <h2>Pushes</h2>
+  <p class="quiet" id="pushes-score"></p>
+  <div id="pushes-list"></div>
+</section>
+</div>
+<footer>
+  <p>21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
+  <p>Gambling problem? Call 1-800-GAMBLER.</p>
+</footer>
+<script src="/app.js?v=27"></script>
+</body>
+</html>
