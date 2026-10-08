@@ -182,6 +182,11 @@ section.plan {
 .chalk .when { font-family: var(--sport); color: var(--gold); margin: 0 0 0.45rem; max-width: 70ch; }
 .chalk .when:empty { display: none; }
 .sofar { color: var(--gold); font-style: normal; font-weight: 700; }
+.history { margin: 0.35rem 0 0.55rem; }
+.history summary { cursor: pointer; font-family: var(--sport); color: var(--gold); }
+.history ol { list-style: none; margin: 0.35rem 0 0; padding: 0; }
+.history li { padding: 0.35rem 0; border-top: 1px solid rgba(244, 241, 232, 0.12); }
+.history li b { display: block; font-family: var(--sport); color: var(--gold); font-weight: 600; }
 .live-note {
   font-family: var(--sport);
   letter-spacing: 0.04em;

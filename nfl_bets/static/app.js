@@ -156,6 +156,7 @@ function renderFeatured(prefix, best, heading, aim) {
   $(`${prefix}-copy`).textContent = `${game}Strategy: ${best.strategy}. The legs are ${pctWords(best.legs)}. The parlay is ${best.pct}%.${win}`;
   $(`${prefix}-legs`).innerHTML = best.legs.map(legItem).join("");
   $(`${prefix}-note`).textContent = dropMiss(best.note || "");
+  mountHistory($(`${prefix}`), best.id, best.game, best.group);
   const saved = bestSaved(best);
   const shaped = best.group ? { legs: best.legs } : best.card;
   const mine = cardGood(best.id, shaped);
@@ -280,6 +281,7 @@ function renderParlay(id, card) {
     ? groups.map((group) => `<li class="split"><b>${esc(group.price)}</b><span>${esc(group.title)}</span><em>${esc(group.pct || "")}</em></li>${(group.legs || []).map(legItem).join("")}`).join("")
     : (card.legs || []).map(legItem).join("");
   $(`${id}-note`).textContent = dropMiss(card.note || "");
+  mountHistory(box, id, card.game || "", "");
   let save = box.querySelector(".pick-save");
   if (!save) {
     save = document.createElement("p");
@@ -292,6 +294,43 @@ function renderParlay(id, card) {
     ? `<button type="button" class="ghost" disabled>Saved</button>`
     : `<button type="button" class="ghost" data-save="${esc(id)}">Save this pick</button>`
   }<button type="button" class="ghost good${mine ? " on" : ""}" data-good-card="${esc(id)}">${mine ? "Good bet" : "Mark good"}</button>`;
+}
+
+function mountHistory(box, cardId, game, group) {
+  if (!box) return;
+  let slot = box.querySelector(".history-slot");
+  if (!slot) {
+    slot = document.createElement("div");
+    slot.className = "history-slot";
+    const save = box.querySelector(".pick-save");
+    if (save) box.insertBefore(slot, save);
+    else box.appendChild(slot);
+  }
+  slot.innerHTML = historyHtml(cardId, game, group);
+}
+
+function historyHtml(cardId, game, group) {
+  const rows = ((state.board && state.board.archive) || []).filter((ticket) => (
+    ticket.card === cardId
+    && (ticket.legs || []).length
+    && (!game || ticket.game === game)
+    && (!group || String(ticket.title || "").endsWith(group))
+  )).sort((a, b) => String(a.offeredAt).localeCompare(String(b.offeredAt)));
+  const versions = [];
+  rows.forEach((ticket) => {
+    const key = (ticket.legs || []).map((leg) => `${leg.label}|${leg.odds}`).join("||");
+    const last = versions[versions.length - 1];
+    if (last && last.key === key) return;
+    versions.push({ key, from: ticket.offeredAt, legs: ticket.legs });
+  });
+  if (!versions.length) return "";
+  const first = when(versions[0].from);
+  if (versions.length === 1) return `<p class="quiet">First seen ${esc(first)} ET. These prices have not moved.</p>`;
+  const items = versions.map((row) => {
+    const legs = row.legs.map((leg) => `${american(leg.odds)} ${String(leg.label).split(" — ")[0]}`).join("; ");
+    return `<li><b>${esc(when(row.from))} ET</b><span>${esc(legs)}</span></li>`;
+  }).join("");
+  return `<details class="history"><summary>Price history since ${esc(first)} ET. ${versions.length} versions.</summary><ol>${items}</ol></details>`;
 }
 
 function cardGood(id, card) {

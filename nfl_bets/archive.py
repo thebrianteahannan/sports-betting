@@ -281,17 +281,14 @@ def _find_event(path: str, match: str, kickoff: str) -> str:
             return str(event.get("id") or "")
     return ""
 def _find_sport(leg: dict[str, Any]) -> str:
-    match = str(leg.get("match") or "")
-    kickoff = str(leg.get("kickoff") or "")
+    match, kickoff = str(leg.get("match") or ""), str(leg.get("kickoff") or "")
     if not match or not kickoff:
         return ""
     for sport in ("WNBA", "NBA", "NHL", "MLB", "NFL", "NCAAF"):
         espn_id = _find_event(_PATHS[sport], match, kickoff)
-        if not espn_id:
-            continue
-        leg["sport"] = sport
-        leg["espnId"] = espn_id
-        return _PATHS[sport]
+        if espn_id:
+            leg["sport"], leg["espnId"] = sport, espn_id
+            return _PATHS[sport]
     return ""
 def _player_stat(summary: dict[str, Any], player: str, stat: str) -> float | None:
     aliases = _ALIASES.get(stat) or []
@@ -493,6 +490,8 @@ def _load() -> list[dict[str, Any]]:
     return [row for row in rows or [] if isinstance(row, dict)]
 
 def _write(rows: list[dict[str, Any]]) -> None:
+    have = {_signature(row) for row in rows}
+    rows.extend(row for row in _load() if _signature(row) not in have)
     write_json(out_dir() / "archive.json", {"tickets": rows})
 
 def _now() -> str:
