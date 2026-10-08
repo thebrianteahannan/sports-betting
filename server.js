@@ -256,7 +256,7 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/subscription.pdf", "/feasibility.pdf"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/choose.js", "/subscription.pdf", "/feasibility.pdf"].includes(url.pathname)) {
       serveStatic(res, url.pathname.slice(1));
       return;
     }

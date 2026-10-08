@@ -1,4 +1,4 @@
-const state = { board: null, tab: "today" };
+const state = window.state = { board: null, tab: "today" };
 
 const $ = (id) => document.getElementById(id);
 
@@ -61,6 +61,7 @@ function render() {
   renderArchive(board.archive || []);
   renderPicks(board.picks || []);
   showTab(state.tab);
+  if (window.paintChoices) window.paintChoices();
 }
 
 function dropMiss(text) {

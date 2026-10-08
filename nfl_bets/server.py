@@ -16,6 +16,7 @@ from nfl_bets.hedge import size_hedge
 from nfl_bets.archive import mark_good, settle_archive
 from nfl_bets.picks import save_pick, settle_pick
 from nfl_bets.plan import build_plan
+from nfl_bets.choose import choose
 from nfl_bets.refresh import public_payload, run
 from nfl_bets.store import load_board, place_bet, public_bank, reset_bank, settle_bet
 
@@ -34,7 +35,7 @@ class Handler(BaseHTTPRequestHandler):
         if path in {"/", "/index.html"}:
             self._file("index.html")
             return
-        if path in {"/app.css", "/app.js"}:
+        if path in {"/app.css", "/app.js", "/choose.js"}:
             self._file(path.lstrip("/"))
             return
         if path == "/feasibility.pdf":
@@ -62,6 +63,16 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         try:
             body = self._body()
+            if path == "/api/choose":
+                sports = body.get("sports") if isinstance(body.get("sports"), list) else []
+                self._json(choose(
+                    load_board(),
+                    [str(sport) for sport in sports],
+                    str(body.get("kind") or "any"),
+                    int(body.get("legs") or 3),
+                    str(body.get("gameId") or ""),
+                ))
+                return
             if path == "/api/refresh":
                 self._json(public_payload(run()))
                 return
