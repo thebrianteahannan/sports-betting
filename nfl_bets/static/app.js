@@ -35,6 +35,8 @@ async function load() {
   const response = await fetch("/api/board", { cache: "no-store" });
   state.board = await response.json();
   render();
+  clearTimeout(state.timer);
+  state.timer = setTimeout(load, liveBoard(state.board) ? 15000 : 120000);
 }
 
 function render() {
@@ -49,6 +51,7 @@ function render() {
   } else {
     banner.hidden = true;
   }
+  renderLive(board.archive || []);
   const week = bestBet(board);
   const today = todayCandidate(board);
   renderFeatured("best", today, "Today's Best Bet", "A bet you can place today.");
@@ -65,14 +68,59 @@ function dropMiss(text) {
 }
 
 function legItem(leg) {
+  const row = withLive(leg);
   const bits = [];
-  if (leg.kickoff) bits.push(`${when(leg.kickoff)} ET`);
-  if (leg.have != null && leg.have !== "") bits.push(leg.have);
-  if (leg.result && leg.result !== "open") bits.push(leg.result);
-  else if (leg.have != null && leg.have !== "") bits.push("so far");
-  else if (leg.note) bits.push(leg.note);
+  const now = progress(row);
+  if (!now && row.note) bits.push(row.note);
+  if (row.result && row.result !== "open") bits.push(row.result);
+  if (row.kickoff) bits.push(`${when(row.kickoff)} ET`);
   const extra = bits.length ? ` · ${bits.join(" ")}` : "";
-  return `<li><b>${esc(american(leg.odds) || leg.odds)}</b><span>${esc(leg.label)}</span><em>${esc(leg.pct || "")}${esc(extra)}</em></li>`;
+  const count = now ? ` <b class="sofar">${esc(now)}</b>` : "";
+  return `<li><b>${esc(american(row.odds) || row.odds)}</b><span>${esc(row.label)}</span><em>${esc(row.pct || "")}${count}${esc(extra)}</em></li>`;
+}
+
+function withLive(leg) {
+  if (leg.have != null && leg.have !== "") return leg;
+  const rows = ((state.board && state.board.archive) || []).flatMap((ticket) => ticket.legs || []);
+  const hit = rows.find((row) => row.label === leg.label && String(row.odds) === String(leg.odds) && row.have != null && row.have !== "");
+  return hit ? { ...leg, have: hit.have, line: hit.line, result: hit.result, stat: hit.stat || leg.stat } : leg;
+}
+
+function progress(leg) {
+  const have = Number(leg.have);
+  const line = Number(leg.line);
+  if (!Number.isFinite(have) || !Number.isFinite(line)) return "";
+  const unit = unitOf(leg);
+  const shown = (value) => Number.isInteger(value) ? String(value) : String(value);
+  return `${shown(have)} of ${shown(line)}${unit ? ` ${unit}` : ""}`;
+}
+
+function unitOf(leg) {
+  const text = `${leg.label || ""} ${leg.stat || ""}`.toLowerCase();
+  const words = ["shots on goal", "receiving yards", "rushing yards", "passing yards", "assists", "rebounds", "points", "receptions", "strikeouts", "saves"];
+  return words.find((word) => text.includes(word)) || "";
+}
+
+function renderLive(archive) {
+  const box = $("live");
+  const now = Date.now();
+  const rows = (archive || []).filter((ticket) => {
+    if (ticket.result !== "open" || !ticket.good) return false;
+    return (ticket.legs || []).some((leg) => {
+      const kick = Date.parse(leg.kickoff || ticket.kickoff || "");
+      return Number.isFinite(kick) && kick <= now && now - kick < 8 * 60 * 60 * 1000;
+    });
+  });
+  box.hidden = !rows.length;
+  $("live-list").innerHTML = rows.map((ticket) => pickRow(ticket, true)).join("");
+}
+
+function liveBoard(board) {
+  const now = Date.now();
+  return ((board && board.archive) || []).some((ticket) => ticket.result === "open" && (ticket.legs || []).some((leg) => {
+    const kick = Date.parse(leg.kickoff || ticket.kickoff || "");
+    return Number.isFinite(kick) && kick <= now && now - kick < 8 * 60 * 60 * 1000;
+  }));
 }
 
 function renderFeatured(prefix, best, heading, aim) {
@@ -329,9 +377,9 @@ function archiveMark(ticket) {
   if (legs.some((leg) => /mark this/i.test(leg.note || ""))) {
     return `${manualMark(ticket, "data-archive")}<span class="status">This line is a half, a quarter, or a drive. Mark won, lost, or push.</span>`;
   }
-  const moving = legs.some((leg) => leg.have != null && leg.have !== "");
-  if (moving) {
-    return `<span class="status">Open. The box score is still moving, and it will say won or lost.</span>`;
+  const moving = legs.map(progress).filter(Boolean);
+  if (moving.length) {
+    return `<span class="status">Live. ${esc(moving.join(". "))}.</span>`;
   }
   const kick = nextKick(ticket);
   return `<span class="status">Open until ${esc(kick || "the game starts")}${kick ? " ET" : ""}. The box score will say won or lost.</span>`;

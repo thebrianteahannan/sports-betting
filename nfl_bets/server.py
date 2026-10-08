@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import os
+import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -214,9 +216,32 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
 
+def _live_counts() -> None:
+    """Grade open props often and publish when a live count changes."""
+    from nfl_bets.archive import grade_open
+    from nfl_bets.cloud import publish_board
+
+    last = None
+    while True:
+        try:
+            rows = grade_open()
+            snap = tuple(
+                (row.get("id"), leg.get("label"), leg.get("have"), leg.get("result"))
+                for row in rows
+                for leg in (row.get("legs") or [])
+            )
+            if snap != last:
+                last = snap
+                publish_board(load_board())
+        except Exception:  # noqa: BLE001
+            pass
+        time.sleep(20)
+
+
 def main() -> None:
     host = os.environ.get("NFL_BETS_BIND") or "0.0.0.0"
     port = int(os.environ.get("NFL_BETS_PORT") or "8793")
+    threading.Thread(target=_live_counts, name="live-counts", daemon=True).start()
     server = ThreadingHTTPServer((host, port), Handler)
     print(f"[nfl-bets] desk on http://{host}:{port}", flush=True)
     server.serve_forever()

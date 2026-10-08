@@ -31,6 +31,7 @@ _ALIASES = {
     "passingYards": ["passingyards"], "passingTouchdowns": ["passingtouchdowns"],
     "receptions": ["receptions"],
     "rebounds": ["rebounds", "totalrebounds"], "points": ["points"],
+    "assists": ["assists"],
     "shotsOnGoal": ["shotsongoal", "shotstotal"],
     "strikeouts": ["strikeouts", "pitchingstrikeouts"],
 }
@@ -48,14 +49,12 @@ def record_offers(board: dict[str, Any]) -> list[dict[str, Any]]:
         _grade(rows)
         _write(rows)
         return _sorted(rows)
-
 def grade_open() -> list[dict[str, Any]]:
     with _LOCK:
         rows = _load()
         _grade(rows)
         _write(rows)
         return _sorted(rows)
-
 def settle_archive(ticket_id: str, result: str) -> dict[str, Any]:
     if result not in _RESULTS:
         raise ValueError("Mark it won, lost, or push.")
@@ -71,7 +70,6 @@ def settle_archive(ticket_id: str, result: str) -> dict[str, Any]:
         found["how"] = "marked here"
         _write(rows)
         return {"archive": _sorted(rows)}
-
 def mark_good(ticket_id: str = "", card_id: str = "", board: dict[str, Any] | None = None, group: str = "") -> dict[str, Any]:
     """Toggle the good-bet flag on one saved ticket, or on the live card's tickets."""
     with _LOCK:
@@ -88,7 +86,6 @@ def mark_good(ticket_id: str = "", card_id: str = "", board: dict[str, Any] | No
                 row.pop("goodAt", None)
         _write(rows)
         return {"archive": _sorted(rows)}
-
 def _good_rows(rows: list[dict[str, Any]], ticket_id: str, card_id: str, board: dict[str, Any], group: str = "") -> list[dict[str, Any]]:
     if ticket_id:
         return [row for row in rows if str(row.get("id")) == ticket_id]
@@ -98,7 +95,6 @@ def _good_rows(rows: list[dict[str, Any]], ticket_id: str, card_id: str, board: 
         tickets = [ticket for ticket in tickets if str(ticket.get("title") or "").endswith(group)]
     keys = {_signature(ticket) for ticket in tickets}
     return [row for row in rows if _signature(row) in keys]
-
 def _from_board(board: dict[str, Any], games: dict[str, dict], stamp: str) -> list[dict[str, Any]]:
     tickets: list[dict[str, Any]] = []
     for card_id in _CARDS:
@@ -116,7 +112,6 @@ def _from_board(board: dict[str, Any], games: dict[str, dict], stamp: str) -> li
         if legs:
             tickets.append(_ticket(card_id, card, games, stamp, legs, None))
     return tickets
-
 def _ticket(card_id: str, card: dict, games: dict, stamp: str, legs: list[dict], group: dict | None) -> dict[str, Any]:
     game = games.get(str(card.get("gameId") or ""), {})
     title = str(card.get("title") or "Bet")
@@ -140,7 +135,6 @@ def _ticket(card_id: str, card: dict, games: dict, stamp: str, legs: list[dict],
         "result": "open",
         "legs": legs,
     }
-
 def _leg(raw: dict[str, Any], card: dict, games: dict) -> dict[str, Any]:
     label = str(raw.get("label") or "")
     market = str(raw.get("market") or "")
@@ -166,7 +160,6 @@ def _leg(raw: dict[str, Any], card: dict, games: dict) -> dict[str, Any]:
         "kickoff": str(raw.get("kickoff") or game.get("kickoff") or card.get("kickoff") or ""),
         "result": "open",
     }
-
 def _game_for(raw: dict[str, Any], card: dict, games: dict, match: str) -> dict:
     found = games.get(str(raw.get("gameId") or card.get("gameId") or ""))
     if found:
@@ -183,11 +176,16 @@ def _game_for(raw: dict[str, Any], card: dict, games: dict, match: str) -> dict:
         if all(side in blob for side in sides):
             return game
     return {}
-
 def _grade(rows: list[dict[str, Any]]) -> None:
     for ticket in rows:
         if ticket.get("result") != "open" or ticket.get("how") == "marked here":
             continue
+        game = str(ticket.get("game") or "")
+        for leg in ticket.get("legs") or []:
+            if not leg.get("match") and game:
+                leg["match"] = game.replace(" at ", " @ ")
+            if not leg.get("kickoff"):
+                leg["kickoff"] = str(ticket.get("kickoff") or "")
         states = [_grade_leg(leg) for leg in ticket.get("legs") or []]
         before = ticket.get("result")
         if any(state == "lost" for state in states):
@@ -202,7 +200,6 @@ def _grade(rows: list[dict[str, Any]]) -> None:
             ticket["settledAt"] = _now()
             ticket["how"] = "box score"
             _mirror(ticket)
-
 def _grade_leg(leg: dict[str, Any]) -> str:
     fresh = _stat(f"{leg.get('market') or ''} {leg.get('label') or ''}")
     if fresh:
@@ -235,7 +232,6 @@ def _grade_leg(leg: dict[str, Any]) -> str:
     state = _compare(float(have), float(leg["line"]), str(leg.get("side") or "plus"), final)
     leg["result"] = state
     return state
-
 def _compare(have: float, line: float, side: str, final: bool) -> str:
     if side == "under":
         if have > line:
@@ -250,10 +246,11 @@ def _compare(have: float, line: float, side: str, final: bool) -> str:
     if abs(have - line) < 1e-9 and side == "over":
         return "push" if final else "open"
     return "lost" if final else "open"
-
 def _summary_for(leg: dict[str, Any]) -> dict[str, Any] | None:
     sport = str(leg.get("sport") or "")
     path = _PATHS.get(sport)
+    if not path:
+        path = _find_sport(leg)
     if not path:
         return None
     espn_id = str(leg.get("espnId") or "")
@@ -266,7 +263,6 @@ def _summary_for(leg: dict[str, Any]) -> dict[str, Any] | None:
     url = f"https://site.web.api.espn.com/apis/site/v2/sports/{path}/summary?event={espn_id}"
     data = _cached(url, lambda: get_json(url, referer="https://www.espn.com/"))
     return data if isinstance(data, dict) else None
-
 def _find_event(path: str, match: str, kickoff: str) -> str:
     sides = [_side(part) for part in re.split(r"\s@\s|\sat\s", match) if part.strip()]
     sides = [side for side in sides if side]
@@ -284,7 +280,19 @@ def _find_event(path: str, match: str, kickoff: str) -> str:
         if all(side in blob for side in sides):
             return str(event.get("id") or "")
     return ""
-
+def _find_sport(leg: dict[str, Any]) -> str:
+    match = str(leg.get("match") or "")
+    kickoff = str(leg.get("kickoff") or "")
+    if not match or not kickoff:
+        return ""
+    for sport in ("WNBA", "NBA", "NHL", "MLB", "NFL", "NCAAF"):
+        espn_id = _find_event(_PATHS[sport], match, kickoff)
+        if not espn_id:
+            continue
+        leg["sport"] = sport
+        leg["espnId"] = espn_id
+        return _PATHS[sport]
+    return ""
 def _player_stat(summary: dict[str, Any], player: str, stat: str) -> float | None:
     aliases = _ALIASES.get(stat) or []
     found_category = False
@@ -306,7 +314,6 @@ def _player_stat(summary: dict[str, Any], player: str, stat: str) -> float | Non
     if found_category:
         return 0.0
     return None
-
 def _total_score(summary: dict[str, Any], label: str) -> float | None:
     comps = _comps(summary)
     named: list[float] = []
@@ -325,15 +332,12 @@ def _total_score(summary: dict[str, Any], label: str) -> float | None:
     if len(named) == 1:
         return named[0]
     return sum(scores) if len(scores) >= 2 else None
-
 def _started(summary: dict[str, Any]) -> bool:
     state = str((_status(summary) or {}).get("state") or "")
     return state in {"in", "post"}
-
 def _final(summary: dict[str, Any]) -> bool:
     status = _status(summary)
     return bool(status.get("completed")) or str(status.get("state") or "") == "post"
-
 def _comps(summary: dict[str, Any]) -> dict[str, Any]:
     return ((summary.get("header") or {}).get("competitions") or [{}])[0]
 
@@ -378,6 +382,8 @@ def _player(head: str, market: str, runner: str) -> str:
 
 def _stat(text: str) -> str:
     low, td = text.lower(), "touchdown" in text.lower()
+    if "assist" in low:
+        return "assists"
     if "shot" in low:
         return "shotsOnGoal"
     if "rebound" in low:
@@ -466,7 +472,8 @@ def _ymd(kickoff: str) -> str:
 def _cached(key: str, fetch) -> Any:
     now = time.time()
     hit = _CACHE.get(key)
-    if hit and now - hit[0] < _TTL:
+    ttl = 15.0 if "/summary?" in key else _TTL
+    if hit and now - hit[0] < ttl:
         return hit[1]
     try:
         data = fetch()

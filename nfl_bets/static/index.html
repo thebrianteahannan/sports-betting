@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/app.css?v=18"/>
+<link rel="stylesheet" href="/app.css?v=19"/>
 </head>
 <body>
 <div class="grid-bg" aria-hidden="true"></div>
@@ -29,6 +29,11 @@
   <button type="button" class="tab" data-tab="pushes" id="tab-pushes" hidden>Pushes</button>
 </nav>
 <div class="pane" id="pane-today">
+<section class="chalk" id="live" hidden>
+  <p class="aim">Where this bet stands right now.</p>
+  <h2>Live now</h2>
+  <div id="live-list"></div>
+</section>
 <section class="chalk best" id="best" hidden>
   <p class="live-note" id="best-live" hidden></p>
   <p class="aim" id="best-aim"></p>
@@ -120,6 +125,6 @@
   <p>21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
-<script src="/app.js?v=28"></script>
+<script src="/app.js?v=29"></script>
 </body>
 </html>
