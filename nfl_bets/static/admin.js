@@ -9,7 +9,7 @@ function loginWhen(stamp) {
 }
 
 function showAdminTab(name) {
-  ["share", "members", "ignore", "strategy"].forEach((id) => {
+  ["members", "share", "ignore", "strategy"].forEach((id) => {
     const pane = document.getElementById(`admin-${id}`);
     if (pane) pane.hidden = id !== name;
     const button = document.querySelector(`[data-admin-tab="${id}"]`);

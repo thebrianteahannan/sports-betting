@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/app.css?v=37"/>
+<link rel="stylesheet" href="/app.css?v=38"/>
 </head>
 <body class="needs-member">
 <div class="grid-bg" aria-hidden="true"></div>
@@ -215,17 +215,17 @@
 <section class="tracked">
   <h2>Admin</h2>
   <nav class="tabs" id="admin-tabs">
-    <button type="button" class="tab on" data-admin-tab="share">Share a win</button>
-    <button type="button" class="tab" data-admin-tab="members">Members</button>
+    <button type="button" class="tab on" data-admin-tab="members">Members</button>
+    <button type="button" class="tab" data-admin-tab="share">Share a win</button>
     <button type="button" class="tab" data-admin-tab="ignore">Ignoring</button>
     <button type="button" class="tab" data-admin-tab="strategy">Strategy</button>
   </nav>
-  <div id="admin-share">
+  <div id="admin-share" hidden>
     <div id="report-review" hidden>
       <div id="report-queue"></div>
     </div>
   </div>
-  <div id="admin-members" hidden>
+  <div id="admin-members">
     <p id="admin-role-note" class="quiet"></p>
     <div id="admin-users"></div>
   </div>
@@ -276,6 +276,6 @@
 <script src="/swipe.js?v=1"></script>
 <script src="/filters.js?v=3"></script>
 <script src="/reports.js?v=1"></script>
-<script src="/admin.js?v=4"></script>
+<script src="/admin.js?v=5"></script>
 </body>
 </html>

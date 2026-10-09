@@ -1,6 +1,6 @@
 :root {
   --bg: #07090e;
-  --card: rgba(12, 16, 26, 0.86);
+  --card: rgba(12, 16, 26, 0.96);
   --card-2: rgba(16, 22, 34, 0.94);
   --magenta: #c1272d;
   --cyan: #d7deea;
@@ -74,9 +74,8 @@ a { color: var(--cyan); }
   position: sticky;
   top: 0;
   z-index: 8;
-  background: rgba(7, 9, 14, 0.88);
+  background: rgba(7, 9, 14, 0.96);
   border-bottom: 0;
-  backdrop-filter: blur(16px);
 }
 .top::after {
   content: "";
@@ -163,7 +162,6 @@ section.plan {
   border: 1px solid var(--line);
   background: var(--card);
   box-shadow: var(--glow);
-  backdrop-filter: blur(12px);
 }
 .plan h2 { font-size: 1.2rem; margin-bottom: 0.45rem; }
 .plan p { margin: 0; color: var(--ink); max-width: 68ch; }
@@ -222,7 +220,6 @@ section.plan {
   border: 1px solid rgba(193, 39, 45, 0.45);
   background: var(--card);
   box-shadow: inset 3px 0 0 var(--magenta), var(--glow);
-  backdrop-filter: blur(12px);
 }
 .chalk h2 { font-size: 1.2rem; margin-bottom: 0.4rem; }
 .chalk .aim { font-family: var(--sport); color: var(--gold); margin: 0 0 0.35rem; max-width: 70ch; }
@@ -367,7 +364,6 @@ a.link {
   border: 1px solid var(--line);
   border-radius: 18px;
   box-shadow: var(--glow);
-  backdrop-filter: blur(12px);
 }
 .sources { margin-top: 0.85rem; padding: 0.75rem 1rem; }
 .sources summary { cursor: pointer; color: var(--muted); font-family: var(--sport); letter-spacing: 0.08em; text-transform: uppercase; }

@@ -48,15 +48,7 @@ def choose(board: dict[str, Any], sports: list[str], kind: str, count: int, game
         pools.append((game, kept, live))
     combo = _take(pools, count)
     if len(combo) < count:
-        names = {_who(leg) for _, legs, _ in pools for leg in legs}
-        names.discard("")
-        if not names:
-            return _empty("FanDuel has not posted player props for those games yet.")
-        noun = "player" if len(names) == 1 else "players"
-        return _empty(
-            f"FanDuel has player props for {len(names)} {noun} in those games, "
-            f"so a {count}-leg parlay does not fit yet."
-        )
+        return _empty(_miss(pools, picked, count, span))
     return _card(combo, picked, kind, count)
 
 
@@ -184,6 +176,30 @@ def _shown(leg: dict[str, Any]) -> str:
     if "to record a hit" in market.lower() and not re.search(r"\d", label):
         return f"{leg.get('runner') or label} 1+ hits"
     return label
+
+
+def _miss(pools: list[tuple[dict[str, Any], list[dict[str, Any]], bool]], sports: list[str], count: int, span: str) -> str:
+    ready = [(game, legs) for game, legs, _ in pools if legs]
+    names = {_who(leg) for _, legs in ready for leg in legs}
+    names.discard("")
+    league = ", ".join(sports)
+    when = "today" if span != "week" else "in this window"
+    if not ready:
+        return f"FanDuel has not posted player props for the {league} games {when}."
+    places = " and ".join(_place(game) for game, _ in ready[:3])
+    if len(ready) > 3:
+        places += f" and {len(ready) - 3} more"
+    noun = "player" if len(names) == 1 else "players"
+    if len(pools) == 1:
+        return (
+            f"The only {league} game {when} is {places}. "
+            f"FanDuel has player props for {len(names)} {noun} in that game, "
+            f"so a {count}-leg parlay does not fit yet."
+        )
+    return (
+        f"FanDuel has player props for {len(names)} {noun} across {places}, "
+        f"so a {count}-leg parlay does not fit yet."
+    )
 
 
 def _empty(copy: str) -> dict[str, Any]:
