@@ -147,7 +147,7 @@ function renderFeatured(prefix, best, heading, aim) {
   }
   $(`${prefix}-aim`).textContent = aim;
   $(`${prefix}-title`).textContent = heading;
-  $(`${prefix}-when`).textContent = [eventClock(best.card, best.legs), pulledText(best.card)].filter(Boolean).join(" · ");
+  $(`${prefix}-when`).textContent = [eventClock(best.card, best.legs), pulledText(best.card)].filter(Boolean).join("\n");
   if (!best.legs.length) {
     $(`${prefix}-copy`).textContent = best.empty || "Nothing left to bet on today's slate.";
     $(`${prefix}-legs`).innerHTML = "";
@@ -269,7 +269,7 @@ function renderParlay(id, card) {
   const game = card.game ? `${card.game}. ` : "";
   $(`${id}-aim`).textContent = card.goal || "";
   $(`${id}-title`).textContent = card.title || "";
-  $(`${id}-when`).textContent = [eventClock(card), pulledText(card)].filter(Boolean).join(" · ");
+  $(`${id}-when`).textContent = [eventClock(card), pulledText(card)].filter(Boolean).join("\n");
   $(`${id}-copy`).textContent = dropMiss(`${game}${card.copy || ""}`);
   const groups = card.groups || [];
   $(`${id}-legs`).innerHTML = groups.length
@@ -441,7 +441,8 @@ function pickRow(pick, archive) {
   const good = goodControl(pick, archive);
   const price = american(pick.american);
   const clock = when(archive ? pick.offeredAt : pick.savedAt);
-  return `<article><h3>${esc(pick.title)}${price ? ` ${esc(price)}` : ""}</h3><p class="quiet">${esc(clock)}${pick.game ? ` · ${esc(pick.game)}` : ""}</p><ol class="chalk-legs">${legs}</ol><p class="pick-save">${good}${mark}</p></article>`;
+  const playing = [pick.game, eventClock(pick, pick.legs)].filter(Boolean).join(" · ");
+  return `<article class="ticket">${clock ? `<p class="pulled">${archive ? "Pulled" : "Saved"} ${esc(clock)} ET</p>` : ""}<h3>${esc(pick.title)}${price ? ` ${esc(price)}` : ""}</h3><p class="quiet">${esc(playing)}</p><ol class="chalk-legs">${legs}</ol><p class="pick-save">${good}${mark}</p></article>`;
 }
 
 function goodControl(pick, archive) {

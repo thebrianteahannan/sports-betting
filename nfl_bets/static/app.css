@@ -293,6 +293,9 @@ section.plan {
 }
 .tracked h2 { font-family: var(--display); font-size: 1.2rem; margin: 0 0 0.35rem; letter-spacing: 0.03em; }
 .tracked article { padding: 0.75rem 0; border-top: 1px solid var(--line); }
+.ticket { position: relative; }
+.ticket .pulled { position: absolute; top: 0.75rem; right: 0; margin: 0; color: var(--muted); font-size: 0.78rem; }
+.ticket h3 { padding-right: 12rem; }
 .tracked h3 { margin: 0; font-size: 1rem; }
 .mark { font-family: var(--sport); letter-spacing: 0.06em; text-transform: uppercase; }
 .mark.won { color: var(--good); }
@@ -427,7 +430,7 @@ button.chip.on {
 .game-hit:hover { filter: none; background: rgba(215, 222, 234, 0.04); }
 .game-top { display: flex; justify-content: space-between; gap: 0.8rem; align-items: baseline; }
 .match { font-family: var(--display); font-size: 1.02rem; letter-spacing: 0.03em; }
-.when { color: var(--cyan); font-family: var(--sport); font-size: 0.95rem; letter-spacing: 0.04em; white-space: nowrap; }
+.when { color: var(--cyan); font-family: var(--sport); font-size: 0.95rem; letter-spacing: 0.04em; white-space: pre-line; }
 .pills { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.5rem 0 0.65rem; }
 .pill {
   font-family: var(--sport);
@@ -509,6 +512,17 @@ select, .hedge input { width: 100%; margin-top: 0.25rem; background: #070a14; co
 @media (max-width: 760px) {
   .top { align-items: flex-start; flex-wrap: wrap; }
   .top-side { width: 100%; text-align: left; }
+  .lede, .banner, .sources, .filters, main, .bank, footer, .plan, .chalk, .tabs, .bets-note, .tracked {
+    width: min(1040px, calc(100% - 1rem));
+  }
+  .chalk, .tracked { padding: 0.8rem 0.7rem 0.85rem; }
+  .chalk li, .tracked li {
+    grid-template-columns: 3.1rem minmax(0, 1fr);
+    align-items: start;
+  }
+  .chalk li em, .tracked li em { grid-column: 2; }
   .prices, .hedge-grid, .plan-days { grid-template-columns: 1fr; }
-  .when { white-space: normal; }
+  .when { white-space: pre-line; }
+  .ticket .pulled { position: static; display: block; margin: 0 0 0.2rem; }
+  .ticket h3 { padding-right: 0; }
 }
