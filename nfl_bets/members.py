@@ -49,6 +49,7 @@ def join(name: str, email: str, password: str) -> tuple[dict[str, Any], str]:
             "hash": _hash(password, salt),
             "plan": "free",
             "createdAt": now_iso(),
+            "lastLogin": now_iso(),
         }
         data["users"].append(user)
         token = _open_session(data, user["id"])
@@ -63,6 +64,7 @@ def login(email: str, password: str) -> tuple[dict[str, Any], str]:
         user = next((row for row in data["users"] if str(row.get("email")) == clean_email), None)
         if not user or not hmac.compare_digest(str(user.get("hash")), _hash(password, str(user.get("salt")))):
             raise ValueError("Email or password does not match.")
+        user["lastLogin"] = now_iso()
         token = _open_session(data, str(user["id"]))
         _save(data)
         return _public(user), token
@@ -112,8 +114,38 @@ def _save(data: dict[str, Any]) -> None:
     write_json(out_dir() / "members.json", data)
 
 
+def is_admin(user: dict[str, Any]) -> bool:
+    return str(user.get("email") or "").strip().lower() == "bthannan@gmail.com"
+
+
+def roster(user: dict[str, Any]) -> dict[str, Any]:
+    if not is_admin(user):
+        raise ValueError("Sign in as an admin.")
+    with _LOCK:
+        data = _load()
+    rows = [_member_row(row) for row in data["users"]]
+    rows.sort(key=lambda row: str(row.get("lastLogin") or ""), reverse=True)
+    return {"users": rows}
+
+
+def _member_row(user: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "name": user.get("name") or "",
+        "email": user.get("email") or "",
+        "plan": user.get("plan") or "free",
+        "lastLogin": user.get("lastLogin") or "",
+        "createdAt": user.get("createdAt") or "",
+    }
+
+
 def _public(user: dict[str, Any]) -> dict[str, Any]:
-    return {"id": user["id"], "name": user["name"], "email": user["email"], "plan": "free"}
+    return {
+        "id": user["id"],
+        "name": user["name"],
+        "email": user["email"],
+        "plan": "free",
+        "admin": is_admin(user),
+    }
 
 
 def _find(data: dict[str, Any], user_id: str) -> dict[str, Any] | None:

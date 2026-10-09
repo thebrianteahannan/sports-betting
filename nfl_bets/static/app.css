@@ -110,6 +110,23 @@ body.needs-member #activity { display: none; }
 body:not(.needs-member) #gate { display: none; }
 #activity { margin-top: 0.8rem; }
 #activity p { margin: 0.25rem 0; }
+.report-form label { margin-top: 0.7rem; }
+.report-form textarea, .report-form input[type="file"] {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  background: #070a14;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.45rem 0.6rem;
+}
+.admin-table { width: 100%; border-collapse: collapse; margin-top: 0.4rem; }
+.admin-table th, .admin-table td { text-align: left; padding: 0.45rem 0.55rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.admin-table th { color: var(--gold); font-weight: 600; }
+.report-card { margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px solid var(--line); }
+.report-card p { margin: 0.25rem 0; }
+.report-shot { display: block; max-width: min(420px, 100%); margin-top: 0.45rem; border-radius: 10px; }
 #gate .aim,
 #gate .choice-line { color: var(--ink); }
 #gate input {

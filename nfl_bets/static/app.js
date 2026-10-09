@@ -384,9 +384,9 @@ function renderArchive(tickets) {
 
 function showTab(name) {
   state.tab = name;
-  const titles = { today: "Today's bets", build: "Build a bet", swipe: "Swipe", open: "Open bets", wins: "Wins", losses: "Losses", pushes: "Pushes" };
+  const titles = { today: "Today's bets", build: "Build a bet", swipe: "Swipe", open: "Open bets", wins: "Wins", losses: "Losses", pushes: "Pushes", share: "Share a win", admin: "Admin" };
   $("page-title").textContent = titles[name] || titles.today;
-  ["today", "build", "swipe", "open", "wins", "losses", "pushes"].forEach((id) => {
+  ["today", "build", "swipe", "open", "wins", "losses", "pushes", "share", "admin"].forEach((id) => {
     $(`pane-${id}`).hidden = id !== name;
     document.querySelector(`[data-tab="${id}"]`).classList.toggle("on", id === name);
   });

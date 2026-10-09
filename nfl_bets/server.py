@@ -17,7 +17,8 @@ from nfl_bets.archive import mark_good, settle_archive
 from nfl_bets.picks import save_pick, settle_pick
 from nfl_bets.plan import build_plan
 from nfl_bets.choose import choose
-from nfl_bets.members import join, login, logout, member_from_cookie, note, profile
+from nfl_bets.members import is_admin, join, login, logout, member_from_cookie, note, profile, roster
+from nfl_bets.reports import decide, listing, shot, submit
 from nfl_bets.refresh import public_payload, run
 from nfl_bets.store import load_board, place_bet, public_bank, reset_bank, settle_bet
 
@@ -37,7 +38,7 @@ class Handler(BaseHTTPRequestHandler):
         if path in {"/", "/index.html"}:
             self._file("index.html")
             return
-        if path in {"/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/logo.png"}:
+        if path in {"/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/logo.png"}:
             self._file(path.lstrip("/"))
             return
         if path == "/feasibility.pdf":
@@ -52,6 +53,33 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"error": "Sign in."}, 401)
                 return
             self._json(profile(user))
+            return
+        if path == "/api/admin":
+            user = self._user()
+            if not user or not is_admin(user):
+                self._json({"error": "Sign in as an admin."}, 403)
+                return
+            self._json(roster(user))
+            return
+        if path == "/api/reports":
+            user = self._user()
+            if not user:
+                self._json({"error": "Sign in."}, 401)
+                return
+            self._json(listing(user))
+            return
+        if path == "/api/reports/shot":
+            user = self._user()
+            report_id = (parse_qs(urlparse(self.path).query).get("id") or [""])[0]
+            if not user:
+                self._json({"error": "Sign in."}, 401)
+                return
+            try:
+                blob, mime = shot(user, report_id)
+            except ValueError as exc:
+                self._json({"error": str(exc)}, 404)
+                return
+            self._bytes(blob, mime)
             return
         if path == "/api/board":
             if not self._user():
@@ -82,6 +110,20 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/login":
                 user, token = login(str(body.get("email") or ""), str(body.get("password") or ""))
                 self._json(profile(user), cookie=token)
+                return
+            if path == "/api/reports":
+                user = self._user()
+                if not user:
+                    self._json({"error": "Sign in."}, 401)
+                    return
+                self._json(submit(user, str(body.get("strategy") or ""), str(body.get("story") or ""), str(body.get("image") or "")))
+                return
+            if path == "/api/reports/decision":
+                user = self._user()
+                if not user:
+                    self._json({"error": "Sign in."}, 401)
+                    return
+                self._json(decide(user, str(body.get("id") or ""), str(body.get("decision") or "")))
                 return
             if path == "/api/logout":
                 logout(self.headers.get("Cookie"))
@@ -259,6 +301,14 @@ class Handler(BaseHTTPRequestHandler):
         payload = path.read_bytes()
         self.send_response(200)
         self.send_header("Content-Type", _TYPES.get(path.suffix, "text/plain"))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def _bytes(self, payload: bytes, mime: str) -> None:
+        self.send_response(200)
+        self.send_header("Content-Type", mime)
         self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()

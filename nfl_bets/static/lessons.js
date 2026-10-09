@@ -98,7 +98,13 @@ const MISS_REASONS = [
   ["early", "One miss, legs still open"],
   ["college", "College receiving yards"],
 ];
-const missLeaveOut = new Set();
+const WIN_REASONS = [
+  ["nflRec", "NFL receiving yards"],
+  ["hits", "Stack hits"],
+  ["chalk", "Near −180"],
+];
+const missLeaveOut = new Set(MISS_REASONS.map(([id]) => id));
+const winOnly = new Set();
 
 function missTags(ticket) {
   const tags = new Set();
@@ -119,22 +125,58 @@ function missLeftOut(ticket) {
   return [...missLeaveOut].some((id) => tags.has(id));
 }
 
-function paintMissFilters(archive) {
-  const counts = Object.fromEntries(MISS_REASONS.map(([id]) => [id, 0]));
-  archive.forEach((ticket) => {
-    if (ticket.result !== "won" && ticket.result !== "lost") return;
-    missTags(ticket).forEach((id) => {
-      if (counts[id] != null) counts[id] += 1;
-    });
+function winTags(ticket) {
+  const tags = new Set();
+  const legs = ticket.legs || [];
+  if (legs.length && legs.every((leg) => lossSport(leg) === "NFL" && leg.stat === "receivingYards")) tags.add("nflRec");
+  if (ticket.card === "hits") tags.add("hits");
+  if (ticket.card === "chalk") tags.add("chalk");
+  return tags;
+}
+
+function recordKept(ticket) {
+  if (missLeftOut(ticket)) return false;
+  if (!winOnly.size) return true;
+  const tags = winTags(ticket);
+  return [...winOnly].some((id) => tags.has(id));
+}
+
+function decidedTickets(archive) {
+  return archive.filter((ticket) => ticket.result === "won" || ticket.result === "lost");
+}
+
+function paintRecordFilters(archive) {
+  const decided = decidedTickets(archive);
+  const missCounts = Object.fromEntries(MISS_REASONS.map(([id]) => [id, 0]));
+  const winCounts = Object.fromEntries(WIN_REASONS.map(([id]) => [id, 0]));
+  decided.forEach((ticket) => {
+    missTags(ticket).forEach((id) => { if (missCounts[id] != null) missCounts[id] += 1; });
+    winTags(ticket).forEach((id) => { if (winCounts[id] != null) winCounts[id] += 1; });
   });
-  const chips = MISS_REASONS.map(([id, label]) => (
-    `<button type="button" data-miss="${id}" class="${missLeaveOut.has(id) ? "on" : ""}">${esc(label)} ${counts[id]}</button>`
+  const missChips = MISS_REASONS.map(([id, label]) => (
+    `<button type="button" data-miss="${id}" class="${missLeaveOut.has(id) ? "on" : ""}">${esc(label)} ${missCounts[id]}</button>`
   )).join("");
-  const html = `<div class="row"><span class="name">Leave out</span>${chips}<button type="button" data-miss="clear">Clear</button></div>`;
+  const winChips = WIN_REASONS.map(([id, label]) => (
+    `<button type="button" data-win="${id}" class="${winOnly.has(id) ? "on" : ""}">${esc(label)} ${winCounts[id]}</button>`
+  )).join("");
+  const html = `<div class="row"><span class="name">Leave out</span>${missChips}<button type="button" data-miss="clear">Clear</button></div><div class="row"><span class="name">Only these</span>${winChips}<button type="button" data-win="clear">Clear</button></div>`;
   ["wins-filters", "losses-filters"].forEach((id) => {
     const box = document.getElementById(id);
     if (box) box.innerHTML = html;
   });
+}
+
+function paintWinNotes(archive) {
+  const box = document.getElementById("win-notes");
+  if (!box) return;
+  const decided = decidedTickets(archive);
+  const bits = WIN_REASONS.map(([id, label]) => {
+    const rows = decided.filter((ticket) => winTags(ticket).has(id));
+    const wins = rows.filter((ticket) => ticket.result === "won").length;
+    const pct = rows.length ? ((wins / rows.length) * 100).toFixed(1) : "0.0";
+    return `<p>${esc(label)}: ${wins} of ${rows.length} decided tickets, ${pct}%.</p>`;
+  });
+  box.innerHTML = `<section class="loss-notes"><h2>Why these hit</h2>${bits.join("")}</section>`;
 }
 
 function applyMissFilter() {
@@ -142,14 +184,16 @@ function applyMissFilter() {
   const won = archive.filter((ticket) => ticket.result === "won");
   const lost = archive.filter((ticket) => ticket.result === "lost");
   const push = archive.filter((ticket) => ticket.result === "push");
-  paintMissFilters(archive);
-  const keptWon = won.filter((ticket) => !missLeftOut(ticket));
-  const keptLost = lost.filter((ticket) => !missLeftOut(ticket));
+  paintRecordFilters(archive);
+  paintWinNotes(archive);
+  const keptWon = won.filter(recordKept);
+  const keptLost = lost.filter(recordKept);
   const decided = keptWon.length + keptLost.length;
   const pct = decided ? `${((keptWon.length / decided) * 100).toFixed(1)}%` : "";
   const left = (won.length - keptWon.length) + (lost.length - keptLost.length);
+  const only = winOnly.size ? " Showing only the selected win types." : "";
   const rate = pct
-    ? `Win percentage ${pct}, from ${keptWon.length} wins and ${keptLost.length} losses.${left ? ` ${left} left out.` : ""}`
+    ? `Win percentage ${pct}, from ${keptWon.length} wins and ${keptLost.length} losses.${left ? ` ${left} left out.` : ""}${only}`
     : "No completed bets yet.";
   const winsScore = document.getElementById("wins-score");
   const lossesScore = document.getElementById("losses-score");
@@ -163,7 +207,7 @@ function applyMissFilter() {
     const list = document.getElementById(id);
     if (!list) return;
     [...list.children].forEach((node, index) => {
-      node.hidden = Boolean(tickets[index] && missLeftOut(tickets[index]));
+      node.hidden = Boolean(tickets[index] && !recordKept(tickets[index]));
     });
   });
 }
@@ -174,11 +218,17 @@ function bindMissFilters() {
     if (!box || box.dataset.bound) return;
     box.dataset.bound = "1";
     box.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-miss]");
+      const miss = event.target.closest("[data-miss]");
+      const win = event.target.closest("[data-win]");
+      const button = miss || win;
       if (!button) return;
-      if (button.dataset.miss === "clear") missLeaveOut.clear();
-      else if (missLeaveOut.has(button.dataset.miss)) missLeaveOut.delete(button.dataset.miss);
-      else missLeaveOut.add(button.dataset.miss);
+      if (miss) {
+        if (button.dataset.miss === "clear") missLeaveOut.clear();
+        else if (missLeaveOut.has(button.dataset.miss)) missLeaveOut.delete(button.dataset.miss);
+        else missLeaveOut.add(button.dataset.miss);
+      } else if (button.dataset.win === "clear") winOnly.clear();
+      else if (winOnly.has(button.dataset.win)) winOnly.delete(button.dataset.win);
+      else winOnly.add(button.dataset.win);
       applyMissFilter();
     });
   });

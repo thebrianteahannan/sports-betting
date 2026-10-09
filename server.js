@@ -237,8 +237,12 @@ function passHash(password, salt) {
   return crypto.pbkdf2Sync(password, Buffer.from(salt, "hex"), 120000, 32, "sha256").toString("hex");
 }
 
+function isAdmin(user) {
+  return String(user && user.email || "").trim().toLowerCase() === "bthannan@gmail.com";
+}
+
 function publicMember(user) {
-  return { id: user.id, name: user.name, email: user.email, plan: "free" };
+  return { id: user.id, name: user.name, email: user.email, plan: "free", admin: isAdmin(user) };
 }
 
 async function loadMembers() {
@@ -269,6 +273,15 @@ async function openSession(data, user) {
   data.sessions[token] = { userId: user.id, expires: Date.now() / 1000 + 60 * 60 * 24 * 30 };
   await writeKey("bets/members.json", data);
   return token;
+}
+
+async function loadReports() {
+  const data = (await readKey("bets/reports.json")) || {};
+  return { reports: Array.isArray(data.reports) ? data.reports : [] };
+}
+
+function reportView(row, mine) {
+  return { id: row.id, name: row.name || "", strategy: row.strategy || "", story: row.story || "", at: row.at || "", decision: row.decision || "", mine: Boolean(mine) };
 }
 
 async function noteMember(user, kind, detail) {
@@ -316,8 +329,41 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/logo.png", "/subscription.pdf", "/feasibility.pdf"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/logo.png", "/subscription.pdf", "/feasibility.pdf"].includes(url.pathname)) {
       serveStatic(res, url.pathname.slice(1));
+      return;
+    }
+    if (req.method === "GET" && url.pathname === "/api/admin") {
+      const user = await memberFrom(req);
+      if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
+      const data = await loadMembers();
+      const users = data.users.map((row) => ({
+        name: row.name || "",
+        email: row.email || "",
+        plan: row.plan || "free",
+        lastLogin: row.lastLogin || "",
+        createdAt: row.createdAt || "",
+      })).sort((a, b) => String(b.lastLogin).localeCompare(String(a.lastLogin)));
+      sendJson(res, { users });
+      return;
+    }
+    if (req.method === "GET" && url.pathname === "/api/reports") {
+      const user = await memberFrom(req);
+      if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
+      const data = await loadReports();
+      const rows = isAdmin(user) ? data.reports : data.reports.filter((row) => row.userId === user.id);
+      sendJson(res, { admin: isAdmin(user), reports: rows.slice(0, 40).map((row) => reportView(row, row.userId === user.id)) });
+      return;
+    }
+    if (req.method === "GET" && url.pathname === "/api/reports/shot") {
+      const user = await memberFrom(req);
+      if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
+      const data = await loadReports();
+      const row = data.reports.find((item) => item.id === url.searchParams.get("id"));
+      if (!row || (row.userId !== user.id && !isAdmin(user)) || !row.image) { sendJson(res, { error: "That screenshot is not here." }, 404); return; }
+      const blob = Buffer.from(row.image, "base64");
+      res.writeHead(200, { "Content-Type": row.mime || "image/png", "Cache-Control": "no-store", "Content-Length": blob.length });
+      res.end(blob);
       return;
     }
     if (req.method === "GET" && url.pathname === "/api/me") {
@@ -346,15 +392,48 @@ const server = http.createServer(async (req, res) => {
           if (name.length < 2) throw new Error("Enter your name.");
           if (user) throw new Error("That email already has a membership.");
           const salt = crypto.randomBytes(16).toString("hex");
-          user = { id: crypto.randomBytes(8).toString("hex"), name, email, salt, hash: passHash(password, salt), plan: "free", createdAt: new Date().toISOString() };
+          user = { id: crypto.randomBytes(8).toString("hex"), name, email, salt, hash: passHash(password, salt), plan: "free", createdAt: new Date().toISOString(), lastLogin: new Date().toISOString() };
           data.users.push(user);
         } else {
           const digest = user ? passHash(password, user.salt) : "";
           const match = user && digest.length === user.hash.length && crypto.timingSafeEqual(Buffer.from(user.hash), Buffer.from(digest));
           if (!match) throw new Error("Email or password does not match.");
+          user.lastLogin = new Date().toISOString();
         }
         const token = await openSession(data, user);
         sendJson(res, memberProfile(data, user), 200, cookie(token));
+        return;
+      }
+      if (url.pathname === "/api/reports") {
+        const user = await memberFrom(req);
+        if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
+        const strategy = String(body.strategy || "").replace(/\s+/g, " ").trim();
+        const story = String(body.story || "").replace(/\s+/g, " ").trim();
+        if (strategy.length < 8) throw new Error("Say what you did, in a sentence or two.");
+        if (story.length < 8) throw new Error("Say a little about the bet.");
+        const image = String(body.image || "").split(",").pop();
+        const blob = Buffer.from(image, "base64");
+        if (blob.length > 1500000) throw new Error("That screenshot is too large.");
+        const mime = blob[0] === 0x89 ? "image/png" : blob[0] === 0xff ? "image/jpeg" : "";
+        if (!mime) throw new Error("Use a PNG or JPEG screenshot.");
+        const data = await loadReports();
+        data.reports.unshift({ id: crypto.randomBytes(8).toString("hex"), userId: user.id, name: user.name, strategy: strategy.slice(0, 400), story: story.slice(0, 1200), image, mime, at: new Date().toISOString(), decision: "" });
+        data.reports = data.reports.slice(0, 200);
+        await writeKey("bets/reports.json", data);
+        sendJson(res, { ok: true });
+        return;
+      }
+      if (url.pathname === "/api/reports/decision") {
+        const user = await memberFrom(req);
+        if (!user || !isAdmin(user)) throw new Error("Sign in as an admin.");
+        const choice = String(body.decision || "");
+        if (choice !== "use" && choice !== "skip") throw new Error("Choose use or skip.");
+        const data = await loadReports();
+        const row = data.reports.find((item) => item.id === String(body.id || ""));
+        if (!row) throw new Error("That report is not here.");
+        row.decision = choice;
+        await writeKey("bets/reports.json", data);
+        sendJson(res, { ok: true });
         return;
       }
       if (url.pathname === "/api/logout") {

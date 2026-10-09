@@ -19,6 +19,10 @@ function showMember(payload) {
   list.innerHTML = rows.length
     ? rows.map(activityLine).join("")
     : "<p>No ratings or saved picks yet.</p>";
+  if (window.loadReports) window.loadReports();
+  const adminTab = document.getElementById("tab-admin");
+  if (adminTab) adminTab.hidden = !member.admin;
+  if (member.admin && window.loadAdmin) window.loadAdmin();
 }
 
 const CARD_NAMES = {

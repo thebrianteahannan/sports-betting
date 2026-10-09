@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/app.css?v=32"/>
+<link rel="stylesheet" href="/app.css?v=34"/>
 </head>
 <body class="needs-member">
 <div class="grid-bg" aria-hidden="true"></div>
@@ -51,6 +51,8 @@
   <button type="button" class="tab" data-tab="wins" id="tab-wins">Wins</button>
   <button type="button" class="tab" data-tab="losses">Losses</button>
   <button type="button" class="tab" data-tab="pushes" id="tab-pushes" hidden>Pushes</button>
+  <button type="button" class="tab" data-tab="share">Share a win</button>
+  <button type="button" class="tab" data-tab="admin" id="tab-admin" hidden>Admin</button>
 </nav>
 <div class="pane" id="pane-today">
 <section class="chalk" id="live" hidden>
@@ -166,6 +168,7 @@
   <h2>Wins</h2>
   <p class="quiet" id="wins-score"></p>
   <div id="wins-filters" class="open-filters"></div>
+  <div id="win-notes"></div>
   <div id="wins-list"></div>
 </section>
 </div>
@@ -176,6 +179,32 @@
   <div id="losses-filters" class="open-filters"></div>
   <div id="loss-notes"></div>
   <div id="losses-list"></div>
+</section>
+</div>
+<div class="pane" id="pane-share" hidden>
+<section class="tracked">
+  <h2>Share a win</h2>
+  <p class="quiet">Tell us the strategy you used and what happened. Add a screenshot of the bet you won. An admin reads it and decides whether it belongs on the board. This does not send a bet.</p>
+  <form id="report-form" class="report-form">
+    <label>What you did <textarea id="report-strategy" required minlength="8"></textarea></label>
+    <label>About this bet <textarea id="report-story" required minlength="8"></textarea></label>
+    <label>Screenshot <input id="report-shot" type="file" accept="image/png,image/jpeg,image/webp" required></label>
+    <p class="pick-save"><button type="submit">Send this win</button></p>
+    <p class="quiet" id="report-error"></p>
+  </form>
+  <div id="report-mine"></div>
+</section>
+</div>
+<div class="pane" id="pane-admin" hidden>
+<section class="tracked">
+  <h2>Admin</h2>
+  <p class="quiet">Share a win submissions, and every membership.</p>
+  <h2>Share a win</h2>
+  <div id="report-review" hidden>
+    <div id="report-queue"></div>
+  </div>
+  <h2>Members</h2>
+  <div id="admin-users"></div>
 </section>
 </div>
 <div class="pane" id="pane-pushes" hidden>
@@ -189,12 +218,14 @@
   <p>21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
-<script src="/app.js?v=35"></script>
-<script src="/members.js?v=2"></script>
+<script src="/app.js?v=36"></script>
+<script src="/members.js?v=3"></script>
 <script src="/stars.js?v=1"></script>
 <script src="/choose.js?v=2"></script>
-<script src="/lessons.js?v=3"></script>
+<script src="/lessons.js?v=4"></script>
 <script src="/swipe.js?v=1"></script>
 <script src="/filters.js?v=3"></script>
+<script src="/reports.js?v=1"></script>
+<script src="/admin.js?v=1"></script>
 </body>
 </html>
