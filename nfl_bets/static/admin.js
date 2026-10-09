@@ -122,5 +122,34 @@ function bindAdmin() {
   });
 }
 
+async function pullCard(id, button) {
+  button.disabled = true;
+  button.textContent = "Updating…";
+  const response = await fetch("/api/admin/pull", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ card: id }),
+  });
+  const payload = await response.json();
+  const banner = document.getElementById("banner");
+  if (!response.ok || !payload.card) {
+    if (banner) {
+      banner.hidden = false;
+      banner.textContent = payload.error || "FanDuel did not update that bet.";
+    }
+    button.disabled = false;
+    button.textContent = "Update from FanDuel";
+    return;
+  }
+  if (window.state && window.state.board) window.state.board[id] = payload.card;
+  if (banner) banner.hidden = true;
+  if (window.render) window.render();
+}
+
+document.body.addEventListener("click", (event) => {
+  const pull = event.target.closest("[data-pull]");
+  if (pull) pullCard(pull.dataset.pull, pull);
+});
+
 window.loadAdmin = loadAdmin;
 bindAdmin();

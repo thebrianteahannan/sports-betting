@@ -93,31 +93,71 @@ function generalNotes(lost) {
   return `<section class="loss-notes"><h2>How to avoid the next one</h2>${notes.map((note) => `<p>${esc(note)}</p>`).join("")}</section>`;
 }
 
-const MISS_REASONS = [
-  ["short", "Under half the line"],
-  ["early", "One miss, legs still open"],
-  ["college", "College receiving yards"],
-];
 const WIN_REASONS = [
   ["nflRec", "NFL receiving yards"],
   ["hits", "Stack hits"],
   ["chalk", "Near −180"],
 ];
-const missLeaveOut = new Set(MISS_REASONS.map(([id]) => id));
+const CARD_LABELS = {
+  hits: "Stack hits",
+  todayBet: "Today's best bet",
+  chalk: "Near −180",
+  four: "Four at 85% each",
+  plus: "Safest near +250",
+};
+const STAT_LABELS = {
+  rushingYards: "rushing yards",
+  receivingYards: "receiving yards",
+  passingYards: "passing yards",
+  assists: "assists",
+  points: "points",
+  rebounds: "rebounds",
+  threes: "threes",
+  total: "total",
+};
+const missLeaveOut = new Set();
 const winOnly = new Set();
+let missKey = "";
+
+function missFeatures(ticket) {
+  const found = new Map();
+  (ticket.legs || []).forEach((leg) => {
+    if (leg.result !== "lost" || !leg.stat) return;
+    const sport = lossSport(leg) || "Other";
+    const id = `stat:${sport}:${leg.stat}`;
+    found.set(id, `${sport} ${STAT_LABELS[leg.stat] || leg.stat}`);
+  });
+  if (ticket.result === "lost" && CARD_LABELS[ticket.card]) {
+    found.set(`card:${ticket.card}`, CARD_LABELS[ticket.card]);
+  }
+  return found;
+}
+
+function topOffenders(decided) {
+  const counts = new Map();
+  const labels = new Map();
+  decided.forEach((ticket) => {
+    missFeatures(ticket).forEach((label, id) => {
+      counts.set(id, (counts.get(id) || 0) + 1);
+      labels.set(id, label);
+    });
+  });
+  return [...counts.entries()]
+    .map(([id, count]) => [id, labels.get(id), count])
+    .sort((a, b) => b[2] - a[2] || a[1].localeCompare(b[1]))
+    .slice(0, 3);
+}
+
+function syncLeaveOut(reasons) {
+  const key = reasons.map(([id]) => id).join("|");
+  if (key === missKey) return;
+  missKey = key;
+  missLeaveOut.clear();
+  reasons.forEach(([id]) => missLeaveOut.add(id));
+}
 
 function missTags(ticket) {
-  const tags = new Set();
-  const legs = ticket.legs || [];
-  if (legs.some((leg) => lossSport(leg) === "NCAAF" && leg.stat === "receivingYards")) tags.add("college");
-  const missed = legs.filter((leg) => leg.result === "lost");
-  missed.forEach((leg) => {
-    const have = Number(leg.have);
-    const line = Number(leg.line);
-    if (line && have < line * 0.5) tags.add("short");
-  });
-  if (missed.length && legs.some((leg) => !leg.result || leg.result === "open")) tags.add("early");
-  return tags;
+  return new Set(missFeatures(ticket).keys());
 }
 
 function missLeftOut(ticket) {
@@ -147,13 +187,14 @@ function decidedTickets(archive) {
 
 function paintRecordFilters(archive) {
   const decided = decidedTickets(archive);
-  const missCounts = Object.fromEntries(MISS_REASONS.map(([id]) => [id, 0]));
+  const reasons = topOffenders(decided);
+  syncLeaveOut(reasons);
+  const missCounts = Object.fromEntries(reasons.map(([id, , count]) => [id, count]));
   const winCounts = Object.fromEntries(WIN_REASONS.map(([id]) => [id, 0]));
   decided.forEach((ticket) => {
-    missTags(ticket).forEach((id) => { if (missCounts[id] != null) missCounts[id] += 1; });
     winTags(ticket).forEach((id) => { if (winCounts[id] != null) winCounts[id] += 1; });
   });
-  const missChips = MISS_REASONS.map(([id, label]) => (
+  const missChips = reasons.map(([id, label]) => (
     `<button type="button" data-miss="${id}" class="${missLeaveOut.has(id) ? "on" : ""}">${esc(label)} ${missCounts[id]}</button>`
   )).join("");
   const winChips = WIN_REASONS.map(([id, label]) => (

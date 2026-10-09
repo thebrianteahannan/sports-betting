@@ -141,6 +141,16 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 self._json(set_admin(user, str(body.get("email") or ""), bool(body.get("admin"))))
                 return
+            if path == "/api/admin/pull":
+                user = self._user()
+                if not user or not is_admin(user):
+                    self._json({"error": "Sign in as an admin."}, 403)
+                    return
+                from nfl_bets.pull import refresh_card
+
+                card_id = str(body.get("card") or "")
+                self._json({"id": card_id, "card": refresh_card(card_id)})
+                return
             if path == "/api/reports/decision":
                 user = self._user()
                 if not user:

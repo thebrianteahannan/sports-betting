@@ -9,6 +9,8 @@ from typing import Any
 
 from nfl_bets.chalk import build_parlays
 from nfl_bets.cross_four import build_cross_four
+from nfl_bets.band import build_band
+from nfl_bets.week_bet import build_week
 from nfl_bets.espn_context import fetch_context
 from nfl_bets.fanduel import fetch_board
 from nfl_bets.indicators import build_flags, score_flags
@@ -111,6 +113,20 @@ def _run() -> dict[str, Any]:
         "hits": parlays["hits"],
         "todayBet": _today_bet(games, now, errors),
     }
+    try:
+        payload["weekThree"], payload["weekFive"] = build_week(games)
+    except Exception as exc:  # noqa: BLE001
+        errors.append(f"Week: {exc}")
+        payload["errors"] = errors
+    try:
+        payload["band"] = build_band(games, now)
+    except Exception as exc:  # noqa: BLE001
+        errors.append(f"Band: {exc}")
+        payload["errors"] = errors
+    for key in ("chalk", "four", "plus", "hits", "todayBet", "band"):
+        card = payload.get(key)
+        if isinstance(card, dict):
+            card["pulledAt"] = payload["updatedAt"]
     try:
         from nfl_bets.archive import record_offers
 

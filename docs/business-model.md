@@ -1,31 +1,63 @@
 # Business model
 
-This is a proposal for a later paid board. Nothing here is on sale today. The desk does not take payments, and it does not send bets. The member counts and profit ranges below are arithmetic from a $19.99 price. They are not a forecast.
+This is a proposal for a later paid board. Nothing here is on sale today. The desk does not take payments, and it does not send bets. The member counts and the remaining-income figure below are arithmetic from the tier prices. They are not a forecast and not a guarantee.
 
-## What would be sold
+The product is not a sportsbook. The reader still types any ticket into their own FanDuel account. Marketing talks about the record and the tools. It does not promise winnings.
 
-Access to the daily FanDuel board: Today's Best Bet, Bet of the Week, the strategy cards, Build a bet, swipe suggestions, live counts, and the graded archive. A free view, if one is offered, shows the public record. A paid view shows the full board.
+## Tiers
 
-The product is not a sportsbook. The reader still types any ticket into their own FanDuel account.
+Pro at $19.99 a month is the main subscription. An annual Pro membership would be $199.99, which is $39.89 less than twelve months at $19.99.
 
-## Price used in the proposal
+| Tier | Price | What it would include |
+| --- | --- | --- |
+| Free | $0 | One featured pick, a short note on that pick, and a preview of Build a bet. The graded record stays visible. |
+| Rookie | $9.99/month | The daily featured pick, the weekly picks, basic notes on the matchup, and limited use of Build a bet. |
+| Pro | $19.99/month | Every daily and weekly pick, picks across the sports on the board, the odds and the estimated chance on each leg, the full Build a bet tool, suggested parlays, and a plain risk note on the ticket. |
+| VIP | $34.99/month | Everything in Pro, more ways to shape a parlay, the full win and loss history, and early access to a new card. |
 
-$19.99 per month, billed while the person stays subscribed.
+The chance on a card is FanDuel's price turned into a percent. The desk does not have a separate prediction model. A VIP line for "model insights" waits until that model exists. Until then, VIP is the wider tool set and the full record, not a claim of a better forecast.
 
-| Paying members | Revenue in a full year |
+## Estimated revenue at 100 paying subscribers
+
+The mix used here is 20% Rookie, 60% Pro, and 20% VIP. Everyone pays the posted price and stays subscribed. That is the assumption, not a prediction.
+
+| Tier | Subscribers | Monthly price | Monthly revenue |
+| --- | ---: | ---: | ---: |
+| Rookie | 20 | $9.99 | $199.80 |
+| Pro | 60 | $19.99 | $1,199.40 |
+| VIP | 20 | $34.99 | $699.80 |
+| Total | 100 |  | $2,099.00 |
+
+A year of that same mix, with no one leaving, is $2,099 × 12 = $25,188 gross.
+
+The same mix at larger counts:
+
+| Paying subscribers | About this much a month |
 | --- | ---: |
-| 100 | $23,988 |
-| 500 | $119,940 |
-| 1,000 | $239,880 |
-| 5,000 | $1,199,400 |
+| 100 | $2,099 |
+| 250 | $5,248 |
+| 500 | $10,495 |
+| 1,000 | $20,990 |
 
-A pitch that rounds these to $24,000, $120,000, $240,000, and $1.2 million is the same price times 12. Hitting those totals requires that many people to pay every month for a year.
+These are gross subscription receipts. They are not profit, and they are not guaranteed earnings.
 
-## What the pitch assumed about profit
+## Estimated monthly remainder at 100 subscribers
 
-At 1,000 paying members the pitch suggested about $100,000 to $170,000 of operating profit before taxes and owner pay, after marketing, data, and other costs. That range was not built from a budget. It depends on costs this repo does not yet have: ads, payment fees, refunds, support, and a lawyer's review before anyone is charged.
+This is one example budget, not a quote from a vendor.
 
-A lean Hostinger and Supabase setup is cheap next to a sportsbook. Cheap hosting does not make the picks profitable, and it does not create the members.
+| Line | Amount |
+| --- | ---: |
+| Gross subscription revenue | $2,099 |
+| Payment processing | −$63 |
+| AI, hosting, and data | −$200 |
+| Marketing and other operating costs | −$150 |
+| Left before taxes | $1,686 |
+
+$63 is about 3% of $2,099. The $1,686 is what would be left in this example before taxes. It does not include labor, a lawyer, accounting, refunds, or anyone's pay. Real costs depend on the card processor, the data sources, the models, the ads, and how many people cancel.
+
+The first goal is 100 paying subscribers, about $2,100 a month before expenses. The next goal is 500, about $10,500 a month before expenses.
+
+Earlier notes used one flat price, $19.99 or $20. This plan keeps $19.99 as Pro and adds Rookie, VIP, a free preview, and the annual Pro price.
 
 ## What has to be true first
 
@@ -58,20 +90,6 @@ A single $1 bet at −110 wins $0.91 and loses $1.00. It has to win 52.4% of the
 | 57.0% | +$8.82 |
 
 Two $1 bets a week at a 54% win rate expect about 6 cents a week. That is the shape of a small edge on a $20 bank. It is not a plan to turn $20 into serious money on a season of $1 bets. A hedge at −110 against −110 locks about a 9 cent loss on $1 a side, because both prices include the vig.
-
-## Prices that were on the table before $19.99
-
-$15 and $20 a month were both named. No annual plan until a few people have stayed a month. At $20 a month, before a 3% card fee:
-
-| Paying members | Gross in a month | After a 3% card fee |
-| --- | ---: | ---: |
-| 25 | $500 | $485 |
-| 100 | $2,000 | $1,940 |
-| 150 | $3,000 | $2,910 |
-| 500 | $10,000 | $9,700 |
-| 10,000 | $200,000 | $194,000 |
-
-The 150-member row was the target in that earlier note: $3,000 a month before the card fee, the lawyer, support, refunds, and time. The 10,000-member row is arithmetic. It is not step one. Costs already paid, and costs still to pay, come out before anyone splits what is left.
 
 ## Before anyone is charged
 

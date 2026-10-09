@@ -40,7 +40,7 @@ The Mac grader and the website both write the archive. A stale write can drop a 
 
 ## Money and trust, if a subscription starts
 
-The screenshot math assumes people stay subscribed and that the picks are worth paying for. Churn, refunds, and ad cost can erase a $19.99 price. A public losing streak will produce refund demands.
+The tier math assumes people stay subscribed and that the picks are worth paying for. Churn, refunds, and ad cost can erase a $19.99 Pro price. A public losing streak will produce refund demands.
 
 **Response.** Do not forecast profit from member counts alone. Publish the record before the paywall. Keep a written refund rule. Separate operating cash from personal cash so upfront spend can be counted later. Do not spend subscription money as if the member count in a pitch is already real.
 

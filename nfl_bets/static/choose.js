@@ -35,9 +35,12 @@ function paintGames() {
     const kick = Date.parse(game.kickoff || "");
     return Number.isFinite(kick) && choiceWindow(kick);
   });
-  const options = [`<option value="">Across these games</option>`].concat(games.map((game) => (
-    `<option value="${String(game.id)}">${game.sport} · ${game.match}</option>`
-  )));
+  games.sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
+  const options = [`<option value="">Across these games</option>`].concat(games.map((game) => {
+    const clock = typeof when === "function" ? when(game.kickoff) : "";
+    const label = `${game.sport} · ${game.match}${clock ? ` · ${clock} ET` : ""}`;
+    return `<option value="${String(game.id)}">${esc(label)}</option>`;
+  }));
   select.innerHTML = options.join("");
   if ([...select.options].some((option) => option.value === choice.gameId)) select.value = choice.gameId;
   else choice.gameId = "";

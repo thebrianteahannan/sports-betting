@@ -27,17 +27,21 @@ function showMember(payload) {
     ? rows.map(activityLine).join("")
     : "<p>No ratings or saved picks yet.</p>";
   if (window.loadReports) window.loadReports();
+  if (window.state) window.state.admin = !!member.admin;
   const adminTab = document.getElementById("tab-admin");
   if (adminTab) adminTab.hidden = !member.admin;
   if (member.admin && window.loadAdmin) window.loadAdmin();
 }
 
 const CARD_NAMES = {
+  band: "Best bet of the day",
   todayBet: "Today's Best Bet",
   chalk: "Near −180",
   four: "Four at 85% each",
   plus: "Safest near +250",
   hits: "Which stack hits more",
+  weekThree: "3-leg best bet",
+  weekFive: "5-leg for the week",
 };
 
 function activityLine(row) {

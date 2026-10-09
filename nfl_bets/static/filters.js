@@ -1,10 +1,13 @@
 const OPEN_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF"];
 const OPEN_CARDS = [
+  ["band", "Best bet of the day"],
   ["todayBet", "Today's Best Bet"],
   ["chalk", "Near -180"],
   ["four", "Four at 85%"],
   ["plus", "Safest near +250"],
   ["hits", "Stack hits"],
+  ["weekThree", "3-leg best bet"],
+  ["weekFive", "5-leg for the week"],
 ];
 const OPEN_KINDS = [
   ["yards", "Yards"],

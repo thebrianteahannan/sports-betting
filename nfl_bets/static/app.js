@@ -52,11 +52,13 @@ function render() {
     banner.hidden = true;
   }
   renderLive(board.archive || []);
-  const week = bestBet(board);
-  const today = todayCandidate(board);
-  renderFeatured("best", today, "Today's Best Bet", "A bet you can place today.");
-  const same = today && week && legKey({ legs: today.legs }) === legKey({ legs: week.legs });
-  renderFeatured("week", same ? null : week, "Bet of the Week", "The highest combined chance among this week's cards.");
+  const bandAim = (board.band && board.band.goal) || "Priced from −150 to +100.";
+  renderFeatured("best", weekCard(board.band, "band"), "Best bet of the day", bandAim);
+  const weekAim = (board.weekThree && board.weekThree.goal) || "Each leg is a different day.";
+  renderFeatured("week", weekCard(board.weekThree, "weekThree"), "Safe 3-leg", weekAim);
+  renderFeatured("today", todayCandidate(board), "Today's Best Bet", "The highest-priced ticket on today's slate.");
+  const fiveAim = (board.weekFive && board.weekFive.goal) || "Each leg is a different day.";
+  renderFeatured("week5", weekCard(board.weekFive, "weekFive"), "5-leg for the week", fiveAim);
   ["chalk", "four", "plus", "hits"].forEach((id) => renderParlay(id, board[id]));
   renderArchive(board.archive || []);
   renderPicks(board.picks || []);
@@ -144,7 +146,7 @@ function renderFeatured(prefix, best, heading, aim) {
   }
   $(`${prefix}-aim`).textContent = aim;
   $(`${prefix}-title`).textContent = heading;
-  $(`${prefix}-when`).textContent = eventClock(best.card, best.legs);
+  $(`${prefix}-when`).textContent = [eventClock(best.card, best.legs), pulledText(best.card)].filter(Boolean).join(" · ");
   if (!best.legs.length) {
     $(`${prefix}-copy`).textContent = best.empty || "Nothing left to bet on today's slate.";
     $(`${prefix}-legs`).innerHTML = "";
@@ -165,7 +167,7 @@ function renderFeatured(prefix, best, heading, aim) {
   $(`${prefix}-save`).innerHTML = `${saved
     ? `<button type="button" class="ghost" disabled>Saved</button>`
     : `<button type="button" class="ghost" data-save="${esc(best.id)}"${group}>Save this pick</button>`
-  }${starHtml(mine, best.id, best.group, "")}`;
+  }${pullButton(best.id)}${starHtml(mine, best.id, best.group, "")}`;
 }
 
 function todayCandidate(board) {
@@ -186,30 +188,21 @@ function todayCandidate(board) {
   };
 }
 
-function bestBet(board) {
-  const candidates = [];
-  ["chalk", "four", "plus"].forEach((id) => {
-    const card = board[id];
-    const legs = (card && card.legs) || [];
-    const pct = Number(card && card.impliedPct);
-    if (!legs.length || !Number.isFinite(pct)) return;
-    candidates.push({
-      id, strategy: card.title || id, game: card.game || "", pct, legs,
-      profit: card.profit, note: card.note || "", live: card.live, group: "", card,
-    });
-  });
-  const hits = board.hits || {};
-  (hits.groups || []).forEach((group) => {
-    const legs = group.legs || [];
-    const pct = Number(String(group.pct || "").replace("%", ""));
-    if (!legs.length || !Number.isFinite(pct)) return;
-    candidates.push({
-      id: "hits", strategy: group.title || "Stack", game: hits.game || "", pct, legs,
-      profit: winOn(group.price), note: hits.note || "", live: hits.live, group: group.title || "", card: hits,
-    });
-  });
-  candidates.sort((a, b) => b.pct - a.pct);
-  return candidates[0] || null;
+function weekCard(card, id) {
+  if (!card) return null;
+  const legs = card.legs || [];
+  const pct = Number(card.impliedPct);
+  if (!legs.length || !Number.isFinite(pct)) {
+    return {
+      id, strategy: "", game: card.game || "", pct: null, legs: [],
+      profit: null, note: "", live: false, group: "", card, empty: card.copy || "",
+    };
+  }
+  return {
+    id, strategy: card.strategy || card.title || "", game: card.game || "", pct, legs,
+    profit: card.profit != null ? card.profit : winOn(card.american), note: card.note || "",
+    live: card.live, group: "", card,
+  };
 }
 
 function eventClock(card, legs) {
@@ -275,7 +268,7 @@ function renderParlay(id, card) {
   const game = card.game ? `${card.game}. ` : "";
   $(`${id}-aim`).textContent = card.goal || "";
   $(`${id}-title`).textContent = card.title || "";
-  $(`${id}-when`).textContent = eventClock(card);
+  $(`${id}-when`).textContent = [eventClock(card), pulledText(card)].filter(Boolean).join(" · ");
   $(`${id}-copy`).textContent = dropMiss(`${game}${card.copy || ""}`);
   const groups = card.groups || [];
   $(`${id}-legs`).innerHTML = groups.length
@@ -294,7 +287,16 @@ function renderParlay(id, card) {
   save.innerHTML = `${saved
     ? `<button type="button" class="ghost" disabled>Saved</button>`
     : `<button type="button" class="ghost" data-save="${esc(id)}">Save this pick</button>`
-  }${starHtml(mine, id, "", "")}`;
+  }${pullButton(id)}${starHtml(mine, id, "", "")}`;
+}
+
+function pulledText(card) {
+  const stamp = (card && card.pulledAt) || (state.board && state.board.updatedAt) || "";
+  return stamp ? `Pulled ${when(stamp)} ET` : "";
+}
+
+function pullButton(id) {
+  return state.admin ? `<button type="button" class="ghost" data-pull="${esc(id)}">Update from FanDuel</button>` : "";
 }
 
 function mountHistory(box, cardId, game, group) {
@@ -467,6 +469,13 @@ async function postPick(url, body) {
 }
 
 document.body.addEventListener("click", (event) => {
+  const more = event.target.closest("#more-bets-toggle");
+  if (more) {
+    const box = $("more-bets");
+    box.hidden = !box.hidden;
+    more.textContent = box.hidden ? "More bets" : "Hide the other bets";
+    return;
+  }
   const tab = event.target.closest("[data-tab]");
   if (tab) showTab(tab.dataset.tab);
   const star = event.target.closest("[data-stars]");

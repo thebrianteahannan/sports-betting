@@ -70,15 +70,10 @@
   <button type="button" class="tab" data-tab="admin" id="tab-admin" hidden>Admin</button>
 </nav>
 <div class="pane" id="pane-today">
-<section class="chalk" id="live" hidden>
-  <p class="aim">Where this bet stands right now.</p>
-  <h2>Live now</h2>
-  <div id="live-list"></div>
-</section>
 <section class="chalk best" id="best" hidden>
   <p class="live-note" id="best-live" hidden></p>
   <p class="aim" id="best-aim"></p>
-  <h2 id="best-title">Today's Best Bet</h2>
+  <h2 id="best-title">Best bet of the day</h2>
   <p class="when" id="best-when"></p>
   <p id="best-copy"></p>
   <ol id="best-legs"></ol>
@@ -88,12 +83,39 @@
 <section class="chalk best week" id="week" hidden>
   <p class="live-note" id="week-live" hidden></p>
   <p class="aim" id="week-aim"></p>
-  <h2 id="week-title">Bet of the Week</h2>
+  <h2 id="week-title">Safe 3-leg</h2>
   <p class="when" id="week-when"></p>
   <p id="week-copy"></p>
   <ol id="week-legs"></ol>
   <p class="quiet" id="week-note"></p>
   <p class="pick-save" id="week-save"></p>
+</section>
+<p class="pick-save"><button type="button" id="more-bets-toggle">More bets</button></p>
+<div id="more-bets" hidden>
+<section class="chalk" id="live" hidden>
+  <p class="aim">Where this bet stands right now.</p>
+  <h2>Live now</h2>
+  <div id="live-list"></div>
+</section>
+<section class="chalk best" id="today" hidden>
+  <p class="live-note" id="today-live" hidden></p>
+  <p class="aim" id="today-aim"></p>
+  <h2 id="today-title">Today's Best Bet</h2>
+  <p class="when" id="today-when"></p>
+  <p id="today-copy"></p>
+  <ol id="today-legs"></ol>
+  <p class="quiet" id="today-note"></p>
+  <p class="pick-save" id="today-save"></p>
+</section>
+<section class="chalk best week" id="week5" hidden>
+  <p class="live-note" id="week5-live" hidden></p>
+  <p class="aim" id="week5-aim"></p>
+  <h2 id="week5-title">5-leg for the week</h2>
+  <p class="when" id="week5-when"></p>
+  <p id="week5-copy"></p>
+  <ol id="week5-legs"></ol>
+  <p class="quiet" id="week5-note"></p>
+  <p class="pick-save" id="week5-save"></p>
 </section>
 <p class="quiet bets-note">Same price is not the same job. A -550 on 5 receiving yards and a -550 on a score are different bets. These cards name the stat. Four prices near 85% multiply to about a coin flip.</p>
 <section class="chalk" id="chalk" hidden>
@@ -133,6 +155,7 @@
   <p class="quiet" id="tracked-score"></p>
   <div id="tracked-list"></div>
 </section>
+</div>
 </div>
 <div class="pane" id="pane-build" hidden>
 <section class="chalk chooser" id="chooser">
@@ -243,7 +266,9 @@
     <article class="report-card"><p><b>The desk does not send the bet</b></p><p>A member types the line into their own FanDuel account. 21+. Gambling problem? Call 1-800-GAMBLER.</p></article>
     <article class="report-card"><p><b>Same-game price can differ</b></p><p>Legs in one game move together. FanDuel's same-game button can charge a different number than the multiplied price on the card.</p></article>
     <h2>Cards</h2>
-    <article class="report-card"><p><b>Today's Best Bet</b></p><p>The highest-priced ticket on today's slate.</p></article>
+    <article class="report-card"><p><b>Best bet of the day</b></p><p>The ticket on today's slate whose price lands between −150 and +100. The highest chance inside that window is the one on the main page. Shorter prices, like −800, stay off this card.</p></article>
+    <article class="report-card"><p><b>Safe 3-leg</b></p><p>Three player props, each on a different day. This is the other card on the main page.</p></article>
+    <article class="report-card"><p><b>Today's Best Bet</b></p><p>The highest-priced ticket on today's slate. It sits behind More bets.</p></article>
     <article class="report-card"><p><b>Near −180</b></p><p>Legs priced from −400 to −700 that multiply to about −180.</p></article>
     <article class="report-card"><p><b>Four at 85% each</b></p><p>Four small yardage prices, each near an 85% chance. Together that is about a coin flip, not an 85% parlay.</p></article>
     <article class="report-card"><p><b>Safest near +250</b></p><p>Four small yardage legs aimed at +250. That price is about 29%, so it misses more often than it hits.</p></article>
@@ -268,14 +293,14 @@
   <p>21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
-<script src="/app.js?v=36"></script>
-<script src="/members.js?v=4"></script>
+<script src="/app.js?v=39"></script>
+<script src="/members.js?v=7"></script>
 <script src="/stars.js?v=1"></script>
-<script src="/choose.js?v=4"></script>
-<script src="/lessons.js?v=4"></script>
+<script src="/choose.js?v=5"></script>
+<script src="/lessons.js?v=5"></script>
 <script src="/swipe.js?v=1"></script>
-<script src="/filters.js?v=3"></script>
+<script src="/filters.js?v=5"></script>
 <script src="/reports.js?v=1"></script>
-<script src="/admin.js?v=5"></script>
+<script src="/admin.js?v=6"></script>
 </body>
 </html>

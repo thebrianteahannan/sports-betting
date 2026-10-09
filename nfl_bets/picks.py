@@ -8,7 +8,7 @@ from typing import Any
 
 from nfl_bets.store import now_iso, out_dir, read_json, write_json
 
-_CARDS = {"chalk", "four", "plus", "hits", "todayBet"}
+_CARDS = {"chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive"}
 _RESULTS = {"won", "lost", "push"}
 _LOCK = threading.Lock()
 
