@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/app.css?v=21"/>
+<link rel="stylesheet" href="/app.css?v=25"/>
 </head>
 <body>
 <div class="grid-bg" aria-hidden="true"></div>
@@ -23,29 +23,14 @@
 <p class="banner" id="banner" hidden></p>
 <nav class="tabs">
   <button type="button" class="tab on" data-tab="today">Today's bets</button>
+  <button type="button" class="tab" data-tab="build">Build a bet</button>
+  <button type="button" class="tab" data-tab="swipe">Swipe</button>
   <button type="button" class="tab" data-tab="open">Open</button>
   <button type="button" class="tab" data-tab="wins" id="tab-wins">Wins</button>
   <button type="button" class="tab" data-tab="losses">Losses</button>
   <button type="button" class="tab" data-tab="pushes" id="tab-pushes" hidden>Pushes</button>
 </nav>
 <div class="pane" id="pane-today">
-<section class="chalk chooser" id="chooser">
-  <p class="aim">Pick the leagues, the prop, and how many legs. The card is the safest FanDuel parlay that fits.</p>
-  <h2>Build a bet</h2>
-  <div class="choices" id="choice-sports"></div>
-  <label class="choice-line">Game <select id="choice-game"></select></label>
-  <label class="choice-line">Prop <select id="choice-kind">
-    <option value="any">Any player prop</option>
-    <option value="yards">Yards</option>
-    <option value="points">Points</option>
-    <option value="assists">Assists</option>
-    <option value="shots">Shots</option>
-    <option value="strikeouts">Strikeouts</option>
-  </select></label>
-  <div class="choices" id="choice-legs"></div>
-  <p class="pick-save"><button type="button" id="choice-go">Show the safest</button></p>
-  <div id="choice-result"></div>
-</section>
 <section class="chalk" id="live" hidden>
   <p class="aim">Where this bet stands right now.</p>
   <h2>Live now</h2>
@@ -110,6 +95,42 @@
   <div id="tracked-list"></div>
 </section>
 </div>
+<div class="pane" id="pane-build" hidden>
+<section class="chalk chooser" id="chooser">
+  <p class="aim">Pick the leagues, the prop, and how many legs. The card is the safest FanDuel parlay that fits.</p>
+  <h2>Build a bet</h2>
+  <div class="choices" id="choice-sports"></div>
+  <label class="choice-line">Game <select id="choice-game"></select></label>
+  <label class="choice-line">Prop <select id="choice-kind">
+    <option value="any">Any player prop</option>
+    <option value="yards">Yards</option>
+    <option value="points">Points</option>
+    <option value="assists">Assists</option>
+    <option value="shots">Shots</option>
+    <option value="strikeouts">Strikeouts</option>
+  </select></label>
+  <div class="choices" id="choice-legs"></div>
+  <p class="pick-save"><button type="button" id="choice-go">Show the safest</button></p>
+  <div id="choice-result"></div>
+</section>
+</div>
+<div class="pane" id="pane-swipe" hidden>
+<section class="chalk swipe-deck">
+  <p class="aim">Swipe right to like a suggestion. Swipe left to pass. This does not send a bet.</p>
+  <h2>Suggestions</h2>
+  <p class="quiet" id="swipe-score"></p>
+  <div class="deck" id="deck">
+    <article class="deck-card" id="deck-card"></article>
+    <p class="deck-stamp like" id="deck-like">Like</p>
+    <p class="deck-stamp pass" id="deck-pass">Pass</p>
+  </div>
+  <p class="pick-save deck-actions">
+    <button type="button" class="ghost" id="deck-pass-btn">Pass</button>
+    <button type="button" class="ghost" id="deck-undo" disabled>Undo</button>
+    <button type="button" id="deck-like-btn">Like</button>
+  </p>
+</section>
+</div>
 <div class="pane" id="pane-open" hidden>
 <section class="tracked">
   <h2>Open bets</h2>
@@ -128,6 +149,7 @@
 <section class="tracked">
   <h2>Losses</h2>
   <p class="quiet" id="losses-score"></p>
+  <div id="loss-notes"></div>
   <div id="losses-list"></div>
 </section>
 </div>
@@ -142,7 +164,10 @@
   <p>21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
-<script src="/app.js?v=32"></script>
+<script src="/app.js?v=33"></script>
+<script src="/stars.js?v=1"></script>
 <script src="/choose.js?v=2"></script>
+<script src="/lessons.js?v=1"></script>
+<script src="/swipe.js?v=1"></script>
 </body>
 </html>

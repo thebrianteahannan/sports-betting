@@ -192,6 +192,17 @@ section.plan {
 .chooser .choices button.on { background: rgba(193, 39, 45, 0.22); border-color: var(--magenta); }
 .choice-line { display: flex; gap: 0.6rem; align-items: center; margin: 0.35rem 0; font-family: var(--sport); color: var(--gold); }
 .choice-line select { font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 0.25rem 0.4rem; }
+.loss-notes { margin: 0.4rem 0 1rem; }
+.loss-notes h2 { font-size: 1.15rem; }
+.why { color: var(--gold); margin: 0.45rem 0 0; max-width: 70ch; }
+.deck { position: relative; min-height: 8rem; margin-top: 0.6rem; touch-action: none; }
+.deck-card { position: relative; margin: 0; padding: 0.2rem 0.2rem 0.4rem; cursor: grab; user-select: none; }
+.deck-card:active { cursor: grabbing; }
+.deck-card h3 { margin-bottom: 0.25rem; }
+.deck-stamp { position: absolute; top: 0.8rem; z-index: 2; margin: 0; padding: 0.15rem 0.45rem; border-radius: 6px; font-family: var(--sport); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0; pointer-events: none; }
+.deck-stamp.like { right: 0.8rem; color: #14301f; background: #8fce6b; }
+.deck-stamp.pass { left: 0.8rem; color: #fff; background: #9a3030; }
+.deck-actions { justify-content: space-between; }
 .live-note {
   font-family: var(--sport);
   letter-spacing: 0.04em;
@@ -241,6 +252,23 @@ section.plan {
 .record-group.losses { color: var(--bad); }
 .record-group.done { color: var(--gold); }
 button.ghost.good.on { color: var(--gold); border-color: var(--gold); }
+.stars { display: inline-flex; gap: 0.02rem; align-items: center; }
+button.star {
+  background: transparent;
+  color: rgba(244, 241, 234, 0.28);
+  border: 0;
+  box-shadow: none;
+  padding: 0 0.06rem;
+  font-size: 1.35rem;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+}
+button.star.on { color: var(--gold); }
+.leg-mark { font-style: normal; font-weight: 700; margin-right: 0.35rem; }
+.leg-mark.won { color: #3dbe6a; }
+.leg-mark.lost { color: #e04545; }
+.leg-mark.wait, .leg-mark.push { color: var(--gold); }
 .chalk.four {
   border-color: rgba(243, 239, 228, 0.28);
   box-shadow: inset 3px 0 0 #f3efe4, var(--glow);

@@ -73,11 +73,11 @@ function legItem(leg) {
   const bits = [];
   const now = progress(row);
   if (!now && row.note) bits.push(row.note);
-  if (row.result && row.result !== "open") bits.push(row.result);
   if (row.kickoff) bits.push(`${when(row.kickoff)} ET`);
   const extra = bits.length ? ` · ${bits.join(" ")}` : "";
   const count = now ? ` <b class="sofar">${esc(now)}</b>` : "";
-  return `<li><b>${esc(american(row.odds) || row.odds)}</b><span>${esc(row.label)}</span><em>${esc(row.pct || "")}${count}${esc(extra)}</em></li>`;
+  const mark = typeof legState === "function" ? legState(row) : "wait";
+  return `<li><b>${esc(american(row.odds) || row.odds)}</b><span><i class="leg-mark ${mark}" title="${mark === "won" ? "Won" : mark === "lost" ? "Missed" : mark === "push" ? "Push" : "Waiting"}">${mark === "won" ? "✓" : mark === "lost" ? "✕" : mark === "push" ? "–" : "◌"}</i>${esc(row.label)}</span><em>${esc(row.pct || "")}${count}${esc(extra)}</em></li>`;
 }
 
 function withLive(leg) {
@@ -165,7 +165,7 @@ function renderFeatured(prefix, best, heading, aim) {
   $(`${prefix}-save`).innerHTML = `${saved
     ? `<button type="button" class="ghost" disabled>Saved</button>`
     : `<button type="button" class="ghost" data-save="${esc(best.id)}"${group}>Save this pick</button>`
-  }<button type="button" class="ghost good${mine ? " on" : ""}" data-good-card="${esc(best.id)}"${group}>${mine ? "Good bet" : "Mark good"}</button>`;
+  }${starHtml(mine, best.id, best.group, "")}`;
 }
 
 function todayCandidate(board) {
@@ -294,7 +294,7 @@ function renderParlay(id, card) {
   save.innerHTML = `${saved
     ? `<button type="button" class="ghost" disabled>Saved</button>`
     : `<button type="button" class="ghost" data-save="${esc(id)}">Save this pick</button>`
-  }<button type="button" class="ghost good${mine ? " on" : ""}" data-good-card="${esc(id)}">${mine ? "Good bet" : "Mark good"}</button>`;
+  }${starHtml(mine, id, "", "")}`;
 }
 
 function mountHistory(box, cardId, game, group) {
@@ -339,7 +339,7 @@ function cardGood(id, card) {
   const hits = ((state.board && state.board.archive) || []).filter((ticket) => (
     ticket.card === id && wanted.includes(legKey(ticket))
   ));
-  return hits.length > 0 && hits.every((ticket) => ticket.good);
+  return hits.length ? Math.max(...hits.map((ticket) => Number(ticket.stars) || (ticket.good ? 1 : 0))) : 0;
 }
 
 function cardKeys(card) {
@@ -384,9 +384,9 @@ function renderArchive(tickets) {
 
 function showTab(name) {
   state.tab = name;
-  const titles = { today: "Today's bets", open: "Open bets", wins: "Wins", losses: "Losses", pushes: "Pushes" };
+  const titles = { today: "Today's bets", build: "Build a bet", swipe: "Swipe", open: "Open bets", wins: "Wins", losses: "Losses", pushes: "Pushes" };
   $("page-title").textContent = titles[name] || titles.today;
-  ["today", "open", "wins", "losses", "pushes"].forEach((id) => {
+  ["today", "build", "swipe", "open", "wins", "losses", "pushes"].forEach((id) => {
     $(`pane-${id}`).hidden = id !== name;
     document.querySelector(`[data-tab="${id}"]`).classList.toggle("on", id === name);
   });
@@ -446,11 +446,8 @@ function pickRow(pick, archive) {
 
 function goodControl(pick, archive) {
   if (!archive) return "";
-  const open = pick.result === "open" || !pick.result;
-  if (open) {
-    return `<button type="button" class="ghost good${pick.good ? " on" : ""}" data-good="${esc(pick.id)}">${pick.good ? "Good bet" : "Mark good"}</button>`;
-  }
-  return pick.good ? `<span class="mark push">Good bet</span>` : "";
+  const rating = Number(pick.stars) || (pick.good ? 1 : 0);
+  return starHtml(rating, "", "", pick.id);
 }
 
 async function postPick(url, body) {
@@ -475,14 +472,13 @@ async function postPick(url, body) {
 document.body.addEventListener("click", (event) => {
   const tab = event.target.closest("[data-tab]");
   if (tab) showTab(tab.dataset.tab);
-  const goodCard = event.target.closest("[data-good-card]");
-  if (goodCard) {
-    postPick("/api/archive/good", { card: goodCard.dataset.goodCard, group: goodCard.dataset.group || "" });
-    return;
-  }
-  const good = event.target.closest("[data-good]");
-  if (good) {
-    postPick("/api/archive/good", { id: good.dataset.good });
+  const star = event.target.closest("[data-stars]");
+  if (star) {
+    const host = star.closest("[data-good-card], [data-good]");
+    const stars = Number(star.dataset.stars);
+    postPick("/api/archive/good", host.dataset.good
+      ? { id: host.dataset.good, stars }
+      : { card: host.dataset.goodCard, group: host.dataset.group || "", stars });
     return;
   }
   const save = event.target.closest("[data-save]");

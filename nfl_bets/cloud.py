@@ -60,7 +60,14 @@ def _merge_archive(local: list[dict[str, Any]], remote: list[Any]) -> list[dict[
             merged.append(row)
             continue
         kept = dict(row)
-        if other.get("good"):
+        remote_at = str(other.get("goodAt") or "")
+        local_at = str(kept.get("goodAt") or "")
+        if other.get("stars") is not None and remote_at >= local_at:
+            kept["stars"] = int(other.get("stars") or 0)
+            kept["good"] = kept["stars"] > 0
+            if remote_at:
+                kept["goodAt"] = remote_at
+        elif other.get("good") and kept.get("stars") is None:
             kept["good"] = True
             if other.get("goodAt"):
                 kept["goodAt"] = other.get("goodAt")

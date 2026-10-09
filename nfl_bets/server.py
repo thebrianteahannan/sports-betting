@@ -35,7 +35,7 @@ class Handler(BaseHTTPRequestHandler):
         if path in {"/", "/index.html"}:
             self._file("index.html")
             return
-        if path in {"/app.css", "/app.js", "/choose.js"}:
+        if path in {"/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js"}:
             self._file(path.lstrip("/"))
             return
         if path == "/feasibility.pdf":
@@ -92,11 +92,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(settle_archive(str(body.get("id") or ""), str(body.get("result") or "")))
                 return
             if path == "/api/archive/good":
+                raw_stars = body.get("stars")
+                stars = int(raw_stars) if raw_stars is not None and str(raw_stars) != "" else None
                 self._json(mark_good(
                     str(body.get("id") or ""),
                     str(body.get("card") or ""),
                     load_board(),
                     str(body.get("group") or ""),
+                    stars,
                 ))
                 return
             if path == "/api/hedge":

@@ -160,7 +160,7 @@ function signature(row) {
   return String(row.card || "") + "\n" + String(row.title || "") + "\n" + legs;
 }
 
-async function markGood(id, cardId, groupTitle) {
+async function markGood(id, cardId, groupTitle, stars) {
   const data = await board();
   const rows = await archive();
   let found = [];
@@ -181,10 +181,13 @@ async function markGood(id, cardId, groupTitle) {
     found = rows.filter((row) => keys.has(signature(row)));
   }
   if (!found.length) throw new Error("That bet is not on record yet.");
-  const turnOn = !found.every((row) => row.good);
+  const current = (row) => (row.stars != null && row.stars !== "" ? Number(row.stars) || 0 : (row.good ? 1 : 0));
+  let next = stars == null || stars === "" ? (found.every((row) => current(row) > 0) ? 0 : 1) : Math.max(0, Math.min(5, Number(stars) || 0));
+  if (stars != null && stars !== "" && next && found.every((row) => current(row) === next)) next = 0;
   for (const row of found) {
-    row.good = turnOn;
-    if (turnOn) row.goodAt = new Date().toISOString();
+    row.stars = next;
+    row.good = next > 0;
+    if (next) row.goodAt = new Date().toISOString();
     else delete row.goodAt;
   }
   await writeKey("bets/archive.json", { tickets: rows });
@@ -256,7 +259,7 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/choose.js", "/subscription.pdf", "/feasibility.pdf"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/subscription.pdf", "/feasibility.pdf"].includes(url.pathname)) {
       serveStatic(res, url.pathname.slice(1));
       return;
     }
@@ -275,7 +278,7 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       if (url.pathname === "/api/archive/good") {
-        sendJson(res, await markGood(String(body.id || ""), String(body.card || ""), String(body.group || "")));
+        sendJson(res, await markGood(String(body.id || ""), String(body.card || ""), String(body.group || ""), body.stars));
         return;
       }
       if (url.pathname === "/api/archive/settle") {

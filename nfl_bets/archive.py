@@ -1,7 +1,5 @@
 """Every offered ticket, with the pull time and a box-score result."""
-
 from __future__ import annotations
-
 import re
 import threading
 import time
@@ -9,10 +7,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
-
 from nfl_bets.http_util import get_json
 from nfl_bets.store import out_dir, read_json, write_json
-
 _LOCK = threading.Lock()
 _ET = ZoneInfo("America/New_York")
 _RESULTS = {"won", "lost", "push"}
@@ -70,22 +66,35 @@ def settle_archive(ticket_id: str, result: str) -> dict[str, Any]:
         found["how"] = "marked here"
         _write(rows)
         return {"archive": _sorted(rows)}
-def mark_good(ticket_id: str = "", card_id: str = "", board: dict[str, Any] | None = None, group: str = "") -> dict[str, Any]:
-    """Toggle the good-bet flag on one saved ticket, or on the live card's tickets."""
+def mark_good(ticket_id: str = "", card_id: str = "", board: dict[str, Any] | None = None, group: str = "", stars: int | None = None) -> dict[str, Any]:
+    """Set a 1-5 star rating. The same star again clears it. A rating keeps the bet marked good."""
     with _LOCK:
         rows = _load()
         found = _good_rows(rows, ticket_id, card_id, board or {}, group)
         if not found:
             raise ValueError("That bet is not on record yet.")
-        turn_on = not all(bool(row.get("good")) for row in found)
+        want = _star_value(found, stars)
         for row in found:
-            row["good"] = turn_on
-            if turn_on:
+            row["stars"] = want
+            row["good"] = want > 0
+            if want:
                 row["goodAt"] = _now()
             else:
                 row.pop("goodAt", None)
         _write(rows)
         return {"archive": _sorted(rows)}
+def _star_value(found: list[dict[str, Any]], stars: int | None) -> int:
+    def current(row: dict[str, Any]) -> int:
+        saved = row.get("stars")
+        if saved is not None and saved != "":
+            return int(saved)
+        return 1 if row.get("good") else 0
+    if stars is None:
+        return 0 if all(current(row) for row in found) else 1
+    want = max(0, min(5, int(stars)))
+    if want and all(current(row) == want for row in found):
+        return 0
+    return want
 def _good_rows(rows: list[dict[str, Any]], ticket_id: str, card_id: str, board: dict[str, Any], group: str = "") -> list[dict[str, Any]]:
     if ticket_id:
         return [row for row in rows if str(row.get("id")) == ticket_id]
@@ -337,13 +346,10 @@ def _final(summary: dict[str, Any]) -> bool:
     return bool(status.get("completed")) or str(status.get("state") or "") == "post"
 def _comps(summary: dict[str, Any]) -> dict[str, Any]:
     return ((summary.get("header") or {}).get("competitions") or [{}])[0]
-
 def _status(summary: dict[str, Any]) -> dict[str, Any]:
     return (_comps(summary).get("status") or {}).get("type") or {}
-
 def _mirror(ticket: dict[str, Any]) -> None:
     from nfl_bets.picks import list_picks, settle_pick
-
     labels = tuple(str(leg.get("label") or "") for leg in ticket.get("legs") or [])
     for pick in list_picks():
         if pick.get("result") != "open":
@@ -357,7 +363,6 @@ def _mirror(ticket: dict[str, Any]) -> None:
             settle_pick(str(pick.get("id") or ""), str(ticket.get("result") or ""))
         except ValueError:
             continue
-
 def _split_label(label: str) -> tuple[str, str, str]:
     head, sep, tail = label.partition(" — ")
     if not sep:
@@ -365,7 +370,6 @@ def _split_label(label: str) -> tuple[str, str, str]:
     sport, _, rest = tail.partition(",")
     match = re.split(r",\s+(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b", rest, maxsplit=1)[0]
     return head.strip(), sport.strip(), match.strip()
-
 def _player(head: str, market: str, runner: str) -> str:
     low = market.lower()
     if low.startswith("to ") or low.startswith("player to"):
@@ -376,7 +380,6 @@ def _player(head: str, market: str, runner: str) -> str:
             return left
     cut = re.split(r"\d+(?:\.\d+)?\s*\+", head)[0]
     return re.sub(r"\bto record\b", "", cut, flags=re.I).strip(" -:")
-
 def _stat(text: str) -> str:
     low, td = text.lower(), "touchdown" in text.lower()
     if "assist" in low:
@@ -400,7 +403,6 @@ def _stat(text: str) -> str:
     if "total" in low:
         return "total"
     return ""
-
 def _line(text: str, stat: str) -> float | None:
     if stat == "total":
         match = re.search(r"\(([\d.]+)\)", text)
