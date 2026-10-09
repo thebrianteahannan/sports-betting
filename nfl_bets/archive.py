@@ -215,7 +215,7 @@ def _grade_leg(leg: dict[str, Any]) -> str:
         leg["stat"] = fresh
     if leg.get("scope") != "game" or not leg.get("stat") or leg.get("line") is None:
         leg["result"] = "open"
-        leg["note"] = "Mark this one. The box score does not settle a half or a drive."
+        leg.pop("note", None)
         return "open"
     summary = _summary_for(leg)
     if not summary:

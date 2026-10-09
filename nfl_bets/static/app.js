@@ -72,7 +72,7 @@ function legItem(leg) {
   const row = withLive(leg);
   const bits = [];
   const now = progress(row);
-  if (!now && row.note) bits.push(row.note);
+  if (!now && row.note && !/mark this/i.test(row.note)) bits.push(row.note);
   if (row.kickoff) bits.push(`${when(row.kickoff)} ET`);
   const extra = bits.length ? ` · ${bits.join(" ")}` : "";
   const count = now ? ` <b class="sofar">${esc(now)}</b>` : "";
@@ -401,11 +401,11 @@ function renderPicks(picks) {
   $("tracked-list").innerHTML = picks.map(pickRow).join("");
 }
 
-function manualMark(pick, attr) {
-  if (pick.result !== "open") {
+function manualMark(pick) {
+  if (pick.result && pick.result !== "open") {
     return `<span class="mark ${esc(pick.result)}">${esc(pick.result)}${pick.how ? ` · ${esc(pick.how)}` : ""}</span>`;
   }
-  return `<span class="bet-actions">${["won", "lost", "push"].map((result) => `<button type="button" class="ghost" ${attr}="${esc(pick.id)}" data-result="${result}">${result[0].toUpperCase()}${result.slice(1)}</button>`).join("")}</span>`;
+  return "";
 }
 
 function archiveMark(ticket) {
@@ -414,9 +414,6 @@ function archiveMark(ticket) {
     return `<span class="mark ${esc(ticket.result)}">${esc(ticket.result)}${how ? ` · ${esc(how)}` : ""}</span>`;
   }
   const legs = ticket.legs || [];
-  if (legs.some((leg) => /mark this/i.test(leg.note || ""))) {
-    return `${manualMark(ticket, "data-archive")}<span class="status">This line is a half, a quarter, or a drive. Mark won, lost, or push.</span>`;
-  }
   const moving = legs.map(progress).filter(Boolean);
   if (moving.length) {
     return `<span class="status">Live. ${esc(moving.join(". "))}.</span>`;
@@ -437,7 +434,7 @@ function pickRow(pick, archive) {
   const legs = groups.length
     ? groups.map((group) => `<li class="split"><b>${esc(group.price)}</b><span>${esc(group.title)}</span><em>${esc(group.pct || "")}</em></li>${(group.legs || []).map(legItem).join("")}`).join("")
     : (pick.legs || []).map(legItem).join("");
-  const mark = archive ? archiveMark(pick) : manualMark(pick, "data-mark");
+  const mark = archive ? archiveMark(pick) : manualMark(pick);
   const good = goodControl(pick, archive);
   const price = american(pick.american);
   const clock = when(archive ? pick.offeredAt : pick.savedAt);
@@ -483,10 +480,6 @@ document.body.addEventListener("click", (event) => {
   }
   const save = event.target.closest("[data-save]");
   if (save) postPick("/api/picks", { card: save.dataset.save, group: save.dataset.group || "" });
-  const mark = event.target.closest("[data-mark]");
-  if (mark) postPick("/api/picks/settle", { id: mark.dataset.mark, result: mark.dataset.result });
-  const archived = event.target.closest("[data-archive]");
-  if (archived) postPick("/api/archive/settle", { id: archived.dataset.archive, result: archived.dataset.result });
 });
 
 load().catch((error) => {

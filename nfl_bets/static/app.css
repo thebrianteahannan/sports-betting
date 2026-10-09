@@ -192,6 +192,14 @@ section.plan {
 .chooser .choices button.on { background: rgba(193, 39, 45, 0.22); border-color: var(--magenta); }
 .choice-line { display: flex; gap: 0.6rem; align-items: center; margin: 0.35rem 0; font-family: var(--sport); color: var(--gold); }
 .choice-line select { font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 0.25rem 0.4rem; }
+.open-filters { margin: 0.5rem 0 0.8rem; }
+.open-filters .row { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; margin: 0.35rem 0; }
+.open-filters .name { font-family: var(--sport); color: var(--gold); letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.82rem; min-width: 4.2rem; }
+.open-filters button { background: transparent; color: var(--ink); border: 1px solid var(--line); box-shadow: none; padding: 0.28rem 0.6rem; }
+.open-filters button.on { background: rgba(193, 39, 45, 0.22); border-color: var(--magenta); }
+.open-filters select { font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 0.25rem 0.4rem; max-width: 100%; }
+#open-list.leg-focus li.leg-hit { background: rgba(198, 163, 106, 0.14); box-shadow: inset 3px 0 0 var(--gold); }
+#open-list.leg-focus li:not(.leg-hit) { opacity: 0.38; }
 .loss-notes { margin: 0.4rem 0 1rem; }
 .loss-notes h2 { font-size: 1.15rem; }
 .why { color: var(--gold); margin: 0.45rem 0 0; max-width: 70ch; }

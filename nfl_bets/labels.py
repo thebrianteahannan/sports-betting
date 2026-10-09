@@ -7,7 +7,7 @@ import re
 _UNITS = (
     "shots on goal", "receiving yards", "rushing yards", "passing yards",
     "receptions", "rebounds", "strikeouts", "assists", "puck line", "run line",
-    "saves", "points", "goals", "shots", "spread", "yards",
+    "saves", "points", "goals", "shots", "made threes", "threes", "spread", "yards",
 )
 
 
