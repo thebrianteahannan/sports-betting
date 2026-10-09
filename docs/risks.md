@@ -50,6 +50,30 @@ Hostinger can warn that a domain change must be edited inside a site database. T
 
 **Response.** Point the domain at the existing Node app. Open the new address and confirm `/api/board` loads. No database edit is required for the domain itself. Keep the Supabase keys in the host's environment, not in git.
 
+## A hedge is not a locked profit
+
+At −110 against −110, $1 on each side locks about a 9 cent loss. A parlay multiplies the vig. Both results profit only when two prices overlap, which FanDuel rarely offers.
+
+**Response.** Keep the hedge, if it is shown, as a picture of that locked loss. Do not describe a hedge or a parlay as a way to get paid either way.
+
+## Everyone betting the same card
+
+Books limit accounts that all bet the same number. One daily slip that every member is told to hammer is a different product from a board with a record.
+
+**Response.** Sell the cards and the graded record. Do not tell every member to place the same ticket.
+
+## A model is not an edge
+
+ESPN's public matchup predictor, and a price a few cents off, are reasons to read a number. They are not a measured edge over the vig.
+
+**Response.** Keep the predictor labeled as ESPN's public model. Do not tell a reader that a flag means the book is wrong. Compare a paper record with 52.4% before anyone says a single −110 price is ahead of the vig. The parlay record is a separate number, and it is 27.5%.
+
+## A processor can refuse the charge
+
+Stripe and other processors often refuse gambling, and some refuse gambling advice. Describing the product as something else to get the charge through is its own problem.
+
+**Response.** Tell the processor what the page is. If the application is refused, do not charge. Card numbers stay with the processor.
+
 ## FanDuel's name and data
 
 The board says "FanDuel prices" because that is the source. The site is not FanDuel. Using their brand as if this were their product, or reselling their feed beyond what their terms allow, is a separate risk from the picks.

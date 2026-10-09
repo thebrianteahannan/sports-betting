@@ -43,4 +43,6 @@ The intended product is still a price desk, not a sportsbook. The near-term job 
 
 Every account is a free membership for now. Signing in opens the board and keeps that person's star ratings and saved picks. A paid membership is only a later step, and only if the page keeps showing the real record, including losses. The intended offer is access to the daily board, player-prop parlays, the build tool, and the graded history. It is not a promise that the picks will win.
 
-The desk stays 21+. It is not a product for minors, and it is not a partnership, a marketing job, or a payday for anyone under 21.
+The desk stays 21+. It is not a product for minors, and it is not a partnership, a marketing job, or a payday for anyone under 21. A later paid account asks for a date of birth and refuses the account when the person is under 21. The free membership does not ask that yet.
+
+Before a charge, the site still needs terms of service, a privacy policy, a refund and cancellation policy, and a line that past results do not promise future results. The page already says 21+ and 1-800-GAMBLER. A card processor has to be told what the product is. A refusal is a stop. Card numbers stay with the processor.

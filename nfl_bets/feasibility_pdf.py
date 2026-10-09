@@ -35,7 +35,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> Path:
-    out = ROOT / "docs" / "NFL_Desk_Feasibility.pdf"
+    out = ROOT / "output" / "NFL_Desk_Feasibility.pdf"
     static = ROOT / "nfl_bets" / "static" / "feasibility.pdf"
     out.parent.mkdir(parents=True, exist_ok=True)
     _write(out)
