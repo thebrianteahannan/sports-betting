@@ -20,7 +20,9 @@ const crypto = require("crypto");
 
 const { createIgnore } = require("./desk-ignore");
 const { createAdmins } = require("./desk-admins");
+const { createDocs } = require("./desk-docs");
 const ROOT = __dirname;
+const sendDoc = createDocs(ROOT);
 const STATIC = path.join(ROOT, "nfl_bets", "static");
 const PORT = Number(process.env.PORT || 3000);
 const CARDS = new Set(["chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive"]);
@@ -335,13 +337,14 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/logo.png", "/subscription.pdf", "/feasibility.pdf"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/doc-view.html", "/logo.png"].includes(url.pathname)) {
       serveStatic(res, url.pathname.slice(1));
       return;
     }
-    if (req.method === "GET" && url.pathname === "/api/admin") {
+    if ((req.method === "GET" && url.pathname === "/api/admin") || ((req.method === "GET" || req.method === "HEAD") && url.pathname.startsWith("/api/admin/doc/"))) {
       const user = await memberFrom(req);
       if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
+      if (url.pathname !== "/api/admin") { sendDoc(req, res, decodeURIComponent(url.pathname.slice(15))); return; }
       sendJson(res, await adminList());
       return;
     }

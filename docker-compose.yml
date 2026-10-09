@@ -26,4 +26,5 @@ services:
       TZ: America/New_York
     volumes:
       - ./nfl_bets:/app/nfl_bets
+      - ./docs:/app/docs
       - ./output:/data/nfl_bets

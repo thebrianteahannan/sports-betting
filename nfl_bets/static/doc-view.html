@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Doc</title>
+  <style>
+    body { margin: 0; background: #111; color: #eee; font: 16px system-ui, sans-serif; }
+    header { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 12px 16px; }
+    a { color: #9cf; }
+    #note { padding: 8px 16px 16px; }
+    #pages { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0 12px 24px; }
+    canvas { width: min(100%, 820px); height: auto; background: #fff; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong id="title">Doc</strong>
+    <a id="download" href="#">Download PDF</a>
+  </header>
+  <p id="note">Loading.</p>
+  <div id="pages"></div>
+  <script type="module">
+    const names = {
+      "readme.pdf": "Overview",
+      "product.pdf": "What the desk does",
+      "risks.pdf": "Risks",
+      "business-model.pdf": "Business model",
+      "agreement.pdf": "Draft agreement",
+      "marketing-overview.pdf": "Marketing overview",
+      "marketing-posts.pdf": "Social posts",
+    };
+    const file = new URLSearchParams(location.search).get("file") || "";
+    const note = document.getElementById("note");
+    const pdfUrl = "/api/admin/doc/" + encodeURIComponent(file);
+    document.getElementById("title").textContent = names[file] || "Doc";
+    document.title = names[file] || "Doc";
+    document.getElementById("download").href = pdfUrl;
+    if (!names[file]) {
+      note.textContent = "That note is not on the list.";
+    } else {
+      try {
+        const pdfjs = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.min.mjs");
+        pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.worker.min.mjs";
+        const response = await fetch(pdfUrl, { credentials: "same-origin" });
+        if (!response.ok) throw new Error(String(response.status));
+        const doc = await pdfjs.getDocument({ data: await response.arrayBuffer() }).promise;
+        note.hidden = true;
+        const host = document.getElementById("pages");
+        for (let number = 1; number <= doc.numPages; number += 1) {
+          const page = await doc.getPage(number);
+          const view = page.getViewport({ scale: 1.4 });
+          const canvas = document.createElement("canvas");
+          canvas.width = view.width;
+          canvas.height = view.height;
+          host.appendChild(canvas);
+          await page.render({ canvasContext: canvas.getContext("2d"), viewport: view }).promise;
+        }
+      } catch (error) {
+        note.textContent = "This note did not open. Sign in as an admin and try again.";
+      }
+    }
+  </script>
+</body>
+</html>

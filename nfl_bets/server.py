@@ -23,6 +23,15 @@ from nfl_bets.refresh import public_payload, run
 from nfl_bets.store import load_board, place_bet, public_bank, reset_bank, settle_bet
 
 _STATIC = Path(__file__).resolve().parent / "static"
+_DOCS = {
+    "readme.pdf": ("README.pdf",),
+    "product.pdf": ("product.pdf",),
+    "risks.pdf": ("risks.pdf",),
+    "business-model.pdf": ("business-model.pdf",),
+    "agreement.pdf": ("agreement.pdf",),
+    "marketing-overview.pdf": ("marketing", "overview.pdf"),
+    "marketing-posts.pdf": ("marketing", "posts.pdf"),
+}
 _TYPES = {
     ".html": "text/html; charset=utf-8",
     ".css": "text/css; charset=utf-8",
@@ -33,19 +42,29 @@ _TYPES = {
 
 
 class Handler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
+    def do_HEAD(self) -> None:  # noqa: N802
+        path = urlparse(self.path).path
+        if not path.startswith("/api/admin/doc/"):
+            self.send_error(501, "Unsupported method ('HEAD')")
+            return
+        self._head = True
+        try:
+            self._doc(path.rsplit("/", 1)[-1])
+        finally:
+            self._head = False
+
     def do_GET(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
         if path in {"/", "/index.html"}:
             self._file("index.html")
             return
-        if path in {"/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/logo.png"}:
+        if path in {"/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/doc-view.html", "/logo.png"}:
             self._file(path.lstrip("/"))
             return
-        if path == "/feasibility.pdf":
-            self._file("feasibility.pdf")
-            return
-        if path == "/subscription.pdf":
-            self._file("subscription.pdf")
+        if path.startswith("/api/admin/doc/"):
+            self._doc(path.rsplit("/", 1)[-1])
             return
         if path == "/api/me":
             user = self._user()
@@ -326,6 +345,50 @@ class Handler(BaseHTTPRequestHandler):
         if not isinstance(data, dict):
             raise ValueError("body must be an object")
         return data
+
+    def _doc(self, name: str) -> None:
+        user = self._user()
+        if not user or not is_admin(user):
+            self._json({"error": "Sign in as an admin."}, 403)
+            return
+        parts = _DOCS.get(name.lower())
+        if not parts:
+            self._json({"error": "not found"}, 404)
+            return
+        path = Path(__file__).resolve().parent.parent.joinpath("docs", *parts)
+        if not path.is_file():
+            self._json({"error": "not found"}, 404)
+            return
+        self._pdf(path.read_bytes(), path.name)
+
+    def _pdf(self, payload: bytes, filename: str) -> None:
+        total = len(payload)
+        start, end, code = 0, max(0, total - 1), 200
+        head = getattr(self, "_head", False)
+        spec = "" if head else (self.headers.get("Range") or "")
+        if spec.startswith("bytes="):
+            left, _, right = spec[6:].split(",", 1)[0].partition("-")
+            if left == "" and right.isdigit():
+                start = max(0, total - int(right))
+            else:
+                start = int(left) if left.isdigit() else 0
+                if right.isdigit():
+                    end = int(right)
+            code = 206
+        if total:
+            start = min(max(0, start), total - 1)
+            end = min(max(start, end), total - 1)
+        chunk = payload[start:end + 1]
+        self.send_response(code)
+        self.send_header("Content-Type", "application/pdf")
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Content-Disposition", f'inline; filename="{filename}"')
+        if code == 206:
+            self.send_header("Content-Range", f"bytes {start}-{end}/{total}")
+        self.send_header("Content-Length", str(0 if head else len(chunk)))
+        self.end_headers()
+        if not head:
+            self.wfile.write(chunk)
 
     def _file(self, name: str) -> None:
         path = _STATIC / name

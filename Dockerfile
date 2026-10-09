@@ -17,6 +17,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY nfl_bets /app/nfl_bets
+COPY docs /app/docs
 
 VOLUME ["/data"]
 EXPOSE 8793
