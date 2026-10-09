@@ -1,9 +1,16 @@
 const memberFetch = window.fetch.bind(window);
 
+function showGateMode(mode) {
+  document.getElementById("gate-pick").hidden = mode !== "pick";
+  document.getElementById("member-form").hidden = mode !== "join";
+  document.getElementById("login-form").hidden = mode !== "login";
+}
+
 function showGate() {
   document.body.classList.add("needs-member");
   const who = document.getElementById("who");
   if (who) who.hidden = true;
+  showGateMode("pick");
 }
 
 function showMember(payload) {
@@ -48,18 +55,17 @@ async function refreshActivity() {
   showMember(await response.json());
 }
 
-async function sendMember(path, extra) {
-  const error = document.getElementById("member-error");
+async function sendMember(path, fields, errorId) {
+  const error = document.getElementById(errorId);
   error.textContent = "";
-  const body = {
-    name: document.getElementById("member-name").value,
-    email: document.getElementById("member-email").value,
-    password: document.getElementById("member-pass").value,
-  };
+  const body = {};
+  Object.entries(fields).forEach(([key, id]) => {
+    body[key] = document.getElementById(id).value;
+  });
   const response = await memberFetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(Object.assign(body, extra || {})),
+    body: JSON.stringify(body),
   });
   const payload = await response.json();
   if (!response.ok) {
@@ -97,10 +103,24 @@ window.fetch = async function memberAwareFetch(url, options) {
 document.getElementById("who").addEventListener("click", (event) => {
   if (event.target.id === "member-out") signOut();
 });
+document.getElementById("gate-join").addEventListener("click", () => showGateMode("join"));
+document.getElementById("gate-have").addEventListener("click", () => showGateMode("login"));
+document.getElementById("join-signin").addEventListener("click", () => showGateMode("login"));
+document.getElementById("login-join").addEventListener("click", () => showGateMode("join"));
 document.getElementById("member-form").addEventListener("submit", (event) => {
   event.preventDefault();
-  sendMember("/api/join");
+  sendMember("/api/join", {
+    name: "member-name",
+    email: "member-email",
+    password: "member-pass",
+  }, "member-error");
 });
-document.getElementById("member-login").addEventListener("click", () => sendMember("/api/login"));
+document.getElementById("login-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  sendMember("/api/login", {
+    email: "login-email",
+    password: "login-pass",
+  }, "login-error");
+});
 
 bootMember();

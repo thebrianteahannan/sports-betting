@@ -18,6 +18,8 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
+const { createIgnore } = require("./desk-ignore");
+const { createAdmins } = require("./desk-admins");
 const ROOT = __dirname;
 const STATIC = path.join(ROOT, "nfl_bets", "static");
 const PORT = Number(process.env.PORT || 3000);
@@ -76,6 +78,9 @@ async function archive() {
   const data = (await readKey("bets/archive.json")) || { tickets: [] };
   return Array.isArray(data.tickets) ? data.tickets : [];
 }
+
+const { ignoreView, sweepIgnored } = createIgnore(readKey, writeKey, archive);
+const { adminList, setMemberAdmin } = createAdmins(readKey, writeKey);
 
 async function picks() {
   const data = (await readKey("bets/picks.json")) || { picks: [] };
@@ -238,7 +243,8 @@ function passHash(password, salt) {
 }
 
 function isAdmin(user) {
-  return String(user && user.email || "").trim().toLowerCase() === "bthannan@gmail.com";
+  const email = String(user && user.email || "").trim().toLowerCase();
+  return email === "bthannan@gmail.com" || Boolean(user && user.admin);
 }
 
 function publicMember(user) {
@@ -336,15 +342,13 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/admin") {
       const user = await memberFrom(req);
       if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
-      const data = await loadMembers();
-      const users = data.users.map((row) => ({
-        name: row.name || "",
-        email: row.email || "",
-        plan: row.plan || "free",
-        lastLogin: row.lastLogin || "",
-        createdAt: row.createdAt || "",
-      })).sort((a, b) => String(b.lastLogin).localeCompare(String(a.lastLogin)));
-      sendJson(res, { users });
+      sendJson(res, await adminList());
+      return;
+    }
+    if (req.method === "GET" && url.pathname === "/api/admin/ignore") {
+      const user = await memberFrom(req);
+      if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
+      sendJson(res, await ignoreView());
       return;
     }
     if (req.method === "GET" && url.pathname === "/api/reports") {
@@ -402,6 +406,18 @@ const server = http.createServer(async (req, res) => {
         }
         const token = await openSession(data, user);
         sendJson(res, memberProfile(data, user), 200, cookie(token));
+        return;
+      }
+      if (url.pathname === "/api/admin/ignore") {
+        const user = await memberFrom(req);
+        if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
+        sendJson(res, await sweepIgnored());
+        return;
+      }
+      if (url.pathname === "/api/admin/role") {
+        const user = await memberFrom(req);
+        if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
+        sendJson(res, await setMemberAdmin(body.email, body.admin));
         return;
       }
       if (url.pathname === "/api/reports") {

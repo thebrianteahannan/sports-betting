@@ -67,7 +67,6 @@ def settle_archive(ticket_id: str, result: str) -> dict[str, Any]:
         _write(rows)
         return {"archive": _sorted(rows)}
 def mark_good(ticket_id: str = "", card_id: str = "", board: dict[str, Any] | None = None, group: str = "", stars: int | None = None) -> dict[str, Any]:
-    """Set a 1-5 star rating. The same star again clears it. A rating keeps the bet marked good."""
     with _LOCK:
         rows = _load()
         found = _good_rows(rows, ticket_id, card_id, board or {}, group)
@@ -492,8 +491,9 @@ def _load() -> list[dict[str, Any]]:
     return [row for row in rows or [] if isinstance(row, dict)]
 
 def _write(rows: list[dict[str, Any]]) -> None:
+    from nfl_bets.ignore import keep_public
     have = {_signature(row) for row in rows}
-    rows.extend(row for row in _load() if _signature(row) not in have)
+    rows[:] = keep_public([*rows, *[row for row in _load() if _signature(row) not in have]])
     write_json(out_dir() / "archive.json", {"tickets": rows})
 
 def _now() -> str:

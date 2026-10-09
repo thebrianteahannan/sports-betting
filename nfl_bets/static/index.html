@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/app.css?v=34"/>
+<link rel="stylesheet" href="/app.css?v=37"/>
 </head>
 <body class="needs-member">
 <div class="grid-bg" aria-hidden="true"></div>
@@ -15,7 +15,7 @@
 <div class="scan" aria-hidden="true"></div>
 <header class="top">
   <a class="brand" href="/">
-    <img src="/logo.png?v=4" alt="Parlay of the Day">
+    <img src="/logo.png?v=5" alt="Parlay of the Day">
   </a>
   <div class="top-side">
     <h1 id="page-title">Today's bets</h1>
@@ -23,17 +23,32 @@
   </div>
 </header>
 <section class="chalk" id="gate">
-  <h2>Free membership</h2>
-  <p class="aim">Sign in to see the board, rate tickets, and save picks. Membership is free. This desk does not send bets.</p>
-  <form id="member-form">
-    <label class="choice-line">Name <input id="member-name" autocomplete="name"></label>
-    <label class="choice-line">Email <input id="member-email" type="email" autocomplete="username" required></label>
-    <label class="choice-line">Password <input id="member-pass" type="password" minlength="8" autocomplete="current-password" required></label>
+  <div id="gate-pick">
+    <h2>Free membership</h2>
+    <p class="aim">Membership is free. This desk does not send bets. Create a membership, or sign in if you already have one.</p>
     <p class="pick-save">
-      <button type="submit">Create free membership</button>
-      <button type="button" class="ghost" id="member-login">Sign in</button>
+      <button type="button" id="gate-join">Create a free membership</button>
+      <button type="button" class="ghost" id="gate-have">I already have one</button>
     </p>
+  </div>
+  <form id="member-form" hidden>
+    <h2>Create a free membership</h2>
+    <p class="aim">Enter your name, email, and a password of at least 8 characters.</p>
+    <label class="choice-line">Name <input id="member-name" autocomplete="name" required></label>
+    <label class="choice-line">Email <input id="member-email" type="email" autocomplete="username" required></label>
+    <label class="choice-line">Password <input id="member-pass" type="password" minlength="8" autocomplete="new-password" required></label>
+    <p class="pick-save"><button type="submit">Create free membership</button></p>
+    <p><button type="button" class="ghost" id="join-signin">I already have a membership</button></p>
     <p class="quiet" id="member-error"></p>
+  </form>
+  <form id="login-form" hidden>
+    <h2>Sign in</h2>
+    <p class="aim">Use the email and password on your membership.</p>
+    <label class="choice-line">Email <input id="login-email" type="email" autocomplete="username" required></label>
+    <label class="choice-line">Password <input id="login-pass" type="password" minlength="8" autocomplete="current-password" required></label>
+    <p class="pick-save"><button type="submit">Sign in</button></p>
+    <p><button type="button" class="ghost" id="login-join">Create a free membership</button></p>
+    <p class="quiet" id="login-error"></p>
   </form>
 </section>
 <p class="lede" id="lede">Loading FanDuel.</p>
@@ -121,8 +136,9 @@
 </div>
 <div class="pane" id="pane-build" hidden>
 <section class="chalk chooser" id="chooser">
-  <p class="aim">Pick the leagues, the prop, and how many legs. The card is the safest FanDuel parlay that fits.</p>
+  <p class="aim">Pick today or this week, the leagues, the prop, and how many legs. The card is the safest FanDuel parlay that fits.</p>
   <h2>Build a bet</h2>
+  <div class="choices" id="choice-when"></div>
   <div class="choices" id="choice-sports"></div>
   <label class="choice-line">Game <select id="choice-game"></select></label>
   <label class="choice-line">Prop <select id="choice-kind">
@@ -198,13 +214,47 @@
 <div class="pane" id="pane-admin" hidden>
 <section class="tracked">
   <h2>Admin</h2>
-  <p class="quiet">Share a win submissions, and every membership.</p>
-  <h2>Share a win</h2>
-  <div id="report-review" hidden>
-    <div id="report-queue"></div>
+  <nav class="tabs" id="admin-tabs">
+    <button type="button" class="tab on" data-admin-tab="share">Share a win</button>
+    <button type="button" class="tab" data-admin-tab="members">Members</button>
+    <button type="button" class="tab" data-admin-tab="ignore">Ignoring</button>
+    <button type="button" class="tab" data-admin-tab="strategy">Strategy</button>
+  </nav>
+  <div id="admin-share">
+    <div id="report-review" hidden>
+      <div id="report-queue"></div>
+    </div>
   </div>
-  <h2>Members</h2>
-  <div id="admin-users"></div>
+  <div id="admin-members" hidden>
+    <p id="admin-role-note" class="quiet"></p>
+    <div id="admin-users"></div>
+  </div>
+  <div id="admin-ignore" hidden>
+    <p class="quiet">These bets are off the record. Deleting removes open bets, wins, and losses that match.</p>
+    <div id="ignore-rules"></div>
+    <p class="pick-save"><button type="button" id="ignore-delete">Delete matching bets</button></p>
+    <p class="quiet" id="ignore-note"></p>
+    <div id="ignore-list"></div>
+  </div>
+  <div id="admin-strategy" hidden>
+    <p class="quiet">The bet rules this desk is using. This does not send a bet.</p>
+    <h2>Standing rules</h2>
+    <article class="report-card"><p><b>No college player props</b></p><p>FanDuel does not allow player prop bets in college. Pennsylvania lists the game and no player props. Leave college player props off the cards.</p></article>
+    <article class="report-card"><p><b>The desk does not send the bet</b></p><p>A member types the line into their own FanDuel account. 21+. Gambling problem? Call 1-800-GAMBLER.</p></article>
+    <article class="report-card"><p><b>Same-game price can differ</b></p><p>Legs in one game move together. FanDuel's same-game button can charge a different number than the multiplied price on the card.</p></article>
+    <h2>Cards</h2>
+    <article class="report-card"><p><b>Today's Best Bet</b></p><p>The highest-priced ticket on today's slate.</p></article>
+    <article class="report-card"><p><b>Near −180</b></p><p>Legs priced from −400 to −700 that multiply to about −180.</p></article>
+    <article class="report-card"><p><b>Four at 85% each</b></p><p>Four small yardage prices, each near an 85% chance. Together that is about a coin flip, not an 85% parlay.</p></article>
+    <article class="report-card"><p><b>Safest near +250</b></p><p>Four small yardage legs aimed at +250. That price is about 29%, so it misses more often than it hits.</p></article>
+    <article class="report-card"><p><b>Which stack hits more</b></p><p>Five legs near 90% set next to four legs near 80%. The higher combined chance is the stack that hits more often. A 90% leg is not a 90% parlay.</p></article>
+    <h2>Left off the record</h2>
+    <article class="report-card"><p><b>Under half the line</b></p><p>A lost leg that finished under half the number. Open bets, wins, and losses that match are removed.</p></article>
+    <article class="report-card"><p><b>One miss, legs still open</b></p><p>One lost leg while other legs are still open. One miss ends the parlay.</p></article>
+    <article class="report-card"><p><b>College receiving yards</b></p><p>Any college receiving-yards leg. These are set aside with the other ignored bets.</p></article>
+    <h2>What has hit more often</h2>
+    <article class="report-card"><p>NFL receiving yards, stack hits, and the near −180 card are the shapes the win filter can keep. Past results do not promise the next ticket.</p></article>
+  </div>
 </section>
 </div>
 <div class="pane" id="pane-pushes" hidden>
@@ -219,13 +269,13 @@
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
 <script src="/app.js?v=36"></script>
-<script src="/members.js?v=3"></script>
+<script src="/members.js?v=4"></script>
 <script src="/stars.js?v=1"></script>
-<script src="/choose.js?v=2"></script>
+<script src="/choose.js?v=4"></script>
 <script src="/lessons.js?v=4"></script>
 <script src="/swipe.js?v=1"></script>
 <script src="/filters.js?v=3"></script>
 <script src="/reports.js?v=1"></script>
-<script src="/admin.js?v=1"></script>
+<script src="/admin.js?v=4"></script>
 </body>
 </html>

@@ -39,6 +39,7 @@ def publish_board(board: dict[str, Any]) -> None:
         write_json(out_dir() / "archive.json", {"tickets": merged})
     _put(_KEYS["board"], _slim(board))
     _put(_KEYS["archive"], {"tickets": merged})
+    _put("bets/ignored.json", read_json(out_dir() / "ignored.json", {"tickets": []}))
 
 
 def _slim(board: dict[str, Any]) -> dict[str, Any]:

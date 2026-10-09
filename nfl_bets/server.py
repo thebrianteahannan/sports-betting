@@ -17,7 +17,7 @@ from nfl_bets.archive import mark_good, settle_archive
 from nfl_bets.picks import save_pick, settle_pick
 from nfl_bets.plan import build_plan
 from nfl_bets.choose import choose
-from nfl_bets.members import is_admin, join, login, logout, member_from_cookie, note, profile, roster
+from nfl_bets.members import is_admin, join, login, logout, member_from_cookie, note, profile, roster, set_admin
 from nfl_bets.reports import decide, listing, shot, submit
 from nfl_bets.refresh import public_payload, run
 from nfl_bets.store import load_board, place_bet, public_bank, reset_bank, settle_bet
@@ -60,6 +60,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"error": "Sign in as an admin."}, 403)
                 return
             self._json(roster(user))
+            return
+        if path == "/api/admin/ignore":
+            user = self._user()
+            if not user or not is_admin(user):
+                self._json({"error": "Sign in as an admin."}, 403)
+                return
+            from nfl_bets.ignore import view
+            self._json(view())
             return
         if path == "/api/reports":
             user = self._user()
@@ -118,6 +126,21 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 self._json(submit(user, str(body.get("strategy") or ""), str(body.get("story") or ""), str(body.get("image") or "")))
                 return
+            if path == "/api/admin/ignore":
+                user = self._user()
+                if not user or not is_admin(user):
+                    self._json({"error": "Sign in as an admin."}, 403)
+                    return
+                from nfl_bets.ignore import sweep
+                self._json(sweep())
+                return
+            if path == "/api/admin/role":
+                user = self._user()
+                if not user or not is_admin(user):
+                    self._json({"error": "Sign in as an admin."}, 403)
+                    return
+                self._json(set_admin(user, str(body.get("email") or ""), bool(body.get("admin"))))
+                return
             if path == "/api/reports/decision":
                 user = self._user()
                 if not user:
@@ -137,6 +160,7 @@ class Handler(BaseHTTPRequestHandler):
                     str(body.get("kind") or "any"),
                     int(body.get("legs") or 3),
                     str(body.get("gameId") or ""),
+                    str(body.get("when") or "today"),
                 ))
                 return
             if path == "/api/refresh":

@@ -9,10 +9,11 @@ import threading
 import time
 from typing import Any
 
-from nfl_bets.store import now_iso, out_dir, read_json, write_json
+from nfl_bets.store import now_iso
 
 _LOCK = threading.Lock()
 _MONTH = 60 * 60 * 24 * 30
+_KEY = "bets/members.json"
 
 
 def member_from_cookie(header: str | None) -> dict[str, Any] | None:
@@ -102,7 +103,10 @@ def profile(user: dict[str, Any]) -> dict[str, Any]:
 
 
 def _load() -> dict[str, Any]:
-    raw = read_json(out_dir() / "members.json", {})
+    from nfl_bets.cloud import _get, configured
+    if not configured():
+        raise ValueError("Memberships are stored in Supabase.")
+    raw = _get(_KEY) or {}
     data = raw if isinstance(raw, dict) else {}
     users = data.get("users") if isinstance(data.get("users"), list) else []
     sessions = data.get("sessions") if isinstance(data.get("sessions"), dict) else {}
@@ -111,11 +115,34 @@ def _load() -> dict[str, Any]:
 
 
 def _save(data: dict[str, Any]) -> None:
-    write_json(out_dir() / "members.json", data)
+    from nfl_bets.cloud import _put, configured
+    if not configured():
+        raise ValueError("Memberships are stored in Supabase.")
+    _put(_KEY, {"users": data["users"], "sessions": data["sessions"], "activity": data["activity"]})
+
+
+_OWNER = "bthannan@gmail.com"
 
 
 def is_admin(user: dict[str, Any]) -> bool:
-    return str(user.get("email") or "").strip().lower() == "bthannan@gmail.com"
+    email = str(user.get("email") or "").strip().lower()
+    return email == _OWNER or bool(user.get("admin"))
+
+
+def set_admin(actor: dict[str, Any], email: str, admin: bool) -> dict[str, Any]:
+    if not is_admin(actor):
+        raise ValueError("Sign in as an admin.")
+    clean = email.strip().lower()
+    if clean == _OWNER and not admin:
+        raise ValueError("That admin stays.")
+    with _LOCK:
+        data = _load()
+        user = next((row for row in data["users"] if str(row.get("email")) == clean), None)
+        if not user:
+            raise ValueError("That member is not here.")
+        user["admin"] = bool(admin)
+        _save(data)
+    return roster(actor)
 
 
 def roster(user: dict[str, Any]) -> dict[str, Any]:
@@ -133,6 +160,7 @@ def _member_row(user: dict[str, Any]) -> dict[str, Any]:
         "name": user.get("name") or "",
         "email": user.get("email") or "",
         "plan": user.get("plan") or "free",
+        "admin": is_admin(user),
         "lastLogin": user.get("lastLogin") or "",
         "createdAt": user.get("createdAt") or "",
     }
