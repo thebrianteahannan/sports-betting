@@ -93,6 +93,97 @@ function generalNotes(lost) {
   return `<section class="loss-notes"><h2>How to avoid the next one</h2>${notes.map((note) => `<p>${esc(note)}</p>`).join("")}</section>`;
 }
 
+const MISS_REASONS = [
+  ["short", "Under half the line"],
+  ["early", "One miss, legs still open"],
+  ["college", "College receiving yards"],
+];
+const missLeaveOut = new Set();
+
+function missTags(ticket) {
+  const tags = new Set();
+  const legs = ticket.legs || [];
+  if (legs.some((leg) => lossSport(leg) === "NCAAF" && leg.stat === "receivingYards")) tags.add("college");
+  const missed = legs.filter((leg) => leg.result === "lost");
+  missed.forEach((leg) => {
+    const have = Number(leg.have);
+    const line = Number(leg.line);
+    if (line && have < line * 0.5) tags.add("short");
+  });
+  if (missed.length && legs.some((leg) => !leg.result || leg.result === "open")) tags.add("early");
+  return tags;
+}
+
+function missLeftOut(ticket) {
+  const tags = missTags(ticket);
+  return [...missLeaveOut].some((id) => tags.has(id));
+}
+
+function paintMissFilters(archive) {
+  const counts = Object.fromEntries(MISS_REASONS.map(([id]) => [id, 0]));
+  archive.forEach((ticket) => {
+    if (ticket.result !== "won" && ticket.result !== "lost") return;
+    missTags(ticket).forEach((id) => {
+      if (counts[id] != null) counts[id] += 1;
+    });
+  });
+  const chips = MISS_REASONS.map(([id, label]) => (
+    `<button type="button" data-miss="${id}" class="${missLeaveOut.has(id) ? "on" : ""}">${esc(label)} ${counts[id]}</button>`
+  )).join("");
+  const html = `<div class="row"><span class="name">Leave out</span>${chips}<button type="button" data-miss="clear">Clear</button></div>`;
+  ["wins-filters", "losses-filters"].forEach((id) => {
+    const box = document.getElementById(id);
+    if (box) box.innerHTML = html;
+  });
+}
+
+function applyMissFilter() {
+  const archive = ((window.state && window.state.board && window.state.board.archive) || []);
+  const won = archive.filter((ticket) => ticket.result === "won");
+  const lost = archive.filter((ticket) => ticket.result === "lost");
+  const push = archive.filter((ticket) => ticket.result === "push");
+  paintMissFilters(archive);
+  const keptWon = won.filter((ticket) => !missLeftOut(ticket));
+  const keptLost = lost.filter((ticket) => !missLeftOut(ticket));
+  const decided = keptWon.length + keptLost.length;
+  const pct = decided ? `${((keptWon.length / decided) * 100).toFixed(1)}%` : "";
+  const left = (won.length - keptWon.length) + (lost.length - keptLost.length);
+  const rate = pct
+    ? `Win percentage ${pct}, from ${keptWon.length} wins and ${keptLost.length} losses.${left ? ` ${left} left out.` : ""}`
+    : "No completed bets yet.";
+  const winsScore = document.getElementById("wins-score");
+  const lossesScore = document.getElementById("losses-score");
+  const pushesScore = document.getElementById("pushes-score");
+  const tab = document.getElementById("tab-wins");
+  if (winsScore) winsScore.textContent = keptWon.length ? `${keptWon.length} wins. ${rate}` : rate;
+  if (lossesScore) lossesScore.textContent = keptLost.length ? `${keptLost.length} losses. ${rate}` : rate;
+  if (pushesScore) pushesScore.textContent = `${push.length} pushes. ${rate}`;
+  if (tab) tab.textContent = pct ? `Wins ${pct}` : "Wins";
+  [["wins-list", won], ["losses-list", lost]].forEach(([id, tickets]) => {
+    const list = document.getElementById(id);
+    if (!list) return;
+    [...list.children].forEach((node, index) => {
+      node.hidden = Boolean(tickets[index] && missLeftOut(tickets[index]));
+    });
+  });
+}
+
+function bindMissFilters() {
+  ["wins-filters", "losses-filters"].forEach((id) => {
+    const box = document.getElementById(id);
+    if (!box || box.dataset.bound) return;
+    box.dataset.bound = "1";
+    box.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-miss]");
+      if (!button) return;
+      if (button.dataset.miss === "clear") missLeaveOut.clear();
+      else if (missLeaveOut.has(button.dataset.miss)) missLeaveOut.delete(button.dataset.miss);
+      else missLeaveOut.add(button.dataset.miss);
+      applyMissFilter();
+    });
+  });
+}
+
 function paintLessons() {
   const board = window.state && window.state.board;
   const lost = ((board && board.archive) || []).filter((ticket) => ticket.result === "lost");
@@ -110,6 +201,7 @@ function paintLessons() {
     }
     note.textContent = whyTicket(ticket);
   });
+  applyMissFilter();
 }
 
 const priorPaint = window.paintChoices;
@@ -117,3 +209,5 @@ window.paintChoices = function paintAfter() {
   if (priorPaint) priorPaint();
   paintLessons();
 };
+
+bindMissFilters();

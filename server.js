@@ -28,6 +28,7 @@ const TYPES = {
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".pdf": "application/pdf",
+  ".png": "image/png",
 };
 
 function env(name) {
@@ -217,8 +218,64 @@ function send(res, code, body, type) {
   res.end(raw);
 }
 
-function sendJson(res, payload, code) {
-  send(res, code || 200, JSON.stringify(payload));
+function sendJson(res, payload, code, headers) {
+  const raw = Buffer.from(JSON.stringify(payload));
+  res.writeHead(code || 200, Object.assign({
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+    "Content-Length": raw.length,
+  }, headers || {}));
+  res.end(raw);
+}
+
+function cookieToken(req) {
+  const hit = String(req.headers.cookie || "").split(";").map((part) => part.trim()).find((part) => part.startsWith("pod="));
+  return hit ? hit.slice(4) : "";
+}
+
+function passHash(password, salt) {
+  return crypto.pbkdf2Sync(password, Buffer.from(salt, "hex"), 120000, 32, "sha256").toString("hex");
+}
+
+function publicMember(user) {
+  return { id: user.id, name: user.name, email: user.email, plan: "free" };
+}
+
+async function loadMembers() {
+  const data = (await readKey("bets/members.json")) || {};
+  return {
+    users: Array.isArray(data.users) ? data.users : [],
+    sessions: data.sessions && typeof data.sessions === "object" ? data.sessions : {},
+    activity: Array.isArray(data.activity) ? data.activity : [],
+  };
+}
+
+async function memberFrom(req) {
+  const token = cookieToken(req);
+  if (!token) return null;
+  const data = await loadMembers();
+  const session = data.sessions[token];
+  if (!session || Number(session.expires) < Date.now() / 1000) return null;
+  return data.users.find((user) => user.id === session.userId) || null;
+}
+
+function memberProfile(data, user) {
+  const activity = data.activity.filter((row) => row.userId === user.id).slice(0, 30);
+  return { member: publicMember(user), activity };
+}
+
+async function openSession(data, user) {
+  const token = crypto.randomBytes(24).toString("hex");
+  data.sessions[token] = { userId: user.id, expires: Date.now() / 1000 + 60 * 60 * 24 * 30 };
+  await writeKey("bets/members.json", data);
+  return token;
+}
+
+async function noteMember(user, kind, detail) {
+  const data = await loadMembers();
+  data.activity.unshift({ id: crypto.randomBytes(6).toString("hex"), userId: user.id, kind, at: new Date().toISOString(), detail });
+  data.activity = data.activity.slice(0, 400);
+  await writeKey("bets/members.json", data);
 }
 
 function readBody(req) {
@@ -259,18 +316,60 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/subscription.pdf", "/feasibility.pdf"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/logo.png", "/subscription.pdf", "/feasibility.pdf"].includes(url.pathname)) {
       serveStatic(res, url.pathname.slice(1));
       return;
     }
+    if (req.method === "GET" && url.pathname === "/api/me") {
+      const user = await memberFrom(req);
+      if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
+      sendJson(res, memberProfile(await loadMembers(), user));
+      return;
+    }
     if (req.method === "GET" && url.pathname === "/api/board") {
+      if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to open the board." }, 401); return; }
       sendJson(res, await publicBoard());
       return;
     }
     if (req.method === "POST") {
       const body = await readBody(req);
+      const cookie = (token) => ({ "Set-Cookie": "pod=" + token + "; HttpOnly; Path=/; SameSite=Lax; Max-Age=2592000" });
+      if (url.pathname === "/api/join" || url.pathname === "/api/login") {
+        const email = String(body.email || "").trim().toLowerCase();
+        const password = String(body.password || "");
+        const data = await loadMembers();
+        if (password.length < 8) throw new Error("Use at least 8 characters.");
+        if (!email.includes("@")) throw new Error("Enter an email.");
+        let user = data.users.find((row) => row.email === email);
+        if (url.pathname === "/api/join") {
+          const name = String(body.name || "").replace(/\s+/g, " ").trim();
+          if (name.length < 2) throw new Error("Enter your name.");
+          if (user) throw new Error("That email already has a membership.");
+          const salt = crypto.randomBytes(16).toString("hex");
+          user = { id: crypto.randomBytes(8).toString("hex"), name, email, salt, hash: passHash(password, salt), plan: "free", createdAt: new Date().toISOString() };
+          data.users.push(user);
+        } else {
+          const digest = user ? passHash(password, user.salt) : "";
+          const match = user && digest.length === user.hash.length && crypto.timingSafeEqual(Buffer.from(user.hash), Buffer.from(digest));
+          if (!match) throw new Error("Email or password does not match.");
+        }
+        const token = await openSession(data, user);
+        sendJson(res, memberProfile(data, user), 200, cookie(token));
+        return;
+      }
+      if (url.pathname === "/api/logout") {
+        const data = await loadMembers();
+        delete data.sessions[cookieToken(req)];
+        await writeKey("bets/members.json", data);
+        sendJson(res, { ok: true }, 200, { "Set-Cookie": "pod=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax" });
+        return;
+      }
       if (url.pathname === "/api/picks") {
-        sendJson(res, await savePick(String(body.card || ""), String(body.group || "")));
+        const user = await memberFrom(req);
+        if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
+        const saved = await savePick(String(body.card || ""), String(body.group || ""));
+        await noteMember(user, "save", { card: String(body.card || ""), group: String(body.group || "") });
+        sendJson(res, saved);
         return;
       }
       if (url.pathname === "/api/picks/settle") {
@@ -278,7 +377,11 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       if (url.pathname === "/api/archive/good") {
-        sendJson(res, await markGood(String(body.id || ""), String(body.card || ""), String(body.group || ""), body.stars));
+        const user = await memberFrom(req);
+        if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
+        const saved = await markGood(String(body.id || ""), String(body.card || ""), String(body.group || ""), body.stars);
+        await noteMember(user, "rate", { stars: Number(body.stars) || 0, id: String(body.id || ""), card: String(body.card || ""), group: String(body.group || "") });
+        sendJson(res, saved);
         return;
       }
       if (url.pathname === "/api/archive/settle") {

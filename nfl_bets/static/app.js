@@ -482,7 +482,7 @@ document.body.addEventListener("click", (event) => {
   if (save) postPick("/api/picks", { card: save.dataset.save, group: save.dataset.group || "" });
 });
 
-load().catch((error) => {
+window.startDesk = () => load().catch((error) => {
   $("lede").textContent = "The desk did not load.";
   $("banner").hidden = false;
   $("banner").textContent = String(error);

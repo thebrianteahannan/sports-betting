@@ -3,23 +3,45 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Betting desk</title>
+<title>Parlay of the Day</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/app.css?v=27"/>
+<link rel="stylesheet" href="/app.css?v=32"/>
 </head>
-<body>
+<body class="needs-member">
 <div class="grid-bg" aria-hidden="true"></div>
 <div class="aurora" aria-hidden="true"></div>
 <div class="scan" aria-hidden="true"></div>
 <header class="top">
-  <div>
-    <p class="kicker">FanDuel prices</p>
+  <a class="brand" href="/">
+    <img src="/logo.png?v=4" alt="Parlay of the Day">
+  </a>
+  <div class="top-side">
     <h1 id="page-title">Today's bets</h1>
+    <p class="who" id="who" hidden></p>
   </div>
 </header>
+<section class="chalk" id="gate">
+  <h2>Free membership</h2>
+  <p class="aim">Sign in to see the board, rate tickets, and save picks. Membership is free. This desk does not send bets.</p>
+  <form id="member-form">
+    <label class="choice-line">Name <input id="member-name" autocomplete="name"></label>
+    <label class="choice-line">Email <input id="member-email" type="email" autocomplete="username" required></label>
+    <label class="choice-line">Password <input id="member-pass" type="password" minlength="8" autocomplete="current-password" required></label>
+    <p class="pick-save">
+      <button type="submit">Create free membership</button>
+      <button type="button" class="ghost" id="member-login">Sign in</button>
+    </p>
+    <p class="quiet" id="member-error"></p>
+  </form>
+</section>
 <p class="lede" id="lede">Loading FanDuel.</p>
+<section class="tracked" id="activity">
+  <h2>Your membership</h2>
+  <p class="quiet" id="activity-plan"></p>
+  <div id="activity-list"></div>
+</section>
 <p class="banner" id="banner" hidden></p>
 <nav class="tabs">
   <button type="button" class="tab on" data-tab="today">Today's bets</button>
@@ -143,6 +165,7 @@
 <section class="tracked">
   <h2>Wins</h2>
   <p class="quiet" id="wins-score"></p>
+  <div id="wins-filters" class="open-filters"></div>
   <div id="wins-list"></div>
 </section>
 </div>
@@ -150,6 +173,7 @@
 <section class="tracked">
   <h2>Losses</h2>
   <p class="quiet" id="losses-score"></p>
+  <div id="losses-filters" class="open-filters"></div>
   <div id="loss-notes"></div>
   <div id="losses-list"></div>
 </section>
@@ -165,10 +189,11 @@
   <p>21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
-<script src="/app.js?v=34"></script>
+<script src="/app.js?v=35"></script>
+<script src="/members.js?v=2"></script>
 <script src="/stars.js?v=1"></script>
 <script src="/choose.js?v=2"></script>
-<script src="/lessons.js?v=1"></script>
+<script src="/lessons.js?v=3"></script>
 <script src="/swipe.js?v=1"></script>
 <script src="/filters.js?v=3"></script>
 </body>

@@ -17,6 +17,7 @@ from nfl_bets.archive import mark_good, settle_archive
 from nfl_bets.picks import save_pick, settle_pick
 from nfl_bets.plan import build_plan
 from nfl_bets.choose import choose
+from nfl_bets.members import join, login, logout, member_from_cookie, note, profile
 from nfl_bets.refresh import public_payload, run
 from nfl_bets.store import load_board, place_bet, public_bank, reset_bank, settle_bet
 
@@ -26,6 +27,7 @@ _TYPES = {
     ".css": "text/css; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
     ".pdf": "application/pdf",
+    ".png": "image/png",
 }
 
 
@@ -35,7 +37,7 @@ class Handler(BaseHTTPRequestHandler):
         if path in {"/", "/index.html"}:
             self._file("index.html")
             return
-        if path in {"/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js"}:
+        if path in {"/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/logo.png"}:
             self._file(path.lstrip("/"))
             return
         if path == "/feasibility.pdf":
@@ -44,7 +46,17 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/subscription.pdf":
             self._file("subscription.pdf")
             return
+        if path == "/api/me":
+            user = self._user()
+            if not user:
+                self._json({"error": "Sign in."}, 401)
+                return
+            self._json(profile(user))
+            return
         if path == "/api/board":
+            if not self._user():
+                self._json({"error": "Sign in to open the board."}, 401)
+                return
             self._json(public_payload())
             return
         if path == "/api/bank":
@@ -63,6 +75,18 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         try:
             body = self._body()
+            if path == "/api/join":
+                user, token = join(str(body.get("name") or ""), str(body.get("email") or ""), str(body.get("password") or ""))
+                self._json(profile(user), cookie=token)
+                return
+            if path == "/api/login":
+                user, token = login(str(body.get("email") or ""), str(body.get("password") or ""))
+                self._json(profile(user), cookie=token)
+                return
+            if path == "/api/logout":
+                logout(self.headers.get("Cookie"))
+                self._json({"ok": True}, clear_cookie=True)
+                return
             if path == "/api/choose":
                 sports = body.get("sports") if isinstance(body.get("sports"), list) else []
                 self._json(choose(
@@ -77,13 +101,19 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(public_payload(run()))
                 return
             if path == "/api/picks":
+                user = self._user()
+                if not user:
+                    self._json({"error": "Sign in."}, 401)
+                    return
                 card = str(body.get("card") or "")
                 board = load_board()
-                self._json(save_pick(
+                saved = save_pick(
                     card,
                     board.get(card) if isinstance(board.get(card), dict) else None,
                     str(body.get("group") or ""),
-                ))
+                )
+                note(user, "save", {"card": card, "group": str(body.get("group") or "")})
+                self._json(saved)
                 return
             if path == "/api/picks/settle":
                 self._json(settle_pick(str(body.get("id") or ""), str(body.get("result") or "")))
@@ -92,15 +122,26 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(settle_archive(str(body.get("id") or ""), str(body.get("result") or "")))
                 return
             if path == "/api/archive/good":
+                user = self._user()
+                if not user:
+                    self._json({"error": "Sign in."}, 401)
+                    return
                 raw_stars = body.get("stars")
                 stars = int(raw_stars) if raw_stars is not None and str(raw_stars) != "" else None
-                self._json(mark_good(
+                saved = mark_good(
                     str(body.get("id") or ""),
                     str(body.get("card") or ""),
                     load_board(),
                     str(body.get("group") or ""),
                     stars,
-                ))
+                )
+                note(user, "rate", {
+                    "stars": 0 if stars is None else stars,
+                    "id": str(body.get("id") or ""),
+                    "card": str(body.get("card") or ""),
+                    "group": str(body.get("group") or ""),
+                })
+                self._json(saved)
                 return
             if path == "/api/hedge":
                 self._json(
@@ -199,6 +240,9 @@ class Handler(BaseHTTPRequestHandler):
             current_week=board.get("currentWeek"),
         )
 
+    def _user(self) -> dict[str, Any] | None:
+        return member_from_cookie(self.headers.get("Cookie"))
+
     def _body(self) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length") or 0)
         raw = self.rfile.read(length) if length else b"{}"
@@ -220,11 +264,15 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
-    def _json(self, payload: dict[str, Any], code: int = 200) -> None:
+    def _json(self, payload: dict[str, Any], code: int = 200, cookie: str = "", clear_cookie: bool = False) -> None:
         raw = json.dumps(payload).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
+        if cookie:
+            self.send_header("Set-Cookie", f"pod={cookie}; HttpOnly; Path=/; SameSite=Lax; Max-Age=2592000")
+        if clear_cookie:
+            self.send_header("Set-Cookie", "pod=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax")
         self.send_header("Content-Length", str(len(raw)))
         self.end_headers()
         self.wfile.write(raw)

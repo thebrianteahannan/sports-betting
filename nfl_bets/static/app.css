@@ -97,6 +97,34 @@ h1 {
   text-transform: uppercase;
 }
 h2 { margin: 0; font-size: 1.15rem; }
+.brand { display: flex; align-items: center; color: inherit; text-decoration: none; min-width: 0; }
+.brand img { width: min(240px, 62vw); height: auto; display: block; }
+.top-side { text-align: right; }
+.top-side h1 { font-size: clamp(1.15rem, 2vw, 1.7rem); }
+.who { margin: 0.25rem 0 0; color: var(--muted); }
+.who button { margin-left: 0.45rem; }
+body.needs-member .tabs,
+body.needs-member .pane,
+body.needs-member .lede,
+body.needs-member #activity { display: none; }
+body:not(.needs-member) #gate { display: none; }
+#activity { margin-top: 0.8rem; }
+#activity p { margin: 0.25rem 0; }
+#gate .aim,
+#gate .choice-line { color: var(--ink); }
+#gate input {
+  flex: 1;
+  min-width: 12rem;
+  background: #070a14;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.45rem 0.6rem;
+}
+#gate input:-webkit-autofill {
+  -webkit-text-fill-color: var(--ink);
+  box-shadow: 0 0 0 1000px #070a14 inset;
+}
 .kicker {
   margin: 0 0 0.3rem;
   color: var(--magenta);
@@ -464,7 +492,8 @@ select, .hedge input { width: 100%; margin-top: 0.25rem; background: #070a14; co
 .result.bad { color: var(--bad); }
 .row-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.75rem; }
 @media (max-width: 760px) {
-  .top { align-items: flex-start; }
+  .top { align-items: flex-start; flex-wrap: wrap; }
+  .top-side { width: 100%; text-align: left; }
   .prices, .hedge-grid, .plan-days { grid-template-columns: 1fr; }
   .when { white-space: normal; }
 }

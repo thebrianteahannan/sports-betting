@@ -32,7 +32,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> Path:
-    out = ROOT / "output" / "NFL_Desk_Subscription_Plan.pdf"
+    out = ROOT / "docs" / "NFL_Desk_Subscription_Plan.pdf"
     static = ROOT / "nfl_bets" / "static" / "subscription.pdf"
     out.parent.mkdir(parents=True, exist_ok=True)
     _write(out)
