@@ -11,7 +11,7 @@ from nfl_bets.chalk import _catches_to_yards, _from_decimal, _legs, _who
 from nfl_bets.hedge import american_decimal, implied_prob
 
 _ET = ZoneInfo("America/New_York")
-_SPORTS = ("NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF")
+_SPORTS = ("NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA")
 _KINDS = {
     "yards": ("yard", "yd"),
     "points": ("point",),
@@ -23,6 +23,13 @@ _SKIP = (
     "spread", "moneyline", "puck line", "puckline", "run line", "handicap",
     "total", "alternate total", "alt total",
 )
+
+
+def offer_legs(game: dict[str, Any]) -> tuple[list[dict[str, Any]], bool]:
+    props = game.get("props")
+    if isinstance(props, list) and props:
+        return [leg for leg in props if isinstance(leg, dict)], bool(game.get("live"))
+    return _legs(str(game.get("id") or ""))
 
 
 def choose(board: dict[str, Any], sports: list[str], kind: str, count: int, game_id: str = "", when: str = "today") -> dict[str, Any]:
@@ -38,7 +45,7 @@ def choose(board: dict[str, Any], sports: list[str], kind: str, count: int, game
     pools = []
     for game in games:
         try:
-            legs, live = _legs(str(game.get("id") or ""))
+            legs, live = offer_legs(game)
         except Exception as exc:  # noqa: BLE001
             return _empty(f"FanDuel did not answer for {game.get('match')}: {exc}")
         kept = [leg for leg in legs if _fits(leg, kind)]

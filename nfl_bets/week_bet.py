@@ -10,13 +10,13 @@ from datetime import datetime, time, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from nfl_bets.chalk import _catches_to_yards, _from_decimal, _legs
-from nfl_bets.choose import _clock, _fits, _place, _parse
+from nfl_bets.chalk import _catches_to_yards, _from_decimal
+from nfl_bets.choose import _clock, _fits, _place, _parse, offer_legs
 from nfl_bets.hedge import american_decimal, implied_prob
 from nfl_bets.store import now_iso, out_dir, read_json, write_json
 
 _ET = ZoneInfo("America/New_York")
-_SPORTS = ("NFL", "MLB", "NBA", "NHL", "WNBA")
+_SPORTS = ("NFL", "MLB", "NBA", "NHL", "WNBA", "PGA")
 _PER_DAY = 3
 _HOLD_HOURS = 6
 _SPREAD = "across"
@@ -89,7 +89,7 @@ def _pools(games: list[dict[str, Any]]) -> list[tuple[dict[str, Any], list[dict[
     pools = []
     for game in games:
         try:
-            legs, live = _legs(str(game.get("id") or ""))
+            legs, live = offer_legs(game)
         except Exception:  # noqa: BLE001
             continue
         kept = [leg for leg in legs if _fits(leg, "any")]

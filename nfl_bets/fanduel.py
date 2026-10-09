@@ -172,6 +172,9 @@ def _golf(
     for market in markets.values():
         if not isinstance(market, dict):
             continue
+        event = events.get(str(market.get("eventId") or "")) or {}
+        if _pga(event, comps):
+            continue
         title = str(market.get("marketName") or "")
         if " vs " not in title or str(market.get("marketStatus") or "").upper() != "OPEN":
             continue
@@ -182,7 +185,6 @@ def _golf(
         right = str(runners[1].get("runnerName") or "")
         if not left or not right or left not in title or right not in title:
             continue
-        event = events.get(str(market.get("eventId") or "")) or {}
         rows.append(
             _row(
                 str(market.get("marketId") or ""),
@@ -199,7 +201,98 @@ def _golf(
                 None,
             )
         )
+    rows.extend(_pga_tournaments(events, comps, markets))
     return rows
+
+
+def _pga(event: dict[str, Any], comps: dict[str, Any]) -> bool:
+    comp = comps.get(str(event.get("competitionId") or "")) or {}
+    return "pga" in str(comp.get("name") or "").lower()
+
+
+def _pga_tournaments(
+    events: dict[str, Any],
+    comps: dict[str, Any],
+    markets: dict[str, Any],
+) -> list[dict[str, Any]]:
+    grouped: dict[str, dict[str, Any]] = {}
+    for event in events.values():
+        if not isinstance(event, dict) or not _pga(event, comps):
+            continue
+        comp_id = str(event.get("competitionId") or "")
+        slot = grouped.setdefault(comp_id, {"event": None, "ids": set()})
+        slot["ids"].add(str(event.get("eventId") or ""))
+        if "pga" in str(event.get("name") or "").lower():
+            slot["event"] = event
+    rows: list[dict[str, Any]] = []
+    for comp_id, slot in grouped.items():
+        event = slot["event"]
+        if not event:
+            continue
+        comp = comps.get(comp_id) or {}
+        title = str(comp.get("name") or event.get("name") or "").strip()
+        props: list[dict[str, Any]] = []
+        live = False
+        for market in markets.values():
+            if not isinstance(market, dict) or str(market.get("eventId") or "") not in slot["ids"]:
+                continue
+            if str(market.get("marketStatus") or "").upper() != "OPEN":
+                continue
+            name = str(market.get("marketName") or "")
+            if not _pga_market(name):
+                continue
+            if market.get("inPlay"):
+                live = True
+            market_id = str(market.get("marketId") or name)
+            for runner in market.get("runners") or []:
+                odds = _odds(runner)
+                runner_name = str(runner.get("runnerName") or "").strip()
+                if odds is None or odds < -1500 or odds > -110 or not runner_name:
+                    continue
+                props.append({
+                    "market": name,
+                    "runner": runner_name,
+                    "label": _pga_label(name, runner_name),
+                    "odds": odds,
+                    "key": f"{market_id}:{runner_name}",
+                    "prop": True,
+                })
+        if not props:
+            continue
+        game = _row(
+            str(event.get("eventId") or comp_id),
+            "PGA",
+            title,
+            title,
+            "Field",
+            str(event.get("openDate") or ""),
+            "",
+            None,
+            "",
+            None,
+            "",
+            None,
+        )
+        game["props"] = props
+        game["live"] = live
+        rows.append(game)
+    return rows
+
+
+def _pga_market(name: str) -> bool:
+    low = name.lower()
+    return low in {"top 5", "top 10", "top 20"} or "matchbet" in low or low.startswith("3 ball")
+
+
+def _pga_label(market: str, runner: str) -> str:
+    low = market.lower()
+    if low in {"top 5", "top 10", "top 20"}:
+        return f"{runner} {low}"
+    if low.startswith("3 ball"):
+        return f"{runner} to win the 3-ball"
+    if "18 hole" in low:
+        return f"{runner} to win the round match"
+    return f"{runner} to win the match"
 
 
 def _row(

@@ -1,4 +1,4 @@
-const OPEN_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF"];
+const OPEN_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA"];
 const OPEN_CARDS = [
   ["band", "Best bet of the day"],
   ["todayBet", "Today's Best Bet"],
@@ -36,7 +36,7 @@ function openTickets() {
 
 function legSport(leg) {
   if (OPEN_SPORTS.includes(leg.sport)) return leg.sport;
-  const match = String(leg.label || "").match(/—\s*(NFL|MLB|NBA|NHL|WNBA|NCAAF)\b/);
+  const match = String(leg.label || "").match(/—\s*(NFL|MLB|NBA|NHL|WNBA|NCAAF|PGA)\b/);
   return match ? match[1] : "";
 }
 

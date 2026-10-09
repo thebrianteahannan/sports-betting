@@ -339,6 +339,8 @@ def _decorate(
         "spreadLabel": raw.get("spreadLabel") or "Spread",
         "moneyLabel": raw.get("moneyLabel") or "Moneyline",
         "totalLabel": raw.get("totalLabel") or "Total",
+        "props": list(raw.get("props") or []),
+        "live": bool(raw.get("live")),
         "open": {
             "spreadAway": opened.get("spreadAway"),
             "total": opened.get("total"),

@@ -10,12 +10,12 @@ from itertools import combinations, product
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from nfl_bets.chalk import _catches_to_yards, _from_decimal, _legs, _who
-from nfl_bets.choose import _clock, _fits, _parse, _place
+from nfl_bets.chalk import _catches_to_yards, _from_decimal, _who
+from nfl_bets.choose import _clock, _fits, _parse, _place, offer_legs
 from nfl_bets.hedge import american_decimal, implied_prob
 
 _ET = ZoneInfo("America/New_York")
-_SPORTS = ("NFL", "MLB", "NBA", "NHL", "WNBA")
+_SPORTS = ("NFL", "MLB", "NBA", "NHL", "WNBA", "PGA")
 _LOW = -150
 _HIGH = 100
 
@@ -45,7 +45,7 @@ def _pools(games: list[dict[str, Any]]) -> list[tuple[dict[str, Any], list[dict[
     pools = []
     for game in games:
         try:
-            legs, live = _legs(str(game.get("id") or ""))
+            legs, live = offer_legs(game)
         except Exception:  # noqa: BLE001
             continue
         kept = [leg for leg in legs if _fits(leg, "any") and -800 <= leg["odds"] <= -110]

@@ -1,4 +1,4 @@
-const CHOICE_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF"];
+const CHOICE_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA"];
 const choice = { sports: ["MLB"], kind: "any", legs: 3, gameId: "", when: "today" };
 
 function choiceButton(label, on, attr, value) {
