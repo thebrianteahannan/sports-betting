@@ -17,7 +17,22 @@ function showAdminTab(name) {
   });
 }
 
+function paintRefresh() {
+  const note = document.getElementById("admin-refresh");
+  if (!note) return;
+  const board = window.state && window.state.board;
+  const seconds = Number(board && board.intervalSeconds) || 600;
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  const every = minutes === 1 ? "every minute" : `every ${minutes} minutes`;
+  const stamp = board && board.updatedAt;
+  const pulled = stamp && typeof when === "function" ? ` Last check ${when(stamp)} ET.` : "";
+  note.textContent = `FanDuel is checked ${every}.${pulled}`;
+  const live = document.getElementById("admin-live");
+  if (live) live.textContent = window.state && window.state.showLive ? "Hide live bets" : "Show live bets";
+}
+
 function paintAdmin(payload) {
+  paintRefresh();
   const list = document.getElementById("admin-users");
   if (!list) return;
   const rows = (payload && payload.users) || [];
@@ -109,6 +124,13 @@ function bindAdmin() {
     const button = event.target.closest("[data-admin-tab]");
     if (button) showAdminTab(button.dataset.adminTab);
   });
+  const live = document.getElementById("admin-live");
+  if (live) live.addEventListener("click", () => {
+    if (!window.state || !window.state.admin) return;
+    window.state.showLive = !window.state.showLive;
+    localStorage.setItem("pod-show-live", window.state.showLive ? "1" : "0");
+    if (window.render) window.render();
+  });
   const del = document.getElementById("ignore-delete");
   if (del) del.addEventListener("click", () => { deleteIgnored().catch((error) => { document.getElementById("ignore-note").textContent = String(error.message || error); }); });
   const users = document.getElementById("admin-users");
@@ -152,4 +174,5 @@ document.body.addEventListener("click", (event) => {
 });
 
 window.loadAdmin = loadAdmin;
+window.paintRefresh = paintRefresh;
 bindAdmin();

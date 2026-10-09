@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import threading
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -95,6 +96,7 @@ def _run() -> dict[str, Any]:
         errors.append(f"Cross parlay: {exc}")
     payload = {
         "updatedAt": now_iso(),
+        "intervalSeconds": int(os.environ.get("NFL_BETS_INTERVAL_SECONDS") or 600),
         "book": "FanDuel",
         "season": context.get("year"),
         "espnWeek": context.get("week"),
@@ -423,6 +425,8 @@ def public_payload(board: dict[str, Any] | None = None) -> dict[str, Any]:
 
     data = dict(board or load_board())
     data.pop("articles", None)
+    if not data.get("intervalSeconds"):
+        data["intervalSeconds"] = int(os.environ.get("NFL_BETS_INTERVAL_SECONDS") or 600)
     bank = public_bank()
     data["bank"] = bank
     data["plan"] = build_plan(

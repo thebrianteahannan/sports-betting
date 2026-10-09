@@ -33,6 +33,7 @@ const TYPES = {
   ".js": "text/javascript; charset=utf-8",
   ".pdf": "application/pdf",
   ".png": "image/png",
+  ".ico": "image/x-icon",
 };
 
 function env(name) {
@@ -337,7 +338,7 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/doc-view.html", "/logo.png"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/doc-view.html", "/logo.png", "/favicon.ico"].includes(url.pathname)) {
       serveStatic(res, url.pathname.slice(1));
       return;
     }

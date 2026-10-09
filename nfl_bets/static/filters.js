@@ -118,7 +118,7 @@ function drawOpenFilters(rows) {
   const cards = OPEN_CARDS.filter(([id]) => rows.some((ticket) => ticket.card === id));
   const legCounts = ["2", "3", "4", "5"].filter((count) => rows.some((ticket) => String((ticket.legs || []).length) === count));
   const kinds = OPEN_KINDS.filter(([id]) => rows.some((ticket) => ticketKinds(ticket).includes(id)));
-  const when = OPEN_WHEN.filter(([id]) => rows.some((ticket) => ticketWhen(ticket).includes(id)));
+  const when = OPEN_WHEN.filter(([id]) => (id !== "live" || (window.state && window.state.showLive)) && rows.some((ticket) => ticketWhen(ticket).includes(id)));
   const games = [...new Set(rows.map((ticket) => ticket.game).filter(Boolean))].sort();
   const sig = [sports, cards.map((row) => row[0]), legCounts, kinds.map((row) => row[0]), when.map((row) => row[0]), games].join("|");
   if (sig === openFilterSig) return;
@@ -177,6 +177,7 @@ function applyOpenFilter(rows) {
 }
 
 function paintOpenFilters() {
+  if (!(window.state && window.state.showLive)) openFilter.when = openFilter.when.filter((id) => id !== "live");
   const rows = openTickets();
   drawOpenFilters(rows);
   applyOpenFilter(rows);

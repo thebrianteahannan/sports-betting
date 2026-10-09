@@ -8,6 +8,7 @@ function showGateMode(mode) {
 
 function showGate() {
   document.body.classList.add("needs-member");
+  if (window.state) window.state.showLive = false;
   const who = document.getElementById("who");
   if (who) who.hidden = true;
   showGateMode("pick");
@@ -27,7 +28,11 @@ function showMember(payload) {
     ? rows.map(activityLine).join("")
     : "<p>No ratings or saved picks yet.</p>";
   if (window.loadReports) window.loadReports();
-  if (window.state) window.state.admin = !!member.admin;
+  if (window.state) {
+    window.state.admin = !!member.admin;
+    window.state.showLive = !!member.admin && localStorage.getItem("pod-show-live") === "1";
+  }
+  if (window.render) window.render();
   const adminTab = document.getElementById("tab-admin");
   if (adminTab) adminTab.hidden = !member.admin;
   if (member.admin && window.loadAdmin) window.loadAdmin();

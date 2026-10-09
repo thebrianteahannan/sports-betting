@@ -153,7 +153,6 @@ function syncLeaveOut(reasons) {
   if (key === missKey) return;
   missKey = key;
   missLeaveOut.clear();
-  reasons.forEach(([id]) => missLeaveOut.add(id));
 }
 
 function missTags(ticket) {

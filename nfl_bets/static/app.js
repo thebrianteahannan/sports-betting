@@ -36,7 +36,7 @@ async function load() {
   state.board = await response.json();
   render();
   clearTimeout(state.timer);
-  state.timer = setTimeout(load, liveBoard(state.board) ? 15000 : 120000);
+  state.timer = setTimeout(load, state.showLive && liveBoard(state.board) ? 15000 : 120000);
 }
 
 function render() {
@@ -64,6 +64,7 @@ function render() {
   renderPicks(board.picks || []);
   showTab(state.tab);
   if (window.paintChoices) window.paintChoices();
+  if (window.paintRefresh) window.paintRefresh();
 }
 
 function dropMiss(text) {
@@ -108,7 +109,7 @@ function renderLive(archive) {
   const box = $("live");
   const now = Date.now();
   const rows = (archive || []).filter((ticket) => {
-    if (ticket.result !== "open" || !ticket.good) return false;
+    if (!state.showLive || ticket.result !== "open" || !ticket.good) return false;
     return (ticket.legs || []).some((leg) => {
       const kick = Date.parse(leg.kickoff || ticket.kickoff || "");
       return Number.isFinite(kick) && kick <= now && now - kick < 8 * 60 * 60 * 1000;
@@ -135,7 +136,7 @@ function renderFeatured(prefix, best, heading, aim) {
   box.hidden = false;
   const live = $(`${prefix}-live`);
   const pulled = state.board && state.board.updatedAt ? when(state.board.updatedAt) : "";
-  if (best.live) {
+  if (state.showLive && best.live) {
     live.hidden = false;
     live.textContent = pulled
       ? `Live. FanDuel in-play prices from ${pulled} ET.`
@@ -254,7 +255,7 @@ function renderParlay(id, card) {
     live.className = "live-note";
     box.insertBefore(live, box.firstChild);
   }
-  if (card.live) {
+  if (state.showLive && card.live) {
     const pulled = state.board && state.board.updatedAt ? when(state.board.updatedAt) : "";
     const clock = pulled ? ` from ${pulled} ET` : "";
     live.hidden = false;
@@ -386,9 +387,9 @@ function renderArchive(tickets) {
 
 function showTab(name) {
   state.tab = name;
-  const titles = { today: "Today's bets", build: "Build a bet", swipe: "Swipe", open: "Open bets", wins: "Wins", losses: "Losses", pushes: "Pushes", share: "Share a win", admin: "Admin" };
+  const titles = { today: "Today's bets", week: "Bet of the week", build: "Build a bet", swipe: "Swipe", open: "Open bets", wins: "Wins", losses: "Losses", pushes: "Pushes", share: "Share a win", admin: "Admin" };
   $("page-title").textContent = titles[name] || titles.today;
-  ["today", "build", "swipe", "open", "wins", "losses", "pushes", "share", "admin"].forEach((id) => {
+  ["today", "week", "build", "swipe", "open", "wins", "losses", "pushes", "share", "admin"].forEach((id) => {
     $(`pane-${id}`).hidden = id !== name;
     document.querySelector(`[data-tab="${id}"]`).classList.toggle("on", id === name);
   });
