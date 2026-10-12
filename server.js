@@ -17,10 +17,9 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-
 const { createIgnore } = require("./desk-ignore");
 const { createAdmins } = require("./desk-admins");
-const { createDocs } = require("./desk-docs");
+const { createDocs } = require("./desk-docs"); const { chooseBet } = require("./choose-api");
 const ROOT = __dirname;
 const sendDoc = createDocs(ROOT);
 const STATIC = path.join(ROOT, "nfl_bets", "static");
@@ -32,7 +31,7 @@ const TYPES = {
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".pdf": "application/pdf",
-  ".png": "image/png",
+  ".png": "image/png", ".jpg": "image/jpeg",
   ".ico": "image/x-icon",
 };
 
@@ -338,7 +337,7 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/doc-view.html", "/logo.png", "/favicon.ico"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/sharecard.js", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
       serveStatic(res, url.pathname.slice(1));
       return;
     }
@@ -387,6 +386,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === "POST") {
       const body = await readBody(req);
+      if (url.pathname === "/api/choose") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await chooseBet(body, await board())); return; }
       const cookie = (token) => ({ "Set-Cookie": "pod=" + token + "; HttpOnly; Path=/; SameSite=Lax; Max-Age=2592000" });
       if (url.pathname === "/api/join" || url.pathname === "/api/login") {
         const email = String(body.email || "").trim().toLowerCase();

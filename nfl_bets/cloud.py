@@ -43,7 +43,23 @@ def publish_board(board: dict[str, Any]) -> None:
 
 
 def _slim(board: dict[str, Any]) -> dict[str, Any]:
-    return {key: board.get(key) for key in _CARD_KEYS}
+    data = {key: board.get(key) for key in _CARD_KEYS}
+    data["games"] = _games(board)
+    return data
+
+
+def _games(board: dict[str, Any]) -> list[dict[str, str]]:
+    rows = []
+    for game in board.get("games") or []:
+        if not isinstance(game, dict) or not game.get("id"):
+            continue
+        rows.append({
+            "id": str(game.get("id")),
+            "sport": str(game.get("sport") or ""),
+            "match": str(game.get("match") or ""),
+            "kickoff": str(game.get("kickoff") or ""),
+        })
+    return rows
 
 
 def _local_archive() -> list[dict[str, Any]]:

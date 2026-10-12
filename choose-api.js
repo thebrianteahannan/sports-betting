@@ -1,0 +1,408 @@
+/** Build a bet on the website. Same rules as the local desk. */
+
+const AK = "FhMFpcPWXMeyZxOx";
+const SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA"];
+const KINDS = {
+  yards: ["yard", "yd"], points: ["point"], assists: ["assist"], shots: ["shot"],
+  strikeouts: ["strikeout"], hits: ["to record a hit", "to hit"],
+};
+const SKIP = ["spread", "moneyline", "money line", "puck line", "puckline", "run line", "handicap", "total", "alternate total", "alt total", "team to score", "first pitch", "pitch result", "kicking"];
+const AIM = { safe: -100, good: -200 };
+const UNITS = ["shots on goal", "receiving yards", "rushing yards", "passing yards", "receptions", "rebounds", "strikeouts", "assists", "puck line", "run line", "saves", "points", "goals", "shots", "made threes", "threes", "spread", "yards"];
+
+function americanDecimal(odds) {
+  const n = Number(odds);
+  if (!n) throw new Error("odds cannot be 0");
+  return n > 0 ? 1 + n / 100 : 1 + 100 / Math.abs(n);
+}
+
+function impliedProb(odds) {
+  const n = Number(odds);
+  return n < 0 ? Math.abs(n) / (Math.abs(n) + 100) : 100 / (n + 100);
+}
+
+function fromDecimal(decimal) {
+  if (decimal <= 1) return null;
+  if (decimal >= 2) return Math.round((decimal - 1) * 100);
+  return Math.round(-100 / (decimal - 1));
+}
+
+function who(leg) {
+  return String(leg.runner || leg.label || "").split(/\d/)[0].trim().toLowerCase();
+}
+
+function etParts(date) {
+  return Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit", hour12: true,
+  }).formatToParts(date).map((part) => [part.type, part.value]));
+}
+
+function etKey(date) {
+  const bag = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(date).map((part) => [part.type, part.value]));
+  return `${bag.year}-${bag.month}-${bag.day}`;
+}
+
+function inWindow(iso, span) {
+  const kick = Date.parse(iso || "");
+  if (!Number.isFinite(kick) || kick < Date.now() - 3 * 60 * 60 * 1000) return false;
+  const kickDay = etKey(new Date(kick));
+  const nowDay = etKey(new Date());
+  if (span !== "week") return kickDay === nowDay;
+  return kickDay <= etKey(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000));
+}
+
+function clock(iso) {
+  const bag = etParts(new Date(iso));
+  if (!bag.weekday) return "";
+  return `${bag.weekday} ${bag.month} ${bag.day}, ${bag.hour}:${bag.minute} ${bag.dayPeriod} ET`;
+}
+
+function place(game) {
+  const match = String(game.match || "");
+  if (!match.includes(" @ ")) return match;
+  const [away, home] = match.split(" @ ");
+  return `${away.trim()} at ${home.trim()}`;
+}
+
+function kindOf(market) {
+  const text = market.toLowerCase();
+  if (text.includes("reception")) return "receptions";
+  if (text.includes("rush")) return "rushing";
+  if (text.includes("pass")) return "passing";
+  if (text.includes("receiv")) return "receiving";
+  return "";
+}
+
+function unitOf(text) {
+  return UNITS.find((word) => new RegExp(`\\b${word}\\b`).test(text)) || "";
+}
+
+function legLabel(market, runner) {
+  if (["over", "under"].includes(runner.toLowerCase()) || ["over", "unde"].includes(runner.slice(0, 4).toLowerCase())) {
+    return `${market}: ${runner}`;
+  }
+  let text = runner.trim();
+  const kind = kindOf(market);
+  if (kind && !text.toLowerCase().includes(kind) && /\by(?:ar)?ds?\b/i.test(text)) {
+    text = text.replace(/\by(?:ar)?ds?\b/i, `${kind} yards`);
+  }
+  let norm = market.replace(/\byds\b/ig, "yards").replace(/puckline/ig, "puck line");
+  const low = norm.toLowerCase();
+  const scope = (low.match(/^(1st|2nd|3rd|4th)\s+(period|half|quarter)/) || [])[0] || "";
+  const unit = unitOf(low);
+  if (/^\d+(?:\.\d+)?\+$/.test(text)) {
+    let whoName = (scope ? norm.slice(scope.length) : norm).replace(/\b(alt|alternate)\b/ig, " ");
+    if (unit) whoName = whoName.replace(new RegExp(`\\b${unit}\\b`, "i"), " ");
+    whoName = whoName.replace(/[-:]/g, " ").split(/\s+/).filter(Boolean).join(" ");
+    text = [whoName, text, unit].filter(Boolean).join(" ");
+  } else if (unit && !text.toLowerCase().includes(unit)) {
+    const count = !/\d/.test(text) ? ((norm.match(/\d+(?:\.\d+)?\+/) || [])[0] || "") : "";
+    text = [text, count, unit].filter(Boolean).join(" ");
+  }
+  if (scope && !text.toLowerCase().includes(scope)) text = `${text}, ${scope}`;
+  return text.split(/\s+/).filter(Boolean).join(" ");
+}
+
+async function eventPage(id) {
+  const url = `https://sbapi.nj.sportsbook.fanduel.com/api/event-page?eventId=${encodeURIComponent(id)}&tab=popular&_ak=${AK}&timezone=America/New_York`;
+  const response = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+      Accept: "application/json,text/plain,*/*",
+      Referer: "https://sportsbook.fanduel.com/",
+    },
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
+}
+
+function parseLegs(id, data) {
+  const attachments = data.attachments || {};
+  const markets = attachments.markets || {};
+  const live = Object.values(attachments.events || {}).some((event) => event && String(event.eventId || "") === String(id) && event.inPlay);
+  const rows = [];
+  Object.values(markets).forEach((market) => {
+    if (!market || String(market.eventId || "") !== String(id)) return;
+    if (String(market.marketStatus || "OPEN").toUpperCase() !== "OPEN") return;
+    const name = String(market.marketName || "");
+    if (["Regular Season", "Playoff", "Drive 1"].some((skip) => name.includes(skip))) return;
+    (market.runners || []).forEach((runner) => {
+      const raw = (((runner.winRunnerOdds || {}).americanDisplayOdds || {}).americanOdds);
+      const odds = Number.parseInt(raw, 10);
+      if (!Number.isFinite(odds) || odds < -1500 || odds > -110) return;
+      const runnerName = String(runner.runnerName || "").trim();
+      rows.push({ market: name, runner: runnerName, label: legLabel(name, runnerName), odds });
+    });
+  });
+  return { rows, live };
+}
+
+async function offerLegs(game) {
+  if (Array.isArray(game.props) && game.props.length) return { rows: game.props.filter((leg) => leg && typeof leg === "object"), live: !!game.live };
+  const data = await eventPage(game.id);
+  return parseLegs(game.id, data);
+}
+
+function teamLeg(leg, game) {
+  const blob = `${leg.runner || ""} ${leg.label || ""}`.toLowerCase();
+  return String(game.match || "").split(" @ ").map((part) => part.split("(")[0].trim().toLowerCase()).some((team) => team && blob.includes(team));
+}
+
+function fits(leg, kind) {
+  const text = `${leg.market || ""} ${leg.runner || ""} ${leg.label || ""}`.toLowerCase();
+  const runner = String(leg.runner || "").trim().toLowerCase();
+  if (SKIP.some((skip) => text.includes(skip)) || runner === "yes" || runner === "no" || runner.endsWith(" over") || runner.endsWith(" under")) return false;
+  if (text.includes("?") || text.includes("combine") || text.includes("either")) return false;
+  if (!/\d/.test(text) && !text.includes("to record a hit") && !text.includes("to score")) return false;
+  const name = who(leg);
+  if (!name || name === "over" || name === "under") return false;
+  if (kind === "any") return true;
+  return (KINDS[kind] || []).some((word) => text.includes(word));
+}
+
+function receivingYards(leg) {
+  const text = `${leg.market || ""} ${leg.label || ""}`.toLowerCase();
+  return text.includes("receiving") && text.includes("yard");
+}
+
+function sizeOf(leg) {
+  const match = `${leg.runner || ""} ${leg.label || ""}`.match(/(\d+(?:\.\d+)?)/);
+  return match ? Number(match[1]) : 999;
+}
+
+function catchesToYards(legs, band) {
+  const kept = [];
+  const seen = new Set();
+  band.forEach((leg) => {
+    const text = `${leg.market || ""} ${leg.label || ""}`.toLowerCase();
+    const td = text.includes("touchdown") || /\btd\b/.test(text);
+    if (td && !text.includes("pass")) return;
+    let chosen = leg;
+    if (text.includes("reception") && !text.includes("yard")) {
+      const name = who(leg);
+      const pool = legs.filter((row) => receivingYards(row) && who(row) === name);
+      pool.sort((a, b) => Math.abs(impliedProb(a.odds) - impliedProb(leg.odds)) - Math.abs(impliedProb(b.odds) - impliedProb(leg.odds)));
+      const nearest = pool[0];
+      if (nearest && Math.abs(impliedProb(nearest.odds) - impliedProb(leg.odds)) <= 0.08 && sizeOf(nearest) <= 55) chosen = nearest;
+      else if (nearest) return;
+    }
+    const token = `${who(chosen)}|${chosen.odds}|${chosen.label}`;
+    if (seen.has(token)) return;
+    seen.add(token);
+    kept.push(chosen);
+  });
+  return kept;
+}
+
+function slate(games, sports, ids, span) {
+  const wanted = new Set(ids);
+  const buckets = Object.fromEntries(sports.map((sport) => [sport, []]));
+  games.forEach((game) => {
+    const sport = String(game.sport || "");
+    if (!buckets[sport]) return;
+    if (wanted.size && !wanted.has(String(game.id || ""))) return;
+    if (!inWindow(game.kickoff, span)) return;
+    buckets[sport].push(game);
+  });
+  Object.values(buckets).forEach((rows) => rows.sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff)));
+  const ordered = [];
+  while (Object.values(buckets).some((rows) => rows.length)) {
+    sports.forEach((sport) => { if (buckets[sport].length) ordered.push(buckets[sport].shift()); });
+  }
+  return ordered;
+}
+
+async function gather(games, kind) {
+  const pools = [];
+  let trouble = "";
+  const queue = games.slice();
+  async function worker() {
+    while (queue.length) {
+      const game = queue.shift();
+      try {
+        const { rows, live } = await offerLegs(game);
+        let kept = rows.filter((leg) => fits(leg, kind) && !teamLeg(leg, game));
+        if (kind === "any" || kind === "yards") kept = catchesToYards(rows, kept);
+        kept.sort((a, b) => a.odds - b.odds);
+        if (kept.length) pools.push([game, kept, live]);
+      } catch (error) {
+        if (!trouble) trouble = `FanDuel did not answer for ${game.match}.`;
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(6, games.length) }, worker));
+  return { pools, trouble };
+}
+
+function spaced(rows, width, aim) {
+  const sorted = rows.slice().sort((a, b) => a[0].odds - b[0].odds);
+  if (!sorted.length) return [];
+  let spots;
+  if (width <= 1) spots = new Set([aim === "payout" ? sorted.length - 1 : 0]);
+  else if (sorted.length <= width) spots = new Set(sorted.map((_, index) => index));
+  else spots = new Set(Array.from({ length: width }, (_, index) => Math.round(index * (sorted.length - 1) / (width - 1))));
+  const kept = [];
+  const seen = new Set();
+  [...spots].sort((a, b) => a - b).forEach((index) => {
+    const player = who(sorted[index][0]);
+    if (!player || seen.has(player)) return;
+    seen.add(player);
+    kept.push(sorted[index]);
+  });
+  return kept;
+}
+
+function mark(combo) {
+  return combo.map((row) => who(row[0])).sort().join("|");
+}
+
+function scoreOf(decimal, aim) {
+  if (aim === "payout") return -decimal;
+  const goal = americanDecimal(AIM[aim]);
+  return Math.abs(decimal - goal) + (aim === "good" && decimal < goal ? 10 : 0);
+}
+
+function decimalOf(combo) {
+  return combo.reduce((decimal, row) => decimal * americanDecimal(row[0].odds), 1);
+}
+
+function search(menus, count, aim, split) {
+  const found = [];
+  function keep(comboScore, combo) {
+    const token = mark(combo);
+    const prior = found.findIndex((row) => row[2] === token);
+    if (prior >= 0) {
+      if (comboScore < found[prior][0]) found[prior] = [comboScore, combo.slice(), token];
+      found.sort((a, b) => a[0] - b[0]);
+      return;
+    }
+    found.push([comboScore, combo.slice(), token]);
+    found.sort((a, b) => a[0] - b[0]);
+    found.splice(8);
+  }
+  function walk(start, need, decimal, players, games, combo) {
+    if (need === 0) { keep(scoreOf(decimal, aim), combo); return; }
+    if (menus.length - start < need) return;
+    for (let index = start; index <= menus.length - need; index += 1) {
+      menus[index].forEach((row) => {
+        const player = who(row[0]);
+        const gameId = String(row[1].id || "");
+        if (!player || players.has(player) || (split && games.has(gameId))) return;
+        players.add(player);
+        combo.push(row);
+        if (split) games.add(gameId);
+        walk(index + 1, need - 1, decimal * americanDecimal(row[0].odds), players, games, combo);
+        combo.pop();
+        players.delete(player);
+        if (split) games.delete(gameId);
+      });
+    }
+  }
+  walk(0, count, 1, new Set(), new Set(), []);
+  return found.map((row) => row[1]).filter((combo) => combo.length >= count);
+}
+
+function windowOf(ranked, aim) {
+  if (!ranked.length) return [];
+  const scored = ranked.map((combo) => [scoreOf(decimalOf(combo), aim), combo]);
+  const best = scored[0][0];
+  return scored.filter((row) => row[0] <= (aim === "payout" ? best * 0.85 : best + 0.4)).map((row) => row[1]);
+}
+
+function pick(pools, count, aim, skip) {
+  const width = count >= 8 ? 1 : count >= 5 ? 2 : 4;
+  const menus = pools.map(([game, legs, live]) => spaced(legs.map((leg) => [leg, game, live]), width, aim)).filter((rows) => rows.length);
+  let ranked = search(menus.slice(0, 14), count, aim, true);
+  if (!ranked.length) {
+    const flat = menus.flatMap((menu) => menu.map((row) => [row]));
+    ranked = search(flat.slice(0, count >= 8 ? 18 : 24), count, aim, false);
+  }
+  const open = windowOf(ranked, aim);
+  const fresh = open.filter((combo) => !skip.has(mark(combo)));
+  if (fresh.length) return { combo: fresh[0], only: open.length === 1, again: false };
+  if (open.length) return { combo: open[0], only: open.length === 1, again: open.length > 1 };
+  return { combo: [], only: true, again: false };
+}
+
+function shown(leg) {
+  if (String(leg.market || "").toLowerCase().includes("to record a hit") && !/\d/.test(leg.label || "")) {
+    return `${leg.runner || leg.label} 1+ hits`;
+  }
+  return leg.label || "";
+}
+
+function card(combo, sports, kind, count, aim, only) {
+  const decimal = decimalOf(combo);
+  const american = fromDecimal(decimal);
+  const chance = american == null ? null : Math.round(impliedProb(american) * 1000) / 10;
+  const profit = Math.round(5 * (decimal - 1) * 100) / 100;
+  const games = new Map(combo.map((row) => [String(row[1].id || ""), row[1]]));
+  const one = games.size === 1;
+  const titleGame = one ? place(games.values().next().value) : sports.join(", ");
+  const kindName = kind === "any" ? "player props" : kind;
+  const legs = combo.map((row) => {
+    let label = shown(row[0]);
+    if (!one) label = `${label} — ${row[1].sport}, ${place(row[1])}, ${clock(row[1].kickoff)}`;
+    return { market: row[0].market || "", runner: row[0].runner || "", label, odds: row[0].odds, kickoff: row[1].kickoff || "", pct: `${(impliedProb(row[0].odds) * 100).toFixed(1)}%` };
+  });
+  const name = { safe: "Safest", good: "Good", payout: "Best payout" }[aim];
+  const aimed = {
+    safe: "Aimed at -100, so a $5 bet wins $5.",
+    good: "Aimed at -200, so a $5 bet wins about $2.50.",
+    payout: "The longest price from these props, so the payout is the largest.",
+  }[aim];
+  const signed = american > 0 ? `+${american}` : String(american);
+  return {
+    title: `${name} ${count}-leg`, game: titleGame, kind: kindName, american, impliedPct: chance, profit,
+    copy: `${aimed} ${kindName[0].toUpperCase()}${kindName.slice(1)} that fit ${sports.join(", ")}. The parlay is ${signed}, about ${chance}%. A $5 bet would win $${profit.toFixed(2)}.`,
+    note: `${one ? "These legs are in one game, so FanDuel's same-game button can charge a different number." : "These legs are in different games, so this is a regular parlay."}${only ? " This is the only bet that fits, so it keeps showing up." : ""}`,
+    players: combo.map((row) => who(row[0])), only, again: false, legs,
+  };
+}
+
+function empty(copy, aim) {
+  return { title: { safe: "Safest parlay", good: "Good parlay", payout: "Best payout" }[aim] || "Safest parlay", game: "", copy, legs: [], note: "" };
+}
+
+function miss(pools, sports, count, span) {
+  const ready = pools.filter((row) => row[1].length);
+  const names = new Set(ready.flatMap((row) => row[1].map(who)).filter(Boolean));
+  const when = span === "week" ? "in this window" : "today";
+  const league = sports.join(", ");
+  if (!ready.length) return `FanDuel has not posted player props for the ${league} games ${when}.`;
+  const places = ready.slice(0, 3).map((row) => place(row[0])).join(" and ") + (ready.length > 3 ? ` and ${ready.length - 3} more` : "");
+  const noun = names.size === 1 ? "player" : "players";
+  if (pools.length === 1) {
+    return `The only ${league} game ${when} is ${places}. FanDuel has player props for ${names.size} ${noun} in that game, so a ${count}-leg parlay does not fit yet.`;
+  }
+  return `FanDuel has player props for ${names.size} ${noun} across ${places}, so a ${count}-leg parlay does not fit yet.`;
+}
+
+async function chooseBet(body, board) {
+  const asked = Array.isArray(body.sports) ? body.sports.map(String) : [];
+  const sports = asked.filter((sport) => SPORTS.includes(sport));
+  const picked = sports.length ? sports : SPORTS.slice();
+  const ids = (Array.isArray(body.gameIds) ? body.gameIds : [body.gameId]).map((item) => String(item || "")).filter(Boolean);
+  const count = Math.min(10, Math.max(2, Number(body.legs) || 3));
+  const kind = ["any", "yards", "points", "assists", "shots", "strikeouts", "hits"].includes(body.kind) ? body.kind : "any";
+  const aim = ["safe", "good", "payout"].includes(body.aim) ? body.aim : "safe";
+  const span = body.when === "week" ? "week" : "today";
+  const games = slate(Array.isArray(board.games) ? board.games : [], picked, ids, span);
+  const safeAim = aim;
+  if (!games.length) {
+    return empty(span === "week" ? (sports.length ? `No game in ${sports.join(", ")} is left this week.` : "No game is left this week.") : (sports.length ? `No game in ${sports.join(", ")} is on today.` : "No game is on today."), safeAim);
+  }
+  const { pools, trouble } = await gather(games.slice(0, 30), kind);
+  if (trouble && !pools.length) return empty(trouble, aim);
+  const skip = new Set((Array.isArray(body.skip) ? body.skip : []).map(String).filter(Boolean));
+  const pickedCombo = pick(pools, count, aim, skip);
+  if (pickedCombo.combo.length < count) return empty(miss(pools, picked, count, span), aim);
+  const built = card(pickedCombo.combo, picked, kind, count, aim, pickedCombo.only);
+  built.again = pickedCombo.again;
+  return built;
+}
+
+module.exports = { chooseBet };
