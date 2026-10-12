@@ -249,6 +249,7 @@
     <button type="button" class="tab" data-admin-tab="strategy">Strategy</button>
     <button type="button" class="tab" data-admin-tab="docs">Docs</button>
     <button type="button" class="tab" data-admin-tab="built">Built bets</button>
+    <button type="button" class="tab" data-admin-tab="card">Share card</button>
   </nav>
   <div id="admin-share" hidden>
     <div id="report-review" hidden>
@@ -289,6 +290,13 @@
     <article class="report-card"><p>NFL receiving yards, stack hits, and the near −180 card are the shapes the win filter can keep. Past results do not promise the next ticket.</p></article>
   </div>
   <div id="admin-built" hidden></div>
+  <div id="admin-card" hidden>
+    <p class="quiet">Pick a bet. The image uses the share layout with that bet on the board. Download it for a post. This does not send a bet.</p>
+    <label class="choice-line">Bet <select id="share-card-bet"></select></label>
+    <p class="pick-save"><button type="button" id="share-card-go">Make the image</button><button type="button" class="ghost" id="share-card-download" hidden>Download</button></p>
+    <p class="quiet" id="share-card-note"></p>
+    <canvas id="share-card-canvas" hidden></canvas>
+  </div>
   <div id="admin-docs" hidden>
     <p class="quiet">These notes are for admins.</p>
     <p><a href="/doc-view.html?file=readme.pdf" target="_blank" rel="noopener">Overview</a></p>
@@ -320,6 +328,7 @@
 <script src="/swipe.js?v=1"></script>
 <script src="/filters.js?v=8"></script>
 <script src="/reports.js?v=1"></script>
-<script src="/admin.js?v=15"></script>
+<script src="/admin.js?v=16"></script>
+<script src="/sharecard.js?v=7"></script>
 </body>
 </html>

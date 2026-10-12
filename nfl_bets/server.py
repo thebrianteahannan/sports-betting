@@ -36,6 +36,7 @@ _TYPES = {
     ".js": "text/javascript; charset=utf-8",
     ".pdf": "application/pdf",
     ".png": "image/png",
+    ".jpg": "image/jpeg",
     ".ico": "image/x-icon",
 }
 
@@ -59,7 +60,7 @@ class Handler(BaseHTTPRequestHandler):
         if path in {"/", "/index.html"}:
             self._file("index.html")
             return
-        if path in {"/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/doc-view.html", "/logo.png", "/favicon.ico"}:
+        if path in {"/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/sharecard.js", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"}:
             self._file(path.lstrip("/"))
             return
         if path.startswith("/api/admin/doc/"):

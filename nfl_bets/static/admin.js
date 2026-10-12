@@ -9,7 +9,7 @@ function loginWhen(stamp) {
 }
 
 function showAdminTab(name) {
-  ["members", "share", "ignore", "strategy", "docs", "built"].forEach((id) => {
+  ["members", "share", "ignore", "strategy", "docs", "built", "card"].forEach((id) => {
     const pane = document.getElementById(`admin-${id}`);
     if (pane) pane.hidden = id !== name;
     const button = document.querySelector(`[data-admin-tab="${id}"]`);
@@ -147,6 +147,7 @@ function bindAdmin() {
     if (button) {
       showAdminTab(button.dataset.adminTab);
       if (button.dataset.adminTab === "built") loadAdmin();
+      if (button.dataset.adminTab === "card" && window.fillShareCards) window.fillShareCards();
     }
   });
   const del = document.getElementById("ignore-delete");
