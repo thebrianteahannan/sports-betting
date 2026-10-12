@@ -9,7 +9,7 @@ from nfl_bets.hedge import american_decimal, implied_prob
 from nfl_bets.http_util import get_json
 from nfl_bets.store import load_board, now_iso, out_dir, read_json, save_board, write_json
 
-_CARDS = {"chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive"}
+_CARDS = {"chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive", "weekSafe"}
 
 
 def refresh_card(card_id: str) -> dict[str, Any]:
@@ -136,7 +136,7 @@ def _price(legs: list[dict[str, Any]]) -> tuple[int | None, float | None, float 
 
 
 def _keep_week(card_id: str, card: dict[str, Any]) -> None:
-    key = {"weekThree": "three", "weekFive": "five"}.get(card_id)
+    key = {"weekThree": "three", "weekFive": "five", "weekSafe": "safe"}.get(card_id)
     if not key:
         return
     path = out_dir() / "week.json"

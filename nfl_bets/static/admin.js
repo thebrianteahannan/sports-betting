@@ -9,7 +9,7 @@ function loginWhen(stamp) {
 }
 
 function showAdminTab(name) {
-  ["members", "share", "ignore", "strategy", "docs"].forEach((id) => {
+  ["members", "share", "ignore", "strategy", "docs", "built"].forEach((id) => {
     const pane = document.getElementById(`admin-${id}`);
     if (pane) pane.hidden = id !== name;
     const button = document.querySelector(`[data-admin-tab="${id}"]`);
@@ -27,12 +27,34 @@ function paintRefresh() {
   const stamp = board && board.updatedAt;
   const pulled = stamp && typeof when === "function" ? ` Last check ${when(stamp)} ET.` : "";
   note.textContent = `FanDuel is checked ${every}.${pulled}`;
-  const live = document.getElementById("admin-live");
-  if (live) live.textContent = window.state && window.state.showLive ? "Hide live bets" : "Show live bets";
+}
+
+function builtLine(line) {
+  const parts = String(line || "").split(" — ");
+  const where = parts.length > 1 ? `<span>${esc(parts.slice(1).join(" — "))}</span>` : "";
+  return `<p class="built-leg"><b>${esc(parts[0] || "")}</b>${where}</p>`;
+}
+
+function paintBuilt(payload) {
+  const list = document.getElementById("admin-built");
+  if (!list) return;
+  const rows = (payload && payload.built) || [];
+  if (!rows.length) {
+    list.innerHTML = "<p>No one has saved a built bet yet.</p>";
+    return;
+  }
+  list.innerHTML = `<p class="quiet">These are built bets a member saved. A save means they liked it.</p>${rows.map((row) => {
+    const clock = row.at && typeof when === "function" ? `${when(row.at)} ET` : "";
+    const sports = (row.sports || []).length ? row.sports.join(", ") : "All leagues";
+    const price = row.american == null || row.american === "" ? "" : ` ${row.american}`;
+    const lines = (row.lines || []).map(builtLine).join("");
+    return `<article class="report-card"><p><b>${esc(row.name || "Member")}</b> · ${esc(clock)}</p><p>${esc(row.title || "Build a bet")}${esc(String(price))} · ${esc(sports)} · ${esc(row.kind || "any")} · ${esc(row.when || "")}</p><p>${esc(row.copy || "")}</p>${lines}</article>`;
+  }).join("")}`;
 }
 
 function paintAdmin(payload) {
   paintRefresh();
+  paintBuilt(payload);
   const list = document.getElementById("admin-users");
   if (!list) return;
   const rows = (payload && payload.users) || [];
@@ -122,14 +144,10 @@ function bindAdmin() {
   tabs.dataset.bound = "1";
   tabs.addEventListener("click", (event) => {
     const button = event.target.closest("[data-admin-tab]");
-    if (button) showAdminTab(button.dataset.adminTab);
-  });
-  const live = document.getElementById("admin-live");
-  if (live) live.addEventListener("click", () => {
-    if (!window.state || !window.state.admin) return;
-    window.state.showLive = !window.state.showLive;
-    localStorage.setItem("pod-show-live", window.state.showLive ? "1" : "0");
-    if (window.render) window.render();
+    if (button) {
+      showAdminTab(button.dataset.adminTab);
+      if (button.dataset.adminTab === "built") loadAdmin();
+    }
   });
   const del = document.getElementById("ignore-delete");
   if (del) del.addEventListener("click", () => { deleteIgnored().catch((error) => { document.getElementById("ignore-note").textContent = String(error.message || error); }); });

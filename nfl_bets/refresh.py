@@ -15,7 +15,7 @@ from nfl_bets.week_bet import build_week
 from nfl_bets.espn_context import fetch_context
 from nfl_bets.fanduel import fetch_board
 from nfl_bets.indicators import build_flags, score_flags
-from nfl_bets.store import load_bank, now_iso, public_bank, record_quote, save_board
+from nfl_bets.store import load_bank, load_board, now_iso, public_bank, record_quote, save_board
 from nfl_bets.teams import nick
 
 _LOCK = threading.Lock()
@@ -116,12 +116,14 @@ def _run() -> dict[str, Any]:
         "todayBet": _today_bet(games, now, errors),
     }
     try:
-        payload["weekThree"], payload["weekFive"] = build_week(games)
+        payload["weekThree"], payload["weekFive"], payload["weekSafe"] = build_week(games)
     except Exception as exc:  # noqa: BLE001
         errors.append(f"Week: {exc}")
         payload["errors"] = errors
     try:
-        payload["band"] = build_band(games, now)
+        prior_band = load_board().get("band")
+        shown = list(prior_band.get("freshMarks") or []) if isinstance(prior_band, dict) else []
+        payload["band"] = build_band(games, now, shown)
     except Exception as exc:  # noqa: BLE001
         errors.append(f"Band: {exc}")
         payload["errors"] = errors

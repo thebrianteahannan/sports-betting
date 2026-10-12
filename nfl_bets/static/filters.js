@@ -6,8 +6,9 @@ const OPEN_CARDS = [
   ["four", "Four at 85%"],
   ["plus", "Safest near +250"],
   ["hits", "Stack hits"],
-  ["weekThree", "3-leg best bet"],
-  ["weekFive", "5-leg for the week"],
+  ["weekThree", "Good 3-leg"],
+  ["weekFive", "Good 5-leg"],
+  ["weekSafe", "Super safe"],
 ];
 const OPEN_KINDS = [
   ["yards", "Yards"],

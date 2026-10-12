@@ -36,7 +36,7 @@ async function load() {
   state.board = await response.json();
   render();
   clearTimeout(state.timer);
-  state.timer = setTimeout(load, state.showLive && liveBoard(state.board) ? 15000 : 120000);
+  state.timer = setTimeout(load, 120000);
 }
 
 function render() {
@@ -51,14 +51,12 @@ function render() {
   } else {
     banner.hidden = true;
   }
-  renderLive(board.archive || []);
   const bandAim = (board.band && board.band.goal) || "Priced from −150 to +100.";
   renderFeatured("best", weekCard(board.band, "band"), "Best bet of the day", bandAim);
-  const weekAim = (board.weekThree && board.weekThree.goal) || "Each leg is a different day.";
-  renderFeatured("week", weekCard(board.weekThree, "weekThree"), "Safe 3-leg", weekAim);
+  [["week", "weekThree", "Good 3-leg"], ["week5", "weekFive", "Good 5-leg"], ["safe", "weekSafe", "Super safe"]].forEach(([prefix, key, title]) => {
+    renderFeatured(prefix, weekCard(board[key], key), title, (board[key] && board[key].goal) || "Each leg is a different day.");
+  });
   renderFeatured("today", todayCandidate(board), "Today's Best Bet", "The highest-priced ticket on today's slate.");
-  const fiveAim = (board.weekFive && board.weekFive.goal) || "Each leg is a different day.";
-  renderFeatured("week5", weekCard(board.weekFive, "weekFive"), "5-leg for the week", fiveAim);
   ["chalk", "four", "plus", "hits"].forEach((id) => renderParlay(id, board[id]));
   renderArchive(board.archive || []);
   renderPicks(board.picks || []);
@@ -105,26 +103,8 @@ function unitOf(leg) {
   return words.find((word) => text.includes(word)) || "";
 }
 
-function renderLive(archive) {
-  const box = $("live");
-  const now = Date.now();
-  const rows = (archive || []).filter((ticket) => {
-    if (!state.showLive || ticket.result !== "open" || !ticket.good) return false;
-    return (ticket.legs || []).some((leg) => {
-      const kick = Date.parse(leg.kickoff || ticket.kickoff || "");
-      return Number.isFinite(kick) && kick <= now && now - kick < 8 * 60 * 60 * 1000;
-    });
-  });
-  box.hidden = !rows.length;
-  $("live-list").innerHTML = rows.map((ticket) => pickRow(ticket, true)).join("");
-}
-
-function liveBoard(board) {
-  const now = Date.now();
-  return ((board && board.archive) || []).some((ticket) => ticket.result === "open" && (ticket.legs || []).some((leg) => {
-    const kick = Date.parse(leg.kickoff || ticket.kickoff || "");
-    return Number.isFinite(kick) && kick <= now && now - kick < 8 * 60 * 60 * 1000;
-  }));
+function fanLink() {
+  return `<a class="ghost" href="https://sportsbook.fanduel.com/" target="_blank" rel="noopener">Open in FanDuel</a>`;
 }
 
 function renderFeatured(prefix, best, heading, aim) {
@@ -134,17 +114,7 @@ function renderFeatured(prefix, best, heading, aim) {
     return;
   }
   box.hidden = false;
-  const live = $(`${prefix}-live`);
   const pulled = state.board && state.board.updatedAt ? when(state.board.updatedAt) : "";
-  if (state.showLive && best.live) {
-    live.hidden = false;
-    live.textContent = pulled
-      ? `Live. FanDuel in-play prices from ${pulled} ET.`
-      : "Live. FanDuel in-play prices.";
-  } else {
-    live.hidden = true;
-    live.textContent = "";
-  }
   $(`${prefix}-aim`).textContent = aim;
   $(`${prefix}-title`).textContent = heading;
   $(`${prefix}-when`).textContent = [eventClock(best.card, best.legs), pulledText(best.card)].filter(Boolean).join("\n");
@@ -168,7 +138,7 @@ function renderFeatured(prefix, best, heading, aim) {
   $(`${prefix}-save`).innerHTML = `${saved
     ? `<button type="button" class="ghost" disabled>Saved</button>`
     : `<button type="button" class="ghost" data-save="${esc(best.id)}"${group}>Save this pick</button>`
-  }${pullButton(best.id)}${starHtml(mine, best.id, best.group, "")}`;
+  }${pullButton(best.id)}${fanLink()}${starHtml(mine, best.id, best.group, "")}`;
 }
 
 function todayCandidate(board) {
@@ -249,23 +219,6 @@ function renderParlay(id, card) {
     return;
   }
   box.hidden = false;
-  let live = box.querySelector(".live-note");
-  if (!live) {
-    live = document.createElement("p");
-    live.className = "live-note";
-    box.insertBefore(live, box.firstChild);
-  }
-  if (state.showLive && card.live) {
-    const pulled = state.board && state.board.updatedAt ? when(state.board.updatedAt) : "";
-    const clock = pulled ? ` from ${pulled} ET` : "";
-    live.hidden = false;
-    live.textContent = String(card.game || "").includes(",")
-      ? `Live. A game on this card is in progress. FanDuel in-play prices${clock}.`
-      : `Live. This game is in progress. FanDuel in-play prices${clock}.`;
-  } else {
-    live.hidden = true;
-    live.textContent = "";
-  }
   const game = card.game ? `${card.game}. ` : "";
   $(`${id}-aim`).textContent = card.goal || "";
   $(`${id}-title`).textContent = card.title || "";
@@ -288,7 +241,7 @@ function renderParlay(id, card) {
   save.innerHTML = `${saved
     ? `<button type="button" class="ghost" disabled>Saved</button>`
     : `<button type="button" class="ghost" data-save="${esc(id)}">Save this pick</button>`
-  }${pullButton(id)}${starHtml(mine, id, "", "")}`;
+  }${pullButton(id)}${fanLink()}${starHtml(mine, id, "", "")}`;
 }
 
 function pulledText(card) {
@@ -391,7 +344,8 @@ function showTab(name) {
   $("page-title").textContent = titles[name] || titles.today;
   ["today", "week", "build", "swipe", "open", "wins", "losses", "pushes", "share", "admin"].forEach((id) => {
     $(`pane-${id}`).hidden = id !== name;
-    document.querySelector(`[data-tab="${id}"]`).classList.toggle("on", id === name);
+    const tab = document.querySelector(`[data-tab="${id}"]`);
+    if (tab) tab.classList.toggle("on", id === name);
   });
 }
 
@@ -419,7 +373,7 @@ function archiveMark(ticket) {
   const legs = ticket.legs || [];
   const moving = legs.map(progress).filter(Boolean);
   if (moving.length) {
-    return `<span class="status">Live. ${esc(moving.join(". "))}.</span>`;
+    return `<span class="status">${esc(moving.join(". "))}.</span>`;
   }
   const kick = nextKick(ticket);
   return `<span class="status">Open until ${esc(kick || "the game starts")}${kick ? " ET" : ""}. The box score will say won or lost.</span>`;
@@ -442,7 +396,7 @@ function pickRow(pick, archive) {
   const price = american(pick.american);
   const clock = when(archive ? pick.offeredAt : pick.savedAt);
   const playing = [pick.game, eventClock(pick, pick.legs)].filter(Boolean).join(" · ");
-  return `<article class="ticket">${clock ? `<p class="pulled">${archive ? "Pulled" : "Saved"} ${esc(clock)} ET</p>` : ""}<h3>${esc(pick.title)}${price ? ` ${esc(price)}` : ""}</h3><p class="quiet">${esc(playing)}</p><ol class="chalk-legs">${legs}</ol><p class="pick-save">${good}${mark}</p></article>`;
+  return `<article class="ticket">${clock ? `<p class="pulled">${archive ? "Pulled" : "Saved"} ${esc(clock)} ET</p>` : ""}<h3>${esc(pick.title)}${price ? ` ${esc(price)}` : ""}</h3><p class="quiet">${esc(playing)}</p><ol class="chalk-legs">${legs}</ol><p class="pick-save">${good}${mark}${fanLink()}</p></article>`;
 }
 
 function goodControl(pick, archive) {

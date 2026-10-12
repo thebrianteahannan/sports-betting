@@ -81,6 +81,33 @@ def logout(header: str | None) -> None:
         _save(data)
 
 
+def save_built(user: dict[str, Any], detail: dict[str, Any]) -> dict[str, Any]:
+    lines = [str(line)[:100] for line in (detail.get("lines") or []) if str(line).strip()][:10]
+    if len(lines) < 2:
+        raise ValueError("That bet has no legs to save.")
+    kept = dict(detail)
+    kept["lines"] = lines
+    with _LOCK:
+        data = _load()
+        prior = next((
+            row for row in data["activity"]
+            if row.get("kind") == "saved" and row.get("userId") == user.get("id")
+            and (row.get("detail") or {}).get("lines") == lines
+        ), None)
+        if prior:
+            return {"ok": True, "already": True}
+        data["activity"].insert(0, {
+            "id": secrets.token_hex(6),
+            "userId": user["id"],
+            "kind": "saved",
+            "at": now_iso(),
+            "detail": kept,
+        })
+        data["activity"] = data["activity"][:400]
+        _save(data)
+    return {"ok": True, "already": False}
+
+
 def note(user: dict[str, Any], kind: str, detail: dict[str, Any]) -> None:
     with _LOCK:
         data = _load()
@@ -152,7 +179,24 @@ def roster(user: dict[str, Any]) -> dict[str, Any]:
         data = _load()
     rows = [_member_row(row) for row in data["users"]]
     rows.sort(key=lambda row: str(row.get("lastLogin") or ""), reverse=True)
-    return {"users": rows}
+    names = {str(row.get("id")): row.get("name") or row.get("email") or "Member" for row in data["users"]}
+    built = []
+    for row in data["activity"]:
+        detail = row.get("detail") if row.get("kind") == "saved" and isinstance(row.get("detail"), dict) else None
+        if not detail:
+            continue
+        built.append({
+            "at": row.get("at") or "",
+            "name": names.get(str(row.get("userId"))) or "Member",
+            "when": detail.get("when") or "",
+            "sports": detail.get("sports") or [],
+            "kind": detail.get("kind") or "",
+            "title": detail.get("title") or "",
+            "american": detail.get("american"),
+            "copy": detail.get("copy") or "",
+            "lines": detail.get("lines") or [],
+        })
+    return {"users": rows, "built": built[:60]}
 
 
 def _member_row(user: dict[str, Any]) -> dict[str, Any]:

@@ -19,9 +19,14 @@ function showMember(payload) {
   const member = payload.member || {};
   const who = document.getElementById("who");
   who.hidden = false;
-  who.innerHTML = `${esc(member.name)} · Free membership <button type="button" class="ghost" id="member-out">Sign out</button>`;
+  const admin = !!member.admin;
+  who.innerHTML = admin
+    ? `<button type="button" id="member-admin">${esc(member.name)} · Admin</button><button type="button" class="ghost" id="member-out">Sign out</button>`
+    : `${esc(member.name)} · Free membership <button type="button" class="ghost" id="member-out">Sign out</button>`;
   const plan = document.getElementById("activity-plan");
-  plan.textContent = "Free membership. Payments are not turned on. Ratings and saved picks are kept on this membership.";
+  plan.textContent = admin
+    ? "Admin. Ratings and saved picks are kept on this membership."
+    : "Free membership. Payments are not turned on. Ratings and saved picks are kept on this membership.";
   const list = document.getElementById("activity-list");
   const rows = payload.activity || [];
   list.innerHTML = rows.length
@@ -29,13 +34,11 @@ function showMember(payload) {
     : "<p>No ratings or saved picks yet.</p>";
   if (window.loadReports) window.loadReports();
   if (window.state) {
-    window.state.admin = !!member.admin;
-    window.state.showLive = !!member.admin && localStorage.getItem("pod-show-live") === "1";
+    window.state.admin = admin;
+    window.state.showLive = false;
   }
   if (window.render) window.render();
-  const adminTab = document.getElementById("tab-admin");
-  if (adminTab) adminTab.hidden = !member.admin;
-  if (member.admin && window.loadAdmin) window.loadAdmin();
+  if (admin && window.loadAdmin) window.loadAdmin();
 }
 
 const CARD_NAMES = {
@@ -45,8 +48,9 @@ const CARD_NAMES = {
   four: "Four at 85% each",
   plus: "Safest near +250",
   hits: "Which stack hits more",
-  weekThree: "3-leg best bet",
-  weekFive: "5-leg for the week",
+  weekThree: "Good 3-leg",
+  weekFive: "Good 5-leg",
+  weekSafe: "Super safe",
 };
 
 function activityLine(row) {
@@ -111,6 +115,7 @@ window.fetch = async function memberAwareFetch(url, options) {
 
 document.getElementById("who").addEventListener("click", (event) => {
   if (event.target.id === "member-out") signOut();
+  if (event.target.id === "member-admin") showTab("admin");
 });
 document.getElementById("gate-join").addEventListener("click", () => showGateMode("join"));
 document.getElementById("gate-have").addEventListener("click", () => showGateMode("login"));

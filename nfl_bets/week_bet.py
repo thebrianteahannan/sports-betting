@@ -7,10 +7,11 @@ builds a new pair. This does not send a bet.
 from __future__ import annotations
 
 from datetime import datetime, time, timedelta
+from itertools import combinations
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from nfl_bets.chalk import _catches_to_yards, _from_decimal
+from nfl_bets.chalk import _catches_to_yards, _from_decimal, _who
 from nfl_bets.choose import _clock, _fits, _place, _parse, offer_legs
 from nfl_bets.hedge import american_decimal, implied_prob
 from nfl_bets.store import now_iso, out_dir, read_json, write_json
@@ -19,30 +20,35 @@ _ET = ZoneInfo("America/New_York")
 _SPORTS = ("NFL", "MLB", "NBA", "NHL", "WNBA", "PGA")
 _PER_DAY = 3
 _HOLD_HOURS = 6
-_SPREAD = "across"
+_SPREAD = "variety"
+_GOOD = -200
+_SAFE = -350
 
 
-def build_week(games: list[dict[str, Any]]) -> tuple[dict[str, Any], dict[str, Any]]:
+def build_week(games: list[dict[str, Any]]) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     monday = _monday(datetime.now(_ET))
     key = monday.isoformat()
     saved = read_json(out_dir() / "week.json", {})
-    if saved.get("week") == key and saved.get("spread") == _SPREAD and _fresh(saved):
-        _remember(saved.get("three"), str(saved.get("builtAt") or ""))
-        _remember(saved.get("five"), str(saved.get("builtAt") or ""))
-        return saved["three"], saved["five"]
+    if saved.get("week") == key and saved.get("spread") == _SPREAD and saved.get("options") and _fresh(saved):
+        return _turn(saved)
     label = _span(datetime.now(_ET))
-    three, five = _build(list(games or []), label)
+    options = _build(list(games or []), label)
     stamp = now_iso()
-    _remember(three, stamp)
-    _remember(five, stamp)
-    write_json(out_dir() / "week.json", {
+    for name in ("three", "five", "safe"):
+        for card in options[name]:
+            _remember(card, stamp)
+    saved = {
         "week": key,
         "spread": _SPREAD,
         "builtAt": stamp,
-        "three": three,
-        "five": five,
-    })
-    return three, five
+        "options": options,
+        "index": 0,
+        "three": options["three"][0],
+        "five": options["five"][0],
+        "safe": options["safe"][0],
+    }
+    write_json(out_dir() / "week.json", saved)
+    return saved["three"], saved["five"], saved["safe"]
 
 
 def _remember(card: Any, stamp: str) -> None:
@@ -53,7 +59,8 @@ def _remember(card: Any, stamp: str) -> None:
 def _fresh(saved: dict[str, Any]) -> bool:
     three = saved.get("three") if isinstance(saved.get("three"), dict) else {}
     five = saved.get("five") if isinstance(saved.get("five"), dict) else {}
-    if len(three.get("legs") or []) >= 3 and len(five.get("legs") or []) >= 5:
+    safe = saved.get("safe") if isinstance(saved.get("safe"), dict) else {}
+    if len(three.get("legs") or []) >= 3 and len(five.get("legs") or []) >= 5 and len(safe.get("legs") or []) >= 3:
         return True
     stamp = _parse(str(saved.get("builtAt") or ""))
     if stamp is None:
@@ -61,9 +68,32 @@ def _fresh(saved: dict[str, Any]) -> bool:
     return datetime.now(_ET) - stamp.astimezone(_ET) < timedelta(hours=_HOLD_HOURS)
 
 
-def _build(games: list[dict[str, Any]], label: str) -> tuple[dict[str, Any], dict[str, Any]]:
-    by_day = _best_by_day(_pools(_slate(games)))
-    return _card(_spread(by_day, 3), 3, label), _card(_spread(by_day, 5), 5, label)
+def _turn(saved: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    options = saved.get("options") if isinstance(saved.get("options"), dict) else {}
+    index = int(saved.get("index") or 0) + 1
+    saved["index"] = index
+    for name in ("three", "five", "safe"):
+        rows = options.get(name) if isinstance(options.get(name), list) else []
+        saved[name] = rows[index % len(rows)] if rows else saved.get(name)
+        _remember(saved.get(name), str(saved.get("builtAt") or ""))
+    write_json(out_dir() / "week.json", saved)
+    return saved["three"], saved["five"], saved["safe"]
+
+
+def _build(games: list[dict[str, Any]], label: str) -> dict[str, list[dict[str, Any]]]:
+    menu = _menu(_pools(_slate(games)))
+    return {
+        "three": _pack(_choose(menu, 3, _GOOD, True), 3, label, "Good 3-leg", _GOOD),
+        "five": _pack(_choose(menu, 5, _GOOD, True), 5, label, "Good 5-leg", _GOOD),
+        "safe": _pack(_choose(menu, 3, _SAFE, False), 3, label, "Super safe", _SAFE),
+    }
+
+
+def _pack(combos: list[list[tuple[dict, dict, bool]]], count: int, label: str, title: str, aim: int) -> list[dict[str, Any]]:
+    cards = [_card(combo, count, label, title, aim) for combo in combos] or [_card([], count, label, title, aim)]
+    if len(cards) == 1 and cards[0].get("legs"):
+        cards[0]["note"] = f"{cards[0].get('note') or ''} This is the only bet that fits, so it keeps showing up.".strip()
+    return cards
 
 
 def _slate(games: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -100,41 +130,95 @@ def _pools(games: list[dict[str, Any]]) -> list[tuple[dict[str, Any], list[dict[
     return pools
 
 
-def _best_by_day(pools: list[tuple[dict[str, Any], list[dict[str, Any]], bool]]) -> dict[str, tuple[dict, dict, bool]]:
-    best: dict[str, tuple[dict, dict, bool]] = {}
+def _menu(pools: list[tuple[dict[str, Any], list[dict[str, Any]], bool]]) -> dict[str, list[tuple[dict, dict, bool]]]:
+    grouped: dict[str, list[tuple[dict, dict, bool]]] = {}
     for game, legs, live in pools:
         stamp = _parse(str(game.get("kickoff") or ""))
-        if stamp is None or not legs:
+        if stamp is None:
             continue
         day = stamp.astimezone(_ET).date().isoformat()
-        leg = legs[0]
-        current = best.get(day)
-        if current is None or leg["odds"] < current[0]["odds"]:
-            best[day] = (leg, game, live)
-    return best
+        grouped.setdefault(day, []).extend((leg, game, live) for leg in legs)
+    return {day: rows for day, rows in ((day, _thin(items)) for day, items in grouped.items()) if rows}
 
 
-def _spread(by_day: dict[str, tuple[dict, dict, bool]], count: int) -> list[tuple[dict, dict, bool]]:
-    days = sorted(by_day)
-    if len(days) <= count:
-        return [by_day[day] for day in days]
-    ords = [datetime.fromisoformat(day).toordinal() for day in days]
-    start, end = ords[0], ords[-1]
-    chosen: list[str] = []
-    for index in range(count):
-        target = start + (end - start) * index / (count - 1)
-        day = min(
-            (day for day in days if day not in chosen),
-            key=lambda day: abs(datetime.fromisoformat(day).toordinal() - target),
-        )
-        chosen.append(day)
-    chosen.sort()
-    return [by_day[day] for day in chosen]
+def _thin(rows: list[tuple[dict, dict, bool]]) -> list[tuple[dict, dict, bool]]:
+    rows = sorted(rows, key=lambda item: item[0]["odds"])
+    if not rows:
+        return []
+    spots = sorted({round(index * (len(rows) - 1) / 5) for index in range(6)})
+    kept: list[tuple[dict, dict, bool]] = []
+    seen: set[str] = set()
+    for index in spots:
+        leg, game, live = rows[index]
+        player = _who(leg) or str(game.get("id") or "")
+        if not player or player in seen:
+            continue
+        seen.add(player)
+        kept.append((leg, game, live))
+    return kept
 
 
-def _card(combo: list[tuple[dict, dict, bool]], count: int, label: str) -> dict[str, Any]:
-    title = "3-leg best bet" if count == 3 else "5-leg for the week"
-    goal = f"For the week of {label}. Each leg is a different day."
+def _choose(menu: dict[str, list[tuple[dict, dict, bool]]], count: int, target: int, at_least: bool) -> list[list[tuple[dict, dict, bool]]]:
+    days = sorted(menu)
+    if len(days) < count:
+        combo = _search([menu[day] for day in days], target, at_least) if days else []
+        return [combo] if len(combo) >= count else []
+    ranked: list[tuple[float, int, list[tuple[dict, dict, bool]]]] = []
+    goal = american_decimal(target)
+    for picked in combinations(days, count):
+        combo = _search([menu[day] for day in picked], target, at_least)
+        if len(combo) < count:
+            continue
+        decimal = 1.0
+        for leg, _, _ in combo:
+            decimal *= american_decimal(leg["odds"])
+        score = abs(decimal - goal) + (10 if at_least and decimal < goal else 0)
+        span = datetime.fromisoformat(picked[-1]).toordinal() - datetime.fromisoformat(picked[0]).toordinal()
+        ranked.append((score, span, combo))
+    ranked.sort(key=lambda item: (item[0], -item[1]))
+    kept: list[list[tuple[dict, dict, bool]]] = []
+    marks: set[str] = set()
+    best = ranked[0][0] if ranked else 0
+    for score, _, combo in ranked:
+        if kept and score > best + 0.4:
+            break
+        mark = "|".join(sorted(_who(leg) for leg, _, _ in combo))
+        if not mark or mark in marks:
+            continue
+        marks.add(mark)
+        kept.append(combo)
+        if len(kept) == 4:
+            break
+    return kept
+
+
+def _search(day_legs: list[list[tuple[dict, dict, bool]]], target: int, at_least: bool) -> list[tuple[dict, dict, bool]]:
+    goal = american_decimal(target)
+    best: tuple[float, list[tuple[dict, dict, bool]]] | None = None
+
+    def walk(index: int, decimal: float, players: set[str], combo: list[tuple[dict, dict, bool]]) -> None:
+        nonlocal best
+        if index == len(day_legs):
+            score = abs(decimal - goal) + (10 if at_least and decimal < goal else 0)
+            if best is None or score < best[0]:
+                best = (score, list(combo))
+            return
+        for leg, game, live in day_legs[index]:
+            player = _who(leg)
+            if not player or player in players:
+                continue
+            players.add(player)
+            combo.append((leg, game, live))
+            walk(index + 1, decimal * american_decimal(leg["odds"]), players, combo)
+            combo.pop()
+            players.remove(player)
+
+    walk(0, 1.0, set(), [])
+    return best[1] if best else []
+
+
+def _card(combo: list[tuple[dict, dict, bool]], count: int, label: str, title: str, aim: int) -> dict[str, Any]:
+    goal = f"For the week of {label}. Aimed at {aim}. Each leg is a different day."
     if len(combo) < count:
         return {
             "title": title,
@@ -168,7 +252,7 @@ def _card(combo: list[tuple[dict, dict, bool]], count: int, label: str) -> dict[
         })
     return {
         "title": title,
-        "strategy": "Safest player prop from a different day",
+        "strategy": f"Player props on different days, aimed at {aim}",
         "game": "",
         "goal": goal,
         "american": american,

@@ -20,10 +20,16 @@ _LOW = -150
 _HIGH = 100
 
 
-def build_band(games: list[dict[str, Any]], now: datetime | None = None) -> dict[str, Any]:
+def build_band(games: list[dict[str, Any]], now: datetime | None = None, shown: list[str] | None = None) -> dict[str, Any]:
     moment = now.astimezone(_ET) if now else datetime.now(_ET)
     pools = _pools(_today(list(games or []), moment))
-    return _card(_search(pools))
+    combos = _search(pools)
+    chosen, only, marks = _next(combos, shown or [])
+    card = _card(chosen)
+    card["freshMarks"] = marks
+    if only and chosen:
+        card["note"] = f"{card.get('note') or ''} This is the only bet that fits, so it keeps showing up.".strip()
+    return card
 
 
 def _today(games: list[dict[str, Any]], now: datetime) -> list[dict[str, Any]]:
@@ -56,8 +62,8 @@ def _pools(games: list[dict[str, Any]]) -> list[tuple[dict[str, Any], list[dict[
     return pools
 
 
-def _search(pools: list[tuple[dict[str, Any], list[dict[str, Any]], bool]]) -> list[tuple[dict, dict, bool]]:
-    best: tuple[tuple, list[tuple[dict, dict, bool]]] | None = None
+def _search(pools: list[tuple[dict[str, Any], list[dict[str, Any]], bool]]) -> list[list[tuple[dict, dict, bool]]]:
+    found: list[tuple[tuple, list[tuple[dict, dict, bool]], str]] = []
     for size in (1, 2, 3):
         for group in combinations(range(len(pools)), size):
             choices = [pools[index][1] for index in group]
@@ -69,10 +75,32 @@ def _search(pools: list[tuple[dict[str, Any], list[dict[str, Any]], bool]]) -> l
                 american = _american(combo)
                 if american is None or american < _LOW or american > _HIGH:
                     continue
-                rank = (implied_prob(american), -size)
-                if best is None or rank > best[0]:
-                    best = (rank, combo)
-    return [] if best is None else best[1]
+                _hold(found, (implied_prob(american), -size), combo)
+    return [combo for _, combo, _ in found]
+
+
+def _hold(found: list[tuple[tuple, list[tuple[dict, dict, bool]], str]], rank: tuple, combo: list[tuple[dict, dict, bool]]) -> None:
+    mark = "|".join(sorted(_who(leg) for leg, _, _ in combo))
+    for index, (old, _, prior) in enumerate(found):
+        if prior == mark:
+            if rank > old:
+                found[index] = (rank, list(combo), mark)
+                found.sort(key=lambda item: item[0], reverse=True)
+            return
+    found.append((rank, list(combo), mark))
+    found.sort(key=lambda item: item[0], reverse=True)
+    del found[6:]
+
+
+def _next(combos: list[list[tuple[dict, dict, bool]]], shown: list[str]) -> tuple[list[tuple[dict, dict, bool]], bool, list[str]]:
+    if not combos:
+        return [], False, []
+    seen = {str(item) for item in shown}
+    fresh = [combo for combo in combos if "|".join(sorted(_who(leg) for leg, _, _ in combo)) not in seen]
+    chosen = fresh[0] if fresh else combos[0]
+    mark = "|".join(sorted(_who(leg) for leg, _, _ in chosen))
+    marks = [mark] if not fresh else [*shown, mark]
+    return chosen, len(combos) == 1, marks[-8:]
 
 
 def _american(combo: list[tuple[dict, dict, bool]]) -> int | None:

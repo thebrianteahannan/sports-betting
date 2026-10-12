@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import threading
-import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -17,7 +15,7 @@ from nfl_bets.archive import mark_good, settle_archive
 from nfl_bets.picks import save_pick, settle_pick
 from nfl_bets.plan import build_plan
 from nfl_bets.choose import choose
-from nfl_bets.members import is_admin, join, login, logout, member_from_cookie, note, profile, roster, set_admin
+from nfl_bets.members import is_admin, join, login, logout, member_from_cookie, note, profile, roster, save_built, set_admin
 from nfl_bets.reports import decide, listing, shot, submit
 from nfl_bets.refresh import public_payload, run
 from nfl_bets.store import load_board, place_bet, public_bank, reset_bank, settle_bet
@@ -184,14 +182,48 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path == "/api/choose":
                 sports = body.get("sports") if isinstance(body.get("sports"), list) else []
-                self._json(choose(
+                raw_ids = body.get("gameIds")
+                if not isinstance(raw_ids, list):
+                    raw_ids = [body.get("gameId") or ""]
+                kind = str(body.get("kind") or "any")
+                count = int(body.get("legs") or 3)
+                span = str(body.get("when") or "today")
+                aim = str(body.get("aim") or "safe")
+                raw_skip = body.get("skip") if isinstance(body.get("skip"), list) else []
+                card = choose(
                     load_board(),
                     [str(sport) for sport in sports],
-                    str(body.get("kind") or "any"),
-                    int(body.get("legs") or 3),
-                    str(body.get("gameId") or ""),
-                    str(body.get("when") or "today"),
-                ))
+                    kind,
+                    count,
+                    [str(item) for item in raw_ids if item],
+                    span,
+                    aim,
+                    [str(item) for item in raw_skip if item],
+                )
+                self._json(card)
+                return
+            if path == "/api/choose/save":
+                user = self._user()
+                if not user:
+                    self._json({"error": "Sign in."}, 401)
+                    return
+                legs = body.get("legs") if isinstance(body.get("legs"), list) else []
+                sports = body.get("sports") if isinstance(body.get("sports"), list) else []
+                try:
+                    saved = save_built(user, {
+                        "when": str(body.get("when") or ""),
+                        "sports": [str(sport) for sport in sports][:8],
+                        "kind": str(body.get("kind") or "any"),
+                        "aim": str(body.get("aim") or ""),
+                        "title": str(body.get("title") or "Built bet")[:80],
+                        "american": body.get("american"),
+                        "copy": str(body.get("copy") or "")[:160],
+                        "lines": [str(leg.get("label") or "") for leg in legs[:10] if isinstance(leg, dict)],
+                    })
+                except ValueError as exc:
+                    self._json({"error": str(exc)}, 400)
+                    return
+                self._json(saved)
                 return
             if path == "/api/refresh":
                 self._json(public_payload(run()))
@@ -426,32 +458,9 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
 
-def _live_counts() -> None:
-    """Grade open props often and publish when a live count changes."""
-    from nfl_bets.archive import grade_open
-    from nfl_bets.cloud import publish_board
-
-    last = None
-    while True:
-        try:
-            rows = grade_open()
-            snap = tuple(
-                (row.get("id"), leg.get("label"), leg.get("have"), leg.get("result"))
-                for row in rows
-                for leg in (row.get("legs") or [])
-            )
-            if snap != last:
-                last = snap
-                publish_board(load_board())
-        except Exception:  # noqa: BLE001
-            pass
-        time.sleep(20)
-
-
 def main() -> None:
     host = os.environ.get("NFL_BETS_BIND") or "0.0.0.0"
     port = int(os.environ.get("NFL_BETS_PORT") or "8793")
-    threading.Thread(target=_live_counts, name="live-counts", daemon=True).start()
     server = ThreadingHTTPServer((host, port), Handler)
     print(f"[nfl-bets] desk on http://{host}:{port}", flush=True)
     server.serve_forever()
