@@ -314,19 +314,7 @@ async function drawShare() {
   }
   canvas.width = image.naturalWidth;
   canvas.height = image.naturalHeight;
-  canvas.style.width = "100%";
-  canvas.style.maxWidth = "100%";
-  canvas.style.minWidth = "0";
-  canvas.style.height = "auto";
-  canvas.style.aspectRatio = `${image.naturalWidth} / ${image.naturalHeight}`;
-  canvas.style.display = "block";
-  canvas.style.boxSizing = "border-box";
-  canvas.style.borderRadius = "12px";
-  canvas.style.marginTop = "0.8rem";
-  const pane = document.getElementById("admin-card");
-  if (pane) { pane.style.maxWidth = "100%"; pane.style.minWidth = "0"; }
-  const pick = document.getElementById("share-card-bet");
-  if (pick) { pick.style.maxWidth = "100%"; pick.style.minWidth = "0"; }
+  fitShareCanvas(canvas);
   const ctx = canvas.getContext("2d");
   ctx.drawImage(image, 0, 0);
   coverNfl(ctx, image);
@@ -336,6 +324,24 @@ async function drawShare() {
   const copy = document.getElementById("share-card-download");
   if (copy) { copy.hidden = false; copy.textContent = "Copy"; }
   if (note) note.textContent = "Copy the image, then paste it into a post.";
+}
+
+function fitShareCanvas(canvas) {
+  const pane = document.getElementById("admin-card");
+  if (pane) { pane.style.maxWidth = "100%"; pane.style.minWidth = "0"; pane.style.overflow = "hidden"; }
+  const pick = document.getElementById("share-card-bet");
+  if (pick) { pick.style.maxWidth = "100%"; pick.style.minWidth = "0"; }
+  canvas.style.width = "0px";
+  canvas.style.maxWidth = "100%";
+  canvas.style.minWidth = "0";
+  const wide = Math.max(220, (pane && pane.clientWidth) || ((document.documentElement.clientWidth || window.innerWidth) - 48));
+  canvas.style.width = `${wide}px`;
+  canvas.style.height = `${Math.round(wide * canvas.height / canvas.width)}px`;
+  canvas.style.aspectRatio = "auto";
+  canvas.style.display = "block";
+  canvas.style.boxSizing = "border-box";
+  canvas.style.borderRadius = "12px";
+  canvas.style.marginTop = "0.8rem";
 }
 
 async function copyShare() {
@@ -365,6 +371,10 @@ function bindShareCard() {
   if (go) go.addEventListener("click", () => { drawShare(); });
   if (download) download.addEventListener("click", () => { copyShare(); });
   if (select) select.addEventListener("change", () => { drawShare(); });
+  window.addEventListener("resize", () => {
+    const canvas = document.getElementById("share-card-canvas");
+    if (canvas && !canvas.hidden && canvas.width) fitShareCanvas(canvas);
+  });
 }
 
 window.fillShareCards = fillShareCards;

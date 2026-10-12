@@ -33,7 +33,8 @@ def offer_legs(game: dict[str, Any]) -> tuple[list[dict[str, Any]], bool]:
     return _legs(str(game.get("id") or ""))
 
 
-_AIM = {"safe": -100, "good": -200}
+_AIM = {"safe": -200, "good": -100}
+_AIMS = {"top", "safe", "good", "payout"}
 
 
 def choose(board: dict[str, Any], sports: list[str], kind: str, count: int, game_ids: list[str] | str | None = None, when: str = "today", aim: str = "safe", skip: list[str] | None = None) -> dict[str, Any]:
@@ -42,7 +43,7 @@ def choose(board: dict[str, Any], sports: list[str], kind: str, count: int, game
     ids = _ids(game_ids)
     count = min(10, max(2, int(count or 3)))
     kind = kind if kind in _KINDS else "any"
-    aim = aim if aim in _AIM or aim == "payout" else "safe"
+    aim = aim if aim in _AIMS else "top"
     span = "week" if when == "week" else "today"
     games = _slate(list(board.get("games") or []), picked, ids, span)
     if not games:
@@ -158,6 +159,8 @@ def _pick(pools: list[tuple[dict[str, Any], list[dict[str, Any]], bool]], count:
     if not ranked:
         flat = [[row] for menu in menus for row in menu]
         ranked = [combo for _, combo in _search(flat[:18 if count >= 8 else 24], count, aim, False) if len(combo) >= count]
+    if aim == "top" and ranked:
+        return ranked[0], len(ranked) == 1, False
     window = _window(ranked, aim)
     fresh = [combo for combo in window if _mark(combo) not in skip]
     if fresh:
@@ -261,6 +264,8 @@ def _signed(american: int | None) -> str:
 def _score(decimal: float, aim: str) -> float:
     if aim == "payout":
         return -decimal
+    if aim == "top":
+        return decimal
     goal = american_decimal(_AIM[aim])
     short = 10 if aim == "good" and decimal < goal else 0
     return abs(decimal - goal) + short
@@ -290,10 +295,11 @@ def _card(combo: list[tuple[dict, dict, bool]], sports: list[str], kind: str, co
             "kickoff": game.get("kickoff") or "",
             "pct": f"{implied_prob(leg['odds']) * 100:.1f}%",
         })
-    name = {"safe": "Safest", "good": "Good", "payout": "Best payout"}[aim]
+    name = {"top": "Safest", "safe": "Safe", "good": "Good", "payout": "Best payout"}[aim]
     aimed = {
-        "safe": "Aimed at -100, so a $5 bet wins $5.",
-        "good": "Aimed at -200, so a $5 bet wins about $2.50.",
+        "top": "This is the safest price from these props.",
+        "safe": "Aimed at -200, so a $5 bet wins about $2.50.",
+        "good": "Aimed at -100, so a $5 bet wins $5.",
         "payout": "The longest price from these props, so the payout is the largest.",
     }[aim]
     return {
@@ -355,7 +361,7 @@ def _miss(pools: list[tuple[dict[str, Any], list[dict[str, Any]], bool]], sports
 
 
 def _empty(copy: str, aim: str = "safe") -> dict[str, Any]:
-    name = {"safe": "Safest parlay", "good": "Good parlay", "payout": "Best payout"}[aim]
+    name = {"top": "Safest parlay", "safe": "Safe parlay", "good": "Good parlay", "payout": "Best payout"}[aim]
     return {"title": name, "game": "", "copy": copy, "legs": [], "note": ""}
 
 

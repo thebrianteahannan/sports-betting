@@ -7,9 +7,9 @@ const SPORT_KINDS = {
   NFL: ["yards"], NCAAF: ["yards"], MLB: ["strikeouts", "hits"], NBA: ["points", "assists"],
   WNBA: ["points", "assists"], NHL: ["shots", "points", "assists"], PGA: [],
 };
-const AIM_LABEL = { safe: "Safest", good: "Good", payout: "Best payout" };
-const GO_LABEL = { safe: "Show the safest", good: "Show a good bet", payout: "Show the best payout" };
-const choice = { sports: [], kind: "any", legs: 3, gameIds: [], when: "today", aim: "safe" };
+const AIM_LABEL = { top: "1 safest", safe: "Safe", good: "Good", payout: "Best payout" };
+const GO_LABEL = { top: "Show the safest", safe: "Show a safe bet", good: "Show a good bet", payout: "Show the best payout" };
+const choice = { sports: [], kind: "any", legs: 3, gameIds: [], when: "today", aim: "top" };
 const seenBets = {};
 
 function choiceButton(label, on, attr, value) {

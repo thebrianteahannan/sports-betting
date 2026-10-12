@@ -7,7 +7,7 @@ const KINDS = {
   strikeouts: ["strikeout"], hits: ["to record a hit", "to hit"],
 };
 const SKIP = ["spread", "moneyline", "money line", "puck line", "puckline", "run line", "handicap", "total", "alternate total", "alt total", "team to score", "first pitch", "pitch result", "kicking"];
-const AIM = { safe: -100, good: -200 };
+const AIM = { safe: -200, good: -100 };
 const UNITS = ["shots on goal", "receiving yards", "rushing yards", "passing yards", "receptions", "rebounds", "strikeouts", "assists", "puck line", "run line", "saves", "points", "goals", "shots", "made threes", "threes", "spread", "yards"];
 
 function americanDecimal(odds) {
@@ -261,6 +261,7 @@ function mark(combo) {
 
 function scoreOf(decimal, aim) {
   if (aim === "payout") return -decimal;
+  if (aim === "top") return decimal;
   const goal = americanDecimal(AIM[aim]);
   return Math.abs(decimal - goal) + (aim === "good" && decimal < goal ? 10 : 0);
 }
@@ -320,6 +321,7 @@ function pick(pools, count, aim, skip) {
     const flat = menus.flatMap((menu) => menu.map((row) => [row]));
     ranked = search(flat.slice(0, count >= 8 ? 18 : 24), count, aim, false);
   }
+  if (aim === "top" && ranked.length) return { combo: ranked[0], only: ranked.length === 1, again: false };
   const open = windowOf(ranked, aim);
   const fresh = open.filter((combo) => !skip.has(mark(combo)));
   if (fresh.length) return { combo: fresh[0], only: open.length === 1, again: false };
@@ -348,10 +350,11 @@ function card(combo, sports, kind, count, aim, only) {
     if (!one) label = `${label} — ${row[1].sport}, ${place(row[1])}, ${clock(row[1].kickoff)}`;
     return { market: row[0].market || "", runner: row[0].runner || "", label, odds: row[0].odds, kickoff: row[1].kickoff || "", pct: `${(impliedProb(row[0].odds) * 100).toFixed(1)}%` };
   });
-  const name = { safe: "Safest", good: "Good", payout: "Best payout" }[aim];
+  const name = { top: "Safest", safe: "Safe", good: "Good", payout: "Best payout" }[aim];
   const aimed = {
-    safe: "Aimed at -100, so a $5 bet wins $5.",
-    good: "Aimed at -200, so a $5 bet wins about $2.50.",
+    top: "This is the safest price from these props.",
+    safe: "Aimed at -200, so a $5 bet wins about $2.50.",
+    good: "Aimed at -100, so a $5 bet wins $5.",
     payout: "The longest price from these props, so the payout is the largest.",
   }[aim];
   const signed = american > 0 ? `+${american}` : String(american);
@@ -364,7 +367,7 @@ function card(combo, sports, kind, count, aim, only) {
 }
 
 function empty(copy, aim) {
-  return { title: { safe: "Safest parlay", good: "Good parlay", payout: "Best payout" }[aim] || "Safest parlay", game: "", copy, legs: [], note: "" };
+  return { title: { top: "Safest parlay", safe: "Safe parlay", good: "Good parlay", payout: "Best payout" }[aim] || "Safest parlay", game: "", copy, legs: [], note: "" };
 }
 
 function miss(pools, sports, count, span) {
@@ -388,7 +391,7 @@ async function chooseBet(body, board) {
   const ids = (Array.isArray(body.gameIds) ? body.gameIds : [body.gameId]).map((item) => String(item || "")).filter(Boolean);
   const count = Math.min(10, Math.max(2, Number(body.legs) || 3));
   const kind = ["any", "yards", "points", "assists", "shots", "strikeouts", "hits"].includes(body.kind) ? body.kind : "any";
-  const aim = ["safe", "good", "payout"].includes(body.aim) ? body.aim : "safe";
+  const aim = ["top", "safe", "good", "payout"].includes(body.aim) ? body.aim : "top";
   const span = body.when === "week" ? "week" : "today";
   const games = slate(Array.isArray(board.games) ? board.games : [], picked, ids, span);
   const safeAim = aim;
