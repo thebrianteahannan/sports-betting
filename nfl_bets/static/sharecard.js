@@ -314,34 +314,48 @@ async function drawShare() {
   }
   canvas.width = image.naturalWidth;
   canvas.height = image.naturalHeight;
-  canvas.style.width = "min(100%, 28rem)";
+  canvas.style.width = "100%";
+  canvas.style.maxWidth = "100%";
+  canvas.style.minWidth = "0";
   canvas.style.height = "auto";
-  canvas.style.borderRadius = "12px";
+  canvas.style.aspectRatio = `${image.naturalWidth} / ${image.naturalHeight}`;
   canvas.style.display = "block";
+  canvas.style.boxSizing = "border-box";
+  canvas.style.borderRadius = "12px";
   canvas.style.marginTop = "0.8rem";
+  const pane = document.getElementById("admin-card");
+  if (pane) { pane.style.maxWidth = "100%"; pane.style.minWidth = "0"; }
+  const pick = document.getElementById("share-card-bet");
+  if (pick) { pick.style.maxWidth = "100%"; pick.style.minWidth = "0"; }
   const ctx = canvas.getContext("2d");
   ctx.drawImage(image, 0, 0);
   coverNfl(ctx, image);
   drawBoard(ctx, chosen.card);
   drawFound(ctx, chosen.card);
   canvas.hidden = false;
-  const download = document.getElementById("share-card-download");
-  if (download) download.hidden = false;
-  if (note) note.textContent = "Download the image, then post it.";
+  const copy = document.getElementById("share-card-download");
+  if (copy) { copy.hidden = false; copy.textContent = "Copy"; }
+  if (note) note.textContent = "Copy the image, then paste it into a post.";
 }
 
-function downloadShare() {
+async function copyShare() {
   const canvas = document.getElementById("share-card-canvas");
+  const note = document.getElementById("share-card-note");
+  const button = document.getElementById("share-card-download");
   if (!canvas || canvas.hidden) return;
-  canvas.toBlob((blob) => {
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "parlay-of-the-day.png";
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
-  }, "image/png");
+  window.focus();
+  try {
+    const item = new ClipboardItem({
+      "image/png": new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("no image"))), "image/png");
+      }),
+    });
+    await navigator.clipboard.write([item]);
+    if (button) button.textContent = "Copied";
+    if (note) note.textContent = "Copied. Paste it into a post.";
+  } catch (error) {
+    if (note) note.textContent = "The browser did not copy the image. Click Copy again.";
+  }
 }
 
 function bindShareCard() {
@@ -349,7 +363,7 @@ function bindShareCard() {
   const download = document.getElementById("share-card-download");
   const select = document.getElementById("share-card-bet");
   if (go) go.addEventListener("click", () => { drawShare(); });
-  if (download) download.addEventListener("click", downloadShare);
+  if (download) download.addEventListener("click", () => { copyShare(); });
   if (select) select.addEventListener("change", () => { drawShare(); });
 }
 
