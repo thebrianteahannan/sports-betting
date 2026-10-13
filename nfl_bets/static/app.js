@@ -366,14 +366,15 @@ function showTab(name) {
   state.tab = name;
   const titles = { today: "Today", week: "Week", build: "Build a bet", open: "Our Bets", history: "History", profile: "Profile" };
   $("page-title").textContent = titles[name] || titles.today;
-  document.body.classList.toggle("day-board", name === "today" || name === "week");
+  const frames = { today: "day-frame", week: "week-frame", build: "build-frame" };
+  document.body.classList.toggle("day-board", Boolean(frames[name]));
   ["today", "week", "build", "open", "history", "profile"].forEach((id) => {
     $(`pane-${id}`).hidden = id !== name;
     const tab = document.querySelector(`[data-tab="${id}"]`);
     if (tab) tab.classList.toggle("on", id === name);
   });
   if (name === "history") showHistory(historyName());
-  const frame = name === "today" || name === "week" ? $(name === "week" ? "week-frame" : "day-frame") : null;
+  const frame = frames[name] ? $(frames[name]) : null;
   const nav = $("main-tabs");
   if (frame) frame.append(nav, $("who"));
   else { document.querySelector(".top-side").append($("who")); $("banner").insertAdjacentElement("afterend", nav); }
