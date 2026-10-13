@@ -41,7 +41,7 @@ def choose(board: dict[str, Any], sports: list[str], kind: str, count: int, game
     named = [sport for sport in _SPORTS if sport in sports]
     picked = named or list(_SPORTS)
     ids = _ids(game_ids)
-    count = min(10, max(2, int(count or 3)))
+    count = min(10, max(1, int(count or 3)))
     kind = kind if kind in _KINDS else "any"
     aim = aim if aim in _AIMS else "top"
     span = "week" if when == "week" else "today"
@@ -159,14 +159,13 @@ def _pick(pools: list[tuple[dict[str, Any], list[dict[str, Any]], bool]], count:
     if not ranked:
         flat = [[row] for menu in menus for row in menu]
         ranked = [combo for _, combo in _search(flat[:18 if count >= 8 else 24], count, aim, False) if len(combo) >= count]
-    if aim == "top" and ranked:
+    if aim in {"top", "payout"} and ranked:
         return ranked[0], len(ranked) == 1, False
-    window = _window(ranked, aim)
-    fresh = [combo for combo in window if _mark(combo) not in skip]
+    fresh = [combo for combo in ranked if _mark(combo) not in skip]
     if fresh:
-        return fresh[0], len(window) == 1, False
-    if window:
-        return window[0], len(window) == 1, len(window) > 1
+        return fresh[0], len(ranked) == 1, False
+    if ranked:
+        return ranked[0], len(ranked) == 1, len(ranked) > 1
     return [], True, False
 
 
@@ -231,7 +230,7 @@ def _keep(found: list[tuple[float, list[tuple[dict, dict, bool]], str]], score: 
             return
     found.append((score, list(combo), mark))
     found.sort(key=lambda item: item[0])
-    del found[8:]
+    del found[24:]
 
 
 def _mark(combo: list[tuple[dict, dict, bool]]) -> str:
@@ -320,12 +319,14 @@ def _card(combo: list[tuple[dict, dict, bool]], sports: list[str], kind: str, co
             f"The parlay is {_signed(american)}, about {chance}%. "
             f"A $5 bet would win ${profit:.2f}."
         ),
-        "note": (
-            ("These legs are in one game, so FanDuel's same-game button can charge a different number."
-            if one else
-            "These legs are in different games, so this is a regular parlay.")
-            + (" This is the only bet that fits, so it keeps showing up." if only else "")
-        ),
+        "note": " ".join(part for part in (
+            "" if count == 1 else (
+                "These legs are in one game, so FanDuel's same-game button can charge a different number."
+                if one else
+                "These legs are in different games, so this is a regular parlay."
+            ),
+            "This is the only bet that fits, so it keeps showing up." if only else "",
+        ) if part),
         "players": [_who(leg) for leg, _, _ in combo],
         "only": only,
         "again": again,

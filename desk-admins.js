@@ -26,9 +26,39 @@ function createAdmins(readKey, writeKey) {
     };
   }
 
+  function asksOf(data) {
+    const names = {};
+    data.users.forEach((row) => { names[row.id] = row.name || row.email || "Member"; });
+    return data.activity.filter((row) => row.kind === "ask" && row.detail).slice(0, 60).map((row) => ({
+      at: row.at || "",
+      name: names[row.userId] || "Member",
+      said: row.detail.said || "",
+      missing: row.detail.missing || "",
+    }));
+  }
+
   return {
     async adminList() {
-      return { users: rows((await load()).users) };
+      const data = await load();
+      return { users: rows(data.users), asks: asksOf(data) };
+    },
+    async saveAsk(user, said, missing) {
+      const text = String(said || "").replace(/\s+/g, " ").trim().slice(0, 240);
+      const gap = String(missing || "").replace(/\s+/g, " ").trim().slice(0, 120);
+      if (text.length < 2) throw new Error("Say what you wanted.");
+      const data = await load();
+      const prior = data.activity.find((row) => row.kind === "ask" && row.userId === user.id && row.detail && row.detail.said === text);
+      if (prior) return { ok: true, already: true };
+      data.activity.unshift({
+        id: Math.random().toString(16).slice(2, 14),
+        userId: user.id,
+        kind: "ask",
+        at: new Date().toISOString(),
+        detail: { said: text, missing: gap },
+      });
+      data.activity = data.activity.slice(0, 400);
+      await writeKey("bets/members.json", data);
+      return { ok: true, already: false };
     },
     async setMemberAdmin(email, admin) {
       const clean = String(email || "").trim().toLowerCase();

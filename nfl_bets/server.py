@@ -15,7 +15,7 @@ from nfl_bets.archive import mark_good, settle_archive
 from nfl_bets.picks import save_pick, settle_pick
 from nfl_bets.plan import build_plan
 from nfl_bets.choose import choose
-from nfl_bets.members import is_admin, join, login, logout, member_from_cookie, note, profile, roster, save_built, set_admin
+from nfl_bets.members import is_admin, join, login, logout, member_from_cookie, note, profile, roster, save_ask, save_built, set_admin
 from nfl_bets.reports import decide, listing, shot, submit
 from nfl_bets.refresh import public_payload, run
 from nfl_bets.store import load_board, place_bet, public_bank, reset_bank, settle_bet
@@ -221,6 +221,18 @@ class Handler(BaseHTTPRequestHandler):
                         "copy": str(body.get("copy") or "")[:160],
                         "lines": [str(leg.get("label") or "") for leg in legs[:10] if isinstance(leg, dict)],
                     })
+                except ValueError as exc:
+                    self._json({"error": str(exc)}, 400)
+                    return
+                self._json(saved)
+                return
+            if path == "/api/choose/ask":
+                user = self._user()
+                if not user:
+                    self._json({"error": "Sign in."}, 401)
+                    return
+                try:
+                    saved = save_ask(user, str(body.get("said") or ""), str(body.get("missing") or ""))
                 except ValueError as exc:
                     self._json({"error": str(exc)}, 400)
                     return

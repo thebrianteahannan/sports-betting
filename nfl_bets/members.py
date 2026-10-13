@@ -83,7 +83,7 @@ def logout(header: str | None) -> None:
 
 def save_built(user: dict[str, Any], detail: dict[str, Any]) -> dict[str, Any]:
     lines = [str(line)[:100] for line in (detail.get("lines") or []) if str(line).strip()][:10]
-    if len(lines) < 2:
+    if len(lines) < 1:
         raise ValueError("That bet has no legs to save.")
     kept = dict(detail)
     kept["lines"] = lines
@@ -102,6 +102,32 @@ def save_built(user: dict[str, Any], detail: dict[str, Any]) -> dict[str, Any]:
             "kind": "saved",
             "at": now_iso(),
             "detail": kept,
+        })
+        data["activity"] = data["activity"][:400]
+        _save(data)
+    return {"ok": True, "already": False}
+
+
+def save_ask(user: dict[str, Any], said: str, missing: str) -> dict[str, Any]:
+    text = " ".join(str(said or "").split())[:240]
+    gap = " ".join(str(missing or "").split())[:120]
+    if len(text) < 2:
+        raise ValueError("Say what you wanted.")
+    with _LOCK:
+        data = _load()
+        prior = next((
+            row for row in data["activity"]
+            if row.get("kind") == "ask" and row.get("userId") == user.get("id")
+            and (row.get("detail") or {}).get("said") == text
+        ), None)
+        if prior:
+            return {"ok": True, "already": True}
+        data["activity"].insert(0, {
+            "id": secrets.token_hex(6),
+            "userId": user["id"],
+            "kind": "ask",
+            "at": now_iso(),
+            "detail": {"said": text, "missing": gap},
         })
         data["activity"] = data["activity"][:400]
         _save(data)
@@ -196,7 +222,18 @@ def roster(user: dict[str, Any]) -> dict[str, Any]:
             "copy": detail.get("copy") or "",
             "lines": detail.get("lines") or [],
         })
-    return {"users": rows, "built": built[:60]}
+    asks = []
+    for row in data["activity"]:
+        detail = row.get("detail") if row.get("kind") == "ask" and isinstance(row.get("detail"), dict) else None
+        if not detail:
+            continue
+        asks.append({
+            "at": row.get("at") or "",
+            "name": names.get(str(row.get("userId"))) or "Member",
+            "said": detail.get("said") or "",
+            "missing": detail.get("missing") or "",
+        })
+    return {"users": rows, "built": built[:60], "asks": asks[:60]}
 
 
 def _member_row(user: dict[str, Any]) -> dict[str, Any]:

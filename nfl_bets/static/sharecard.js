@@ -54,14 +54,20 @@ function whenLine(card) {
   if (stamps.length === 1) return `${when(stamps[0])} ET`.toUpperCase();
   return `${when(stamps[0])} – ${when(stamps[stamps.length - 1])} ET`.toUpperCase();
 }
-
+function whyLines(card, kicker) {
+  if (kicker === "BET OF THE DAY") return ["Highest chance today", "between −150 and +100."];
+  if (kicker !== "BET OF THE WEEK") return [];
+  const match = String(card.strategy || "").match(/aimed at (-?\d+)/);
+  const n = match ? Number(match[1]) : -200;
+  const price = n > 0 ? `+${n}` : `−${Math.abs(n)}`;
+  return ["Each leg a different day,", `aimed at ${price}.`];
+}
 function foundLine(card) {
   const board = (window.state && window.state.board) || {};
   const stamp = card.pulledAt || board.updatedAt || "";
   if (!stamp || typeof when !== "function") return "";
   return `${when(stamp)} ET`;
 }
-
 function shareFrom(card, kicker, label) {
   const legs = (card.legs || []).filter((leg) => leg && leg.label).map((leg) => ({
     label: String(leg.label),
@@ -75,7 +81,7 @@ function shareFrom(card, kicker, label) {
   if (game === "Across the slate" && kicker === "BET OF THE DAY") game = "Today";
   return {
     kicker, title: card.title || label || "Parlay", strategy, game,
-    when: whenLine(card), found: foundLine(card), legs, pct: sharePct(card.impliedPct), profit,
+    when: whenLine(card), found: foundLine(card), why: whyLines(card, kicker), legs, pct: sharePct(card.impliedPct), profit,
   };
 }
 
@@ -284,20 +290,24 @@ function drawFound(ctx, bet) {
   ctx.fillRect(-230, -95, 470, 240);
   ctx.fillStyle = "#1a1a1a";
   ctx.textBaseline = "top";
-  ctx.font = "700 30px 'Bradley Hand', 'Marker Felt', cursive";
-  ctx.fillText("FOUND", -200, -72);
-  ctx.font = "24px 'Bradley Hand', 'Marker Felt', cursive";
-  ctx.fillText(bet.found || "Just now", -200, -28);
-  ctx.font = "20px 'Bradley Hand', 'Marker Felt', cursive";
-  ctx.fillText("Prices can change", -200, 16);
-  ctx.fillText("after that.", -200, 44);
+  const hand = "'Bradley Hand', 'Marker Felt', cursive";
+  ctx.font = `700 26px ${hand}`;
+  ctx.fillText("FOUND", -200, -80);
+  ctx.font = `20px ${hand}`;
+  ctx.fillText(bet.found || "Just now", -200, -50);
+  ctx.fillText("Prices can change.", -200, -24);
+  const lines = bet.why || [];
+  if (lines.length) {
+    ctx.font = `700 26px ${hand}`;
+    ctx.fillText("WHY", -200, 12);
+    ctx.font = `20px ${hand}`;
+    lines.forEach((line, index) => ctx.fillText(line, -200, 42 + index * 26));
+  }
   ctx.restore();
 }
-
 function coverNfl(ctx, image) {
   ctx.drawImage(image, 152, 318, 52, 58, 2, 294, 116, 118);
 }
-
 async function drawShare() {
   const select = document.getElementById("share-card-bet");
   const canvas = document.getElementById("share-card-canvas");
@@ -377,7 +387,7 @@ function bindShareCard() {
   });
 }
 
-const WEEK_SHARE_KEY = "pod-week-share";
+const WEEK_SHARE_KEY = "pod-week-share-2";
 
 function cachedWeekShare() {
   try {
@@ -444,7 +454,7 @@ async function paintPoster(key, imgId, card, kicker, label, textIds, boxId) {
     return;
   }
   const bet = shareFrom(card, kicker, label);
-  const mark = `${bet.legs.map((leg) => leg.label).join("|")}|${card.american || ""}`;
+  const mark = `${bet.legs.map((leg) => leg.label).join("|")}|${card.american || ""}|2`;
   if (posterMark[key] === mark && img.getAttribute("src")) {
     img.hidden = false;
     img.style.display = "block";
@@ -471,7 +481,6 @@ async function paintPoster(key, imgId, card, kicker, label, textIds, boxId) {
     posterText(textIds, boxId, true);
   }
 }
-
 const DAY_TEXT = ["best-aim", "best-title", "best-when", "best-copy", "best-legs", "best-note"];
 const WEEK_TEXT = ["week-aim", "week-title", "week-when", "week-copy", "week-legs", "week-note"];
 

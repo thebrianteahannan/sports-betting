@@ -283,7 +283,7 @@ function search(menus, count, aim, split) {
     }
     found.push([comboScore, combo.slice(), token]);
     found.sort((a, b) => a[0] - b[0]);
-    found.splice(8);
+    found.splice(24);
   }
   function walk(start, need, decimal, players, games, combo) {
     if (need === 0) { keep(scoreOf(decimal, aim), combo); return; }
@@ -322,11 +322,10 @@ function pick(pools, count, aim, skip) {
     const flat = menus.flatMap((menu) => menu.map((row) => [row]));
     ranked = search(flat.slice(0, count >= 8 ? 18 : 24), count, aim, false);
   }
-  if (aim === "top" && ranked.length) return { combo: ranked[0], only: ranked.length === 1, again: false };
-  const open = windowOf(ranked, aim);
-  const fresh = open.filter((combo) => !skip.has(mark(combo)));
-  if (fresh.length) return { combo: fresh[0], only: open.length === 1, again: false };
-  if (open.length) return { combo: open[0], only: open.length === 1, again: open.length > 1 };
+  if ((aim === "top" || aim === "payout") && ranked.length) return { combo: ranked[0], only: ranked.length === 1, again: false };
+  const fresh = ranked.filter((combo) => !skip.has(mark(combo)));
+  if (fresh.length) return { combo: fresh[0], only: ranked.length === 1, again: false };
+  if (ranked.length) return { combo: ranked[0], only: ranked.length === 1, again: ranked.length > 1 };
   return { combo: [], only: true, again: false };
 }
 
@@ -362,7 +361,7 @@ function card(combo, sports, kind, count, aim, only) {
   return {
     title: `${name} ${count}-leg`, game: titleGame, kind: kindName, american, impliedPct: chance, profit,
     copy: `${aimed} ${kindName[0].toUpperCase()}${kindName.slice(1)} that fit ${sports.join(", ")}. The parlay is ${signed}, about ${chance}%. A $5 bet would win $${profit.toFixed(2)}.`,
-    note: `${one ? "These legs are in one game, so FanDuel's same-game button can charge a different number." : "These legs are in different games, so this is a regular parlay."}${only ? " This is the only bet that fits, so it keeps showing up." : ""}`,
+    note: `${count === 1 ? "" : (one ? "These legs are in one game, so FanDuel's same-game button can charge a different number." : "These legs are in different games, so this is a regular parlay.")}${only ? " This is the only bet that fits, so it keeps showing up." : ""}`.trim(),
     players: combo.map((row) => who(row[0])), only, again: false, legs,
   };
 }
@@ -390,7 +389,7 @@ async function chooseBet(body, board) {
   const sports = asked.filter((sport) => SPORTS.includes(sport));
   const picked = sports.length ? sports : SPORTS.slice();
   const ids = (Array.isArray(body.gameIds) ? body.gameIds : [body.gameId]).map((item) => String(item || "")).filter(Boolean);
-  const count = Math.min(10, Math.max(2, Number(body.legs) || 3));
+  const count = Math.min(10, Math.max(1, Number(body.legs) || 3));
   const kind = ["any", "yards", "points", "assists", "shots", "strikeouts", "hits"].includes(body.kind) ? body.kind : "any";
   const aim = ["top", "safe", "good", "payout"].includes(body.aim) ? body.aim : "top";
   const span = body.when === "week" ? "week" : "today";

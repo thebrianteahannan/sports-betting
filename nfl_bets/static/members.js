@@ -20,9 +20,11 @@ function showMember(payload) {
   const who = document.getElementById("who");
   who.hidden = false;
   const admin = !!member.admin;
-  who.innerHTML = `<button type="button" id="member-profile">${esc(member.name)}</button>${
-    admin ? `<button type="button" class="ghost" id="member-admin">Admin</button>` : ""
-  }<button type="button" class="ghost" id="member-out">Sign out</button>`;
+  who.innerHTML = `<button type="button" id="member-profile" aria-label="Profile" title="${esc(member.name)}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.5-3.1 4-4.6 7-4.6s5.5 1.5 7 4.6"/></svg></button>`;
+  const heading = document.querySelector("#activity h2");
+  if (heading) heading.textContent = member.name || "Your membership";
+  const adminBox = document.getElementById("profile-admin");
+  if (adminBox) adminBox.hidden = !admin;
   const plan = document.getElementById("activity-plan");
   plan.textContent = admin
     ? "Admin. Ratings and saved picks are kept on this membership."
@@ -114,9 +116,10 @@ window.fetch = async function memberAwareFetch(url, options) {
 };
 
 document.getElementById("who").addEventListener("click", (event) => {
-  if (event.target.id === "member-out") signOut();
-  if (event.target.id === "member-profile") showTab("profile");
-  if (event.target.id === "member-admin") showTab("admin");
+  if (event.target.closest("#member-profile")) showTab("profile");
+});
+document.getElementById("pane-profile").addEventListener("click", (event) => {
+  if (event.target.closest("#member-out")) signOut();
 });
 document.getElementById("gate-join").addEventListener("click", () => showGateMode("join"));
 document.getElementById("gate-have").addEventListener("click", () => showGateMode("login"));

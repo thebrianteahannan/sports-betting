@@ -75,6 +75,16 @@ function render() {
   if (board.updatedAt && window.rememberWeekShare) window.rememberWeekShare(board);
   if (window.paintDayShare) window.paintDayShare(board);
   if (window.paintWeekShare) window.paintWeekShare(board);
+  paintForm("day-form", board.band);
+  paintForm("week-form", board.weekThree);
+}
+
+function paintForm(id, card) {
+  const el = $(id);
+  if (!el) return;
+  const lines = ((card && card.legs) || []).map((leg) => leg.form).filter(Boolean);
+  el.hidden = !lines.length;
+  el.textContent = lines.join(" ");
 }
 
 function dropMiss(text) {
@@ -90,7 +100,7 @@ function legItem(leg) {
   const extra = bits.length ? ` · ${bits.join(" ")}` : "";
   const count = now ? ` <b class="sofar">${esc(now)}</b>` : "";
   const mark = typeof legState === "function" ? legState(row) : "wait";
-  const sway = [row.fact, row.sway].filter(Boolean).join(" ");
+  const sway = [row.fact, row.sway, row.form].filter(Boolean).join(" ");
   const fact = sway ? `<br><span class="quiet">${esc(sway)}</span>` : "";
   return `<li><b>${esc(american(row.odds) || row.odds)}</b><span><i class="leg-mark ${mark}" title="${mark === "won" ? "Won" : mark === "lost" ? "Missed" : mark === "push" ? "Push" : "Waiting"}">${mark === "won" ? "✓" : mark === "lost" ? "✕" : mark === "push" ? "–" : "◌"}</i>${esc(row.label)}${fact}</span><em>${esc(row.pct || "")}${count}${esc(extra)}</em></li>`;
 }
@@ -370,10 +380,10 @@ function renderArchive(tickets) {
 
 function showTab(name) {
   state.tab = name;
-  const titles = { today: "Today", week: "Week", build: "Build a bet", swipe: "Swipe", open: "Live Bets", wins: "Wins", losses: "Losses", pushes: "Pushes", profile: "Profile", admin: "Admin" };
+  const titles = { today: "Today", week: "Week", build: "Build a bet", open: "Live Bets", wins: "Wins", losses: "Losses", pushes: "Pushes", profile: "Profile" };
   $("page-title").textContent = titles[name] || titles.today;
   document.body.classList.toggle("day-board", name === "today" || name === "week");
-  ["today", "week", "build", "swipe", "open", "wins", "losses", "pushes", "profile", "admin"].forEach((id) => {
+  ["today", "week", "build", "open", "wins", "losses", "pushes", "profile"].forEach((id) => {
     $(`pane-${id}`).hidden = id !== name;
     const tab = document.querySelector(`[data-tab="${id}"]`);
     if (tab) tab.classList.toggle("on", id === name);

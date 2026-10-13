@@ -47,16 +47,27 @@ def annotate(legs: list[dict[str, Any]], games: list[dict[str, Any]]) -> None:
     by_id = {str(game.get("id") or ""): game for game in games}
     for leg in legs:
         game = by_id.get(str(leg.get("gameId") or "")) or _find(leg, games)
+        fact, sway, hits, count = "", "", 0, 0
         try:
             fact, sway, hits, count = describe(leg, game)
         except Exception:  # noqa: BLE001
-            continue
-        if not fact:
-            continue
-        leg["fact"] = fact
-        leg["sway"] = sway
-        leg["historyHits"] = hits
-        leg["historyN"] = count
+            fact = ""
+        form = ""
+        try:
+            from nfl_bets.form import recent
+
+            form = recent(leg, game)
+        except Exception:  # noqa: BLE001
+            form = ""
+        if fact:
+            leg["fact"] = fact
+            leg["sway"] = sway
+            leg["historyHits"] = hits
+            leg["historyN"] = count
+        if form:
+            leg["form"] = form
+        else:
+            leg.pop("form", None)
     _flush()
 
 

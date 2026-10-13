@@ -100,8 +100,8 @@ h2 { margin: 0; font-size: 1.15rem; }
 .brand img { width: 84px; height: auto; display: block; }
 .top-side { text-align: right; }
 .top-side h1 { font-size: clamp(1.15rem, 2vw, 1.7rem); }
-.who { margin: 0.25rem 0 0; color: var(--muted); }
-.who button { margin-left: 0.45rem; }
+.who { margin: 0.25rem 0 0; color: var(--muted); display: flex; justify-content: flex-end; }
+.who button { margin: 0; width: 2.2rem; height: 2.2rem; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
 body.needs-member .tabs,
 body.needs-member .pane,
 body.needs-member .lede,

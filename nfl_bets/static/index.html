@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/app.css?v=44"/>
+<link rel="stylesheet" href="/app.css?v=45"/>
 <style>
 #page-title { display: none; }
 body.day-board .top { padding: 0.28rem 0.7rem; }
@@ -16,7 +16,7 @@ body.day-board .who { margin: 0; }
 body.day-board .lede { margin: 0.15rem auto 0; }
 body.day-board .tabs { margin-top: 0.2rem; }
 body.day-board #day-share:not([hidden]),
-body.day-board #week-share:not([hidden]) { width: min(calc(100vw - 0.4rem), calc((100dvh - 8.4rem) * 0.937)); height: auto; margin: 0.25rem auto 0; display: block; }
+body.day-board #week-share:not([hidden]) { width: min(calc(100% - 0.75rem), calc((100dvh - 8.4rem) * 0.937)); max-width: calc(100% - 0.75rem); height: auto; margin: 0.25rem auto 0; display: block; }
 body.day-board #best.open-share,
 body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin: 0.2rem auto 0; padding: 0; border: 0; box-shadow: none; background: transparent; }
 </style>
@@ -63,13 +63,11 @@ body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin:
     <p class="quiet" id="login-error"></p>
   </form>
 </section>
-<p class="lede" id="lede">Loading FanDuel.</p>
 <p class="banner" id="banner" hidden></p>
 <nav class="tabs">
   <button type="button" class="tab on" data-tab="today">Today</button>
   <button type="button" class="tab" data-tab="week">Week</button>
   <button type="button" class="tab" data-tab="build">Build a bet</button>
-  <button type="button" class="tab" data-tab="swipe">Swipe</button>
   <button type="button" class="tab" data-tab="open">Live Bets</button>
   <button type="button" class="tab" data-tab="wins" id="tab-wins">Wins</button>
   <button type="button" class="tab" data-tab="losses">Losses</button>
@@ -80,6 +78,7 @@ body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin:
   <img id="loading-share-img" alt="Bet of the week" style="width:100%;height:auto;border-radius:12px;display:block">
 </figure>
 <img id="day-share" alt="Best bet of the day" hidden>
+<p class="quiet" id="day-form" hidden style="width:min(calc(100% - 0.75rem),42rem);margin:0.35rem auto 0"></p>
 <section class="chalk best" id="best" hidden>
   <p class="live-note" id="best-live" hidden></p>
   <p class="aim" id="best-aim"></p>
@@ -144,6 +143,7 @@ body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin:
 </div>
 <div class="pane" id="pane-week" hidden>
 <img id="week-share" alt="Bet of the week" hidden>
+<p class="quiet" id="week-form" hidden style="width:min(calc(100% - 0.75rem),42rem);margin:0.35rem auto 0"></p>
 <p class="quiet" id="week-intro">The 3-leg and 5-leg are aimed at −200, so a $5 bet wins about $2.50. The super safe parlay is aimed at −350. Each leg is a different day. When another bet fits, the next check shows that one. This does not send a bet.</p>
 <section class="chalk best week" id="week" hidden>
   <p class="live-note" id="week-live" hidden></p>
@@ -180,6 +180,8 @@ body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin:
 <section class="chalk chooser" id="chooser">
   <p class="aim">Pick today or this week, the leagues, the prop, and how many legs. Leave the leagues and games blank to use all of them. 1 safest is the highest chance and stays the same. Safe aims at −200. Good aims at −100. Best payout takes the longest price. Tap Safe, Good, or Best payout again for a different bet. If one bet is the only fit, the card says so.</p>
   <h2>Build a bet</h2>
+  <p class="pick-save"><button type="button" id="choice-speak">Speak a bet</button></p>
+  <p class="quiet" id="choice-heard"></p>
   <div class="choices" id="choice-when"></div>
   <div class="choices" id="choice-sports"></div>
   <label class="choice-line games">Games <select id="choice-game" multiple size="6"></select></label>
@@ -190,23 +192,6 @@ body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin:
   <div class="choices" id="choice-aim"></div>
   <p class="pick-save"><button type="button" id="choice-go">Show the safest</button></p>
   <div id="choice-result"></div>
-</section>
-</div>
-<div class="pane" id="pane-swipe" hidden>
-<section class="chalk swipe-deck">
-  <p class="aim">Swipe right to like a suggestion. Swipe left to pass. This does not send a bet.</p>
-  <h2>Suggestions</h2>
-  <p class="quiet" id="swipe-score"></p>
-  <div class="deck" id="deck">
-    <article class="deck-card" id="deck-card"></article>
-    <p class="deck-stamp like" id="deck-like">Like</p>
-    <p class="deck-stamp pass" id="deck-pass">Pass</p>
-  </div>
-  <p class="pick-save deck-actions">
-    <button type="button" class="ghost" id="deck-pass-btn">Pass</button>
-    <button type="button" class="ghost" id="deck-undo" disabled>Undo</button>
-    <button type="button" id="deck-like-btn">Like</button>
-  </p>
 </section>
 </div>
 <div class="pane" id="pane-open" hidden>
@@ -240,10 +225,9 @@ body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin:
   <h2>Your membership</h2>
   <p class="quiet" id="activity-plan"></p>
   <div id="activity-list"></div>
+  <p class="pick-save"><button type="button" class="ghost" id="member-out">Sign out</button></p>
 </section>
-</div>
-<div class="pane" id="pane-admin" hidden>
-<section class="tracked">
+<section class="tracked" id="profile-admin" hidden>
   <h2>Admin</h2>
   <nav class="tabs" id="admin-tabs">
     <button type="button" class="tab on" data-admin-tab="members">Members</button>
@@ -251,6 +235,7 @@ body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin:
     <button type="button" class="tab" data-admin-tab="strategy">Strategy</button>
     <button type="button" class="tab" data-admin-tab="docs">Docs</button>
     <button type="button" class="tab" data-admin-tab="built">Built bets</button>
+    <button type="button" class="tab" data-admin-tab="asks">Asked</button>
     <button type="button" class="tab" data-admin-tab="card">Share card</button>
   </nav>
   <div id="admin-members">
@@ -287,6 +272,10 @@ body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin:
     <article class="report-card"><p>NFL receiving yards, stack hits, and the near −180 card are the shapes the win filter can keep. Past results do not promise the next ticket.</p></article>
   </div>
   <div id="admin-built" hidden></div>
+  <div id="admin-asks" hidden>
+    <p class="quiet">Spoken bets that Build a Bet does not offer.</p>
+    <div id="admin-ask-list"></div>
+  </div>
   <div id="admin-card" hidden>
     <p class="quiet">Pick a bet. The image uses the share layout with that bet on the board. Copy it, then paste it into a post. This does not send a bet.</p>
     <label class="choice-line">Bet <select id="share-card-bet"></select></label>
@@ -313,19 +302,19 @@ body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin:
   <div id="pushes-list"></div>
 </section>
 </div>
+<p class="lede" id="lede">Loading FanDuel.</p>
 <footer>
   <p>21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
-<script src="/app.js?v=58"></script>
-<script src="/members.js?v=12"></script>
+<script src="/app.js?v=61"></script>
+<script src="/members.js?v=13"></script>
 <script src="/stars.js?v=1"></script>
-<script src="/choose.js?v=14"></script>
+<script src="/choose.js?v=20"></script>
 <script src="/lessons.js?v=6"></script>
-<script src="/swipe.js?v=1"></script>
 <script src="/filters.js?v=8"></script>
 <script src="/reports.js?v=1"></script>
-<script src="/admin.js?v=17"></script>
-<script src="/sharecard.js?v=16"></script>
+<script src="/admin.js?v=18"></script>
+<script src="/sharecard.js?v=17"></script>
 </body>
 </html>

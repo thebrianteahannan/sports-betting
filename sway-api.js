@@ -13,11 +13,13 @@ async function addSway(legs, games) {
     const game = byId.get(String(leg.gameId || "")) || findGame(leg, games || []);
     try {
       const row = await describe(leg, game);
-      if (!row.fact) continue;
-      leg.fact = row.fact;
-      leg.sway = row.sway;
-      leg.historyHits = row.hits;
-      leg.historyN = row.count;
+      if (row.fact) {
+        leg.fact = row.fact;
+        leg.sway = row.sway;
+        leg.historyHits = row.hits;
+        leg.historyN = row.count;
+      }
+      if (row.form) leg.form = row.form;
     } catch (error) {
       continue;
     }
@@ -37,21 +39,52 @@ async function describe(leg, game) {
   if (line == null || !name || !away || !home) return blank();
   const pack = await playerLog(sport, path, name);
   if (!pack || !pack.team) return blank();
+  const form = formLine(pack, spec, line, name);
   const opponent = otherSide(pack.team, away, home);
-  if (!opponent) return blank();
+  if (!opponent) return blank(form);
   const played = meetings(pack, spec.keys, opponent);
-  if (played.length < 2) return blank();
+  if (played.length < 2) return blank(form);
   const hits = played.filter((value) => value >= line).length;
   const nick = nickname(opponent);
   const shown = Number.isInteger(line) ? line : line;
   const fact = spec.fixed && line === 1
     ? `Scored a touchdown against the ${nick} in ${hits} of the last ${played.length}.`
     : `${shown}+ ${spec.noun} against the ${nick} in ${hits} of the last ${played.length}.`;
-  return { fact, sway: swayText(hits, played.length, leg.odds), hits, count: played.length };
+  return { fact, sway: swayText(hits, played.length, leg.odds), hits, count: played.length, form };
 }
 
-function blank() {
-  return { fact: "", sway: "", hits: 0, count: 0 };
+function blank(form) {
+  return { fact: "", sway: "", hits: 0, count: 0, form: form || "" };
+}
+
+function formLine(pack, spec, line, name) {
+  const values = recentValues(pack, spec.keys);
+  if (values.length < 3) return "";
+  const hits = values.filter((value) => value >= line).length;
+  const shown = Number.isInteger(line) ? line : line;
+  const did = spec.fixed && line === 1 ? "scored a touchdown" : `cleared ${shown}+ ${spec.noun}`;
+  const who = nickname(name);
+  return formWords(hits, values.length, `${who} ${did} in ${hits} of the last ${values.length}`);
+}
+
+function recentValues(pack, keys) {
+  const names = pack.names || [];
+  const indexes = keys.map((key) => names.indexOf(key)).filter((index) => index >= 0);
+  if (!indexes.length) return [];
+  const found = [];
+  (pack.rows || []).forEach((row) => {
+    if (found.length >= 5) return;
+    const values = indexes.map((index) => statValue((row.stats || [])[index], names[index]));
+    if (values.some((value) => value == null)) return;
+    found.push(values.reduce((sum, value) => sum + value, 0));
+  });
+  return found;
+}
+
+function formWords(hits, count, phrase) {
+  const rate = count ? hits / count : 0;
+  const label = rate >= 0.8 ? "In form" : rate <= 0.25 ? "Cold" : "Mixed";
+  return `${label}: ${phrase}.`;
 }
 
 function readSpec(text) {

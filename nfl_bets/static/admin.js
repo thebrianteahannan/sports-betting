@@ -9,7 +9,7 @@ function loginWhen(stamp) {
 }
 
 function showAdminTab(name) {
-  ["members", "ignore", "strategy", "docs", "built", "card"].forEach((id) => {
+  ["members", "ignore", "strategy", "docs", "built", "asks", "card"].forEach((id) => {
     const pane = document.getElementById(`admin-${id}`);
     if (pane) pane.hidden = id !== name;
     const button = document.querySelector(`[data-admin-tab="${id}"]`);
@@ -52,9 +52,24 @@ function paintBuilt(payload) {
   }).join("")}`;
 }
 
+function paintAsks(payload) {
+  const list = document.getElementById("admin-ask-list");
+  if (!list || !payload || !Array.isArray(payload.asks)) return;
+  const rows = payload.asks;
+  if (!rows.length) {
+    list.innerHTML = "<p>No one has asked for an option that is not on Build a Bet.</p>";
+    return;
+  }
+  list.innerHTML = rows.map((row) => {
+    const clock = row.at && typeof when === "function" ? `${when(row.at)} ET` : "";
+    return `<article class="report-card"><p><b>${esc(row.name || "Member")}</b> · ${esc(clock)}</p><p>${esc(row.said || "")}</p><p class="quiet">${esc(row.missing || "")}</p></article>`;
+  }).join("");
+}
+
 function paintAdmin(payload) {
   paintRefresh();
   paintBuilt(payload);
+  paintAsks(payload);
   const list = document.getElementById("admin-users");
   if (!list) return;
   const rows = (payload && payload.users) || [];
@@ -146,7 +161,7 @@ function bindAdmin() {
     const button = event.target.closest("[data-admin-tab]");
     if (button) {
       showAdminTab(button.dataset.adminTab);
-      if (button.dataset.adminTab === "built") loadAdmin();
+      if (button.dataset.adminTab === "built" || button.dataset.adminTab === "asks") loadAdmin();
       if (button.dataset.adminTab === "card" && window.fillShareCards) window.fillShareCards();
     }
   });
