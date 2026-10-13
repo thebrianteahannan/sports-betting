@@ -238,11 +238,11 @@ function applyMissFilter() {
   const winsScore = document.getElementById("wins-score");
   const lossesScore = document.getElementById("losses-score");
   const pushesScore = document.getElementById("pushes-score");
-  const tab = document.getElementById("tab-wins");
+  const tab = document.getElementById("tab-history");
   if (winsScore) winsScore.textContent = keptWon.length ? `${keptWon.length} wins. ${rate}` : rate;
   if (lossesScore) lossesScore.textContent = keptLost.length ? `${keptLost.length} losses. ${rate}` : rate;
   if (pushesScore) pushesScore.textContent = `${push.length} pushes. ${rate}`;
-  if (tab) tab.textContent = pct ? `Wins ${pct}` : "Wins";
+  if (tab) tab.textContent = pct ? `History ${pct}` : "History";
   [["wins-list", won], ["losses-list", lost]].forEach(([id, tickets]) => {
     const list = document.getElementById(id);
     if (!list) return;

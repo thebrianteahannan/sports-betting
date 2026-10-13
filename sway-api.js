@@ -83,8 +83,8 @@ function recentValues(pack, keys) {
 
 function formWords(hits, count, phrase) {
   const rate = count ? hits / count : 0;
-  const label = rate >= 0.8 ? "In form" : rate <= 0.25 ? "Cold" : "Mixed";
-  return `${label}: ${phrase}.`;
+  if (rate >= 0.8) return `${phrase}.`;
+  return `${rate <= 0.25 ? "Cold" : "Mixed"}: ${phrase}.`;
 }
 
 function readSpec(text) {

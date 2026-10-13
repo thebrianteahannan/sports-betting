@@ -72,6 +72,7 @@ function shareFrom(card, kicker, label) {
   const legs = (card.legs || []).filter((leg) => leg && leg.label).map((leg) => ({
     label: String(leg.label),
     pct: sharePct(leg.pct),
+    form: String(leg.form || "").replace(/^In form:\s*/i, ""),
   }));
   const price = shareSigned(card.american);
   const strategy = price ? `Near ${price}` : (card.strategy || label || "");
@@ -232,7 +233,9 @@ function drawBoard(ctx, bet) {
   const shown = bet.legs.length > 6 ? bet.legs.slice(0, 5) : bet.legs;
   const extra = bet.legs.length - shown.length;
   const bottom = y + h - 118;
-  const rowH = Math.min(76, Math.max(40, (bottom - cursor) / Math.max(shown.length + (extra ? 1 : 0), 1)));
+  const noted = shown.some((leg) => leg.form);
+  const slots = Math.max(shown.length + (extra ? 1 : 0), 1);
+  const rowH = Math.min(noted ? 98 : 76, Math.max(noted ? 72 : 40, (bottom - cursor) / slots));
   shown.forEach((leg) => {
     ctx.strokeStyle = "rgba(61,255,110,0.35)";
     ctx.lineWidth = 1;
@@ -244,11 +247,20 @@ function drawBoard(ctx, bet) {
     ctx.fillStyle = "#ffffff";
     const nameSize = fitText(ctx, parts.name.toUpperCase(), right - left - 86, 20, SHARE_FONT);
     ctx.fillText(parts.name.toUpperCase(), left, cursor + 6);
+    let under = cursor + 8 + nameSize;
     if (parts.prop) {
       ctx.fillStyle = "#d5deea";
       const propSize = fitText(ctx, parts.prop.toUpperCase(), right - left - 86, 15, SHARE_TEXT);
       ctx.font = `600 ${propSize}px ${SHARE_TEXT}`;
-      ctx.fillText(parts.prop.toUpperCase(), left, cursor + 8 + nameSize);
+      ctx.fillText(parts.prop.toUpperCase(), left, under);
+      under += propSize + 3;
+    }
+    if (leg.form) {
+      const note = leg.form.toUpperCase();
+      ctx.fillStyle = "#b7ffc9";
+      const noteSize = fitText(ctx, note, right - left, 15, SHARE_TEXT);
+      ctx.font = `600 ${noteSize}px ${SHARE_TEXT}`;
+      ctx.fillText(note, left, under);
     }
     if (leg.pct) {
       ctx.fillStyle = "#3dff6e";
@@ -387,48 +399,6 @@ function bindShareCard() {
   });
 }
 
-const WEEK_SHARE_KEY = "pod-week-share-2";
-
-function cachedWeekShare() {
-  try {
-    return localStorage.getItem(WEEK_SHARE_KEY) || "";
-  } catch (error) {
-    return "";
-  }
-}
-
-function weekShareCard(board) {
-  const picks = [["weekThree", "Good 3-leg"], ["weekFive", "Good 5-leg"], ["weekSafe", "Super safe"]];
-  for (let i = 0; i < picks.length; i += 1) {
-    const card = board && board[picks[i][0]];
-    if (card && (card.legs || []).length) return shareFrom(card, "BET OF THE WEEK", picks[i][1]);
-  }
-  return null;
-}
-
-async function rememberWeekShare(board) {
-  const bet = weekShareCard(board);
-  if (!bet) return;
-  const mark = bet.legs.map((leg) => leg.label).join("|");
-  if (rememberWeekShare.mark === mark && cachedWeekShare()) return;
-  try {
-    const image = await loadTemplate();
-    if (document.fonts && document.fonts.ready) await document.fonts.ready;
-    const canvas = document.createElement("canvas");
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(image, 0, 0);
-    coverNfl(ctx, image);
-    drawBoard(ctx, bet);
-    drawFound(ctx, bet);
-    localStorage.setItem(WEEK_SHARE_KEY, canvas.toDataURL("image/jpeg", 0.72));
-    rememberWeekShare.mark = mark;
-  } catch (error) {
-    return;
-  }
-}
-
 const posterMark = {};
 
 function posterText(ids, boxId, show) {
@@ -454,7 +424,7 @@ async function paintPoster(key, imgId, card, kicker, label, textIds, boxId) {
     return;
   }
   const bet = shareFrom(card, kicker, label);
-  const mark = `${bet.legs.map((leg) => leg.label).join("|")}|${card.american || ""}|2`;
+  const mark = `${bet.legs.map((leg) => `${leg.label}|${leg.form || ""}`).join("|")}|${card.american || ""}|3`;
   if (posterMark[key] === mark && img.getAttribute("src")) {
     img.hidden = false;
     img.style.display = "block";
@@ -492,8 +462,6 @@ function paintWeekShare(board) {
   paintPoster("week", "week-share", board && board.weekThree, "BET OF THE WEEK", "Good 3-leg", WEEK_TEXT, "week");
 }
 
-window.cachedWeekShare = cachedWeekShare;
-window.rememberWeekShare = rememberWeekShare;
 window.paintDayShare = paintDayShare;
 window.paintWeekShare = paintWeekShare;
 window.fillShareCards = fillShareCards;

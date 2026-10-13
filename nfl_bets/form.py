@@ -69,5 +69,7 @@ def _recent_values(pack: dict[str, Any], keys: tuple[str, ...]) -> list[float]:
 
 def _words(hits: int, count: int, phrase: str) -> str:
     rate = hits / count if count else 0
-    label = "In form" if rate >= 0.8 else "Cold" if rate <= 0.25 else "Mixed"
+    if rate >= 0.8:
+        return f"{phrase}."
+    label = "Cold" if rate <= 0.25 else "Mixed"
     return f"{label}: {phrase}."

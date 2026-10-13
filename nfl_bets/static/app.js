@@ -42,16 +42,11 @@ async function load() {
 function render() {
   const board = state.board || {};
   const waiting = !board.updatedAt;
-  const cached = waiting && window.cachedWeekShare ? window.cachedWeekShare() : "";
-  $("lede").textContent = board.updatedAt
-    ? `FanDuel ${when(board.updatedAt)} ET.`
-    : (cached ? "Loading the latest board." : "No board yet.");
-  const fig = $("loading-share");
-  if (fig) {
-    fig.hidden = !cached;
-    fig.style.display = cached ? "block" : "none";
-    const img = $("loading-share-img");
-    if (cached && img && img.getAttribute("src") !== cached) img.src = cached;
+  $("lede").textContent = board.updatedAt ? `FanDuel ${when(board.updatedAt)} ET.` : "Loading the latest board.";
+  const parrot = $("parrot-load");
+  if (parrot) {
+    parrot.hidden = !waiting;
+    parrot.style.display = waiting ? "block" : "none";
   }
   const banner = $("banner");
   if (board.errors && board.errors.length) {
@@ -72,19 +67,8 @@ function render() {
   showTab(state.tab);
   if (window.paintChoices) window.paintChoices();
   if (window.paintRefresh) window.paintRefresh();
-  if (board.updatedAt && window.rememberWeekShare) window.rememberWeekShare(board);
   if (window.paintDayShare) window.paintDayShare(board);
   if (window.paintWeekShare) window.paintWeekShare(board);
-  paintForm("day-form", board.band);
-  paintForm("week-form", board.weekThree);
-}
-
-function paintForm(id, card) {
-  const el = $(id);
-  if (!el) return;
-  const lines = ((card && card.legs) || []).map((leg) => leg.form).filter(Boolean);
-  el.hidden = !lines.length;
-  el.textContent = lines.join(" ");
 }
 
 function dropMiss(text) {
@@ -100,7 +84,7 @@ function legItem(leg) {
   const extra = bits.length ? ` · ${bits.join(" ")}` : "";
   const count = now ? ` <b class="sofar">${esc(now)}</b>` : "";
   const mark = typeof legState === "function" ? legState(row) : "wait";
-  const sway = [row.fact, row.sway, row.form].filter(Boolean).join(" ");
+  const sway = [row.fact, row.sway, String(row.form || "").replace(/^In form:\s*/i, "")].filter(Boolean).join(" ");
   const fact = sway ? `<br><span class="quiet">${esc(sway)}</span>` : "";
   return `<li><b>${esc(american(row.odds) || row.odds)}</b><span><i class="leg-mark ${mark}" title="${mark === "won" ? "Won" : mark === "lost" ? "Missed" : mark === "push" ? "Push" : "Waiting"}">${mark === "won" ? "✓" : mark === "lost" ? "✕" : mark === "push" ? "–" : "◌"}</i>${esc(row.label)}${fact}</span><em>${esc(row.pct || "")}${count}${esc(extra)}</em></li>`;
 }
@@ -375,18 +359,37 @@ function renderArchive(tickets) {
   $("pushes-score").textContent = `${push.length} pushes. ${rate}`;
   $("pushes-list").innerHTML = push.map((ticket) => pickRow(ticket, true)).join("");
   $("tab-pushes").hidden = push.length === 0;
-  $("tab-wins").textContent = pct ? `Wins ${pct}` : "Wins";
+  $("tab-history").textContent = pct ? `History ${pct}` : "History";
 }
 
 function showTab(name) {
   state.tab = name;
-  const titles = { today: "Today", week: "Week", build: "Build a bet", open: "Live Bets", wins: "Wins", losses: "Losses", pushes: "Pushes", profile: "Profile" };
+  const titles = { today: "Today", week: "Week", build: "Build a bet", open: "Our Bets", history: "History", profile: "Profile" };
   $("page-title").textContent = titles[name] || titles.today;
   document.body.classList.toggle("day-board", name === "today" || name === "week");
-  ["today", "week", "build", "open", "wins", "losses", "pushes", "profile"].forEach((id) => {
+  ["today", "week", "build", "open", "history", "profile"].forEach((id) => {
     $(`pane-${id}`).hidden = id !== name;
     const tab = document.querySelector(`[data-tab="${id}"]`);
     if (tab) tab.classList.toggle("on", id === name);
+  });
+  if (name === "history") showHistory(historyName());
+  const frame = name === "today" || name === "week" ? $(name === "week" ? "week-frame" : "day-frame") : null;
+  const nav = $("main-tabs");
+  if (frame) frame.append(nav, $("who"));
+  else { document.querySelector(".top-side").append($("who")); $("banner").insertAdjacentElement("afterend", nav); }
+}
+
+function historyName() {
+  const on = document.querySelector("#history-tabs .tab.on:not([hidden])");
+  return (on && on.dataset.history) || "wins";
+}
+
+function showHistory(name) {
+  ["wins", "losses", "pushes"].forEach((id) => {
+    const pane = document.getElementById(`history-${id}`);
+    if (pane) pane.hidden = id !== name;
+    const button = document.querySelector(`[data-history="${id}"]`);
+    if (button) button.classList.toggle("on", id === name);
   });
 }
 
@@ -466,11 +469,9 @@ async function postPick(url, body) {
 }
 
 document.body.addEventListener("click", (event) => {
-  const more = event.target.closest("#more-bets-toggle");
-  if (more) {
-    const box = $("more-bets");
-    box.hidden = !box.hidden;
-    more.textContent = box.hidden ? "More bets" : "Hide the other bets";
+  const history = event.target.closest("[data-history]");
+  if (history) {
+    showHistory(history.dataset.history);
     return;
   }
   const tab = event.target.closest("[data-tab]");

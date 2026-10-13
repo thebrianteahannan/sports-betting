@@ -11,14 +11,27 @@
 <link rel="stylesheet" href="/app.css?v=45"/>
 <style>
 #page-title { display: none; }
-body.day-board .top { padding: 0.28rem 0.7rem; }
-body.day-board .who { margin: 0; }
-body.day-board .lede { margin: 0.15rem auto 0; }
-body.day-board .tabs { margin-top: 0.2rem; }
-body.day-board #day-share:not([hidden]),
-body.day-board #week-share:not([hidden]) { width: min(calc(100% - 0.75rem), calc((100dvh - 8.4rem) * 0.937)); max-width: calc(100% - 0.75rem); height: auto; margin: 0.25rem auto 0; display: block; }
+body.day-board .brand, body.day-board .top::after, body.day-board .lede, body.day-board footer { display: none; }
+body.day-board .top { position: absolute; width: 0; height: 0; padding: 0; overflow: visible; background: none; }
+body.day-board .poster-frame { position: relative; width: min(100%, calc(100dvh * 0.937)); margin: 0 auto; }
+body.day-board .poster-frame > img:not([hidden]) { width: 100%; max-width: 100%; height: auto; margin: 0; display: block; }
+body.day-board .poster-frame > nav.tabs, body.day-board .poster-frame > .who { position: absolute; z-index: 5; margin: 0; bottom: 0.45rem; }
+body.day-board .poster-frame > nav.tabs { left: 0.4rem; right: 3.1rem; width: auto; gap: 0.28rem; }
+body.day-board .poster-frame > .who { right: 0.4rem; }
+body.day-board .poster-frame .tab { padding: 0.28rem 0.55rem; background: rgba(7, 9, 14, 0.78); }
 body.day-board #best.open-share,
-body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin: 0.2rem auto 0; padding: 0; border: 0; box-shadow: none; background: transparent; }
+body.day-board #week.open-share,
+body.day-board #week5,
+body.day-board #safe { display: none; }
+#parrot-load { width: min(36rem, calc(100% - 1rem)); margin: 1.4rem auto 0; text-align: center; }
+#parrot-load img { width: min(22rem, 88%); height: auto; display: block; margin: 0 auto; transform-origin: 50% 70%; animation: parrot-bob 0.9s ease-in-out infinite; }
+#parrot-load p { margin: 0.15rem 0; color: var(--muted); font-family: var(--sport); letter-spacing: 0.06em; text-transform: uppercase; }
+#parrot-load .parrot-lines { position: relative; height: 3.2rem; margin-top: 0.7rem; }
+#parrot-load .parrot-lines p { position: absolute; left: 0; right: 0; opacity: 0; animation: parrot-say 7.5s infinite; }
+#parrot-load .parrot-lines p:nth-child(2) { animation-delay: 2.5s; }
+#parrot-load .parrot-lines p:nth-child(3) { animation-delay: 5s; }
+@keyframes parrot-bob { 50% { transform: rotate(-7deg) translateY(-10px); } }
+@keyframes parrot-say { 0%, 28% { opacity: 1; } 34%, 100% { opacity: 0; } }
 </style>
 </head>
 <body class="needs-member">
@@ -64,20 +77,25 @@ body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin:
   </form>
 </section>
 <p class="banner" id="banner" hidden></p>
-<nav class="tabs">
+<nav class="tabs" id="main-tabs">
   <button type="button" class="tab on" data-tab="today">Today</button>
   <button type="button" class="tab" data-tab="week">Week</button>
   <button type="button" class="tab" data-tab="build">Build a bet</button>
-  <button type="button" class="tab" data-tab="open">Live Bets</button>
-  <button type="button" class="tab" data-tab="wins" id="tab-wins">Wins</button>
-  <button type="button" class="tab" data-tab="losses">Losses</button>
-  <button type="button" class="tab" data-tab="pushes" id="tab-pushes" hidden>Pushes</button>
+  <button type="button" class="tab" data-tab="open">Our Bets</button>
+  <button type="button" class="tab" data-tab="history" id="tab-history">History</button>
 </nav>
 <div class="pane" id="pane-today">
-<figure id="loading-share" hidden style="display:none;margin:0.85rem auto 0;width:min(420px,calc(100% - 2rem))">
-  <img id="loading-share-img" alt="Bet of the week" style="width:100%;height:auto;border-radius:12px;display:block">
-</figure>
+<div class="poster-frame" id="day-frame">
+<div id="parrot-load" hidden>
+  <img src="/logo.png?v=5" alt="Parlay parrot">
+  <div class="parrot-lines">
+    <p>Squawk. Checking FanDuel.</p>
+    <p>The parrot is counting the legs.</p>
+    <p>Sunglasses on. One more second.</p>
+  </div>
+</div>
 <img id="day-share" alt="Best bet of the day" hidden>
+</div>
 <p class="quiet" id="day-form" hidden style="width:min(calc(100% - 0.75rem),42rem);margin:0.35rem auto 0"></p>
 <section class="chalk best" id="best" hidden>
   <p class="live-note" id="best-live" hidden></p>
@@ -89,7 +107,6 @@ body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin:
   <p class="quiet" id="best-note"></p>
   <p class="pick-save" id="best-save"></p>
 </section>
-<p class="pick-save"><button type="button" id="more-bets-toggle">More bets</button></p>
 <div id="more-bets" hidden>
 <section class="chalk best" id="today" hidden>
   <p class="live-note" id="today-live" hidden></p>
@@ -142,7 +159,9 @@ body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin:
 </div>
 </div>
 <div class="pane" id="pane-week" hidden>
+<div class="poster-frame" id="week-frame">
 <img id="week-share" alt="Bet of the week" hidden>
+</div>
 <p class="quiet" id="week-form" hidden style="width:min(calc(100% - 0.75rem),42rem);margin:0.35rem auto 0"></p>
 <p class="quiet" id="week-intro">The 3-leg and 5-leg are aimed at −200, so a $5 bet wins about $2.50. The super safe parlay is aimed at −350. Each leg is a different day. When another bet fits, the next check shows that one. This does not send a bet.</p>
 <section class="chalk best week" id="week" hidden>
@@ -196,13 +215,19 @@ body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin:
 </div>
 <div class="pane" id="pane-open" hidden>
 <section class="tracked">
-  <h2>Live Bets</h2>
+  <h2>Our Bets</h2>
   <p class="quiet" id="open-score"></p>
   <div id="open-filters" class="open-filters"></div>
   <div id="open-list"></div>
 </section>
 </div>
-<div class="pane" id="pane-wins" hidden>
+<div class="pane" id="pane-history" hidden>
+<nav class="tabs" id="history-tabs">
+  <button type="button" class="tab on" data-history="wins">Wins</button>
+  <button type="button" class="tab" data-history="losses">Losses</button>
+  <button type="button" class="tab" data-history="pushes" id="tab-pushes" hidden>Pushes</button>
+</nav>
+<div id="history-wins">
 <section class="tracked">
   <h2>Wins</h2>
   <p class="quiet" id="wins-score"></p>
@@ -211,7 +236,7 @@ body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin:
   <div id="wins-list"></div>
 </section>
 </div>
-<div class="pane" id="pane-losses" hidden>
+<div id="history-losses" hidden>
 <section class="tracked">
   <h2>Losses</h2>
   <p class="quiet" id="losses-score"></p>
@@ -219,6 +244,14 @@ body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin:
   <div id="loss-notes"></div>
   <div id="losses-list"></div>
 </section>
+</div>
+<div id="history-pushes" hidden>
+<section class="tracked">
+  <h2>Pushes</h2>
+  <p class="quiet" id="pushes-score"></p>
+  <div id="pushes-list"></div>
+</section>
+</div>
 </div>
 <div class="pane" id="pane-profile" hidden>
 <section class="tracked" id="activity">
@@ -295,26 +328,19 @@ body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin:
   </div>
 </section>
 </div>
-<div class="pane" id="pane-pushes" hidden>
-<section class="tracked">
-  <h2>Pushes</h2>
-  <p class="quiet" id="pushes-score"></p>
-  <div id="pushes-list"></div>
-</section>
-</div>
 <p class="lede" id="lede">Loading FanDuel.</p>
 <footer>
   <p>21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
-<script src="/app.js?v=61"></script>
+<script src="/app.js?v=66"></script>
 <script src="/members.js?v=13"></script>
 <script src="/stars.js?v=1"></script>
-<script src="/choose.js?v=20"></script>
-<script src="/lessons.js?v=6"></script>
+<script src="/choose.js?v=21"></script>
+<script src="/lessons.js?v=7"></script>
 <script src="/filters.js?v=8"></script>
 <script src="/reports.js?v=1"></script>
 <script src="/admin.js?v=18"></script>
-<script src="/sharecard.js?v=17"></script>
+<script src="/sharecard.js?v=19"></script>
 </body>
 </html>

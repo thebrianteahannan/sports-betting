@@ -108,7 +108,7 @@ async function runChoice() {
   const mark = (card.players || []).slice().sort().join("|");
   if (mark) seenBets[key] = card.only || card.again ? [mark] : (seenBets[key] || []).concat(mark).slice(-24);
   const legs = (card.legs || []).map((leg) => {
-    const sway = [leg.fact, leg.sway, leg.form].filter(Boolean).join(" ");
+    const sway = [leg.fact, leg.sway, String(leg.form || "").replace(/^In form:\s*/i, "")].filter(Boolean).join(" ");
     const fact = sway ? `<br><span class="quiet">${esc(sway)}</span>` : "";
     return `<li><b>${esc(american(leg.odds))}</b><span>${esc(leg.label)}${fact}</span><em>${esc(leg.pct || "")}</em></li>`;
   }).join("");

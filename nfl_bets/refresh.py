@@ -447,12 +447,27 @@ def public_payload(board: dict[str, Any] | None = None) -> dict[str, Any]:
     )
     from nfl_bets.picks import list_picks
     from nfl_bets.archive import grade_open
+    from nfl_bets.store import out_dir, read_json
 
     data["picks"] = list_picks()
     try:
-        data["archive"] = grade_open()
+        saved = read_json(out_dir() / "archive.json", {"tickets": []})
+        rows = saved.get("tickets") if isinstance(saved, dict) else []
+        data["archive"] = sorted(
+            [row for row in rows or [] if isinstance(row, dict)],
+            key=lambda row: str(row.get("offeredAt") or ""),
+            reverse=True,
+        )
     except Exception:  # noqa: BLE001
         data["archive"] = []
+    if not getattr(public_payload, "grading", False):
+        def _grade() -> None:
+            try:
+                grade_open()
+            finally:
+                public_payload.grading = False
+        public_payload.grading = True
+        threading.Thread(target=_grade, daemon=True).start()
     return data
 
 
