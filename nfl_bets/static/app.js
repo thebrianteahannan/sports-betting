@@ -41,9 +41,18 @@ async function load() {
 
 function render() {
   const board = state.board || {};
+  const waiting = !board.updatedAt;
+  const cached = waiting && window.cachedWeekShare ? window.cachedWeekShare() : "";
   $("lede").textContent = board.updatedAt
     ? `FanDuel ${when(board.updatedAt)} ET.`
-    : "No board yet.";
+    : (cached ? "Loading the latest board." : "No board yet.");
+  const fig = $("loading-share");
+  if (fig) {
+    fig.hidden = !cached;
+    fig.style.display = cached ? "block" : "none";
+    const img = $("loading-share-img");
+    if (cached && img && img.getAttribute("src") !== cached) img.src = cached;
+  }
   const banner = $("banner");
   if (board.errors && board.errors.length) {
     banner.hidden = false;
@@ -63,6 +72,9 @@ function render() {
   showTab(state.tab);
   if (window.paintChoices) window.paintChoices();
   if (window.paintRefresh) window.paintRefresh();
+  if (board.updatedAt && window.rememberWeekShare) window.rememberWeekShare(board);
+  if (window.paintDayShare) window.paintDayShare(board);
+  if (window.paintWeekShare) window.paintWeekShare(board);
 }
 
 function dropMiss(text) {
@@ -78,7 +90,9 @@ function legItem(leg) {
   const extra = bits.length ? ` · ${bits.join(" ")}` : "";
   const count = now ? ` <b class="sofar">${esc(now)}</b>` : "";
   const mark = typeof legState === "function" ? legState(row) : "wait";
-  return `<li><b>${esc(american(row.odds) || row.odds)}</b><span><i class="leg-mark ${mark}" title="${mark === "won" ? "Won" : mark === "lost" ? "Missed" : mark === "push" ? "Push" : "Waiting"}">${mark === "won" ? "✓" : mark === "lost" ? "✕" : mark === "push" ? "–" : "◌"}</i>${esc(row.label)}</span><em>${esc(row.pct || "")}${count}${esc(extra)}</em></li>`;
+  const sway = [row.fact, row.sway].filter(Boolean).join(" ");
+  const fact = sway ? `<br><span class="quiet">${esc(sway)}</span>` : "";
+  return `<li><b>${esc(american(row.odds) || row.odds)}</b><span><i class="leg-mark ${mark}" title="${mark === "won" ? "Won" : mark === "lost" ? "Missed" : mark === "push" ? "Push" : "Waiting"}">${mark === "won" ? "✓" : mark === "lost" ? "✕" : mark === "push" ? "–" : "◌"}</i>${esc(row.label)}${fact}</span><em>${esc(row.pct || "")}${count}${esc(extra)}</em></li>`;
 }
 
 function withLive(leg) {
@@ -111,9 +125,11 @@ function renderFeatured(prefix, best, heading, aim) {
   const box = $(prefix);
   if (!best) {
     box.hidden = true;
+    box.style.display = "none";
     return;
   }
   box.hidden = false;
+  box.style.display = "";
   const pulled = state.board && state.board.updatedAt ? when(state.board.updatedAt) : "";
   $(`${prefix}-aim`).textContent = aim;
   $(`${prefix}-title`).textContent = heading;
@@ -127,7 +143,10 @@ function renderFeatured(prefix, best, heading, aim) {
   }
   const game = best.game ? `${best.game}. ` : "";
   const win = best.profit != null ? ` A $5 bet would win $${Number(best.profit).toFixed(2)}.` : "";
-  $(`${prefix}-copy`).textContent = `${game}Strategy: ${best.strategy}. The legs are ${pctWords(best.legs)}. The parlay is ${best.pct}%.${win}`;
+  const why = bandWhy(best);
+  $(`${prefix}-copy`).textContent = why
+    ? `${game}${why}`
+    : `${game}Strategy: ${best.strategy}. The legs are ${pctWords(best.legs)}. The parlay is ${best.pct}%.${win}`;
   $(`${prefix}-legs`).innerHTML = best.legs.map(legItem).join("");
   $(`${prefix}-note`).textContent = dropMiss(best.note || "");
   mountHistory($(`${prefix}`), best.id, best.game, best.group);
@@ -139,6 +158,17 @@ function renderFeatured(prefix, best, heading, aim) {
     ? `<button type="button" class="ghost" disabled>Saved</button>`
     : `<button type="button" class="ghost" data-save="${esc(best.id)}"${group}>Save this pick</button>`
   }${pullButton(best.id)}${fanLink()}${starHtml(mine, best.id, best.group, "")}`;
+}
+
+function bandWhy(best) {
+  if (best.id !== "band") return "";
+  if (best.card && best.card.why) return best.card.why;
+  const american = best.card && best.card.american;
+  if (american == null || best.pct == null) return "";
+  const price = Number(american);
+  const shown = price > 0 ? `+${price}` : String(american);
+  const win = best.profit != null ? ` A $5 bet would win $${Number(best.profit).toFixed(2)}.` : "";
+  return `Picked because ${shown} is the highest chance FanDuel has today between −150 and +100. That is about ${best.pct}%.${win}`;
 }
 
 function todayCandidate(board) {
@@ -340,9 +370,10 @@ function renderArchive(tickets) {
 
 function showTab(name) {
   state.tab = name;
-  const titles = { today: "Today's bets", week: "Bet of the week", build: "Build a bet", swipe: "Swipe", open: "Open bets", wins: "Wins", losses: "Losses", pushes: "Pushes", share: "Share a win", admin: "Admin" };
+  const titles = { today: "Today", week: "Week", build: "Build a bet", swipe: "Swipe", open: "Live Bets", wins: "Wins", losses: "Losses", pushes: "Pushes", profile: "Profile", admin: "Admin" };
   $("page-title").textContent = titles[name] || titles.today;
-  ["today", "week", "build", "swipe", "open", "wins", "losses", "pushes", "share", "admin"].forEach((id) => {
+  document.body.classList.toggle("day-board", name === "today" || name === "week");
+  ["today", "week", "build", "swipe", "open", "wins", "losses", "pushes", "profile", "admin"].forEach((id) => {
     $(`pane-${id}`).hidden = id !== name;
     const tab = document.querySelector(`[data-tab="${id}"]`);
     if (tab) tab.classList.toggle("on", id === name);

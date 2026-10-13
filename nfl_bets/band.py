@@ -144,6 +144,13 @@ def _card(combo: list[tuple[dict, dict, bool]]) -> dict[str, Any]:
             "pct": f"{implied_prob(leg['odds']) * 100:.1f}%",
         })
     one = len(combo) == 1
+    price = f"+{american}" if american is not None and american > 0 else str(american if american is not None else "")
+    why = ""
+    if price and chance is not None:
+        why = (
+            f"Picked because {price} is the highest chance FanDuel has today between −150 and +100. "
+            f"That is about {chance}%. A $5 bet would win ${profit:.2f}."
+        )
     return {
         "title": "Best bet of the day",
         "strategy": "Best price from −150 to +100",
@@ -154,11 +161,8 @@ def _card(combo: list[tuple[dict, dict, bool]]) -> dict[str, Any]:
         "stake": 5,
         "profit": profit,
         "live": any(live for _, _, live in combo),
-        "note": (
-            "This is one FanDuel price between −150 and +100."
-            if one else
-            "These legs are in different games, so this is a regular parlay. The price stays between −150 and +100."
-        ),
+        "why": why,
+        "note": "Each leg is a different game, so FanDuel prices this as a regular parlay." if not one else "",
         "copy": (
             f"The ticket is {american}. That is about {chance}%. "
             f"A $5 bet would win ${profit:.2f}."

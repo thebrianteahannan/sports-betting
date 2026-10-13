@@ -132,6 +132,13 @@ def _run() -> dict[str, Any]:
         if isinstance(card, dict):
             card["pulledAt"] = payload["updatedAt"]
     try:
+        from nfl_bets.sway import annotate_board
+
+        annotate_board(payload)
+    except Exception as exc:  # noqa: BLE001
+        errors.append(f"Sway: {exc}")
+        payload["errors"] = errors
+    try:
         from nfl_bets.archive import record_offers
 
         record_offers(payload)

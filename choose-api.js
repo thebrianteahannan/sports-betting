@@ -1,5 +1,6 @@
 /** Build a bet on the website. Same rules as the local desk. */
 
+const { addSway } = require("./sway-api");
 const AK = "FhMFpcPWXMeyZxOx";
 const SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA"];
 const KINDS = {
@@ -348,7 +349,7 @@ function card(combo, sports, kind, count, aim, only) {
   const legs = combo.map((row) => {
     let label = shown(row[0]);
     if (!one) label = `${label} — ${row[1].sport}, ${place(row[1])}, ${clock(row[1].kickoff)}`;
-    return { market: row[0].market || "", runner: row[0].runner || "", label, odds: row[0].odds, kickoff: row[1].kickoff || "", pct: `${(impliedProb(row[0].odds) * 100).toFixed(1)}%` };
+    return { market: row[0].market || "", runner: row[0].runner || "", label, odds: row[0].odds, kickoff: row[1].kickoff || "", gameId: String(row[1].id || ""), sport: row[1].sport || "", pct: `${(impliedProb(row[0].odds) * 100).toFixed(1)}%` };
   });
   const name = { top: "Safest", safe: "Safe", good: "Good", payout: "Best payout" }[aim];
   const aimed = {
@@ -405,6 +406,7 @@ async function chooseBet(body, board) {
   if (pickedCombo.combo.length < count) return empty(miss(pools, picked, count, span), aim);
   const built = card(pickedCombo.combo, picked, kind, count, aim, pickedCombo.only);
   built.again = pickedCombo.again;
+  await addSway(built.legs, games);
   return built;
 }
 

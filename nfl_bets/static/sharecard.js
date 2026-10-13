@@ -377,5 +377,115 @@ function bindShareCard() {
   });
 }
 
+const WEEK_SHARE_KEY = "pod-week-share";
+
+function cachedWeekShare() {
+  try {
+    return localStorage.getItem(WEEK_SHARE_KEY) || "";
+  } catch (error) {
+    return "";
+  }
+}
+
+function weekShareCard(board) {
+  const picks = [["weekThree", "Good 3-leg"], ["weekFive", "Good 5-leg"], ["weekSafe", "Super safe"]];
+  for (let i = 0; i < picks.length; i += 1) {
+    const card = board && board[picks[i][0]];
+    if (card && (card.legs || []).length) return shareFrom(card, "BET OF THE WEEK", picks[i][1]);
+  }
+  return null;
+}
+
+async function rememberWeekShare(board) {
+  const bet = weekShareCard(board);
+  if (!bet) return;
+  const mark = bet.legs.map((leg) => leg.label).join("|");
+  if (rememberWeekShare.mark === mark && cachedWeekShare()) return;
+  try {
+    const image = await loadTemplate();
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(image, 0, 0);
+    coverNfl(ctx, image);
+    drawBoard(ctx, bet);
+    drawFound(ctx, bet);
+    localStorage.setItem(WEEK_SHARE_KEY, canvas.toDataURL("image/jpeg", 0.72));
+    rememberWeekShare.mark = mark;
+  } catch (error) {
+    return;
+  }
+}
+
+const posterMark = {};
+
+function posterText(ids, boxId, show) {
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.hidden = !show;
+  });
+  const box = document.getElementById(boxId);
+  if (box) box.classList.toggle("open-share", !show);
+  if (boxId === "week") {
+    const intro = document.getElementById("week-intro");
+    if (intro) intro.hidden = !show;
+  }
+}
+
+async function paintPoster(key, imgId, card, kicker, label, textIds, boxId) {
+  const img = document.getElementById(imgId);
+  if (!img) return;
+  if (!card || !(card.legs || []).length) {
+    img.hidden = true;
+    img.style.display = "none";
+    posterText(textIds, boxId, true);
+    return;
+  }
+  const bet = shareFrom(card, kicker, label);
+  const mark = `${bet.legs.map((leg) => leg.label).join("|")}|${card.american || ""}`;
+  if (posterMark[key] === mark && img.getAttribute("src")) {
+    img.hidden = false;
+    img.style.display = "block";
+    posterText(textIds, boxId, false);
+    return;
+  }
+  try {
+    const image = await loadTemplate();
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(image, 0, 0);
+    coverNfl(ctx, image);
+    drawBoard(ctx, bet);
+    drawFound(ctx, bet);
+    img.src = canvas.toDataURL("image/jpeg", 0.82);
+    img.hidden = false;
+    img.style.display = "block";
+    posterMark[key] = mark;
+    posterText(textIds, boxId, false);
+  } catch (error) {
+    posterText(textIds, boxId, true);
+  }
+}
+
+const DAY_TEXT = ["best-aim", "best-title", "best-when", "best-copy", "best-legs", "best-note"];
+const WEEK_TEXT = ["week-aim", "week-title", "week-when", "week-copy", "week-legs", "week-note"];
+
+function paintDayShare(board) {
+  paintPoster("day", "day-share", board && board.band, "BET OF THE DAY", "Best bet of the day", DAY_TEXT, "best");
+}
+
+function paintWeekShare(board) {
+  paintPoster("week", "week-share", board && board.weekThree, "BET OF THE WEEK", "Good 3-leg", WEEK_TEXT, "week");
+}
+
+window.cachedWeekShare = cachedWeekShare;
+window.rememberWeekShare = rememberWeekShare;
+window.paintDayShare = paintDayShare;
+window.paintWeekShare = paintWeekShare;
 window.fillShareCards = fillShareCards;
 bindShareCard();

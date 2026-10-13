@@ -293,6 +293,8 @@ def _card(combo: list[tuple[dict, dict, bool]], sports: list[str], kind: str, co
             "label": label,
             "odds": leg.get("odds"),
             "kickoff": game.get("kickoff") or "",
+            "gameId": str(game.get("id") or ""),
+            "sport": game.get("sport") or "",
             "pct": f"{implied_prob(leg['odds']) * 100:.1f}%",
         })
     name = {"top": "Safest", "safe": "Safe", "good": "Good", "payout": "Best payout"}[aim]
@@ -302,6 +304,9 @@ def _card(combo: list[tuple[dict, dict, bool]], sports: list[str], kind: str, co
         "good": "Aimed at -100, so a $5 bet wins $5.",
         "payout": "The longest price from these props, so the payout is the largest.",
     }[aim]
+    from nfl_bets.sway import annotate
+
+    annotate(legs, list(games.values()))
     return {
         "title": f"{name} {count}-leg",
         "game": title_game,

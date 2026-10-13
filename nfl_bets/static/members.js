@@ -20,9 +20,9 @@ function showMember(payload) {
   const who = document.getElementById("who");
   who.hidden = false;
   const admin = !!member.admin;
-  who.innerHTML = admin
-    ? `<button type="button" id="member-admin">${esc(member.name)} · Admin</button><button type="button" class="ghost" id="member-out">Sign out</button>`
-    : `${esc(member.name)} · Free membership <button type="button" class="ghost" id="member-out">Sign out</button>`;
+  who.innerHTML = `<button type="button" id="member-profile">${esc(member.name)}</button>${
+    admin ? `<button type="button" class="ghost" id="member-admin">Admin</button>` : ""
+  }<button type="button" class="ghost" id="member-out">Sign out</button>`;
   const plan = document.getElementById("activity-plan");
   plan.textContent = admin
     ? "Admin. Ratings and saved picks are kept on this membership."
@@ -115,6 +115,7 @@ window.fetch = async function memberAwareFetch(url, options) {
 
 document.getElementById("who").addEventListener("click", (event) => {
   if (event.target.id === "member-out") signOut();
+  if (event.target.id === "member-profile") showTab("profile");
   if (event.target.id === "member-admin") showTab("admin");
 });
 document.getElementById("gate-join").addEventListener("click", () => showGateMode("join"));

@@ -107,9 +107,11 @@ async function runChoice() {
   }
   const mark = (card.players || []).slice().sort().join("|");
   if (mark) seenBets[key] = card.only || card.again ? [mark] : (seenBets[key] || []).concat(mark).slice(-8);
-  const legs = (card.legs || []).map((leg) => (
-    `<li><b>${esc(american(leg.odds))}</b><span>${esc(leg.label)}</span><em>${esc(leg.pct || "")}</em></li>`
-  )).join("");
+  const legs = (card.legs || []).map((leg) => {
+    const sway = [leg.fact, leg.sway].filter(Boolean).join(" ");
+    const fact = sway ? `<br><span class="quiet">${esc(sway)}</span>` : "";
+    return `<li><b>${esc(american(leg.odds))}</b><span>${esc(leg.label)}${fact}</span><em>${esc(leg.pct || "")}</em></li>`;
+  }).join("");
   const kicks = [...new Set((card.legs || []).map((leg) => leg.kickoff).filter(Boolean))];
   const whenLine = kicks.length === 1 ? `<p class="when">${esc(when(kicks[0]))} ET</p>` : "";
   const save = (card.legs || []).length ? `<p class="pick-save"><button type="button" id="choice-save">Save this bet</button></p>` : "";

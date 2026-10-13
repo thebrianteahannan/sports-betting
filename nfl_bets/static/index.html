@@ -8,7 +8,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/app.css?v=42"/>
+<link rel="stylesheet" href="/app.css?v=44"/>
+<style>
+#page-title { display: none; }
+body.day-board .top { padding: 0.28rem 0.7rem; }
+body.day-board .who { margin: 0; }
+body.day-board .lede { margin: 0.15rem auto 0; }
+body.day-board .tabs { margin-top: 0.2rem; }
+body.day-board #day-share:not([hidden]),
+body.day-board #week-share:not([hidden]) { width: min(calc(100vw - 0.4rem), calc((100dvh - 8.4rem) * 0.937)); height: auto; margin: 0.25rem auto 0; display: block; }
+body.day-board #best.open-share,
+body.day-board #week.open-share { width: min(1040px, calc(100% - 1rem)); margin: 0.2rem auto 0; padding: 0; border: 0; box-shadow: none; background: transparent; }
+</style>
 </head>
 <body class="needs-member">
 <div class="grid-bg" aria-hidden="true"></div>
@@ -19,7 +30,7 @@
     <img src="/logo.png?v=5" alt="Parlay of the Day">
   </a>
   <div class="top-side">
-    <h1 id="page-title">Today's bets</h1>
+    <h1 id="page-title">Today</h1>
     <p class="who" id="who" hidden></p>
   </div>
 </header>
@@ -53,24 +64,22 @@
   </form>
 </section>
 <p class="lede" id="lede">Loading FanDuel.</p>
-<section class="tracked" id="activity">
-  <h2>Your membership</h2>
-  <p class="quiet" id="activity-plan"></p>
-  <div id="activity-list"></div>
-</section>
 <p class="banner" id="banner" hidden></p>
 <nav class="tabs">
-  <button type="button" class="tab on" data-tab="today">Today's bets</button>
-  <button type="button" class="tab" data-tab="week">Bet of the week</button>
+  <button type="button" class="tab on" data-tab="today">Today</button>
+  <button type="button" class="tab" data-tab="week">Week</button>
   <button type="button" class="tab" data-tab="build">Build a bet</button>
   <button type="button" class="tab" data-tab="swipe">Swipe</button>
-  <button type="button" class="tab" data-tab="open">Open</button>
+  <button type="button" class="tab" data-tab="open">Live Bets</button>
   <button type="button" class="tab" data-tab="wins" id="tab-wins">Wins</button>
   <button type="button" class="tab" data-tab="losses">Losses</button>
   <button type="button" class="tab" data-tab="pushes" id="tab-pushes" hidden>Pushes</button>
-  <button type="button" class="tab" data-tab="share">Share a win</button>
 </nav>
 <div class="pane" id="pane-today">
+<figure id="loading-share" hidden style="display:none;margin:0.85rem auto 0;width:min(420px,calc(100% - 2rem))">
+  <img id="loading-share-img" alt="Bet of the week" style="width:100%;height:auto;border-radius:12px;display:block">
+</figure>
+<img id="day-share" alt="Best bet of the day" hidden>
 <section class="chalk best" id="best" hidden>
   <p class="live-note" id="best-live" hidden></p>
   <p class="aim" id="best-aim"></p>
@@ -134,7 +143,8 @@
 </div>
 </div>
 <div class="pane" id="pane-week" hidden>
-<p class="quiet">The 3-leg and 5-leg are aimed at −200, so a $5 bet wins about $2.50. The super safe parlay is aimed at −350. Each leg is a different day. When another bet fits, the next check shows that one. This does not send a bet.</p>
+<img id="week-share" alt="Bet of the week" hidden>
+<p class="quiet" id="week-intro">The 3-leg and 5-leg are aimed at −200, so a $5 bet wins about $2.50. The super safe parlay is aimed at −350. Each leg is a different day. When another bet fits, the next check shows that one. This does not send a bet.</p>
 <section class="chalk best week" id="week" hidden>
   <p class="live-note" id="week-live" hidden></p>
   <p class="aim" id="week-aim"></p>
@@ -201,7 +211,7 @@
 </div>
 <div class="pane" id="pane-open" hidden>
 <section class="tracked">
-  <h2>Open bets</h2>
+  <h2>Live Bets</h2>
   <p class="quiet" id="open-score"></p>
   <div id="open-filters" class="open-filters"></div>
   <div id="open-list"></div>
@@ -225,18 +235,11 @@
   <div id="losses-list"></div>
 </section>
 </div>
-<div class="pane" id="pane-share" hidden>
-<section class="tracked">
-  <h2>Share a win</h2>
-  <p class="quiet">Tell us the strategy you used and what happened. Add a screenshot of the bet you won. An admin reads it and decides whether it belongs on the board. This does not send a bet.</p>
-  <form id="report-form" class="report-form">
-    <label>What you did <textarea id="report-strategy" required minlength="8"></textarea></label>
-    <label>About this bet <textarea id="report-story" required minlength="8"></textarea></label>
-    <label>Screenshot <input id="report-shot" type="file" accept="image/png,image/jpeg,image/webp" required></label>
-    <p class="pick-save"><button type="submit">Send this win</button></p>
-    <p class="quiet" id="report-error"></p>
-  </form>
-  <div id="report-mine"></div>
+<div class="pane" id="pane-profile" hidden>
+<section class="tracked" id="activity">
+  <h2>Your membership</h2>
+  <p class="quiet" id="activity-plan"></p>
+  <div id="activity-list"></div>
 </section>
 </div>
 <div class="pane" id="pane-admin" hidden>
@@ -244,18 +247,12 @@
   <h2>Admin</h2>
   <nav class="tabs" id="admin-tabs">
     <button type="button" class="tab on" data-admin-tab="members">Members</button>
-    <button type="button" class="tab" data-admin-tab="share">Share a win</button>
     <button type="button" class="tab" data-admin-tab="ignore">Ignoring</button>
     <button type="button" class="tab" data-admin-tab="strategy">Strategy</button>
     <button type="button" class="tab" data-admin-tab="docs">Docs</button>
     <button type="button" class="tab" data-admin-tab="built">Built bets</button>
     <button type="button" class="tab" data-admin-tab="card">Share card</button>
   </nav>
-  <div id="admin-share" hidden>
-    <div id="report-review" hidden>
-      <div id="report-queue"></div>
-    </div>
-  </div>
   <div id="admin-members">
     <p class="quiet" id="admin-refresh">FanDuel is checked every 10 minutes.</p>
     <p id="admin-role-note" class="quiet"></p>
@@ -320,15 +317,15 @@
   <p>21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
-<script src="/app.js?v=47"></script>
-<script src="/members.js?v=11"></script>
+<script src="/app.js?v=58"></script>
+<script src="/members.js?v=12"></script>
 <script src="/stars.js?v=1"></script>
-<script src="/choose.js?v=12"></script>
+<script src="/choose.js?v=14"></script>
 <script src="/lessons.js?v=6"></script>
 <script src="/swipe.js?v=1"></script>
 <script src="/filters.js?v=8"></script>
 <script src="/reports.js?v=1"></script>
-<script src="/admin.js?v=16"></script>
-<script src="/sharecard.js?v=12"></script>
+<script src="/admin.js?v=17"></script>
+<script src="/sharecard.js?v=16"></script>
 </body>
 </html>

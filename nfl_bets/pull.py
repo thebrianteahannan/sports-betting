@@ -37,6 +37,9 @@ def refresh_card(card_id: str) -> dict[str, Any]:
             continue
         leg["odds"] = odds
         leg["pct"] = f"{implied_prob(odds) * 100:.1f}%"
+        from nfl_bets.sway import resway
+
+        resway(leg)
         updated += 1
     if not updated:
         raise ValueError("FanDuel did not return prices for that bet.")
