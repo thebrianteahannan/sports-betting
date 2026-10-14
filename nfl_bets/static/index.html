@@ -368,23 +368,39 @@ body.day-board #choice-result h2 { font-size: 1.05rem; color: #3dff6e; }
 function fitPoster() {
   const frames = document.querySelectorAll(".poster-frame");
   if (!document.body.classList.contains("day-board")) {
-    frames.forEach((frame) => { frame.style.width = ""; frame.style.maxWidth = ""; });
+    frames.forEach((frame) => {
+      frame.style.width = "";
+      frame.style.maxWidth = "";
+      frame.querySelectorAll("img").forEach((img) => { img.style.width = ""; img.style.maxWidth = ""; img.style.height = ""; });
+    });
     return;
   }
   const view = window.visualViewport;
   const widths = [document.documentElement.clientWidth, window.innerWidth];
   if (view) widths.push(view.width);
-  const vw = Math.floor(Math.min.apply(null, widths));
+  let vw = Math.floor(Math.min.apply(null, widths));
+  if (screen.width > 200 && screen.width < vw) vw = Math.floor(screen.width);
   const vh = Math.floor(Math.min(window.innerHeight, view ? view.height : window.innerHeight));
   const width = Math.max(1, Math.min(vw, Math.floor(vh * 959 / 1024)));
+  const height = Math.round(width * 1024 / 959);
   frames.forEach((frame) => {
     frame.style.width = width + "px";
     frame.style.maxWidth = width + "px";
+    frame.style.overflow = "hidden";
+    frame.querySelectorAll("img").forEach((img) => {
+      img.style.width = width + "px";
+      img.style.maxWidth = width + "px";
+      img.style.height = height + "px";
+      img.style.objectFit = "contain";
+      img.setAttribute("width", String(width));
+      img.setAttribute("height", String(height));
+    });
   });
-  console.log("poster fit", vw, vh, width);
+  console.log("poster fit", vw, vh, width, screen.width);
 }
 fitPoster();
 window.addEventListener("resize", fitPoster);
+document.addEventListener("load", fitPoster, true);
 if (window.visualViewport) window.visualViewport.addEventListener("resize", fitPoster);
 new MutationObserver(fitPoster).observe(document.body, { attributes: true, attributeFilter: ["class"] });
 </script>
