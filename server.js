@@ -9,6 +9,7 @@
  * Environment (do not commit these):
  *   SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
+ * Local Mac reads the same names from .env. Hostinger sets them in hPanel.
  *
  * The Mac keeps pulling FanDuel and writes bets/board.json and bets/archive.json.
  */
@@ -20,6 +21,7 @@ const { createIgnore } = require("./desk-ignore");
 const { createAdmins } = require("./desk-admins");
 const { createDocs } = require("./desk-docs"); const { chooseBet } = require("./choose-api");
 const ROOT = __dirname;
+loadEnv(path.join(ROOT, ".env"));
 const sendDoc = createDocs(ROOT);
 const STATIC = path.join(ROOT, "nfl_bets", "static");
 const PORT = Number(process.env.PORT || 3000);
@@ -33,6 +35,19 @@ const TYPES = {
   ".png": "image/png", ".jpg": "image/jpeg",
   ".ico": "image/x-icon",
 };
+
+function loadEnv(file) {
+  if (env("SUPABASE_URL") && env("SUPABASE_SERVICE_ROLE_KEY")) return;
+  let text = "";
+  try { text = fs.readFileSync(file, "utf8"); } catch { return; }
+  for (const line of text.split("\n")) {
+    const cut = line.trim();
+    if (!cut || cut.startsWith("#") || !cut.includes("=")) continue;
+    const name = cut.slice(0, cut.indexOf("=")).trim();
+    const raw = cut.slice(cut.indexOf("=") + 1).trim().replace(/^["']|["']$/g, "");
+    if (name && !process.env[name]) process.env[name] = raw;
+  }
+}
 
 function env(name) {
   return String(process.env[name] || "").trim().replace(/\/$/, "");
@@ -336,7 +351,11 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/sharecard.js", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/sharecard.js", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
+      serveStatic(res, url.pathname.slice(1));
+      return;
+    }
+    if (req.method === "GET" && url.pathname.startsWith("/scene/") && !url.pathname.includes("..")) {
       serveStatic(res, url.pathname.slice(1));
       return;
     }

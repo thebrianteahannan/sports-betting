@@ -366,18 +366,17 @@ function showTab(name) {
   state.tab = name;
   const titles = { today: "Today", week: "Week", build: "Build a bet", open: "Our Bets", history: "History", profile: "Profile" };
   $("page-title").textContent = titles[name] || titles.today;
-  const frames = { today: "day-frame", week: "week-frame", build: "build-frame" };
-  document.body.classList.toggle("day-board", Boolean(frames[name]));
+  document.body.classList.add("day-board");
   ["today", "week", "build", "open", "history", "profile"].forEach((id) => {
     $(`pane-${id}`).hidden = id !== name;
-    const tab = document.querySelector(`[data-tab="${id}"]`);
-    if (tab) tab.classList.toggle("on", id === name);
+    document.querySelectorAll(`[data-tab="${id}"]`).forEach((tab) => tab.classList.toggle("on", id === name));
   });
   if (name === "history") showHistory(historyName());
-  const frame = frames[name] ? $(frames[name]) : null;
-  const nav = $("main-tabs");
-  if (frame) frame.append(nav, $("who"));
-  else { document.querySelector(".top-side").append($("who")); $("banner").insertAdjacentElement("afterend", nav); }
+  const dock = $("desk-dock");
+  if (dock && $("who") && $("who").parentElement !== dock) dock.append($("who"));
+  if (window.deskFrame) window.deskFrame(name);
+  const historyTab = $("desk-history");
+  if (historyTab && $("tab-history")) historyTab.textContent = $("tab-history").textContent;
 }
 
 function historyName() {

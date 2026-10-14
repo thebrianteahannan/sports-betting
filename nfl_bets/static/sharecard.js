@@ -160,7 +160,7 @@ function loadTemplate() {
     const image = new Image();
     image.onload = () => resolve(image);
     image.onerror = () => reject(new Error("template"));
-    image.src = "/share-template.jpg?v=1";
+    image.src = "/share-template.jpg?v=5";
   });
   return shareTemplate;
 }

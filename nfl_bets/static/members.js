@@ -12,6 +12,7 @@ function showGate() {
   const who = document.getElementById("who");
   if (who) who.hidden = true;
   showGateMode("pick");
+  if (window.deskGate) window.deskGate();
 }
 
 function showMember(payload) {
