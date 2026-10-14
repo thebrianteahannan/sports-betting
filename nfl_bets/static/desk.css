@@ -391,6 +391,8 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
   min-height: 2.7rem;
 }
 #chooser.built #choice-filters { display: none; }
+#choice-save, #desk.tv-full #desk-glass #choice-save { width: 2.4rem; height: 2.4rem; min-height: 0; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+#choice-save.on svg { fill: currentColor; }
 #choice-again[hidden] { display: none; }
 #desk.tv-full #desk-glass #gate h2 { font-size: 40px; }
 #desk.tv-full #desk-glass #gate .aim { font-size: 18px; }

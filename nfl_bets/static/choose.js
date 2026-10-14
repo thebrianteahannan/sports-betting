@@ -90,7 +90,7 @@ function choiceKey() {
 
 async function runChoice() {
   const box = document.getElementById("choice-result");
-  const key = choiceKey();
+  const key = choiceKey(); document.getElementById("choice-save")?.remove();
   document.getElementById("choice-again").hidden = (document.getElementById("chooser").classList.add("built"), false);
   box.textContent = "Checking FanDuel.";
   const response = await fetch("/api/choose", {
@@ -115,8 +115,9 @@ async function runChoice() {
   }).join("");
   const kicks = [...new Set((card.legs || []).map((leg) => leg.kickoff).filter(Boolean))];
   const whenLine = kicks.length === 1 ? `<p class="when">${esc(when(kicks[0]))} ET</p>` : "";
-  const save = (card.legs || []).length ? `<p class="pick-save"><button type="button" id="choice-save">Save this bet</button></p>` : "";
-  box.innerHTML = `<h2>${esc(card.title || "Safest parlay")}</h2>${whenLine}<p>${esc(card.game ? `${card.game}. ` : "")}${esc(card.copy || "")}</p><ol class="chalk-legs">${legs}</ol><p class="quiet">${esc(card.note || "")}</p>${save}`;
+  const save = (card.legs || []).length ? `<button type="button" id="choice-save" aria-label="Save this bet" title="Save this bet"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>` : "";
+  box.innerHTML = `<h2>${esc(card.title || "Safest parlay")}</h2>${whenLine}<p>${esc(card.game ? `${card.game}. ` : "")}${esc(card.copy || "")}</p><ol class="chalk-legs">${legs}</ol><p class="quiet">${esc(card.note || "")}</p>`;
+  if (save) document.getElementById("choice-again").insertAdjacentHTML("afterbegin", save);
   const button = document.getElementById("choice-save");
   if (button) button.addEventListener("click", () => saveBuilt(card, button));
 }
@@ -135,10 +136,12 @@ async function saveBuilt(card, button) {
   const payload = await response.json();
   if (!response.ok) {
     button.disabled = false;
-    button.textContent = payload.error || "Could not save.";
+    button.title = payload.error || "Could not save.";
     return;
   }
-  button.textContent = "Saved";
+  button.title = "Saved";
+  button.setAttribute("aria-label", "Saved");
+  button.classList.add("on");
 }
 
 function etDay(ms) {
