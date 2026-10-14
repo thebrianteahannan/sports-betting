@@ -201,28 +201,28 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
 #desk-glow, #desk-glass { left: 558px; top: 20px; width: 392px; height: 620px; }
 #desk-glow { z-index: 3; pointer-events: none; border: 5px solid #3dff6e; box-shadow: 0 0 22px rgba(61, 255, 110, 0.55), inset 0 0 30px rgba(61, 255, 110, 0.2); animation: desk-glow 2.8s ease-in-out infinite; }
 #desk-glass { z-index: 4; background: #07131a; }
-#desk-note { width: 300px; height: 210px; z-index: 5; pointer-events: none; }
+#desk-note { width: 400px; height: 230px; z-index: 5; pointer-events: none; }
 #desk-note-in {
   height: 100%;
   overflow: hidden;
   background: transparent;
   color: #1a120c;
   font-family: "Bradley Hand", "Marker Felt", "Segoe Print", cursive;
-  padding: 14px 28px 12px 22px;
+  padding: 8px 18px 6px 16px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 #desk-note-in .note-kicker {
-  margin: 0 0 6px;
-  font-size: 18px;
+  margin: 0 0 4px;
+  font-size: 32px;
   font-weight: 700;
   line-height: 1.05;
 }
 #desk-note-in .note-reason {
   margin: 0;
-  font-size: 24px;
+  font-size: 52px;
   line-height: 1.08;
   transform-origin: 0 70%;
 }
