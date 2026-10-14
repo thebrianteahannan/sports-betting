@@ -1,5 +1,6 @@
 const LAPTOP = [[6, 636], [178, 678], [156, 798], [4, 756]];
 const NOTE = [[356, 778], [584, 751], [600, 882], [371, 909]];
+const NOTE_URL = [[353, 740], [559, 714], [561, 730], [355, 756]];
 const PANES = {
   today: ["best"],
   week: ["week", "week5", "safe"],
@@ -68,6 +69,8 @@ function warp() {
   glass.style.transform = "none";
   if (glow) glow.style.transform = "none";
   if (note && note.clientWidth) note.style.transform = quadMatrix(note.clientWidth, note.clientHeight, NOTE);
+  const url = document.getElementById("desk-url");
+  if (url && url.clientWidth) url.style.transform = quadMatrix(url.clientWidth, url.clientHeight, NOTE_URL);
   if (laptop && laptop.clientWidth) laptop.style.transform = quadMatrix(laptop.clientWidth, laptop.clientHeight, LAPTOP);
 }
 
@@ -93,6 +96,16 @@ function place(x, y, scale, box) {
 function shot() {
   const { w, h } = viewSize();
   return place(480, 512, Math.min(w / 959, h / 1024));
+}
+
+function setMenu(on) {
+  const desk = document.getElementById("desk");
+  const btn = document.getElementById("desk-menu");
+  if (!desk || !btn) return;
+  desk.classList.toggle("menu-open", on);
+  btn.setAttribute("aria-pressed", on ? "true" : "false");
+  btn.setAttribute("aria-expanded", on ? "true" : "false");
+  btn.setAttribute("aria-label", on ? "Close the menu" : "Open the menu");
 }
 
 function toggleTv() {
@@ -183,7 +196,7 @@ function paintNote() {
   const box = document.getElementById("desk-note-in");
   if (!box || box.dataset.live) return;
   box.dataset.live = "1";
-  box.innerHTML = `<p class="note-kicker">Why Parlay of the Day?</p><p class="note-reason" id="note-reason"></p>`;
+  box.innerHTML = `<p class="note-reason" id="note-reason"></p>`;
   const line = document.getElementById("note-reason");
   const show = () => {
     line.innerHTML = NOTE_REASONS[noteTick % NOTE_REASONS.length];
@@ -298,7 +311,124 @@ function bootDesk() {
   if (window.visualViewport) window.visualViewport.addEventListener("resize", refit);
   const full = document.getElementById("desk-full");
   if (full) full.addEventListener("click", toggleTv);
+  const menu = document.getElementById("desk-menu");
+  if (menu) menu.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setMenu(!document.getElementById("desk").classList.contains("menu-open"));
+  });
+  document.addEventListener("click", (event) => {
+    const desk = document.getElementById("desk");
+    if (!desk || !desk.classList.contains("menu-open")) return;
+    if (event.target.closest("#desk-dock")) {
+      if (event.target.closest("[data-tab]")) setMenu(false);
+      return;
+    }
+    setMenu(false);
+  });
   paintNote();
+  startGuide();
+}
+
+const BIRD_WAIT = 18000;
+const BIRD_NUDGES = [
+  ["Hey, want to make a bet?", [["build", "Build a bet"], ["today", "Best bets"]]],
+  ["Hey, you should try a safer bet.", [["build", "Try safe", "safe"]]],
+  ["Hey, want to try the long price? It misses more often.", [["build", "Best payout", "payout"]]],
+  ["The week uses a different day on each leg. Want a look?", [["week", "This week"]]],
+  ["The best bet of the day sits between −150 and +100. Want it?", [["today", "Show it"]]],
+];
+let birdTimer = 0;
+let birdNudge = 0;
+let birdOn = false;
+let birdHeld = false;
+
+function birdSay(text, picks) {
+  const box = document.getElementById("bird-guide");
+  const line = document.getElementById("bird-line");
+  const row = document.getElementById("bird-picks");
+  if (!box || !line || !row) return;
+  const desk = document.getElementById("desk");
+  if (document.body.classList.contains("needs-member")) {
+    box.hidden = true;
+    if (desk) desk.classList.remove("bird-on");
+    return;
+  }
+  if (desk) desk.classList.add("bird-on");
+  line.textContent = text;
+  row.replaceChildren();
+  (picks || []).forEach(([tab, label, aim]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.tab = tab;
+    if (aim) button.dataset.aim = aim;
+    button.textContent = label;
+    row.append(button);
+  });
+  box.hidden = false;
+  const head = document.getElementById("desk-head");
+  if (!head) return;
+  head.classList.remove("bird-talk");
+  void head.offsetWidth;
+  head.classList.add("bird-talk");
+}
+
+function birdBump() {
+  clearTimeout(birdTimer);
+  if (document.body.classList.contains("needs-member")) return;
+  birdTimer = setTimeout(() => {
+    if (document.body.classList.contains("needs-member")) return;
+    const nudge = BIRD_NUDGES[birdNudge % BIRD_NUDGES.length];
+    birdNudge += 1;
+    birdSay(nudge[0], nudge[1]);
+    birdBump();
+  }, BIRD_WAIT);
+}
+
+function birdHide() {
+  const desk = document.getElementById("desk");
+  const box = document.getElementById("bird-guide");
+  if (desk) desk.classList.remove("bird-on");
+  if (box) box.hidden = true;
+}
+
+function birdLand() {
+  birdOn = true;
+  birdHeld = true;
+  birdHide();
+  birdBump();
+}
+
+function startGuide() {
+  const hello = () => {
+    birdOn = true;
+    birdHeld = false;
+    birdSay("Hey.", []);
+    setTimeout(() => {
+      if (!birdOn || birdHeld || document.body.classList.contains("needs-member")) return;
+      birdSay("Hey. What are you trying to do today?", [["today", "Best bets"], ["build", "Build a bet"]]);
+    }, 900);
+    birdBump();
+  };
+  if (document.body.classList.contains("needs-member")) {
+    const watch = new MutationObserver(() => {
+      if (document.body.classList.contains("needs-member")) return;
+      watch.disconnect();
+      hello();
+    });
+    watch.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  } else hello();
+  document.addEventListener("pointerdown", birdBump);
+  document.addEventListener("keydown", birdBump);
+  document.addEventListener("click", (event) => {
+    const pick = event.target.closest("#bird-guide [data-tab]");
+    if (pick && pick.dataset.aim) {
+      const aim = document.querySelector(`#choice-aim [data-aim="${pick.dataset.aim}"]`);
+      if (aim) aim.click();
+    }
+    const tab = event.target.closest("[data-tab]");
+    if (!tab || !birdOn) return;
+    birdLand();
+  });
 }
 
 window.deskFrame = deskFrame;

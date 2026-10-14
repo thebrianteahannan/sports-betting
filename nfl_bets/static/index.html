@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/app.css?v=45"/>
-<link rel="stylesheet" href="/desk.css?v=23"/>
+<link rel="stylesheet" href="/desk.css?v=32"/>
 <style>
 #page-title { display: none; }
 #who { gap: 0.28rem; align-items: center; }
@@ -56,8 +56,9 @@ body.day-board #parrot-load[hidden] { display: none; }
     <img id="desk-bg" alt="" src="/scene/bg.jpg?v=8">
     <div id="desk-neon" aria-hidden="true"></div>
     <div class="warp glow" id="desk-glow" aria-hidden="true"></div>
-    <div class="warp" id="desk-glass"><div class="warp-in" id="desk-glass-in"></div></div>
+    <div class="warp" id="desk-glass"><div class="warp-in" id="desk-glass-in"></div><div id="bird-guide" hidden><p id="bird-line"></p><div id="bird-picks"></div></div></div>
     <img id="desk-pad" alt="" src="/scene/notepad.png?v=6">
+    <div class="warp" id="desk-url"><p>https://parlayoftheday.com</p></div>
     <div class="warp" id="desk-note"><div class="warp-in" id="desk-note-in"></div></div>
     <img id="desk-books" alt="" src="/scene/books.png">
     <div id="desk-actor">
@@ -72,6 +73,10 @@ body.day-board #parrot-load[hidden] { display: none; }
     <button type="button" class="hot" data-tab="how" aria-label="How we pick" style="left:640px;top:688px;width:280px;height:150px"></button>
     <button type="button" class="hot" data-tab="history" aria-label="History" style="left:860px;top:740px;width:99px;height:190px"></button>
   </div>
+  <a id="desk-logo" href="/"><img src="/logo.png?v=5" alt="Parlay of the Day"></a>
+  <button type="button" id="desk-menu" aria-pressed="false" aria-expanded="false" aria-controls="desk-dock" aria-label="Open the menu">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
   <button type="button" id="desk-full" aria-pressed="false" aria-label="Make the TV full screen">
     <svg class="open" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg>
     <svg class="shut" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9h5V4M15 4v5h5M20 15h-5v5M9 20v-5H4"/></svg>
@@ -416,7 +421,7 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
 <script src="/app.js?v=69"></script>
-<script src="/desk.js?v=21"></script>
+<script src="/desk.js?v=26"></script>
 <script src="/members.js?v=16"></script>
 <script src="/stars.js?v=1"></script>
 <script src="/choose.js?v=22"></script>
