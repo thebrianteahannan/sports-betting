@@ -78,13 +78,25 @@ function paintAdmin(payload) {
     return;
   }
   const admins = rows.filter((row) => row.admin).map((row) => row.name || row.email);
-  const body = rows.map((row) => {
+  const line = (row) => {
     const role = row.admin ? "Admin" : "Member";
     const stay = String(row.email || "").toLowerCase() === "bthannan@gmail.com";
     const action = stay ? "" : `<button type="button" class="ghost" data-admin-email="${esc(row.email || "")}" data-admin-on="${row.admin ? "0" : "1"}">${row.admin ? "Remove" : "Make admin"}</button>`;
-    return `<tr><td>${esc(row.name || "Member")}</td><td>${esc(row.email || "")}</td><td>${esc(planName(row.plan))}</td><td>${esc(role)} ${action}</td><td>${esc(loginWhen(row.lastLogin))}</td></tr>`;
+    return { role, action, row };
+  };
+  const head = `<p>Admins: ${esc(admins.join(", ") || "none")}.</p>`;
+  if (window.matchMedia("(max-width: 760px)").matches) {
+    list.innerHTML = head + rows.map((row) => {
+      const item = line(row);
+      return `<article class="report-card"><p><b>${esc(item.row.name || "Member")}</b> · ${esc(item.role)} ${item.action}</p><p>${esc(item.row.email || "")}</p><p class="quiet">${esc(planName(item.row.plan))} · ${esc(loginWhen(item.row.lastLogin))}</p></article>`;
+    }).join("");
+    return;
+  }
+  const body = rows.map((row) => {
+    const item = line(row);
+    return `<tr><td>${esc(item.row.name || "Member")}</td><td>${esc(item.row.email || "")}</td><td>${esc(planName(item.row.plan))}</td><td>${esc(item.role)} ${item.action}</td><td>${esc(loginWhen(item.row.lastLogin))}</td></tr>`;
   }).join("");
-  list.innerHTML = `<p>Admins: ${esc(admins.join(", ") || "none")}.</p><table class="admin-table"><thead><tr><th>Name</th><th>Email</th><th>Subscription</th><th>Admin</th><th>Last login</th></tr></thead><tbody>${body}</tbody></table>`;
+  list.innerHTML = `${head}<table class="admin-table"><thead><tr><th>Name</th><th>Email</th><th>Subscription</th><th>Admin</th><th>Last login</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 
 async function setAdminRole(email, admin) {

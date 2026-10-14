@@ -186,9 +186,9 @@ function roundBox(ctx, x, y, w, h, r) {
 }
 
 function drawBoard(ctx, bet) {
-  const x = 568;
-  const y = 8;
-  const w = 380;
+  const x = 574;
+  const y = 0;
+  const w = 382;
   const h = 648;
   const left = x + 16;
   const right = x + w - 16;
@@ -296,24 +296,28 @@ function drawBoard(ctx, bet) {
 
 function drawFound(ctx, bet) {
   ctx.save();
-  ctx.translate(500, 800);
-  ctx.rotate(0.16);
+  ctx.translate(490, 850);
+  ctx.rotate(-0.22);
   ctx.fillStyle = "#f3e4ce";
-  ctx.fillRect(-230, -95, 470, 240);
+  ctx.fillRect(-155, -132, 320, 247);
   ctx.fillStyle = "#1a1a1a";
   ctx.textBaseline = "top";
   const hand = "'Bradley Hand', 'Marker Felt', cursive";
-  ctx.font = `700 26px ${hand}`;
-  ctx.fillText("FOUND", -200, -80);
-  ctx.font = `20px ${hand}`;
-  ctx.fillText(bet.found || "Just now", -200, -50);
-  ctx.fillText("Prices can change.", -200, -24);
+  const wide = 290;
+  ctx.font = `700 24px ${hand}`;
+  ctx.fillText("FOUND", -140, -90);
+  ctx.font = `${fitText(ctx, bet.found || "Just now", wide, 18, hand)}px ${hand}`;
+  ctx.fillText(bet.found || "Just now", -140, -60);
+  ctx.font = `${fitText(ctx, "Prices can change.", wide, 18, hand)}px ${hand}`;
+  ctx.fillText("Prices can change.", -140, -36);
   const lines = bet.why || [];
   if (lines.length) {
-    ctx.font = `700 26px ${hand}`;
-    ctx.fillText("WHY", -200, 12);
-    ctx.font = `20px ${hand}`;
-    lines.forEach((line, index) => ctx.fillText(line, -200, 42 + index * 26));
+    ctx.font = `700 24px ${hand}`;
+    ctx.fillText("WHY", -140, -2);
+    lines.forEach((line, index) => {
+      ctx.font = `${fitText(ctx, line, wide, 18, hand)}px ${hand}`;
+      ctx.fillText(line, -140, 28 + index * 24);
+    });
   }
   ctx.restore();
 }
@@ -424,7 +428,7 @@ async function paintPoster(key, imgId, card, kicker, label, textIds, boxId) {
     return;
   }
   const bet = shareFrom(card, kicker, label);
-  const mark = `${bet.legs.map((leg) => `${leg.label}|${leg.form || ""}`).join("|")}|${card.american || ""}|3`;
+  const mark = `${bet.legs.map((leg) => `${leg.label}|${leg.form || ""}`).join("|")}|${card.american || ""}|4`;
   if (posterMark[key] === mark && img.getAttribute("src")) {
     img.hidden = false;
     img.style.display = "block";
