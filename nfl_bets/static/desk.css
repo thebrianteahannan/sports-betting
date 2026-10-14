@@ -65,6 +65,7 @@ body.needs-member #desk-note { display: none; }
   border: 1px solid rgba(61, 255, 110, 0.7);
   box-shadow: none;
 }
+#desk-glass #gate-wait:not([hidden]) ~ .gate-legal { display: none; }
 #desk-glass #gate .gate-legal {
   margin: 0.9rem 0 0;
   color: #8ea0b3;
@@ -295,6 +296,69 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
   cursor: pointer;
 }
 .hot:hover, .hot.on { box-shadow: inset 0 0 0 2px rgba(61, 255, 110, 0.0), 0 0 18px rgba(61, 255, 110, 0.35); }
+#desk-full {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 14;
+  width: 2.7rem;
+  height: 2.7rem;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(61, 255, 110, 0.85);
+  border-radius: 8px;
+  background: rgba(4, 16, 12, 0.88);
+  color: #3dff6e;
+  box-shadow: 0 0 14px rgba(61, 255, 110, 0.35);
+  cursor: pointer;
+}
+#desk-full .shut { display: none; }
+#desk.tv-full #desk-full .open { display: none; }
+#desk.tv-full #desk-full .shut { display: block; }
+#desk-full:hover { filter: none; background: #3dff6e; color: #04140c; }
+#desk.tv-full #desk-glass {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 3.8rem;
+  width: auto;
+  height: auto;
+  z-index: 11;
+  transform: none;
+  border: 5px solid #3dff6e;
+  box-shadow: 0 0 28px rgba(61, 255, 110, 0.4);
+}
+#desk.tv-full #desk-glass h2 { font-size: 40px; }
+#desk.tv-full #desk-glass .quiet,
+#desk.tv-full #desk-glass .when,
+#desk.tv-full #desk-glass .aim,
+#desk.tv-full #desk-glass p,
+#desk.tv-full #desk-glass li { font-size: 18px; }
+#desk.tv-full #desk-glass #pane-how b { font-size: 22px; }
+#desk.tv-full #desk-glass li { grid-template-columns: 4.4rem minmax(0, 1fr); }
+#desk.tv-full #desk-glass .chalk,
+#desk.tv-full #desk-glass .tracked,
+#desk.tv-full #desk-glass .pane {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 28px 32px;
+}
+#desk.tv-full #desk-glass button,
+#desk.tv-full #desk-glass select,
+#desk.tv-full #desk-glass input {
+  font-size: 18px;
+  min-height: 2.7rem;
+}
+#chooser.built #choice-filters { display: none; }
+#choice-again[hidden] { display: none; }
+#desk.tv-full #desk-glass #gate h2 { font-size: 40px; }
+#desk.tv-full #desk-glass #gate .aim { font-size: 18px; }
+#desk.tv-full #desk-glass #gate .squawk p { font-size: 36px; }
+body.needs-member #desk.tv-full #desk-glass { bottom: 0; }
+#desk.tv-full #desk-dock { z-index: 12; }
 #desk-dock {
   position: absolute;
   left: 0;

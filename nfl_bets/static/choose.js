@@ -91,6 +91,7 @@ function choiceKey() {
 async function runChoice() {
   const box = document.getElementById("choice-result");
   const key = choiceKey();
+  document.getElementById("choice-again").hidden = (document.getElementById("chooser").classList.add("built"), false);
   box.textContent = "Checking FanDuel.";
   const response = await fetch("/api/choose", {
     method: "POST",
@@ -489,6 +490,8 @@ document.getElementById("choice-go").addEventListener("click", () => {
     document.getElementById("choice-result").textContent = String(error);
   });
 });
+
+document.getElementById("choice-another").onclick = () => { const chooser = document.getElementById("chooser"); chooser.classList.remove("built"); chooser.querySelector("#choice-again").hidden = true; chooser.querySelector("#choice-result").textContent = ""; };
 
 window.paintChoices = paintChoices;
 paintChoices();

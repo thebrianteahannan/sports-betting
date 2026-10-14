@@ -1,6 +1,8 @@
 const memberFetch = window.fetch.bind(window);
 
 function showGateMode(mode) {
+  const wait = document.getElementById("gate-wait");
+  if (wait) wait.hidden = true;
   document.getElementById("gate-pick").hidden = mode !== "pick";
   document.getElementById("member-form").hidden = mode !== "join";
   document.getElementById("login-form").hidden = mode !== "login";

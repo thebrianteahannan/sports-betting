@@ -90,23 +90,23 @@ function place(x, y, scale, box) {
   };
 }
 
-function zoomBox(w, h) {
-  const aspect = 640 / 720;
-  const fw = h * aspect;
-  return { w: fw, h, ox: (w - fw) / 2, oy: 0 };
+function shot() {
+  const { w, h } = viewSize();
+  return place(480, 512, Math.min(w / 959, h / 1024));
 }
 
-function shot(name) {
-  const { w, h } = viewSize();
-  const fit = Math.min(w / 959, h / 1024);
-  if (name === "build" || name === "open" || name === "history" || name === "profile" || name === "how") {
-    if (w / h > 640 / 720) {
-      const box = zoomBox(w, h);
-      return place(900, 0, Math.min(box.w / 640, box.h / 720), box);
-    }
-    return place(900, 0, Math.max(w / 700, h / 720));
-  }
-  return place(480, 512, fit);
+function toggleTv() {
+  const desk = document.getElementById("desk");
+  const glass = document.getElementById("desk-glass");
+  const glow = document.getElementById("desk-glow");
+  const btn = document.getElementById("desk-full");
+  if (!desk || !glass || !glow) return;
+  const on = desk.classList.toggle("tv-full");
+  if (on) desk.insertBefore(glass, document.getElementById("desk-dock"));
+  else glow.after(glass);
+  if (!btn) return;
+  btn.setAttribute("aria-pressed", on ? "true" : "false");
+  btn.setAttribute("aria-label", on ? "Close the TV" : "Make the TV full screen");
 }
 
 function apply() {
@@ -220,6 +220,7 @@ let squawkTimer = 0;
 function squawk() {
   const line = document.getElementById("gate-line");
   if (!line || squawkTimer) return;
+  line.setAttribute("aria-label", SQUAWK);
   let i = 0;
   let hold = 0;
   function step() {
@@ -259,6 +260,12 @@ function showGateScene() {
   shown = "gate";
   cam = shot("gate");
   apply();
+  const wait = document.getElementById("gate-wait");
+  const line = document.getElementById("gate-line");
+  if (wait && !wait.hidden) {
+    if (line) line.textContent = "The parrot is eating crackers.";
+    return;
+  }
   squawk();
 }
 
@@ -289,6 +296,8 @@ function bootDesk() {
   };
   window.addEventListener("resize", refit);
   if (window.visualViewport) window.visualViewport.addEventListener("resize", refit);
+  const full = document.getElementById("desk-full");
+  if (full) full.addEventListener("click", toggleTv);
   paintNote();
 }
 

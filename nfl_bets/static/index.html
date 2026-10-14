@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/app.css?v=45"/>
-<link rel="stylesheet" href="/desk.css?v=19"/>
+<link rel="stylesheet" href="/desk.css?v=23"/>
 <style>
 #page-title { display: none; }
 #who { gap: 0.28rem; align-items: center; }
@@ -72,6 +72,10 @@ body.day-board #parrot-load[hidden] { display: none; }
     <button type="button" class="hot" data-tab="how" aria-label="How we pick" style="left:640px;top:688px;width:280px;height:150px"></button>
     <button type="button" class="hot" data-tab="history" aria-label="History" style="left:860px;top:740px;width:99px;height:190px"></button>
   </div>
+  <button type="button" id="desk-full" aria-pressed="false" aria-label="Make the TV full screen">
+    <svg class="open" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg>
+    <svg class="shut" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9h5V4M15 4v5h5M20 15h-5v5M9 20v-5H4"/></svg>
+  </button>
   <nav id="desk-dock" aria-label="Desk">
     <button type="button" class="tab on" data-tab="today">Today</button>
     <button type="button" class="tab" data-tab="week">Week</button>
@@ -91,7 +95,10 @@ body.day-board #parrot-load[hidden] { display: none; }
   </div>
 </header>
 <section class="chalk" id="gate">
-  <div id="gate-pick">
+  <div id="gate-wait">
+    <h2>Logging you in</h2>
+  </div>
+  <div id="gate-pick" hidden>
     <h2>Free membership</h2>
     <p class="aim">Membership is free. This desk does not send bets. Create a membership, or sign in if you already have one.</p>
     <p class="pick-save">
@@ -121,7 +128,7 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p class="gate-legal">21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
   <p class="gate-legal">Gambling problem? Call 1-800-GAMBLER.</p>
   <div class="squawk">
-    <p id="gate-line" aria-label="Think you're smarter than a bird? Sign up and find out!!"></p>
+    <p id="gate-line" aria-label="The parrot is eating crackers.">The parrot is eating crackers.</p>
   </div>
 </section>
 <p class="banner" id="banner" hidden></p>
@@ -255,20 +262,23 @@ body.day-board #parrot-load[hidden] { display: none; }
 <div class="poster-stage">
 <img id="build-share" alt="Build a bet" src="/share-template.jpg?v=5">
 <section class="chalk chooser" id="chooser">
-  <p class="aim">Pick today or this week, the leagues, the prop, and how many legs. Leave the leagues and games blank to use all of them. 1 safest is the highest chance and stays the same. Safe aims at −200. Good aims at −100. Best payout takes the longest price. Tap Safe, Good, or Best payout again for a different bet. If one bet is the only fit, the card says so.</p>
-  <h2>Build a bet</h2>
-  <p class="pick-save"><button type="button" id="choice-speak">Speak a bet</button></p>
-  <p class="quiet" id="choice-heard"></p>
-  <div class="choices" id="choice-when"></div>
-  <div class="choices" id="choice-sports"></div>
-  <label class="choice-line games">Games <select id="choice-game" multiple size="3"></select></label>
-  <label class="choice-line">Prop <select id="choice-kind">
-    <option value="any">Any player prop</option>
-  </select></label>
-  <div class="choices" id="choice-legs"></div>
-  <div class="choices" id="choice-aim"></div>
-  <p class="pick-save"><button type="button" id="choice-go">Show the safest</button></p>
+  <div id="choice-filters">
+    <p class="aim">Pick today or this week, the leagues, the prop, and how many legs. Leave the leagues and games blank to use all of them. 1 safest is the highest chance and stays the same. Safe aims at −200. Good aims at −100. Best payout takes the longest price. Tap Safe, Good, or Best payout again for a different bet. If one bet is the only fit, the card says so.</p>
+    <h2>Build a bet</h2>
+    <p class="pick-save"><button type="button" id="choice-speak">Speak a bet</button></p>
+    <p class="quiet" id="choice-heard"></p>
+    <div class="choices" id="choice-when"></div>
+    <div class="choices" id="choice-sports"></div>
+    <label class="choice-line games">Games <select id="choice-game" multiple size="3"></select></label>
+    <label class="choice-line">Prop <select id="choice-kind">
+      <option value="any">Any player prop</option>
+    </select></label>
+    <div class="choices" id="choice-legs"></div>
+    <div class="choices" id="choice-aim"></div>
+    <p class="pick-save"><button type="button" id="choice-go">Show the safest</button></p>
+  </div>
   <div id="choice-result"></div>
+  <p class="pick-save" id="choice-again" hidden><button type="button" id="choice-another">Build another bet</button></p>
 </section>
 </div>
 </div>
@@ -406,10 +416,10 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
 <script src="/app.js?v=69"></script>
-<script src="/desk.js?v=19"></script>
-<script src="/members.js?v=15"></script>
+<script src="/desk.js?v=21"></script>
+<script src="/members.js?v=16"></script>
 <script src="/stars.js?v=1"></script>
-<script src="/choose.js?v=21"></script>
+<script src="/choose.js?v=22"></script>
 <script src="/lessons.js?v=7"></script>
 <script src="/filters.js?v=8"></script>
 <script src="/reports.js?v=1"></script>
