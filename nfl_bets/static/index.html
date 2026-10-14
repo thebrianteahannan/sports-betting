@@ -14,15 +14,13 @@
 html, body.day-board { overflow-x: hidden; max-width: 100%; }
 body.day-board .brand, body.day-board .top::after, body.day-board .lede, body.day-board footer { display: none; }
 body.day-board .top { position: absolute; width: 0; height: 0; padding: 0; overflow: visible; background: none; }
-body.day-board .poster-frame { position: relative; width: min(100vw, calc(100svh * 0.937)); width: min(100dvw, calc(100svh * 0.937)); max-width: 100vw; max-width: 100dvw; min-width: 0; margin: 0 auto; overflow: hidden; }
+body.day-board .poster-frame { position: relative; width: 100%; max-width: 100%; min-width: 0; margin: 0 auto; }
 body.day-board .poster-frame > img:not([hidden]) { width: 100%; max-width: 100%; height: auto; min-width: 0; margin: 0; display: block; }
 body.day-board .poster-frame > nav.tabs, body.day-board .poster-frame > .who { position: absolute; z-index: 5; margin: 0; bottom: 0.45rem; }
 body.day-board .poster-frame > nav.tabs { left: 0.4rem; right: 3.1rem; width: auto; max-width: none; gap: 0.28rem; flex-wrap: nowrap; }
 body.day-board .poster-frame > .who { right: 0.4rem; }
 body.day-board .poster-frame .tab { padding: 0.28rem 0.55rem; background: rgba(7, 9, 14, 0.78); white-space: nowrap; }
 @media (max-width: 760px) {
-  body.day-board .poster-frame,
-  body.day-board .poster-frame > img:not([hidden]) { width: 100vw; width: 100dvw; max-width: 100vw; max-width: 100dvw; }
   body.day-board .poster-frame > nav.tabs { left: 0.2rem; right: 2.05rem; bottom: 0.25rem; gap: 0.15rem; }
   body.day-board .poster-frame .tab { padding: 0.12rem 0.28rem; font-size: 0.62rem; letter-spacing: 0.01em; }
   body.day-board .poster-frame > .who { right: 0.15rem; bottom: 0.25rem; }
@@ -366,5 +364,29 @@ body.day-board #choice-result h2 { font-size: 1.05rem; color: #3dff6e; }
 <script src="/reports.js?v=1"></script>
 <script src="/admin.js?v=18"></script>
 <script src="/sharecard.js?v=19"></script>
+<script>
+function fitPoster() {
+  const frames = document.querySelectorAll(".poster-frame");
+  if (!document.body.classList.contains("day-board")) {
+    frames.forEach((frame) => { frame.style.width = ""; frame.style.maxWidth = ""; });
+    return;
+  }
+  const view = window.visualViewport;
+  const widths = [document.documentElement.clientWidth, window.innerWidth];
+  if (view) widths.push(view.width);
+  const vw = Math.floor(Math.min.apply(null, widths));
+  const vh = Math.floor(Math.min(window.innerHeight, view ? view.height : window.innerHeight));
+  const width = Math.max(1, Math.min(vw, Math.floor(vh * 959 / 1024)));
+  frames.forEach((frame) => {
+    frame.style.width = width + "px";
+    frame.style.maxWidth = width + "px";
+  });
+  console.log("poster fit", vw, vh, width);
+}
+fitPoster();
+window.addEventListener("resize", fitPoster);
+if (window.visualViewport) window.visualViewport.addEventListener("resize", fitPoster);
+new MutationObserver(fitPoster).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+</script>
 </body>
 </html>
