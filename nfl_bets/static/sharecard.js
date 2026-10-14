@@ -408,7 +408,7 @@ const posterMark = {};
 function posterText(ids, boxId, show) {
   ids.forEach((id) => {
     const el = document.getElementById(id);
-    if (el) el.hidden = !show;
+    if (el) el.hidden = false;
   });
   const box = document.getElementById(boxId);
   if (box) box.classList.toggle("open-share", !show);
@@ -433,6 +433,7 @@ async function paintPoster(key, imgId, card, kicker, label, textIds, boxId) {
     img.hidden = false;
     img.style.display = "block";
     posterText(textIds, boxId, false);
+    if (window.fitPoster) window.fitPoster();
     return;
   }
   try {
@@ -451,6 +452,7 @@ async function paintPoster(key, imgId, card, kicker, label, textIds, boxId) {
     img.style.display = "block";
     posterMark[key] = mark;
     posterText(textIds, boxId, false);
+    if (window.fitPoster) window.fitPoster();
   } catch (error) {
     posterText(textIds, boxId, true);
   }
