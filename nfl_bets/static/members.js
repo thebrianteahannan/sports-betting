@@ -20,7 +20,7 @@ function showMember(payload) {
   const who = document.getElementById("who");
   who.hidden = false;
   const admin = !!member.admin;
-  who.innerHTML = `<button type="button" id="member-profile" aria-label="Profile" title="${esc(member.name)}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.5-3.1 4-4.6 7-4.6s5.5 1.5 7 4.6"/></svg></button>`;
+  who.innerHTML = `<button type="button" id="hard-refresh" aria-label="Reload the page" title="Reload"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.2-5.8"/><path d="M21 4v5h-5"/></svg></button><button type="button" id="member-profile" aria-label="Profile" title="${esc(member.name)}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.5-3.1 4-4.6 7-4.6s5.5 1.5 7 4.6"/></svg></button>`;
   const heading = document.querySelector("#activity h2");
   if (heading) heading.textContent = member.name || "Your membership";
   const adminBox = document.getElementById("profile-admin");
@@ -115,7 +115,20 @@ window.fetch = async function memberAwareFetch(url, options) {
   return response;
 };
 
+async function hardRefresh() {
+  const stamp = Date.now();
+  try {
+    if (window.caches) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+    }
+    await fetch("/?fresh=" + stamp, { cache: "reload" });
+  } catch (error) {}
+  location.replace(location.pathname + "?fresh=" + stamp);
+}
+
 document.getElementById("who").addEventListener("click", (event) => {
+  if (event.target.closest("#hard-refresh")) hardRefresh();
   if (event.target.closest("#member-profile")) showTab("profile");
 });
 document.getElementById("pane-profile").addEventListener("click", (event) => {
