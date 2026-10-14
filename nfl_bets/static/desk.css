@@ -157,15 +157,24 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
   z-index: 8;
   pointer-events: none;
 }
+#desk-sign {
+  position: absolute;
+  left: 118px;
+  top: 230px;
+  width: 216px;
+  height: 47px;
+  z-index: 9;
+  pointer-events: none;
+}
 #desk-head {
   position: absolute;
   inset: 0;
-  transform-origin: 360px 534px;
+  transform-origin: 416px 534px;
   animation: desk-bob 3.2s ease-in-out infinite;
 }
 #desk-glint {
   position: absolute;
-  left: 322px;
+  left: 378px;
   top: 328px;
   width: 168px;
   height: 42px;
@@ -247,6 +256,8 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+#desk-glass #pane-how p { margin: 0 0 6px; }
+#desk-glass #pane-how b { color: #3dff6e; font-size: 16px; letter-spacing: 0.04em; }
 #desk-glass .aim, #desk-glass .when, #desk-glass .quiet { color: #d5deea; font-size: 13px; }
 #desk-glass .aim { display: none; }
 #desk-glass li { grid-template-columns: 3.4rem minmax(0, 1fr); align-items: start; }

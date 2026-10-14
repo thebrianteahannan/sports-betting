@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/app.css?v=45"/>
-<link rel="stylesheet" href="/desk.css?v=15"/>
+<link rel="stylesheet" href="/desk.css?v=18"/>
 <style>
 #page-title { display: none; }
 #who { gap: 0.28rem; align-items: center; }
@@ -61,15 +61,16 @@ body.day-board #parrot-load[hidden] { display: none; }
     <div class="warp" id="desk-note"><div class="warp-in" id="desk-note-in"></div></div>
     <img id="desk-books" alt="" src="/scene/books.png">
     <div id="desk-actor">
-      <img id="desk-body" alt="" src="/scene/parrot-body.png?v=2">
+      <img id="desk-body" alt="" src="/scene/parrot-body.png?v=3">
       <div id="desk-head">
-        <img id="desk-parrot" alt="" src="/scene/parrot-head.png?v=2">
+        <img id="desk-parrot" alt="" src="/scene/parrot-head.png?v=4">
         <div id="desk-glint" aria-hidden="true"></div>
       </div>
     </div>
+    <img id="desk-sign" alt="" src="/scene/sign-words.png?v=1">
     <div class="warp" id="desk-laptop"><div class="warp-in" id="desk-laptop-in"></div></div>
     <button type="button" class="hot" data-tab="week" aria-label="Week" style="left:300px;top:728px;width:420px;height:52px"></button>
-    <button type="button" class="hot" data-tab="open" aria-label="Our bets" style="left:640px;top:688px;width:280px;height:150px"></button>
+    <button type="button" class="hot" data-tab="how" aria-label="How we pick" style="left:640px;top:688px;width:280px;height:150px"></button>
     <button type="button" class="hot" data-tab="history" aria-label="History" style="left:860px;top:740px;width:99px;height:190px"></button>
   </div>
   <nav id="desk-dock" aria-label="Desk">
@@ -273,6 +274,18 @@ body.day-board #parrot-load[hidden] { display: none; }
 </div>
 </div>
 </div>
+<section class="tracked" id="pane-how" hidden>
+  <h2>How we pick</h2>
+  <p class="quiet">Four steps. Then a ticket for today and a ticket for the week.</p>
+  <p><b>Research</b></p>
+  <p class="quiet">FanDuel is checked every 10 minutes. The slate is already the player props on the board. College player props stay off, because FanDuel does not offer them.</p>
+  <p><b>Analyze</b></p>
+  <p class="quiet">The card names the stat, so a price has a job. A −550 on 5 receiving yards and a −550 on a score are different bets. Four prices near 85% multiply to about a coin flip. Prices like −800 stay off the best bet of the day.</p>
+  <p><b>Make the picks</b></p>
+  <p class="quiet">Today is the ticket whose price lands between −150 and +100, and the highest chance inside that window. The week is a 3-leg and a 5-leg aimed at −200, so a $5 bet wins about $2.50, plus a super safe parlay aimed at −350. Each leg is a different day. Build a bet can ask for the highest chance, a safe −200, a good −100, or the longest price.</p>
+  <p><b>Cash</b></p>
+  <p class="quiet">You place it. This desk does not send it. Type the line into your own FanDuel account if you want it. A $5 night stays a $5 night. 21+. Gambling problem? Call 1-800-GAMBLER. Past results do not promise the next ticket.</p>
+</section>
 <div class="pane" id="pane-open" hidden>
 <section class="tracked">
   <h2>Our Bets</h2>
@@ -393,8 +406,8 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p>21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
-<script src="/app.js?v=68"></script>
-<script src="/desk.js?v=14"></script>
+<script src="/app.js?v=69"></script>
+<script src="/desk.js?v=18"></script>
 <script src="/members.js?v=15"></script>
 <script src="/stars.js?v=1"></script>
 <script src="/choose.js?v=21"></script>

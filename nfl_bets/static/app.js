@@ -364,10 +364,10 @@ function renderArchive(tickets) {
 
 function showTab(name) {
   state.tab = name;
-  const titles = { today: "Today", week: "Week", build: "Build a bet", open: "Our Bets", history: "History", profile: "Profile" };
+  const titles = { today: "Today", week: "Week", build: "Build a bet", open: "Our Bets", history: "History", profile: "Profile", how: "How we pick" };
   $("page-title").textContent = titles[name] || titles.today;
   document.body.classList.add("day-board");
-  ["today", "week", "build", "open", "history", "profile"].forEach((id) => {
+  ["today", "week", "build", "open", "history", "profile", "how"].forEach((id) => {
     $(`pane-${id}`).hidden = id !== name;
     document.querySelectorAll(`[data-tab="${id}"]`).forEach((tab) => tab.classList.toggle("on", id === name));
   });

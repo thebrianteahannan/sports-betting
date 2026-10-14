@@ -5,6 +5,7 @@ const PANES = {
   week: ["week", "week5", "safe"],
   build: ["chooser"],
   open: ["pane-open"],
+  how: ["pane-how"],
   history: ["pane-history"],
   profile: ["pane-profile"],
 };
@@ -14,6 +15,10 @@ let shown = "";
 let tweenId = 0;
 
 function viewSize() {
+  const desk = document.getElementById("desk");
+  if (desk && desk.clientWidth > 0 && desk.clientHeight > 0) {
+    return { w: desk.clientWidth, h: desk.clientHeight };
+  }
   const view = window.visualViewport;
   return {
     w: view ? view.width : window.innerWidth,
@@ -66,8 +71,10 @@ function warp() {
   if (laptop && laptop.clientWidth) laptop.style.transform = quadMatrix(laptop.clientWidth, laptop.clientHeight, LAPTOP);
 }
 
-function place(x, y, scale) {
-  const { w, h } = viewSize();
+function place(x, y, scale, box) {
+  const full = viewSize();
+  const w = box ? box.w : full.w;
+  const h = box ? box.h : full.h;
   const visW = w / scale;
   const visH = h / scale;
   const midX = 959 / 2;
@@ -76,15 +83,28 @@ function place(x, y, scale) {
     x: Math.min(Math.max(x, Math.min(visW / 2, midX)), Math.max(959 - visW / 2, midX)),
     y: Math.min(Math.max(y, Math.min(visH / 2, midY)), Math.max(1024 - visH / 2, midY)),
     scale,
+    ox: box ? box.ox : 0,
+    oy: box ? box.oy : 0,
+    sw: w,
+    sh: h,
   };
+}
+
+function zoomBox(w, h) {
+  const aspect = 640 / 720;
+  const fw = h * aspect;
+  return { w: fw, h, ox: (w - fw) / 2, oy: 0 };
 }
 
 function shot(name) {
   const { w, h } = viewSize();
-  const cover = Math.max(w / 959, h / 1024);
   const fit = Math.min(w / 959, h / 1024);
-  if (name === "build" || name === "open" || name === "history" || name === "profile") {
-    return place(750, 340, Math.max(cover, Math.min(w / 480, h / 720)));
+  if (name === "build" || name === "open" || name === "history" || name === "profile" || name === "how") {
+    if (w / h > 640 / 720) {
+      const box = zoomBox(w, h);
+      return place(900, 0, Math.min(box.w / 640, box.h / 720), box);
+    }
+    return place(900, 0, Math.max(w / 700, h / 720));
   }
   return place(480, 512, fit);
 }
@@ -93,11 +113,24 @@ function apply() {
   const world = document.getElementById("desk-world");
   if (!world) return;
   const { w, h } = viewSize();
-  world.style.transform = `translate(${w / 2 - cam.x * cam.scale}px, ${h / 2 - cam.y * cam.scale}px) scale(${cam.scale})`;
+  const sw = cam.sw || w;
+  const sh = cam.sh || h;
+  const ox = cam.ox || 0;
+  const oy = cam.oy || 0;
+  world.style.transform = `translate(${ox + sw / 2 - cam.x * cam.scale}px, ${oy + sh / 2 - cam.y * cam.scale}px) scale(${cam.scale})`;
 }
 
 function tween(target) {
-  const from = { x: cam.x, y: cam.y, scale: cam.scale };
+  const { w, h } = viewSize();
+  const from = {
+    x: cam.x,
+    y: cam.y,
+    scale: cam.scale,
+    ox: cam.ox || 0,
+    oy: cam.oy || 0,
+    sw: cam.sw || w,
+    sh: cam.sh || h,
+  };
   const start = performance.now();
   const token = ++tweenId;
   function step(now) {
@@ -107,6 +140,10 @@ function tween(target) {
     cam.x = from.x + (target.x - from.x) * ease;
     cam.y = from.y + (target.y - from.y) * ease;
     cam.scale = from.scale + (target.scale - from.scale) * ease;
+    cam.ox = from.ox + ((target.ox || 0) - from.ox) * ease;
+    cam.oy = from.oy + ((target.oy || 0) - from.oy) * ease;
+    cam.sw = from.sw + ((target.sw || w) - from.sw) * ease;
+    cam.sh = from.sh + ((target.sh || h) - from.sh) * ease;
     apply();
     if (k < 1) requestAnimationFrame(step);
   }
