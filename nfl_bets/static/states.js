@@ -25,7 +25,7 @@ Object.keys(STATE_NAME).forEach((code) => {
 });
 STATE_LAW.FL.kind = "props";
 STATE_LAW.FL.level = "some";
-STATE_LAW.FL.note = "Hard Rock is the sportsbook. College player props stay off. These prices are FanDuel's. Hard Rock's number is usually close, and sometimes the same.";
+STATE_LAW.FL.note = "Hard Rock is your sportsbook. We use FanDuel for the odds and prices. Your sportsbook is different, and the numbers are usually close. College player props stay off.";
 const BOOKS = [
   { id: "fanduel", name: "FanDuel", href: "https://sportsbook.fanduel.com/", states: "AZ AR CO CT DC IL IN IA KS KY LA MD MA MI MO NJ NY NC OH PA TN VT VA WV WY" },
   { id: "hardrock", name: "Hard Rock", href: "https://www.hardrock.bet/", states: "AZ CO FL IL IN MI NJ OH TN VA" },
@@ -72,7 +72,7 @@ function lawNote() {
   if (row.kind === "off" && other.length) return `${row.name}: FanDuel Sportsbook is not offered. You can place these FanDuel prices on ${other.map((book) => book.name).join(", ")}. The number is usually close, and sometimes the same. Check it before you bet.`;
   if (row.level === "none") return "";
   const book = BOOKS.find((item) => item.id === window.memberBook);
-  const extra = book && book.id !== "fanduel" && !row.note.includes("usually close") ? ` These prices are FanDuel's. ${book.name}'s number is usually close, and sometimes the same.` : "";
+  const extra = book && book.id !== "fanduel" && !row.note.includes("usually close") ? ` ${book.name} is your sportsbook. We use FanDuel for the odds and prices. Your sportsbook is different, and the numbers are usually close.` : "";
   return `${row.name}: ${row.note}${extra}`;
 }
 
