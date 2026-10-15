@@ -1,6 +1,6 @@
 const LAPTOP = [[6, 636], [178, 678], [156, 798], [4, 756]];
 const NOTE = [[356, 778], [584, 751], [600, 882], [371, 909]];
-const NOTE_URL = [[353, 740], [559, 714], [561, 730], [355, 756]];
+const NOTE_URL = [[353, 766], [559, 740], [561, 756], [355, 782]];
 const PANES = {
   today: ["best"],
   week: ["week", "week5", "safe"],
@@ -327,18 +327,23 @@ function bootDesk() {
   });
   paintNote();
   startGuide();
+  const back = document.getElementById("desk-back");
+  if (back) back.addEventListener("click", tvBack);
+  const go = document.getElementById("choice-go");
+  if (go) go.addEventListener("click", tvPush);
+  const home = document.getElementById("desk-home");
+  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; birdSay("Hey. What are you trying to do today?", [["today", "Our Recommended Bets"], ["build", "Build Your Own Bet"]]); tvSkip = false; birdBump(); });
 }
-
 const BIRD_WAIT = 18000;
 const BIRD_NUDGES = [
-  ["Hey, want to make a bet?", [["build", "Build a bet"], ["today", "Best bets"]]],
-  ["Hey, you should try a safer bet.", [["build", "Try safe", "safe"]]],
-  ["Hey, want to try the long price? It misses more often.", [["build", "Best payout", "payout"]]],
-  ["The week uses a different day on each leg. Want a look?", [["week", "This week"]]],
+  ["Hey, want to find a bet you want to make?", [["today", "Our Recommended Bets"], ["build", "Build Your Own Bet"]]],
+  ["Hey, try a safe bet. Safe aims at −200, so a $5 bet wins about $2.50. That price misses less often than the long price. It can still miss.", [["build", "Try Safe Bet", "safe"]]],
+  ["Hey, the safe bet is sometimes boring. A higher payout is louder, and it gives you something to talk about with friends. That long price misses more often. It can still miss.", [["build", "Build a higher payout", "payout"]]],
+  ["Best Bets of the Week uses a different day on each leg. Want a look?", [["week", "Best Bets of the Week"]]],
   ["The best bet of the day sits between −150 and +100. Want it?", [["today", "Show it"]]],
+  ["Gambling can ruin people's lives. Only bet money you can afford to lose. If you need help, call 1‑800‑GAMBLER.", []],
 ];
-let birdTimer = 0;
-let birdNudge = 0;
+let birdTimer = 0; let birdNudge = 0;
 let birdOn = false;
 let birdHeld = false;
 
@@ -353,6 +358,7 @@ function birdSay(text, picks) {
     if (desk) desk.classList.remove("bird-on");
     return;
   }
+  if (!tvSkip && tvSeen && desk && !desk.classList.contains("bird-on")) tvPush();
   if (desk) desk.classList.add("bird-on");
   line.textContent = text;
   row.replaceChildren();
@@ -392,6 +398,9 @@ function birdHide() {
 }
 
 function birdLand() {
+  const desk = document.getElementById("desk");
+  if (desk && desk.classList.contains("bird-on")) tvPush();
+  tvSeen = true;
   birdOn = true;
   birdHeld = true;
   birdHide();
@@ -405,7 +414,7 @@ function startGuide() {
     birdSay("Hey.", []);
     setTimeout(() => {
       if (!birdOn || birdHeld || document.body.classList.contains("needs-member")) return;
-      birdSay("Hey. What are you trying to do today?", [["today", "Best bets"], ["build", "Build a bet"]]);
+      birdSay("Hey. What are you trying to do today?", [["today", "Our Recommended Bets"], ["build", "Build Your Own Bet"]]);
     }, 900);
     birdBump();
   };
@@ -430,6 +439,61 @@ function startGuide() {
     birdLand();
   });
 }
+
+let tvStack = [];
+let tvSkip = false;
+let tvSeen = false;
+function tvShot() {
+  const desk = document.getElementById("desk");
+  if (desk && desk.classList.contains("bird-on")) {
+    const picks = [...document.querySelectorAll("#bird-picks button")].map((b) => [b.dataset.tab, b.textContent, b.dataset.aim || ""]);
+    return { bird: 1, text: document.getElementById("bird-line").textContent, picks };
+  }
+  const tab = (window.state && state.tab) || "today";
+  const chooser = document.getElementById("chooser");
+  return { tab, built: tab === "build" && !!(chooser && chooser.classList.contains("built")) };
+}
+function tvSame(a, b) {
+  return !!a && !!b && !!a.bird === !!b.bird && (a.bird ? a.text === b.text : a.tab === b.tab && !!a.built === !!b.built);
+}
+function tvPaint() {
+  document.getElementById("desk").classList.toggle("has-back", tvStack.length > 0);
+}
+function tvPush() {
+  if (tvSkip) return;
+  const shot = tvShot();
+  if ((shot.bird && !shot.picks.length) || tvSame(shot, tvStack.at(-1))) return;
+  tvStack.push(shot);
+  if (tvStack.length > 12) tvStack.shift();
+  tvPaint();
+}
+function tvUnbuild() {
+  const chooser = document.getElementById("chooser");
+  if (!chooser) return;
+  chooser.classList.remove("built");
+  const again = document.getElementById("choice-again");
+  const box = document.getElementById("choice-result");
+  if (again) again.hidden = true;
+  if (box) box.textContent = "";
+}
+function tvBack() {
+  const prev = tvStack.pop();
+  tvPaint();
+  if (!prev) return;
+  tvSkip = true;
+  if (prev.bird) birdSay(prev.text, prev.picks);
+  else { birdHide(); if (!prev.built) tvUnbuild(); showTab(prev.tab); }
+  tvSkip = false;
+}
+const goTab = showTab;
+showTab = (name) => {
+  const desk = document.getElementById("desk");
+  if (!tvSkip && !(desk && desk.classList.contains("bird-on"))) {
+    const here = tvShot();
+    if (!tvSame(here, { tab: name, built: name === "build" && here.built })) { tvSeen = true; tvPush(); }
+  }
+  goTab(name);
+};
 
 window.deskFrame = deskFrame;
 window.deskGate = showGateScene;

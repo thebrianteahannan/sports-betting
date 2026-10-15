@@ -192,7 +192,7 @@ function bindAdmin() {
 
 async function pullCard(id, button) {
   button.disabled = true;
-  button.textContent = "Updating…";
+  button.title = "Updating";
   const response = await fetch("/api/admin/pull", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -206,7 +206,7 @@ async function pullCard(id, button) {
       banner.textContent = payload.error || "FanDuel did not update that bet.";
     }
     button.disabled = false;
-    button.textContent = "Update from FanDuel";
+    button.title = "Update from FanDuel";
     return;
   }
   if (window.state && window.state.board) window.state.board[id] = payload.card;

@@ -68,7 +68,7 @@ function render() {
   if (window.paintChoices) window.paintChoices();
   if (window.paintRefresh) window.paintRefresh();
   if (window.paintDayShare) window.paintDayShare(board);
-  if (window.paintWeekShare) window.paintWeekShare(board);
+  if (window.paintWeekShare) window.paintWeekShare(board); if (window.paintWeather) window.paintWeather();
 }
 
 function dropMiss(text) {
@@ -84,9 +84,11 @@ function legItem(leg) {
   const extra = bits.length ? ` · ${bits.join(" ")}` : "";
   const count = now ? ` <b class="sofar">${esc(now)}</b>` : "";
   const mark = typeof legState === "function" ? legState(row) : "wait";
-  const sway = [row.fact, row.sway, String(row.form || "").replace(/^In form:\s*/i, "")].filter(Boolean).join(" ");
-  const fact = sway ? `<br><span class="quiet">${esc(sway)}</span>` : "";
-  return `<li><b>${esc(american(row.odds) || row.odds)}</b><span><i class="leg-mark ${mark}" title="${mark === "won" ? "Won" : mark === "lost" ? "Missed" : mark === "push" ? "Push" : "Waiting"}">${mark === "won" ? "✓" : mark === "lost" ? "✕" : mark === "push" ? "–" : "◌"}</i>${esc(row.label)}${fact}</span><em>${esc(row.pct || "")}${count}${esc(extra)}</em></li>`;
+  const sway = [row.fact, row.sway, String(row.form || "").replace(/^In form:\s*/i, ""), row.weather].filter(Boolean).join(" ");
+  const fact = sway ? `<span class="quiet">${esc(sway)}</span>` : "";
+  const parts = String(row.label || "").split(" — ");
+  const more = `<span class="leg-more">${parts.length > 1 ? ` — ${esc(parts.slice(1).join(" — "))}` : ""}${count}${esc(extra)}</span>`;
+  return `<li><b>${esc(american(row.odds) || row.odds)}</b><span><i class="leg-mark ${mark}" title="${mark === "won" ? "Won" : mark === "lost" ? "Missed" : mark === "push" ? "Push" : "Waiting"}">${mark === "won" ? "✓" : mark === "lost" ? "✕" : mark === "push" ? "–" : "◌"}</i>${esc(parts[0])}${more}${fact}</span><em>${esc(row.pct || "")}</em></li>`;
 }
 
 function withLive(leg) {
@@ -112,7 +114,7 @@ function unitOf(leg) {
 }
 
 function fanLink() {
-  return `<a class="ghost" href="https://sportsbook.fanduel.com/" target="_blank" rel="noopener">Open in FanDuel</a>`;
+  return `<a class="ghost" href="https://sportsbook.fanduel.com/" target="_blank" rel="noopener" aria-label="Open in FanDuel" title="Open in FanDuel"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 5h5v5M19 5l-9 9M17 13v6H5V7h6"/></svg></a>`;
 }
 
 function renderFeatured(prefix, best, heading, aim) {
@@ -149,8 +151,8 @@ function renderFeatured(prefix, best, heading, aim) {
   const mine = cardGood(best.id, shaped);
   const group = best.group ? ` data-group="${esc(best.group)}"` : "";
   $(`${prefix}-save`).innerHTML = `${saved
-    ? `<button type="button" class="ghost" disabled>Saved</button>`
-    : `<button type="button" class="ghost" data-save="${esc(best.id)}"${group}>Save this pick</button>`
+    ? `<button type="button" class="ghost on" disabled aria-label="Saved" title="Saved"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>`
+    : `<button type="button" class="ghost" data-save="${esc(best.id)}"${group} aria-label="Save this pick" title="Save this pick"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>`
   }${pullButton(best.id)}${fanLink()}${starHtml(mine, best.id, best.group, "")}`;
 }
 
@@ -263,8 +265,8 @@ function renderParlay(id, card) {
   const saved = openCopy(id, card);
   const mine = cardGood(id, card);
   save.innerHTML = `${saved
-    ? `<button type="button" class="ghost" disabled>Saved</button>`
-    : `<button type="button" class="ghost" data-save="${esc(id)}">Save this pick</button>`
+    ? `<button type="button" class="ghost on" disabled aria-label="Saved" title="Saved"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>`
+    : `<button type="button" class="ghost" data-save="${esc(id)}" aria-label="Save this pick" title="Save this pick"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>`
   }${pullButton(id)}${fanLink()}${starHtml(mine, id, "", "")}`;
 }
 
@@ -274,7 +276,7 @@ function pulledText(card) {
 }
 
 function pullButton(id) {
-  return state.admin ? `<button type="button" class="ghost" data-pull="${esc(id)}">Update from FanDuel</button>` : "";
+  return state.admin ? `<button type="button" class="ghost" data-pull="${esc(id)}" aria-label="Update from FanDuel" title="Update from FanDuel"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.2-5.8"/><path d="M21 4v5h-5"/></svg></button>` : "";
 }
 
 function mountHistory(box, cardId, game, group) {
@@ -487,6 +489,8 @@ document.body.addEventListener("click", (event) => {
   }
   const save = event.target.closest("[data-save]");
   if (save) postPick("/api/picks", { card: save.dataset.save, group: save.dataset.group || "" });
+  const leg = event.target.closest(".chalk li, .ticket li");
+  if (leg && !event.target.closest("button, a, select, input")) leg.classList.toggle("open");
 });
 
 window.startDesk = () => load().catch((error) => {

@@ -15,9 +15,8 @@ body.needs-member .lede,
 body.needs-member #desk-dock,
 body.needs-member #bird-guide,
 body.needs-member #desk-menu,
-body.needs-member .hot,
-body.needs-member #desk-note,
-body.needs-member #desk-url { display: none; }
+body.needs-member #desk-back,
+body.needs-member .hot { display: none; }
 #desk-glass #gate {
   width: auto;
   height: 100%;
@@ -277,15 +276,13 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
 #desk-glass #pane-how b { color: #3dff6e; font-size: 16px; letter-spacing: 0.04em; }
 #desk-glass .aim, #desk-glass .when, #desk-glass .quiet { color: #d5deea; font-size: 13px; }
 #desk-glass .aim { display: none; }
-#desk-glass li { grid-template-columns: 3.4rem minmax(0, 1fr); align-items: start; }
-#desk-glass li em { grid-column: 2; }
-#desk-glass li span { overflow-wrap: break-word; }
+#desk-glass li, #desk.tv-full #desk-glass li { grid-template-columns: 3.4rem minmax(0, 1fr) auto; align-items: start; }
+#desk-glass li em { grid-column: 3; grid-row: 1; }
 #desk-glass li b { color: #3dff6e; }
+#desk-glass .chalk li .quiet, #desk-glass .chalk .history-slot, #desk-glass .ticket li .quiet, #desk-glass #choice-result li .quiet { display: none; }
+#desk-glass li.open .quiet, #desk-glass .ticket li.open .quiet, #desk-glass #choice-result li.open .quiet { display: block; }
 #desk-glass-in.arrive li { animation: leg-in 0.48s ease both; }
-#desk-glass-in.arrive li:nth-child(2) { animation-delay: 0.08s; }
-#desk-glass-in.arrive li:nth-child(3) { animation-delay: 0.16s; }
-#desk-glass-in.arrive li:nth-child(4) { animation-delay: 0.24s; }
-#desk-glass-in.arrive li:nth-child(5) { animation-delay: 0.32s; }
+#desk-glass-in.arrive li:nth-child(2) { animation-delay: 0.08s; } #desk-glass-in.arrive li:nth-child(3) { animation-delay: 0.16s; } #desk-glass-in.arrive li:nth-child(4) { animation-delay: 0.24s; } #desk-glass-in.arrive li:nth-child(5) { animation-delay: 0.32s; }
 #desk-laptop .chalk {
   height: 100%;
   overflow: auto;
@@ -376,7 +373,7 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
 #desk.tv-full #desk-glass p,
 #desk.tv-full #desk-glass li { font-size: 18px; }
 #desk.tv-full #desk-glass #pane-how b { font-size: 22px; }
-#desk.tv-full #desk-glass li { grid-template-columns: 4.4rem minmax(0, 1fr); }
+#desk.tv-full #desk-glass li { grid-template-columns: 4.4rem minmax(0, 1fr) auto; }
 #desk.tv-full #desk-glass .chalk,
 #desk.tv-full #desk-glass .tracked,
 #desk.tv-full #desk-glass .pane {
@@ -393,6 +390,17 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
 #chooser.built #choice-filters { display: none; }
 #choice-save, #desk.tv-full #desk-glass #choice-save { width: 2.4rem; height: 2.4rem; min-height: 0; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
 #choice-save.on svg { fill: currentColor; }
+#desk-back, #desk.tv-full #desk-glass #desk-back { position: absolute; top: 8px; left: 8px; z-index: 7; width: 2rem; height: 2rem; min-height: 0; padding: 0; display: none; align-items: center; justify-content: center; border: 1px solid #3dff6e; border-radius: 8px; background: #07140f; color: #3dff6e; box-shadow: none; }
+#desk.has-back #desk-back, #desk.tv-full.has-back #desk-glass #desk-back { display: inline-flex; }
+#desk.has-back #desk-glass-in { padding-top: 2.6rem; }
+#desk-glass .chalk:not(#chooser) { position: relative; padding-top: 2.8rem; }
+#desk-glass .chalk:not(#chooser) > .pick-save { position: absolute; top: 8px; left: 8px; z-index: 6; margin: 0; width: auto; display: flex; flex-wrap: nowrap; gap: 6px; align-items: center; }
+#desk.has-back #desk-glass .chalk:not(#chooser) > .pick-save { left: 46px; }
+#desk.has-back #desk-glass-in > .chalk:first-of-type { padding-top: 12px; }
+#desk.has-back #desk-glass-in > .chalk:first-of-type > .pick-save { top: -2.15rem; }
+#desk-glass .chalk:not(#chooser) > .pick-save button.ghost, #desk-glass .chalk:not(#chooser) > .pick-save a.ghost, #desk.tv-full #desk-glass .chalk:not(#chooser) > .pick-save button.ghost, #desk.tv-full #desk-glass .chalk:not(#chooser) > .pick-save a.ghost { width: 2rem; height: 2rem; min-height: 0; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border-color: #3dff6e; background: #07140f; color: #3dff6e; }
+#desk-glass .chalk:not(#chooser) > .pick-save button.on svg, #desk-glass .chalk:not(#chooser) > .pick-save button:disabled svg { fill: currentColor; }
+#desk-glass .chalk:not(#chooser) > .pick-save .star, #desk.tv-full #desk-glass .chalk:not(#chooser) > .pick-save .star { min-height: 0; width: auto; height: auto; padding: 0 0.05rem; font-size: 16px; }
 #choice-again[hidden] { display: none; }
 #desk.tv-full #desk-glass #gate h2 { font-size: 40px; }
 #desk.tv-full #desk-glass #gate .aim { font-size: 18px; }
@@ -467,15 +475,8 @@ body.day-board .banner:not([hidden]) {
 @keyframes desk-glow {
   50% { box-shadow: 0 0 34px rgba(61, 255, 110, 0.85), inset 0 0 40px rgba(61, 255, 110, 0.28); }
 }
-@keyframes desk-neon {
-  0%, 100% { opacity: 0.35; }
-  40% { opacity: 0.85; }
-  70% { opacity: 0.2; }
-}
-@keyframes leg-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: none; }
-}
+@keyframes desk-neon { 0%, 100% { opacity: 0.35; } 40% { opacity: 0.85; } 70% { opacity: 0.2; } }
+@keyframes leg-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 #bird-guide { display: none; }
 #desk.bird-on #bird-guide:not([hidden]) {
   position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column;
@@ -490,7 +491,7 @@ body.day-board .banner:not([hidden]) {
 #bird-line::before { content: ""; position: absolute; left: -14px; top: 22px; border: 8px solid transparent; border-right-color: #3dff6e; }
 #bird-line::after { content: ""; display: inline-block; width: 8px; height: 0.95em; margin-left: 3px; background: #3dff6e; vertical-align: text-bottom; animation: desk-caret 0.7s steps(1) infinite; }
 #bird-picks { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-#bird-picks button { margin: 0; padding: 0.35rem 0.7rem; border: 0; border-radius: 8px; box-shadow: none; background: #3dff6e; color: #04140c; font-family: "Rajdhani", sans-serif; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; }
+#bird-picks button { margin: 0; padding: 0.35rem 0.7rem; border: 0; border-radius: 8px; box-shadow: none; background: #3dff6e; color: #04140c; font-family: "Rajdhani", sans-serif; font-weight: 700; letter-spacing: 0.04em; text-transform: none; cursor: pointer; }
 #desk.tv-full #desk-glass #bird-line { font-size: 36px; }
 #desk.tv-full #desk-glass #bird-picks button { font-size: 18px; min-height: 0; }
 #desk-head.bird-talk { animation: desk-talk 0.42s ease-in-out 3; }
