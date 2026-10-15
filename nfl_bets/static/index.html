@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/app.css?v=45"/>
-<link rel="stylesheet" href="/desk.css?v=52"/>
+<link rel="stylesheet" href="/desk.css?v=57"/>
 <style>
 #page-title { display: none; }
 #who { gap: 0.28rem; align-items: center; }
@@ -348,12 +348,14 @@ body.day-board #parrot-load[hidden] { display: none; }
   <h2>Your membership</h2>
   <p class="quiet" id="activity-plan"></p>
   <div id="activity-list"></div>
-  <p class="pick-save"><button type="button" class="ghost" id="member-out">Sign out</button></p>
+  <p class="quiet">What should the parrot call you? Leave it blank and the parrot will ask.</p>
+  <p class="pick-save"><input id="call-name" maxlength="40" autocomplete="nickname" placeholder="Your name"><button type="button" class="ghost" id="call-save">Save</button><button type="button" class="ghost" id="member-out">Sign out</button></p>
 </section>
 <section class="tracked" id="profile-admin" hidden>
   <h2>Admin</h2>
   <nav class="tabs" id="admin-tabs">
     <button type="button" class="tab on" data-admin-tab="members">Members</button>
+    <button type="button" class="tab" data-admin-tab="habits">Habits</button>
     <button type="button" class="tab" data-admin-tab="ignore">Ignoring</button>
     <button type="button" class="tab" data-admin-tab="strategy">Strategy</button>
     <button type="button" class="tab" data-admin-tab="docs">Docs</button>
@@ -361,6 +363,7 @@ body.day-board #parrot-load[hidden] { display: none; }
     <button type="button" class="tab" data-admin-tab="asks">Asked</button>
     <button type="button" class="tab" data-admin-tab="card">Share card</button>
   </nav>
+  <div id="admin-habits" hidden></div>
   <div id="admin-members">
     <p class="quiet" id="admin-refresh">FanDuel is checked every 10 minutes.</p>
     <p id="admin-role-note" class="quiet"></p>
@@ -423,15 +426,15 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p>21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
-<script src="/app.js?v=81"></script>
-<script src="/desk.js?v=41"></script>
-<script src="/members.js?v=19"></script>
+<script src="/app.js?v=82"></script>
+<script src="/desk.js?v=44"></script>
+<script src="/members.js?v=23"></script>
 <script src="/stars.js?v=4"></script>
-<script src="/choose.js?v=36"></script>
+<script src="/choose.js?v=38"></script>
 <script src="/lessons.js?v=7"></script>
 <script src="/filters.js?v=8"></script>
 <script src="/reports.js?v=1"></script>
-<script src="/admin.js?v=21"></script>
+<script src="/admin.js?v=22"></script>
 <script src="/sharecard.js?v=26"></script>
 <script>
 function fitPoster() {

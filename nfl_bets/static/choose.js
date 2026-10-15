@@ -108,6 +108,7 @@ async function runChoice() {
   }
   const mark = (card.players || []).slice().sort().join("|");
   if (mark) seenBets[key] = card.only || card.again ? [mark] : (seenBets[key] || []).concat(mark).slice(-24);
+  if (window.noteTaste && (card.legs || []).length) noteTaste("found", { title: card.title || "", when: choice.when, aim: choice.aim || "top", kind: choice.kind, sports: [...new Set((card.legs || []).map((leg) => leg.sport).filter(Boolean))] });
   const legs = (window.builtLegs = card.legs || []).map((leg) => {
     const sway = [leg.fact, leg.sway, String(leg.form || "").replace(/^In form:\s*/i, ""), leg.weather].filter(Boolean).join(" ");
     const fact = sway ? `<span class="quiet">${esc(sway)}</span>` : "";
@@ -162,7 +163,7 @@ function etDay(ms) {
 
 function choiceWindow(kick) {
   const now = Date.now();
-  if (kick < now - 3 * 60 * 60 * 1000) return false;
+  if (kick <= now) return false;
   const kickDay = etDay(kick);
   const nowDay = etDay(now);
   if (choice.when !== "week") return kickDay.key === nowDay.key;
@@ -249,6 +250,7 @@ function askStep() {
 }
 
 function askGo() {
+  if (window.noteTaste) noteTaste("quiz", { when: choice.when, sports: choice.sports.slice(), kind: choice.kind, legs: choice.legs, aim: choice.aim || "top" });
   window.asking = false;
   ask = null;
   window.askShow = true;

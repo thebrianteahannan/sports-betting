@@ -332,7 +332,7 @@ function bootDesk() {
   const go = document.getElementById("choice-go");
   if (go) go.addEventListener("click", tvPush);
   const home = document.getElementById("desk-home");
-  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; birdSay("Hey. What are you trying to do today?", [["today", "Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]); tvSkip = false; birdBump(); });
+  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["today", "Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]); tvSkip = false; birdBump(); });
 }
 const BIRD_WAIT = 18000;
 const BIRD_NUDGES = [
@@ -341,7 +341,7 @@ const BIRD_NUDGES = [
   ["Hey, the safe bet is sometimes boring. A higher payout is louder, and it gives you something to talk about with friends. That long price misses more often. It can still miss.", [["quiz", "Build a higher payout", "payout"]]],
   ["Best Bets of the Week uses a different day on each leg. Want a look?", [["week", "Best Bets of the Week"]]],
   ["The best bet of the day sits between −150 and +100. Want it?", [["today", "Show it"]]],
-  ["Gambling can ruin people's lives. Only bet money you can afford to lose. If you need help, call 1‑800‑GAMBLER.", []],
+  ["Gambling can really ruin people's lives. Only bet money you can afford to lose. If you need help, call 1‑800‑GAMBLER.", []],
 ];
 let birdTimer = 0; let birdNudge = 0;
 let birdOn = false;
@@ -358,9 +358,9 @@ function birdSay(text, picks) {
     if (desk) desk.classList.remove("bird-on");
     return;
   }
-  if (!tvSkip && tvSeen && desk && !desk.classList.contains("bird-on")) tvPush();
-  if (desk) desk.classList.add("bird-on");
-  line.textContent = text;
+  if (!tvSkip && desk && !desk.classList.contains("bird-on")) tvPush();
+  if (desk) { desk.classList.add("bird-on"); tvPaint(); }
+  line.textContent = text; line.classList.toggle("warn", /ruin people's lives/i.test(text));
   row.replaceChildren();
   (picks || []).forEach(([tab, label, aim]) => {
     const button = document.createElement("button");
@@ -396,7 +396,7 @@ function birdHide() {
   const head = document.getElementById("desk-head");
   if (desk) desk.classList.remove("bird-on");
   if (box) box.hidden = true;
-  if (head) head.classList.remove("bird-talk");
+  if (head) head.classList.remove("bird-talk"); tvPaint();
 }
 
 function birdLand() {
@@ -414,7 +414,7 @@ function startGuide() {
     birdSay("Hey.", []);
     setTimeout(() => {
       if (!birdOn || birdHeld || window.asking || document.body.classList.contains("needs-member")) return;
-      birdSay("Hey. What are you trying to do today?", [["today", "Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]);
+      if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["today", "Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]);
     }, 900);
     birdBump();
   };
@@ -456,7 +456,7 @@ function tvSame(a, b) {
   return !!a && !!b && !!a.bird === !!b.bird && (a.bird ? a.text === b.text : a.tab === b.tab && !!a.built === !!b.built);
 }
 function tvPaint() {
-  document.getElementById("desk").classList.toggle("has-back", tvStack.length > 0);
+  const desk = document.getElementById("desk"); desk.classList.toggle("has-back", tvStack.length > 0 || desk.classList.contains("bird-on"));
 }
 function tvPush() {
   if (tvSkip) return;
@@ -477,8 +477,8 @@ function tvUnbuild() {
 }
 function tvBack() {
   const prev = tvStack.pop();
+  if (!prev) { window.asking = false; birdHide(); return; }
   tvPaint();
-  if (!prev) return;
   tvSkip = true;
   if (prev.bird) birdSay(prev.text, prev.picks);
   else { window.asking = false; birdHide(); if (!prev.built) tvUnbuild(); showTab(prev.tab); }
@@ -496,4 +496,5 @@ showTab = (name) => {
 
 window.deskFrame = deskFrame;
 window.deskGate = showGateScene;
+window.birdSay = birdSay;
 bootDesk();

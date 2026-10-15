@@ -96,7 +96,7 @@ async function archive() {
 }
 
 const { ignoreView, sweepIgnored } = createIgnore(readKey, writeKey, archive);
-const { adminList, setMemberAdmin, saveAsk } = createAdmins(readKey, writeKey);
+const { adminList, setMemberAdmin, saveAsk, noteTaste } = createAdmins(readKey, writeKey);
 
 async function picks() {
   const data = (await readKey("bets/picks.json")) || { picks: [] };
@@ -428,7 +428,21 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST") {
       const body = await readBody(req);
       if (url.pathname === "/api/choose") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await chooseBet(body, await board())); return; }
+      if (url.pathname === "/api/name") {
+        const user = await memberFrom(req);
+        if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
+        const name = String(body.name || "").replace(/\s+/g, " ").trim().slice(0, 40);
+        if (name && name.length < 2) throw new Error("Use at least 2 letters, or leave it blank.");
+        const data = await loadMembers();
+        const row = data.users.find((item) => item.id === user.id);
+        if (!row) throw new Error("That membership is not here.");
+        row.name = name;
+        await writeKey("bets/members.json", data);
+        sendJson(res, { member: publicMember(row) });
+        return;
+      }
       if (url.pathname === "/api/choose/ask") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await saveAsk(user, body.said, body.missing)); return; }
+      if (url.pathname === "/api/taste") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await noteTaste(user, String(body.slot || ""), body)); return; }
       const cookie = (token) => ({ "Set-Cookie": "pod=" + token + "; HttpOnly; Path=/; SameSite=Lax; Max-Age=2592000" });
       if (url.pathname === "/api/join" || url.pathname === "/api/login") {
         const email = String(body.email || "").trim().toLowerCase();

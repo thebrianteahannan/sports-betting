@@ -21,7 +21,7 @@ async function paintGateRecord() {
     if (!Number.isFinite(pct) || !Number.isFinite(won) || !Number.isFinite(lost)) return;
     line.dataset.ready = "1";
     line.hidden = false;
-    line.innerHTML = `Settled tickets have hit <b>${pct.toFixed(1)}%</b>, from ${won} wins and ${lost} losses. Past results do not promise the next ticket.`;
+    line.innerHTML = `Recommended bets have hit <b>${pct.toFixed(1)}%</b>, from ${won} wins and ${lost} losses. <span class="fine">Past results do not promise the next ticket.</span>`;
   } catch (error) {}
 }
 
@@ -46,6 +46,14 @@ function showMember(payload) {
   who.innerHTML = `<button type="button" id="hard-refresh" aria-label="Reload the page" title="Reload"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.2-5.8"/><path d="M21 4v5h-5"/></svg></button><button type="button" id="member-profile" aria-label="Profile" title="${esc(member.name)}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.5-3.1 4-4.6 7-4.6s5.5 1.5 7 4.6"/></svg></button>`;
   const heading = document.querySelector("#activity h2");
   if (heading) heading.textContent = member.name || "Your membership";
+  window.memberName = member.name || "";
+  window.memberReady = true;
+  const call = document.getElementById("call-name");
+  if (call && document.activeElement !== call) call.value = member.name || "";
+  const spoken = document.getElementById("bird-line");
+  const said = spoken ? spoken.textContent : "";
+  const desk = document.getElementById("desk");
+  if (desk && desk.classList.contains("bird-on") && (said === "Hey." || said.startsWith("Hey. What") || said.startsWith("What should I call you"))) birdGreet();
   const adminBox = document.getElementById("profile-admin");
   if (adminBox) adminBox.hidden = !admin;
   const plan = document.getElementById("activity-plan");
@@ -154,9 +162,58 @@ document.getElementById("who").addEventListener("click", (event) => {
   if (event.target.closest("#hard-refresh")) hardRefresh();
   if (event.target.closest("#member-profile")) showTab("profile");
 });
+function calledName() {
+  return String(window.memberName || "").trim().split(/\s+/)[0];
+}
+
+function birdGreet() {
+  if (!window.memberReady || document.body.classList.contains("needs-member") || !window.birdSay) return;
+  const called = calledName();
+  if (!called) { birdAskName(); return; }
+  window.asking = false;
+  birdSay(`Hey, ${called}. What are you trying to do today?`, [["today", "Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]);
+}
+
+function birdAskName() {
+  window.asking = true;
+  birdSay("What should I call you?", []);
+  const row = document.getElementById("bird-picks");
+  if (!row) return;
+  row.innerHTML = `<input id="bird-name" maxlength="40" placeholder="Your name" autocomplete="nickname"><button type="button" id="bird-name-go">That's me</button>`;
+  document.getElementById("bird-name").addEventListener("keydown", (event) => { if (event.key === "Enter") saveCalledName(event.target.value); });
+  document.getElementById("bird-name-go").addEventListener("click", () => saveCalledName(document.getElementById("bird-name").value));
+}
+
+async function saveCalledName(raw) {
+  const name = String(raw || "").replace(/\s+/g, " ").trim();
+  if (name && name.length < 2) return;
+  const response = await memberFetch("/api/name", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) return;
+  window.memberName = (payload.member && payload.member.name) || "";
+  const heading = document.querySelector("#activity h2");
+  if (heading) heading.textContent = window.memberName || "Your membership";
+  const call = document.getElementById("call-name");
+  if (call) call.value = window.memberName;
+  const who = document.querySelector("#member-profile");
+  if (who) who.title = window.memberName;
+  if (window.memberName) birdGreet();
+  else birdAskName();
+}
+
 document.getElementById("pane-profile").addEventListener("click", (event) => {
   if (event.target.closest("#member-out")) signOut();
+  if (event.target.closest("#call-save")) saveCalledName(document.getElementById("call-name").value);
 });
+window.birdGreet = birdGreet;
+function noteTaste(kind, detail) {
+  memberFetch("/api/taste", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slot: kind, ...(detail || {}) }) }).catch(() => {});
+}
+window.noteTaste = noteTaste;
 document.getElementById("gate-join").addEventListener("click", () => showGateMode("join"));
 document.getElementById("gate-have").addEventListener("click", () => showGateMode("login"));
 document.getElementById("join-signin").addEventListener("click", () => showGateMode("login"));

@@ -59,7 +59,7 @@ function etKey(date) {
 
 function inWindow(iso, span) {
   const kick = Date.parse(iso || "");
-  if (!Number.isFinite(kick) || kick < Date.now() - 3 * 60 * 60 * 1000) return false;
+  if (!Number.isFinite(kick) || kick <= Date.now()) return false;
   const kickDay = etKey(new Date(kick));
   const nowDay = etKey(new Date());
   if (span !== "week") return kickDay === nowDay;
@@ -446,7 +446,13 @@ async function chooseBet(body, board) {
   const games = slate(Array.isArray(board.games) ? board.games : [], picked, ids, span);
   const safeAim = aim;
   if (!games.length) {
-    return empty(span === "week" ? (sports.length ? `No game in ${sports.join(", ")} is left this week.` : "No game is left this week.") : (sports.length ? `No game in ${sports.join(", ")} is on today.` : "No game is on today."), safeAim);
+    const rows = Array.isArray(board.games) ? board.games : [];
+    const begun = rows.some((game) => { const kick = Date.parse(game.kickoff || ""); return picked.includes(String(game.sport || "")) && Number.isFinite(kick) && kick <= Date.now() && etKey(new Date(kick)) === etKey(new Date()); });
+    const later = rows.some((game) => picked.includes(String(game.sport || "")) && Date.parse(game.kickoff || "") > Date.now());
+    const todayNote = begun
+      ? `Tonight's games have started, so they stay off this bet. ${later ? "This week still has games that have not started." : "Nothing is left this week."}`
+      : (sports.length ? `No game in ${sports.join(", ")} is on today.` : "No game is on today.");
+    return empty(span === "week" ? (sports.length ? `No game in ${sports.join(", ")} is left this week.` : "No game is left this week.") : todayNote, safeAim);
   }
   const { pools, trouble } = await gather(games.slice(0, 30), kind);
   if (trouble && !pools.length) return empty(trouble, aim);

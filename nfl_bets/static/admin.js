@@ -9,7 +9,7 @@ function loginWhen(stamp) {
 }
 
 function showAdminTab(name) {
-  ["members", "ignore", "strategy", "docs", "built", "asks", "card"].forEach((id) => {
+  ["members", "habits", "ignore", "strategy", "docs", "built", "asks", "card"].forEach((id) => {
     const pane = document.getElementById(`admin-${id}`);
     if (pane) pane.hidden = id !== name;
     const button = document.querySelector(`[data-admin-tab="${id}"]`);
@@ -66,10 +66,21 @@ function paintAsks(payload) {
   }).join("");
 }
 
+function paintHabits(payload) {
+  const list = document.getElementById("admin-habits");
+  if (!list || !payload || !Array.isArray(payload.habits)) return;
+  const rows = payload.habits;
+  list.innerHTML = rows.length ? rows.map((row) => {
+    const recent = (row.recent || []).length ? `<p class="quiet">Recent answers: ${esc(row.recent.join("; "))}.</p>` : "";
+    return `<article class="report-card"><p><b>${esc(row.name || "Member")}</b> · ${esc(row.email || "")}</p><p>${esc(row.blurb || "")}</p>${recent}</article>`;
+  }).join("") : "<p>No members yet.</p>";
+}
+
 function paintAdmin(payload) {
   paintRefresh();
   paintBuilt(payload);
   paintAsks(payload);
+  paintHabits(payload);
   const list = document.getElementById("admin-users");
   if (!list) return;
   const rows = (payload && payload.users) || [];
@@ -173,7 +184,7 @@ function bindAdmin() {
     const button = event.target.closest("[data-admin-tab]");
     if (button) {
       showAdminTab(button.dataset.adminTab);
-      if (button.dataset.adminTab === "built" || button.dataset.adminTab === "asks") loadAdmin();
+      if (button.dataset.adminTab === "built" || button.dataset.adminTab === "asks" || button.dataset.adminTab === "habits") loadAdmin();
       if (button.dataset.adminTab === "card" && window.fillShareCards) window.fillShareCards();
     }
   });

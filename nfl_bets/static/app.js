@@ -477,7 +477,7 @@ document.body.addEventListener("click", (event) => {
     return;
   }
   const tab = event.target.closest("[data-tab]");
-  if (tab) showTab(tab.dataset.tab);
+  if (tab) { showTab(tab.dataset.tab); if (window.noteTaste && ["today", "week", "open"].includes(tab.dataset.tab)) noteTaste("open", { card: tab.dataset.tab }); }
   const star = event.target.closest("[data-stars]");
   if (star) {
     const host = star.closest("[data-good-card], [data-good]");

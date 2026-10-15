@@ -118,7 +118,7 @@ def _one(game: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]], bo
 
 
 def _bounds(span: str, now: datetime) -> tuple[datetime, datetime]:
-    start = now - timedelta(hours=3)
+    start = now
     if span == "week":
         horizon = (now + timedelta(days=14)).date()
         return start, datetime.combine(horizon, time(23, 59), _ET)
