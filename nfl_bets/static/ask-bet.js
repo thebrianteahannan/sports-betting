@@ -1,27 +1,62 @@
 let digHold = false;
 
+function barButton(className, label) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `ghost dig ${className}`;
+  button.title = label;
+  button.textContent = label;
+  return button;
+}
+
 function paintDig() {
   document.querySelectorAll("section.chalk > .pick-save [data-pull]").forEach((button) => button.parentElement.append(button));
   document.querySelectorAll("section.chalk > .pick-save").forEach((bar) => {
-    if (bar.querySelector(".dig")) return;
+    if (bar.querySelector(".bet-more")) return;
     const card = bar.closest(".chalk");
     if (!card || !card.querySelector("ol li")) return;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "ghost dig";
-    button.dataset.dig = "1";
-    button.setAttribute("aria-label", "Dig deeper into this bet");
-    button.title = "Dig Deeper";
-    button.textContent = "Dig Deeper";
-    button.addEventListener("pointerdown", (event) => {
+    const more = barButton("bet-more", "Show More Info");
+    more.setAttribute("aria-label", "Show more info about this bet");
+    more.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      showInfo(card);
+    });
+    const ask = barButton("bet-ask-open", "Ask Parlay the Parrot");
+    ask.setAttribute("aria-label", "Ask Parlay the Parrot about this bet");
+    ask.addEventListener("pointerdown", (event) => {
       event.preventDefault();
       event.stopPropagation();
       openBet(card);
     });
     const anchor = bar.querySelector(".leg-edit") || bar.querySelector("[data-save], [data-unsave], #choice-save");
-    if (anchor) anchor.after(button);
-    else bar.prepend(button);
+    if (anchor) anchor.after(more, ask);
+    else bar.prepend(more, ask);
   });
+}
+
+function showInfo(card) {
+  const desk = document.getElementById("desk");
+  const full = document.getElementById("desk-full");
+  window.digCard = card;
+  if (desk && full && !desk.classList.contains("tv-full")) {
+    digHold = true;
+    full.click();
+    digHold = false;
+  }
+  window.asking = false;
+  window.digOn = false;
+  window.askGeneral = false;
+  if (desk) {
+    desk.classList.add("dug");
+    desk.classList.remove("bird-on");
+  }
+  const guide = document.getElementById("bird-guide");
+  if (guide) guide.hidden = true;
+  const head = document.getElementById("desk-head");
+  if (head) head.classList.remove("bird-talk");
+  const line = document.getElementById("bird-line");
+  if (line) line.classList.remove("answer");
 }
 
 function openBet(card) {
@@ -242,10 +277,22 @@ if (sayBird) {
   };
 }
 
+document.getElementById("desk-back").addEventListener("click", (event) => {
+  const desk = document.getElementById("desk");
+  if (!window.askGeneral || !desk || !desk.classList.contains("tv-full")) return;
+  event.stopImmediatePropagation();
+  window.askGeneral = false;
+  window.asking = false;
+  window.digOn = false;
+  const full = document.getElementById("desk-full");
+  if (full) full.click();
+}, true);
+
 document.getElementById("desk-ask").addEventListener("click", () => {
   const glass = document.getElementById("desk-glass");
   const card = (glass && glass.querySelector("section.chalk")) || document.getElementById("best");
-  if (!card || !card.querySelector("ol li")) return;
-  window.digCard = card;
+  if (card && card.querySelector("ol li")) window.digCard = card;
   askBet("general");
+  const box = document.getElementById("bet-ask");
+  if (box) focusAsk(box);
 });
