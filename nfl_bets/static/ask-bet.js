@@ -10,9 +10,9 @@ function paintDig() {
     button.type = "button";
     button.className = "ghost dig";
     button.dataset.dig = "1";
-    button.setAttribute("aria-label", "Look closer at this bet");
-    button.title = "Look closer";
-    button.textContent = "Look closer";
+    button.setAttribute("aria-label", "Dig deeper into this bet");
+    button.title = "Dig Deeper";
+    button.textContent = "Dig Deeper";
     button.addEventListener("pointerdown", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -37,13 +37,17 @@ function openBet(card) {
   askBet();
 }
 
-function askBet() {
+function askBet(kind) {
   window.asking = true;
   window.digOn = true;
-  birdSay("What do you want to know about this bet?", []);
+  const general = kind === "general";
+  birdSay(general
+    ? "Howdy howdy, I'm Parlay the Parrot, and I know everything about betting ... ask me anything and see if you're smarter than a bird."
+    : "What do you want to know about this bet?", []);
   const row = document.getElementById("bird-picks");
   if (!row) return;
-  row.innerHTML = `<input id="bet-ask" maxlength="160" placeholder="Ask about this bet" autocomplete="off"><button type="button" id="bet-ask-go">Ask</button>`;
+  const placeholder = general ? "Ask me anything" : "Ask about this bet";
+  row.innerHTML = `<input id="bet-ask" maxlength="160" placeholder="${placeholder}" autocomplete="off"><button type="button" id="bet-ask-go">Ask</button>`;
   const box = document.getElementById("bet-ask");
   const go = () => replyBet();
   box.addEventListener("keydown", (event) => { if (event.key === "Enter") go(); });
@@ -195,5 +199,5 @@ document.getElementById("desk-ask").addEventListener("click", () => {
   const card = (glass && glass.querySelector("section.chalk")) || document.getElementById("best");
   if (!card || !card.querySelector("ol li")) return;
   window.digCard = card;
-  askBet();
+  askBet("general");
 });

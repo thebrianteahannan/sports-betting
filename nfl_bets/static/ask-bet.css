@@ -39,3 +39,11 @@
   font-size: 20px; line-height: 1.35; max-height: min(62vh, 28rem); overflow: auto;
 }
 #desk.dug #bet-ask { width: auto; flex: 1 1 16rem; }
+#desk-glass .leg-edit,
+#desk.tv-full #desk-glass .leg-edit {
+  display: inline-block; width: auto; height: auto; min-height: 0; margin: 0.1rem 0 0.55rem;
+  padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
+  color: #9dffc0; font-family: "Outfit", sans-serif; font-size: 15px; font-weight: 600;
+  letter-spacing: 0; text-transform: none; text-decoration: underline; cursor: pointer;
+}
+#desk-glass .leg-edit.on { color: #3dff6e; }

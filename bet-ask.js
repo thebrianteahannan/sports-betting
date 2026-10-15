@@ -31,22 +31,50 @@ function clean(text) {
   return end > 240 ? cut.slice(0, end + 1) : cut;
 }
 
-async function askGemini(question, facts) {
+function geminiKey() {
+  return String(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "").trim().replace(/^["']|["']$/g, "");
+}
+
+function said(payload) {
+  const parts = ((((payload.candidates || [])[0] || {}).content || {}).parts || []);
+  const words = parts.filter((part) => part && part.text && !part.thought).map((part) => part.text).join(" ");
+  const any = parts.filter((part) => part && part.text).map((part) => part.text).join(" ");
+  return clean(words || any);
+}
+
+function geminiFail(status, payload) {
+  const message = String((payload.error && payload.error.message) || "").replace(/\s+/g, " ").trim();
+  if (status === 429 || /quota|resource_exhausted/i.test(message)) return "The bird is busy. Ask again in a minute.";
+  if (/api key/i.test(message)) return "Google did not accept the Gemini key. In Hostinger the name has to be GEMINI_API_KEY, then restart the Node app.";
+  if (message) return `The bird could not think of that. ${message.slice(0, 160)}`;
+  return "The bird could not think of that.";
+}
+
+async function geminiCall(key, question, facts, think) {
+  const generationConfig = { temperature: 0.4, maxOutputTokens: 420 };
+  if (think) generationConfig.thinkingConfig = { thinkingBudget: 0 };
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
+    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
     signal: AbortSignal.timeout(45000),
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM }] },
       contents: [{ role: "user", parts: [{ text: promptFor(facts, question) }] }],
-      generationConfig: { temperature: 0.4, maxOutputTokens: 420, thinkingConfig: { thinkingBudget: 0 } },
+      generationConfig,
     }),
   });
   const payload = await response.json().catch(() => ({}));
-  if (response.status === 429) throw new Error("The bird is busy. Ask again in a minute.");
-  const text = clean(((payload.candidates || [])[0] || {}).content && (((payload.candidates || [])[0].content.parts || []).map((part) => part.text).join(" ")));
-  if (!response.ok || !text) throw new Error("The bird could not think of that.");
-  return text;
+  return { status: response.status, text: said(payload), error: payload };
+}
+
+async function askGemini(question, facts) {
+  const key = geminiKey();
+  let result = await geminiCall(key, question, facts, true);
+  const message = String((result.error.error && result.error.error.message) || "");
+  if (result.status === 400 && /thinking/i.test(message)) result = await geminiCall(key, question, facts, false);
+  if (result.status === 429) throw new Error("The bird is busy. Ask again in a minute.");
+  if (result.status < 200 || result.status >= 300 || !result.text) throw new Error(geminiFail(result.status, result.error));
+  return result.text;
 }
 
 async function askLocal(question, facts) {
@@ -76,11 +104,17 @@ async function askBet(question, card) {
   const facts = cardText(card || {});
   if (!facts) throw new Error("Open a bet first.");
   try {
-    const answer = process.env.GEMINI_API_KEY ? await askGemini(q, facts) : await askLocal(q, facts);
-    return { answer };
+    if (!geminiKey()) {
+      try {
+        return { answer: await askLocal(q, facts) };
+      } catch (error) {
+        throw new Error("This server has no GEMINI_API_KEY. Add that name in Hostinger and restart the Node app.");
+      }
+    }
+    return { answer: await askGemini(q, facts) };
   } catch (error) {
     if (error.name === "TimeoutError" || error.name === "AbortError") throw new Error("That took too long. Ask again.");
-    if (String(error.message || "").startsWith("The bird") || error.message === "Ask a question about this bet." || error.message === "Open a bet first.") throw error;
+    if (String(error.message || "").startsWith("The bird") || String(error.message || "").startsWith("This server") || String(error.message || "").startsWith("Google did not")) throw error;
     throw new Error("The bird could not think of that.");
   }
 }

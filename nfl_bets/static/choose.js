@@ -334,15 +334,14 @@ function editCard(node) {
 }
 
 function paintEdits() {
-  const icon = `<button type="button" class="ghost leg-edit" aria-label="Edit this bet" title="Edit this bet"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>`;
+  const link = `<button type="button" class="leg-edit">Edit this bet</button>`;
   document.querySelectorAll("#desk-glass .chalk > .pick-save").forEach((bar) => {
-    if (bar.querySelector(".leg-edit")) return;
     const card = editCard(bar);
-    if (!card || !cardLegs(card).length) return;
+    if (!card || card.querySelector(".leg-edit") || !cardLegs(card).length) return;
+    const title = card.querySelector(":scope > h2") || card.querySelector("h2");
+    if (!title) return;
     card.classList.remove("editing");
-    const anchor = bar.querySelector("[data-save], [data-unsave], #choice-save");
-    if (anchor) anchor.insertAdjacentHTML("afterend", icon);
-    else bar.insertAdjacentHTML("afterbegin", icon);
+    title.insertAdjacentHTML("afterend", link);
   });
   if (window.paintDig) paintDig();
 }

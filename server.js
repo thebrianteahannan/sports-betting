@@ -42,7 +42,6 @@ const TYPES = {
 };
 
 function loadEnv(file) {
-  if (env("SUPABASE_URL") && env("SUPABASE_SERVICE_ROLE_KEY")) return;
   let text = "";
   try { text = fs.readFileSync(file, "utf8"); } catch { return; }
   for (const line of text.split("\n")) {
