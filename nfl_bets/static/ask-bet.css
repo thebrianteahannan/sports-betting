@@ -85,6 +85,14 @@
   color: #9dffc0; font-family: "Outfit", sans-serif; font-size: 15px;
   font-weight: 600; text-decoration: underline;
 }
+@media (max-width: 720px) {
+  #desk.tv-full.bird-on #bird-guide:has(#bet-ask) { justify-content: flex-start; }
+  #bird-picks:has(.ask-ideas) #bet-ask,
+  #bird-picks:has(.ask-ideas) #bet-ask-go { order: -1; }
+  #desk.tv-full #desk-glass #bird-picks .ask-ideas button.ask-idea {
+    padding: 0.18rem 0.45rem; font-size: 14px; line-height: 1.15; border-radius: 7px;
+  }
+}
 #bird-picks:has(#bet-ask):has(.ask-bet-card),
 #bird-picks:has(#bet-ask):has(.ask-more) { flex-wrap: wrap; }
 #bird-picks #bet-ask { width: auto; flex: 1 1 0; min-width: 0; }
