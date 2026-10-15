@@ -82,11 +82,15 @@ function showInfo(card) {
 }
 
 function openBet(card) {
+  askTrail = [];
   window.digCard = card;
   askBet();
 }
 
-function askBet(kind) {
+let askTrail = [];
+
+function askBet(kind, kept) {
+  if (kind === "general" && !kept) askTrail = [];
   window.asking = true;
   window.digOn = true;
   const general = kind === "general";
@@ -101,8 +105,8 @@ function askBet(kind) {
   const row = document.getElementById("bird-picks");
   if (!row) return;
   const placeholder = general ? "Ask me anything" : "Ask about this bet";
-  row.innerHTML = `<input id="bet-ask" maxlength="160" placeholder="${placeholder}" autocomplete="off"><button type="button" id="bet-ask-go">Ask</button>`;
-  const box = document.getElementById("bet-ask");
+  row.innerHTML = `<input id="bet-ask" maxlength="160" placeholder="${placeholder}" autocomplete="off"><button type="button" id="bet-mic" aria-label="Speak your question">Speak</button><button type="button" id="bet-ask-go">Ask</button>`;
+  const box = document.getElementById("bet-ask"); if (window.hearAsk) hearAsk(box);
   const go = () => replyBet();
   box.addEventListener("keydown", (event) => { if (event.key === "Enter") go(); });
   document.getElementById("bet-ask-go").addEventListener("click", go);
@@ -205,8 +209,8 @@ function cardPack() {
 function askAgain() {
   const row = document.getElementById("bird-picks");
   if (!row) return;
-  row.insertAdjacentHTML("beforeend", `<input id="bet-ask" maxlength="160" placeholder="Ask another question" autocomplete="off"><button type="button" id="bet-ask-go">Ask</button>`);
-  const again = document.getElementById("bet-ask");
+  row.insertAdjacentHTML("beforeend", `<input id="bet-ask" maxlength="160" placeholder="Ask another question" autocomplete="off"><button type="button" id="bet-mic" aria-label="Speak your question">Speak</button><button type="button" id="bet-ask-go">Ask</button>`);
+  const again = document.getElementById("bet-ask"); if (window.hearAsk) hearAsk(again);
   again.addEventListener("keydown", (event) => { if (event.key === "Enter") replyBet(); });
   document.getElementById("bet-ask-go").addEventListener("click", replyBet);
   again.focus();
@@ -217,6 +221,8 @@ async function replyBet() {
   const box = document.getElementById("bet-ask");
   const question = String((box && box.value) || "").trim();
   if (!question) return;
+  askTrail.push({ kind: "ask", general: !!window.askGeneral, question, card: (!window.askGeneral && window.digCard && window.digCard.id) || "" });
+  if (askTrail.length > 8) askTrail.shift();
   const card = cardPack();
   if (!card) { birdSay("I don't have a bet in front of me yet.", []); return; }
   askingBet = true;
@@ -311,14 +317,50 @@ function paintRaw(answer) {
   row.append(more, raw);
 }
 
+function betChoice(card) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "ask-choice";
+  const title = ((card.querySelector("h2") || {}).textContent || "This bet").trim();
+  const copy = [...card.querySelectorAll(":scope > p")].map((node) => node.textContent.trim()).join(" ");
+  const found = copy.match(/about ([\d.]+%)/) || copy.match(/parlay is ([\d.]+%)/);
+  const pct = found ? found[1] : "";
+  const money = (copy.match(/A \$5 bet would win \$[\d.]+/) || [])[0] || "";
+  const name = document.createElement("b");
+  name.textContent = title;
+  button.append(name);
+  const note = [pct, money].filter(Boolean).join(". ");
+  if (note) {
+    const line = document.createElement("span");
+    line.textContent = note.endsWith(".") ? note : `${note}.`;
+    button.append(line);
+  }
+  if (card.id) button.dataset.card = card.id;
+  button.addEventListener("click", () => {
+    const raw = document.querySelector("#bird-picks .ask-raw");
+    askTrail.push({
+      kind: "choices",
+      text: (document.getElementById("bird-line") || {}).textContent || "",
+      ids: [...document.querySelectorAll(".ask-choice")].map((node) => node.dataset.card).filter(Boolean),
+      raw: raw ? raw.textContent : "",
+    });
+    card.hidden = false;
+    const glass = document.getElementById("desk-glass-in");
+    if (glass && !glass.contains(card)) glass.append(card);
+    showInfo(card);
+    card.scrollIntoView({ block: "start" });
+  });
+  return button;
+}
+
 function showAnswer(question, answer) {
   const cards = pickedCards(question, answer);
   const text = String(answer || "").trim();
   if (cards.length) {
     const title = ((cards[0].querySelector("h2") || {}).textContent || "the bet").trim();
-    birdSay(cards.length > 1 ? "Here are the bets." : `Here is the ${title}.`, []);
+    birdSay(cards.length > 1 ? "Which of these do you want?" : `Here is the ${title}.`, []);
     const row = document.getElementById("bird-picks");
-    if (row) cards.forEach((card) => row.append(betPreview(card)));
+    if (row) cards.forEach((card) => row.append(betChoice(card)));
     paintRaw(text);
   } else {
     const bits = text.split(/(?<=[.!?])\s/).filter(Boolean);
@@ -326,6 +368,28 @@ function showAnswer(question, answer) {
     if (bits.length > 1) paintRaw(text);
   }
   askAgain();
+}
+
+function restoreAsk(shot) {
+  const desk = document.getElementById("desk");
+  if (desk) desk.classList.add("bird-on");
+  if (shot.kind === "choices") {
+    window.asking = true;
+    window.digOn = true;
+    window.askGeneral = false;
+    if (desk) desk.classList.remove("dug");
+    birdSay(shot.text || "Which of these do you want?", []);
+    const row = document.getElementById("bird-picks");
+    if (!row) return;
+    shot.ids.forEach((id) => { const card = document.getElementById(id); if (card) row.append(betChoice(card)); });
+    if (shot.raw) paintRaw(shot.raw);
+    askAgain();
+    return;
+  }
+  if (shot.card) window.digCard = document.getElementById(shot.card);
+  askBet(shot.general ? "general" : undefined, true);
+  const box = document.getElementById("bet-ask");
+  if (box) box.value = shot.question || "";
 }
 
 function legBits(li) {
@@ -417,6 +481,11 @@ if (sayBird) {
 document.getElementById("desk-back").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
   if (!desk || !desk.classList.contains("tv-full")) return;
+  if (askTrail.length) {
+    event.stopImmediatePropagation();
+    restoreAsk(askTrail.pop());
+    return;
+  }
   if (!window.askGeneral && desk.classList.contains("has-back")) return;
   event.stopImmediatePropagation();
   window.askGeneral = false;

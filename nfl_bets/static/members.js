@@ -397,3 +397,29 @@ document.getElementById("login-form").addEventListener("submit", (event) => {
 });
 
 bootMember();
+
+let askEar = null;
+function hearAsk(box) {
+  const mic = document.getElementById("bet-mic");
+  const Hear = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!mic) return;
+  if (askEar) { try { askEar.stop(); } catch (error) { askEar = null; } }
+  if (!Hear) { mic.hidden = true; return; }
+  mic.addEventListener("click", () => {
+    if (askEar) { try { askEar.stop(); } catch (error) { askEar = null; } return; }
+    const ear = new Hear();
+    askEar = ear;
+    ear.lang = "en-US";
+    ear.interimResults = true;
+    ear.onresult = (event) => {
+      box.value = [...event.results].map((row) => row[0].transcript).join(" ").trim();
+    };
+    const done = () => { if (askEar === ear) askEar = null; mic.classList.remove("on"); mic.textContent = "Speak"; };
+    ear.onend = done;
+    ear.onerror = done;
+    mic.classList.add("on");
+    mic.textContent = "Stop";
+    try { ear.start(); } catch (error) { done(); }
+  });
+}
+window.hearAsk = hearAsk;

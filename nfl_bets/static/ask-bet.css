@@ -80,7 +80,8 @@
 #bird-picks:has(#bet-ask) { flex-wrap: nowrap; }
 #bird-picks:has(#bet-ask):has(.ask-ideas) { flex-wrap: wrap; }
 #bird-picks:has(.ask-ideas) #bet-ask,
-#bird-picks:has(.ask-ideas) #bet-ask-go { order: -1; }
+#bird-picks:has(.ask-ideas) #bet-ask-go,
+#bird-picks:has(.ask-ideas) #bet-mic { order: -1; }
 #bird-picks .ask-ideas { flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 0.4rem; }
 #bird-picks .ask-ideas button.ask-rest {
   background: none; box-shadow: none; padding: 0.15rem 0;
@@ -102,10 +103,18 @@
 #desk-glass #bird-picks section.ask-bet-card,
 #desk.tv-full #desk-glass #bird-picks section.ask-bet-card {
   flex: 1 0 100%; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box;
-  max-height: min(46vh, 20rem); overflow: auto; margin: 0;
+  max-height: none; overflow: visible; margin: 0;
   padding: 0.75rem 0.85rem 0.45rem;
   font-family: "Outfit", sans-serif; text-align: left;
   background: rgba(4, 16, 24, 0.55); border-radius: 12px;
+}
+#bird-picks button.ask-choice {
+  flex: 1 0 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem;
+  background: rgba(4, 16, 24, 0.72); color: #f4fff6; border: 1px solid #3dff6e;
+  font-family: "Outfit", sans-serif; font-size: 16px; font-weight: 500; text-align: left;
+}
+#bird-picks button.ask-choice b {
+  color: #3dff6e; font-size: 18px; letter-spacing: 0.03em; text-transform: uppercase;
 }
 #bird-picks .ask-bet-card p,
 #bird-picks .ask-bet-card li,
@@ -127,7 +136,10 @@
   color: #9dffc0; font-family: "Outfit", sans-serif; font-size: 15px; font-weight: 600;
   letter-spacing: 0; text-transform: none; text-decoration: underline; cursor: pointer;
 }
-#desk-glass .leg-edit.on { color: #3dff6e; }
+#bird-picks #bet-mic {
+  background: transparent; color: #9dffc0; border: 1px solid #3dff6e; box-shadow: none; flex: 0 0 auto;
+}
+#bird-picks #bet-mic.on { background: #3dff6e; color: #04140c; }
 #bird-picks button[data-book][disabled] {
   background: transparent; color: #8a97a3; box-shadow: none; cursor: default;
 }
