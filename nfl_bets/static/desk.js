@@ -188,6 +188,8 @@ const NOTE_REASONS = [
   "The slate is <b>already picked</b>.",
   "Have the fun. <b>Keep the wallet.</b>",
   "Know what the <b>number</b> means.",
+  "Click the <b>parrot's head</b> to ask a question anytime. The <b>Parlay of the Day</b> logo up top starts over fresh. The <b>books</b> show how we pick. The <b>football</b> shows our wins and losses.",
+  "The <b>stars</b> remember the bets you like.",
 ];
 let noteTick = 0;
 let noteTimer = 0;
@@ -200,6 +202,7 @@ function paintNote() {
   const line = document.getElementById("note-reason");
   const show = () => {
     line.innerHTML = NOTE_REASONS[noteTick % NOTE_REASONS.length];
+    line.classList.toggle("hint", line.innerHTML.includes("parrot"));
     noteTick += 1;
     line.classList.remove("pop");
     void line.offsetWidth;

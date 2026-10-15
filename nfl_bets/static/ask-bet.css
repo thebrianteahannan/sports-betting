@@ -1,3 +1,4 @@
+#desk-note-in .note-reason.hint { font-size: 26px; line-height: 1.12; }
 #desk-fade { display: none; }
 #desk.tv-full #desk-world { visibility: hidden; }
 #desk.tv-full #desk-fade {
@@ -77,6 +78,13 @@
 }
 #desk.tv-full #desk-glass #bird-picks .ask-model { font-size: 14px; }
 #bird-picks:has(#bet-ask) { flex-wrap: nowrap; }
+#bird-picks:has(#bet-ask):has(.ask-ideas) { flex-wrap: wrap; }
+#bird-picks .ask-ideas { flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+#bird-picks .ask-ideas button.ask-rest {
+  background: none; box-shadow: none; padding: 0.15rem 0;
+  color: #9dffc0; font-family: "Outfit", sans-serif; font-size: 15px;
+  font-weight: 600; text-decoration: underline;
+}
 #bird-picks:has(#bet-ask):has(.ask-bet-card),
 #bird-picks:has(#bet-ask):has(.ask-more) { flex-wrap: wrap; }
 #bird-picks #bet-ask { width: auto; flex: 1 1 0; min-width: 0; }

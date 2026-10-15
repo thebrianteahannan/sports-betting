@@ -20,7 +20,9 @@ function paintDig() {
     more.addEventListener("pointerdown", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      showInfo(card);
+      const desk = document.getElementById("desk");
+      if (desk && desk.classList.contains("dug")) hideInfo();
+      else showInfo(card);
     });
     const ask = barButton("bet-ask-open", "Ask Parlay the Parrot");
     ask.setAttribute("aria-label", "Ask Parlay the Parrot about this bet");
@@ -33,7 +35,26 @@ function paintDig() {
     if (anchor) anchor.after(more, ask);
     else bar.prepend(more, ask);
   });
+  syncMore();
 }
+
+function syncMore() {
+  const desk = document.getElementById("desk");
+  const open = !!(desk && desk.classList.contains("dug"));
+  const label = open ? "Show Less" : "Show More Info";
+  document.querySelectorAll(".bet-more").forEach((button) => {
+    button.textContent = label;
+    button.title = label;
+    button.setAttribute("aria-label", open ? "Show less info about this bet" : "Show more info about this bet");
+  });
+}
+
+function hideInfo() {
+  const desk = document.getElementById("desk");
+  if (desk) desk.classList.remove("dug");
+  syncMore();
+}
+new MutationObserver(syncMore).observe(document.getElementById("desk"), { attributes: true, attributeFilter: ["class"] });
 
 function showInfo(card) {
   const desk = document.getElementById("desk");
@@ -57,6 +78,7 @@ function showInfo(card) {
   if (head) head.classList.remove("bird-talk");
   const line = document.getElementById("bird-line");
   if (line) line.classList.remove("answer");
+  syncMore();
 }
 
 function openBet(card) {
@@ -88,8 +110,51 @@ function askBet(kind) {
   const go = () => replyBet();
   box.addEventListener("keydown", (event) => { if (event.key === "Enter") go(); });
   document.getElementById("bet-ask-go").addEventListener("click", go);
-  if (general) box.addEventListener("click", () => focusAsk(box));
+  if (general) {
+    paintIdeas(row);
+    box.addEventListener("click", () => focusAsk(box));
+  }
   box.focus();
+}
+
+const ASK_IDEAS = [
+  ["Best bet of the day", "What's the best bet of the day?"],
+  ["This week", "What's the good 3 leg and the good 5 leg this week?"],
+  ["Most winning strategies", "What are the most winning strategies?"],
+  ["Bets from those strategies", "What are the bets from the most winning strategies?"],
+  ["Super safe", "What's the super safe bet?"],
+  ["Today's best bet", "What's today's best bet?"],
+  ["Good 3-leg", "What's a good 3 leg?"],
+  ["Good 5-leg", "What's a good 5 leg?"],
+  ["How you pick", "How do you pick a bet?"],
+];
+
+function paintIdeas(row) {
+  const wrap = document.createElement("div");
+  wrap.className = "ask-ideas";
+  ASK_IDEAS.forEach(([label, question], index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "ask-idea";
+    button.textContent = label;
+    if (index >= 5) button.hidden = true;
+    button.addEventListener("click", () => {
+      const field = document.getElementById("bet-ask");
+      if (field) field.value = question;
+      replyBet();
+    });
+    wrap.append(button);
+  });
+  const more = document.createElement("button");
+  more.type = "button";
+  more.className = "ask-rest";
+  more.textContent = "Show more";
+  more.addEventListener("click", () => {
+    wrap.querySelectorAll(".ask-idea[hidden]").forEach((button) => { button.hidden = false; });
+    more.hidden = true;
+  });
+  wrap.append(more);
+  row.prepend(wrap);
 }
 
 function focusAsk(box) {
@@ -336,6 +401,7 @@ document.getElementById("desk-full").addEventListener("click", () => {
   if (digHold) return;
   if (!desk || desk.classList.contains("tv-full")) return;
   desk.classList.remove("dug", "bird-on");
+  syncMore();
   const guide = document.getElementById("bird-guide");
   const head = document.getElementById("desk-head");
   if (guide) guide.hidden = true;
