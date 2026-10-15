@@ -41,6 +41,7 @@ function askBet(kind) {
   window.asking = true;
   window.digOn = true;
   const general = kind === "general";
+  window.askGeneral = general;
   birdSay(general
     ? "Howdy howdy, I'm Parlay the Parrot, and I know everything about betting ... ask me anything and see if you're smarter than a bird."
     : "What do you want to know about this bet?", []);
@@ -79,9 +80,7 @@ function openAskScreen() {
 
 let askingBet = false;
 
-function cardPack() {
-  const card = window.digCard;
-  if (!card) return null;
+function packOne(card) {
   const legs = [...card.querySelectorAll(":scope > ol > li")].map(legBits);
   const copy = [...card.querySelectorAll(":scope > p")].map((node) => node.textContent.trim()).filter((line) => line && !/^pulled /i.test(line));
   return {
@@ -89,6 +88,23 @@ function cardPack() {
     aim: (card.querySelector(".aim") || {}).textContent || "",
     copy,
     legs: legs.map(({ price, name, more, pct, quiet }) => ({ price, name, more, pct, quiet })),
+  };
+}
+
+function cardPack() {
+  const card = window.digCard;
+  if (!window.askGeneral && card && card.isConnected && card.querySelector("ol li")) return packOne(card);
+  const cards = ["best", "today", "week", "week5", "safe"].map((id) => document.getElementById(id)).filter((item) => item && item.querySelector("ol li"));
+  if (!cards.length) return null;
+  return {
+    title: "Recommended bets",
+    aim: "Best bet of the day, Today's Best Bet, Good 3-leg, Good 5-leg, and Super safe.",
+    copy: cards.map((item) => {
+      const packed = packOne(item);
+      const names = packed.legs.map((leg) => [leg.price, leg.name].filter(Boolean).join(" ")).join("; ");
+      return [packed.title, packed.aim, names].filter(Boolean).join(". ");
+    }),
+    legs: [],
   };
 }
 
@@ -106,8 +122,9 @@ async function replyBet() {
   if (askingBet) return;
   const box = document.getElementById("bet-ask");
   const question = String((box && box.value) || "").trim();
+  if (!question) return;
   const card = cardPack();
-  if (!question || !card) return;
+  if (!card) { birdSay("I don't have a bet in front of me yet.", []); return; }
   askingBet = true;
   window.asking = true;
   const said = /[.?!]$/.test(question) ? question : `${question}.`;

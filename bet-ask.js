@@ -16,7 +16,7 @@ function cardText(card) {
   return [
     clip(card.title, 80),
     clip(card.aim, 160),
-    ...(Array.isArray(card.copy) ? card.copy : []).slice(0, 4).map((line) => clip(line, 300)),
+    ...(Array.isArray(card.copy) ? card.copy : []).slice(0, 6).map((line) => clip(line, 420)),
     ...legs,
   ].filter(Boolean).join("\n");
 }
