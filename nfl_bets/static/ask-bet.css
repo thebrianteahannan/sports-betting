@@ -79,6 +79,8 @@
 #desk.tv-full #desk-glass #bird-picks .ask-model { font-size: 14px; }
 #bird-picks:has(#bet-ask) { flex-wrap: nowrap; }
 #bird-picks:has(#bet-ask):has(.ask-ideas) { flex-wrap: wrap; }
+#bird-picks:has(.ask-ideas) #bet-ask,
+#bird-picks:has(.ask-ideas) #bet-ask-go { order: -1; }
 #bird-picks .ask-ideas { flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 0.4rem; }
 #bird-picks .ask-ideas button.ask-rest {
   background: none; box-shadow: none; padding: 0.15rem 0;
@@ -90,8 +92,6 @@
   #desk.tv-full #desk-glass #bird-guide:has(#bet-ask) #bird-line:not(.answer) {
     font-size: 16px; line-height: 1.25; padding: 12px 14px; margin-top: 2.6rem;
   }
-  #bird-picks:has(.ask-ideas) #bet-ask,
-  #bird-picks:has(.ask-ideas) #bet-ask-go { order: -1; }
   #desk.tv-full #desk-glass #bird-picks .ask-ideas button.ask-idea {
     padding: 0.18rem 0.45rem; font-size: 14px; line-height: 1.15; border-radius: 7px;
   }
