@@ -68,6 +68,7 @@ function showMember(payload) {
   window.memberName = member.name || "";
   window.memberState = member.state || "";
   window.memberBook = member.book || "";
+  if (payload.model) window.askModel = payload.model;
   if (window.applyMember) applyMember(window.memberState);
   window.memberReady = true;
   loadBirdPct();
@@ -202,7 +203,7 @@ function birdGreet() {
   if (birdAskBook()) return;
   if (birdLaw()) return;
   window.asking = false;
-  birdSay(`Hey, ${called}. What are you trying to do today?`, [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]);
+  birdSay(`Hey, ${called}. What are you trying to do today?`, [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"], ["parrot", "Ask Parlay the Parrot"]]);
 }
 
 function birdLaw() {
@@ -345,6 +346,8 @@ window.birdMenu = birdMenu;
 document.getElementById("bird-guide").addEventListener("click", (event) => {
   const menu = event.target.closest("[data-menu]");
   if (menu) { birdMenu(menu.dataset.menu); return; }
+  const parrot = event.target.closest("[data-parrot]");
+  if (parrot && window.askBet) { askBet("general"); return; }
   if (!event.target.closest("#bird-picks button")) return;
   const line = (document.getElementById("bird-line") || {}).textContent || "";
   const note = window.lawNote ? lawNote() : "";

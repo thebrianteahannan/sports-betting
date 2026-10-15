@@ -17,6 +17,7 @@
   animation: desk-bob 3.2s ease-in-out infinite;
 }
 #desk.tv-full #desk-glass, #desk.tv-full #desk-glass-in { background: rgba(7, 19, 26, 0.55); }
+#desk.tv-full.bird-on:not(.dug) #bird-guide:not([hidden]) { background: transparent; }
 #desk-glass .chalk > .pick-save { right: 8px; }
 #desk-glass .chalk > .pick-save [data-pull] { margin-left: auto; }
 #desk.dug #desk-glass li .quiet,
@@ -41,6 +42,11 @@
 #desk.tv-full #desk-glass #bird-line.answer {
   font-size: 20px; line-height: 1.35; max-height: min(62vh, 28rem); overflow: auto;
 }
+#bird-picks .ask-model {
+  flex: 1 0 100%; margin: 0.1rem 0 0; font-family: "Outfit", sans-serif;
+  font-size: 13px; font-weight: 500; line-height: 1.3; color: #9aa8b5;
+}
+#desk.tv-full #desk-glass #bird-picks .ask-model { font-size: 14px; }
 #desk.dug #bet-ask { width: auto; flex: 1 1 16rem; }
 #desk-glass .leg-edit,
 #desk.tv-full #desk-glass .leg-edit {

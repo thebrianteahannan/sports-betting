@@ -332,11 +332,11 @@ function bootDesk() {
   const go = document.getElementById("choice-go");
   if (go) go.addEventListener("click", tvPush);
   const home = document.getElementById("desk-home");
-  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]); tvSkip = false; birdBump(); });
+  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"], ["parrot", "Ask Parlay the Parrot"]]); tvSkip = false; birdBump(); });
 }
 const BIRD_WAIT = 18000;
 const BIRD_NUDGES = [
-  ["Hey, want to find a bet you want to make?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]],
+  ["Hey, want to find a bet you want to make?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"], ["parrot", "Ask Parlay the Parrot"]]],
   ["Hey, try a safe bet. Safe aims at −200, so a $5 bet wins about $2.50. That price misses less often than the long price.", [["quiz", "Try Safe Bet", "safe"]]],
   ["Hey, the safe bet is sometimes boring. A higher payout is louder, and it gives you something to talk about with friends. That long price misses more often.", [["quiz", "Build a higher payout", "payout"]]],
   ["Best Bets of the Week uses a different day on each leg. Want a look?", [["week", "Best Bets of the Week"]]],
@@ -368,7 +368,7 @@ function birdSay(text, picks) {
   (picks || []).forEach(([tab, label, aim]) => {
     const button = document.createElement("button");
     button.type = "button";
-    if (tab === "quiz" || tab === "ask" || tab === "menu") button.dataset[tab] = aim || "";
+    if (tab === "quiz" || tab === "ask" || tab === "menu" || tab === "parrot") button.dataset[tab] = aim || "";
     else { button.dataset.tab = tab; if (aim) button.dataset.aim = aim; }
     button.textContent = label;
     row.append(button);
@@ -414,7 +414,7 @@ function startGuide() {
     birdSay("Hey.", []);
     setTimeout(() => {
       if (!birdOn || birdHeld || window.asking || document.body.classList.contains("needs-member")) return;
-      if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]);
+      if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"], ["parrot", "Ask Parlay the Parrot"]]);
     }, 900);
     birdBump();
   };
@@ -441,7 +441,7 @@ let tvSeen = false;
 function tvShot() {
   const desk = document.getElementById("desk");
   if (desk && desk.classList.contains("bird-on")) {
-    const picks = [...document.querySelectorAll("#bird-picks button")].filter((b) => !b.dataset.stay).map((b) => ["quiz" in b.dataset ? "quiz" : "ask" in b.dataset ? "ask" : b.dataset.tab, b.textContent, b.dataset.quiz || b.dataset.ask || b.dataset.aim || ""]);
+    const picks = [...document.querySelectorAll("#bird-picks button")].filter((b) => !b.dataset.stay).map((b) => ["quiz" in b.dataset ? "quiz" : "ask" in b.dataset ? "ask" : "parrot" in b.dataset ? "parrot" : b.dataset.tab, b.textContent, b.dataset.quiz || b.dataset.ask || b.dataset.parrot || b.dataset.aim || ""]);
     return { bird: 1, text: document.getElementById("bird-line").textContent, picks };
   }
   const tab = (window.state && state.tab) || "today";

@@ -23,7 +23,7 @@ const crypto = require("crypto");
 const { createIgnore } = require("./desk-ignore");
 const { createAdmins } = require("./desk-admins");
 const { createDocs } = require("./desk-docs"); const { chooseBet } = require("./choose-api");
-const { askBet } = require("./bet-ask");
+const { askBet, birdModel } = require("./bet-ask");
 const { createPull } = require("./desk-pull");
 const ROOT = __dirname;
 loadEnv(path.join(ROOT, ".env"));
@@ -319,7 +319,7 @@ async function memberFrom(req) {
 
 function memberProfile(data, user) {
   const activity = data.activity.filter((row) => row.userId === user.id).slice(0, 30);
-  return { member: publicMember(user), activity };
+  return { member: publicMember(user), activity, model: birdModel() };
 }
 
 async function openSession(data, user) {

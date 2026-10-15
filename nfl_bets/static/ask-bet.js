@@ -52,7 +52,23 @@ function askBet(kind) {
   const go = () => replyBet();
   box.addEventListener("keydown", (event) => { if (event.key === "Enter") go(); });
   document.getElementById("bet-ask-go").addEventListener("click", go);
+  if (general) box.addEventListener("pointerdown", () => { openAskScreen(); box.focus(); });
   box.focus();
+}
+
+function modelTalk(name) {
+  const raw = String(name || "").trim();
+  const known = { "gemini-3.8-flash": "Gemini 3.8 Flash", "llama3.2": "Llama 3.2" };
+  return known[raw] || raw;
+}
+
+function openAskScreen() {
+  const desk = document.getElementById("desk");
+  const full = document.getElementById("desk-full");
+  if (!desk || !full || desk.classList.contains("tv-full")) return;
+  digHold = true;
+  full.click();
+  digHold = false;
 }
 
 let askingBet = false;
@@ -88,7 +104,16 @@ async function replyBet() {
   if (!question || !card) return;
   askingBet = true;
   window.asking = true;
-  birdSay("Let me look at that.", []);
+  const said = /[.?!]$/.test(question) ? question : `${question}.`;
+  birdSay(`You asked: ${said} Let me look at that.`, []);
+  const model = modelTalk(window.askModel);
+  const row = document.getElementById("bird-picks");
+  if (row && model) {
+    const note = document.createElement("p");
+    note.className = "ask-model";
+    note.textContent = `This was powered by the ${model} AI model.`;
+    row.append(note);
+  }
   let answer = "The bird could not think of that.";
   try {
     const response = await fetch("/api/bet-ask", {

@@ -121,4 +121,8 @@ async function askBet(question, card) {
   }
 }
 
-module.exports = { askBet };
+function birdModel() {
+  return geminiKey() ? geminiModel() : LOCAL_MODEL;
+}
+
+module.exports = { askBet, birdModel };
