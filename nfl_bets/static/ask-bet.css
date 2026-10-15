@@ -87,6 +87,9 @@
 }
 @media (max-width: 720px) {
   #desk.tv-full.bird-on #bird-guide:has(#bet-ask) { justify-content: flex-start; }
+  #desk.tv-full #desk-glass #bird-guide:has(#bet-ask) #bird-line:not(.answer) {
+    font-size: 16px; line-height: 1.25; padding: 12px 14px; margin-top: 2.6rem;
+  }
   #bird-picks:has(.ask-ideas) #bet-ask,
   #bird-picks:has(.ask-ideas) #bet-ask-go { order: -1; }
   #desk.tv-full #desk-glass #bird-picks .ask-ideas button.ask-idea {
