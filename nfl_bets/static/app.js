@@ -52,7 +52,7 @@ function render() {
   if (board.errors && board.errors.length) {
     banner.hidden = false;
     banner.textContent = board.errors.join(" ");
-  } else { const note = window.lawNote ? lawNote() : ""; const x = document.getElementById("banner-x"); banner.hidden = !note; if (x) x.hidden = !note; if (note) banner.textContent = note; }
+  } else { banner.hidden = true; const x = document.getElementById("banner-x"); if (x) x.hidden = true; }
   const bandAim = (board.band && board.band.goal) || "Priced from −150 to +100.";
   renderFeatured("best", weekCard(board.band, "band"), "Best bet of the day", bandAim);
   [["week", "weekThree", "Good 3-leg"], ["week5", "weekFive", "Good 5-leg"], ["safe", "weekSafe", "Super safe"]].forEach(([prefix, key, title]) => {

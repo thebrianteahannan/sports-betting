@@ -178,8 +178,17 @@ function birdGreet() {
   if (!called) { birdAskName(); return; }
   if (!window.memberState) { birdAskState(); return; }
   if (birdAskBook()) return;
+  if (birdLaw()) return;
   window.asking = false;
   birdSay(`Hey, ${called}. What are you trying to do today?`, [["today", "View Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]);
+}
+
+function birdLaw() {
+  const note = window.lawNote ? lawNote() : "";
+  if (!note) return false;
+  window.asking = true;
+  birdSay(note, [["today", "View Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]);
+  return true;
 }
 
 function birdAskState() {
@@ -263,6 +272,12 @@ async function saveCalledName(raw) {
   else birdAskName();
 }
 
+document.getElementById("bird-guide").addEventListener("click", (event) => {
+  if (!event.target.closest("#bird-picks button")) return;
+  const line = (document.getElementById("bird-line") || {}).textContent || "";
+  const note = window.lawNote ? lawNote() : "";
+  if (note && line === note) window.lawShut = window.memberState || "";
+});
 document.getElementById("pane-profile").addEventListener("click", (event) => {
   if (event.target.closest("#member-out")) signOut();
   if (event.target.closest("#call-save")) saveCalledName(document.getElementById("call-name").value);
