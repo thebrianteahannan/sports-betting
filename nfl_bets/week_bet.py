@@ -260,7 +260,7 @@ def _card(combo: list[tuple[dict, dict, bool]], count: int, label: str, title: s
         "stake": 5,
         "profit": profit,
         "live": any(live for _, _, live in combo),
-        "note": "Each leg is on a different day, in a different game, so this is a regular parlay.",
+        "note": "",
         "copy": (
             f"{count} FanDuel player props, each on a different day, multiply to {american}. "
             f"The parlay is about {chance}%. A $5 bet would win ${profit:.2f}."

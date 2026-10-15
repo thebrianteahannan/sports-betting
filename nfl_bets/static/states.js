@@ -1,11 +1,11 @@
 const STATE_NAME = Object.fromEntries("AL=Alabama,AK=Alaska,AZ=Arizona,AR=Arkansas,CA=California,CO=Colorado,CT=Connecticut,DE=Delaware,DC=Washington D.C.,FL=Florida,GA=Georgia,HI=Hawaii,ID=Idaho,IL=Illinois,IN=Indiana,IA=Iowa,KS=Kansas,KY=Kentucky,LA=Louisiana,ME=Maine,MD=Maryland,MA=Massachusetts,MI=Michigan,MN=Minnesota,MS=Mississippi,MO=Missouri,MT=Montana,NE=Nebraska,NV=Nevada,NH=New Hampshire,NJ=New Jersey,NM=New Mexico,NY=New York,NC=North Carolina,ND=North Dakota,OH=Ohio,OK=Oklahoma,OR=Oregon,PA=Pennsylvania,RI=Rhode Island,SC=South Carolina,SD=South Dakota,TN=Tennessee,TX=Texas,UT=Utah,VT=Vermont,VA=Virginia,WA=Washington,WV=West Virginia,WI=Wisconsin,WY=Wyoming".split(",").map((row) => row.split("=")));
 const STATE_KIND = {
   none: { level: "none", note: "No extra limit on these bets, including college player props." },
-  props: { level: "some", note: "College player props stay off. Spreads, totals, and moneylines can still be bet." },
+  props: { level: "some", note: "College player props stay off because of the state you live in. Spreads, totals, and moneylines can still be bet." },
   home: { level: "some", note: "Bets on in-state college teams stay off. College player props on other teams can still be bet." },
   live: { level: "some", note: "Live college player props stay off. Pre-game college props can still be bet." },
-  both: { level: "some", note: "College player props stay off, and bets on in-state colleges stay off." },
-  tourney: { level: "some", note: "College player props stay off. In-state colleges are limited to tournament games." },
+  both: { level: "some", note: "College player props stay off because of the state you live in, and bets on in-state colleges stay off." },
+  tourney: { level: "some", note: "College player props stay off because of the state you live in. In-state colleges are limited to tournament games." },
   off: { level: "lot", note: "FanDuel Sportsbook is not offered here, so these lines cannot be placed in this state." },
 };
 const STATE_GROUP = {
@@ -25,7 +25,7 @@ Object.keys(STATE_NAME).forEach((code) => {
 });
 STATE_LAW.FL.kind = "props";
 STATE_LAW.FL.level = "some";
-STATE_LAW.FL.note = "Hard Rock is your sportsbook. We use FanDuel for the odds and prices. Your sportsbook is different, and the numbers are usually close. College player props stay off.";
+STATE_LAW.FL.note = "Hard Rock is your sportsbook. We use FanDuel for the odds and prices. Your sportsbook is different, and the numbers are usually close. College player props stay off because of the state you live in.";
 const BOOKS = [
   { id: "fanduel", name: "FanDuel", href: "https://sportsbook.fanduel.com/", states: "AZ AR CO CT DC IL IN IA KS KY LA MD MA MI MO NJ NY NC OH PA TN VT VA WV WY" },
   { id: "hardrock", name: "Hard Rock", href: "https://www.hardrock.bet/", states: "AZ CO FL IL IN MI NJ OH TN VA" },

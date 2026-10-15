@@ -61,7 +61,7 @@ function render() {
   renderFeatured("today", todayCandidate(board), "Today's Best Bet", "The highest-priced ticket on today's slate.");
   ["chalk", "four", "plus", "hits"].forEach((id) => renderParlay(id, board[id]));
   renderArchive(board.archive || []);
-  renderPicks(board.picks || []);
+  renderPicks(board.archive || []);
   showTab(state.tab);
   if (window.paintChoices) window.paintChoices();
   if (window.paintRefresh) window.paintRefresh();
@@ -70,7 +70,7 @@ function render() {
 }
 
 function dropMiss(text) {
-  return String(text || "").replace(/\s*(?:It|Either) can miss\./g, "").replace(/These legs are in different games, so this is a regular parlay\.?\s*/g, "").trim();
+  return String(text || "").replace(/\s*(?:It|Either) can miss\./g, "").replace(/(?:Each leg is (?:a different game|on a different day, in a different game)|These (?:legs|four) are in different games), so (?:FanDuel prices this as |this is )a regular parlay\.?\s*/g, "").trim();
 }
 
 function legItem(leg) {
@@ -78,7 +78,7 @@ function legItem(leg) {
   const bits = [];
   const now = progress(row);
   if (!now && row.note && !/mark this/i.test(row.note)) bits.push(row.note);
-  if (row.kickoff) bits.push(`${when(row.kickoff)} ET`);
+  if (row.kickoff && !/\d{1,2}:\d{2}\s*[AP]M/i.test(row.label || "")) bits.push(`${when(row.kickoff)} ET`);
   const extra = bits.length ? ` · ${bits.join(" ")}` : "";
   const count = now ? ` <b class="sofar">${esc(now)}</b>` : "";
   const mark = typeof legState === "function" ? legState(row) : "wait";
@@ -86,7 +86,7 @@ function legItem(leg) {
   const fact = sway ? `<span class="quiet">${esc(sway)}</span>` : "";
   const parts = String(row.label || "").split(" — ");
   const more = `<span class="leg-more">${parts.length > 1 ? ` — ${esc(parts.slice(1).join(" — "))}` : ""}${count}${esc(extra)}</span>`; const pin = mark === "wait" ? ` data-drop="${esc(String(row.runner || parts[0] || "").split(/\d/)[0].trim().toLowerCase())}" data-line="${esc((String(parts[0]).match(/(\d+(?:\.\d+)?)/) || [])[1] || "")}" data-word="${esc((String(parts[0]).toLowerCase().match(/shots|threes|assists|rebounds|points|yards|receptions|strikeouts|hits|goals|saves/) || [])[0] || "")}"` : "";
-  return `<li${pin}><b>${esc(american(row.odds) || row.odds)}</b><span><i class="leg-mark ${mark}" title="${mark === "won" ? "Won" : mark === "lost" ? "Missed" : mark === "push" ? "Push" : "Waiting"}">${mark === "won" ? "✓" : mark === "lost" ? "✕" : mark === "push" ? "–" : "◌"}</i>${esc(parts[0])}${more}${fact}</span><em>${esc(row.pct || "")}</em></li>`;
+  return `<li${pin}><b>${esc(american(row.odds) || row.odds)}</b><span><i class="leg-mark ${mark}" title="${mark === "won" ? "Won" : mark === "lost" ? "Missed" : mark === "push" ? "Push" : "Waiting"}">${mark === "won" ? "✓" : mark === "lost" ? "✕" : mark === "push" ? "–" : "◌"}</i>${esc(parts[0])}${more}${fact}${legOdds(row)}</span><em>${esc(row.pct || "")}</em></li>`;
 }
 
 function withLive(leg) {
@@ -144,15 +144,9 @@ function renderFeatured(prefix, best, heading, aim) {
     : `${game}Strategy: ${best.strategy}. The legs are ${pctWords(best.legs)}. The parlay is ${best.pct}%.${win}`;
   $(`${prefix}-legs`).innerHTML = best.legs.map(legItem).join("");
   $(`${prefix}-note`).textContent = dropMiss(best.note || "");
-  mountHistory($(`${prefix}`), best.id, best.game, best.group);
-  const saved = bestSaved(best);
   const shaped = best.group ? { legs: best.legs } : best.card;
   const mine = cardGood(best.id, shaped);
-  const group = best.group ? ` data-group="${esc(best.group)}"` : "";
-  $(`${prefix}-save`).innerHTML = `${saved
-    ? `<button type="button" class="ghost on" data-unsave="${esc(saved.id)}" aria-label="Unsave this pick" title="Unsave this pick"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>`
-    : `<button type="button" class="ghost" data-save="${esc(best.id)}"${group} aria-label="Save this pick" title="Save this pick"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>`
-  }${pullButton(best.id)}${fanLink()}${starHtml(mine, best.id, best.group, "")}`;
+  $(`${prefix}-save`).innerHTML = `${pullButton(best.id)}${fanLink()}${starHtml(mine, best.id, best.group, "")}`;
 }
 
 function bandWhy(best) {
@@ -228,15 +222,6 @@ function winOn(price) {
   return Math.round(5 * (decimal - 1) * 100) / 100;
 }
 
-function bestSaved(best) {
-  const labels = best.legs.map((leg) => leg.label).join("|");
-  return ((state.board && state.board.picks) || []).find((pick) => (
-    pick.result === "open"
-    && pick.card === best.id
-    && (pick.legs || []).map((leg) => leg.label).join("|") === labels
-  ));
-}
-
 function renderParlay(id, card) {
   const box = $(id);
   if (!card || (window.blockCollege && blockCollege(card))) {
@@ -254,19 +239,14 @@ function renderParlay(id, card) {
     ? groups.map((group) => `<li class="split"><b>${esc(group.price)}</b><span>${esc(group.title)}</span><em>${esc(group.pct || "")}</em></li>${(group.legs || []).map(legItem).join("")}`).join("")
     : (card.legs || []).map(legItem).join("");
   $(`${id}-note`).textContent = dropMiss(card.note || "");
-  mountHistory(box, id, card.game || "", "");
   let save = box.querySelector(".pick-save");
   if (!save) {
     save = document.createElement("p");
     save.className = "pick-save";
     box.appendChild(save);
   }
-  const saved = openCopy(id, card);
   const mine = cardGood(id, card);
-  save.innerHTML = `${saved
-    ? `<button type="button" class="ghost on" data-unsave="${esc(saved.id)}" aria-label="Unsave this pick" title="Unsave this pick"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>`
-    : `<button type="button" class="ghost" data-save="${esc(id)}" aria-label="Save this pick" title="Save this pick"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>`
-  }${pullButton(id)}${fanLink()}${starHtml(mine, id, "", "")}`;
+  save.innerHTML = `${pullButton(id)}${fanLink()}${starHtml(mine, id, "", "")}`;
 }
 
 function pulledText(card) {
@@ -278,41 +258,27 @@ function pullButton(id) {
   return state.admin ? `<button type="button" class="ghost" data-pull="${esc(id)}" aria-label="Update from FanDuel" title="Update from FanDuel"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.2-5.8"/><path d="M21 4v5h-5"/></svg></button>` : "";
 }
 
-function mountHistory(box, cardId, game, group) {
-  if (!box) return;
-  let slot = box.querySelector(".history-slot");
-  if (!slot) {
-    slot = document.createElement("div");
-    slot.className = "history-slot";
-    const save = box.querySelector(".pick-save");
-    if (save) box.insertBefore(slot, save);
-    else box.appendChild(slot);
-  }
-  slot.innerHTML = historyHtml(cardId, game, group);
-}
-
-function historyHtml(cardId, game, group) {
-  const rows = ((state.board && state.board.archive) || []).filter((ticket) => (
-    ticket.card === cardId
-    && (ticket.legs || []).length
-    && (!game || ticket.game === game)
-    && (!group || String(ticket.title || "").endsWith(group))
-  )).sort((a, b) => String(a.offeredAt).localeCompare(String(b.offeredAt)));
-  const versions = [];
-  rows.forEach((ticket) => {
-    const key = (ticket.legs || []).map((leg) => `${leg.label}|${leg.odds}`).join("||");
-    const last = versions[versions.length - 1];
-    if (last && last.key === key) return;
-    versions.push({ key, from: ticket.offeredAt, legs: ticket.legs });
+function legOdds(leg) {
+  const head = String(leg.label || "").split(" — ")[0].trim().toLowerCase();
+  if (!head) return "";
+  const rows = [];
+  ((state.board && state.board.archive) || []).forEach((ticket) => {
+    (ticket.legs || []).forEach((item) => {
+      if (String(item.label || "").split(" — ")[0].trim().toLowerCase() !== head) return;
+      rows.push({ at: String(ticket.offeredAt || ""), odds: item.odds });
+    });
   });
-  if (!versions.length) return "";
-  const first = when(versions[0].from);
-  if (versions.length === 1) return `<p class="quiet">First seen ${esc(first)} ET. These prices have not moved.</p>`;
-  const items = versions.map((row) => {
-    const legs = row.legs.map((leg) => `${american(leg.odds)} ${String(leg.label).split(" — ")[0]}`).join("; ");
-    return `<li><b>${esc(when(row.from))} ET</b><span>${esc(legs)}</span></li>`;
-  }).join("");
-  return `<details class="history"><summary>Price history since ${esc(first)} ET. ${versions.length} versions.</summary><ol>${items}</ol></details>`;
+  rows.sort((a, b) => a.at.localeCompare(b.at));
+  const moves = [];
+  rows.forEach((row) => {
+    const last = moves[moves.length - 1];
+    if (last && String(last.odds) === String(row.odds)) return;
+    moves.push(row);
+  });
+  if (moves.length < 2) return "";
+  const shown = moves.length > 8 ? [moves[0], ...moves.slice(-7)] : moves;
+  const text = shown.map((row) => `${american(row.odds)} ${when(row.at)}`).join(" · ");
+  return `<span class="quiet">Odds ${esc(text)} ET</span>`;
 }
 
 function cardGood(id, card) {
@@ -331,12 +297,6 @@ function cardKeys(card) {
 
 function legKey(ticket) {
   return (ticket.legs || []).map((leg) => `${leg.label}|${leg.odds}`).join("||");
-}
-
-function openCopy(id, card) {
-  return ((state.board && state.board.picks) || []).find((pick) => (
-    pick.result === "open" && pick.card === id && String(pick.american) === String(card.american) && pick.copy === card.copy
-  ));
 }
 
 function renderArchive(tickets) {
@@ -394,13 +354,14 @@ function showHistory(name) {
   });
 }
 
-function renderPicks(picks) {
+function renderPicks(tickets) {
+  const rated = (tickets || []).filter((ticket) => (Number(ticket.stars) || (ticket.good ? 1 : 0)) > 0).concat(window.ratedBuilt || []);
   const counts = { open: 0, won: 0, lost: 0, push: 0 };
-  picks.forEach((pick) => { counts[pick.result] = (counts[pick.result] || 0) + 1; });
-  $("tracked-score").textContent = picks.length
+  rated.forEach((pick) => { counts[pick.result || "open"] = (counts[pick.result || "open"] || 0) + 1; });
+  $("tracked-score").textContent = rated.length
     ? `Open ${counts.open}. Won ${counts.won}. Lost ${counts.lost}. Push ${counts.push}. Nothing here is sent to FanDuel.`
-    : "Save a card above. This list only remembers the pick. It does not place the bet.";
-  $("tracked-list").innerHTML = picks.map(pickRow).join("");
+    : "Rate a bet and it shows up here. This does not place the bet.";
+  $("tracked-list").innerHTML = rated.map((ticket) => pickRow(ticket, "rated")).join("");
 }
 
 function manualMark(pick) {
@@ -436,18 +397,20 @@ function pickRow(pick, archive) {
   const legs = groups.length
     ? groups.map((group) => `<li class="split"><b>${esc(group.price)}</b><span>${esc(group.title)}</span><em>${esc(group.pct || "")}</em></li>${(group.legs || []).map(legItem).join("")}`).join("")
     : (pick.legs || []).map(legItem).join("");
+  const rated = archive === "rated";
   const mark = archive ? archiveMark(pick) : manualMark(pick);
   const good = goodControl(pick, archive);
   const price = american(pick.american);
-  const clock = when(archive ? pick.offeredAt : pick.savedAt);
+  const clock = when(rated ? (pick.goodAt || pick.offeredAt) : archive ? pick.offeredAt : pick.savedAt);
+  const word = rated ? "Rated" : archive ? "Pulled" : "Saved";
   const playing = [pick.game, eventClock(pick, pick.legs)].filter(Boolean).join(" · ");
-  return `<article class="ticket">${clock ? `<p class="pulled">${archive ? "Pulled" : "Saved"} ${esc(clock)} ET</p>` : ""}<h3>${esc(pick.title)}${price ? ` ${esc(price)}` : ""}</h3><p class="quiet">${esc(playing)}</p><ol class="chalk-legs">${legs}</ol><p class="pick-save">${good}${mark}${fanLink()}</p></article>`;
+  return `<article class="ticket">${clock ? `<p class="pulled">${word} ${esc(clock)} ET</p>` : ""}<h3>${esc(pick.title)}${price ? ` ${esc(price)}` : ""}</h3><p class="quiet">${esc(playing)}</p><ol class="chalk-legs">${legs}</ol><p class="pick-save">${good}${mark}${fanLink()}</p></article>`;
 }
 
 function goodControl(pick, archive) {
   if (!archive) return "";
   const rating = Number(pick.stars) || (pick.good ? 1 : 0);
-  return starHtml(rating, "", "", pick.id);
+  return pick.built ? starHtml(rating, "", "", "", pick.id) : starHtml(rating, "", "", pick.id);
 }
 
 async function postPick(url, body) {
@@ -479,15 +442,16 @@ document.body.addEventListener("click", (event) => {
   if (tab) { showTab(tab.dataset.tab); if (window.noteTaste && ["today", "week", "open"].includes(tab.dataset.tab)) noteTaste("open", { card: tab.dataset.tab }); }
   const star = event.target.closest("[data-stars]");
   if (star) {
+    const built = star.closest("[data-built]");
     const host = star.closest("[data-good-card], [data-good]");
     const stars = Number(star.dataset.stars);
-    postPick("/api/archive/good", host.dataset.good
-      ? { id: host.dataset.good, stars }
-      : { card: host.dataset.goodCard, group: host.dataset.group || "", stars });
+    postPick("/api/archive/good", built
+      ? { built: true, id: built.dataset.built, stars }
+      : host.dataset.good
+        ? { id: host.dataset.good, stars }
+        : { card: host.dataset.goodCard, group: host.dataset.group || "", stars });
     return;
   }
-  const save = event.target.closest("[data-save], [data-unsave]");
-  if (save) postPick(save.dataset.unsave ? "/api/picks/drop" : "/api/picks", save.dataset.unsave ? { id: save.dataset.unsave } : { card: save.dataset.save, group: save.dataset.group || "" });
   const leg = event.target.closest(".chalk li, .ticket li");
   if (leg && !event.target.closest("button, a, select, input")) leg.classList.toggle("open");
 });

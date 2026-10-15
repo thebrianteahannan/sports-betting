@@ -44,6 +44,7 @@ def refresh_card(card_id: str) -> dict[str, Any]:
     if not updated:
         raise ValueError("FanDuel did not return prices for that bet.")
     _reprice(card)
+    _say(card)
     card["live"] = live
     card["pulledAt"] = now_iso()
     board[card_id] = card
@@ -128,6 +129,25 @@ def _reprice(card: dict[str, Any]) -> None:
     card["profit"] = profit
 
 
+def _say(card: dict[str, Any]) -> None:
+    american = card.get("american")
+    chance = card.get("impliedPct")
+    profit = card.get("profit")
+    if american is None or chance is None or profit is None:
+        return
+    price = f"+{american}" if isinstance(american, int) and american > 0 else str(american)
+    if str(card.get("why") or "").startswith("Picked because"):
+        card["why"] = (
+            f"Picked because {price} is the highest chance FanDuel has today between −150 and +100. "
+            f"That is about {chance}%. A $5 bet would win ${float(profit):.2f}."
+        )
+    if str(card.get("copy") or "").startswith("The ticket is"):
+        card["copy"] = (
+            f"The ticket is {american}. That is about {chance}%. "
+            f"A $5 bet would win ${float(profit):.2f}."
+        )
+
+
 def _price(legs: list[dict[str, Any]]) -> tuple[int | None, float | None, float | None]:
     decimal = 1.0
     for leg in legs:
@@ -148,3 +168,20 @@ def _keep_week(card_id: str, card: dict[str, Any]) -> None:
         return
     saved[key] = card
     write_json(path, saved)
+
+
+def main() -> None:
+    import json
+    import sys
+
+    card_id = sys.argv[1] if len(sys.argv) > 1 else ""
+    try:
+        card = refresh_card(card_id)
+    except (ValueError, RuntimeError) as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(1) from exc
+    json.dump(card, sys.stdout)
+
+
+if __name__ == "__main__":
+    main()

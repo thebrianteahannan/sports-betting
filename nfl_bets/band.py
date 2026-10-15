@@ -162,7 +162,7 @@ def _card(combo: list[tuple[dict, dict, bool]]) -> dict[str, Any]:
         "profit": profit,
         "live": any(live for _, _, live in combo),
         "why": why,
-        "note": "Each leg is a different game, so FanDuel prices this as a regular parlay." if not one else "",
+        "note": "",
         "copy": (
             f"The ticket is {american}. That is about {chance}%. "
             f"A $5 bet would win ${profit:.2f}."

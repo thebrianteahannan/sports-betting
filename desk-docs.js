@@ -9,6 +9,7 @@ const FILES = {
   "agreement.pdf": ["docs", "agreement.pdf"],
   "marketing-overview.pdf": ["docs", "marketing", "overview.pdf"],
   "marketing-posts.pdf": ["docs", "marketing", "posts.pdf"],
+  "payments.pdf": ["docs", "payments.pdf"],
 };
 
 function createDocs(root) {

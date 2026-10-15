@@ -9,7 +9,10 @@
  * Environment (do not commit these):
  *   SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
+ *   GEMINI_API_KEY
  * Local Mac reads the same names from .env. Hostinger sets them in hPanel.
+ * GEMINI_API_KEY is a free Google AI Studio key with no billing account.
+ * Without it, this Mac answers from Ollama. Hostinger needs the key.
  *
  * The Mac keeps pulling FanDuel and writes bets/board.json and bets/archive.json.
  */
@@ -20,6 +23,8 @@ const crypto = require("crypto");
 const { createIgnore } = require("./desk-ignore");
 const { createAdmins } = require("./desk-admins");
 const { createDocs } = require("./desk-docs"); const { chooseBet } = require("./choose-api");
+const { askBet } = require("./bet-ask");
+const { createPull } = require("./desk-pull");
 const ROOT = __dirname;
 loadEnv(path.join(ROOT, ".env"));
 const sendDoc = createDocs(ROOT);
@@ -96,7 +101,8 @@ async function archive() {
 }
 
 const { ignoreView, sweepIgnored } = createIgnore(readKey, writeKey, archive);
-const { adminList, setMemberAdmin, saveAsk, noteTaste } = createAdmins(readKey, writeKey);
+const pullLive = createPull(readKey, writeKey, ROOT);
+const { adminList, setMemberAdmin, saveAsk, noteTaste, saveRated } = createAdmins(readKey, writeKey);
 
 async function picks() {
   const data = (await readKey("bets/picks.json")) || { picks: [] };
@@ -378,7 +384,7 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/us-map.svg", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/ask-bet.css", "/us-map.svg", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
       serveStatic(res, url.pathname.slice(1));
       return;
     }
@@ -440,6 +446,13 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST") {
       const body = await readBody(req);
       if (url.pathname === "/api/choose") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await chooseBet(body, await board())); return; }
+      if (url.pathname === "/api/bet-ask") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await askBet(body.question, body.card)); return; }
+      if (url.pathname === "/api/admin/pull") {
+        const user = await memberFrom(req);
+        if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
+        sendJson(res, await pullLive(String(body.card || "")));
+        return;
+      }
       if (url.pathname === "/api/name") {
         const user = await memberFrom(req);
         if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
@@ -576,6 +589,7 @@ const server = http.createServer(async (req, res) => {
       if (url.pathname === "/api/archive/good") {
         const user = await memberFrom(req);
         if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
+        if (body.built) { sendJson(res, await saveRated(user, body)); return; }
         const saved = await markGood(String(body.id || ""), String(body.card || ""), String(body.group || ""), body.stars);
         await noteMember(user, "rate", { stars: Number(body.stars) || 0, id: String(body.id || ""), card: String(body.card || ""), group: String(body.group || "") });
         sendJson(res, saved);

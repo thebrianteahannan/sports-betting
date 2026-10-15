@@ -95,7 +95,7 @@ function choiceKey() {
 
 async function runChoice() {
   const box = document.getElementById("choice-result");
-  const key = choiceKey(); document.getElementById("choice-save")?.remove();
+  const key = choiceKey(); document.getElementById("choice-stars")?.remove();
   document.getElementById("choice-again").hidden = (document.getElementById("chooser").classList.add("built"), false);
   if (window.memberLaw === "off" && !(window.booksHere && booksHere().some((book) => book.id !== "fanduel"))) { box.textContent = "No sportsbook on this desk is offered in your state, so this bet cannot be placed there."; return; }
   box.textContent = "Checking FanDuel.";
@@ -125,34 +125,33 @@ async function runChoice() {
   }).join("");
   const kicks = [...new Set((card.legs || []).map((leg) => leg.kickoff).filter(Boolean))];
   const whenLine = kicks.length === 1 ? `<p class="when">${esc(when(kicks[0]))} ET</p>` : "";
-  const save = (card.legs || []).length ? `<button type="button" class="ghost" id="choice-save" aria-label="Save this bet" title="Save this bet"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>` : "";
-  const note = String(card.note || "").replace(/These legs are in different games, so this is a regular parlay\.?\s*/g, "").trim();
+  const stars = (card.legs || []).length ? `<span class="stars" id="choice-stars">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="star" data-built-star="${n}" aria-label="${n} star${n > 1 ? "s" : ""}">★</button>`).join("")}</span>` : "";
+  const note = String(card.note || "").replace(/(?:Each leg is (?:a different game|on a different day, in a different game)|These (?:legs|four) are in different games), so (?:FanDuel prices this as |this is )a regular parlay\.?\s*/g, "").trim();
   box.innerHTML = `<h2>${esc(card.title || "Safest parlay")}</h2>${whenLine}<p>${esc(card.game ? `${card.game}. ` : "")}${esc(card.copy || "")}</p><ol class="chalk-legs">${legs}</ol>${note ? `<p class="quiet">${esc(note)}</p>` : ""}`;
-  if (save) document.getElementById("choice-again").insertAdjacentHTML("afterbegin", save); if (window.paintWeather) paintWeather(); paintEdits();
-  const button = document.getElementById("choice-save");
-  if (button) button.addEventListener("click", () => saveBuilt(card, button));
+  if (stars) {
+    document.getElementById("choice-again").insertAdjacentHTML("afterbegin", stars);
+    document.getElementById("choice-stars").addEventListener("click", (event) => {
+      const star = event.target.closest("[data-built-star]");
+      if (star) saveBuilt(card, Number(star.dataset.builtStar), star.parentElement);
+    });
+  }
+  if (window.paintWeather) paintWeather(); paintEdits();
 }
 
-async function saveBuilt(card, button) {
-  button.disabled = true;
-  const response = await fetch("/api/choose/save", {
+async function saveBuilt(card, stars, host) {
+  const response = await fetch("/api/archive/good", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      title: card.title, american: card.american, copy: card.copy,
+      built: true, stars, title: card.title, american: card.american, copy: card.copy,
       when: choice.when, sports: choice.sports, kind: choice.kind, aim: choice.aim,
-      legs: (card.legs || []).slice(0, 10),
+      legs: (card.legs || []).slice(0, 10).map((leg) => ({ label: String(leg.label || ""), odds: leg.odds, pct: String(leg.pct || "") })),
     }),
   });
   const payload = await response.json();
-  if (!response.ok) {
-    button.disabled = false;
-    button.title = payload.error || "Could not save.";
-    return;
-  }
-  button.title = "Saved";
-  button.setAttribute("aria-label", "Saved");
-  button.classList.add("on");
+  if (!response.ok || !host) return;
+  const n = Number(payload.stars) || 0;
+  host.querySelectorAll("[data-built-star]").forEach((button) => button.classList.toggle("on", Number(button.dataset.builtStar) <= n));
 }
 
 function etDay(ms) {
@@ -214,9 +213,9 @@ function askAnswer(token) {
 function askButtons(step) {
   if (step === "when") {
     const lead = choice.aim === "safe"
-      ? "Safe aims at −200, so a $5 bet wins about $2.50. It can still miss. "
+      ? "Safe aims at −200, so a $5 bet wins about $2.50. "
       : choice.aim === "payout"
-        ? "The long price misses more often. It can still miss. "
+        ? "The long price misses more often. "
         : "";
     return [`${lead}Today, or this week?`, [["ask", "Today", "when:today"], ["ask", "This week", "when:week"]]];
   }
@@ -345,6 +344,7 @@ function paintEdits() {
     if (anchor) anchor.insertAdjacentHTML("afterend", icon);
     else bar.insertAdjacentHTML("afterbegin", icon);
   });
+  if (window.paintDig) paintDig();
 }
 
 function armCard(card, on) {

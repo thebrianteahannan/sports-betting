@@ -100,6 +100,22 @@ function createAdmins(readKey, writeKey) {
     });
   }
 
+  function builtOf(data) {
+    const names = {};
+    data.users.forEach((row) => { names[row.id] = row.name || "Member"; });
+    return data.activity.filter((row) => row.kind === "rate" && row.detail && row.detail.built && Number(row.detail.stars) > 0).slice(0, 60).map((row) => ({
+      at: row.at || "",
+      name: names[row.userId] || "Member",
+      title: row.detail.title || "",
+      american: row.detail.american,
+      copy: row.detail.copy || "",
+      sports: row.detail.sports || [],
+      kind: row.detail.kind || "any",
+      when: row.detail.when || "",
+      lines: (row.detail.legs || []).map((leg) => leg.label || ""),
+    }));
+  }
+
   function asksOf(data) {
     const names = {};
     data.users.forEach((row) => { names[row.id] = row.name || row.email || "Member"; });
@@ -136,12 +152,42 @@ function createAdmins(readKey, writeKey) {
   return {
     async adminList() {
       const data = await load();
-      return { users: rows(data.users), asks: asksOf(data), habits: habitsOf(data) };
+      return { users: rows(data.users), asks: asksOf(data), habits: habitsOf(data), built: builtOf(data) };
     },
     noteTaste(user, kind, detail) {
       const run = tasteChain.then(() => saveTaste(user, kind, detail));
       tasteChain = run.catch(() => {});
       return run;
+    },
+    async saveRated(user, body) {
+      const data = await load();
+      const stars = Math.max(0, Math.min(5, Number(body.stars) || 0));
+      const legs = (Array.isArray(body.legs) ? body.legs : []).slice(0, 10).map((leg) => ({
+        label: String(leg.label || "").slice(0, 180),
+        odds: leg.odds,
+        pct: String(leg.pct || "").slice(0, 12),
+      })).filter((leg) => leg.label);
+      const title = String(body.title || "Built bet").slice(0, 80);
+      const mark = legs.map((leg) => leg.label).join("|");
+      let row = data.activity.find((item) => item.id === String(body.id || "") && item.userId === user.id && item.detail && item.detail.built);
+      if (!row && mark) row = data.activity.find((item) => item.kind === "rate" && item.userId === user.id && item.detail && item.detail.built && item.detail.title === title && (item.detail.legs || []).map((leg) => leg.label).join("|") === mark);
+      const next = row && Number(row.detail.stars) === stars ? 0 : stars;
+      if (!row && next && legs.length) {
+        row = { id: Math.random().toString(16).slice(2, 14), userId: user.id, kind: "rate", at: new Date().toISOString(), detail: { built: true, stars: next, title, american: body.american, copy: String(body.copy || "").slice(0, 400), when: body.when === "week" ? "week" : "today", sports: (Array.isArray(body.sports) ? body.sports : []).slice(0, 7), kind: String(body.kind || "any").slice(0, 24), aim: String(body.aim || "").slice(0, 24), legs } };
+        data.activity.unshift(row);
+      } else if (row && next) {
+        row.detail.stars = next;
+        row.at = new Date().toISOString();
+      } else if (row) {
+        const gone = row.id;
+        data.activity = data.activity.filter((item) => item !== row);
+        data.activity = data.activity.slice(0, 400);
+        await writeKey("bets/members.json", data);
+        return { stars: 0, id: gone };
+      } else return { stars: 0 };
+      data.activity = data.activity.slice(0, 400);
+      await writeKey("bets/members.json", data);
+      return { stars: next, id: row.id };
     },
     async saveAsk(user, said, missing) {
       const text = String(said || "").replace(/\s+/g, " ").trim().slice(0, 240);

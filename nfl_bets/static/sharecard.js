@@ -138,7 +138,7 @@ async function fillShareCards() {
       (payload.built || []).forEach((row, index) => {
         const card = savedShare(row);
         if (!card.legs.length) return;
-        shareChoices.push({ key: `saved-${index}`, label: `${row.name || "Member"} saved ${row.title || "a bet"}`, card });
+        shareChoices.push({ key: `saved-${index}`, label: `${row.name || "Member"} rated ${row.title || "a bet"}`, card });
       });
     }
   } catch (error) {

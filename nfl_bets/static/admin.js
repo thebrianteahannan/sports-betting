@@ -40,10 +40,10 @@ function paintBuilt(payload) {
   if (!list) return;
   const rows = (payload && payload.built) || [];
   if (!rows.length) {
-    list.innerHTML = "<p>No one has saved a built bet yet.</p>";
+    list.innerHTML = "<p>No one has rated a built bet yet.</p>";
     return;
   }
-  list.innerHTML = `<p class="quiet">These are built bets a member saved. A save means they liked it.</p>${rows.map((row) => {
+  list.innerHTML = `<p class="quiet">These are built bets a member rated.</p>${rows.map((row) => {
     const clock = row.at && typeof when === "function" ? `${when(row.at)} ET` : "";
     const sports = (row.sports || []).length ? row.sports.join(", ") : "All leagues";
     const price = row.american == null || row.american === "" ? "" : ` ${row.american}`;

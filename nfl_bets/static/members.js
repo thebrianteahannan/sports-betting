@@ -22,9 +22,26 @@ async function paintGateRecord() {
     line.dataset.ready = "1";
     line.hidden = false;
     line.innerHTML = `Recommended bets have hit <b>${pct.toFixed(1)}%</b>, from ${won} wins and ${lost} losses. <span class="fine">Past results do not promise the next ticket.</span>`;
+    window.birdPct = pct.toFixed(1);
   } catch (error) {}
 }
 
+function birdBrag() {
+  const pct = window.birdPct;
+  if (pct == null) return "";
+  return `Not to brag or anything, but ${pct}% of my recommended bets are cashing. Are you sure you're smarter than a bird?`;
+}
+
+async function loadBirdPct() {
+  if (window.birdPct != null) return;
+  try {
+    const response = await memberFetch("/api/record", { cache: "no-store" });
+    if (!response.ok) return;
+    const row = await response.json();
+    const pct = Number(row.pct);
+    if (Number.isFinite(pct)) window.birdPct = pct.toFixed(1);
+  } catch (error) {}
+}
 function showGate() {
   document.body.classList.add("needs-member");
   const desk = document.getElementById("desk");
@@ -36,6 +53,8 @@ function showGate() {
   showGateMode("pick");
   if (window.deskGate) window.deskGate();
 }
+
+window.birdBrag = birdBrag;
 
 function showMember(payload) {
   document.body.classList.remove("needs-member");
@@ -51,6 +70,7 @@ function showMember(payload) {
   window.memberBook = member.book || "";
   if (window.applyMember) applyMember(window.memberState);
   window.memberReady = true;
+  loadBirdPct();
   const call = document.getElementById("call-name");
   if (call && document.activeElement !== call) call.value = member.name || "";
   const spoken = document.getElementById("bird-line");
@@ -61,13 +81,16 @@ function showMember(payload) {
   if (adminBox) adminBox.hidden = !admin;
   const plan = document.getElementById("activity-plan");
   plan.textContent = admin
-    ? "Admin. Ratings and saved picks are kept on this membership."
-    : "Free membership. Payments are not turned on. Ratings and saved picks are kept on this membership.";
+    ? "Admin. Ratings are kept on this membership."
+    : "Free membership. Payments are not turned on. Ratings are kept on this membership.";
   const list = document.getElementById("activity-list");
   const rows = payload.activity || [];
-  list.innerHTML = rows.length
-    ? rows.map(activityLine).join("")
-    : "<p>No ratings or saved picks yet.</p>";
+  window.ratedBuilt = rows.filter((row) => row.kind === "rate" && row.detail && row.detail.built && Number(row.detail.stars) > 0).map((row) => ({
+    id: row.id, built: true, title: row.detail.title || "Built bet", american: row.detail.american,
+    copy: row.detail.copy || "", legs: row.detail.legs || [], stars: Number(row.detail.stars) || 0, goodAt: row.at, result: "open",
+  }));
+  const lines = rows.map(activityLine).filter(Boolean);
+  list.innerHTML = lines.length ? lines.join("") : "<p>No ratings yet.</p>";
   if (window.loadReports) window.loadReports();
   if (window.state) {
     window.state.admin = admin;
@@ -92,9 +115,8 @@ const CARD_NAMES = {
 function activityLine(row) {
   const detail = row.detail || {};
   const clock = row.at && typeof when === "function" ? `${when(row.at)} ET` : "";
-  const what = detail.group || CARD_NAMES[detail.card] || "a ticket";
-  if (row.kind === "rate") return `<p>Rated ${esc(what)} ${esc(detail.stars)} stars. ${esc(clock)}</p>`;
-  if (row.kind === "save") return `<p>Saved ${esc(what)}. ${esc(clock)}</p>`;
+  const what = detail.title || detail.group || CARD_NAMES[detail.card] || "a ticket";
+  if (row.kind === "rate" && Number(detail.stars) > 0) return `<p>Rated ${esc(what)} ${esc(detail.stars)} stars. ${esc(clock)}</p>`;
   return "";
 }
 
@@ -180,14 +202,22 @@ function birdGreet() {
   if (birdAskBook()) return;
   if (birdLaw()) return;
   window.asking = false;
-  birdSay(`Hey, ${called}. What are you trying to do today?`, [["today", "View Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]);
+  birdSay(`Hey, ${called}. What are you trying to do today?`, [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]);
 }
 
 function birdLaw() {
   const note = window.lawNote ? lawNote() : "";
   if (!note) return false;
   window.asking = true;
-  birdSay(note, [["today", "View Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]);
+  birdSay(note, []);
+  const row = document.getElementById("bird-picks");
+  if (row) {
+    row.innerHTML = `<button type="button" id="bird-law-go">Continue</button>`;
+    document.getElementById("bird-law-go").addEventListener("click", () => {
+      window.lawShut = window.memberState || "";
+      birdGreet();
+    });
+  }
   return true;
 }
 
@@ -272,7 +302,49 @@ async function saveCalledName(raw) {
   else birdAskName();
 }
 
+function birdMenu(kind) {
+  if (kind !== "bets") return;
+  window.asking = true;
+  if (window.birdQuiet) birdQuiet();
+  const choices = [["best", "Best bet of the day"], ["today", "Today's Best Bet"], ["week", "Good 3-leg"], ["week5", "Good 5-leg"], ["safe", "Super safe"]];
+  birdSay("Which recommended bet do you want to see?", []);
+  const row = document.getElementById("bird-picks");
+  if (!row) return;
+  choices.forEach(([id, label]) => {
+    const card = document.getElementById(id);
+    if (!card || !card.querySelector("ol li")) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.card = id;
+    button.textContent = (card.querySelector("h2") || {}).textContent || label;
+    button.addEventListener("click", () => openRecommended(id));
+    row.append(button);
+  });
+}
+
+function openRecommended(id) {
+  window.asking = false;
+  if (window.birdQuiet) birdQuiet();
+  window.digOn = false;
+  const desk = document.getElementById("desk");
+  if (desk) desk.classList.remove("bird-on", "dug");
+  const guide = document.getElementById("bird-guide");
+  if (guide) guide.hidden = true;
+  const head = document.getElementById("desk-head");
+  if (head) head.classList.remove("bird-talk");
+  const card = document.getElementById(id);
+  const week = id === "week" || id === "week5" || id === "safe";
+  if (typeof showTab === "function") showTab(week ? "week" : "today");
+  const glass = document.getElementById("desk-glass-in");
+  if (card && glass && !glass.contains(card)) glass.append(card);
+  if (card) { card.hidden = false; card.scrollIntoView({ block: "start" }); }
+}
+
+window.birdMenu = birdMenu;
+
 document.getElementById("bird-guide").addEventListener("click", (event) => {
+  const menu = event.target.closest("[data-menu]");
+  if (menu) { birdMenu(menu.dataset.menu); return; }
   if (!event.target.closest("#bird-picks button")) return;
   const line = (document.getElementById("bird-line") || {}).textContent || "";
   const note = window.lawNote ? lawNote() : "";

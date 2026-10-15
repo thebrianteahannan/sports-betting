@@ -168,7 +168,6 @@ def _candidates(game: dict) -> list[dict]:
 
 def _note(combo: list[dict]) -> str:
     text = (
-        "These four are in different games, so this is a regular parlay. "
         "FanDuel's button can still show a different number."
     )
     if any(leg.get("sport") == "NCAAF" for leg in combo):

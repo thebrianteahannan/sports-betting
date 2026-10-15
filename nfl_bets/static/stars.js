@@ -6,11 +6,13 @@ function legState(row) {
   return "wait";
 }
 
-function starHtml(rating, card, group, id) {
+function starHtml(rating, card, group, id, built) {
   const n = Number(rating) || 0;
-  const attrs = id
-    ? ` data-good="${esc(id)}"`
-    : ` data-good-card="${esc(card)}"${group ? ` data-group="${esc(group)}"` : ""}`;
+  const attrs = built
+    ? ` data-built="${esc(built)}"`
+    : id
+      ? ` data-good="${esc(id)}"`
+      : ` data-good-card="${esc(card)}"${group ? ` data-group="${esc(group)}"` : ""}`;
   const stars = [1, 2, 3, 4, 5].map((value) => (
     `<button type="button" class="star${value <= n ? " on" : ""}" data-stars="${value}" aria-label="${value} star${value > 1 ? "s" : ""}">★</button>`
   )).join("");
@@ -99,7 +101,7 @@ function affect(label, temp, wind, pop, code) {
   if (wind >= 15 && /pass|receiv|kick|punt|golf|total/.test(text)) notes.push("Wind at this speed can move a pass or a kick");
   if (temp <= 32 && /pass|receiv|rush|yard|kick/.test(text)) notes.push("A freeze can stiffen grip");
   else if (temp >= 90) notes.push("Heat can wear a player down late");
-  if (!notes.length) return "Mild conditions. Weather is not the main thing on this leg. It can still miss.";
+  if (!notes.length) return "Mild conditions. Weather is not the main thing on this leg.";
   return `${notes.slice(0, 2).join(". ")}. It can still hit.`;
 }
 
