@@ -18,6 +18,19 @@
 }
 #desk.tv-full #desk-glass, #desk.tv-full #desk-glass-in { background: rgba(7, 19, 26, 0.55); }
 #desk.tv-full.bird-on:not(.dug) #bird-guide:not([hidden]) { background: transparent; }
+@media (max-width: 560px) {
+  #desk.tv-full #desk-glass h2,
+  #desk.tv-full #desk-glass #gate h2 { font-size: 30px; }
+  #desk.tv-full #desk-glass .quiet,
+  #desk.tv-full #desk-glass .when,
+  #desk.tv-full #desk-glass .aim,
+  #desk.tv-full #desk-glass p,
+  #desk.tv-full #desk-glass li,
+  #desk.tv-full #desk-glass #bird-picks button { font-size: 16px; }
+  #desk.tv-full #desk-glass #bird-line { font-size: 22px; line-height: 1.3; }
+  #desk.tv-full #desk-glass #bird-line.warn,
+  #desk.tv-full #desk-glass #gate .squawk p { font-size: 24px; }
+}
 #desk-glass .chalk > .pick-save { right: 8px; }
 #desk-glass .chalk > .pick-save [data-pull] { margin-left: auto; }
 #desk.dug #desk-glass li .quiet,

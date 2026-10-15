@@ -52,8 +52,14 @@ function askBet(kind) {
   const go = () => replyBet();
   box.addEventListener("keydown", (event) => { if (event.key === "Enter") go(); });
   document.getElementById("bet-ask-go").addEventListener("click", go);
-  if (general) box.addEventListener("pointerdown", () => { openAskScreen(); box.focus(); });
+  if (general) box.addEventListener("click", () => focusAsk(box));
   box.focus();
+}
+
+function focusAsk(box) {
+  openAskScreen();
+  box.focus();
+  requestAnimationFrame(() => box.focus());
 }
 
 function modelTalk(name) {
