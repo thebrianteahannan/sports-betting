@@ -32,6 +32,17 @@ function who(leg) {
   return String(leg.runner || leg.label || "").split(/\d/)[0].trim().toLowerCase();
 }
 
+function pinOf(token) {
+  const [name, size, word] = String(token || "").toLowerCase().split("|");
+  return { name: name.trim(), size: Number(size), word: (word || "").trim() };
+}
+
+function pinRank(leg, want) {
+  const text = `${leg.market || ""} ${leg.label || ""}`.toLowerCase();
+  const miss = want.word && !text.includes(want.word) ? 1000 : 0;
+  return miss + Math.abs(sizeOf(leg) - (want.size || sizeOf(leg)));
+}
+
 function etParts(date) {
   return Object.fromEntries(new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric",
@@ -314,9 +325,48 @@ function windowOf(ranked, aim) {
   return scored.filter((row) => row[0] <= (aim === "payout" ? best * 0.85 : best + 0.4)).map((row) => row[1]);
 }
 
-function pick(pools, count, aim, skip) {
+function pick(pools, count, aim, skip, holdList, dropList) {
+  const drop = new Set((dropList || []).map((name) => pinOf(name).name).filter(Boolean));
+  const asked = (holdList || []).map(pinOf).filter((row) => row.name);
+  const hold = [...new Set(asked.map((row) => row.name))];
+  const source = drop.size ? pools.map(([game, legs, live]) => [game, legs.filter((leg) => !drop.has(who(leg))), live]) : pools;
   const width = count >= 8 ? 1 : count >= 5 ? 2 : 4;
-  const menus = pools.map(([game, legs, live]) => spaced(legs.map((leg) => [leg, game, live]), width, aim)).filter((rows) => rows.length);
+  const menus = source.map(([game, legs, live]) => spaced(legs.map((leg) => [leg, game, live]), width, aim)).filter((rows) => rows.length);
+  hold.forEach((name) => {
+    if (menus.some((rows) => rows.some((row) => who(row[0]) === name))) return;
+    source.some(([game, legs, live]) => {
+      const leg = legs.find((item) => who(item) === name);
+      if (!leg) return false;
+      menus.push([[leg, game, live]]);
+      return true;
+    });
+  });
+  if (hold.length || drop.size) {
+    const pins = [];
+    const used = new Set();
+    hold.forEach((name) => {
+      if (used.has(name)) return;
+      const want = asked.find((item) => item.name === name);
+      let found = null;
+      source.some(([game, legs, live]) => {
+        const options = legs.filter((item) => who(item) === name);
+        if (!options.length) return false;
+        options.sort((a, b) => pinRank(a, want) - pinRank(b, want));
+        found = [options[0], game, live];
+        return true;
+      });
+      if (!found) return;
+      used.add(name);
+      pins.push(found);
+    });
+    const pinGames = new Set(pins.map((row) => String(row[1].id || "")));
+    const rest = menus.map((menu) => menu.filter((row) => !used.has(who(row[0])) && !pinGames.has(String(row[1].id || "")))).filter((menu) => menu.length);
+    const need = Math.max(0, count - pins.length);
+    let rankedHold = need ? search(rest.slice(0, 14), need, aim, true) : [[]];
+    if (need && !rankedHold.length) rankedHold = search(rest.flatMap((menu) => menu.map((row) => [row])).slice(0, 24), need, aim, false);
+    const combo = pins.concat(rankedHold[0] || []);
+    if (combo.length >= count) return { combo: combo.slice(0, count), only: rankedHold.length === 1, again: false, kept: pins.length === hold.length };
+  }
   let ranked = search(menus.slice(0, 14), count, aim, true);
   if (!ranked.length) {
     const flat = menus.flatMap((menu) => menu.map((row) => [row]));
@@ -361,7 +411,7 @@ function card(combo, sports, kind, count, aim, only) {
   return {
     title: `${name} ${count}-leg`, game: titleGame, kind: kindName, american, impliedPct: chance, profit,
     copy: `${aimed} ${kindName[0].toUpperCase()}${kindName.slice(1)} that fit ${sports.join(", ")}. The parlay is ${signed}, about ${chance}%. A $5 bet would win $${profit.toFixed(2)}.`,
-    note: `${count === 1 ? "" : (one ? "These legs are in one game, so FanDuel's same-game button can charge a different number." : "These legs are in different games, so this is a regular parlay.")}${only ? " This is the only bet that fits, so it keeps showing up." : ""}`.trim(),
+    note: `${count > 1 && one ? "These legs are in one game, so FanDuel's same-game button can charge a different number." : ""}${only ? " This is the only bet that fits, so it keeps showing up." : ""}`.trim(),
     players: combo.map((row) => who(row[0])), only, again: false, legs,
   };
 }
@@ -400,11 +450,14 @@ async function chooseBet(body, board) {
   }
   const { pools, trouble } = await gather(games.slice(0, 30), kind);
   if (trouble && !pools.length) return empty(trouble, aim);
+  const hold = Array.isArray(body.hold) ? body.hold : [];
+  const drop = Array.isArray(body.drop) ? body.drop : [];
   const skip = new Set((Array.isArray(body.skip) ? body.skip : []).map(String).filter(Boolean));
-  const pickedCombo = pick(pools, count, aim, skip);
+  const pickedCombo = pick(pools, count, aim, skip, hold, drop);
   if (pickedCombo.combo.length < count) return empty(miss(pools, picked, count, span), aim);
   const built = card(pickedCombo.combo, picked, kind, count, aim, pickedCombo.only);
   built.again = pickedCombo.again;
+  if (hold.length && pickedCombo.kept === false) built.note = `${built.note} A leg you wanted to keep did not fit, so this one replaced it too.`.trim();
   await addSway(built.legs, games);
   return built;
 }

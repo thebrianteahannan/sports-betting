@@ -320,7 +320,7 @@ function bootDesk() {
     const desk = document.getElementById("desk");
     if (!desk || !desk.classList.contains("menu-open")) return;
     if (event.target.closest("#desk-dock")) {
-      if (event.target.closest("[data-tab]")) setMenu(false);
+      if (event.target.closest("[data-tab], [data-quiz], #member-profile")) setMenu(false);
       return;
     }
     setMenu(false);
@@ -332,13 +332,13 @@ function bootDesk() {
   const go = document.getElementById("choice-go");
   if (go) go.addEventListener("click", tvPush);
   const home = document.getElementById("desk-home");
-  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; birdSay("Hey. What are you trying to do today?", [["today", "Our Recommended Bets"], ["build", "Build Your Own Bet"]]); tvSkip = false; birdBump(); });
+  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; birdSay("Hey. What are you trying to do today?", [["today", "Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]); tvSkip = false; birdBump(); });
 }
 const BIRD_WAIT = 18000;
 const BIRD_NUDGES = [
-  ["Hey, want to find a bet you want to make?", [["today", "Our Recommended Bets"], ["build", "Build Your Own Bet"]]],
-  ["Hey, try a safe bet. Safe aims at −200, so a $5 bet wins about $2.50. That price misses less often than the long price. It can still miss.", [["build", "Try Safe Bet", "safe"]]],
-  ["Hey, the safe bet is sometimes boring. A higher payout is louder, and it gives you something to talk about with friends. That long price misses more often. It can still miss.", [["build", "Build a higher payout", "payout"]]],
+  ["Hey, want to find a bet you want to make?", [["today", "Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]],
+  ["Hey, try a safe bet. Safe aims at −200, so a $5 bet wins about $2.50. That price misses less often than the long price. It can still miss.", [["quiz", "Try Safe Bet", "safe"]]],
+  ["Hey, the safe bet is sometimes boring. A higher payout is louder, and it gives you something to talk about with friends. That long price misses more often. It can still miss.", [["quiz", "Build a higher payout", "payout"]]],
   ["Best Bets of the Week uses a different day on each leg. Want a look?", [["week", "Best Bets of the Week"]]],
   ["The best bet of the day sits between −150 and +100. Want it?", [["today", "Show it"]]],
   ["Gambling can ruin people's lives. Only bet money you can afford to lose. If you need help, call 1‑800‑GAMBLER.", []],
@@ -365,8 +365,8 @@ function birdSay(text, picks) {
   (picks || []).forEach(([tab, label, aim]) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.dataset.tab = tab;
-    if (aim) button.dataset.aim = aim;
+    if (tab === "quiz" || tab === "ask") button.dataset[tab] = aim || "";
+    else { button.dataset.tab = tab; if (aim) button.dataset.aim = aim; }
     button.textContent = label;
     row.append(button);
   });
@@ -380,9 +380,9 @@ function birdSay(text, picks) {
 
 function birdBump() {
   clearTimeout(birdTimer);
-  if (document.body.classList.contains("needs-member")) return;
+  if (document.body.classList.contains("needs-member") || window.asking) return;
   birdTimer = setTimeout(() => {
-    if (document.body.classList.contains("needs-member")) return;
+    if (document.body.classList.contains("needs-member") || window.asking) return;
     const nudge = BIRD_NUDGES[birdNudge % BIRD_NUDGES.length];
     birdNudge += 1;
     birdSay(nudge[0], nudge[1]);
@@ -393,16 +393,16 @@ function birdBump() {
 function birdHide() {
   const desk = document.getElementById("desk");
   const box = document.getElementById("bird-guide");
+  const head = document.getElementById("desk-head");
   if (desk) desk.classList.remove("bird-on");
   if (box) box.hidden = true;
+  if (head) head.classList.remove("bird-talk");
 }
 
 function birdLand() {
   const desk = document.getElementById("desk");
-  if (desk && desk.classList.contains("bird-on")) tvPush();
-  tvSeen = true;
-  birdOn = true;
-  birdHeld = true;
+  if (!window.askShow && desk && desk.classList.contains("bird-on")) tvPush();
+  tvSeen = true; birdOn = true; birdHeld = true; window.asking = false;
   birdHide();
   birdBump();
 }
@@ -413,8 +413,8 @@ function startGuide() {
     birdHeld = false;
     birdSay("Hey.", []);
     setTimeout(() => {
-      if (!birdOn || birdHeld || document.body.classList.contains("needs-member")) return;
-      birdSay("Hey. What are you trying to do today?", [["today", "Our Recommended Bets"], ["build", "Build Your Own Bet"]]);
+      if (!birdOn || birdHeld || window.asking || document.body.classList.contains("needs-member")) return;
+      birdSay("Hey. What are you trying to do today?", [["today", "Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]);
     }, 900);
     birdBump();
   };
@@ -429,13 +429,12 @@ function startGuide() {
   document.addEventListener("pointerdown", birdBump);
   document.addEventListener("keydown", birdBump);
   document.addEventListener("click", (event) => {
-    const pick = event.target.closest("#bird-guide [data-tab]");
-    if (pick && pick.dataset.aim) {
-      const aim = document.querySelector(`#choice-aim [data-aim="${pick.dataset.aim}"]`);
-      if (aim) aim.click();
-    }
-    const tab = event.target.closest("[data-tab]");
-    if (!tab || !birdOn) return;
+    const quiz = event.target.closest("[data-quiz]");
+    if (quiz && window.askStart) { askStart(quiz.dataset.quiz); return; }
+    const asked = event.target.closest("#bird-guide [data-ask]");
+    if (asked && window.askAnswer) { askAnswer(asked.dataset.ask); return; }
+    const tab = event.target.closest("[data-tab], #member-profile");
+    if (!tab || !birdOn || tab.dataset.tab === "build") return;
     birdLand();
   });
 }
@@ -446,7 +445,7 @@ let tvSeen = false;
 function tvShot() {
   const desk = document.getElementById("desk");
   if (desk && desk.classList.contains("bird-on")) {
-    const picks = [...document.querySelectorAll("#bird-picks button")].map((b) => [b.dataset.tab, b.textContent, b.dataset.aim || ""]);
+    const picks = [...document.querySelectorAll("#bird-picks button")].map((b) => ["quiz" in b.dataset ? "quiz" : "ask" in b.dataset ? "ask" : b.dataset.tab, b.textContent, b.dataset.quiz || b.dataset.ask || b.dataset.aim || ""]);
     return { bird: 1, text: document.getElementById("bird-line").textContent, picks };
   }
   const tab = (window.state && state.tab) || "today";
@@ -482,7 +481,7 @@ function tvBack() {
   if (!prev) return;
   tvSkip = true;
   if (prev.bird) birdSay(prev.text, prev.picks);
-  else { birdHide(); if (!prev.built) tvUnbuild(); showTab(prev.tab); }
+  else { window.asking = false; birdHide(); if (!prev.built) tvUnbuild(); showTab(prev.tab); }
   tvSkip = false;
 }
 const goTab = showTab;

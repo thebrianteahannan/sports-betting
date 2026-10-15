@@ -68,11 +68,11 @@ function render() {
   if (window.paintChoices) window.paintChoices();
   if (window.paintRefresh) window.paintRefresh();
   if (window.paintDayShare) window.paintDayShare(board);
-  if (window.paintWeekShare) window.paintWeekShare(board); if (window.paintWeather) window.paintWeather();
+  if (window.paintWeekShare) window.paintWeekShare(board); if (window.paintWeather) window.paintWeather(); if (window.paintEdits) paintEdits();
 }
 
 function dropMiss(text) {
-  return String(text || "").replace(/\s*(?:It|Either) can miss\./g, "").trim();
+  return String(text || "").replace(/\s*(?:It|Either) can miss\./g, "").replace(/These legs are in different games, so this is a regular parlay\.?\s*/g, "").trim();
 }
 
 function legItem(leg) {
@@ -87,8 +87,8 @@ function legItem(leg) {
   const sway = [row.fact, row.sway, String(row.form || "").replace(/^In form:\s*/i, ""), row.weather].filter(Boolean).join(" ");
   const fact = sway ? `<span class="quiet">${esc(sway)}</span>` : "";
   const parts = String(row.label || "").split(" — ");
-  const more = `<span class="leg-more">${parts.length > 1 ? ` — ${esc(parts.slice(1).join(" — "))}` : ""}${count}${esc(extra)}</span>`;
-  return `<li><b>${esc(american(row.odds) || row.odds)}</b><span><i class="leg-mark ${mark}" title="${mark === "won" ? "Won" : mark === "lost" ? "Missed" : mark === "push" ? "Push" : "Waiting"}">${mark === "won" ? "✓" : mark === "lost" ? "✕" : mark === "push" ? "–" : "◌"}</i>${esc(parts[0])}${more}${fact}</span><em>${esc(row.pct || "")}</em></li>`;
+  const more = `<span class="leg-more">${parts.length > 1 ? ` — ${esc(parts.slice(1).join(" — "))}` : ""}${count}${esc(extra)}</span>`; const pin = mark === "wait" ? ` data-drop="${esc(String(row.runner || parts[0] || "").split(/\d/)[0].trim().toLowerCase())}" data-line="${esc((String(parts[0]).match(/(\d+(?:\.\d+)?)/) || [])[1] || "")}" data-word="${esc((String(parts[0]).toLowerCase().match(/shots|threes|assists|rebounds|points|yards|receptions|strikeouts|hits|goals|saves/) || [])[0] || "")}"` : "";
+  return `<li${pin}><b>${esc(american(row.odds) || row.odds)}</b><span><i class="leg-mark ${mark}" title="${mark === "won" ? "Won" : mark === "lost" ? "Missed" : mark === "push" ? "Push" : "Waiting"}">${mark === "won" ? "✓" : mark === "lost" ? "✕" : mark === "push" ? "–" : "◌"}</i>${esc(parts[0])}${more}${fact}</span><em>${esc(row.pct || "")}</em></li>`;
 }
 
 function withLive(leg) {
@@ -151,7 +151,7 @@ function renderFeatured(prefix, best, heading, aim) {
   const mine = cardGood(best.id, shaped);
   const group = best.group ? ` data-group="${esc(best.group)}"` : "";
   $(`${prefix}-save`).innerHTML = `${saved
-    ? `<button type="button" class="ghost on" disabled aria-label="Saved" title="Saved"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>`
+    ? `<button type="button" class="ghost on" data-unsave="${esc(saved.id)}" aria-label="Unsave this pick" title="Unsave this pick"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>`
     : `<button type="button" class="ghost" data-save="${esc(best.id)}"${group} aria-label="Save this pick" title="Save this pick"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>`
   }${pullButton(best.id)}${fanLink()}${starHtml(mine, best.id, best.group, "")}`;
 }
@@ -265,7 +265,7 @@ function renderParlay(id, card) {
   const saved = openCopy(id, card);
   const mine = cardGood(id, card);
   save.innerHTML = `${saved
-    ? `<button type="button" class="ghost on" disabled aria-label="Saved" title="Saved"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>`
+    ? `<button type="button" class="ghost on" data-unsave="${esc(saved.id)}" aria-label="Unsave this pick" title="Unsave this pick"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>`
     : `<button type="button" class="ghost" data-save="${esc(id)}" aria-label="Save this pick" title="Save this pick"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>`
   }${pullButton(id)}${fanLink()}${starHtml(mine, id, "", "")}`;
 }
@@ -460,7 +460,7 @@ async function postPick(url, body) {
   const payload = await response.json();
   if (!response.ok) {
     $("banner").hidden = false;
-    $("banner").textContent = payload.error || "Could not save that pick.";
+    $("banner").textContent = payload.error || "Could not update that pick.";
     return;
   }
   if (payload.picks) state.board.picks = payload.picks;
@@ -487,8 +487,8 @@ document.body.addEventListener("click", (event) => {
       : { card: host.dataset.goodCard, group: host.dataset.group || "", stars });
     return;
   }
-  const save = event.target.closest("[data-save]");
-  if (save) postPick("/api/picks", { card: save.dataset.save, group: save.dataset.group || "" });
+  const save = event.target.closest("[data-save], [data-unsave]");
+  if (save) postPick(save.dataset.unsave ? "/api/picks/drop" : "/api/picks", save.dataset.unsave ? { id: save.dataset.unsave } : { card: save.dataset.save, group: save.dataset.group || "" });
   const leg = event.target.closest(".chalk li, .ticket li");
   if (leg && !event.target.closest("button, a, select, input")) leg.classList.toggle("open");
 });

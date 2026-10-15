@@ -4,7 +4,7 @@ function planName(plan) {
 }
 
 function loginWhen(stamp) {
-  if (!stamp) return "No login yet";
+  if (!stamp) return "Not yet";
   return typeof when === "function" ? `${when(stamp)} ET` : stamp;
 }
 
@@ -96,7 +96,7 @@ function paintAdmin(payload) {
     const item = line(row);
     return `<tr><td>${esc(item.row.name || "Member")}</td><td>${esc(item.row.email || "")}</td><td>${esc(planName(item.row.plan))}</td><td>${esc(item.role)} ${item.action}</td><td>${esc(loginWhen(item.row.lastLogin))}</td></tr>`;
   }).join("");
-  list.innerHTML = `${head}<table class="admin-table"><thead><tr><th>Name</th><th>Email</th><th>Subscription</th><th>Admin</th><th>Last login</th></tr></thead><tbody>${body}</tbody></table>`;
+  list.innerHTML = `${head}<table class="admin-table"><thead><tr><th>Name</th><th>Email</th><th>Subscription</th><th>Admin</th><th>Last on site</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 
 async function setAdminRole(email, admin) {

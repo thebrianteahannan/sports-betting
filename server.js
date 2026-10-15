@@ -165,6 +165,15 @@ async function savePick(cardId, groupTitle) {
   return { picks: rows, pick: fresh, already: false };
 }
 
+async function dropPick(id) {
+  const rows = await picks();
+  const found = rows.find((row) => String(row.id) === id && row.result === "open");
+  if (!found) throw new Error("That pick is not saved.");
+  const next = rows.filter((row) => row !== found);
+  await writeKey("bets/picks.json", { picks: next });
+  return { picks: next };
+}
+
 async function settlePick(id, result) {
   if (!RESULTS.has(result)) throw new Error("Mark it won, lost, or push.");
   const rows = await picks();
@@ -282,7 +291,13 @@ async function memberFrom(req) {
   const data = await loadMembers();
   const session = data.sessions[token];
   if (!session || Number(session.expires) < Date.now() / 1000) return null;
-  return data.users.find((user) => user.id === session.userId) || null;
+  const user = data.users.find((row) => row.id === session.userId);
+  const then = user ? Date.parse(user.lastLogin || "") : NaN;
+  if (user && (!Number.isFinite(then) || Date.now() - then >= 600000)) {
+    user.lastLogin = new Date().toISOString();
+    await writeKey("bets/members.json", data);
+  }
+  return user || null;
 }
 
 function memberProfile(data, user) {
@@ -397,6 +412,14 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, memberProfile(await loadMembers(), user));
       return;
     }
+    if (req.method === "GET" && url.pathname === "/api/record") {
+      const rows = await archive();
+      const won = rows.filter((ticket) => ticket.result === "won").length;
+      const lost = rows.filter((ticket) => ticket.result === "lost").length;
+      const decided = won + lost;
+      sendJson(res, { won, lost, pct: decided ? ((won / decided) * 100).toFixed(1) : null });
+      return;
+    }
     if (req.method === "GET" && url.pathname === "/api/board") {
       if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to open the board." }, 401); return; }
       sendJson(res, await publicBoard());
@@ -488,6 +511,11 @@ const server = http.createServer(async (req, res) => {
         const saved = await savePick(String(body.card || ""), String(body.group || ""));
         await noteMember(user, "save", { card: String(body.card || ""), group: String(body.group || "") });
         sendJson(res, saved);
+        return;
+      }
+      if (url.pathname === "/api/picks/drop") {
+        if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; }
+        sendJson(res, await dropPick(String(body.id || "")));
         return;
       }
       if (url.pathname === "/api/picks/settle") {

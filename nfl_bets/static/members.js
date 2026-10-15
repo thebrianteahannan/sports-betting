@@ -8,8 +8,28 @@ function showGateMode(mode) {
   document.getElementById("login-form").hidden = mode !== "login";
 }
 
+async function paintGateRecord() {
+  const line = document.getElementById("gate-record");
+  if (!line || line.dataset.ready) return;
+  try {
+    const response = await memberFetch("/api/record", { cache: "no-store" });
+    if (!response.ok) return;
+    const row = await response.json();
+    const pct = Number(row.pct);
+    const won = Number(row.won);
+    const lost = Number(row.lost);
+    if (!Number.isFinite(pct) || !Number.isFinite(won) || !Number.isFinite(lost)) return;
+    line.dataset.ready = "1";
+    line.hidden = false;
+    line.innerHTML = `Settled tickets have hit <b>${pct.toFixed(1)}%</b>, from ${won} wins and ${lost} losses. Past results do not promise the next ticket.`;
+  } catch (error) {}
+}
+
 function showGate() {
   document.body.classList.add("needs-member");
+  const desk = document.getElementById("desk");
+  if (desk) desk.classList.remove("bird-on");
+  paintGateRecord();
   if (window.state) window.state.showLive = false;
   const who = document.getElementById("who");
   if (who) who.hidden = true;
@@ -140,7 +160,7 @@ document.getElementById("pane-profile").addEventListener("click", (event) => {
 document.getElementById("gate-join").addEventListener("click", () => showGateMode("join"));
 document.getElementById("gate-have").addEventListener("click", () => showGateMode("login"));
 document.getElementById("join-signin").addEventListener("click", () => showGateMode("login"));
-document.getElementById("login-join").addEventListener("click", () => showGateMode("join"));
+document.getElementById("login-join").addEventListener("click", (event) => { event.preventDefault(); showGateMode("join"); });
 document.getElementById("member-form").addEventListener("submit", (event) => {
   event.preventDefault();
   sendMember("/api/join", {

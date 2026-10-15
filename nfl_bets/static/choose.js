@@ -98,7 +98,7 @@ async function runChoice() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       sports: choice.sports, kind: choice.kind, legs: choice.legs,
-      gameIds: choice.gameIds, when: choice.when, aim: choice.aim, skip: seenBets[key] || [],
+      gameIds: choice.gameIds, when: choice.when, aim: choice.aim, skip: seenBets[key] || [], hold: choice.hold || [], drop: choice.drop || [],
     }),
   });
   const card = await response.json();
@@ -111,13 +111,17 @@ async function runChoice() {
   const legs = (window.builtLegs = card.legs || []).map((leg) => {
     const sway = [leg.fact, leg.sway, String(leg.form || "").replace(/^In form:\s*/i, ""), leg.weather].filter(Boolean).join(" ");
     const fact = sway ? `<span class="quiet">${esc(sway)}</span>` : "";
-    return `<li><b>${esc(american(leg.odds))}</b><span>${esc(String(leg.label || "").split(" — ")[0])}${fact}<span class="leg-more">${String(leg.label || "").includes(" — ") ? ` — ${esc(String(leg.label).split(" — ").slice(1).join(" — "))}` : ""}</span></span><em>${esc(leg.pct || "")}</em></li>`;
+    const who = esc(String(leg.runner || leg.label || "").split(/\d/)[0].trim().toLowerCase());
+    const line = esc((String(leg.label || "").match(/(\d+(?:\.\d+)?)/) || [])[1] || "");
+    const word = esc((String(leg.label || "").toLowerCase().match(/shots|threes|assists|rebounds|points|yards|receptions|strikeouts|hits|goals|saves/) || [])[0] || "");
+    return `<li data-drop="${who}" data-line="${line}" data-word="${word}"><b>${esc(american(leg.odds))}</b><span>${esc(String(leg.label || "").split(" — ")[0])}${fact}<span class="leg-more">${String(leg.label || "").includes(" — ") ? ` — ${esc(String(leg.label).split(" — ").slice(1).join(" — "))}` : ""}</span></span><em>${esc(leg.pct || "")}</em></li>`;
   }).join("");
   const kicks = [...new Set((card.legs || []).map((leg) => leg.kickoff).filter(Boolean))];
   const whenLine = kicks.length === 1 ? `<p class="when">${esc(when(kicks[0]))} ET</p>` : "";
-  const save = (card.legs || []).length ? `<button type="button" id="choice-save" aria-label="Save this bet" title="Save this bet"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>` : "";
-  box.innerHTML = `<h2>${esc(card.title || "Safest parlay")}</h2>${whenLine}<p>${esc(card.game ? `${card.game}. ` : "")}${esc(card.copy || "")}</p><ol class="chalk-legs">${legs}</ol><p class="quiet">${esc(card.note || "")}</p>`;
-  if (save) document.getElementById("choice-again").insertAdjacentHTML("afterbegin", save); if (window.paintWeather) paintWeather();
+  const save = (card.legs || []).length ? `<button type="button" class="ghost" id="choice-save" aria-label="Save this bet" title="Save this bet"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>` : "";
+  const note = String(card.note || "").replace(/These legs are in different games, so this is a regular parlay\.?\s*/g, "").trim();
+  box.innerHTML = `<h2>${esc(card.title || "Safest parlay")}</h2>${whenLine}<p>${esc(card.game ? `${card.game}. ` : "")}${esc(card.copy || "")}</p><ol class="chalk-legs">${legs}</ol>${note ? `<p class="quiet">${esc(note)}</p>` : ""}`;
+  if (save) document.getElementById("choice-again").insertAdjacentHTML("afterbegin", save); if (window.paintWeather) paintWeather(); paintEdits();
   const button = document.getElementById("choice-save");
   if (button) button.addEventListener("click", () => saveBuilt(card, button));
 }
@@ -166,290 +170,100 @@ function choiceWindow(kick) {
   return kickDay.key <= horizon.key;
 }
 
-const SPOKEN_SPORTS = [
-  ["college football", "NCAAF"], ["ncaa football", "NCAAF"], ["ncaaf", "NCAAF"],
-  ["womens basketball", "WNBA"], ["wnba", "WNBA"], ["football", "NFL"], ["nfl", "NFL"],
-  ["baseball", "MLB"], ["mlb", "MLB"], ["basketball", "NBA"], ["nba", "NBA"],
-  ["hockey", "NHL"], ["nhl", "NHL"], ["golf", "PGA"], ["pga", "PGA"],
-];
-const SPOKEN_KINDS = [
-  ["passing yards", "yards"], ["rushing yards", "yards"], ["receiving yards", "yards"],
-  ["strikeouts", "strikeouts"], ["strikeout", "strikeouts"], ["assists", "assists"],
-  ["assist", "assists"], ["shots", "shots"], ["shot", "shots"], ["yards", "yards"],
-  ["yardage", "yards"], ["points", "points"], ["point", "points"], ["hits", "hits"], ["hit", "hits"],
-  ["any prop", "any"], ["player prop", "any"], ["any", "any"],
-];
-const SPOKEN_MISSING = [
-  ["three pointers", "three pointers"], ["three pointer", "three pointers"], ["three point", "three pointers"],
-  ["home runs", "home runs"], ["home run", "home runs"], ["money line", "moneyline"], ["moneyline", "moneyline"],
-  ["puck line", "puck line"], ["run line", "run line"], ["over under", "total"], ["first half", "first half"],
-  ["first basket", "first basket"], ["double double", "double double"], ["to score", "to score"],
-  ["touchdowns", "touchdowns"], ["touchdown", "touchdowns"], ["receptions", "receptions"], ["reception", "receptions"],
-  ["rebounds", "rebounds"], ["rebound", "rebounds"], ["field goal", "field goal"], ["goals", "goals"],
-  ["interceptions", "interceptions"], ["sacks", "sacks"], ["tackles", "tackles"], ["steals", "steals"],
-  ["blocks", "blocks"], ["saves", "saves"], ["spread", "spread"], ["totals", "total"], ["total", "total"],
-  ["threes", "threes"], ["futures", "futures"], ["soccer", "soccer"], ["tennis", "tennis"], ["boxing", "boxing"],
-  ["cricket", "cricket"], ["nascar", "nascar"], ["formula 1", "Formula 1"], ["ufc", "UFC"], ["mma", "MMA"], ["mvp", "MVP"],
-];
-const SPOKEN_AIM = [
-  ["best payout", "payout"], ["biggest payout", "payout"], ["longest price", "payout"],
-  ["highest chance", "top"], ["one safest", "top"], ["safest", "top"], ["payout", "payout"],
-  ["safe", "safe"], ["good", "good"],
-];
-const SPOKEN_WHEN = [
-  ["this week", "week"], ["next week", "week"], ["weekend", "week"], ["week", "week"],
-  ["tonight", "today"], ["today", "today"],
-];
-const LEG_WORDS = { two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12 };
-const NICK_ALIAS = {
-  niners: "49ers", pats: "patriots", bucs: "buccaneers", cards: "cardinals", mavs: "mavericks",
-  sixers: "76ers", cavs: "cavaliers", dubs: "warriors", wolves: "timberwolves",
-};
-const SPOKEN_SKIP = new Set("i me my a an the bet bets parlay parlays please give show for of on with and some to be like can you make build just get this that it its from in at prop props player players game games leg legs set use using about around looking look need would gonna let do does have has something anything thanks thank want wanted".split(" "));
+const ASK_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA"];
+let ask = null;
 
-function spokenNorm(text) {
-  return String(text || "").toLowerCase().replace(/'/g, "").replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+function askStart(aim) {
+  choice.sports = [];
+  choice.kind = "any";
+  choice.legs = 3;
+  choice.gameIds = [];
+  choice.when = "today";
+  choice.aim = aim || "";
+  choice.hold = [];
+  choice.drop = [];
+  window.asking = true;
+  ask = ["when", "sport", "game", "kind", "legs"];
+  if (!aim) ask.push("aim");
+  birdBump();
+  askStep();
 }
 
-function cutPhrase(text, phrase) {
-  const re = new RegExp(`(^|\\s)${phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=\\s|$)`);
-  if (!re.test(text)) return null;
-  return text.replace(re, " ").replace(/\s+/g, " ").trim();
-}
-
-function takePhrase(text, phrases) {
-  for (let i = 0; i < phrases.length; i += 1) {
-    const next = cutPhrase(text, phrases[i][0]);
-    if (next !== null) return [phrases[i][1], next];
-  }
-  return ["", text];
-}
-
-function takeAll(text, phrases) {
-  const values = [];
-  let next = text;
-  for (let guard = 0; guard < 8; guard += 1) {
-    const [value, rest] = takePhrase(next, phrases);
-    if (!value) break;
-    if (!values.includes(value)) values.push(value);
-    next = rest;
-  }
-  return [values, next];
-}
-
-function takeLegs(text) {
-  const words = Object.keys(LEG_WORDS).join("|");
-  const match = text.match(new RegExp(`\\b(\\d+|${words})\\s*-?\\s*legs?\\b`));
-  if (!match) return [0, text];
-  const count = Number(match[1]) || LEG_WORDS[match[1]] || 0;
-  const next = `${text.slice(0, match.index)} ${text.slice(match.index + match[0].length)}`.replace(/\s+/g, " ").trim();
-  return [count, next];
-}
-
-function gamesIn(when) {
-  const board = window.state && window.state.board;
-  const saved = choice.when;
-  if (when) choice.when = when;
-  const games = ((board && board.games) || []).filter((game) => {
-    const kick = Date.parse(game.kickoff || "");
-    return Number.isFinite(kick) && choiceWindow(kick);
-  });
-  if (when) choice.when = saved;
-  return games;
-}
-
-function gameRows(games) {
-  return games.map((game) => {
-    const nicks = String(game.match || "").split("@").map((side) => {
-      const bits = side.replace(/\([^)]*\)/g, "").trim().split(/\s+/).filter(Boolean);
-      return (bits[bits.length - 1] || "").toLowerCase();
-    }).filter((nick) => nick.length >= 4);
-    return { id: String(game.id), sport: game.sport, nicks };
-  });
-}
-
-function takeGames(text, when, sports) {
-  const rows = gameRows(when ? gamesIn(when) : gamesIn("today").concat(gamesIn("week")));
-  const known = new Map();
-  rows.forEach((row) => row.nicks.forEach((nick) => { if (!known.has(nick)) known.set(nick, row); }));
-  Object.entries(NICK_ALIAS).forEach(([alias, nick]) => {
-    const row = rows.find((item) => item.nicks.includes(nick));
-    if (row && !known.has(alias)) known.set(alias, row);
-  });
-  const ids = [];
-  const labels = [];
-  let next = text;
-  const wanted = sports && sports.length ? new Set(sports) : null;
-  [...known.keys()].sort((a, b) => b.length - a.length).forEach((nick) => {
-    const re = new RegExp(`(^|\\s)${nick.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=\\s|$)`, "i");
-    if (!re.test(next)) return;
-    const row = known.get(nick);
-    if (wanted && !wanted.has(row.sport)) return;
-    next = next.replace(re, " ").replace(/\s+/g, " ").trim();
-    if (!ids.includes(row.id)) ids.push(row.id);
-    const target = NICK_ALIAS[nick] || nick;
-    const label = row.nicks.find((name) => name === target) || target;
-    if (label && !labels.includes(label)) labels.push(label);
-  });
-  return { ids, labels, text: next };
-}
-
-function spokenLeft(text) {
-  return text.split(/\s+/).filter((word) => word.length >= 3 && !SPOKEN_SKIP.has(word) && !/^\d+$/.test(word));
-}
-
-function sportsFromGames(ids, when) {
-  if (!ids.length) return [];
-  const rows = gameRows(gamesIn(when || "week"));
-  return [...new Set(rows.filter((row) => ids.includes(row.id)).map((row) => row.sport))];
-}
-
-function kindFits(kind, sports) {
-  if (kind === "any") return true;
-  const names = sports && sports.length ? sports : CHOICE_SPORTS;
-  return names.some((sport) => (SPORT_KINDS[sport] || []).includes(kind));
-}
-
-function spokenTitle(phrase) {
-  return String(phrase || "").replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
-}
-
-function parseSpoken(text) {
-  let left = spokenNorm(text);
-  const [missingHits, afterMissing] = takeAll(left, SPOKEN_MISSING);
-  left = afterMissing;
-  const [kind, afterKind] = takePhrase(left, SPOKEN_KINDS);
-  left = afterKind;
-  const [sports, afterSports] = takeAll(left, SPOKEN_SPORTS);
-  left = afterSports;
-  const [aim, afterAim] = takePhrase(left, SPOKEN_AIM);
-  left = afterAim;
-  const [when, afterWhen] = takePhrase(left, SPOKEN_WHEN);
-  left = afterWhen;
-  const [legs, afterLegs] = takeLegs(left);
-  left = afterLegs;
-  const games = takeGames(left, when, sports);
-  left = games.text;
-  const missing = missingHits.map(spokenTitle);
-  if (legs && (legs < 2 || legs > 10)) missing.push(`${legs} legs`);
-  const kindSports = sports.length ? sports : sportsFromGames(games.ids, when);
-  if (kind && !kindFits(kind, kindSports)) missing.push(KIND_LABELS[kind] || spokenTitle(kind));
-  spokenLeft(left).forEach((word) => missing.push(spokenTitle(word)));
-  return {
-    when, sports, aim,
-    kind: kind && kindFits(kind, sports) ? kind : "",
-    legs: legs >= 2 && legs <= 10 ? legs : 0,
-    gameIds: games.ids,
-    gameLabels: games.labels,
-    missing,
-  };
-}
-
-function spokenSet(parsed) {
-  const bits = [];
-  if (parsed.when) bits.push(parsed.when === "week" ? "This week" : "Today");
-  if (parsed.sports.length) bits.push(parsed.sports.join(", "));
-  if (parsed.gameLabels.length) bits.push(parsed.gameLabels.map(spokenTitle).join(", "));
-  if (parsed.kind) bits.push(parsed.kind === "any" ? "Any player prop" : KIND_LABELS[parsed.kind]);
-  if (parsed.legs) bits.push(`${parsed.legs} legs`);
-  if (parsed.aim) bits.push(AIM_LABEL[parsed.aim]);
-  return bits.join(", ");
-}
-
-async function saveAsk(said, missing) {
-  const response = await fetch("/api/choose/ask", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ said, missing }),
-  });
-  const payload = await response.json().catch(() => ({}));
-  return response.ok ? payload : { ok: false, error: payload.error || "Could not save that request." };
-}
-
-async function hearChoice(text) {
-  const heard = document.getElementById("choice-heard");
-  const raw = String(text || "").replace(/\s+/g, " ").trim();
-  if (raw.length < 2) {
-    if (heard) heard.textContent = "Say the league, the prop, or how many legs.";
-    return;
-  }
-  const parsed = parseSpoken(raw);
-  if (parsed.when) choice.when = parsed.when;
-  else if (parsed.gameIds.length) {
-    const todayIds = new Set(gamesIn("today").map((game) => String(game.id)));
-    if (!parsed.gameIds.every((id) => todayIds.has(id))) choice.when = "week";
-  }
-  if (parsed.sports.length) choice.sports = parsed.sports.slice();
-  if (parsed.kind) {
-    choice.kind = parsed.kind;
-    const held = choice.sports.length ? choice.sports : CHOICE_SPORTS;
-    if (!held.some((sport) => parsed.kind === "any" || (SPORT_KINDS[sport] || []).includes(parsed.kind))) choice.sports = [];
-  }
-  if (parsed.legs) choice.legs = parsed.legs;
-  if (parsed.aim) choice.aim = parsed.aim;
-  if (parsed.gameIds.length) {
-    if (!parsed.sports.length) {
-      const rows = gameRows(gamesIn(choice.when));
-      parsed.sports = [...new Set(rows.filter((row) => parsed.gameIds.includes(row.id)).map((row) => row.sport))];
-      choice.sports = parsed.sports.slice();
-    }
-    choice.gameIds = parsed.gameIds.slice();
-  }
+function askAnswer(token) {
+  if (!ask) return;
+  const cut = token.indexOf(":");
+  const key = token.slice(0, cut);
+  const value = token.slice(cut + 1);
+  if (key === "when") choice.when = value;
+  else if (key === "sport") choice.sports = value ? [value] : [];
+  else if (key === "kind") choice.kind = value;
+  else if (key === "legs") choice.legs = Number(value);
+  else if (key === "game") choice.gameIds = value ? [value] : [];
+  else if (key === "aim") choice.aim = value;
+  ask.shift();
   paintChoices();
-  const set = spokenSet(parsed);
-  const named = [...new Set(parsed.missing)];
-  const gap = named.length < 2 ? named.join("") : `${named.slice(0, -1).join(", ")} and ${named[named.length - 1]}`;
-  let message = named.length ? `${gap} ${named.length === 1 ? "is" : "are"} not on Build a Bet.` : "";
-  if (set) message = message ? `${message} Set ${set}.` : `Set ${set}.`;
-  if (!message) message = "Say the league, the prop, or how many legs.";
-  if (named.length) {
-    const saved = await saveAsk(raw, named.join(", "));
-    if (!saved.ok) message = `${message} ${saved.error}`;
-  }
-  if (heard) heard.textContent = message;
+  askStep();
 }
 
-let choiceMic = null;
-
-function speakChoice() {
-  const button = document.getElementById("choice-speak");
-  const heard = document.getElementById("choice-heard");
-  const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!Speech) {
-    if (heard) heard.textContent = "This browser cannot hear a bet. Pick the options on the page.";
-    return;
+function askButtons(step) {
+  if (step === "when") {
+    const lead = choice.aim === "safe"
+      ? "Safe aims at −200, so a $5 bet wins about $2.50. It can still miss. "
+      : choice.aim === "payout"
+        ? "The long price misses more often. It can still miss. "
+        : "";
+    return [`${lead}Today, or this week?`, [["ask", "Today", "when:today"], ["ask", "This week", "when:week"]]];
   }
-  if (choiceMic) {
-    choiceMic.stop();
-    return;
+  if (step === "sport") {
+    return ["Which league? All of them is fine.", [["ask", "All of them", "sport:"]].concat(ASK_SPORTS.map((name) => ["ask", name, `sport:${name}`]))];
   }
-  const rec = new Speech();
-  choiceMic = rec;
-  rec.lang = "en-US";
-  rec.interimResults = false;
-  rec.maxAlternatives = 1;
-  rec.onresult = (event) => {
-    const said = event.results && event.results[0] && event.results[0][0] ? event.results[0][0].transcript : "";
-    hearChoice(said);
-  };
-  rec.onerror = (event) => {
-    if (heard && event.error !== "aborted") {
-      heard.textContent = event.error === "not-allowed"
-        ? "Allow the microphone, then speak the bet."
-        : "The microphone did not catch that.";
-    }
-  };
-  rec.onend = () => {
-    choiceMic = null;
-    if (button) button.textContent = "Speak a bet";
-  };
-  if (button) button.textContent = "Listening…";
-  if (heard) heard.textContent = "Listening.";
-  rec.start();
+  if (step === "game") {
+    const opts = [...document.querySelectorAll("#choice-game option")];
+    if (opts.length < 1 || opts.length > 32) return null;
+    return ["Any game, or one of these?", [["ask", "Any game", "game:"]].concat(opts.map((opt) => ["ask", opt.textContent, `game:${opt.value}`]))];
+  }
+  if (step === "kind") {
+    const opts = [...document.querySelectorAll("#choice-kind option")];
+    if (opts.length < 2) return null;
+    return ["Any player prop, or one stat?", opts.map((opt) => ["ask", opt.textContent, `kind:${opt.value}`])];
+  }
+  if (step === "legs") {
+    return ["How many legs?", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => ["ask", n === 1 ? "1 leg" : `${n} legs`, `legs:${n}`])];
+  }
+  if (step === "aim") {
+    return ["How should I aim the price? 1 safest is the highest chance and stays the same. Safe aims at −200. Good aims at −100. Best payout is the longest price, so it misses more often.", [["ask", "1 safest", "aim:top"], ["ask", "Safe", "aim:safe"], ["ask", "Good", "aim:good"], ["ask", "Best payout", "aim:payout"]]];
+  }
+  return null;
 }
 
-document.getElementById("choice-speak").addEventListener("click", speakChoice);
-window.hearChoice = hearChoice;
+function askStep() {
+  if (!ask) return;
+  while (ask.length) {
+    if (ask[0] === "game" || ask[0] === "kind") paintChoices();
+    const next = askButtons(ask[0]);
+    if (!next) { ask.shift(); continue; }
+    birdSay(next[0], next[1]);
+    return;
+  }
+  askGo();
+}
+
+function askGo() {
+  window.asking = false;
+  ask = null;
+  window.askShow = true;
+  birdLand();
+  window.askShow = false;
+  showTab("build");
+  runChoice().catch((error) => {
+    const box = document.getElementById("choice-result");
+    if (box) box.textContent = String(error);
+  });
+}
+
+window.askStart = askStart;
+window.askAnswer = askAnswer;
+
 
 document.getElementById("chooser").addEventListener("click", (event) => {
   const when = event.target.closest("[data-when]");
@@ -494,7 +308,118 @@ document.getElementById("choice-go").addEventListener("click", () => {
   });
 });
 
-document.getElementById("choice-another").onclick = () => { const chooser = document.getElementById("chooser"); chooser.classList.remove("built"); chooser.querySelector("#choice-again").hidden = true; chooser.querySelector("#choice-result").textContent = ""; };
+function legName(li) {
+  return li.dataset.drop || "";
+}
+
+function legWho(li) {
+  const name = legName(li);
+  if (!name) return "";
+  return [name, li.dataset.line || "", li.dataset.word || ""].filter((part, index) => index < 2 || part).join("|");
+}
+
+function cardLegs(card) {
+  const ol = card.querySelector(":scope > ol");
+  return ol ? [...ol.children].filter((li) => li.dataset.drop) : [];
+}
+
+function editCard(node) {
+  return node.closest("#choice-again, #choice-result") ? document.getElementById("choice-result") : node.closest(".chalk");
+}
+
+function paintEdits() {
+  const icon = `<button type="button" class="ghost leg-edit" aria-label="Edit this bet" title="Edit this bet"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>`;
+  document.querySelectorAll("#desk-glass .chalk > .pick-save").forEach((bar) => {
+    if (bar.querySelector(".leg-edit")) return;
+    const card = editCard(bar);
+    if (!card || !cardLegs(card).length) return;
+    card.classList.remove("editing");
+    const anchor = bar.querySelector("[data-save], [data-unsave], #choice-save");
+    if (anchor) anchor.insertAdjacentHTML("afterend", icon);
+    else bar.insertAdjacentHTML("afterbegin", icon);
+  });
+}
+
+function armCard(card, on) {
+  card.classList.toggle("editing", on);
+  cardLegs(card).forEach((li) => {
+    let box = li.querySelector(".leg-check");
+    if (on && !box) {
+      box = document.createElement("input");
+      box.type = "checkbox";
+      box.className = "leg-check";
+      const span = li.querySelector("span");
+      if (span) span.prepend(box);
+    }
+    if (!on && box) box.remove();
+  });
+  const go = card.querySelector(".leg-swap");
+  if (!on) { if (go) go.remove(); return; }
+  if (go) return;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "leg-swap";
+  button.disabled = true;
+  button.textContent = "Similar bet, without the checked legs";
+  const ol = card.querySelector(":scope > ol");
+  if (ol) ol.insertAdjacentElement("beforebegin", button);
+}
+
+function swapCard(card) {
+  const lis = cardLegs(card);
+  const dropped = lis.filter((li) => li.querySelector(".leg-check:checked"));
+  const drop = dropped.map(legName).filter(Boolean);
+  const hold = lis.filter((li) => !dropped.includes(li)).map(legWho).filter(Boolean);
+  if (!drop.length) return;
+  if (card.id !== "choice-result") {
+    const id = card.id || "";
+    const sports = [...new Set(lis.map((li) => {
+      const hit = (li.querySelector(".leg-more")?.textContent || "").match(/—\s*(NFL|MLB|NBA|NHL|WNBA|NCAAF|PGA)\b/);
+      return hit ? hit[1] : "";
+    }).filter(Boolean))];
+    choice.sports = sports;
+    choice.kind = "any";
+    choice.gameIds = [];
+    choice.when = ["week", "week5", "safe"].includes(id) ? "week" : "today";
+    choice.aim = { today: "payout", plus: "payout", best: "good", four: "top", hits: "top" }[id] || "safe";
+  }
+  choice.legs = lis.length;
+  choice.hold = hold;
+  choice.drop = drop;
+  armCard(card, false);
+  const edit = (card.id === "choice-result" ? document.getElementById("choice-again") : card).querySelector(".leg-edit");
+  if (edit) edit.classList.remove("on");
+  const desk = document.getElementById("desk");
+  if (desk && desk.classList.contains("bird-on") && window.birdLand) birdLand();
+  if (typeof showTab === "function") showTab("build");
+  runChoice().catch((error) => {
+    const box = document.getElementById("choice-result");
+    if (box) box.textContent = String(error);
+  });
+}
+
+document.addEventListener("click", (event) => {
+  const edit = event.target.closest(".leg-edit");
+  if (edit) {
+    const card = editCard(edit);
+    if (!card) return;
+    const on = !card.classList.contains("editing");
+    armCard(card, on);
+    edit.classList.toggle("on", on);
+    return;
+  }
+  const swap = event.target.closest(".leg-swap");
+  if (swap) swapCard(editCard(swap));
+});
+
+document.addEventListener("change", (event) => {
+  const box = event.target.closest(".leg-check");
+  if (!box) return;
+  const card = editCard(box);
+  const go = card && card.querySelector(".leg-swap");
+  if (go) go.disabled = !card.querySelector(".leg-check:checked");
+});
 
 window.paintChoices = paintChoices;
+window.paintEdits = paintEdits;
 paintChoices();

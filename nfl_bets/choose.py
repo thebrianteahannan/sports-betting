@@ -320,11 +320,7 @@ def _card(combo: list[tuple[dict, dict, bool]], sports: list[str], kind: str, co
             f"A $5 bet would win ${profit:.2f}."
         ),
         "note": " ".join(part for part in (
-            "" if count == 1 else (
-                "These legs are in one game, so FanDuel's same-game button can charge a different number."
-                if one else
-                "These legs are in different games, so this is a regular parlay."
-            ),
+            "" if count == 1 or not one else "These legs are in one game, so FanDuel's same-game button can charge a different number.",
             "This is the only bet that fits, so it keeps showing up." if only else "",
         ) if part),
         "players": [_who(leg) for leg, _, _ in combo],
