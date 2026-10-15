@@ -121,8 +121,11 @@ async function sendMember(path, fields, errorId) {
     error.textContent = payload.error || "Could not open the membership.";
     return;
   }
+  if (window.state) window.state.tab = "today";
   showMember(payload.activity ? payload : { member: payload.member, activity: [] });
   if (window.startDesk) window.startDesk();
+  const home = document.getElementById("desk-home");
+  if (home) home.click();
 }
 
 async function signOut() {
