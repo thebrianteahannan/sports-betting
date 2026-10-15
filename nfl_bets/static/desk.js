@@ -8,7 +8,7 @@ const PANES = {
   open: ["pane-open"],
   how: ["pane-how"],
   history: ["pane-history"],
-  profile: ["pane-profile"],
+  profile: ["pane-profile"], laws: ["pane-laws"],
 };
 
 let cam = { x: 620, y: 430, scale: 1 };
@@ -332,11 +332,11 @@ function bootDesk() {
   const go = document.getElementById("choice-go");
   if (go) go.addEventListener("click", tvPush);
   const home = document.getElementById("desk-home");
-  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["today", "Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]); tvSkip = false; birdBump(); });
+  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["today", "View Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]); tvSkip = false; birdBump(); });
 }
 const BIRD_WAIT = 18000;
 const BIRD_NUDGES = [
-  ["Hey, want to find a bet you want to make?", [["today", "Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]],
+  ["Hey, want to find a bet you want to make?", [["today", "View Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]],
   ["Hey, try a safe bet. Safe aims at −200, so a $5 bet wins about $2.50. That price misses less often than the long price. It can still miss.", [["quiz", "Try Safe Bet", "safe"]]],
   ["Hey, the safe bet is sometimes boring. A higher payout is louder, and it gives you something to talk about with friends. That long price misses more often. It can still miss.", [["quiz", "Build a higher payout", "payout"]]],
   ["Best Bets of the Week uses a different day on each leg. Want a look?", [["week", "Best Bets of the Week"]]],
@@ -414,7 +414,7 @@ function startGuide() {
     birdSay("Hey.", []);
     setTimeout(() => {
       if (!birdOn || birdHeld || window.asking || document.body.classList.contains("needs-member")) return;
-      if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["today", "Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]);
+      if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["today", "View Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]);
     }, 900);
     birdBump();
   };

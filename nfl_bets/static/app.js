@@ -52,9 +52,7 @@ function render() {
   if (board.errors && board.errors.length) {
     banner.hidden = false;
     banner.textContent = board.errors.join(" ");
-  } else {
-    banner.hidden = true;
-  }
+  } else { const note = window.lawNote ? lawNote() : ""; const x = document.getElementById("banner-x"); banner.hidden = !note; if (x) x.hidden = !note; if (note) banner.textContent = note; }
   const bandAim = (board.band && board.band.goal) || "Priced from −150 to +100.";
   renderFeatured("best", weekCard(board.band, "band"), "Best bet of the day", bandAim);
   [["week", "weekThree", "Good 3-leg"], ["week5", "weekFive", "Good 5-leg"], ["safe", "weekSafe", "Super safe"]].forEach(([prefix, key, title]) => {
@@ -114,7 +112,8 @@ function unitOf(leg) {
 }
 
 function fanLink() {
-  return `<a class="ghost" href="https://sportsbook.fanduel.com/" target="_blank" rel="noopener" aria-label="Open in FanDuel" title="Open in FanDuel"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 5h5v5M19 5l-9 9M17 13v6H5V7h6"/></svg></a>`;
+  const book = window.bookLink ? bookLink() : { name: "FanDuel", href: "https://sportsbook.fanduel.com/" };
+  return `<a class="ghost" href="${book.href}" target="_blank" rel="noopener" aria-label="Open in ${book.name}" title="Open in ${book.name}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 5h5v5M19 5l-9 9M17 13v6H5V7h6"/></svg></a>`;
 }
 
 function renderFeatured(prefix, best, heading, aim) {
@@ -169,7 +168,7 @@ function bandWhy(best) {
 
 function todayCandidate(board) {
   const card = board.todayBet;
-  if (!card) return null;
+  if (!card || (window.blockCollege && blockCollege(card))) return null;
   const legs = card.legs || [];
   const pct = Number(card.impliedPct);
   if (!legs.length || !Number.isFinite(pct)) {
@@ -186,7 +185,7 @@ function todayCandidate(board) {
 }
 
 function weekCard(card, id) {
-  if (!card) return null;
+  if (!card || (window.blockCollege && blockCollege(card))) return null;
   const legs = card.legs || [];
   const pct = Number(card.impliedPct);
   if (!legs.length || !Number.isFinite(pct)) {
@@ -240,7 +239,7 @@ function bestSaved(best) {
 
 function renderParlay(id, card) {
   const box = $(id);
-  if (!card) {
+  if (!card || (window.blockCollege && blockCollege(card))) {
     box.hidden = true;
     return;
   }
@@ -366,10 +365,10 @@ function renderArchive(tickets) {
 
 function showTab(name) {
   state.tab = name;
-  const titles = { today: "Today", week: "Week", build: "Build a bet", open: "Our Bets", history: "History", profile: "Profile", how: "How we pick" };
+  const titles = { today: "Today", week: "Week", build: "Build a bet", open: "Our Bets", history: "History", profile: "Profile", how: "How we pick", laws: "State rules" };
   $("page-title").textContent = titles[name] || titles.today;
   document.body.classList.add("day-board");
-  ["today", "week", "build", "open", "history", "profile", "how"].forEach((id) => {
+  ["today", "week", "build", "open", "history", "profile", "how", "laws"].forEach((id) => {
     $(`pane-${id}`).hidden = id !== name;
     document.querySelectorAll(`[data-tab="${id}"]`).forEach((tab) => tab.classList.toggle("on", id === name));
   });

@@ -437,7 +437,7 @@ function miss(pools, sports, count, span) {
 async function chooseBet(body, board) {
   const asked = Array.isArray(body.sports) ? body.sports.map(String) : [];
   const sports = asked.filter((sport) => SPORTS.includes(sport));
-  const picked = sports.length ? sports : SPORTS.slice();
+  const picked = (sports.length ? sports : SPORTS.slice()).filter((sport) => body.college !== false || sport !== "NCAAF");
   const ids = (Array.isArray(body.gameIds) ? body.gameIds : [body.gameId]).map((item) => String(item || "")).filter(Boolean);
   const count = Math.min(10, Math.max(1, Number(body.legs) || 3));
   const kind = ["any", "yards", "points", "assists", "shots", "strikeouts", "hits"].includes(body.kind) ? body.kind : "any";

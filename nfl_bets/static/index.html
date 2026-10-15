@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/app.css?v=45"/>
 <link rel="stylesheet" href="/desk.css?v=57"/>
+<link rel="stylesheet" href="/states.css?v=3"/>
 <style>
 #page-title { display: none; }
 #who { gap: 0.28rem; align-items: center; }
@@ -89,6 +90,7 @@ body.day-board #parrot-load[hidden] { display: none; }
     <button type="button" class="tab" data-quiz>Build</button>
     <button type="button" class="tab" data-tab="open">Our Bets</button>
     <button type="button" class="tab" data-tab="history" id="desk-history">History</button>
+    <button type="button" class="tab" data-tab="laws">States</button>
   </nav>
   <div id="desk-hold" hidden></div>
 </div>
@@ -116,8 +118,9 @@ body.day-board #parrot-load[hidden] { display: none; }
   </div>
   <form id="member-form" hidden>
     <h2>Create a free membership</h2>
-    <p class="aim">Enter your name, email, and a password of at least 8 characters.</p>
+    <p class="aim">Enter your name, email, and a password of at least 8 characters. We need your state so the desk only shows bets you are allowed to place there.</p>
     <label class="choice-line">Name <input id="member-name" autocomplete="name" required></label>
+    <label class="choice-line">State <select id="member-state" required></select></label>
     <label class="choice-line">Email <input id="member-email" type="email" autocomplete="username" required></label>
     <label class="choice-line">Password <input id="member-pass" type="password" minlength="8" autocomplete="new-password" required></label>
     <p class="pick-save"><button type="submit">Create free membership</button></p>
@@ -140,12 +143,14 @@ body.day-board #parrot-load[hidden] { display: none; }
   </div>
 </section>
 <p class="banner" id="banner" hidden></p>
+<button type="button" id="banner-x" aria-label="Close this warning" hidden>×</button>
 <nav class="tabs" id="main-tabs">
   <button type="button" class="tab on" data-tab="today">Today</button>
   <button type="button" class="tab" data-tab="week">Week</button>
   <button type="button" class="tab" data-quiz>Build a bet</button>
   <button type="button" class="tab" data-tab="open">Our Bets</button>
   <button type="button" class="tab" data-tab="history" id="tab-history">History</button>
+  <button type="button" class="tab" data-tab="laws">States</button>
 </nav>
 <div class="pane" id="pane-today">
 <div class="poster-frame" id="day-frame">
@@ -295,7 +300,7 @@ body.day-board #parrot-load[hidden] { display: none; }
   <h2>How we pick</h2>
   <p class="quiet">Four steps. Then a ticket for today and a ticket for the week.</p>
   <p><b>Research</b></p>
-  <p class="quiet">FanDuel is checked every 10 minutes. The slate is already the player props on the board. College player props stay off, because FanDuel does not offer them.</p>
+  <p class="quiet">FanDuel is checked every 10 minutes. The slate is already the player props on the board. College player props stay off in states that do not allow them.</p>
   <p><b>Analyze</b></p>
   <p class="quiet">The card names the stat, so a price has a job. A −550 on 5 receiving yards and a −550 on a score are different bets. Four prices near 85% multiply to about a coin flip. Prices like −800 stay off the best bet of the day.</p>
   <p><b>Make the picks</b></p>
@@ -343,6 +348,18 @@ body.day-board #parrot-load[hidden] { display: none; }
 </section>
 </div>
 </div>
+<div class="pane" id="pane-laws" hidden>
+<section class="tracked">
+  <h2>State rules</h2>
+  <p class="quiet">We ask for your state so the desk can leave off bets you are not allowed to place there. Green means no extra limit. Orange means some limits. Red means FanDuel Sportsbook is not offered. Where another book on this desk is legal, you can still take the FanDuel price there. The number is usually close, and sometimes the same. This is not legal advice, and a state can change its rule.</p>
+  <p id="laws-you"></p>
+  <p id="laws-key"><i class="none"></i>No limits <i class="some"></i>Some limits <i class="lot"></i>A lot of limits</p>
+  <div id="laws-map"></div>
+  <p id="laws-detail"></p>
+  <p class="quiet">If you switch states, some bets may no longer show up.</p>
+  <p class="pick-save"><select id="laws-state"></select><button type="button" id="laws-save">Save state</button></p>
+</section>
+</div>
 <div class="pane" id="pane-profile" hidden>
 <section class="tracked" id="activity">
   <h2>Your membership</h2>
@@ -350,6 +367,10 @@ body.day-board #parrot-load[hidden] { display: none; }
   <div id="activity-list"></div>
   <p class="quiet">What should the parrot call you? Leave it blank and the parrot will ask.</p>
   <p class="pick-save"><input id="call-name" maxlength="40" autocomplete="nickname" placeholder="Your name"><button type="button" class="ghost" id="call-save">Save</button><button type="button" class="ghost" id="member-out">Sign out</button></p>
+  <p class="quiet">Your state decides which bets can be placed. If you switch states, some bets may no longer show up.</p>
+  <p class="pick-save"><select id="call-state"></select><button type="button" class="ghost" id="state-save">Save state</button></p>
+  <p class="quiet">Which sportsbook are you using? These prices are FanDuel's. Another book's number is usually close, and sometimes the same.</p>
+  <p class="pick-save"><select id="call-book"></select><button type="button" class="ghost" id="book-save">Save book</button></p>
 </section>
 <section class="tracked" id="profile-admin" hidden>
   <h2>Admin</h2>
@@ -426,16 +447,17 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p>21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
-<script src="/app.js?v=82"></script>
-<script src="/desk.js?v=44"></script>
-<script src="/members.js?v=23"></script>
+<script src="/app.js?v=85"></script>
+<script src="/desk.js?v=46"></script>
+<script src="/members.js?v=26"></script>
 <script src="/stars.js?v=4"></script>
-<script src="/choose.js?v=38"></script>
+<script src="/choose.js?v=40"></script>
 <script src="/lessons.js?v=7"></script>
 <script src="/filters.js?v=8"></script>
 <script src="/reports.js?v=1"></script>
 <script src="/admin.js?v=22"></script>
 <script src="/sharecard.js?v=26"></script>
+<script src="/states.js?v=3"></script>
 <script>
 function fitPoster() {
   const view = window.visualViewport;

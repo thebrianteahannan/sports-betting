@@ -1,0 +1,19 @@
+#laws-map svg { width: 100%; height: auto; display: block; }
+#laws-map path, #laws-map circle { cursor: pointer; }
+#laws-map [data-law="none"] { fill: #3dff6e; }
+#laws-map [data-law="some"] { fill: #f0a202; }
+#laws-map [data-law="lot"] { fill: #e23b3b; }
+#laws-map [data-code].you { stroke: #ffffff; stroke-width: 2.6; }
+#laws-map [data-code].on { stroke: #04140c; stroke-width: 2; }
+#laws-map [data-code].you.on { stroke: #ffffff; stroke-width: 3; }
+#laws-key { display: flex; gap: 0.8rem; flex-wrap: wrap; margin: 0.4rem 0; }
+#laws-key i { display: inline-block; width: 0.8rem; height: 0.8rem; margin-right: 0.3rem; vertical-align: -0.05rem; border-radius: 2px; }
+#laws-key .none { background: #3dff6e; }
+#laws-key .some { background: #f0a202; }
+#laws-key .lot { background: #e23b3b; }
+#laws-you { font-weight: 700; }
+#bird-picks select, #laws-state, #call-state, #member-state { font: inherit; color: #d8ffe4; background: #07140f; border: 1px solid #3dff6e; border-radius: 8px; padding: 0.35rem 0.4rem; }
+#desk.tv-full ~ .banner:not([hidden]) { top: 4.2rem; z-index: 14; left: 3.4rem; right: 0.8rem; }
+body.day-board .banner:not([hidden]) { padding-right: 2.4rem; }
+#banner-x { position: fixed; z-index: 16; top: 0.7rem; right: 0.95rem; width: 1.7rem; height: 1.7rem; padding: 0; border: 0; border-radius: 6px; background: transparent; color: #fecdd3; font-size: 1.3rem; line-height: 1; cursor: pointer; }
+#desk.tv-full ~ #banner-x:not([hidden]) { top: 4.45rem; right: 1.15rem; }

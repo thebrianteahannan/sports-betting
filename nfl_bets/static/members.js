@@ -47,13 +47,16 @@ function showMember(payload) {
   const heading = document.querySelector("#activity h2");
   if (heading) heading.textContent = member.name || "Your membership";
   window.memberName = member.name || "";
+  window.memberState = member.state || "";
+  window.memberBook = member.book || "";
+  if (window.applyMember) applyMember(window.memberState);
   window.memberReady = true;
   const call = document.getElementById("call-name");
   if (call && document.activeElement !== call) call.value = member.name || "";
   const spoken = document.getElementById("bird-line");
   const said = spoken ? spoken.textContent : "";
   const desk = document.getElementById("desk");
-  if (desk && desk.classList.contains("bird-on") && (said === "Hey." || said.startsWith("Hey. What") || said.startsWith("What should I call you"))) birdGreet();
+  if (desk && desk.classList.contains("bird-on") && (said === "Hey." || said.startsWith("Hey. What") || said.startsWith("What should I call you") || said.startsWith("Which state") || said.startsWith("Which sportsbook"))) birdGreet();
   const adminBox = document.getElementById("profile-admin");
   if (adminBox) adminBox.hidden = !admin;
   const plan = document.getElementById("activity-plan");
@@ -170,8 +173,60 @@ function birdGreet() {
   if (!window.memberReady || document.body.classList.contains("needs-member") || !window.birdSay) return;
   const called = calledName();
   if (!called) { birdAskName(); return; }
+  if (!window.memberState) { birdAskState(); return; }
+  if (birdAskBook()) return;
   window.asking = false;
-  birdSay(`Hey, ${called}. What are you trying to do today?`, [["today", "Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]);
+  birdSay(`Hey, ${called}. What are you trying to do today?`, [["today", "View Our Recommended Bets"], ["quiz", "Build Your Own Bet"]]);
+}
+
+function birdAskState() {
+  window.asking = true;
+  birdSay("Which state are you in? We need it so the desk only shows bets you are allowed to place there.", []);
+  const row = document.getElementById("bird-picks");
+  if (!row || !window.fillStateSelect) return;
+  row.innerHTML = `<select id="bird-state"></select><button type="button" id="bird-state-go">That's my state</button>`;
+  fillStateSelect(document.getElementById("bird-state"));
+  document.getElementById("bird-state-go").addEventListener("click", () => saveState(document.getElementById("bird-state").value));
+}
+
+function birdAskBook() {
+  const books = window.booksHere ? booksHere() : [];
+  if (!books.length || books.some((book) => book.id === window.memberBook)) return false;
+  window.asking = true;
+  const place = window.stateName ? stateName() : "your state";
+  birdSay(`Which sportsbook are you using in ${place}? These prices are FanDuel's. Another book's number is usually close, and sometimes the same.`, []);
+  const row = document.getElementById("bird-picks");
+  if (row) {
+    row.innerHTML = books.map((book) => `<button type="button" data-book="${book.id}">${book.name}</button>`).join("");
+    row.querySelectorAll("[data-book]").forEach((button) => button.addEventListener("click", () => saveBook(button.dataset.book)));
+  }
+  return true;
+}
+
+async function saveBook(raw) {
+  const book = String(raw || "").trim().toLowerCase();
+  if (!book) return;
+  const response = await memberFetch("/api/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ book }) });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) return;
+  window.memberBook = (payload.member && payload.member.book) || "";
+  if (window.fillBookSelect) fillBookSelect(document.getElementById("call-book"));
+  if (window.render) window.render();
+  const said = (document.getElementById("bird-line") || {}).textContent || "";
+  if (said.startsWith("Which sportsbook")) birdGreet();
+}
+
+async function saveState(raw) {
+  const state = String(raw || "").trim().toUpperCase();
+  if (!state) return;
+  const response = await memberFetch("/api/state", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state }) });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) return;
+  window.memberState = (payload.member && payload.member.state) || "";
+  if (window.applyMember) applyMember(window.memberState);
+  if (window.render) window.render();
+  const said = (document.getElementById("bird-line") || {}).textContent || "";
+  if (said.startsWith("Which state")) birdGreet();
 }
 
 function birdAskName() {
@@ -208,6 +263,11 @@ async function saveCalledName(raw) {
 document.getElementById("pane-profile").addEventListener("click", (event) => {
   if (event.target.closest("#member-out")) signOut();
   if (event.target.closest("#call-save")) saveCalledName(document.getElementById("call-name").value);
+  if (event.target.closest("#state-save")) saveState(document.getElementById("call-state").value);
+  if (event.target.closest("#book-save")) saveBook(document.getElementById("call-book").value);
+});
+document.getElementById("pane-laws").addEventListener("click", (event) => {
+  if (event.target.closest("#laws-save")) saveState(document.getElementById("laws-state").value);
 });
 window.birdGreet = birdGreet;
 function noteTaste(kind, detail) {
@@ -224,6 +284,7 @@ document.getElementById("member-form").addEventListener("submit", (event) => {
     name: "member-name",
     email: "member-email",
     password: "member-pass",
+    state: "member-state",
   }, "member-error");
 });
 document.getElementById("login-form").addEventListener("submit", (event) => {

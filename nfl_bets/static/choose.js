@@ -26,7 +26,7 @@ function paintChoices() {
       choiceButton(label, choice.when === id, "data-when", id)
     )).join("");
   }
-  sports.innerHTML = CHOICE_SPORTS.map((sport) => (
+  sports.innerHTML = liveSports().map((sport) => (
     choiceButton(sport, choice.sports.includes(sport), "data-sport", sport)
   )).join("");
   legs.innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
@@ -44,8 +44,13 @@ function paintChoices() {
   paintGames();
 }
 
+function liveSports() {
+  const block = ["props", "both", "tourney", "off"].includes(window.memberLaw || "");
+  return CHOICE_SPORTS.filter((sport) => !block || sport !== "NCAAF");
+}
+
 function chosenSports() {
-  return choice.sports.length ? choice.sports : CHOICE_SPORTS;
+  return choice.sports.length ? choice.sports.filter((sport) => liveSports().includes(sport)) : liveSports();
 }
 
 function paintKinds() {
@@ -92,13 +97,14 @@ async function runChoice() {
   const box = document.getElementById("choice-result");
   const key = choiceKey(); document.getElementById("choice-save")?.remove();
   document.getElementById("choice-again").hidden = (document.getElementById("chooser").classList.add("built"), false);
+  if (window.memberLaw === "off" && !(window.booksHere && booksHere().some((book) => book.id !== "fanduel"))) { box.textContent = "No sportsbook on this desk is offered in your state, so this bet cannot be placed there."; return; }
   box.textContent = "Checking FanDuel.";
   const response = await fetch("/api/choose", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       sports: choice.sports, kind: choice.kind, legs: choice.legs,
-      gameIds: choice.gameIds, when: choice.when, aim: choice.aim, skip: seenBets[key] || [], hold: choice.hold || [], drop: choice.drop || [],
+      gameIds: choice.gameIds, when: choice.when, aim: choice.aim, skip: seenBets[key] || [], hold: choice.hold || [], drop: choice.drop || [], college: !["props", "both", "tourney", "off"].includes(window.memberLaw || ""),
     }),
   });
   const card = await response.json();
@@ -171,7 +177,6 @@ function choiceWindow(kick) {
   return kickDay.key <= horizon.key;
 }
 
-const ASK_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA"];
 let ask = null;
 
 function askStart(aim) {
@@ -216,7 +221,7 @@ function askButtons(step) {
     return [`${lead}Today, or this week?`, [["ask", "Today", "when:today"], ["ask", "This week", "when:week"]]];
   }
   if (step === "sport") {
-    return ["Which league? All of them is fine.", [["ask", "All of them", "sport:"]].concat(ASK_SPORTS.map((name) => ["ask", name, `sport:${name}`]))];
+    return ["Which league? All of them is fine.", [["ask", "All of them", "sport:"]].concat(liveSports().map((name) => ["ask", name, `sport:${name}`]))];
   }
   if (step === "game") {
     const opts = [...document.querySelectorAll("#choice-game option")];

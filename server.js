@@ -272,8 +272,20 @@ function isAdmin(user) {
   return email === "bthannan@gmail.com" || Boolean(user && user.admin);
 }
 
+function cleanState(value) {
+  const state = String(value || "").trim().toUpperCase();
+  if (!"AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY".split(" ").includes(state)) throw new Error("Choose your state.");
+  return state;
+}
+
+function cleanBook(value) {
+  const book = String(value || "").trim().toLowerCase();
+  if (!["fanduel", "hardrock", "draftkings", "betmgm", "thescore"].includes(book)) throw new Error("Choose your sportsbook.");
+  return book;
+}
+
 function publicMember(user) {
-  return { id: user.id, name: user.name, email: user.email, plan: "free", admin: isAdmin(user) };
+  return { id: user.id, name: user.name, email: user.email, plan: "free", admin: isAdmin(user), state: user.state || "", book: user.book || "" };
 }
 
 async function loadMembers() {
@@ -366,7 +378,7 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/sharecard.js", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/us-map.svg", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
       serveStatic(res, url.pathname.slice(1));
       return;
     }
@@ -441,6 +453,30 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, { member: publicMember(row) });
         return;
       }
+      if (url.pathname === "/api/state") {
+        const user = await memberFrom(req);
+        if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
+        const state = cleanState(body.state);
+        const data = await loadMembers();
+        const row = data.users.find((item) => item.id === user.id);
+        if (!row) throw new Error("That membership is not here.");
+        row.state = state;
+        await writeKey("bets/members.json", data);
+        sendJson(res, { member: publicMember(row) });
+        return;
+      }
+      if (url.pathname === "/api/book") {
+        const user = await memberFrom(req);
+        if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
+        const book = cleanBook(body.book);
+        const data = await loadMembers();
+        const row = data.users.find((item) => item.id === user.id);
+        if (!row) throw new Error("That membership is not here.");
+        row.book = book;
+        await writeKey("bets/members.json", data);
+        sendJson(res, { member: publicMember(row) });
+        return;
+      }
       if (url.pathname === "/api/choose/ask") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await saveAsk(user, body.said, body.missing)); return; }
       if (url.pathname === "/api/taste") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await noteTaste(user, String(body.slot || ""), body)); return; }
       const cookie = (token) => ({ "Set-Cookie": "pod=" + token + "; HttpOnly; Path=/; SameSite=Lax; Max-Age=2592000" });
@@ -453,10 +489,11 @@ const server = http.createServer(async (req, res) => {
         let user = data.users.find((row) => row.email === email);
         if (url.pathname === "/api/join") {
           const name = String(body.name || "").replace(/\s+/g, " ").trim();
+          const state = cleanState(body.state);
           if (name.length < 2) throw new Error("Enter your name.");
           if (user) throw new Error("That email already has a membership.");
           const salt = crypto.randomBytes(16).toString("hex");
-          user = { id: crypto.randomBytes(8).toString("hex"), name, email, salt, hash: passHash(password, salt), plan: "free", createdAt: new Date().toISOString(), lastLogin: new Date().toISOString() };
+          user = { id: crypto.randomBytes(8).toString("hex"), name, email, state, salt, hash: passHash(password, salt), plan: "free", createdAt: new Date().toISOString(), lastLogin: new Date().toISOString() };
           data.users.push(user);
         } else {
           const digest = user ? passHash(password, user.salt) : "";
