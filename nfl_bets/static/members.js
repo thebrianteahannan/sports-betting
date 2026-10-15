@@ -241,16 +241,22 @@ function birdAskBook() {
   const place = window.stateName ? stateName() : "your state";
   birdSay(`Which sportsbook are you using in ${place}? These prices are FanDuel's. Another book's number is usually close, and sometimes the same.`, []);
   const row = document.getElementById("bird-picks");
+  const all = window.bookRoster ? bookRoster() : books;
+  const openIds = new Set(books.map((book) => book.id));
   if (row) {
-    row.innerHTML = books.map((book) => `<button type="button" data-book="${book.id}">${book.name}</button>`).join("");
-    row.querySelectorAll("[data-book]").forEach((button) => button.addEventListener("click", () => saveBook(button.dataset.book)));
+    row.innerHTML = all.map((book) => {
+      const open = openIds.has(book.id);
+      const label = open ? book.name : `${book.name} (not available in your state)`;
+      return `<button type="button" data-book="${book.id}"${open ? "" : " disabled"}>${label}</button>`;
+    }).join("");
+    row.querySelectorAll("[data-book]:not([disabled])").forEach((button) => button.addEventListener("click", () => saveBook(button.dataset.book)));
   }
   return true;
 }
 
 async function saveBook(raw) {
   const book = String(raw || "").trim().toLowerCase();
-  if (!book) return;
+  if (!book || (window.booksHere && !booksHere().some((item) => item.id === book))) return;
   const response = await memberFetch("/api/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ book }) });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) return;

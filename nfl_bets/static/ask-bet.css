@@ -88,9 +88,11 @@
 #bird-picks:has(#bet-ask):has(.ask-bet-card),
 #bird-picks:has(#bet-ask):has(.ask-more) { flex-wrap: wrap; }
 #bird-picks #bet-ask { width: auto; flex: 1 1 0; min-width: 0; }
-#desk-glass #bird-picks section.ask-bet-card {
-  flex: 1 1 100%; min-width: 0; max-width: 100%; box-sizing: border-box;
-  margin: 0; padding: 0.75rem 0.85rem 0.45rem;
+#desk-glass #bird-picks section.ask-bet-card,
+#desk.tv-full #desk-glass #bird-picks section.ask-bet-card {
+  flex: 1 0 100%; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box;
+  max-height: min(46vh, 20rem); overflow: auto; margin: 0;
+  padding: 0.75rem 0.85rem 0.45rem;
   font-family: "Outfit", sans-serif; text-align: left;
   background: rgba(4, 16, 24, 0.55); border-radius: 12px;
 }
@@ -115,3 +117,7 @@
   letter-spacing: 0; text-transform: none; text-decoration: underline; cursor: pointer;
 }
 #desk-glass .leg-edit.on { color: #3dff6e; }
+#bird-picks button[data-book][disabled] {
+  background: transparent; color: #8a97a3; box-shadow: none; cursor: default;
+}
+#call-book option:disabled { color: #8a97a3; }

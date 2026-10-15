@@ -82,15 +82,7 @@ function showInfo(card) {
 }
 
 function openBet(card) {
-  const desk = document.getElementById("desk");
-  const full = document.getElementById("desk-full");
   window.digCard = card;
-  if (desk && full && !desk.classList.contains("tv-full")) {
-    digHold = true;
-    full.click();
-    digHold = false;
-  }
-  if (desk) desk.classList.add("dug");
   askBet();
 }
 
@@ -99,9 +91,13 @@ function askBet(kind) {
   window.digOn = true;
   const general = kind === "general";
   window.askGeneral = general;
+  const desk = document.getElementById("desk");
+  if (desk) desk.classList.remove("dug");
+  if (general) window.digCard = null;
+  const title = !general && window.digCard ? ((window.digCard.querySelector("h2") || {}).textContent || "").trim() : "";
   birdSay(general
     ? "Howdy howdy, I'm Parlay the Parrot, and I know everything about betting ... ask me anything and see if you're smarter than a bird."
-    : "What do you want to know about this bet?", []);
+    : `What do you want to know about ${title || "this bet"}?`, []);
   const row = document.getElementById("bird-picks");
   if (!row) return;
   const placeholder = general ? "Ask me anything" : "Ask about this bet";
@@ -110,11 +106,9 @@ function askBet(kind) {
   const go = () => replyBet();
   box.addEventListener("keydown", (event) => { if (event.key === "Enter") go(); });
   document.getElementById("bet-ask-go").addEventListener("click", go);
-  if (general) {
-    paintIdeas(row);
-    box.addEventListener("click", () => focusAsk(box));
-  }
-  box.focus();
+  if (general) paintIdeas(row);
+  else if (window.digCard && window.digCard.querySelector("ol li")) row.prepend(betPreview(window.digCard));
+  focusAsk(box);
 }
 
 const ASK_IDEAS = [
@@ -433,11 +427,4 @@ document.getElementById("desk-back").addEventListener("click", (event) => {
   if (window.birdGreet) birdGreet();
 }, true);
 
-document.getElementById("desk-ask").addEventListener("click", () => {
-  const glass = document.getElementById("desk-glass");
-  const card = (glass && glass.querySelector("section.chalk")) || document.getElementById("best");
-  if (card && card.querySelector("ol li")) window.digCard = card;
-  askBet("general");
-  const box = document.getElementById("bet-ask");
-  if (box) focusAsk(box);
-});
+document.getElementById("desk-ask").addEventListener("click", () => askBet("general"));

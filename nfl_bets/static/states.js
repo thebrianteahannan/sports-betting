@@ -52,7 +52,12 @@ function bookLink() {
 function fillBookSelect(node) {
   if (!node) return;
   const picked = window.memberBook || "";
-  node.innerHTML = `<option value="">Choose your sportsbook</option>${booksHere().map((book) => `<option value="${book.id}"${book.id === picked ? " selected" : ""}>${book.name}</option>`).join("")}`;
+  const openIds = new Set(booksHere().map((book) => book.id));
+  node.innerHTML = `<option value="">Choose your sportsbook</option>${BOOKS.map((book) => {
+    const open = openIds.has(book.id);
+    const label = open ? book.name : `${book.name} (not available in your state)`;
+    return `<option value="${book.id}"${open ? "" : " disabled"}${open && book.id === picked ? " selected" : ""}>${label}</option>`;
+  }).join("")}`;
 }
 
 function stateOptions(selected) {
@@ -144,6 +149,7 @@ window.blockCollege = blockCollege;
 window.applyMember = applyMember;
 window.fillStateSelect = fillStateSelect;
 window.booksHere = booksHere;
+window.bookRoster = () => BOOKS.slice();
 window.bookLink = bookLink;
 window.fillBookSelect = fillBookSelect;
 window.stateName = stateName;
