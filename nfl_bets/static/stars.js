@@ -142,8 +142,19 @@ function hourAt(hourly, kickoff) {
   return Math.abs(new Date(times[best]).getTime() - target) <= 3 * 3600 * 1000 ? best : -1;
 }
 
+function playsInside(leg) {
+  return INDOOR.has(String(leg.sport || "")) || /—\s*(NHL|NBA|WNBA|NCAAB)\b/.test(String(leg.label || ""));
+}
+
+function domeGame(leg, team) {
+  const nfl = String(leg.sport || "") === "NFL" || /—\s*NFL\b/.test(String(leg.label || ""));
+  return nfl && ROOF.has(team);
+}
+
 async function describeWeather(leg) {
+  if (playsInside(leg)) return "";
   const team = homeTeam(leg);
+  if (domeGame(leg, team)) return "This game is played in a dome, so the weather doesn't matter.";
   const kick = kickoffOf(leg);
   if (!team || !kick) return "";
   const place = await locate(cityOf(team));
@@ -156,13 +167,7 @@ async function describeWeather(leg) {
   const pop = hourly.precipitation_probability[index];
   const code = hourly.weather_code[index];
   const cond = `${Math.round(temp)}°F, ${skyWord(code)}, wind ${Math.round(wind)} mph`;
-  const indoors = INDOOR.has(String(leg.sport || "")) || /—\s*(NHL|NBA|WNBA|NCAAB)\b/.test(String(leg.label || ""));
-  if (indoors || ROOF.has(team)) {
-    const why = indoors
-      ? "This game is indoors, so that weather does not change the leg."
-      : "The roof is usually closed, so the outside forecast is a weak read on this leg.";
-    return `${place.place}: ${cond} outside. ${why}`;
-  }
+  if (ROOF.has(team)) return `${place.place}: ${cond} outside. The roof is usually closed, so the outside forecast is a weak read on this leg.`;
   return `${place.place} at kickoff: ${cond}. ${affect(leg.label, temp, wind, pop, code)}`;
 }
 

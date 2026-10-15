@@ -1,6 +1,8 @@
 const OLLAMA = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
 const LOCAL_MODEL = process.env.BET_MODEL || "llama3.2";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+function geminiModel() {
+  return String(process.env.GEMINI_MODEL || "gemini-3.8-flash").trim() || "gemini-3.8-flash";
+}
 const SYSTEM = "You are the parrot on a sports desk. Answer the question using only this card. Explain what the prices and notes mean in plain words. If the question names a player or team that is not on the card, say they are not on this bet, then talk about the players who are. Do not invent stats, injuries, or a final score. Do not say the bet will win. Finish every sentence. Use a short paragraph, and end on a complete sentence. Do not repeat a game time. Do not quote the card back as a list.";
 
 function clip(value, max) {
@@ -51,9 +53,9 @@ function geminiFail(status, payload) {
 }
 
 async function geminiCall(key, question, facts, think) {
-  const generationConfig = { temperature: 0.4, maxOutputTokens: 420 };
-  if (think) generationConfig.thinkingConfig = { thinkingBudget: 0 };
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
+  const generationConfig = { maxOutputTokens: 640 };
+  if (think) generationConfig.thinkingConfig = { thinkingLevel: "low" };
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel()}:generateContent`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
     signal: AbortSignal.timeout(45000),
