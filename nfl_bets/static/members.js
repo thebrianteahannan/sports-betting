@@ -69,6 +69,7 @@ function showMember(payload) {
   window.memberState = member.state || "";
   window.memberBook = member.book || "";
   if (payload.model) window.askModel = payload.model;
+  window.fullAt = member.fullAt || "";
   if (window.applyMember) applyMember(window.memberState);
   window.memberReady = true;
   loadBirdPct();
@@ -214,7 +215,8 @@ function birdLaw() {
   const row = document.getElementById("bird-picks");
   if (row) {
     row.innerHTML = `<button type="button" id="bird-law-go">Continue</button>`;
-    document.getElementById("bird-law-go").addEventListener("click", () => {
+    document.getElementById("bird-law-go").addEventListener("pointerdown", (event) => {
+      event.preventDefault();
       window.lawShut = window.memberState || "";
       birdGreet();
     });

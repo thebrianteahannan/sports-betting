@@ -290,7 +290,7 @@ function cleanBook(value) {
 }
 
 function publicMember(user) {
-  return { id: user.id, name: user.name, email: user.email, plan: "free", admin: isAdmin(user), state: user.state || "", book: user.book || "" };
+  return { id: user.id, name: user.name, email: user.email, plan: "free", admin: isAdmin(user), state: user.state || "", book: user.book || "", fullAt: user.fullAt || "" };
 }
 
 async function loadMembers() {

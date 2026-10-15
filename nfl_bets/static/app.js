@@ -17,11 +17,14 @@ function american(value) {
   return n > 0 ? `+${n}` : String(n);
 }
 
+const whenSaid = new Map();
 function when(iso) {
   if (!iso) return "";
+  const saved = whenSaid.get(iso);
+  if (saved != null) return saved;
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString("en-US", {
+  const text = date.toLocaleString("en-US", {
     timeZone: "America/New_York",
     weekday: "short",
     month: "short",
@@ -29,6 +32,8 @@ function when(iso) {
     hour: "numeric",
     minute: "2-digit",
   });
+  whenSaid.set(iso, text);
+  return text;
 }
 
 async function load() {
@@ -39,7 +44,14 @@ async function load() {
   state.timer = setTimeout(load, 120000);
 }
 
+let renderLater = 0;
 function render() {
+  if (window.asking) {
+    clearTimeout(renderLater);
+    renderLater = setTimeout(render, 200);
+    return;
+  }
+  oddsByHead = null;
   const board = state.board || {};
   const waiting = !board.updatedAt;
   $("lede").textContent = board.updatedAt ? `FanDuel ${when(board.updatedAt)} ET.` : "Loading the latest board.";
@@ -258,23 +270,37 @@ function pullButton(id) {
   return state.admin ? `<button type="button" class="ghost" data-pull="${esc(id)}" aria-label="Update from FanDuel" title="Update from FanDuel"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.2-5.8"/><path d="M21 4v5h-5"/></svg></button>` : "";
 }
 
+let oddsByHead = null;
+function oddsMoves(head) {
+  if (!oddsByHead) {
+    oddsByHead = new Map();
+    ((state.board && state.board.archive) || []).forEach((ticket) => {
+      const at = String(ticket.offeredAt || "");
+      (ticket.legs || []).forEach((item) => {
+        const key = String(item.label || "").split(" — ")[0].trim().toLowerCase();
+        if (!key) return;
+        let rows = oddsByHead.get(key);
+        if (!rows) oddsByHead.set(key, rows = []);
+        rows.push({ at, odds: item.odds });
+      });
+    });
+    oddsByHead.forEach((rows) => {
+      rows.sort((a, b) => a.at.localeCompare(b.at));
+      let n = 0;
+      rows.forEach((row) => {
+        const last = n ? rows[n - 1] : null;
+        if (last && String(last.odds) === String(row.odds)) return;
+        rows[n++] = row;
+      });
+      rows.length = n;
+    });
+  }
+  return oddsByHead.get(head) || [];
+}
+
 function legOdds(leg) {
   const head = String(leg.label || "").split(" — ")[0].trim().toLowerCase();
-  if (!head) return "";
-  const rows = [];
-  ((state.board && state.board.archive) || []).forEach((ticket) => {
-    (ticket.legs || []).forEach((item) => {
-      if (String(item.label || "").split(" — ")[0].trim().toLowerCase() !== head) return;
-      rows.push({ at: String(ticket.offeredAt || ""), odds: item.odds });
-    });
-  });
-  rows.sort((a, b) => a.at.localeCompare(b.at));
-  const moves = [];
-  rows.forEach((row) => {
-    const last = moves[moves.length - 1];
-    if (last && String(last.odds) === String(row.odds)) return;
-    moves.push(row);
-  });
+  const moves = head ? oddsMoves(head) : [];
   if (moves.length < 2) return "";
   const shown = moves.length > 8 ? [moves[0], ...moves.slice(-7)] : moves;
   const text = shown.map((row) => `${american(row.odds)} ${when(row.at)}`).join(" · ");

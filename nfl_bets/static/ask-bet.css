@@ -7,13 +7,12 @@
 #desk.tv-full::before { display: none; }
 #desk.tv-full #desk-glass { top: 0; }
 #desk.tv-full #desk-logo { display: none; }
+#desk.tv-full #desk-glass #desk-back { display: inline-flex; }
 #desk.tv-full #desk-name {
-  z-index: 14; top: 0.55rem; left: 0.7rem; transform: none;
+  z-index: 14; top: 0.55rem; left: 3.15rem; transform: none;
   height: 2.55rem; width: auto; max-width: min(52vw, 220px);
 }
-#desk.tv-full.has-back #desk-name { left: 3.15rem; }
-#desk.tv-full #desk-glass .chalk > .pick-save { left: 8.4rem; }
-#desk.tv-full.has-back #desk-glass .chalk > .pick-save { left: 10.8rem; }
+#desk.tv-full #desk-glass .chalk > .pick-save { left: 10.8rem; }
 #desk-fade-bird {
   position: absolute; left: -2%; top: -2%;
   width: min(92vh, 780px); aspect-ratio: 600 / 696; opacity: 0.92;
@@ -78,7 +77,28 @@
 }
 #desk.tv-full #desk-glass #bird-picks .ask-model { font-size: 14px; }
 #bird-picks:has(#bet-ask) { flex-wrap: nowrap; }
+#bird-picks:has(#bet-ask):has(.ask-bet-card),
+#bird-picks:has(#bet-ask):has(.ask-more) { flex-wrap: wrap; }
 #bird-picks #bet-ask { width: auto; flex: 1 1 0; min-width: 0; }
+#desk-glass #bird-picks section.ask-bet-card {
+  flex: 1 1 100%; min-width: 0; max-width: 100%; box-sizing: border-box;
+  margin: 0; padding: 0.75rem 0.85rem 0.45rem;
+  font-family: "Outfit", sans-serif; text-align: left;
+  background: rgba(4, 16, 24, 0.55); border-radius: 12px;
+}
+#bird-picks .ask-bet-card p,
+#bird-picks .ask-bet-card li,
+#bird-picks .ask-bet-card h2 { overflow-wrap: anywhere; }
+#bird-picks .ask-more { flex: 1 0 100%; justify-content: flex-start; }
+#bird-picks button.ask-more {
+  background: none; box-shadow: none; padding: 0.15rem 0;
+  color: #9dffc0; font-family: "Outfit", sans-serif; font-size: 15px;
+  font-weight: 600; text-decoration: underline;
+}
+#bird-picks .ask-raw {
+  flex: 1 0 100%; margin: 0; white-space: pre-wrap;
+  font-family: "Outfit", sans-serif; font-size: 15px; line-height: 1.4; color: #d5deea;
+}
 #desk-glass .leg-edit,
 #desk.tv-full #desk-glass .leg-edit {
   display: inline-block; width: auto; height: auto; min-height: 0; margin: 0.1rem 0 0.55rem;

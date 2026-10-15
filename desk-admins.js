@@ -129,6 +129,16 @@ function createAdmins(readKey, writeKey) {
 
   let tasteChain = Promise.resolve();
   async function saveTaste(user, kind, detail) {
+      if (kind === "full") {
+        const data = await load();
+        const row = data.users.find((item) => item.id === user.id);
+        if (!row) return { ok: false };
+        const then = Date.parse(row.fullAt || "");
+        if (Number.isFinite(then) && Date.now() - then < 600000) return { ok: true, already: true };
+        row.fullAt = new Date().toISOString();
+        await writeKey("bets/members.json", data);
+        return { ok: true };
+      }
       const slot = ["quiz", "open", "found"].includes(kind) ? kind : "";
       if (!slot) return { ok: false };
       const data = await load();

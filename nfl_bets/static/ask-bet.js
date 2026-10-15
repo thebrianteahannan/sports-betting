@@ -187,14 +187,14 @@ async function replyBet() {
   }
   askingBet = false;
   if (!window.digOn) return;
-  birdSay(answer, []);
-  const line = document.getElementById("bird-line");
-  if (line) line.classList.add("answer");
-  showMentioned(answer);
-  askAgain();
+  showAnswer(question, answer);
 }
 
 const SKIP_NAME = /^(over|under|points|yards|shots|goals|saves|hits|assists|rebounds|strikeouts|total|moneyline|spread)$/i;
+
+function foldText(text) {
+  return String(text || "").toLowerCase().replace(/-/g, " ");
+}
 
 function nameWords(card) {
   return [...card.querySelectorAll(":scope > ol > li")].flatMap((li) => (
@@ -202,47 +202,71 @@ function nameWords(card) {
   ));
 }
 
-function mentionedCards(answer) {
-  const text = String(answer || "").toLowerCase();
+function askCardKeys(card) {
+  const title = foldText((card.querySelector("h2") || {}).textContent || "");
+  const keys = title ? [title] : [];
+  if (title.includes("3 leg")) keys.push("3 leg", "three leg");
+  if (title.includes("5 leg")) keys.push("5 leg", "five leg");
+  if (title.includes("super safe")) keys.push("super safe");
+  if (title.includes("best bet of the day")) keys.push("best bet");
+  if (title.includes("today")) keys.push("today's best", "todays best");
+  return keys;
+}
+
+function pickedCards(question, answer) {
+  const text = foldText(`${question}\n${answer}`);
+  const said = foldText(answer);
   const cards = [...document.querySelectorAll("section.chalk")].filter((card) => card.id !== "chooser" && card.querySelector("ol li"));
-  const hits = cards.filter((card) => nameWords(card).some((word) => text.includes(word)));
-  const current = window.digCard;
-  if (current && current.querySelector("ol li") && !hits.includes(current)) hits.unshift(current);
-  return hits.slice(0, 4);
+  return cards.filter((card) => {
+    if (!window.askGeneral && card === window.digCard) return false;
+    if (askCardKeys(card).some((key) => text.includes(foldText(key)))) return true;
+    return nameWords(card).some((word) => said.includes(word));
+  }).slice(0, 3);
 }
 
-function showMentioned(answer) {
+function betPreview(card) {
+  const view = card.cloneNode(true);
+  view.hidden = false;
+  view.classList.add("ask-bet-card");
+  view.removeAttribute("id");
+  view.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
+  view.querySelectorAll(".pick-save, .leg-edit, .leg-swap, .leg-check").forEach((node) => node.remove());
+  return view;
+}
+
+function paintRaw(answer) {
   const row = document.getElementById("bird-picks");
-  if (!row) return;
-  mentionedCards(answer).forEach((card) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.dataset.showBet = card.id || "bet";
-    const title = ((card.querySelector("h2") || {}).textContent || "this bet").trim();
-    button.textContent = `Show ${title}`;
-    button.addEventListener("click", () => revealBet(card));
-    row.append(button);
+  if (!row || !answer) return;
+  const raw = document.createElement("p");
+  raw.className = "ask-raw";
+  raw.hidden = true;
+  raw.textContent = answer;
+  const more = document.createElement("button");
+  more.type = "button";
+  more.className = "ask-more";
+  more.textContent = "View more";
+  more.addEventListener("click", () => {
+    raw.hidden = !raw.hidden;
+    more.textContent = raw.hidden ? "View more" : "Hide";
   });
+  row.append(more, raw);
 }
 
-function revealBet(card) {
-  window.asking = false;
-  window.digOn = false;
-  const desk = document.getElementById("desk");
-  if (desk) desk.classList.remove("bird-on", "dug");
-  const guide = document.getElementById("bird-guide");
-  if (guide) guide.hidden = true;
-  const head = document.getElementById("desk-head");
-  if (head) head.classList.remove("bird-talk");
-  const line = document.getElementById("bird-line");
-  if (line) line.classList.remove("answer");
-  const week = card.closest("#pane-week");
-  const build = card.id === "chooser" || card.closest("#pane-build");
-  if (typeof showTab === "function") showTab(week ? "week" : build ? "build" : "today");
-  const glass = document.getElementById("desk-glass-in");
-  if (glass && !glass.contains(card)) glass.append(card);
-  card.hidden = false;
-  card.scrollIntoView({ block: "start" });
+function showAnswer(question, answer) {
+  const cards = pickedCards(question, answer);
+  const text = String(answer || "").trim();
+  if (cards.length) {
+    const title = ((cards[0].querySelector("h2") || {}).textContent || "the bet").trim();
+    birdSay(cards.length > 1 ? "Here are the bets." : `Here is the ${title}.`, []);
+    const row = document.getElementById("bird-picks");
+    if (row) cards.forEach((card) => row.append(betPreview(card)));
+    paintRaw(text);
+  } else {
+    const bits = text.split(/(?<=[.!?])\s/).filter(Boolean);
+    birdSay(bits[0] || text, []);
+    if (bits.length > 1) paintRaw(text);
+  }
+  askAgain();
 }
 
 function legBits(li) {
@@ -254,9 +278,62 @@ function legBits(li) {
   return { price, name, more: more.trim(), pct, quiet: quiet.trim(), text: `${name} ${more} ${quiet}`.toLowerCase() };
 }
 
-document.getElementById("desk-full").addEventListener("click", () => {
-  if (digHold) return;
+const FULL_GAP = 8 * 60 * 60 * 1000;
+let fullNagged = false;
+
+function fullStamp() {
+  let local = "";
+  try { local = localStorage.getItem("parlay-full-at") || ""; } catch (error) {}
+  const saved = Date.parse(window.fullAt || "");
+  const here = Date.parse(local);
+  return Math.max(Number.isFinite(saved) ? saved : 0, Number.isFinite(here) ? here : 0);
+}
+
+function markFull() {
+  const at = new Date().toISOString();
+  window.fullAt = at;
+  try { localStorage.setItem("parlay-full-at", at); } catch (error) {}
+  if (window.noteTaste) noteTaste("full");
+}
+
+function remindFull() {
+  if (fullNagged) return;
   const desk = document.getElementById("desk");
+  if (!window.memberReady || document.body.classList.contains("needs-member") || !desk) {
+    setTimeout(remindFull, 4000);
+    return;
+  }
+  if (desk.classList.contains("tv-full") || window.asking || desk.classList.contains("bird-on")) {
+    setTimeout(remindFull, 15000);
+    return;
+  }
+  if (fullStamp() && Date.now() - fullStamp() < FULL_GAP) return;
+  fullNagged = true;
+  if (!window.birdSay) return;
+  birdSay("Hey, full screen mode can make the site much easier to view. The button is in the corner.", []);
+  const row = document.getElementById("bird-picks");
+  if (!row) return;
+  const open = document.createElement("button");
+  open.type = "button";
+  open.textContent = "Open full screen";
+  open.addEventListener("click", () => {
+    const full = document.getElementById("desk-full");
+    if (!full || desk.classList.contains("tv-full")) return;
+    window.asking = false;
+    full.click();
+    desk.classList.remove("bird-on", "dug");
+    const guide = document.getElementById("bird-guide");
+    if (guide) guide.hidden = true;
+  });
+  row.append(open);
+}
+
+setTimeout(remindFull, 20000);
+
+document.getElementById("desk-full").addEventListener("click", () => {
+  const desk = document.getElementById("desk");
+  if (desk && desk.classList.contains("tv-full")) markFull();
+  if (digHold) return;
   if (!desk || desk.classList.contains("tv-full")) return;
   desk.classList.remove("dug", "bird-on");
   const guide = document.getElementById("bird-guide");
@@ -279,13 +356,15 @@ if (sayBird) {
 
 document.getElementById("desk-back").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
-  if (!window.askGeneral || !desk || !desk.classList.contains("tv-full")) return;
+  if (!desk || !desk.classList.contains("tv-full")) return;
+  if (!window.askGeneral && desk.classList.contains("has-back")) return;
   event.stopImmediatePropagation();
   window.askGeneral = false;
   window.asking = false;
   window.digOn = false;
   const full = document.getElementById("desk-full");
   if (full) full.click();
+  if (window.birdGreet) birdGreet();
 }, true);
 
 document.getElementById("desk-ask").addEventListener("click", () => {
