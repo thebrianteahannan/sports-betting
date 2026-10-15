@@ -84,7 +84,7 @@ function place(x, y, scale, box) {
   const midY = 1024 / 2;
   return {
     x: Math.min(Math.max(x, Math.min(visW / 2, midX)), Math.max(959 - visW / 2, midX)),
-    y: Math.min(Math.max(y, Math.min(visH / 2, midY)), Math.max(1024 - visH / 2, midY)),
+    y: visH > 1024 ? visH / 2 : Math.min(Math.max(y, Math.min(visH / 2, midY)), Math.max(1024 - visH / 2, midY)),
     scale,
     ox: box ? box.ox : 0,
     oy: box ? box.oy : 0,
@@ -180,16 +180,16 @@ function mount(name) {
 }
 
 const NOTE_REASONS = [
-  "See the <b>chance</b>, not just the juice.",
-  "A <b>$5</b> night that stays a $5 night.",
-  "Every leg gets a <b>different day</b>.",
-  "You place it. We <b>never send</b> it.",
-  "The short prices <b>stay off</b> the card.",
-  "The slate is <b>already picked</b>.",
-  "Have the fun. <b>Keep the wallet.</b>",
-  "Know what the <b>number</b> means.",
-  "Click the <b>parrot's head</b> to ask a question anytime. The <b>Parlay of the Day</b> logo up top starts over fresh. The <b>books</b> show how we pick. The <b>football</b> shows our wins and losses.",
-  "The <b>stars</b> remember the bets you like.",
+  "Look at the <b>chance</b>, not just the juice.",
+  "I keep a <b>$5</b> night a $5 night.",
+  "I put each leg on a <b>different day</b>.",
+  "You place it. I <b>never send</b> it.",
+  "I leave the short prices <b>off</b> the card.",
+  "I <b>already picked</b> the slate.",
+  "Have the fun. <b>Keep your wallet.</b>",
+  "I'll tell you what the <b>number</b> means.",
+  "Click <b>my head</b> to ask me anything. The <b>Parlay of the Day</b> logo up top starts fresh. The <b>books</b> show how I pick. The <b>football</b> shows the wins and losses.",
+  "I'll remember the bets you <b>star</b>.",
 ];
 let noteTick = 0;
 let noteTimer = 0;
@@ -202,7 +202,7 @@ function paintNote() {
   const line = document.getElementById("note-reason");
   const show = () => {
     line.innerHTML = NOTE_REASONS[noteTick % NOTE_REASONS.length];
-    line.classList.toggle("hint", line.innerHTML.includes("parrot"));
+    line.classList.toggle("hint", line.innerHTML.includes("logo"));
     noteTick += 1;
     line.classList.remove("pop");
     void line.offsetWidth;

@@ -144,3 +144,12 @@
   background: transparent; color: #8a97a3; box-shadow: none; cursor: default;
 }
 #call-book option:disabled { color: #8a97a3; }
+#desk.bird-on #bird-picks:has(button[data-menu]) {
+  flex-direction: column; align-items: center; gap: 0.65rem;
+}
+#desk.bird-on #bird-picks button[data-menu],
+#desk.bird-on #bird-picks button[data-quiz],
+#desk.bird-on #bird-picks button[data-parrot] {
+  width: min(100%, 28rem); box-sizing: border-box; text-align: center;
+  padding: 0.8rem 1rem; font-size: 18px;
+}
