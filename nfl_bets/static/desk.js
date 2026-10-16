@@ -343,7 +343,7 @@ const BIRD_NUDGES = [
   ["Hey, try a safe bet. Safe aims at −200, so a $5 bet wins about $2.50. That price misses less often than the long price.", [["quiz", "Try Safe Bet", "safe"]]],
   ["Hey, the safe bet is sometimes boring. A higher payout is louder, and it gives you something to talk about with friends. That long price misses more often.", [["quiz", "Build a higher payout", "payout"]]],
   ["Best Bets of the Week uses a different day on each leg. Want a look?", [["week", "Best Bets of the Week"]]],
-  ["The best bet of the day sits between −150 and +100. Want it?", [["today", "Show it"]]],
+  ["The −150 to +100 window is on the main page. Want it?", [["today", "Show it"]]],
   ["", [["menu", "View Our Recommended Bets", "bets"]], "brag"],
   ["Gambling can really ruin people's lives. Only bet money you can afford to lose. If you need help, call 1‑800‑GAMBLER.", []],
 ];
@@ -429,7 +429,7 @@ function startGuide() {
     const stay = event.target.closest("[data-stay]");
     if (stay) { while (tvStack.length && tvStack.at(-1).bird) tvStack.pop(); tvBack(); return; }
     const quiz = event.target.closest("[data-quiz]");
-    if (quiz && window.askStart) { askStart(quiz.dataset.quiz); return; }
+    if (quiz && window.askStart) { if (window.goFull) goFull(); askStart(quiz.dataset.quiz); return; }
     const asked = event.target.closest("#bird-guide [data-ask]");
     if (asked && window.askAnswer) { askAnswer(asked.dataset.ask); return; }
     const tab = event.target.closest("[data-tab], #member-profile");
@@ -485,7 +485,8 @@ function tvBack() {
 }
 const goTab = showTab;
 showTab = (name) => {
-  const desk = document.getElementById("desk");
+  const desk = document.getElementById("desk"); if (desk) desk.classList.remove("solo");
+  if (window.legStarted && !window.keepStarted && window.state && window.state.board) { const map = { best: "band", today: "todayBet", week: "weekThree", week5: "weekFive", safe: "weekSafe", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; Object.keys(map).forEach((id) => { const card = document.getElementById(id); const data = window.state.board[map[id]]; if (card && data && window.legStarted(data)) card.hidden = true; }); }
   if (!tvSkip && !(desk && desk.classList.contains("bird-on"))) {
     const here = tvShot();
     if (!tvSame(here, { tab: name, built: name === "build" && here.built })) { tvSeen = true; tvPush(); }

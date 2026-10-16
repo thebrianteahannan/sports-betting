@@ -103,15 +103,15 @@ function showMember(payload) {
 }
 
 const CARD_NAMES = {
-  band: "Best bet of the day",
-  todayBet: "Today's Best Bet",
-  chalk: "Near −180",
-  four: "Four at 85% each",
-  plus: "Safest near +250",
-  hits: "Which stack hits more",
-  weekThree: "Good 3-leg",
-  weekFive: "Good 5-leg",
-  weekSafe: "Super safe",
+  band: "−150 to +100 window",
+  todayBet: "Highest chance parlay today",
+  chalk: "−400 to −700 legs, near −180",
+  four: "Four yardage legs near 85% each",
+  plus: "Four yardage legs near +250",
+  hits: "Five near 90% vs four near 80%",
+  weekThree: "3 legs, different days, near −200",
+  weekFive: "5 legs, different days, near −200",
+  weekSafe: "3 legs, different days, near −350",
 };
 
 function activityLine(row) {
@@ -210,6 +210,7 @@ function birdGreet() {
 function birdLaw() {
   const note = window.lawNote ? lawNote() : "";
   if (!note) return false;
+  if (window.lawMarkToday) lawMarkToday();
   window.asking = true;
   birdSay(note, []);
   const row = document.getElementById("bird-picks");
@@ -315,23 +316,74 @@ function birdMenu(kind) {
   if (kind !== "bets") return;
   window.asking = true;
   if (window.birdQuiet) birdQuiet();
-  const choices = [["best", "Best bet of the day"], ["today", "Today's Best Bet"], ["week", "Good 3-leg"], ["week5", "Good 5-leg"], ["safe", "Super safe"]];
-  birdSay("Which recommended bet do you want to see?", []);
+  birdSay("Recommended bets, by strategy.", []);
   const row = document.getElementById("bird-picks");
   if (!row) return;
-  choices.forEach(([id, label]) => {
-    const card = document.getElementById(id);
-    if (!card || !card.querySelector("ol li")) return;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.dataset.card = id;
-    button.textContent = (card.querySelector("h2") || {}).textContent || label;
-    button.addEventListener("click", () => openRecommended(id));
-    row.append(button);
+  const board = document.createElement("div");
+  board.className = "rec-board";
+  const archive = ((window.state && window.state.board && window.state.board.archive) || []);
+  const now = Date.now();
+  const live = (ticket) => ![ticket.kickoff, ...(ticket.legs || []).map((leg) => leg.kickoff)].some((iso) => {
+    const stamp = Date.parse(iso || "");
+    return Number.isFinite(stamp) && stamp <= now;
   });
+  const strategies = Object.entries(CARD_NAMES).flatMap(([id, name]) => (
+    id === "hits" ? [["hits", "Five near 90% each", "five"], ["hits", "Four near 80% each", "four"]] : [[id, name, ""]]
+  ));
+  const filled = [];
+  const empty = [];
+  strategies.forEach(([id, name, part]) => {
+    const block = document.createElement("section");
+    block.className = "rec-strategy";
+    const heading = document.createElement("h3");
+    heading.textContent = name;
+    block.append(heading);
+    const seen = new Set();
+    const hitsPart = (ticket) => { const mark = String(ticket.title || "").toLowerCase().split("·").pop(); return mark.includes("five near 90") ? "five" : mark.includes("four near 80") ? "four" : ((ticket.legs || []).length >= 5 ? "five" : "four"); };
+    archive.filter((ticket) => ticket.card === id && (!part || hitsPart(ticket) === part) && (!ticket.result || ticket.result === "open") && ticket.legs && ticket.legs.length && live(ticket))
+      .sort((a, b) => String(b.offeredAt || "").localeCompare(String(a.offeredAt || "")))
+      .forEach((ticket) => {
+        const key = `${ticket.american}|${ticket.legs.map((leg) => leg.label).join("|")}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        const bet = document.createElement("div");
+        bet.className = "rec-bet";
+        const price = Number(ticket.american);
+        const shown = Number.isFinite(price) ? (price > 0 ? `+${price}` : String(price)) : "";
+        const pct = ticket.impliedPct != null && ticket.impliedPct !== "" ? `${ticket.impliedPct}%` : "";
+        const head = document.createElement("b");
+        head.textContent = [shown, pct].filter(Boolean).join(" · ") || name;
+        bet.append(head);
+        ticket.legs.forEach((leg) => {
+          const line = document.createElement("span");
+          const odds = Number(leg.odds);
+          const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : "";
+          line.textContent = [tag, leg.label].filter(Boolean).join(" ");
+          bet.append(line);
+        });
+        block.append(bet);
+      });
+    if (!block.querySelector(".rec-bet")) {
+      const note = document.createElement("p");
+      note.textContent = "None you can place right now.";
+      block.append(note);
+      empty.push(block);
+    } else filled.push(block);
+  });
+  filled.forEach((block) => board.append(block));
+  empty.forEach((block) => board.append(block));
+  row.append(board);
 }
 
+function goFull() {
+  const desk = document.getElementById("desk");
+  const full = document.getElementById("desk-full");
+  if (full && desk && !desk.classList.contains("tv-full")) full.click();
+}
+window.goFull = goFull;
+
 function openRecommended(id) {
+  goFull();
   window.asking = false;
   if (window.birdQuiet) birdQuiet();
   window.digOn = false;
@@ -353,9 +405,9 @@ window.birdMenu = birdMenu;
 
 document.getElementById("bird-guide").addEventListener("click", (event) => {
   const menu = event.target.closest("[data-menu]");
-  if (menu) { birdMenu(menu.dataset.menu); return; }
+  if (menu) { goFull(); birdMenu(menu.dataset.menu); return; }
   const parrot = event.target.closest("[data-parrot]");
-  if (parrot && window.askBet) { askBet("general"); return; }
+  if (parrot && window.askBet) { goFull(); askBet("general"); return; }
   if (!event.target.closest("#bird-picks button")) return;
   const line = (document.getElementById("bird-line") || {}).textContent || "";
   const note = window.lawNote ? lawNote() : "";

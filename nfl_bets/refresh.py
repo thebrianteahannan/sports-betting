@@ -207,13 +207,13 @@ def _today_bet(games: list[dict[str, Any]], now: datetime, errors: list[str]) ->
     )
     if not best:
         return {
-            "title": "Today's Best Bet",
+            "title": "Highest chance parlay today",
             "goal": "A bet you can place today.",
             "copy": "Nothing left to bet on today's slate.",
             "legs": [],
         }
     return {
-        "title": "Today's Best Bet",
+        "title": "Highest chance parlay today",
         "strategy": best.get("strategy") or "",
         "game": best.get("game") or "",
         "goal": "A bet you can place today.",
@@ -247,7 +247,7 @@ def _today_games(games: list[dict[str, Any]], now: datetime) -> list[dict[str, A
         stamp = _parse(str(game.get("kickoff") or ""))
         if stamp is None or stamp.astimezone(_ET).date() != today:
             continue
-        if stamp < now - timedelta(hours=3):
+        if stamp < now:
             continue
         grouped.setdefault(sport, []).append((stamp, game))
     picked: list[dict[str, Any]] = []
@@ -384,7 +384,7 @@ def _still_bettable(kickoff: str, now: datetime) -> bool:
     stamp = _parse(kickoff)
     if stamp is None:
         return True
-    return stamp >= now - timedelta(hours=8)
+    return stamp > now
 
 
 def _current_week(games: list[dict[str, Any]], now: datetime) -> int:

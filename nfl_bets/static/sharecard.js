@@ -1,14 +1,14 @@
 const SHARE_FONT = "Oswald, Impact, sans-serif";
 const SHARE_TEXT = "Rajdhani, sans-serif";
 const NAMED_BETS = [
-  ["band", "Best bet of the day", "BET OF THE DAY"],
-  ["todayBet", "Today's Best Bet", "BET OF THE DAY"],
-  ["weekThree", "Good 3-leg", "BET OF THE WEEK"],
-  ["weekFive", "Good 5-leg", "BET OF THE WEEK"],
-  ["weekSafe", "Super safe", "BET OF THE WEEK"],
-  ["chalk", "Near −180", "NEAR −180"],
-  ["four", "Four at 85% each", "FOUR AT 85%"],
-  ["plus", "Safest near +250", "SAFEST NEAR +250"],
+  ["band", "−150 to +100 window", "−150 TO +100"],
+  ["todayBet", "Highest chance parlay today", "HIGHEST CHANCE"],
+  ["weekThree", "3 legs, different days, near −200", "3 LEGS NEAR −200"],
+  ["weekFive", "5 legs, different days, near −200", "5 LEGS NEAR −200"],
+  ["weekSafe", "3 legs, different days, near −350", "NEAR −350"],
+  ["chalk", "−400 to −700 legs, near −180", "NEAR −180"],
+  ["four", "Four yardage legs near 85% each", "FOUR NEAR 85%"],
+  ["plus", "Four yardage legs near +250", "FOUR NEAR +250"],
 ];
 
 let shareChoices = [];
@@ -461,11 +461,11 @@ const DAY_TEXT = ["best-aim", "best-title", "best-when", "best-copy", "best-legs
 const WEEK_TEXT = ["week-aim", "week-title", "week-when", "week-copy", "week-legs", "week-note"];
 
 function paintDayShare(board) {
-  paintPoster("day", "day-share", board && board.band, "BET OF THE DAY", "Best bet of the day", DAY_TEXT, "best");
+  paintPoster("day", "day-share", board && board.band, "−150 TO +100", "−150 to +100 window", DAY_TEXT, "best");
 }
 
 function paintWeekShare(board) {
-  paintPoster("week", "week-share", board && board.weekThree, "BET OF THE WEEK", "Good 3-leg", WEEK_TEXT, "week");
+  paintPoster("week", "week-share", board && board.weekThree, "3 LEGS NEAR −200", "3 legs, different days, near −200", WEEK_TEXT, "week");
 }
 
 window.paintDayShare = paintDayShare;

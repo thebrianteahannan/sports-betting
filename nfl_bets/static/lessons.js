@@ -95,15 +95,15 @@ function generalNotes(lost) {
 
 const WIN_REASONS = [
   ["nflRec", "NFL receiving yards"],
-  ["hits", "Stack hits"],
-  ["chalk", "Near −180"],
+  ["hits", "Five near 90% vs four near 80%"],
+  ["chalk", "−400 to −700 legs, near −180"],
 ];
 const CARD_LABELS = {
-  hits: "Stack hits",
-  todayBet: "Today's best bet",
-  chalk: "Near −180",
-  four: "Four at 85% each",
-  plus: "Safest near +250",
+  hits: "Five near 90% vs four near 80%",
+  todayBet: "Highest chance parlay today",
+  chalk: "−400 to −700 legs, near −180",
+  four: "Four yardage legs near 85% each",
+  plus: "Four yardage legs near +250",
 };
 const STAT_LABELS = {
   rushingYards: "rushing yards",

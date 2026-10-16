@@ -70,9 +70,15 @@ function fillStateSelect(node, selected) {
   node.innerHTML = stateOptions(selected || window.memberState || "");
 }
 
+function lawDay() {
+  return `${window.memberState || ""}:${new Date().toLocaleDateString("en-CA")}`;
+}
+
 function lawNote() {
   const row = STATE_LAW[window.memberState || ""];
-  if (!row || window.lawShut === window.memberState) return "";
+  let seen = false;
+  try { seen = localStorage.getItem("parlay-law-day") === lawDay(); } catch (error) { seen = false; }
+  if (!row || window.lawShut === window.memberState || seen) return "";
   const other = booksHere().filter((book) => book.id !== "fanduel");
   if (row.kind === "off" && other.length) return `${row.name}: FanDuel Sportsbook is not offered. You can place these FanDuel prices on ${other.map((book) => book.name).join(", ")}. The number is usually close, and sometimes the same. Check it before you bet.`;
   if (row.level === "none") return "";
@@ -140,6 +146,7 @@ document.getElementById("laws-map").addEventListener("click", (event) => {
 const priorTab = showTab;
 showTab = (name) => { priorTab(name); if (name === "laws") paintLaws(); };
 window.lawNote = lawNote;
+window.lawMarkToday = () => { try { localStorage.setItem("parlay-law-day", lawDay()); } catch (error) {} };
 document.getElementById("banner-x").addEventListener("click", () => {
   window.lawShut = window.memberState || "";
   document.getElementById("banner").hidden = true;

@@ -96,7 +96,7 @@ function askBet(kind, kept) {
   const general = kind === "general";
   window.askGeneral = general;
   const desk = document.getElementById("desk");
-  if (desk) desk.classList.remove("dug");
+  if (desk) desk.classList.remove("dug", "solo");
   if (general) window.digCard = null;
   const title = !general && window.digCard ? ((window.digCard.querySelector("h2") || {}).textContent || "").trim() : "";
   birdSay(general
@@ -116,15 +116,14 @@ function askBet(kind, kept) {
 }
 
 const ASK_IDEAS = [
-  ["Best bet of the day", "What's the best bet of the day?"],
+  ["−150 to +100", "What's the bet in the -150 to +100 window?"],
   ["This week", "What's the good 3 leg and the good 5 leg this week?"],
   ["Most winning strategies", "What are the most winning strategies?"],
   ["Bets from those strategies", "What are the bets from the most winning strategies?"],
-  ["Super safe", "What's the super safe bet?"],
-  ["Today's best bet", "What's today's best bet?"],
-  ["Good 3-leg", "What's a good 3 leg?"],
-  ["Good 5-leg", "What's a good 5 leg?"],
-  ["How you pick", "How do you pick a bet?"],
+  ["Near −350", "What's the super safe bet?"],
+  ["Highest chance today", "What's today's best bet?"],
+  ["3 legs near −200", "What's a good 3 leg?"],
+  ["5 legs near −200", "What's a good 5 leg?"],
 ];
 
 function paintIdeas(row) {
@@ -196,7 +195,7 @@ function cardPack() {
   if (!cards.length) return null;
   return {
     title: "Recommended bets",
-    aim: "Best bet of the day, Today's Best Bet, Good 3-leg, Good 5-leg, and Super safe.",
+    aim: "−150 to +100 window, highest chance parlay today, 3 legs near −200, 5 legs near −200, and 3 legs near −350.",
     copy: cards.map((item) => {
       const packed = packOne(item);
       const names = packed.legs.map((leg) => [leg.price, leg.name].filter(Boolean).join(" ")).join("; ");
@@ -270,22 +269,19 @@ function nameWords(card) {
 function askCardKeys(card) {
   const title = foldText((card.querySelector("h2") || {}).textContent || "");
   const keys = title ? [title] : [];
-  if (title.includes("3 leg")) keys.push("3 leg", "three leg");
-  if (title.includes("5 leg")) keys.push("5 leg", "five leg");
-  if (title.includes("super safe")) keys.push("super safe");
-  if (title.includes("best bet of the day")) keys.push("best bet");
-  if (title.includes("today")) keys.push("today's best", "todays best");
-  return keys;
+  const extra = { best: ["best bet", "150"], today: ["today's best", "todays best"], week: ["3 leg", "three leg"], week5: ["5 leg", "five leg"], safe: ["super safe", "350"] };
+  return keys.concat(extra[card.id] || []);
 }
 
 function pickedCards(question, answer) {
-  const text = foldText(`${question}\n${answer}`);
+  const asked = foldText(question);
   const said = foldText(answer);
-  const cards = [...document.querySelectorAll("section.chalk")].filter((card) => card.id !== "chooser" && card.querySelector("ol li"));
+  const lesson = /\b(you need to|when picking|to pick a bet|look at the recommended|decide which|such as)\b/.test(said) && !/\b(3|three|5|five) leg is\b|\bis a parlay of\b/.test(said);
+  const hit = (key) => asked.includes(key) || (!lesson && said.includes(key));
+  const cards = [...document.querySelectorAll("section.chalk")].filter((card) => card.id !== "chooser" && !card.hidden && card.querySelector("ol li"));
   return cards.filter((card) => {
     if (!window.askGeneral && card === window.digCard) return false;
-    if (askCardKeys(card).some((key) => text.includes(foldText(key)))) return true;
-    return nameWords(card).some((word) => said.includes(word));
+    return askCardKeys(card).some((key) => hit(foldText(key))) || nameWords(card).some((word) => hit(word));
   }).slice(0, 3);
 }
 
@@ -299,20 +295,20 @@ function betPreview(card) {
   return view;
 }
 
-function paintRaw(answer) {
+function paintRaw(answer, open) {
   const row = document.getElementById("bird-picks");
   if (!row || !answer) return;
   const raw = document.createElement("p");
   raw.className = "ask-raw";
-  raw.hidden = true;
+  raw.hidden = !open;
   raw.textContent = answer;
   const more = document.createElement("button");
   more.type = "button";
   more.className = "ask-more";
-  more.textContent = "View more";
+  more.textContent = open ? "Hide" : "Parlay the Parrot's Squawkings";
   more.addEventListener("click", () => {
     raw.hidden = !raw.hidden;
-    more.textContent = raw.hidden ? "View more" : "Hide";
+    more.textContent = raw.hidden ? "Parlay the Parrot's Squawkings" : "Hide";
   });
   row.append(more, raw);
 }
@@ -338,51 +334,50 @@ function betChoice(card) {
   if (card.id) button.dataset.card = card.id;
   button.addEventListener("click", () => {
     const raw = document.querySelector("#bird-picks .ask-raw");
-    askTrail.push({
-      kind: "choices",
-      text: (document.getElementById("bird-line") || {}).textContent || "",
-      ids: [...document.querySelectorAll(".ask-choice")].map((node) => node.dataset.card).filter(Boolean),
-      raw: raw ? raw.textContent : "",
-    });
+    askTrail.push({ kind: "choices", text: (document.getElementById("bird-line") || {}).textContent || "", ids: [...document.querySelectorAll(".ask-choice")].map((node) => node.dataset.card).filter(Boolean), raw: raw ? raw.textContent : "" });
     card.hidden = false;
     const glass = document.getElementById("desk-glass-in");
     if (glass && !glass.contains(card)) glass.append(card);
     showInfo(card);
+    const desk = document.getElementById("desk");
+    if (desk) { desk.classList.add("solo"); desk.classList.remove("dug"); }
+    document.querySelectorAll(".solo-on").forEach((node) => node.classList.remove("solo-on"));
+    card.classList.add("solo-on");
+    syncMore();
+    if (glass) glass.scrollTop = 0;
     card.scrollIntoView({ block: "start" });
   });
   return button;
 }
 
 function showAnswer(question, answer) {
+  const said = foldText(answer);
+  if (/\b(3|three|5|five) leg is\b|\bis a parlay of\b/.test(said) && window.render) { const wasAsking = window.asking; window.asking = false; window.keepStarted = true; window.render(); window.keepStarted = false; window.asking = wasAsking; }
   const cards = pickedCards(question, answer);
+  if (window.legStarted && window.state && window.state.board) { const map = { best: "band", today: "todayBet", week: "weekThree", week5: "weekFive", safe: "weekSafe", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; Object.keys(map).forEach((id) => { const card = document.getElementById(id); const data = window.state.board[map[id]]; if (card && data && window.legStarted(data)) card.hidden = true; }); }
   const text = String(answer || "").trim();
-  if (cards.length) {
-    const title = ((cards[0].querySelector("h2") || {}).textContent || "the bet").trim();
-    birdSay(cards.length > 1 ? "Which of these do you want?" : `Here is the ${title}.`, []);
-    const row = document.getElementById("bird-picks");
-    if (row) cards.forEach((card) => row.append(betChoice(card)));
-    paintRaw(text);
-  } else {
-    const bits = text.split(/(?<=[.!?])\s/).filter(Boolean);
-    birdSay(bits[0] || text, []);
-    if (bits.length > 1) paintRaw(text);
-  }
+  birdSay(`You asked: ${question}`, []);
+  const line = document.getElementById("bird-line");
+  if (line) { line.classList.add("answer"); const q = document.createElement("strong"); q.textContent = line.textContent; line.replaceChildren(q); if (!cards.length && text) line.append(document.createTextNode(`\n${text}`)); }
+  const row = document.getElementById("bird-picks");
+  if (row && cards.length) { cards.forEach((card) => row.append(betChoice(card))); paintRaw(text, true); }
   askAgain();
 }
 
 function restoreAsk(shot) {
   const desk = document.getElementById("desk");
-  if (desk) desk.classList.add("bird-on");
+  if (desk) { desk.classList.add("bird-on"); desk.classList.remove("solo"); }
   if (shot.kind === "choices") {
     window.asking = true;
     window.digOn = true;
     window.askGeneral = false;
     if (desk) desk.classList.remove("dug");
     birdSay(shot.text || "Which of these do you want?", []);
+    const backLine = document.getElementById("bird-line"); if (backLine && /^You asked:/.test(shot.text || "")) backLine.classList.add("answer");
     const row = document.getElementById("bird-picks");
     if (!row) return;
     shot.ids.forEach((id) => { const card = document.getElementById(id); if (card) row.append(betChoice(card)); });
-    if (shot.raw) paintRaw(shot.raw);
+    if (shot.raw) paintRaw(shot.raw, true);
     askAgain();
     return;
   }
@@ -458,14 +453,11 @@ document.getElementById("desk-full").addEventListener("click", () => {
   if (desk && desk.classList.contains("tv-full")) markFull();
   if (digHold) return;
   if (!desk || desk.classList.contains("tv-full")) return;
-  desk.classList.remove("dug", "bird-on");
-  syncMore();
-  const guide = document.getElementById("bird-guide");
-  const head = document.getElementById("desk-head");
-  if (guide) guide.hidden = true;
-  if (head) head.classList.remove("bird-talk");
+  desk.classList.remove("dug", "solo");
   window.digOn = false;
   window.asking = false;
+  if (window.birdGreet) birdGreet();
+  else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"], ["parrot", "Ask Parlay the Parrot"]]);
 });
 window.paintDig = paintDig;
 
@@ -473,7 +465,7 @@ const sayBird = window.birdSay;
 if (sayBird) {
   window.birdSay = (text, picks) => {
     const line = document.getElementById("bird-line");
-    if (line) line.classList.remove("answer");
+    if (line) line.classList.remove("answer", "build");
     sayBird(text, picks);
   };
 }
@@ -481,19 +473,18 @@ if (sayBird) {
 document.getElementById("desk-back").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
   if (!desk || !desk.classList.contains("tv-full")) return;
-  if (askTrail.length) {
-    event.stopImmediatePropagation();
-    restoreAsk(askTrail.pop());
-    return;
-  }
-  if (!window.askGeneral && desk.classList.contains("has-back")) return;
   event.stopImmediatePropagation();
+  askTrail = [];
   window.askGeneral = false;
   window.asking = false;
   window.digOn = false;
-  const full = document.getElementById("desk-full");
-  if (full) full.click();
+  desk.classList.remove("dug", "solo");
   if (window.birdGreet) birdGreet();
+  else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"], ["parrot", "Ask Parlay the Parrot"]]);
 }, true);
 
 document.getElementById("desk-ask").addEventListener("click", () => askBet("general"));
+document.getElementById("desk-name").addEventListener("click", () => {
+  const desk = document.getElementById("desk");
+  if (desk && desk.classList.contains("tv-full")) askBet("general");
+});

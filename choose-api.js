@@ -118,8 +118,8 @@ function legLabel(market, runner) {
   return text.split(/\s+/).filter(Boolean).join(" ");
 }
 
-async function eventPage(id) {
-  const url = `https://sbapi.nj.sportsbook.fanduel.com/api/event-page?eventId=${encodeURIComponent(id)}&tab=popular&_ak=${AK}&timezone=America/New_York`;
+async function eventPage(id, tab) {
+  const url = `https://sbapi.nj.sportsbook.fanduel.com/api/event-page?eventId=${encodeURIComponent(id)}&tab=${encodeURIComponent(tab)}&_ak=${AK}&timezone=America/New_York`;
   const response = await fetch(url, {
     headers: {
       "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
@@ -144,7 +144,7 @@ function parseLegs(id, data) {
     (market.runners || []).forEach((runner) => {
       const raw = (((runner.winRunnerOdds || {}).americanDisplayOdds || {}).americanOdds);
       const odds = Number.parseInt(raw, 10);
-      if (!Number.isFinite(odds) || odds < -1500 || odds > -110) return;
+      if (!Number.isFinite(odds) || odds < -2000 || odds > 5000) return;
       const runnerName = String(runner.runnerName || "").trim();
       rows.push({ market: name, runner: runnerName, label: legLabel(name, runnerName), odds });
     });
@@ -152,10 +152,40 @@ function parseLegs(id, data) {
   return { rows, live };
 }
 
+function propTabs(layout) {
+  const tabs = (layout && layout.tabs) || {};
+  const words = ["prop", "point", "three", "rebound", "assist", "goal", "shot", "batter", "pitcher", "scorer", "hit", "combo"];
+  const slugs = [];
+  ((layout && layout.tabsDisplayOrder) || []).forEach((id) => {
+    const low = String((tabs[id] || {}).title || "").toLowerCase();
+    if (!words.some((word) => low.includes(word))) return;
+    if (["quarter", "half", "period", "margin", "same game"].some((word) => low.includes(word)) && !low.includes("prop") && !low.includes("player")) return;
+    const slug = low.replace(/™/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    if (slug && !slugs.includes(slug)) slugs.push(slug);
+  });
+  return slugs;
+}
+
 async function offerLegs(game) {
   if (Array.isArray(game.props) && game.props.length) return { rows: game.props.filter((leg) => leg && typeof leg === "object"), live: !!game.live };
-  const data = await eventPage(game.id);
-  return parseLegs(game.id, data);
+  const first = await eventPage(game.id, "popular");
+  const pages = [first];
+  const extra = await Promise.all(propTabs(first.layout).map((tab) => eventPage(game.id, tab).catch(() => null)));
+  extra.forEach((page) => { if (page) pages.push(page); });
+  const rows = [];
+  const seen = new Set();
+  let live = false;
+  pages.forEach((page) => {
+    const parsed = parseLegs(game.id, page);
+    live = live || parsed.live;
+    parsed.rows.forEach((row) => {
+      const key = `${row.market}|${row.runner}|${row.odds}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      rows.push(row);
+    });
+  });
+  return { rows, live };
 }
 
 function teamLeg(leg, game) {
@@ -168,7 +198,7 @@ function fits(leg, kind) {
   const runner = String(leg.runner || "").trim().toLowerCase();
   if (SKIP.some((skip) => text.includes(skip)) || runner === "yes" || runner === "no" || runner.endsWith(" over") || runner.endsWith(" under")) return false;
   if (text.includes("?") || text.includes("combine") || text.includes("either")) return false;
-  if (!/\d/.test(text) && !text.includes("to record a hit") && !text.includes("to score")) return false;
+  if (!/\d/.test(text) && !text.includes("to record a hit") && !text.includes("to score") && !text.includes("scorer") && !text.includes("touchdown")) return false;
   const name = who(leg);
   if (!name || name === "over" || name === "under") return false;
   if (kind === "any") return true;
@@ -190,8 +220,6 @@ function catchesToYards(legs, band) {
   const seen = new Set();
   band.forEach((leg) => {
     const text = `${leg.market || ""} ${leg.label || ""}`.toLowerCase();
-    const td = text.includes("touchdown") || /\btd\b/.test(text);
-    if (td && !text.includes("pass")) return;
     let chosen = leg;
     if (text.includes("reception") && !text.includes("yard")) {
       const name = who(leg);

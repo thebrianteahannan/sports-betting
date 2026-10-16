@@ -66,11 +66,11 @@ function render() {
     banner.textContent = board.errors.join(" ");
   } else { banner.hidden = true; const x = document.getElementById("banner-x"); if (x) x.hidden = true; }
   const bandAim = (board.band && board.band.goal) || "Priced from −150 to +100.";
-  renderFeatured("best", weekCard(board.band, "band"), "Best bet of the day", bandAim);
-  [["week", "weekThree", "Good 3-leg"], ["week5", "weekFive", "Good 5-leg"], ["safe", "weekSafe", "Super safe"]].forEach(([prefix, key, title]) => {
+  renderFeatured("best", weekCard(board.band, "band"), "−150 to +100 window", bandAim);
+  [["week", "weekThree", "3 legs, different days, near −200"], ["week5", "weekFive", "5 legs, different days, near −200"], ["safe", "weekSafe", "3 legs, different days, near −350"]].forEach(([prefix, key, title]) => {
     renderFeatured(prefix, weekCard(board[key], key), title, (board[key] && board[key].goal) || "Each leg is a different day.");
   });
-  renderFeatured("today", todayCandidate(board), "Today's Best Bet", "The highest-priced ticket on today's slate.");
+  renderFeatured("today", todayCandidate(board), "Highest chance parlay today", "The highest-chance parlay on today's slate.");
   ["chalk", "four", "plus", "hits"].forEach((id) => renderParlay(id, board[id]));
   renderArchive(board.archive || []);
   renderPicks(board.archive || []);
@@ -78,7 +78,7 @@ function render() {
   if (window.paintChoices) window.paintChoices();
   if (window.paintRefresh) window.paintRefresh();
   if (window.paintDayShare) window.paintDayShare(board);
-  if (window.paintWeekShare) window.paintWeekShare(board); if (window.paintWeather) window.paintWeather(); if (window.paintEdits) paintEdits();
+  if (window.paintWeekShare) window.paintWeekShare(board); if (window.paintWeather) window.paintWeather(); if (window.paintEdits) paintEdits(); window.render = render; window.legStarted = legStarted;
 }
 
 function dropMiss(text) {
@@ -172,9 +172,13 @@ function bandWhy(best) {
   return `Picked because ${shown} is the highest chance FanDuel has today between −150 and +100. That is about ${best.pct}%.${win}`;
 }
 
+function legStarted(card) {
+  const open = document.querySelector("section.chalk.solo-on"); const map = { week: "weekThree", week5: "weekFive", safe: "weekSafe", best: "band", today: "todayBet", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; if (window.keepStarted || (open && window.state && window.state.board && window.state.board[map[open.id]] === card)) return false; const rows = [...(card.legs || []), ...((card.groups || []).flatMap((group) => group.legs || []))]; return [card.kickoff, ...rows.map((leg) => leg.kickoff)].some((iso) => Number.isFinite(Date.parse(iso || "")) && Date.parse(iso || "") <= Date.now());
+}
+
 function todayCandidate(board) {
   const card = board.todayBet;
-  if (!card || (window.blockCollege && blockCollege(card))) return null;
+  if (!card || (window.blockCollege && blockCollege(card)) || legStarted(card)) return null;
   const legs = card.legs || [];
   const pct = Number(card.impliedPct);
   if (!legs.length || !Number.isFinite(pct)) {
@@ -191,7 +195,7 @@ function todayCandidate(board) {
 }
 
 function weekCard(card, id) {
-  if (!card || (window.blockCollege && blockCollege(card))) return null;
+  if (!card || (window.blockCollege && blockCollege(card)) || legStarted(card)) return null;
   const legs = card.legs || [];
   const pct = Number(card.impliedPct);
   if (!legs.length || !Number.isFinite(pct)) {
@@ -234,16 +238,23 @@ function winOn(price) {
   return Math.round(5 * (decimal - 1) * 100) / 100;
 }
 
+const PARLAY_TITLES = {
+  chalk: "−400 to −700 legs, near −180",
+  four: "Four yardage legs near 85% each",
+  plus: "Four yardage legs near +250",
+  hits: "Five near 90% vs four near 80%",
+};
+
 function renderParlay(id, card) {
   const box = $(id);
-  if (!card || (window.blockCollege && blockCollege(card))) {
+  if (!card || (window.blockCollege && blockCollege(card)) || legStarted(card)) {
     box.hidden = true;
     return;
   }
   box.hidden = false;
   const game = card.game ? `${card.game}. ` : "";
   $(`${id}-aim`).textContent = card.goal || "";
-  $(`${id}-title`).textContent = card.title || "";
+  $(`${id}-title`).textContent = PARLAY_TITLES[id] || card.title || "";
   $(`${id}-when`).textContent = [eventClock(card), pulledText(card)].filter(Boolean).join("\n");
   $(`${id}-copy`).textContent = dropMiss(`${game}${card.copy || ""}`);
   const groups = card.groups || [];

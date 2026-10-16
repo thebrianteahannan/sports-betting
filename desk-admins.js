@@ -27,9 +27,9 @@ function createAdmins(readKey, writeKey) {
   }
 
   const CARD_SAY = {
-    today: "Today", week: "Week", open: "Our Bets", band: "Best bet of the day", todayBet: "Today's Best Bet",
-    weekThree: "Good 3-leg", weekFive: "Good 5-leg", weekSafe: "Super safe", chalk: "Near −180",
-    four: "Four at 85%", plus: "Safest near +250", hits: "Which stack hits more",
+    today: "Today", week: "Week", open: "Our Bets", band: "−150 to +100 window", todayBet: "Highest chance parlay today",
+    weekThree: "3 legs, different days, near −200", weekFive: "5 legs, different days, near −200", weekSafe: "3 legs, different days, near −350", chalk: "−400 to −700 legs, near −180",
+    four: "Four yardage legs near 85% each", plus: "Four yardage legs near +250", hits: "Five near 90% vs four near 80%",
   };
   const AIM_SAY = { top: "the safest price", safe: "a safe price", good: "a price near −100", payout: "the longest price" };
   const KIND_SAY = { any: "any player prop", yards: "yards", points: "points", assists: "assists", shots: "shots", strikeouts: "strikeouts", hits: "hits" };

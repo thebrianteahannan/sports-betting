@@ -1,14 +1,14 @@
 const OPEN_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA"];
 const OPEN_CARDS = [
-  ["band", "Best bet of the day"],
-  ["todayBet", "Today's Best Bet"],
-  ["chalk", "Near -180"],
-  ["four", "Four at 85%"],
-  ["plus", "Safest near +250"],
-  ["hits", "Stack hits"],
-  ["weekThree", "Good 3-leg"],
-  ["weekFive", "Good 5-leg"],
-  ["weekSafe", "Super safe"],
+  ["band", "−150 to +100 window"],
+  ["todayBet", "Highest chance parlay today"],
+  ["chalk", "−400 to −700 legs, near −180"],
+  ["four", "Four yardage legs near 85% each"],
+  ["plus", "Four yardage legs near +250"],
+  ["hits", "Five near 90% vs four near 80%"],
+  ["weekThree", "3 legs, different days, near −200"],
+  ["weekFive", "5 legs, different days, near −200"],
+  ["weekSafe", "3 legs, different days, near −350"],
 ];
 const OPEN_KINDS = [
   ["yards", "Yards"],

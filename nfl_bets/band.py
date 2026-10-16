@@ -1,4 +1,4 @@
-"""Best bet of the day: the ticket priced from -150 to +100.
+"""−150 to +100 window: the ticket priced from -150 to +100.
 
 Short prices like -800 stay off this card. This does not send a bet.
 """
@@ -34,7 +34,7 @@ def build_band(games: list[dict[str, Any]], now: datetime | None = None, shown: 
 
 def _today(games: list[dict[str, Any]], now: datetime) -> list[dict[str, Any]]:
     today = now.date()
-    start = now - timedelta(hours=3)
+    start = now
     rows = []
     for game in games:
         if str(game.get("sport") or "") not in _SPORTS:
@@ -114,7 +114,7 @@ def _card(combo: list[tuple[dict, dict, bool]]) -> dict[str, Any]:
     goal = "The best ticket on today's slate priced from −150 to +100."
     if not combo:
         return {
-            "title": "Best bet of the day",
+            "title": "−150 to +100 window",
             "strategy": "Best price from −150 to +100",
             "game": "",
             "goal": goal,
@@ -152,7 +152,7 @@ def _card(combo: list[tuple[dict, dict, bool]]) -> dict[str, Any]:
             f"That is about {chance}%. A $5 bet would win ${profit:.2f}."
         )
     return {
-        "title": "Best bet of the day",
+        "title": "−150 to +100 window",
         "strategy": "Best price from −150 to +100",
         "game": _place(combo[0][1]) if one else "",
         "goal": goal,

@@ -139,7 +139,7 @@ def _fits(leg: dict[str, Any], kind: str) -> bool:
         return False
     if "?" in text or "combine" in text or "either" in text:
         return False
-    if not re.search(r"\d", text) and "to record a hit" not in text and "to score" not in text:
+    if not re.search(r"\d", text) and "to record a hit" not in text and "to score" not in text and "scorer" not in text and "touchdown" not in text:
         return False
     if not _who(leg) or _who(leg) in {"over", "under"}:
         return False

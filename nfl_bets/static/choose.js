@@ -248,6 +248,13 @@ function askStep() {
     const next = askButtons(ask[0]);
     if (!next) { ask.shift(); continue; }
     birdSay(next[0], next[1]);
+    const line = document.getElementById("bird-line");
+    if (line) {
+      line.classList.add("build");
+      const title = document.createElement("strong");
+      title.textContent = "Build Your Own Bet";
+      line.prepend(title);
+    }
     return;
   }
   askGo();

@@ -25,7 +25,7 @@ function suggestions() {
   const cards = [];
   const add = (id, card, extra) => {
     const legs = (extra && extra.legs) || card.legs || [];
-    if (!legs.length) return;
+    if (!legs.length || legs.some((leg) => { const stamp = Date.parse(leg.kickoff || card.kickoff || ""); return Number.isFinite(stamp) && stamp <= Date.now(); })) return;
     const row = {
       id,
       title: (extra && extra.title) || card.title || id,

@@ -70,7 +70,7 @@ def _write(path: Path) -> None:
         Paragraph("What is for sale", style["h"]),
         Paragraph(
             "The product is a login that unlocks the day's bets. The page shows "
-            "bets to make, and nothing else. The Near -180 card stacks -400 to -700 "
+            "bets to make, and nothing else. The −400 to −700 card stacks those prices "
             "prices until the parlay is about -180. The four-leg card takes one small "
             "player line from each of four sports, each priced near 85%. Four prices "
             "near 85% multiply to about a coin flip. Every card says it can miss. "

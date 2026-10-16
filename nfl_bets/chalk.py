@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from concurrent.futures import ThreadPoolExecutor
 from itertools import combinations
 from typing import Any
 
@@ -56,7 +57,7 @@ def _chalk_card(event_id: str, title: str, legs: list[dict[str, Any]]) -> dict[s
     return {
         "gameId": event_id,
         "game": title,
-        "title": "Near -180",
+        "title": "−400 to −700 legs, near −180",
         "goal": goal,
         "american": american,
         "impliedPct": chance,
@@ -78,7 +79,7 @@ def _chalk_card(event_id: str, title: str, legs: list[dict[str, Any]]) -> dict[s
 def _four_card(event_id: str, title: str, legs: list[dict[str, Any]]) -> dict[str, Any]:
     goal = (
         "Going for four legs, each priced near an 85% chance. "
-        "Small yardage only. Touchdowns and receptions of 4.5 or more stay off. "
+        "Small yardage only. Receptions of 4.5 or more stay off. "
         "Four prices near 85% multiply to about a coin flip, not an 85% parlay."
     )
     combo = _best_four(legs)
@@ -95,7 +96,7 @@ def _four_card(event_id: str, title: str, legs: list[dict[str, Any]]) -> dict[st
     return {
         "gameId": event_id,
         "game": title,
-        "title": "Four at 85% each",
+        "title": "Four yardage legs near 85% each",
         "goal": goal,
         "american": american,
         "impliedPct": chance,
@@ -128,7 +129,7 @@ def _plus_card(event_id: str, title: str, legs: list[dict[str, Any]]) -> dict[st
     return {
         "gameId": event_id,
         "game": title,
-        "title": "Safest near +250",
+        "title": "Four yardage legs near +250",
         "goal": goal,
         "american": american,
         "impliedPct": chance,
@@ -165,7 +166,7 @@ def _hits_card(event_id: str, title: str, legs: list[dict[str, Any]]) -> dict[st
     return {
         "gameId": event_id,
         "game": title,
-        "title": "Which stack hits more",
+        "title": "Five near 90% vs four near 80%",
         "goal": goal,
         "copy": (
             f"Five yardage prices nearest 90% multiply to {_signed(a5)}, about {c5}%. "
@@ -197,44 +198,80 @@ def _empty(event_id: str, title: str, heading: str, goal: str, copy: str) -> dic
     }
 
 
-def _legs(event_id: str) -> tuple[list[dict[str, Any]], bool]:
+def _event(event_id: str, tab: str) -> dict[str, Any]:
     url = (
         "https://sbapi.nj.sportsbook.fanduel.com/api/event-page"
-        f"?eventId={event_id}&tab=popular&_ak={_AK}&timezone=America/New_York"
+        f"?eventId={event_id}&tab={tab}&_ak={_AK}&timezone=America/New_York"
     )
-    data = get_json(url, referer="https://sportsbook.fanduel.com/")
-    attachments = data.get("attachments") or {}
-    markets = attachments.get("markets") or {}
-    live = any(
-        bool(event.get("inPlay"))
-        for event in (attachments.get("events") or {}).values()
-        if isinstance(event, dict) and str(event.get("eventId") or "") == event_id
-    )
+    return get_json(url, referer="https://sportsbook.fanduel.com/")
+
+
+def _prop_tabs(layout: dict[str, Any]) -> list[str]:
+    tabs = layout.get("tabs") or {}
+    slugs: list[str] = []
+    for item in layout.get("tabsDisplayOrder") or []:
+        title = str((tabs.get(str(item)) or {}).get("title") or "")
+        low = title.lower()
+        if not any(word in low for word in ("prop", "point", "three", "rebound", "assist", "goal", "shot", "batter", "pitcher", "scorer", "hit", "combo")):
+            continue
+        if any(word in low for word in ("quarter", "half", "period", "margin", "same game")) and "prop" not in low and "player" not in low:
+            continue
+        slug = re.sub(r"[^a-z0-9]+", "-", low.replace("™", "")).strip("-")
+        if slug and slug not in slugs:
+            slugs.append(slug)
+    return slugs
+
+
+def _legs(event_id: str) -> tuple[list[dict[str, Any]], bool]:
+    first = _event(event_id, "popular")
+    pages = [first]
+    slugs = _prop_tabs(first.get("layout") or {})
+    if slugs:
+        def load(slug: str) -> dict[str, Any] | None:
+            try:
+                return _event(event_id, slug)
+            except Exception:
+                return None
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            for page in pool.map(load, slugs):
+                if isinstance(page, dict):
+                    pages.append(page)
     rows: list[dict[str, Any]] = []
-    for market in markets.values():
-        if str(market.get("eventId") or "") != event_id:
-            continue
-        if str(market.get("marketStatus") or "OPEN").upper() != "OPEN":
-            continue
-        name = str(market.get("marketName") or "")
-        if any(skip in name for skip in ("Regular Season", "Playoff", "Drive 1")):
-            continue
-        market_id = str(market.get("marketId") or name)
-        for runner in market.get("runners") or []:
-            odds = _american(runner)
-            if odds is None or odds < -1500 or odds > -110:
+    seen: set[str] = set()
+    live = False
+    for data in pages:
+        attachments = data.get("attachments") or {}
+        live = live or any(
+            bool(event.get("inPlay"))
+            for event in (attachments.get("events") or {}).values()
+            if isinstance(event, dict) and str(event.get("eventId") or "") == event_id
+        )
+        for market in (attachments.get("markets") or {}).values():
+            if not isinstance(market, dict) or str(market.get("eventId") or "") != event_id:
                 continue
-            runner_name = str(runner.get("runnerName") or "").strip()
-            rows.append(
-                {
+            if str(market.get("marketStatus") or "OPEN").upper() != "OPEN":
+                continue
+            name = str(market.get("marketName") or "")
+            if any(skip in name for skip in ("Regular Season", "Playoff", "Drive 1")):
+                continue
+            market_id = str(market.get("marketId") or name)
+            for runner in market.get("runners") or []:
+                odds = _american(runner)
+                if odds is None or odds < -2000 or odds > 5000:
+                    continue
+                runner_name = str(runner.get("runnerName") or "").strip()
+                token = f"{market_id}|{runner_name}|{odds}"
+                if token in seen:
+                    continue
+                seen.add(token)
+                rows.append({
                     "market": name,
                     "runner": runner_name,
                     "label": _label(name, runner_name),
                     "odds": odds,
                     "key": _key(name, market_id),
                     "prop": _prop(name),
-                }
-            )
+                })
     return rows, live
 
 
@@ -243,8 +280,6 @@ def _catches_to_yards(legs: list[dict[str, Any]], band: list[dict[str, Any]]) ->
     kept: list[dict[str, Any]] = []
     seen: set[str] = set()
     for leg in band:
-        if _td(leg) and not _passing_td(leg):
-            continue
         chosen = leg
         if _reception(leg):
             yards = _same_price_yards(legs, leg)
@@ -268,16 +303,6 @@ def _reception(leg: dict[str, Any]) -> bool:
 def _receiving_yards(leg: dict[str, Any]) -> bool:
     text = f"{leg.get('market') or ''} {leg.get('label') or ''}".lower()
     return "yard" in text and "receiv" in text
-
-
-def _td(leg: dict[str, Any]) -> bool:
-    text = f"{leg.get('market') or ''} {leg.get('runner') or ''} {leg.get('label') or ''}".lower()
-    return "touchdown" in text or re.search(r"\btd\b", text) is not None
-
-
-def _passing_td(leg: dict[str, Any]) -> bool:
-    text = f"{leg.get('market') or ''} {leg.get('label') or ''}".lower()
-    return _td(leg) and "pass" in text
 
 
 def _who(leg: dict[str, Any]) -> str:
@@ -412,8 +437,6 @@ def _yardage(leg: dict[str, Any]) -> bool:
 
 def _scary(leg: dict[str, Any]) -> bool:
     text = f"{leg['market']} {leg['runner']} {leg['label']}".lower()
-    if "touchdown" in text or re.search(r"\btd\b", text):
-        return True
     if "reception" in text:
         number = _size(leg)
         return number >= 4.5

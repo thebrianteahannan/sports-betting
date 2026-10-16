@@ -6,11 +6,9 @@ import re
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from nfl_bets.chalk import _american, _catches_to_yards, _from_decimal, _label, _size
+from nfl_bets.chalk import _catches_to_yards, _from_decimal, _label, _legs, _size
 from nfl_bets.hedge import american_decimal, implied_prob
-from nfl_bets.http_util import get_json
 
-_AK = "FhMFpcPWXMeyZxOx"
 _ET = ZoneInfo("America/New_York")
 _TARGET = 0.85
 _STAKE = 5.0
@@ -41,7 +39,7 @@ def build_cross_four(games: list[dict]) -> dict | None:
     return {
         "gameId": "",
         "game": sports,
-        "title": "Four at 85% each",
+        "title": "Four yardage legs near 85% each",
         "goal": (
             "Going for four legs, each priced near an 85% chance, from different sports. "
             "Small lines only. Touchdowns and receptions of 4.5 or more stay off. "
@@ -123,46 +121,30 @@ def _best(game: dict) -> dict | None:
 
 
 def _candidates(game: dict) -> list[dict]:
-    event_id = str(game.get("id") or "")
-    url = (
-        "https://sbapi.nj.sportsbook.fanduel.com/api/event-page"
-        f"?eventId={event_id}&tab=popular&_ak={_AK}&timezone=America/New_York"
-    )
-    data = get_json(url, referer="https://sportsbook.fanduel.com/")
-    attachments = data.get("attachments") or {}
-    markets = attachments.get("markets") or {}
-    live = any(
-        bool(event.get("inPlay"))
-        for event in (attachments.get("events") or {}).values()
-        if isinstance(event, dict) and str(event.get("eventId") or "") == event_id
-    )
+    try:
+        legs, live = _legs(str(game.get("id") or ""))
+    except Exception:
+        return []
     rows = []
-    for market in markets.values():
-        if str(market.get("eventId") or "") != event_id:
+    for leg in legs:
+        name = str(leg.get("market") or "")
+        odds = leg.get("odds")
+        if not _player_market(name) or odds is None or odds < -900 or odds > -400:
             continue
-        if str(market.get("marketStatus") or "OPEN").upper() != "OPEN":
+        runner_name = str(leg.get("runner") or "").strip()
+        if _scary(name, runner_name):
             continue
-        name = str(market.get("marketName") or "")
-        if not _player_market(name):
-            continue
-        for runner in market.get("runners") or []:
-            odds = _american(runner)
-            if odds is None or odds < -900 or odds > -400:
-                continue
-            runner_name = str(runner.get("runnerName") or "").strip()
-            if _scary(name, runner_name):
-                continue
-            pretty = _pretty(name, runner_name)
-            rows.append({
-                "sport": game.get("sport") or "",
-                "gameId": str(game.get("id") or ""),
-                "kickoff": game.get("kickoff") or "",
-                "market": name,
-                "runner": runner_name,
-                "label": f"{pretty} — {game.get('sport')}, {_when(game)}",
-                "odds": odds,
-                "live": live,
-            })
+        pretty = _pretty(name, runner_name)
+        rows.append({
+            "sport": game.get("sport") or "",
+            "gameId": str(game.get("id") or ""),
+            "kickoff": game.get("kickoff") or "",
+            "market": name,
+            "runner": runner_name,
+            "label": f"{pretty} — {game.get('sport')}, {_when(game)}",
+            "odds": odds,
+            "live": live,
+        })
     return rows
 
 
@@ -193,8 +175,6 @@ def _player_market(name: str) -> bool:
 
 def _scary(market: str, runner: str) -> bool:
     text = f"{market} {runner}".lower()
-    if "touchdown" in text or re.search(r"\btd\b", text):
-        return "pass" not in text
     if "reception" in text:
         match = re.search(r"(\d+(?:\.\d+)?)", runner)
         return bool(match) and float(match.group(1)) >= 4.5

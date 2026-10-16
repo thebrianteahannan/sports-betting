@@ -83,9 +83,9 @@ def _turn(saved: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any], dict[s
 def _build(games: list[dict[str, Any]], label: str) -> dict[str, list[dict[str, Any]]]:
     menu = _menu(_pools(_slate(games)))
     return {
-        "three": _pack(_choose(menu, 3, _GOOD, True), 3, label, "Good 3-leg", _GOOD),
-        "five": _pack(_choose(menu, 5, _GOOD, True), 5, label, "Good 5-leg", _GOOD),
-        "safe": _pack(_choose(menu, 3, _SAFE, False), 3, label, "Super safe", _SAFE),
+        "three": _pack(_choose(menu, 3, _GOOD, True), 3, label, "3 legs, different days, near −200", _GOOD),
+        "five": _pack(_choose(menu, 5, _GOOD, True), 5, label, "5 legs, different days, near −200", _GOOD),
+        "safe": _pack(_choose(menu, 3, _SAFE, False), 3, label, "3 legs, different days, near −350", _SAFE),
     }
 
 
@@ -98,7 +98,7 @@ def _pack(combos: list[list[tuple[dict, dict, bool]]], count: int, label: str, t
 
 def _slate(games: list[dict[str, Any]]) -> list[dict[str, Any]]:
     now = datetime.now(_ET)
-    start = now - timedelta(hours=3)
+    start = now
     end = datetime.combine((now + timedelta(days=13)).date(), time(23, 59), _ET)
     grouped: dict[str, list[tuple[datetime, dict[str, Any]]]] = {}
     for game in games:
