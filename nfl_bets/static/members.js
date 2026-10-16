@@ -357,7 +357,7 @@ function birdMenu(kind) {
     const done = archive.filter((ticket) => ticket.card === id && (ticket.result === "won" || ticket.result === "lost") && (!part || hitsPart(ticket) === part));
     const history = document.createElement("p");
     history.className = "rec-history";
-    history.innerHTML = [["Past day", day], ["Past week", day * 7], ["Past month", day * 30], ["Past year", day * 365]].map(([label, span]) => `<span>${label} <b>${recPct(done, now - span)}</b></span>`).join("");
+    history.textContent = [day, day * 7, day * 30, day * 365].map((span) => recPct(done, now - span)).join(", ");
     block.append(history);
     const seen = new Set();
     archive.filter((ticket) => ticket.card === id && (!part || hitsPart(ticket) === part) && (!ticket.result || ticket.result === "open") && ticket.legs && ticket.legs.length && live(ticket))
