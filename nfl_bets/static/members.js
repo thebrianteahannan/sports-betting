@@ -179,7 +179,7 @@ async function hardRefresh() {
 }
 
 document.getElementById("who").addEventListener("click", (event) => {
-  if (event.target.closest("#member-profile")) showTab("profile");
+  if (event.target.closest("#member-profile")) { goFull(); showTab("profile"); }
 });
 function calledName() {
   return String(window.memberName || "").trim().split(/\s+/)[0];
@@ -339,10 +339,11 @@ function birdMenu(kind) {
   board.append(expand);
   board.addEventListener("click", (event) => {
     const bet = event.target.closest(".rec-bet");
-    if (bet) { bet.classList.toggle("open"); return; }
+    if (bet) { if (window.openRec) openRec(bet.dataset.rec); return; }
     const strategy = event.target.closest(".rec-strategy");
     if (strategy) strategy.classList.toggle("open");
   });
+  window.recTickets = [];
   const strategies = Object.entries(CARD_NAMES).flatMap(([id, name]) => (
     id === "hits" ? [["hits", "Five near 90% each", "five"], ["hits", "Four near 80% each", "four"]] : [[id, name, ""]]
   ));
@@ -368,6 +369,7 @@ function birdMenu(kind) {
         seen.add(key);
         const bet = document.createElement("div");
         bet.className = "rec-bet";
+        bet.dataset.rec = String((window.recTickets = window.recTickets || []).push({ ticket, name }) - 1);
         const price = Number(ticket.american);
         const shown = Number.isFinite(price) ? (price > 0 ? `+${price}` : String(price)) : "";
         const pct = ticket.impliedPct != null && ticket.impliedPct !== "" ? `${ticket.impliedPct}%` : "";

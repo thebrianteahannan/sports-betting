@@ -115,7 +115,7 @@ function askBet(kind, kept) {
   focusAsk(box);
 }
 
-const ASK_IDEAS = ["−150 to +100", "This week", "Most winning strategies", "Bets from those strategies", "Near −350", "Highest chance today", "3 legs near −200", "5 legs near −200"];
+const ASK_IDEAS = ["−150 to +100 window", "Highest chance parlay today", "−400 to −700 legs, near −180", "Four yardage legs near 85% each", "Four yardage legs near +250", "Five near 90% each", "Four near 80% each", "3 legs, different days, near −200", "5 legs, different days, near −200", "3 legs, different days, near −350"];
 
 function paintIdeas(row) {
   const wrap = document.createElement("div");
@@ -125,7 +125,7 @@ function paintIdeas(row) {
     button.type = "button";
     button.className = "ask-idea";
     button.textContent = label;
-    if (index >= 5) button.hidden = true;
+    if (index >= 5 && innerWidth < 721) button.hidden = true;
     button.addEventListener("click", () => {
       const field = document.getElementById("bet-ask");
       if (field) field.value = label;
@@ -136,6 +136,7 @@ function paintIdeas(row) {
   const more = document.createElement("button");
   more.type = "button";
   more.className = "ask-rest";
+  more.hidden = innerWidth >= 721;
   more.textContent = "Show more";
   more.addEventListener("click", () => {
     wrap.querySelectorAll(".ask-idea[hidden]").forEach((button) => { button.hidden = false; });
@@ -271,7 +272,7 @@ function askCardKeys(card) {
 
 function namedCard(question) {
   const asked = foldText(question);
-  const hits = [["3 legs near", "week"], ["5 legs near", "week5"], ["350", "safe"], ["150", "best"], ["highest chance", "today"]].filter(([key]) => asked.includes(key));
+  const hits = [["3 legs, different days, near −350", "safe"], ["5 legs, different days, near −200", "week5"], ["3 legs, different days, near −200", "week"], ["five near 90", "hits"], ["four near 80", "hits"], ["85", "four"], ["250", "plus"], ["180", "chalk"], ["150", "best"], ["highest chance", "today"]].filter(([key]) => asked.includes(foldText(key)));
   return hits.length === 1 ? document.getElementById(hits[0][1]) : null;
 }
 
@@ -485,6 +486,7 @@ document.getElementById("desk-back").addEventListener("click", (event) => {
   event.stopImmediatePropagation();
   const shot = askTrail.pop();
   if (shot) { restoreAsk(shot); return; }
+  if (window.recBack && recBack()) return;
   window.askGeneral = false;
   window.asking = false;
   window.digOn = false;
@@ -494,7 +496,4 @@ document.getElementById("desk-back").addEventListener("click", (event) => {
 }, true);
 
 document.getElementById("desk-ask").addEventListener("click", () => askBet("general"));
-document.getElementById("desk-name").addEventListener("click", () => {
-  const desk = document.getElementById("desk");
-  if (desk && desk.classList.contains("tv-full")) askBet("general");
-});
+document.getElementById("desk-name").addEventListener("click", () => { const desk = document.getElementById("desk"); if (desk && desk.classList.contains("tv-full")) askBet("general"); });

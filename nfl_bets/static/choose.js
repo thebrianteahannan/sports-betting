@@ -436,3 +436,65 @@ document.addEventListener("change", (event) => {
 window.paintChoices = paintChoices;
 window.paintEdits = paintEdits;
 paintChoices();
+
+function recLeg(leg) {
+  const odds = Number(leg.odds);
+  const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : "";
+  const parts = String(leg.label || "").split(" — ");
+  const who = esc(String(leg.player || parts[0] || "").split(/\d/)[0].trim().toLowerCase());
+  const line = esc((String(parts[0]).match(/(\d+(?:\.\d+)?)/) || [])[1] || "");
+  const word = esc((String(parts[0]).toLowerCase().match(/shots|threes|assists|rebounds|points|yards|receptions|strikeouts|hits|goals|saves|touchdowns/) || [])[0] || "");
+  const clock = leg.kickoff && typeof when === "function" && !/\d{1,2}:\d{2}\s*[AP]M/i.test(leg.label || "") ? ` · ${when(leg.kickoff)} ET` : "";
+  const more = `${parts.length > 1 ? ` — ${esc(parts.slice(1).join(" — "))}` : ""}${esc(clock)}`;
+  return `<li data-drop="${who}" data-line="${line}" data-word="${word}"><b>${esc(tag)}</b><span>${esc(parts[0])}<span class="leg-more">${more}</span></span><em>${esc(leg.pct || "")}</em></li>`;
+}
+
+function recWin(price) {
+  if (!Number.isFinite(price) || !price) return "";
+  const decimal = price > 0 ? 1 + price / 100 : 1 + 100 / Math.abs(price);
+  return `. A $5 bet would win $${(Math.round(5 * (decimal - 1) * 100) / 100).toFixed(2)}.`;
+}
+
+function openRec(index) {
+  const row = (window.recTickets || [])[Number(index)];
+  if (!row) return;
+  const ticket = row.ticket;
+  const card = document.getElementById("rec-open") || document.createElement("section");
+  card.id = "rec-open";
+  card.className = "chalk";
+  const price = Number(ticket.american);
+  const shown = Number.isFinite(price) ? (price > 0 ? `+${price}` : String(price)) : "";
+  const pct = ticket.impliedPct != null && ticket.impliedPct !== "" ? `${ticket.impliedPct}%` : "";
+  const sports = [...new Set((ticket.legs || []).map((leg) => leg.sport).filter(Boolean))].join(", ");
+  const bits = (ticket.legs || []).map((leg) => String(leg.pct || "").trim()).filter(Boolean);
+  const legsLine = bits.length > 1 ? `The legs are ${bits.slice(0, -1).join(", ")}, and ${bits[bits.length - 1]}` : "";
+  const priceLine = shown && pct ? `The parlay is ${shown}, about ${pct}${recWin(price)}` : "";
+  const copy = [sports, ticket.game, legsLine, priceLine].filter(Boolean).join(". ");
+  const stars = typeof starHtml === "function" ? starHtml(typeof cardGood === "function" ? cardGood(ticket.card, ticket) : 0, ticket.card, "", "") : "";
+  const link = typeof fanLink === "function" ? fanLink() : "";
+  card.innerHTML = `<h2>${esc(row.name || ticket.title || "This bet")}</h2><p>${esc(copy)}</p><ol>${(ticket.legs || []).map(recLeg).join("")}</ol><p class="pick-save">${link}${stars}</p>`;
+  card.hidden = false;
+  const glass = document.getElementById("desk-glass-in");
+  if (glass && !glass.contains(card)) glass.append(card);
+  const desk = document.getElementById("desk");
+  if (desk) { desk.classList.add("solo", "has-back"); desk.classList.remove("bird-on", "dug"); }
+  document.querySelectorAll(".solo-on").forEach((node) => node.classList.remove("solo-on"));
+  card.classList.add("solo-on");
+  const guide = document.getElementById("bird-guide");
+  if (guide) guide.hidden = true;
+  window.recOpen = true;
+  if (window.paintEdits) paintEdits();
+  if (glass) glass.scrollTop = 0;
+}
+window.openRec = openRec;
+function recBack() {
+  if (!window.recOpen) return false;
+  window.recOpen = false;
+  const card = document.getElementById("rec-open");
+  if (card) { card.classList.remove("solo-on"); card.hidden = true; }
+  const desk = document.getElementById("desk");
+  if (desk) desk.classList.remove("solo", "dug");
+  if (window.birdMenu) birdMenu("bets");
+  return true;
+}
+window.recBack = recBack;
