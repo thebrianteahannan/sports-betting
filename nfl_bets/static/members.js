@@ -335,11 +335,13 @@ function birdMenu(kind) {
   expand.type = "button";
   expand.className = "rec-expand";
   expand.textContent = "Expand all";
-  expand.addEventListener("click", () => { const open = expand.dataset.open !== "1"; board.querySelectorAll(".rec-bet").forEach((bet) => bet.classList.toggle("open", open)); expand.dataset.open = open ? "1" : ""; expand.textContent = open ? "Collapse all" : "Expand all"; });
+  expand.addEventListener("click", () => { const open = expand.dataset.open !== "1"; board.querySelectorAll(".rec-strategy, .rec-bet").forEach((item) => item.classList.toggle("open", open)); expand.dataset.open = open ? "1" : ""; expand.textContent = open ? "Collapse all" : "Expand all"; });
   board.append(expand);
   board.addEventListener("click", (event) => {
     const bet = event.target.closest(".rec-bet");
-    if (bet) bet.classList.toggle("open");
+    if (bet) { bet.classList.toggle("open"); return; }
+    const strategy = event.target.closest("h3");
+    if (strategy) strategy.parentElement.classList.toggle("open");
   });
   const strategies = Object.entries(CARD_NAMES).flatMap(([id, name]) => (
     id === "hits" ? [["hits", "Five near 90% each", "five"], ["hits", "Four near 80% each", "four"]] : [[id, name, ""]]
