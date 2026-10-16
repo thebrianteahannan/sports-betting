@@ -229,6 +229,7 @@ bindOpenFilters();
 const recFilter = { when: "", sports: [], game: "", kind: "", legs: "", aim: "" };
 let recFiltersOpen = false;
 let recAllOpen = false;
+let recPast = false;
 const REC_KINDS = [["yards", "Yards"], ["points", "Points"], ["assists", "Assists"], ["shots", "Shots"], ["strikeouts", "Strikeouts"], ["hits", "Hits"]];
 const REC_PAY = [["top", "1 safest"], ["safe", "Safe"], ["good", "Good"], ["payout", "Best payout"]];
 
@@ -239,11 +240,13 @@ function recDayKey(ms) {
 function recSpan(ticket) {
   const now = Date.now();
   const today = recDayKey(now);
-  const end = recDayKey(now + 14 * 86400000);
-  const days = [...new Set([ticket.kickoff, ...(ticket.legs || []).map((leg) => leg.kickoff)].map((iso) => Date.parse(iso || "")).filter((ms) => ms > now).map(recDayKey))];
+  const past = !!window.recPast;
+  const end = recDayKey(now + (past ? -14 : 14) * 86400000);
+  const source = past && ticket.settledAt ? [ticket.settledAt] : [ticket.kickoff, ...(ticket.legs || []).map((leg) => leg.kickoff)];
+  const days = [...new Set(source.map((iso) => Date.parse(iso || "")).filter((ms) => Number.isFinite(ms) && (past ? ms <= now : ms > now)).map(recDayKey))];
   if (!days.length) return ["weekThree", "weekFive", "weekSafe"].includes(ticket.card) ? "week" : "today";
   if (days.every((day) => day === today)) return "today";
-  return days.every((day) => day <= end) ? "week" : "later";
+  return days.every((day) => past ? day >= end : day <= end) ? "week" : "later";
 }
 
 function recLeagues(ticket) {
@@ -338,7 +341,7 @@ function paintRecFilters(board) {
   bar.className = "rec-filters";
   if (recFiltersOpen) bar.classList.add("open");
   bar.innerHTML = [
-    `<div class="rec-head"><button type="button" class="rec-fold${on ? " on" : ""}" data-rec="fold">Filters</button><button type="button" class="rec-expand" data-rec="expand">${recAllOpen ? "Collapse all" : "Expand all"}</button></div>`,
+    `<div class="rec-head"><span class="rec-tools"><button type="button" class="rec-fold${on ? " on" : ""}" data-rec="fold">Filters</button><button type="button" class="rec-past${recPast ? " on" : ""}" data-rec="past">History</button></span><button type="button" class="rec-expand" data-rec="expand">${recAllOpen ? "Collapse all" : "Expand all"}</button></div>`,
     line("When", recChip("when", "today", "Today", recFilter.when === "today") + recChip("when", "week", "This week", recFilter.when === "week")),
     line("League", leagues.map((name) => recChip("sports", name, name, recFilter.sports.includes(name))).join("")),
     line("Game", games.length ? `<select data-rec="game"><option value="">Any game</option>${games.map((game) => `<option value="${esc(game)}"${game === recFilter.game ? " selected" : ""}>${esc(game)}</option>`).join("")}</select>` : ""),
@@ -356,6 +359,7 @@ function paintRecFilters(board) {
     const button = event.target.closest("[data-rec]");
     if (!button || button.dataset.rec === "game") return;
     if (button.dataset.rec === "fold") { recFiltersOpen = !recFiltersOpen; bar.classList.toggle("open", recFiltersOpen); return; }
+    if (button.dataset.rec === "past") { recPast = !recPast; window.recPast = recPast; recAllOpen = false; if (window.birdMenu) birdMenu("bets"); return; }
     if (button.dataset.rec === "expand") { recAllOpen = !recAllOpen; board.querySelectorAll(".rec-strategy, .rec-bet").forEach((item) => item.classList.toggle("open", recAllOpen)); button.textContent = recAllOpen ? "Collapse all" : "Expand all"; return; }
     if (button.dataset.rec === "clear") {
       recFilter.when = "";

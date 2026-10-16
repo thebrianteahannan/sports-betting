@@ -322,7 +322,7 @@ function birdMenu(kind) {
   if (kind !== "bets") return;
   window.asking = true;
   if (window.birdQuiet) birdQuiet();
-  birdSay("Recommended bets, by strategy.", []);
+  birdSay(window.recPast ? "Finished bets, by strategy." : "Recommended bets, by strategy.", []);
   const row = document.getElementById("bird-picks");
   if (!row) return;
   const board = document.createElement("div");
@@ -330,7 +330,7 @@ function birdMenu(kind) {
   const archive = ((window.state && window.state.board && window.state.board.archive) || []);
   const now = Date.now();
   const day = 86400000;
-  const live = (ticket) => ![ticket.kickoff, ...(ticket.legs || []).map((leg) => leg.kickoff)].some((iso) => Number.isFinite(Date.parse(iso || "")) && Date.parse(iso || "") <= now);
+  const past = !!window.recPast;
   board.addEventListener("click", (event) => {
     const bet = event.target.closest(".rec-bet");
     if (bet) { if (window.openRec) openRec(bet.dataset.rec); return; }
@@ -355,20 +355,23 @@ function birdMenu(kind) {
     history.textContent = [day, day * 7, day * 30, day * 365].map((span) => recPct(done, now - span)).join(", ");
     block.append(history);
     const seen = new Set();
-    archive.filter((ticket) => ticket.card === id && (!part || hitsPart(ticket) === part) && (!ticket.result || ticket.result === "open") && ticket.legs && ticket.legs.length && live(ticket))
-      .sort((a, b) => String(b.offeredAt || "").localeCompare(String(a.offeredAt || "")))
+    const live = (ticket) => ![ticket.kickoff, ...(ticket.legs || []).map((leg) => leg.kickoff)].some((iso) => Number.isFinite(Date.parse(iso || "")) && Date.parse(iso || "") <= now);
+    archive.filter((ticket) => ticket.card === id && (!part || hitsPart(ticket) === part) && ticket.legs && ticket.legs.length && (past ? (ticket.result === "won" || ticket.result === "lost") : ((!ticket.result || ticket.result === "open") && live(ticket))))
+      .sort((a, b) => String((past ? b.settledAt : b.offeredAt) || "").localeCompare(String((past ? a.settledAt : a.offeredAt) || "")))
       .forEach((ticket) => {
-        const key = `${ticket.american}|${ticket.legs.map((leg) => leg.label).join("|")}`;
+        const key = `${past ? ticket.settledAt : ticket.american}|${ticket.result || ""}|${ticket.legs.map((leg) => leg.label).join("|")}`;
         if (seen.has(key)) return;
         seen.add(key);
         const bet = document.createElement("div");
         bet.className = "rec-bet";
+        if (ticket.result === "won" || ticket.result === "lost") bet.classList.add(ticket.result);
         bet.dataset.rec = String((window.recTickets = window.recTickets || []).push({ ticket, name }) - 1);
         const price = Number(ticket.american);
         const shown = Number.isFinite(price) ? (price > 0 ? `+${price}` : String(price)) : "";
         const pct = ticket.impliedPct != null && ticket.impliedPct !== "" ? `${ticket.impliedPct}%` : "";
+        const mark = ticket.result === "won" ? "Won" : ticket.result === "lost" ? "Lost" : "";
         const head = document.createElement("b");
-        head.textContent = [shown, pct].filter(Boolean).join(" · ") || name;
+        head.textContent = [shown, pct, mark].filter(Boolean).join(" · ") || name;
         const gist = document.createElement("p");
         gist.className = "rec-gist";
         gist.textContent = ticket.legs.map((leg) => String(leg.label || "").split(/,|\s+—\s+/)[0].trim()).filter(Boolean).join(", ");
@@ -378,7 +381,7 @@ function birdMenu(kind) {
       });
     if (!block.querySelector(".rec-bet")) {
       const note = document.createElement("p");
-      note.textContent = "None you can place right now.";
+      note.textContent = past ? "None finished yet." : "None you can place right now.";
       block.append(note);
       empty.push(block);
     } else filled.push(block);

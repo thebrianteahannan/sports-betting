@@ -111,6 +111,9 @@
 #bird-picks .rec-filters { display: flex; flex-direction: column; gap: 0.45rem; margin: 0 0 0.15rem; padding: 0.4rem 0.55rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.92); }
 #bird-picks .rec-filters:not(.open) .row { display: none; }
 #bird-picks .rec-filters .rec-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+#bird-picks .rec-filters .rec-tools { display: flex; align-items: center; gap: 0.35rem; }
+#bird-picks .rec-bet.won b { color: #3dff6e; }
+#bird-picks .rec-bet.lost b { color: #ffb4b4; }
 #bird-picks .rec-filters .rec-fold::after { content: " +"; color: #3dff6e; }
 #bird-picks .rec-filters.open .rec-fold::after { content: " –"; }
 #bird-picks .rec-filters .rec-fold.on::after { color: #04140c; }
