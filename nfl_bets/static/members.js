@@ -340,8 +340,8 @@ function birdMenu(kind) {
   board.addEventListener("click", (event) => {
     const bet = event.target.closest(".rec-bet");
     if (bet) { bet.classList.toggle("open"); return; }
-    const strategy = event.target.closest("h3");
-    if (strategy) strategy.parentElement.classList.toggle("open");
+    const strategy = event.target.closest(".rec-strategy");
+    if (strategy) strategy.classList.toggle("open");
   });
   const strategies = Object.entries(CARD_NAMES).flatMap(([id, name]) => (
     id === "hits" ? [["hits", "Five near 90% each", "five"], ["hits", "Four near 80% each", "four"]] : [[id, name, ""]]
@@ -357,7 +357,7 @@ function birdMenu(kind) {
     const done = archive.filter((ticket) => ticket.card === id && (ticket.result === "won" || ticket.result === "lost") && (!part || hitsPart(ticket) === part));
     const history = document.createElement("p");
     history.className = "rec-history";
-    history.textContent = `Past day ${recPct(done, now - day)} · Past week ${recPct(done, now - day * 7)} · Past month ${recPct(done, now - day * 30)} · Past year ${recPct(done, now - day * 365)}`;
+    history.innerHTML = [["Past day", day], ["Past week", day * 7], ["Past month", day * 30], ["Past year", day * 365]].map(([label, span]) => `<span>${label} <b>${recPct(done, now - span)}</b></span>`).join("");
     block.append(history);
     const seen = new Set();
     archive.filter((ticket) => ticket.card === id && (!part || hitsPart(ticket) === part) && (!ticket.result || ticket.result === "open") && ticket.legs && ticket.legs.length && live(ticket))

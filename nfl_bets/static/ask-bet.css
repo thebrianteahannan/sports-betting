@@ -78,12 +78,13 @@
 #bird-line.answer strong { display: block; color: #b8ffd2; font-weight: 700; margin-bottom: 0.45rem; }
 #bird-line.answer::after { content: none; }
 #bird-picks .rec-board { flex: 1 0 100%; display: flex; flex-direction: column; gap: 0.55rem; font-family: "Outfit", sans-serif; text-align: left; }
-#bird-picks .rec-strategy h3 { margin: 0; padding: 0.45rem 0.7rem; border: 1px solid #3dff6e; border-radius: 10px; color: #3dff6e; font-size: 16px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; cursor: pointer; }
-#bird-picks .rec-strategy h3::after { content: " +"; }
+#bird-picks .rec-strategy { padding: 0.5rem 0.7rem 0.55rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.92); cursor: pointer; }
+#bird-picks .rec-strategy h3 { margin: 0; color: #f4fff6; font-size: 15px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; }
+#bird-picks .rec-strategy h3::after { content: " +"; color: #3dff6e; }
 #bird-picks .rec-strategy.open h3::after { content: " –"; }
-#bird-picks .rec-strategy.open h3 { margin-bottom: 0.35rem; }
-#bird-picks .rec-strategy > :not(h3) { display: none; }
-#bird-picks .rec-strategy.open > :not(h3) { display: block; }
+#bird-picks .rec-strategy > :not(h3):not(.rec-history) { display: none; }
+#bird-picks .rec-strategy.open > .rec-bet,
+#bird-picks .rec-strategy.open > p:not(.rec-history) { display: block; }
 #bird-picks .rec-strategy p { margin: 0; color: #9aa8b5; font-size: 14px; }
 #bird-picks .rec-bet { margin: 0 0 0.45rem; padding: 0.55rem 0.7rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.72); cursor: pointer; }
 #bird-picks .rec-bet b { display: block; color: #f4fff6; font-size: 16px; }
@@ -91,7 +92,9 @@
 #bird-picks .rec-bet.open b::after { content: " –"; }
 #bird-picks .rec-bet span { display: none; margin-top: 0.2rem; color: #d5deea; font-size: 14px; line-height: 1.3; }
 #bird-picks .rec-bet.open span { display: block; }
-#bird-picks .rec-history { margin: 0 0 0.45rem; color: #d5deea; font-size: 13px; line-height: 1.35; }
+#bird-picks .rec-history { display: grid; grid-template-columns: 1fr 1fr; gap: 0.12rem 0.75rem; margin: 0.35rem 0 0; color: #c5d0dc; font-size: 13px; line-height: 1.3; }
+#bird-picks .rec-history b { color: #3dff6e; font-weight: 700; }
+#bird-picks .rec-strategy.open .rec-history { margin-bottom: 0.5rem; }
 #bird-picks button.rec-expand { align-self: flex-start; width: auto; margin: 0; padding: 0.35rem 0.75rem; border: 1px solid #3dff6e; background: transparent; color: #3dff6e; box-shadow: none; font-family: "Outfit", sans-serif; font-size: 14px; }
 #bird-line.build strong {
   display: block; margin-bottom: 0.35rem;
