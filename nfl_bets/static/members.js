@@ -301,6 +301,23 @@ async function saveCalledName(raw) {
   else birdAskName();
 }
 
+function hitsPart(ticket) {
+  const mark = String(ticket.title || "").toLowerCase().split("·").pop();
+  return mark.includes("five near 90") ? "five" : mark.includes("four near 80") ? "four" : ((ticket.legs || []).length >= 5 ? "five" : "four");
+}
+
+function recPct(rows, since) {
+  const seen = new Map();
+  rows.forEach((ticket) => {
+    const when = Date.parse(ticket.settledAt || ticket.offeredAt || "");
+    const key = (ticket.legs || []).map((leg) => leg.label).join("|");
+    const prior = seen.get(key);
+    if (key && Number.isFinite(when) && when >= since && (!prior || when >= prior.when)) seen.set(key, { when, won: ticket.result === "won" });
+  });
+  const list = [...seen.values()];
+  return list.length ? `${((list.filter((row) => row.won).length / list.length) * 100).toFixed(1)}%` : "—";
+}
+
 function birdMenu(kind) {
   if (kind !== "bets") return;
   window.asking = true;
@@ -312,9 +329,17 @@ function birdMenu(kind) {
   board.className = "rec-board";
   const archive = ((window.state && window.state.board && window.state.board.archive) || []);
   const now = Date.now();
-  const live = (ticket) => ![ticket.kickoff, ...(ticket.legs || []).map((leg) => leg.kickoff)].some((iso) => {
-    const stamp = Date.parse(iso || "");
-    return Number.isFinite(stamp) && stamp <= now;
+  const day = 86400000;
+  const live = (ticket) => ![ticket.kickoff, ...(ticket.legs || []).map((leg) => leg.kickoff)].some((iso) => Number.isFinite(Date.parse(iso || "")) && Date.parse(iso || "") <= now);
+  const expand = document.createElement("button");
+  expand.type = "button";
+  expand.className = "rec-expand";
+  expand.textContent = "Expand all";
+  expand.addEventListener("click", () => { const open = expand.dataset.open !== "1"; board.querySelectorAll(".rec-bet").forEach((bet) => bet.classList.toggle("open", open)); expand.dataset.open = open ? "1" : ""; expand.textContent = open ? "Collapse all" : "Expand all"; });
+  board.append(expand);
+  board.addEventListener("click", (event) => {
+    const bet = event.target.closest(".rec-bet");
+    if (bet) bet.classList.toggle("open");
   });
   const strategies = Object.entries(CARD_NAMES).flatMap(([id, name]) => (
     id === "hits" ? [["hits", "Five near 90% each", "five"], ["hits", "Four near 80% each", "four"]] : [[id, name, ""]]
@@ -327,8 +352,12 @@ function birdMenu(kind) {
     const heading = document.createElement("h3");
     heading.textContent = name;
     block.append(heading);
+    const done = archive.filter((ticket) => ticket.card === id && (ticket.result === "won" || ticket.result === "lost") && (!part || hitsPart(ticket) === part));
+    const history = document.createElement("p");
+    history.className = "rec-history";
+    history.textContent = `Past day ${recPct(done, now - day)} · Past week ${recPct(done, now - day * 7)} · Past month ${recPct(done, now - day * 30)} · Past year ${recPct(done, now - day * 365)}`;
+    block.append(history);
     const seen = new Set();
-    const hitsPart = (ticket) => { const mark = String(ticket.title || "").toLowerCase().split("·").pop(); return mark.includes("five near 90") ? "five" : mark.includes("four near 80") ? "four" : ((ticket.legs || []).length >= 5 ? "five" : "four"); };
     archive.filter((ticket) => ticket.card === id && (!part || hitsPart(ticket) === part) && (!ticket.result || ticket.result === "open") && ticket.legs && ticket.legs.length && live(ticket))
       .sort((a, b) => String(b.offeredAt || "").localeCompare(String(a.offeredAt || "")))
       .forEach((ticket) => {

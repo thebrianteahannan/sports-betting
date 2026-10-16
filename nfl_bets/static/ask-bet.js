@@ -179,9 +179,11 @@ function packOne(card) {
   };
 }
 
+function gone(id) { const map = { week: "weekThree", week5: "weekFive", safe: "weekSafe", best: "band", today: "todayBet", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; const data = window.state && window.state.board && window.state.board[map[id] || ""]; const rows = data ? [...(data.legs || []), ...((data.groups || []).flatMap((group) => group.legs || []))] : []; return rows.some((leg) => Number.isFinite(Date.parse(leg.kickoff || "")) && Date.parse(leg.kickoff) <= Date.now()) || !!(data && Number.isFinite(Date.parse(data.kickoff || "")) && Date.parse(data.kickoff) <= Date.now()); }
+
 function cardPack(question) {
   const named = namedCard(question);
-  if (named && !named.querySelector("ol li") && window.render) { const was = window.asking; window.asking = false; window.keepStarted = true; window.render(); window.keepStarted = false; window.asking = was; }
+  if (named && gone(named.id)) return { closed: true };
   if (named && named.querySelector("ol li")) return packOne(named);
   const card = window.digCard;
   if (!window.askGeneral && card && card.isConnected && card.querySelector("ol li")) return packOne(card);
@@ -217,7 +219,7 @@ async function replyBet() {
   askTrail.push({ kind: "ask", general: !!window.askGeneral, question, card: (!window.askGeneral && window.digCard && window.digCard.id) || "" });
   if (askTrail.length > 8) askTrail.shift();
   const card = cardPack(question);
-  if (!card) { birdSay("I don't have a bet in front of me yet.", []); return; }
+  if (!card || card.closed) { birdSay(card && card.closed ? `You asked: ${question}. A leg already finished, so that parlay can't be started.` : "I don't have a bet in front of me yet.", []); if (card && card.closed) askAgain(); return; }
   askingBet = true;
   window.asking = true;
   const said = /[.?!]$/.test(question) ? question : `${question}.`;
@@ -275,7 +277,7 @@ function namedCard(question) {
 
 function pickedCards(question, answer) {
   const named = namedCard(question);
-  if (named && named.querySelector("ol li")) return [named];
+  if (named && named.querySelector("ol li") && !gone(named.id)) return [named];
   const asked = foldText(question);
   const said = foldText(answer);
   const lesson = /\b(you need to|when picking|to pick a bet|look at the recommended|decide which|such as)\b/.test(said) && !/\b(3|three|5|five) leg is\b|\bis a parlay of\b/.test(said);
@@ -353,8 +355,6 @@ function betChoice(card) {
 }
 
 function showAnswer(question, answer) {
-  const said = foldText(answer);
-  if (/\b(3|three|5|five) leg is\b|\bis a parlay of\b/.test(said) && window.render) { const wasAsking = window.asking; window.asking = false; window.keepStarted = true; window.render(); window.keepStarted = false; window.asking = wasAsking; }
   const cards = pickedCards(question, answer);
   if (window.legStarted && window.state && window.state.board) { const map = { best: "band", today: "todayBet", week: "weekThree", week5: "weekFive", safe: "weekSafe", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; Object.keys(map).forEach((id) => { const card = document.getElementById(id); const data = window.state.board[map[id]]; if (card && data && window.legStarted(data)) card.hidden = true; }); }
   const text = String(answer || "").trim();
@@ -464,9 +464,9 @@ document.getElementById("desk-full").addEventListener("click", () => {
 document.getElementById("desk-glass").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
   if (!desk || desk.classList.contains("tv-full")) return;
-  event.preventDefault();
-  event.stopPropagation();
-  document.getElementById("desk-full").click();
+  const button = event.target.closest("button");
+  event.preventDefault(); event.stopPropagation(); document.getElementById("desk-full").click();
+  if (button && desk.contains(button)) setTimeout(() => button.click(), 0);
 }, true);
 window.paintDig = paintDig;
 
