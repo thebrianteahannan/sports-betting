@@ -127,9 +127,9 @@ body:not(.needs-member) #gate { display: none; }
 .admin-table button { padding: 0.2rem 0.55rem; margin-left: 0.35rem; }
 .report-card { margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px solid var(--line); }
 .report-card p { margin: 0.25rem 0; }
-#admin-built .built-leg { margin: 0.55rem 0 0; padding-top: 0.45rem; border-top: 1px solid rgba(193, 39, 45, 0.28); line-height: 1.35; max-width: none; }
-#admin-built .built-leg b, #admin-built .built-leg span { display: block; }
-#admin-built .built-leg span { color: var(--muted); font-family: var(--sport); }
+#admin-built .built-leg, #admin-rates .built-leg { margin: 0.55rem 0 0; padding-top: 0.45rem; border-top: 1px solid rgba(193, 39, 45, 0.28); line-height: 1.35; max-width: none; }
+#admin-built .built-leg b, #admin-built .built-leg span, #admin-rates .built-leg b, #admin-rates .built-leg span { display: block; }
+#admin-built .built-leg span, #admin-rates .built-leg span { color: var(--muted); font-family: var(--sport); }
 .report-shot { display: block; max-width: min(420px, 100%); margin-top: 0.45rem; border-radius: 10px; }
 #gate .aim,
 #gate .choice-line { color: var(--ink); }

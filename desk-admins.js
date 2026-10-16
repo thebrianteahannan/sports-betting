@@ -127,6 +127,57 @@ function createAdmins(readKey, writeKey) {
     }));
   }
 
+  function legText(ticket, group) {
+    if (!ticket) return [];
+    const named = group && (ticket.groups || []).find((item) => item.title === group);
+    const rows = named ? (named.legs || []) : (ticket.legs || []).length ? ticket.legs : (ticket.groups || []).flatMap((item) => item.legs || []);
+    return rows.map((leg) => String(leg.label || "")).filter(Boolean).slice(0, 10);
+  }
+
+  function ticketAt(tickets, detail, at) {
+    if (detail.id) {
+      const hit = tickets.find((row) => String(row.id) === String(detail.id));
+      if (hit) return hit;
+    }
+    const when = Date.parse(at || "");
+    if (!detail.card || !Number.isFinite(when)) return null;
+    let best = null;
+    let bestAt = -Infinity;
+    tickets.forEach((row) => {
+      if (row.card !== detail.card) return;
+      const offered = Date.parse(row.offeredAt || "");
+      if (!Number.isFinite(offered) || offered > when || offered < bestAt) return;
+      best = row;
+      bestAt = offered;
+    });
+    return best;
+  }
+
+  function ratesOf(data, tickets) {
+    const names = {};
+    data.users.forEach((row) => { names[row.id] = row.name || "Member"; });
+    const seen = new Set();
+    const out = [];
+    data.activity.forEach((row) => {
+      if (out.length >= 60 || row.kind !== "rate" || !row.detail || !(Number(row.detail.stars) > 0)) return;
+      const detail = row.detail;
+      const ticket = detail.built ? { title: detail.title, american: detail.american, legs: detail.legs || [] } : ticketAt(tickets, detail, row.at);
+      const lines = detail.built ? (detail.legs || []).map((leg) => String(leg.label || "")).filter(Boolean) : legText(ticket, detail.group);
+      const key = `${row.userId}|${detail.stars}|${lines.join("|")}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push({
+        at: row.at || "",
+        name: names[row.userId] || "Member",
+        stars: Number(detail.stars) || 0,
+        title: CARD_SAY[detail.card] || detail.title || (ticket && ticket.title) || "Bet",
+        american: ticket && ticket.american != null ? ticket.american : detail.american,
+        lines,
+      });
+    });
+    return out;
+  }
+
   let tasteChain = Promise.resolve();
   async function saveTaste(user, kind, detail) {
       if (kind === "full") {
@@ -162,7 +213,9 @@ function createAdmins(readKey, writeKey) {
   return {
     async adminList() {
       const data = await load();
-      return { users: rows(data.users), asks: asksOf(data), habits: habitsOf(data), built: builtOf(data) };
+      const archived = (await readKey("bets/archive.json")) || {};
+      const tickets = Array.isArray(archived.tickets) ? archived.tickets : [];
+      return { users: rows(data.users), asks: asksOf(data), habits: habitsOf(data), built: builtOf(data), rates: ratesOf(data, tickets) };
     },
     noteTaste(user, kind, detail) {
       const run = tasteChain.then(() => saveTaste(user, kind, detail));

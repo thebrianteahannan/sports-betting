@@ -30,7 +30,7 @@ function paintChoices() {
     choiceButton(sport, choice.sports.includes(sport), "data-sport", sport)
   )).join("");
   legs.innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
-    choiceButton(count === 1 ? "1 leg" : `${count} legs`, choice.legs === count, "data-legs", String(count))
+    choiceButton(count === 1 ? "1 pick" : `${count} picks`, choice.legs === count, "data-legs", String(count))
   )).join("");
   const aim = document.getElementById("choice-aim");
   const go = document.getElementById("choice-go");
@@ -213,9 +213,9 @@ function askAnswer(token) {
 function askButtons(step) {
   if (step === "when") {
     const lead = choice.aim === "safe"
-      ? "Safe aims at −200, so a $5 bet wins about $2.50. "
+      ? "Five dollars wins about $2.50. "
       : choice.aim === "payout"
-        ? "The long price misses more often. "
+        ? "A bigger payout loses more often. "
         : "";
     return [`${lead}Today, or this week?`, [["ask", "Today", "when:today"], ["ask", "This week", "when:week"]]];
   }
@@ -230,13 +230,13 @@ function askButtons(step) {
   if (step === "kind") {
     const opts = [...document.querySelectorAll("#choice-kind option")];
     if (opts.length < 2) return null;
-    return ["Any player prop, or one stat?", opts.map((opt) => ["ask", opt.textContent, `kind:${opt.value}`])];
+    return ["Any stat, or one of these?", opts.map((opt) => ["ask", opt.textContent, `kind:${opt.value}`])];
   }
   if (step === "legs") {
-    return ["How many legs?", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => ["ask", n === 1 ? "1 leg" : `${n} legs`, `legs:${n}`])];
+    return ["How many picks?", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => ["ask", n === 1 ? "1 pick" : `${n} picks`, `legs:${n}`])];
   }
   if (step === "aim") {
-    return ["How should I aim the price? 1 safest is the highest chance and stays the same. Safe aims at −200. Good aims at −100. Best payout is the longest price, so it misses more often.", [["ask", "1 safest", "aim:top"], ["ask", "Safe", "aim:safe"], ["ask", "Good", "aim:good"], ["ask", "Best payout", "aim:payout"]]];
+    return ["How do you want this to pay? Safest wins the most. On Safe, five dollars wins about $2.50. Good wins about as often as it loses. Best payout pays the most, and it loses more often.", [["ask", "1 safest", "aim:top"], ["ask", "Safe", "aim:safe"], ["ask", "Good", "aim:good"], ["ask", "Best payout", "aim:payout"]]];
   }
   return null;
 }
@@ -373,7 +373,7 @@ function armCard(card, on) {
   button.type = "button";
   button.className = "leg-swap";
   button.disabled = true;
-  button.textContent = "Similar bet, without the checked legs";
+  button.textContent = "Similar bet, without the ones you checked";
   const ol = card.querySelector(":scope > ol");
   if (ol) ol.insertAdjacentElement("beforebegin", button);
 }

@@ -365,13 +365,11 @@ function showTab(name) {
   const titles = { today: "Today", week: "Week", build: "Build a bet", open: "Our Bets", history: "History", profile: "Profile", how: "How we pick", laws: "State rules" };
   $("page-title").textContent = titles[name] || titles.today;
   document.body.classList.add("day-board");
-  ["today", "week", "build", "open", "history", "profile", "how", "laws"].forEach((id) => {
+  ["today", "week", "build", "open", "history", "profile", "how"].forEach((id) => {
     $(`pane-${id}`).hidden = id !== name;
     document.querySelectorAll(`[data-tab="${id}"]`).forEach((tab) => tab.classList.toggle("on", id === name));
   });
   if (name === "history") showHistory(historyName());
-  const dock = $("desk-dock");
-  if (dock && $("who") && $("who").parentElement !== dock) dock.append($("who"));
   if (window.deskFrame) window.deskFrame(name);
   const historyTab = $("desk-history");
   if (historyTab && $("tab-history")) historyTab.textContent = $("tab-history").textContent;

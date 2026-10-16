@@ -25,6 +25,7 @@ const { createAdmins } = require("./desk-admins");
 const { createDocs } = require("./desk-docs"); const { chooseBet } = require("./choose-api");
 const { askBet, birdModel } = require("./bet-ask");
 const { createPull } = require("./desk-pull");
+const { createNotes } = require("./desk-notes");
 const ROOT = __dirname;
 loadEnv(path.join(ROOT, ".env"));
 const sendDoc = createDocs(ROOT);
@@ -102,6 +103,7 @@ async function archive() {
 const { ignoreView, sweepIgnored } = createIgnore(readKey, writeKey, archive);
 const pullLive = createPull(readKey, writeKey, ROOT);
 const { adminList, setMemberAdmin, saveAsk, noteTaste, saveRated } = createAdmins(readKey, writeKey);
+const { list: noteList, save: noteSave } = createNotes(readKey, writeKey);
 
 async function picks() {
   const data = (await readKey("bets/picks.json")) || { picks: [] };
@@ -398,6 +400,7 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, await adminList());
       return;
     }
+    if (req.method === "GET" && url.pathname === "/api/notes") { sendJson(res, await noteList()); return; }
     if (req.method === "GET" && url.pathname === "/api/admin/ignore") {
       const user = await memberFrom(req);
       if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
@@ -521,6 +524,12 @@ const server = http.createServer(async (req, res) => {
         const user = await memberFrom(req);
         if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
         sendJson(res, await sweepIgnored());
+        return;
+      }
+      if (url.pathname === "/api/admin/notes") {
+        const user = await memberFrom(req);
+        if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
+        sendJson(res, await noteSave(body));
         return;
       }
       if (url.pathname === "/api/admin/role") {

@@ -9,7 +9,7 @@ function loginWhen(stamp) {
 }
 
 function showAdminTab(name) {
-  ["members", "habits", "ignore", "strategy", "docs", "built", "asks", "card"].forEach((id) => {
+  ["members", "rates", "habits", "ignore", "strategy", "docs", "built", "asks", "card", "notes", "laws"].forEach((id) => {
     const pane = document.getElementById(`admin-${id}`);
     if (pane) pane.hidden = id !== name;
     const button = document.querySelector(`[data-admin-tab="${id}"]`);
@@ -52,6 +52,23 @@ function paintBuilt(payload) {
   }).join("")}`;
 }
 
+function paintRates(payload) {
+  const list = document.getElementById("admin-rates");
+  if (!list) return;
+  const rows = (payload && payload.rates) || [];
+  if (!rows.length) {
+    list.innerHTML = "<p>No ratings yet.</p>";
+    return;
+  }
+  list.innerHTML = rows.map((row) => {
+    const clock = row.at && typeof when === "function" ? `${when(row.at)} ET` : "";
+    const price = row.american == null || row.american === "" ? "" : ` ${typeof american === "function" ? american(row.american) : row.american}`;
+    const lines = (row.lines || []).map(builtLine).join("") || "<p>That bet is no longer on the record.</p>";
+    const stars = `${row.stars} star${row.stars === 1 ? "" : "s"}`;
+    return `<article class="report-card"><p><b>${esc(row.name || "Member")}</b> · ${esc(stars)} · ${esc(clock)}</p><p>${esc(row.title || "Bet")}${esc(String(price))}</p>${lines}</article>`;
+  }).join("");
+}
+
 function paintAsks(payload) {
   const list = document.getElementById("admin-ask-list");
   if (!list || !payload || !Array.isArray(payload.asks)) return;
@@ -79,6 +96,7 @@ function paintHabits(payload) {
 function paintAdmin(payload) {
   paintRefresh();
   paintBuilt(payload);
+  paintRates(payload);
   paintAsks(payload);
   paintHabits(payload);
   const list = document.getElementById("admin-users");
@@ -184,7 +202,9 @@ function bindAdmin() {
     const button = event.target.closest("[data-admin-tab]");
     if (button) {
       showAdminTab(button.dataset.adminTab);
-      if (button.dataset.adminTab === "built" || button.dataset.adminTab === "asks" || button.dataset.adminTab === "habits") loadAdmin();
+      if (button.dataset.adminTab === "built" || button.dataset.adminTab === "asks" || button.dataset.adminTab === "habits" || button.dataset.adminTab === "rates") loadAdmin();
+      if (button.dataset.adminTab === "notes") loadNotes().catch((error) => { const msg = document.getElementById("note-msg"); if (msg) msg.textContent = String(error.message || error); });
+      if (button.dataset.adminTab === "laws" && window.paintLaws) window.paintLaws();
       if (button.dataset.adminTab === "card" && window.fillShareCards) window.fillShareCards();
     }
   });
@@ -225,9 +245,54 @@ async function pullCard(id, button) {
   if (window.render) window.render();
 }
 
+function paintNotes(payload) {
+  const list = document.getElementById("note-list");
+  if (!list) return;
+  const rows = (payload && payload.notes) || [];
+  list._notes = rows;
+  if (window.applyNotes) window.applyNotes(rows);
+  list.innerHTML = rows.length ? rows.map((row) => `<article class="report-card"><p>${esc(row.text)}</p><p class="pick-save"><button type="button" data-note-edit="${esc(row.id)}">Edit</button><button type="button" data-note-drop="${esc(row.id)}">Delete</button></p></article>`).join("") : "<p>No lines yet.</p>";
+}
+
+async function loadNotes() {
+  const response = await fetch("/api/notes", { cache: "no-store" });
+  paintNotes(await response.json());
+}
+
+async function saveNote(body) {
+  const response = await fetch("/api/admin/notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const payload = await response.json();
+  const msg = document.getElementById("note-msg");
+  if (!response.ok) { if (msg) msg.textContent = payload.error || "That line did not save."; return; }
+  if (msg) msg.textContent = "";
+  const field = document.getElementById("note-new");
+  if (field && body.op === "add") field.value = "";
+  paintNotes(payload);
+}
+
 document.body.addEventListener("click", (event) => {
   const pull = event.target.closest("[data-pull]");
   if (pull) pullCard(pull.dataset.pull, pull);
+  const edit = event.target.closest("[data-note-edit]");
+  const drop = event.target.closest("[data-note-drop]");
+  const save = event.target.closest("[data-note-save]");
+  if (edit) {
+    const list = document.getElementById("note-list");
+    const row = ((list && list._notes) || []).find((item) => item.id === edit.dataset.noteEdit);
+    const card = edit.closest("article");
+    if (row && card) card.innerHTML = `<p class="pick-save"><input data-note-field="${esc(row.id)}" maxlength="180" value="${esc(row.text)}"><button type="button" data-note-save="${esc(row.id)}">Save</button></p>`;
+  }
+  if (drop) saveNote({ op: "delete", id: drop.dataset.noteDrop }).catch((error) => { const msg = document.getElementById("note-msg"); if (msg) msg.textContent = String(error.message || error); });
+  if (save) {
+    const field = document.querySelector(`[data-note-field="${save.dataset.noteSave}"]`);
+    saveNote({ op: "edit", id: save.dataset.noteSave, text: field ? field.value : "" }).catch((error) => { const msg = document.getElementById("note-msg"); if (msg) msg.textContent = String(error.message || error); });
+  }
+});
+
+const noteAdd = document.getElementById("note-add");
+if (noteAdd) noteAdd.addEventListener("click", () => {
+  const field = document.getElementById("note-new");
+  saveNote({ op: "add", text: field ? field.value : "" }).catch((error) => { const msg = document.getElementById("note-msg"); if (msg) msg.textContent = String(error.message || error); });
 });
 
 window.loadAdmin = loadAdmin;

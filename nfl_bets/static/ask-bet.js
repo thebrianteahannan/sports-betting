@@ -115,21 +115,12 @@ function askBet(kind, kept) {
   focusAsk(box);
 }
 
-const ASK_IDEAS = [
-  ["−150 to +100", "What's the bet in the -150 to +100 window?"],
-  ["This week", "What's the good 3 leg and the good 5 leg this week?"],
-  ["Most winning strategies", "What are the most winning strategies?"],
-  ["Bets from those strategies", "What are the bets from the most winning strategies?"],
-  ["Near −350", "What's the super safe bet?"],
-  ["Highest chance today", "What's today's best bet?"],
-  ["3 legs near −200", "What's a good 3 leg?"],
-  ["5 legs near −200", "What's a good 5 leg?"],
-];
+const ASK_IDEAS = ["−150 to +100", "This week", "Most winning strategies", "Bets from those strategies", "Near −350", "Highest chance today", "3 legs near −200", "5 legs near −200"];
 
 function paintIdeas(row) {
   const wrap = document.createElement("div");
   wrap.className = "ask-ideas";
-  ASK_IDEAS.forEach(([label, question], index) => {
+  ASK_IDEAS.forEach((label, index) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "ask-idea";
@@ -137,7 +128,7 @@ function paintIdeas(row) {
     if (index >= 5) button.hidden = true;
     button.addEventListener("click", () => {
       const field = document.getElementById("bet-ask");
-      if (field) field.value = question;
+      if (field) field.value = label;
       replyBet();
     });
     wrap.append(button);
@@ -188,7 +179,10 @@ function packOne(card) {
   };
 }
 
-function cardPack() {
+function cardPack(question) {
+  const named = namedCard(question);
+  if (named && !named.querySelector("ol li") && window.render) { const was = window.asking; window.asking = false; window.keepStarted = true; window.render(); window.keepStarted = false; window.asking = was; }
+  if (named && named.querySelector("ol li")) return packOne(named);
   const card = window.digCard;
   if (!window.askGeneral && card && card.isConnected && card.querySelector("ol li")) return packOne(card);
   const cards = ["best", "today", "week", "week5", "safe"].map((id) => document.getElementById(id)).filter((item) => item && item.querySelector("ol li"));
@@ -222,7 +216,7 @@ async function replyBet() {
   if (!question) return;
   askTrail.push({ kind: "ask", general: !!window.askGeneral, question, card: (!window.askGeneral && window.digCard && window.digCard.id) || "" });
   if (askTrail.length > 8) askTrail.shift();
-  const card = cardPack();
+  const card = cardPack(question);
   if (!card) { birdSay("I don't have a bet in front of me yet.", []); return; }
   askingBet = true;
   window.asking = true;
@@ -273,7 +267,15 @@ function askCardKeys(card) {
   return keys.concat(extra[card.id] || []);
 }
 
+function namedCard(question) {
+  const asked = foldText(question);
+  const hits = [["3 legs near", "week"], ["5 legs near", "week5"], ["350", "safe"], ["150", "best"], ["highest chance", "today"]].filter(([key]) => asked.includes(key));
+  return hits.length === 1 ? document.getElementById(hits[0][1]) : null;
+}
+
 function pickedCards(question, answer) {
+  const named = namedCard(question);
+  if (named && named.querySelector("ol li")) return [named];
   const asked = foldText(question);
   const said = foldText(answer);
   const lesson = /\b(you need to|when picking|to pick a bet|look at the recommended|decide which|such as)\b/.test(said) && !/\b(3|three|5|five) leg is\b|\bis a parlay of\b/.test(said);
@@ -334,7 +336,7 @@ function betChoice(card) {
   if (card.id) button.dataset.card = card.id;
   button.addEventListener("click", () => {
     const raw = document.querySelector("#bird-picks .ask-raw");
-    askTrail.push({ kind: "choices", text: (document.getElementById("bird-line") || {}).textContent || "", ids: [...document.querySelectorAll(".ask-choice")].map((node) => node.dataset.card).filter(Boolean), raw: raw ? raw.textContent : "" });
+    askTrail.push({ kind: "choices", general: !!window.askGeneral, text: (document.getElementById("bird-line") || {}).textContent || "", ids: [...document.querySelectorAll(".ask-choice")].map((node) => node.dataset.card).filter(Boolean), raw: raw ? raw.textContent : "" });
     card.hidden = false;
     const glass = document.getElementById("desk-glass-in");
     if (glass && !glass.contains(card)) glass.append(card);
@@ -366,17 +368,17 @@ function showAnswer(question, answer) {
 
 function restoreAsk(shot) {
   const desk = document.getElementById("desk");
-  if (desk) { desk.classList.add("bird-on"); desk.classList.remove("solo"); }
+  if (desk) { desk.classList.add("bird-on"); desk.classList.remove("solo", "dug"); document.querySelectorAll(".solo-on").forEach((node) => node.classList.remove("solo-on")); }
   if (shot.kind === "choices") {
     window.asking = true;
     window.digOn = true;
-    window.askGeneral = false;
+    window.askGeneral = !!shot.general;
     if (desk) desk.classList.remove("dug");
     birdSay(shot.text || "Which of these do you want?", []);
-    const backLine = document.getElementById("bird-line"); if (backLine && /^You asked:/.test(shot.text || "")) backLine.classList.add("answer");
+    const backLine = document.getElementById("bird-line"); if (backLine && /^You asked:/.test(shot.text || "")) { backLine.classList.add("answer"); const q = document.createElement("strong"); q.textContent = backLine.textContent; backLine.replaceChildren(q); }
     const row = document.getElementById("bird-picks");
     if (!row) return;
-    shot.ids.forEach((id) => { const card = document.getElementById(id); if (card) row.append(betChoice(card)); });
+    shot.ids.forEach((id) => { const card = document.getElementById(id); if (!card) return; row.append(betChoice(card)); card.classList.remove("solo-on"); const map = { week: "weekThree", week5: "weekFive", safe: "weekSafe", best: "band", today: "todayBet", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; const data = window.state && window.state.board && window.state.board[map[id]]; if (data && window.legStarted && window.legStarted(data)) card.hidden = true; });
     if (shot.raw) paintRaw(shot.raw, true);
     askAgain();
     return;
@@ -459,6 +461,13 @@ document.getElementById("desk-full").addEventListener("click", () => {
   if (window.birdGreet) birdGreet();
   else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"], ["parrot", "Ask Parlay the Parrot"]]);
 });
+document.getElementById("desk-glass").addEventListener("click", (event) => {
+  const desk = document.getElementById("desk");
+  if (!desk || desk.classList.contains("tv-full")) return;
+  event.preventDefault();
+  event.stopPropagation();
+  document.getElementById("desk-full").click();
+}, true);
 window.paintDig = paintDig;
 
 const sayBird = window.birdSay;
@@ -474,7 +483,8 @@ document.getElementById("desk-back").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
   if (!desk || !desk.classList.contains("tv-full")) return;
   event.stopImmediatePropagation();
-  askTrail = [];
+  const shot = askTrail.pop();
+  if (shot) { restoreAsk(shot); return; }
   window.askGeneral = false;
   window.asking = false;
   window.digOn = false;

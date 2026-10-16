@@ -152,6 +152,7 @@ document.getElementById("banner-x").addEventListener("click", () => {
   document.getElementById("banner").hidden = true;
   document.getElementById("banner-x").hidden = true;
 });
+window.paintLaws = paintLaws;
 window.blockCollege = blockCollege;
 window.applyMember = applyMember;
 window.fillStateSelect = fillStateSelect;

@@ -8,14 +8,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/app.css?v=45"/>
+<link rel="stylesheet" href="/app.css?v=46"/>
 <link rel="stylesheet" href="/desk.css?v=57"/>
 <link rel="stylesheet" href="/states.css?v=3"/>
-<link rel="stylesheet" href="/ask-bet.css?v=45"/>
+<link rel="stylesheet" href="/ask-bet.css?v=49"/>
 <style>
 #page-title { display: none; }
-#who { gap: 0.28rem; align-items: center; }
-#hard-refresh { background: rgba(7, 9, 14, 0.78); color: #fff; border: 1px solid rgba(215, 222, 234, 0.4); box-shadow: none; }
+#who { position: fixed; right: 0.7rem; bottom: 0.7rem; z-index: 20; margin: 0; }
+#member-profile { width: 2.7rem; height: 2.7rem; padding: 0; display: grid; place-items: center; border: 1px solid rgba(61, 255, 110, 0.85); border-radius: 8px; background: rgba(4, 16, 12, 0.88); color: #3dff6e; box-shadow: 0 0 14px rgba(61, 255, 110, 0.35); }
 #admin-tabs { width: 100%; max-width: 100%; margin-left: 0; margin-right: 0; }
 #profile-admin, #activity, #pane-profile { max-width: 100%; min-width: 0; }
 @media (max-width: 760px) {
@@ -85,21 +85,14 @@ body.day-board #parrot-load[hidden] { display: none; }
   </div>
   <a id="desk-logo" href="/"><img src="/logo.png?v=5" alt="Parlay of the Day"></a>
   <img id="desk-name" alt="" src="/scene/wordmark.png">
-  <button type="button" id="desk-menu" aria-pressed="false" aria-expanded="false" aria-controls="desk-dock" aria-label="Open the menu">
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  <button type="button" id="desk-menu" aria-label="Ask Parlay the Parrot">
+    <img src="/scene/parrot-face.png?v=1" alt="">
   </button>
   <button type="button" id="desk-full" aria-pressed="false" aria-label="Make the TV full screen">
     <svg class="open" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg>
     <svg class="shut" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9h5V4M15 4v5h5M20 15h-5v5M9 20v-5H4"/></svg>
   </button>
-  <nav id="desk-dock" aria-label="Desk">
-    <button type="button" class="tab on" data-tab="today">Today</button>
-    <button type="button" class="tab" data-tab="week">Week</button>
-    <button type="button" class="tab" data-quiz>Build</button>
-    <button type="button" class="tab" data-tab="open">Our Bets</button>
-    <button type="button" class="tab" data-tab="history" id="desk-history">History</button>
-    <button type="button" class="tab" data-tab="laws">States</button>
-  </nav>
+  <div id="desk-dock" hidden></div>
   <div id="desk-hold" hidden></div>
 </div>
 <header class="top">
@@ -154,11 +147,8 @@ body.day-board #parrot-load[hidden] { display: none; }
 <button type="button" id="banner-x" aria-label="Close this warning" hidden>×</button>
 <nav class="tabs" id="main-tabs">
   <button type="button" class="tab on" data-tab="today">Today</button>
-  <button type="button" class="tab" data-tab="week">Week</button>
-  <button type="button" class="tab" data-quiz>Build a bet</button>
   <button type="button" class="tab" data-tab="open">Our Bets</button>
   <button type="button" class="tab" data-tab="history" id="tab-history">History</button>
-  <button type="button" class="tab" data-tab="laws">States</button>
 </nav>
 <div class="pane" id="pane-today">
 <div class="poster-frame" id="day-frame">
@@ -168,7 +158,7 @@ body.day-board #parrot-load[hidden] { display: none; }
   <img src="/logo.png?v=5" alt="Parlay parrot">
   <div class="parrot-lines">
     <p>Squawk. Checking FanDuel.</p>
-    <p>The parrot is counting the legs.</p>
+    <p>The parrot is counting the picks.</p>
     <p>Sunglasses on. One more second.</p>
   </div>
 </div>
@@ -284,15 +274,15 @@ body.day-board #parrot-load[hidden] { display: none; }
 <img id="build-share" alt="Build a bet" src="/share-template.jpg?v=5">
 <section class="chalk chooser" id="chooser">
   <div id="choice-filters">
-    <p class="aim">Pick today or this week, the leagues, the prop, and how many legs. Leave the leagues and games blank to use all of them. 1 safest is the highest chance and stays the same. Safe aims at −200. Good aims at −100. Best payout takes the longest price. Tap Safe, Good, or Best payout again for a different bet. If one bet is the only fit, the card says so.</p>
+    <p class="aim">Pick today or this week, the league, the stat, and how many picks. Leave the league and the games blank to use all of them. Safest wins the most. On Safe, five dollars wins about $2.50. Good wins about as often as it loses. Best payout pays the most, and it loses more often. Tap Safe, Good, or Best payout again for a different bet. If only one bet fits, the card says so.</p>
     <h2>Build a bet</h2>
     <p class="pick-save"><button type="button" id="choice-speak">Speak a bet</button></p>
     <p class="quiet" id="choice-heard"></p>
     <div class="choices" id="choice-when"></div>
     <div class="choices" id="choice-sports"></div>
     <label class="choice-line games">Games <select id="choice-game" multiple size="3"></select></label>
-    <label class="choice-line">Prop <select id="choice-kind">
-      <option value="any">Any player prop</option>
+    <label class="choice-line">Stat <select id="choice-kind">
+      <option value="any">Any stat</option>
     </select></label>
     <div class="choices" id="choice-legs"></div>
     <div class="choices" id="choice-aim"></div>
@@ -356,34 +346,23 @@ body.day-board #parrot-load[hidden] { display: none; }
 </section>
 </div>
 </div>
-<div class="pane" id="pane-laws" hidden>
-<section class="tracked">
-  <h2>State rules</h2>
-  <p class="quiet">We ask for your state so the desk can leave off bets you are not allowed to place there. Green means no extra limit. Orange means some limits. Red means FanDuel Sportsbook is not offered. Where another book on this desk is legal, you can still take the FanDuel price there. The number is usually close, and sometimes the same. This is not legal advice, and a state can change its rule.</p>
-  <p id="laws-you"></p>
-  <p id="laws-key"><i class="none"></i>No limits <i class="some"></i>Some limits <i class="lot"></i>A lot of limits</p>
-  <div id="laws-map"></div>
-  <p id="laws-detail"></p>
-  <p class="quiet">If you switch states, some bets may no longer show up.</p>
-  <p class="pick-save"><select id="laws-state"></select><button type="button" id="laws-save">Save state</button></p>
-</section>
-</div>
 <div class="pane" id="pane-profile" hidden>
 <section class="tracked" id="activity">
   <h2>Your membership</h2>
   <p class="quiet" id="activity-plan"></p>
-  <div id="activity-list"></div>
   <p class="quiet">What should the parrot call you? Leave it blank and the parrot will ask.</p>
   <p class="pick-save"><input id="call-name" maxlength="40" autocomplete="nickname" placeholder="Your name"><button type="button" class="ghost" id="call-save">Save</button><button type="button" class="ghost" id="member-out">Sign out</button></p>
   <p class="quiet">Your state decides which bets can be placed. If you switch states, some bets may no longer show up.</p>
   <p class="pick-save"><select id="call-state"></select><button type="button" class="ghost" id="state-save">Save state</button></p>
   <p class="quiet">Which sportsbook are you using? These prices are FanDuel's. Another book's number is usually close, and sometimes the same.</p>
   <p class="pick-save"><select id="call-book"></select><button type="button" class="ghost" id="book-save">Save book</button></p>
+  <p class="pick-save"><button type="button" class="ghost" id="hard-refresh">Reload the page</button></p>
 </section>
 <section class="tracked" id="profile-admin" hidden>
   <h2>Admin</h2>
   <nav class="tabs" id="admin-tabs">
     <button type="button" class="tab on" data-admin-tab="members">Members</button>
+    <button type="button" class="tab" data-admin-tab="rates">Ratings</button>
     <button type="button" class="tab" data-admin-tab="habits">Habits</button>
     <button type="button" class="tab" data-admin-tab="ignore">Ignoring</button>
     <button type="button" class="tab" data-admin-tab="strategy">Strategy</button>
@@ -391,7 +370,10 @@ body.day-board #parrot-load[hidden] { display: none; }
     <button type="button" class="tab" data-admin-tab="built">Built bets</button>
     <button type="button" class="tab" data-admin-tab="asks">Asked</button>
     <button type="button" class="tab" data-admin-tab="card">Share card</button>
+    <button type="button" class="tab" data-admin-tab="notes">Notepad</button>
+    <button type="button" class="tab" data-admin-tab="laws">States</button>
   </nav>
+  <div id="admin-rates" hidden></div>
   <div id="admin-habits" hidden></div>
   <div id="admin-members">
     <p class="quiet" id="admin-refresh">FanDuel is checked every 10 minutes.</p>
@@ -438,6 +420,24 @@ body.day-board #parrot-load[hidden] { display: none; }
     <p class="quiet" id="share-card-note"></p>
     <canvas id="share-card-canvas" hidden style="width:100%;max-width:100%;min-width:0;height:auto;display:block;"></canvas>
   </div>
+  <div id="admin-laws" hidden>
+    <section class="tracked" id="pane-laws">
+      <h2>State rules</h2>
+      <p class="quiet">We ask for your state so the desk can leave off bets you are not allowed to place there. Green means no extra limit. Orange means some limits. Red means FanDuel Sportsbook is not offered. Where another book on this desk is legal, you can still take the FanDuel price there. The number is usually close, and sometimes the same. This is not legal advice, and a state can change its rule.</p>
+      <p id="laws-you"></p>
+      <p id="laws-key"><i class="none"></i>No limits <i class="some"></i>Some limits <i class="lot"></i>A lot of limits</p>
+      <div id="laws-map"></div>
+      <p id="laws-detail"></p>
+      <p class="quiet">If you switch states, some bets may no longer show up.</p>
+      <p class="pick-save"><select id="laws-state"></select><button type="button" id="laws-save">Save state</button></p>
+    </section>
+  </div>
+  <div id="admin-notes" hidden>
+    <p class="quiet">These lines rotate on the notepad. Wrap a word in *stars* to highlight it.</p>
+    <div id="note-list"></div>
+    <p class="pick-save"><input id="note-new" maxlength="180" placeholder="A new line"><button type="button" id="note-add">Add</button></p>
+    <p class="quiet" id="note-msg"></p>
+  </div>
   <div id="admin-docs" hidden>
     <p class="quiet">These notes are for admins.</p>
     <p><a href="/doc-view.html?file=readme.pdf" target="_blank" rel="noopener">Overview</a></p>
@@ -456,18 +456,18 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p>21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
-<script src="/app.js?v=97"></script>
-<script src="/desk.js?v=61"></script>
-<script src="/members.js?v=46"></script>
+<script src="/app.js?v=99"></script>
+<script src="/desk.js?v=68"></script>
+<script src="/members.js?v=51"></script>
 <script src="/stars.js?v=7"></script>
-<script src="/choose.js?v=47"></script>
+<script src="/choose.js?v=49"></script>
 <script src="/lessons.js?v=8"></script>
 <script src="/filters.js?v=9"></script>
 <script src="/reports.js?v=1"></script>
-<script src="/admin.js?v=23"></script>
+<script src="/admin.js?v=26"></script>
 <script src="/sharecard.js?v=28"></script>
-<script src="/states.js?v=7"></script>
-<script src="/ask-bet.js?v=47"></script>
+<script src="/states.js?v=8"></script>
+<script src="/ask-bet.js?v=52"></script>
 <script>
 function fitPoster() {
   const view = window.visualViewport;

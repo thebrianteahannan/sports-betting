@@ -29,7 +29,7 @@ async function paintGateRecord() {
 function birdBrag() {
   const pct = window.birdPct;
   if (pct == null) return "";
-  return `Not to brag or anything, but ${pct}% of my recommended bets are cashing. Are you sure you're smarter than a bird?`;
+  return `Not to brag or anything, but ${pct}% of my recommended bets are winning. Are you sure you're smarter than a bird?`;
 }
 
 async function loadBirdPct() {
@@ -61,8 +61,9 @@ function showMember(payload) {
   const member = payload.member || {};
   const who = document.getElementById("who");
   who.hidden = false;
+  if (who.parentElement !== document.body) document.body.append(who);
   const admin = !!member.admin;
-  who.innerHTML = `<button type="button" id="hard-refresh" aria-label="Reload the page" title="Reload"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.2-5.8"/><path d="M21 4v5h-5"/></svg></button><button type="button" id="member-profile" aria-label="Profile" title="${esc(member.name)}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.5-3.1 4-4.6 7-4.6s5.5 1.5 7 4.6"/></svg></button>`;
+  who.innerHTML = `<button type="button" id="member-profile" aria-label="Profile" title="${esc(member.name)}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.5-3.1 4-4.6 7-4.6s5.5 1.5 7 4.6"/></svg></button>`;
   const heading = document.querySelector("#activity h2");
   if (heading) heading.textContent = member.name || "Your membership";
   window.memberName = member.name || "";
@@ -85,14 +86,11 @@ function showMember(payload) {
   plan.textContent = admin
     ? "Admin. Ratings are kept on this membership."
     : "Free membership. Payments are not turned on. Ratings are kept on this membership.";
-  const list = document.getElementById("activity-list");
   const rows = payload.activity || [];
   window.ratedBuilt = rows.filter((row) => row.kind === "rate" && row.detail && row.detail.built && Number(row.detail.stars) > 0).map((row) => ({
     id: row.id, built: true, title: row.detail.title || "Built bet", american: row.detail.american,
     copy: row.detail.copy || "", legs: row.detail.legs || [], stars: Number(row.detail.stars) || 0, goodAt: row.at, result: "open",
   }));
-  const lines = rows.map(activityLine).filter(Boolean);
-  list.innerHTML = lines.length ? lines.join("") : "<p>No ratings yet.</p>";
   if (window.loadReports) window.loadReports();
   if (window.state) {
     window.state.admin = admin;
@@ -113,14 +111,6 @@ const CARD_NAMES = {
   weekFive: "5 legs, different days, near −200",
   weekSafe: "3 legs, different days, near −350",
 };
-
-function activityLine(row) {
-  const detail = row.detail || {};
-  const clock = row.at && typeof when === "function" ? `${when(row.at)} ET` : "";
-  const what = detail.title || detail.group || CARD_NAMES[detail.card] || "a ticket";
-  if (row.kind === "rate" && Number(detail.stars) > 0) return `<p>Rated ${esc(what)} ${esc(detail.stars)} stars. ${esc(clock)}</p>`;
-  return "";
-}
 
 async function refreshActivity() {
   const response = await memberFetch("/api/me", { cache: "no-store" });
@@ -189,7 +179,6 @@ async function hardRefresh() {
 }
 
 document.getElementById("who").addEventListener("click", (event) => {
-  if (event.target.closest("#hard-refresh")) hardRefresh();
   if (event.target.closest("#member-profile")) showTab("profile");
 });
 function calledName() {
@@ -418,6 +407,7 @@ document.getElementById("pane-profile").addEventListener("click", (event) => {
   if (event.target.closest("#call-save")) saveCalledName(document.getElementById("call-name").value);
   if (event.target.closest("#state-save")) saveState(document.getElementById("call-state").value);
   if (event.target.closest("#book-save")) saveBook(document.getElementById("call-book").value);
+  if (event.target.closest("#hard-refresh")) hardRefresh();
 });
 document.getElementById("pane-laws").addEventListener("click", (event) => {
   if (event.target.closest("#laws-save")) saveState(document.getElementById("laws-state").value);

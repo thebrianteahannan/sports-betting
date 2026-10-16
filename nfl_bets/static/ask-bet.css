@@ -1,6 +1,6 @@
 #desk-note-in .note-reason.hint { font-size: 26px; line-height: 1.12; }
 #desk-fade { display: none; }
-#desk.tv-full #desk-world { visibility: hidden; }
+#desk:not(.tv-full) #desk-glass { cursor: pointer; }
 #desk.tv-full #desk-fade {
   display: block; position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 10;
   pointer-events: none; overflow: hidden;
@@ -170,3 +170,7 @@
   width: min(100%, 28rem); box-sizing: border-box; text-align: center;
   padding: 0.8rem 1rem; font-size: 18px;
 }
+#desk-menu { overflow: hidden; }
+#desk-menu img { width: 100%; height: 100%; object-fit: cover; object-position: center 42%; pointer-events: none; }
+body.needs-member #who { display: none; }
+#desk-menu:hover, #desk.menu-open #desk-menu { background: rgba(4, 16, 12, 0.88); color: #3dff6e; }

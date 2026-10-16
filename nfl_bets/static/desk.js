@@ -8,7 +8,7 @@ const PANES = {
   open: ["pane-open"],
   how: ["pane-how"],
   history: ["pane-history"],
-  profile: ["pane-profile"], laws: ["pane-laws"],
+  profile: ["pane-profile"],
 };
 
 let cam = { x: 620, y: 430, scale: 1 };
@@ -179,21 +179,11 @@ function mount(name) {
   glass.classList.add("arrive");
 }
 
-const NOTE_REASONS = [
-  "Look at the <b>chance</b>, not just the juice.",
-  "I keep a <b>$5</b> night a $5 night.",
-  "I put each leg on a <b>different day</b>.",
-  "You place it. I <b>never send</b> it.",
-  "I leave the short prices <b>off</b> the card.",
-  "I <b>already picked</b> the slate.",
-  "Have the fun. <b>Keep your wallet.</b>",
-  "I'll tell you what the <b>number</b> means.",
-  "Click <b>my head</b> to ask me anything. The <b>Parlay of the Day</b> logo up top starts fresh. The <b>books</b> show how I pick. The <b>football</b> shows the wins and losses.",
-  "I'll remember the bets you <b>star</b>.",
-];
+let noteLines = ["I already picked tonight."];
 let noteTick = 0;
-let noteTimer = 0;
-
+function noteHtml(text) {
+  return String(text || "").replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch])).replace(/\*([^*]+)\*/g, "<b>$1</b>");
+}
 function paintNote() {
   const box = document.getElementById("desk-note-in");
   if (!box || box.dataset.live) return;
@@ -201,16 +191,21 @@ function paintNote() {
   box.innerHTML = `<p class="note-reason" id="note-reason"></p>`;
   const line = document.getElementById("note-reason");
   const show = () => {
-    line.innerHTML = NOTE_REASONS[noteTick % NOTE_REASONS.length];
-    line.classList.toggle("hint", line.innerHTML.includes("logo"));
-    noteTick += 1;
+    const text = noteLines[noteTick++ % noteLines.length] || "";
+    line.innerHTML = noteHtml(text);
+    line.classList.toggle("hint", text.length > 70);
     line.classList.remove("pop");
     void line.offsetWidth;
     line.classList.add("pop");
   };
   show();
-  noteTimer = window.setInterval(show, 2600);
+  window.setInterval(show, 4500);
+  fetch("/api/notes", { cache: "no-store" }).then((response) => response.json()).then((payload) => {
+    const rows = ((payload && payload.notes) || []).map((row) => String(row.text || "").trim()).filter(Boolean);
+    if (rows.length) { noteLines = rows; noteTick = 0; show(); }
+  }).catch(() => {});
 }
+window.applyNotes = (rows) => { const next = (rows || []).map((row) => String(row.text || "").trim()).filter(Boolean); if (next.length) noteLines = next; };
 
 function countUps(root) {
   root.querySelectorAll("em").forEach((el) => {
@@ -317,13 +312,14 @@ function bootDesk() {
   const menu = document.getElementById("desk-menu");
   if (menu) menu.addEventListener("click", (event) => {
     event.stopPropagation();
-    setMenu(!document.getElementById("desk").classList.contains("menu-open"));
+    if (window.goFull) goFull();
+    if (window.askBet) askBet("general");
   });
   document.addEventListener("click", (event) => {
     const desk = document.getElementById("desk");
     if (!desk || !desk.classList.contains("menu-open")) return;
     if (event.target.closest("#desk-dock")) {
-      if (event.target.closest("[data-tab], [data-quiz], #member-profile")) setMenu(false);
+      if (event.target.closest("[data-tab], [data-quiz], [data-parrot], #member-profile, #hard-refresh")) setMenu(false);
       return;
     }
     setMenu(false);
@@ -340,10 +336,10 @@ function bootDesk() {
 const BIRD_WAIT = 18000;
 const BIRD_NUDGES = [
   ["Hey, want to find a bet you want to make?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"], ["parrot", "Ask Parlay the Parrot"]]],
-  ["Hey, try a safe bet. Safe aims at −200, so a $5 bet wins about $2.50. That price misses less often than the long price.", [["quiz", "Try Safe Bet", "safe"]]],
-  ["Hey, the safe bet is sometimes boring. A higher payout is louder, and it gives you something to talk about with friends. That long price misses more often.", [["quiz", "Build a higher payout", "payout"]]],
-  ["Best Bets of the Week uses a different day on each leg. Want a look?", [["week", "Best Bets of the Week"]]],
-  ["The −150 to +100 window is on the main page. Want it?", [["today", "Show it"]]],
+  ["Hey, try a safer bet. Five dollars wins about $2.50. It still loses sometimes. It just loses less often than the ones that pay a lot.", [["quiz", "Try Safe Bet", "safe"]]],
+  ["Hey, a safer bet is a smaller win. A bigger payout is more fun to talk about with friends, and it loses more often.", [["quiz", "Build a higher payout", "payout"]]],
+  ["Best Bets of the Week puts each pick on a different day. Want a look?", [["week", "Best Bets of the Week"]]],
+  ["Tonight's bet is ready. Want a look?", [["today", "Show tonight's bet"]]],
   ["", [["menu", "View Our Recommended Bets", "bets"]], "brag"],
   ["Gambling can really ruin people's lives. Only bet money you can afford to lose. If you need help, call 1‑800‑GAMBLER.", []],
 ];
