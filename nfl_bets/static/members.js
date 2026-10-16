@@ -79,7 +79,7 @@ function showMember(payload) {
   const spoken = document.getElementById("bird-line");
   const said = spoken ? spoken.textContent : "";
   const desk = document.getElementById("desk");
-  if (desk && desk.classList.contains("bird-on") && (said === "Hey." || said.startsWith("Hey. What") || said.startsWith("What should I call you") || said.startsWith("Which state") || said.startsWith("Which sportsbook"))) birdGreet();
+  if (desk && desk.classList.contains("bird-on") && ((said === "Squawk!!!" && Date.now() > (window.squawkUntil || 0)) || said.startsWith("Hey. What") || said.startsWith("What should I call you") || said.startsWith("Which state") || said.startsWith("Which sportsbook"))) birdGreet();
   const adminBox = document.getElementById("profile-admin");
   if (adminBox) adminBox.hidden = !admin;
   const plan = document.getElementById("activity-plan");
@@ -331,12 +331,6 @@ function birdMenu(kind) {
   const now = Date.now();
   const day = 86400000;
   const live = (ticket) => ![ticket.kickoff, ...(ticket.legs || []).map((leg) => leg.kickoff)].some((iso) => Number.isFinite(Date.parse(iso || "")) && Date.parse(iso || "") <= now);
-  const expand = document.createElement("button");
-  expand.type = "button";
-  expand.className = "rec-expand";
-  expand.textContent = "Expand all";
-  expand.addEventListener("click", () => { const open = expand.dataset.open !== "1"; board.querySelectorAll(".rec-strategy, .rec-bet").forEach((item) => item.classList.toggle("open", open)); expand.dataset.open = open ? "1" : ""; expand.textContent = open ? "Collapse all" : "Expand all"; });
-  board.append(expand);
   board.addEventListener("click", (event) => {
     const bet = event.target.closest(".rec-bet");
     if (bet) { if (window.openRec) openRec(bet.dataset.rec); return; }
@@ -375,14 +369,11 @@ function birdMenu(kind) {
         const pct = ticket.impliedPct != null && ticket.impliedPct !== "" ? `${ticket.impliedPct}%` : "";
         const head = document.createElement("b");
         head.textContent = [shown, pct].filter(Boolean).join(" · ") || name;
-        bet.append(head);
-        ticket.legs.forEach((leg) => {
-          const line = document.createElement("span");
-          const odds = Number(leg.odds);
-          const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : "";
-          line.textContent = [tag, leg.label].filter(Boolean).join(" ");
-          bet.append(line);
-        });
+        const gist = document.createElement("p");
+        gist.className = "rec-gist";
+        gist.textContent = ticket.legs.map((leg) => String(leg.label || "").split(/,|\s+—\s+/)[0].trim()).filter(Boolean).join(", ");
+        bet.append(head, gist);
+        ticket.legs.forEach((leg) => { const line = document.createElement("span"); const odds = Number(leg.odds); const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : ""; line.textContent = [tag, leg.label].filter(Boolean).join(" "); bet.append(line); });
         block.append(bet);
       });
     if (!block.querySelector(".rec-bet")) {
@@ -394,6 +385,7 @@ function birdMenu(kind) {
   });
   filled.forEach((block) => board.append(block));
   empty.forEach((block) => board.append(block));
+  if (window.paintRecFilters) paintRecFilters(board);
   row.append(board);
 }
 

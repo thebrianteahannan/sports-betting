@@ -96,9 +96,9 @@ function choiceKey() {
 async function runChoice() {
   const box = document.getElementById("choice-result");
   const key = choiceKey(); document.getElementById("choice-stars")?.remove();
-  document.getElementById("choice-again").hidden = (document.getElementById("chooser").classList.add("built"), false);
+  document.getElementById("choice-again").hidden = (document.getElementById("chooser").classList.add("built"), true);
   if (window.memberLaw === "off" && !(window.booksHere && booksHere().some((book) => book.id !== "fanduel"))) { box.textContent = "No sportsbook on this desk is offered in your state, so this bet cannot be placed there."; return; }
-  box.textContent = "Loading your bet.";
+  box.innerHTML = `<div class="bet-load"><span class="bet-bird"><img src="/scene/parrot.png" alt=""></span><p>Picking the legs.</p></div>`;
   const response = await fetch("/api/choose", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -129,7 +129,7 @@ async function runChoice() {
   const note = String(card.note || "").replace(/(?:Each leg is (?:a different game|on a different day, in a different game)|These (?:legs|four) are in different games), so (?:FanDuel prices this as |this is )a regular parlay\.?\s*/g, "").trim();
   box.innerHTML = `<h2>${esc(card.title || "Safest parlay")}</h2>${whenLine}<p>${esc(card.game ? `${card.game}. ` : "")}${esc(card.copy || "")}</p><ol class="chalk-legs">${legs}</ol>${note ? `<p class="quiet">${esc(note)}</p>` : ""}`;
   if (stars) {
-    document.getElementById("choice-again").insertAdjacentHTML("afterbegin", stars);
+    const again = document.getElementById("choice-again"); again.hidden = (again.insertAdjacentHTML("afterbegin", stars), false);
     document.getElementById("choice-stars").addEventListener("click", (event) => {
       const star = event.target.closest("[data-built-star]");
       if (star) saveBuilt(card, Number(star.dataset.builtStar), star.parentElement);

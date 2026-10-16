@@ -394,7 +394,7 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
 #choice-save, #desk.tv-full #desk-glass #choice-save { width: 2rem; height: 2rem; min-height: 0; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
 #choice-save.on svg { fill: currentColor; }
 #desk-back, #desk.tv-full #desk-glass #desk-back { position: absolute; top: 8px; left: 8px; z-index: 7; width: 2rem; height: 2rem; min-height: 0; padding: 0; display: none; align-items: center; justify-content: center; border: 1px solid #3dff6e; border-radius: 8px; background: #07140f; color: #3dff6e; box-shadow: none; }
-#desk.has-back #desk-back, #desk.tv-full.has-back #desk-glass #desk-back { display: inline-flex; }
+#desk.tv-full.has-back #desk-glass #desk-back { display: inline-flex; }
 #desk.has-back #desk-glass-in { padding-top: 2.6rem; }
 #desk-glass .chalk:not(#chooser), #chooser.built { position: relative; padding-top: 2.8rem; }
 #desk-glass .chalk > .pick-save { position: absolute; top: 8px; left: 8px; z-index: 6; margin: 0; width: auto; display: flex; flex-wrap: nowrap; gap: 6px; align-items: center; }

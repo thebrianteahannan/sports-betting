@@ -313,6 +313,7 @@ function bootDesk() {
   if (menu) menu.addEventListener("click", (event) => {
     event.stopPropagation();
     if (window.goFull) goFull();
+    if (birdPending) { const pending = birdPending; birdPending = null; menu.classList.remove("bird-has"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Ask Parlay the Parrot"); birdSay(pending[0], pending[1]); return; }
     if (window.askBet) askBet("general");
   });
   document.addEventListener("click", (event) => {
@@ -343,7 +344,7 @@ const BIRD_NUDGES = [
   ["", [["menu", "View Our Recommended Bets", "bets"]], "brag"],
   ["Gambling can really ruin people's lives. Only bet money you can afford to lose. If you need help, call 1‑800‑GAMBLER.", []],
 ];
-let birdTimer = 0; let birdNudge = 0;
+let birdTimer = 0; let birdNudge = 0; let birdPending = null;
 let birdOn = false;
 let birdHeld = false;
 
@@ -360,10 +361,8 @@ function birdSay(text, picks) {
   }
   if (!tvSkip && desk && !desk.classList.contains("bird-on")) tvPush();
   if (desk) { desk.classList.add("bird-on"); tvPaint(); }
-  line.textContent = text; line.classList.toggle("warn", /ruin people's lives/i.test(text));
+  line.textContent = text; line.classList.toggle("warn", /ruin people's lives/i.test(text)); line.classList.toggle("pow", text === "Squawk!!!");
   row.replaceChildren();
-  const left = [...tvStack].reverse().find((shot) => !shot.bird);
-  if (left && (left.built || left.tab === "build")) { const stay = document.createElement("button"); stay.type = "button"; stay.dataset.stay = "1"; stay.textContent = "Continue where you left off"; row.append(stay); }
   (picks || []).forEach(([tab, label, aim]) => {
     const button = document.createElement("button");
     button.type = "button";
@@ -388,7 +387,7 @@ function birdBump() {
     const nudge = BIRD_NUDGES[birdNudge % BIRD_NUDGES.length];
     birdNudge += 1;
     const text = nudge[2] === "brag" && window.birdBrag ? birdBrag() : nudge[0];
-    if (text) birdSay(text, nudge[1]);
+    if (text) { birdPending = [text, nudge[1]]; const menu = document.getElementById("desk-menu"); if (menu) { menu.classList.add("bird-has"); menu.dataset.say = text.split(/\s+/).slice(0, 6).join(" "); menu.setAttribute("aria-label", "Parlay has something to say"); } }
     birdBump();
   }, BIRD_WAIT);
 }
@@ -410,11 +409,11 @@ function startGuide() {
   const hello = () => {
     birdOn = true;
     birdHeld = false;
-    birdSay("Hey.", []);
+    window.squawkUntil = Date.now() + 1400; birdSay("Squawk!!!", []);
     setTimeout(() => {
       if (!birdOn || birdHeld || window.asking || document.body.classList.contains("needs-member")) return;
       if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"], ["parrot", "Ask Parlay the Parrot"]]);
-    }, 900);
+    }, 1400);
     birdBump();
   };
   if (!document.body.classList.contains("needs-member")) hello();
@@ -440,7 +439,7 @@ let tvSeen = false;
 function tvShot() {
   const desk = document.getElementById("desk");
   if (desk && desk.classList.contains("bird-on")) {
-    const picks = [...document.querySelectorAll("#bird-picks button")].filter((b) => !b.dataset.stay).map((b) => ["quiz" in b.dataset ? "quiz" : "ask" in b.dataset ? "ask" : "parrot" in b.dataset ? "parrot" : b.dataset.tab, b.textContent, b.dataset.quiz || b.dataset.ask || b.dataset.parrot || b.dataset.aim || ""]);
+    const picks = [...document.querySelectorAll("#bird-picks button")].filter((b) => !b.dataset.stay && !b.dataset.rec).map((b) => ["quiz" in b.dataset ? "quiz" : "ask" in b.dataset ? "ask" : "parrot" in b.dataset ? "parrot" : b.dataset.tab, b.textContent, b.dataset.quiz || b.dataset.ask || b.dataset.parrot || b.dataset.aim || ""]);
     return { bird: 1, text: document.getElementById("bird-line").textContent, picks };
   }
   const tab = (window.state && state.tab) || "today";
