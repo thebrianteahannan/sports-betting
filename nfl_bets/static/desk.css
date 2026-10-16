@@ -365,7 +365,7 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
   height: auto;
   z-index: 11;
   transform: none;
-  border: 5px solid #3dff6e;
+  border: 3px solid #3dff6e;
   box-shadow: 0 0 28px rgba(61, 255, 110, 0.4);
 }
 #desk.tv-full #desk-glass h2 { font-size: 40px; }
