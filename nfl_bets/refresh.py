@@ -223,6 +223,7 @@ def _today_bet(games: list[dict[str, Any]], now: datetime, errors: list[str]) ->
         "profit": best.get("profit"),
         "live": bool(best.get("live")),
         "kickoff": str(best.get("kickoff") or ""),
+        "gameId": str(best.get("gameId") or ""),
         "note": best.get("note") or "",
         "copy": "",
         "legs": best.get("legs") or [],
@@ -271,6 +272,7 @@ def _offers(card: dict[str, Any]) -> list[dict[str, Any]]:
             "note": card.get("note") or "",
             "live": bool(card.get("live")),
             "kickoff": str(card.get("kickoff") or ""),
+            "gameId": str(card.get("gameId") or ""),
             "legs": card.get("legs") or [],
         })
     for group in card.get("groups") or []:
@@ -289,6 +291,7 @@ def _offers(card: dict[str, Any]) -> list[dict[str, Any]]:
             "note": card.get("note") or "",
             "live": bool(card.get("live")),
             "kickoff": str(card.get("kickoff") or ""),
+            "gameId": str(card.get("gameId") or ""),
             "legs": group.get("legs") or [],
         })
     return rows

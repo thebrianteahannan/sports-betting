@@ -7,11 +7,26 @@ function halfEsc(text) {
   return String(text ?? "").replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]));
 }
 
+function halfGame(leg, data) {
+  const own = String(leg.gameId || "");
+  if (own) return own;
+  const games = (window.state && window.state.board && window.state.board.games) || [];
+  const text = `${leg.match || ""} ${leg.label || ""} ${data.game || ""}`.toLowerCase().replace(/\s+at\s+/g, " @ ");
+  const hit = games.find((game) => {
+    const match = String(game.match || "").toLowerCase();
+    if (!match) return false;
+    if (text.includes(match)) return true;
+    const parts = match.split(" @ ");
+    return parts.length === 2 && text.includes(parts[0]) && text.includes(parts[1]);
+  });
+  return hit ? String(hit.id) : String(data.gameId || "");
+}
+
 function halfLegs(card) {
   let data = null;
   const board = window.state && window.state.board;
   if (card.id === "choice-result") data = { legs: window.builtLegs || [] };
-  else if (card.id === "rec-open") data = { legs: (window.recTicket && window.recTicket.legs) || [] };
+  else if (card.id === "rec-open") data = window.recTicket || { legs: [] };
   else if (board && HALF_KEYS[card.id]) data = board[HALF_KEYS[card.id]];
   if (!data) return [];
   const rows = [...(data.legs || [])];
@@ -21,7 +36,7 @@ function halfLegs(card) {
     runner: leg.runner || "",
     label: leg.label || "",
     odds: leg.odds,
-    gameId: leg.gameId || data.gameId || "",
+    gameId: halfGame(leg, data),
   }));
 }
 

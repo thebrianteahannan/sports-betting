@@ -95,7 +95,7 @@ function place(x, y, scale, box) {
 
 function shot() {
   const { w, h } = viewSize();
-  if (document.getElementById("desk")?.classList.contains("tv-full")) return place(0, 0, Math.max(w / 959, h / 1024, w / 640));
+  if (document.getElementById("desk")?.classList.contains("tv-full")) return place(0, 0, Math.max(w / 959, h / 1024) * (w / h > 959 / 1024 ? 1.2 : 1));
   return place(480, 512, Math.min(w / 959, h / 1024));
 }
 
