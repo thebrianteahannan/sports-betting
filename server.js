@@ -31,7 +31,7 @@ loadEnv(path.join(ROOT, ".env"));
 const sendDoc = createDocs(ROOT);
 const STATIC = path.join(ROOT, "nfl_bets", "static");
 const PORT = Number(process.env.PORT || 3000);
-const CARDS = new Set(["chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive"]);
+const CARDS = new Set(["chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive", "weekEven"]);
 const RESULTS = new Set(["won", "lost", "push"]);
 const TYPES = {
   ".html": "text/html; charset=utf-8",

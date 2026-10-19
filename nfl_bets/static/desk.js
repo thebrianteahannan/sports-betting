@@ -481,7 +481,7 @@ function tvBack() {
 const goTab = showTab;
 showTab = (name) => {
   const desk = document.getElementById("desk"); if (desk) desk.classList.remove("solo");
-  if (window.legStarted && !window.keepStarted && window.state && window.state.board) { const map = { best: "band", today: "todayBet", week: "weekThree", week5: "weekFive", safe: "weekSafe", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; Object.keys(map).forEach((id) => { const card = document.getElementById(id); const data = window.state.board[map[id]]; if (card && data && window.legStarted(data)) card.hidden = true; }); }
+  if (window.legStarted && !window.keepStarted && window.state && window.state.board) { const map = { best: "band", today: "todayBet", week: "weekThree", week5: "weekFive", safe: "weekSafe", even: "weekEven", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; Object.keys(map).forEach((id) => { const card = document.getElementById(id); const data = window.state.board[map[id]]; if (card && data && window.legStarted(data)) card.hidden = true; }); }
   if (!tvSkip && !(desk && desk.classList.contains("bird-on"))) {
     const here = tvShot();
     if (!tvSame(here, { tab: name, built: name === "build" && here.built })) { tvSeen = true; tvPush(); }

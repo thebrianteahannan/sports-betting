@@ -116,7 +116,7 @@ def _run() -> dict[str, Any]:
         "todayBet": _today_bet(games, now, errors),
     }
     try:
-        payload["weekThree"], payload["weekFive"], payload["weekSafe"] = build_week(games)
+        payload["weekThree"], payload["weekFive"], payload["weekSafe"], payload["weekEven"] = build_week(games)
     except Exception as exc:  # noqa: BLE001
         errors.append(f"Week: {exc}")
         payload["errors"] = errors

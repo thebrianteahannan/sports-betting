@@ -235,7 +235,7 @@ body.day-board #parrot-load[hidden] { display: none; }
 </div>
 </div>
 <p class="quiet" id="week-form" hidden style="width:min(calc(100% - 0.75rem),42rem);margin:0.35rem auto 0"></p>
-<p class="quiet" id="week-intro">The 3-leg and 5-leg are aimed at −200, so a $5 bet wins about $2.50. The 3-leg near −350 is the shorter price. Each leg is a different day. When another bet fits, the next check shows that one. This does not send a bet.</p>
+<p class="quiet" id="week-intro">The 3-leg and 5-leg are aimed at −200, so a $5 bet wins about $2.50. The 3-leg near −100 is even money, so a $5 bet wins $5. The 3-leg near −350 is the shorter price. Each leg is a different day. When another bet fits, the next check shows that one. This does not send a bet.</p>
 <section class="chalk best week" id="week" hidden>
   <p class="live-note" id="week-live" hidden></p>
   <p class="aim" id="week-aim"></p>
@@ -265,6 +265,16 @@ body.day-board #parrot-load[hidden] { display: none; }
   <ol id="safe-legs"></ol>
   <p class="quiet" id="safe-note"></p>
   <p class="pick-save" id="safe-save"></p>
+</section>
+<section class="chalk best week" id="even" hidden>
+  <p class="live-note" id="even-live" hidden></p>
+  <p class="aim" id="even-aim"></p>
+  <h2 id="even-title">3 legs, different days, near −100</h2>
+  <p class="when" id="even-when"></p>
+  <p id="even-copy"></p>
+  <ol id="even-legs"></ol>
+  <p class="quiet" id="even-note"></p>
+  <p class="pick-save" id="even-save"></p>
 </section>
 </div>
 <div class="pane" id="pane-build" hidden>
@@ -302,7 +312,7 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p><b>Analyze</b></p>
   <p class="quiet">The card names the stat, so a price has a job. A −550 on 5 receiving yards and a −550 on a score are different bets. Four prices near 85% multiply to about a coin flip. Prices like −800 stay off the −150 to +100 window.</p>
   <p><b>Make the picks</b></p>
-  <p class="quiet">Today is the ticket whose price lands between −150 and +100, and the highest chance inside that window. The week is a 3-leg and a 5-leg aimed at −200, so a $5 bet wins about $2.50, plus a 3-leg aimed at −350. Each leg is a different day. Build a bet can ask for the highest chance, a safe −200, a good −100, or the longest price.</p>
+  <p class="quiet">Today is the ticket whose price lands between −150 and +100, and the highest chance inside that window. The week is a 3-leg and a 5-leg aimed at −200, so a $5 bet wins about $2.50, plus a 3-leg at −100 and a 3-leg aimed at −350. Each leg is a different day. Build a bet can ask for the highest chance, a safe −200, a good −100, or the longest price.</p>
   <p><b>Cash</b></p>
   <p class="quiet">You place it. This desk does not send it. Type the line into your own FanDuel account if you want it. A $5 night stays a $5 night. 21+. Gambling problem? Call 1-800-GAMBLER. Past results do not promise the next ticket.</p>
 </section>
@@ -395,7 +405,7 @@ body.day-board #parrot-load[hidden] { display: none; }
     <article class="report-card"><p><b>Same-game price can differ</b></p><p>Legs in one game move together. FanDuel's same-game button can charge a different number than the multiplied price on the card.</p></article>
     <h2>Cards</h2>
     <article class="report-card"><p><b>−150 to +100 window</b></p><p>The ticket on today's slate whose price lands between −150 and +100. The highest chance inside that window is the one on the main page. Shorter prices, like −800, stay off this card.</p></article>
-    <article class="report-card"><p><b>3-leg and 5-leg, different days, near −200</b></p><p>Player props on different days, aimed at −200, so a $5 bet wins about $2.50. The 3-leg near −350 on the same tab is the shorter price.</p></article>
+    <article class="report-card"><p><b>3-leg and 5-leg, different days, near −200</b></p><p>Player props on different days, aimed at −200, so a $5 bet wins about $2.50. The 3-leg near −100 is even money, so a $5 bet wins $5. The 3-leg near −350 on the same tab is the shorter price.</p></article>
     <article class="report-card"><p><b>Highest chance parlay today</b></p><p>The parlay on today's slate with the highest chance. It sits behind More bets.</p></article>
     <article class="report-card"><p><b>−400 to −700 legs, near −180</b></p><p>Legs priced from −400 to −700 that multiply to about −180.</p></article>
     <article class="report-card"><p><b>Four yardage legs near 85% each</b></p><p>Four small yardage prices, each near an 85% chance. Together that is about a coin flip, not an 85% parlay.</p></article>
@@ -456,18 +466,18 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p>21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
-<script src="/app.js?v=99"></script>
-<script src="/desk.js?v=73"></script>
-<script src="/members.js?v=63"></script>
-<script src="/stars.js?v=7"></script>
-<script src="/choose.js?v=53"></script>
+<script src="/app.js?v=100"></script>
+<script src="/desk.js?v=74"></script>
+<script src="/members.js?v=64"></script>
+<script src="/stars.js?v=8"></script>
+<script src="/choose.js?v=54"></script>
 <script src="/lessons.js?v=8"></script>
-<script src="/filters.js?v=13"></script>
+<script src="/filters.js?v=14"></script>
 <script src="/reports.js?v=1"></script>
 <script src="/admin.js?v=26"></script>
-<script src="/sharecard.js?v=28"></script>
+<script src="/sharecard.js?v=29"></script>
 <script src="/states.js?v=8"></script>
-<script src="/ask-bet.js?v=57"></script>
+<script src="/ask-bet.js?v=58"></script>
 <script>
 function fitPoster() {
   const view = window.visualViewport;

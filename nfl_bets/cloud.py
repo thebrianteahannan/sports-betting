@@ -20,7 +20,7 @@ _KEYS = {
     "archive": "bets/archive.json",
     "picks": "bets/picks.json",
 }
-_CARD_KEYS = ("updatedAt", "intervalSeconds", "book", "errors", "chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive", "weekSafe")
+_CARD_KEYS = ("updatedAt", "intervalSeconds", "book", "errors", "chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive", "weekSafe", "weekEven")
 
 
 def configured() -> bool:

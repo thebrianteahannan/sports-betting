@@ -19,7 +19,7 @@ _PATH = {
     "MLB": ("baseball", "mlb"),
     "NHL": ("hockey", "nhl"),
 }
-_CARDS = ("chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive", "weekSafe")
+_CARDS = ("chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive", "weekSafe", "weekEven")
 _TTL = 12 * 3600
 _MEM: dict[str, Any] | None = None
 _DIRTY = False

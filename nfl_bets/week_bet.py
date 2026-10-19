@@ -23,9 +23,10 @@ _HOLD_HOURS = 6
 _SPREAD = "variety"
 _GOOD = -200
 _SAFE = -350
+_EVEN = -100
 
 
-def build_week(games: list[dict[str, Any]]) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+def build_week(games: list[dict[str, Any]]) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     monday = _monday(datetime.now(_ET))
     key = monday.isoformat()
     saved = read_json(out_dir() / "week.json", {})
@@ -34,7 +35,7 @@ def build_week(games: list[dict[str, Any]]) -> tuple[dict[str, Any], dict[str, A
     label = _span(datetime.now(_ET))
     options = _build(list(games or []), label)
     stamp = now_iso()
-    for name in ("three", "five", "safe"):
+    for name in ("three", "five", "safe", "even"):
         for card in options[name]:
             _remember(card, stamp)
     saved = {
@@ -46,9 +47,10 @@ def build_week(games: list[dict[str, Any]]) -> tuple[dict[str, Any], dict[str, A
         "three": options["three"][0],
         "five": options["five"][0],
         "safe": options["safe"][0],
+        "even": options["even"][0],
     }
     write_json(out_dir() / "week.json", saved)
-    return saved["three"], saved["five"], saved["safe"]
+    return saved["three"], saved["five"], saved["safe"], saved["even"]
 
 
 def _remember(card: Any, stamp: str) -> None:
@@ -60,7 +62,10 @@ def _fresh(saved: dict[str, Any]) -> bool:
     three = saved.get("three") if isinstance(saved.get("three"), dict) else {}
     five = saved.get("five") if isinstance(saved.get("five"), dict) else {}
     safe = saved.get("safe") if isinstance(saved.get("safe"), dict) else {}
-    if len(three.get("legs") or []) >= 3 and len(five.get("legs") or []) >= 5 and len(safe.get("legs") or []) >= 3:
+    even = saved.get("even") if isinstance(saved.get("even"), dict) else None
+    if even is None:
+        return False
+    if len(three.get("legs") or []) >= 3 and len(five.get("legs") or []) >= 5 and len(safe.get("legs") or []) >= 3 and len(even.get("legs") or []) >= 3:
         return True
     stamp = _parse(str(saved.get("builtAt") or ""))
     if stamp is None:
@@ -68,16 +73,16 @@ def _fresh(saved: dict[str, Any]) -> bool:
     return datetime.now(_ET) - stamp.astimezone(_ET) < timedelta(hours=_HOLD_HOURS)
 
 
-def _turn(saved: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+def _turn(saved: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     options = saved.get("options") if isinstance(saved.get("options"), dict) else {}
     index = int(saved.get("index") or 0) + 1
     saved["index"] = index
-    for name in ("three", "five", "safe"):
+    for name in ("three", "five", "safe", "even"):
         rows = options.get(name) if isinstance(options.get(name), list) else []
         saved[name] = rows[index % len(rows)] if rows else saved.get(name)
         _remember(saved.get(name), str(saved.get("builtAt") or ""))
     write_json(out_dir() / "week.json", saved)
-    return saved["three"], saved["five"], saved["safe"]
+    return saved["three"], saved["five"], saved["safe"], saved["even"]
 
 
 def _build(games: list[dict[str, Any]], label: str) -> dict[str, list[dict[str, Any]]]:
@@ -86,6 +91,7 @@ def _build(games: list[dict[str, Any]], label: str) -> dict[str, list[dict[str, 
         "three": _pack(_choose(menu, 3, _GOOD, True), 3, label, "3 legs, different days, near −200", _GOOD),
         "five": _pack(_choose(menu, 5, _GOOD, True), 5, label, "5 legs, different days, near −200", _GOOD),
         "safe": _pack(_choose(menu, 3, _SAFE, False), 3, label, "3 legs, different days, near −350", _SAFE),
+        "even": _pack(_choose(menu, 3, _EVEN, False), 3, label, "3 legs, different days, near −100", _EVEN),
     }
 
 

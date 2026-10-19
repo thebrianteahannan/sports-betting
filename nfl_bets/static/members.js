@@ -110,6 +110,7 @@ const CARD_NAMES = {
   weekThree: "3 legs, different days, near −200",
   weekFive: "5 legs, different days, near −200",
   weekSafe: "3 legs, different days, near −350",
+  weekEven: "3 legs, different days, near −100",
 };
 
 async function refreshActivity() {

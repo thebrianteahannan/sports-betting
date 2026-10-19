@@ -67,7 +67,7 @@ function render() {
   } else { banner.hidden = true; const x = document.getElementById("banner-x"); if (x) x.hidden = true; }
   const bandAim = (board.band && board.band.goal) || "Priced from −150 to +100.";
   renderFeatured("best", weekCard(board.band, "band"), "−150 to +100 window", bandAim);
-  [["week", "weekThree", "3 legs, different days, near −200"], ["week5", "weekFive", "5 legs, different days, near −200"], ["safe", "weekSafe", "3 legs, different days, near −350"]].forEach(([prefix, key, title]) => {
+  [["week", "weekThree", "3 legs, different days, near −200"], ["week5", "weekFive", "5 legs, different days, near −200"], ["safe", "weekSafe", "3 legs, different days, near −350"], ["even", "weekEven", "3 legs, different days, near −100"]].forEach(([prefix, key, title]) => {
     renderFeatured(prefix, weekCard(board[key], key), title, (board[key] && board[key].goal) || "Each leg is a different day.");
   });
   renderFeatured("today", todayCandidate(board), "Highest chance parlay today", "The highest-chance parlay on today's slate.");
@@ -173,7 +173,7 @@ function bandWhy(best) {
 }
 
 function legStarted(card) {
-  const open = document.querySelector("section.chalk.solo-on"); const map = { week: "weekThree", week5: "weekFive", safe: "weekSafe", best: "band", today: "todayBet", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; if (window.keepStarted || (open && window.state && window.state.board && window.state.board[map[open.id]] === card)) return false; const rows = [...(card.legs || []), ...((card.groups || []).flatMap((group) => group.legs || []))]; return [card.kickoff, ...rows.map((leg) => leg.kickoff)].some((iso) => Number.isFinite(Date.parse(iso || "")) && Date.parse(iso || "") <= Date.now());
+  const open = document.querySelector("section.chalk.solo-on"); const map = { week: "weekThree", week5: "weekFive", safe: "weekSafe", even: "weekEven", best: "band", today: "todayBet", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; if (window.keepStarted || (open && window.state && window.state.board && window.state.board[map[open.id]] === card)) return false; const rows = [...(card.legs || []), ...((card.groups || []).flatMap((group) => group.legs || []))]; return [card.kickoff, ...rows.map((leg) => leg.kickoff)].some((iso) => Number.isFinite(Date.parse(iso || "")) && Date.parse(iso || "") <= Date.now());
 }
 
 function todayCandidate(board) {

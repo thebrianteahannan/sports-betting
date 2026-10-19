@@ -393,8 +393,8 @@ function swapCard(card) {
     choice.sports = sports;
     choice.kind = "any";
     choice.gameIds = [];
-    choice.when = ["week", "week5", "safe"].includes(id) ? "week" : "today";
-    choice.aim = { today: "payout", plus: "payout", best: "good", four: "top", hits: "top" }[id] || "safe";
+    choice.when = ["week", "week5", "safe", "even"].includes(id) ? "week" : "today";
+    choice.aim = { today: "payout", plus: "payout", best: "good", even: "good", four: "top", hits: "top" }[id] || "safe";
   }
   choice.legs = lis.length;
   choice.hold = hold;

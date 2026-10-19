@@ -115,7 +115,7 @@ function askBet(kind, kept) {
   focusAsk(box);
 }
 
-const ASK_IDEAS = ["−150 to +100 window", "Highest chance parlay today", "−400 to −700 legs, near −180", "Four yardage legs near 85% each", "Four yardage legs near +250", "Five near 90% each", "Four near 80% each", "3 legs, different days, near −200", "5 legs, different days, near −200", "3 legs, different days, near −350"];
+const ASK_IDEAS = ["−150 to +100 window", "Highest chance parlay today", "−400 to −700 legs, near −180", "Four yardage legs near 85% each", "Four yardage legs near +250", "Five near 90% each", "Four near 80% each", "3 legs, different days, near −200", "5 legs, different days, near −200", "3 legs, different days, near −350", "3 legs, different days, near −100"];
 
 function paintIdeas(row) {
   const wrap = document.createElement("div");
@@ -180,7 +180,7 @@ function packOne(card) {
   };
 }
 
-function gone(id) { const map = { week: "weekThree", week5: "weekFive", safe: "weekSafe", best: "band", today: "todayBet", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; const data = window.state && window.state.board && window.state.board[map[id] || ""]; const rows = data ? [...(data.legs || []), ...((data.groups || []).flatMap((group) => group.legs || []))] : []; return rows.some((leg) => Number.isFinite(Date.parse(leg.kickoff || "")) && Date.parse(leg.kickoff) <= Date.now()) || !!(data && Number.isFinite(Date.parse(data.kickoff || "")) && Date.parse(data.kickoff) <= Date.now()); }
+function gone(id) { const map = { week: "weekThree", week5: "weekFive", safe: "weekSafe", even: "weekEven", best: "band", today: "todayBet", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; const data = window.state && window.state.board && window.state.board[map[id] || ""]; const rows = data ? [...(data.legs || []), ...((data.groups || []).flatMap((group) => group.legs || []))] : []; return rows.some((leg) => Number.isFinite(Date.parse(leg.kickoff || "")) && Date.parse(leg.kickoff) <= Date.now()) || !!(data && Number.isFinite(Date.parse(data.kickoff || "")) && Date.parse(data.kickoff) <= Date.now()); }
 
 function cardPack(question) {
   const named = namedCard(question);
@@ -192,7 +192,7 @@ function cardPack(question) {
   if (!cards.length) return null;
   return {
     title: "Recommended bets",
-    aim: "−150 to +100 window, highest chance parlay today, 3 legs near −200, 5 legs near −200, and 3 legs near −350.",
+    aim: "−150 to +100 window, highest chance parlay today, 3 legs near −200, 5 legs near −200, 3 legs near −350, and 3 legs near −100.",
     copy: cards.map((item) => {
       const packed = packOne(item);
       const names = packed.legs.map((leg) => [leg.price, leg.name].filter(Boolean).join(" ")).join("; ");
@@ -272,7 +272,7 @@ function askCardKeys(card) {
 
 function namedCard(question) {
   const asked = foldText(question);
-  const hits = [["3 legs, different days, near −350", "safe"], ["5 legs, different days, near −200", "week5"], ["3 legs, different days, near −200", "week"], ["five near 90", "hits"], ["four near 80", "hits"], ["85", "four"], ["250", "plus"], ["180", "chalk"], ["150", "best"], ["highest chance", "today"]].filter(([key]) => asked.includes(foldText(key)));
+  const hits = [["3 legs, different days, near −100", "even"], ["3 legs, different days, near −350", "safe"], ["5 legs, different days, near −200", "week5"], ["3 legs, different days, near −200", "week"], ["five near 90", "hits"], ["four near 80", "hits"], ["85", "four"], ["250", "plus"], ["180", "chalk"], ["150", "best"], ["highest chance", "today"]].filter(([key]) => asked.includes(foldText(key)));
   return hits.length === 1 ? document.getElementById(hits[0][1]) : null;
 }
 
@@ -357,7 +357,7 @@ function betChoice(card) {
 
 function showAnswer(question, answer) {
   const cards = pickedCards(question, answer);
-  if (window.legStarted && window.state && window.state.board) { const map = { best: "band", today: "todayBet", week: "weekThree", week5: "weekFive", safe: "weekSafe", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; Object.keys(map).forEach((id) => { const card = document.getElementById(id); const data = window.state.board[map[id]]; if (card && data && window.legStarted(data)) card.hidden = true; }); }
+  if (window.legStarted && window.state && window.state.board) { const map = { best: "band", today: "todayBet", week: "weekThree", week5: "weekFive", safe: "weekSafe", even: "weekEven", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; Object.keys(map).forEach((id) => { const card = document.getElementById(id); const data = window.state.board[map[id]]; if (card && data && window.legStarted(data)) card.hidden = true; }); }
   const text = String(answer || "").trim();
   birdSay(`You asked: ${question}`, []);
   const line = document.getElementById("bird-line");
@@ -379,7 +379,7 @@ function restoreAsk(shot) {
     const backLine = document.getElementById("bird-line"); if (backLine && /^You asked:/.test(shot.text || "")) { backLine.classList.add("answer"); const q = document.createElement("strong"); q.textContent = backLine.textContent; backLine.replaceChildren(q); }
     const row = document.getElementById("bird-picks");
     if (!row) return;
-    shot.ids.forEach((id) => { const card = document.getElementById(id); if (!card) return; row.append(betChoice(card)); card.classList.remove("solo-on"); const map = { week: "weekThree", week5: "weekFive", safe: "weekSafe", best: "band", today: "todayBet", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; const data = window.state && window.state.board && window.state.board[map[id]]; if (data && window.legStarted && window.legStarted(data)) card.hidden = true; });
+    shot.ids.forEach((id) => { const card = document.getElementById(id); if (!card) return; row.append(betChoice(card)); card.classList.remove("solo-on"); const map = { week: "weekThree", week5: "weekFive", safe: "weekSafe", even: "weekEven", best: "band", today: "todayBet", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; const data = window.state && window.state.board && window.state.board[map[id]]; if (data && window.legStarted && window.legStarted(data)) card.hidden = true; });
     if (shot.raw) paintRaw(shot.raw, true);
     askAgain();
     return;

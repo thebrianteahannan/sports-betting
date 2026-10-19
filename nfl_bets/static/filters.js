@@ -9,6 +9,7 @@ const OPEN_CARDS = [
   ["weekThree", "3 legs, different days, near −200"],
   ["weekFive", "5 legs, different days, near −200"],
   ["weekSafe", "3 legs, different days, near −350"],
+  ["weekEven", "3 legs, different days, near −100"],
 ];
 const OPEN_KINDS = [
   ["yards", "Yards"],
@@ -244,7 +245,7 @@ function recSpan(ticket) {
   const end = recDayKey(now + (past ? -14 : 14) * 86400000);
   const source = past && ticket.settledAt ? [ticket.settledAt] : [ticket.kickoff, ...(ticket.legs || []).map((leg) => leg.kickoff)];
   const days = [...new Set(source.map((iso) => Date.parse(iso || "")).filter((ms) => Number.isFinite(ms) && (past ? ms <= now : ms > now)).map(recDayKey))];
-  if (!days.length) return ["weekThree", "weekFive", "weekSafe"].includes(ticket.card) ? "week" : "today";
+  if (!days.length) return ["weekThree", "weekFive", "weekSafe", "weekEven"].includes(ticket.card) ? "week" : "today";
   if (days.every((day) => day === today)) return "today";
   return days.every((day) => past ? day >= end : day <= end) ? "week" : "later";
 }

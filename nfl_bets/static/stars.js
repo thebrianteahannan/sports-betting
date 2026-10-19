@@ -19,7 +19,7 @@ function starHtml(rating, card, group, id, built) {
   return `<span class="stars"${attrs}>${stars}</span>`;
 }
 
-const WEATHER_CARDS = ["band", "weekThree", "weekFive", "weekSafe", "todayBet", "chalk", "four", "plus", "hits"];
+const WEATHER_CARDS = ["band", "weekThree", "weekFive", "weekSafe", "weekEven", "todayBet", "chalk", "four", "plus", "hits"];
 const INDOOR = new Set(["NHL", "NBA", "WNBA", "NCAAB"]);
 const ROOF = new Set(["Arizona Cardinals", "Atlanta Falcons", "Dallas Cowboys", "Detroit Lions", "Houston Texans", "Indianapolis Colts", "Las Vegas Raiders", "Los Angeles Chargers", "Los Angeles Rams", "Minnesota Vikings", "New Orleans Saints", "Arizona Diamondbacks", "Houston Astros", "Miami Marlins", "Milwaukee Brewers", "Texas Rangers", "Toronto Blue Jays", "Tampa Bay Rays"]);
 const CITY = {

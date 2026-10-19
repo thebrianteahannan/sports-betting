@@ -6,6 +6,7 @@ const NAMED_BETS = [
   ["weekThree", "3 legs, different days, near −200", "3 LEGS NEAR −200"],
   ["weekFive", "5 legs, different days, near −200", "5 LEGS NEAR −200"],
   ["weekSafe", "3 legs, different days, near −350", "NEAR −350"],
+  ["weekEven", "3 legs, different days, near −100", "NEAR −100"],
   ["chalk", "−400 to −700 legs, near −180", "NEAR −180"],
   ["four", "Four yardage legs near 85% each", "FOUR NEAR 85%"],
   ["plus", "Four yardage legs near +250", "FOUR NEAR +250"],
