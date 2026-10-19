@@ -95,8 +95,8 @@ function place(x, y, scale, box) {
 
 function shot() {
   const { w, h } = viewSize();
-  const wide = document.getElementById("desk")?.classList.contains("tv-full") && w > h * 959 / 1024;
-  return place(480, wide ? 1024 : 512, wide ? Math.max(w / 959, h / 1024) : Math.min(w / 959, h / 1024));
+  if (document.getElementById("desk")?.classList.contains("tv-full")) return place(0, 0, Math.max(w / 959, h / 1024, w / 640));
+  return place(480, 512, Math.min(w / 959, h / 1024));
 }
 
 function setMenu(on) {
@@ -390,7 +390,7 @@ function birdBump() {
     const nudge = BIRD_NUDGES[birdNudge % BIRD_NUDGES.length];
     birdNudge += 1;
     const text = nudge[2] === "brag" && window.birdBrag ? birdBrag() : nudge[0];
-    if (text) { birdPending = [text, nudge[1]]; const menu = document.getElementById("desk-menu"); if (menu) { menu.classList.add("bird-has"); menu.dataset.say = text.split(/\s+/).slice(0, 6).join(" "); menu.setAttribute("aria-label", "Parlay has something to say"); } }
+    if (text) { birdPending = [text, nudge[1]]; const menu = document.getElementById("desk-menu"); if (menu) { menu.classList.add("bird-has"); const words = text.split(/\s+/); menu.dataset.say = words.slice(0, 6).join(" ") + (words.length > 6 ? " ..." : ""); menu.setAttribute("aria-label", "Parlay has something to say"); } }
     birdBump();
   }, BIRD_WAIT);
 }

@@ -458,7 +458,7 @@ function recWin(price) {
 function openRec(index) {
   const row = (window.recTickets || [])[Number(index)];
   if (!row) return;
-  const ticket = row.ticket;
+  const ticket = window.recTicket = row.ticket;
   const card = document.getElementById("rec-open") || document.createElement("section");
   card.id = "rec-open";
   card.className = "chalk";

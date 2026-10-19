@@ -22,7 +22,7 @@ const path = require("path");
 const crypto = require("crypto");
 const { createIgnore } = require("./desk-ignore");
 const { createAdmins } = require("./desk-admins");
-const { createDocs } = require("./desk-docs"); const { chooseBet } = require("./choose-api");
+const { createDocs } = require("./desk-docs"); const { chooseBet } = require("./choose-api"); const { halfBet } = require("./half-api");
 const { askBet, birdModel } = require("./bet-ask");
 const { createPull } = require("./desk-pull");
 const { createNotes } = require("./desk-notes");
@@ -385,7 +385,7 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/ask-bet.css", "/us-map.svg", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/ask-bet.css", "/half.js", "/us-map.svg", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
       serveStatic(res, url.pathname.slice(1));
       return;
     }
@@ -448,6 +448,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST") {
       const body = await readBody(req);
       if (url.pathname === "/api/choose") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await chooseBet(body, await board())); return; }
+      if (url.pathname === "/api/half") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await halfBet(body)); return; }
       if (url.pathname === "/api/bet-ask") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await askBet(body.question, body.card)); return; }
       if (url.pathname === "/api/admin/pull") {
         const user = await memberFrom(req);
