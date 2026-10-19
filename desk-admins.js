@@ -196,7 +196,7 @@ function createAdmins(readKey, writeKey) {
       const row = data.users.find((item) => item.id === user.id);
       if (!row) return { ok: false };
       const taste = tasteOf(row);
-      const sports = (Array.isArray(detail.sports) ? detail.sports : []).map(String).filter((sport) => ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA"].includes(sport)).slice(0, 7);
+      const sports = (Array.isArray(detail.sports) ? detail.sports : []).map(String).filter(Boolean).slice(0, 12);
       const item = slot === "open"
         ? { at: new Date().toISOString(), card: ["today", "week", "open"].includes(detail.card) ? detail.card : "" }
         : { at: new Date().toISOString(), when: detail.when === "week" ? "week" : "today", aim: ["top", "safe", "good", "payout"].includes(detail.aim) ? detail.aim : "top", kind: ["any", "yards", "points", "assists", "shots", "strikeouts", "hits"].includes(detail.kind) ? detail.kind : "any", legs: Math.min(10, Math.max(1, Number(detail.legs) || 3)), sports, title: String(detail.title || "").slice(0, 80) };

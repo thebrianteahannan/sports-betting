@@ -17,7 +17,6 @@ from nfl_bets.hedge import american_decimal, implied_prob
 from nfl_bets.store import now_iso, out_dir, read_json, write_json
 
 _ET = ZoneInfo("America/New_York")
-_SPORTS = ("NFL", "MLB", "NBA", "NHL", "WNBA", "PGA")
 _PER_DAY = 3
 _HOLD_HOURS = 6
 _SPREAD = "variety"
@@ -38,6 +37,8 @@ def build_week(games: list[dict[str, Any]]) -> tuple[dict[str, Any], dict[str, A
     for name in ("three", "five", "safe", "even"):
         for card in options[name]:
             _remember(card, stamp)
+        if options[name] and isinstance(options[name][0], dict):
+            options[name][0]["offers"] = _offers(options[name])
     saved = {
         "week": key,
         "spread": _SPREAD,
@@ -51,6 +52,10 @@ def build_week(games: list[dict[str, Any]]) -> tuple[dict[str, Any], dict[str, A
     }
     write_json(out_dir() / "week.json", saved)
     return saved["three"], saved["five"], saved["safe"], saved["even"]
+
+
+def _offers(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [{"title": str(row.get("american") if row.get("american") is not None else ""), "price": row.get("american"), "impliedPct": row.get("impliedPct"), "legs": row.get("legs") or []} for row in rows if isinstance(row, dict) and row.get("legs")]
 
 
 def _remember(card: Any, stamp: str) -> None:
@@ -79,7 +84,10 @@ def _turn(saved: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any], dict[s
     saved["index"] = index
     for name in ("three", "five", "safe", "even"):
         rows = options.get(name) if isinstance(options.get(name), list) else []
-        saved[name] = rows[index % len(rows)] if rows else saved.get(name)
+        card = rows[index % len(rows)] if rows else saved.get(name)
+        if isinstance(card, dict):
+            card["offers"] = _offers(rows)
+        saved[name] = card
         _remember(saved.get(name), str(saved.get("builtAt") or ""))
     write_json(out_dir() / "week.json", saved)
     return saved["three"], saved["five"], saved["safe"], saved["even"]
@@ -108,7 +116,7 @@ def _slate(games: list[dict[str, Any]]) -> list[dict[str, Any]]:
     end = datetime.combine((now + timedelta(days=13)).date(), time(23, 59), _ET)
     grouped: dict[str, list[tuple[datetime, dict[str, Any]]]] = {}
     for game in games:
-        if str(game.get("sport") or "") not in _SPORTS:
+        if not str(game.get("sport") or ""):
             continue
         stamp = _parse(str(game.get("kickoff") or ""))
         if stamp is None or stamp < start or stamp > end:
@@ -193,7 +201,7 @@ def _choose(menu: dict[str, list[tuple[dict, dict, bool]]], count: int, target: 
             continue
         marks.add(mark)
         kept.append(combo)
-        if len(kept) == 4:
+        if len(kept) == 6:
             break
     return kept
 

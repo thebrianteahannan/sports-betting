@@ -38,8 +38,8 @@ _AIMS = {"top", "safe", "good", "payout"}
 
 
 def choose(board: dict[str, Any], sports: list[str], kind: str, count: int, game_ids: list[str] | str | None = None, when: str = "today", aim: str = "safe", skip: list[str] | None = None) -> dict[str, Any]:
-    named = [sport for sport in _SPORTS if sport in sports]
-    picked = named or list(_SPORTS)
+    named = [str(sport) for sport in sports if str(sport or "")]
+    picked = named or sorted({str(game.get("sport") or "") for game in board.get("games") or [] if game.get("sport")}) or list(_SPORTS)
     ids = _ids(game_ids)
     count = min(10, max(1, int(count or 3)))
     kind = kind if kind in _KINDS else "any"

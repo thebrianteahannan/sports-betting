@@ -12,10 +12,6 @@ from nfl_bets.hedge import american_decimal, implied_prob
 _ET = ZoneInfo("America/New_York")
 _TARGET = 0.85
 _STAKE = 5.0
-_ORDER = (
-    "NFL", "NHL", "WNBA", "NCAAF", "NBA", "MLB", "CFL",
-    "Basketball", "Hockey", "Baseball",
-)
 _SKIP_MARKET = (
     "moneyline", "spread", "handicap", "puck line", "run line",
     "total points", "total runs", "total goals", "alt total", "alternate total",
@@ -74,7 +70,7 @@ def _combo(games: list[dict]) -> list[dict]:
     grouped = _soon(games)
     found: dict[str, dict] = {}
     fetches = 0
-    for sport in _ORDER:
+    for sport in sorted(grouped, key=lambda name: str(grouped[name][0].get("kickoff") or "")):
         best: dict | None = None
         for game in grouped.get(sport, [])[:3]:
             if fetches >= 18:
@@ -97,7 +93,7 @@ def _soon(games: list[dict]) -> dict[str, list[dict]]:
     grouped: dict[str, list[dict]] = {}
     for game in games:
         sport = str(game.get("sport") or "")
-        if sport not in _ORDER:
+        if not sport:
             continue
         stamp = _parse(str(game.get("kickoff") or ""))
         if stamp is None or stamp < now - timedelta(hours=2) or stamp > now + timedelta(hours=72):

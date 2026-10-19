@@ -1,4 +1,4 @@
-const OPEN_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA"];
+const OPEN_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "NCAAB", "PGA", "Golf", "Soccer", "Tennis", "UFC", "MMA", "CFL", "Football", "Basketball", "Baseball", "Hockey", "Boxing", "Cricket", "Rugby", "Darts", "Table tennis", "Handball", "eSports"];
 const OPEN_CARDS = [
   ["band", "−150 to +100 window"],
   ["todayBet", "Highest chance parlay today"],
@@ -10,6 +10,19 @@ const OPEN_CARDS = [
   ["weekFive", "5 legs, different days, near −200"],
   ["weekSafe", "3 legs, different days, near −350"],
   ["weekEven", "3 legs, different days, near −100"],
+  ["safe2", "Safe 2-leg, both 75%+"],
+  ["mid3", "3 legs, −250 to −400"],
+  ["win4", "4 legs, −150 to −300"],
+  ["plusLegs", "+100 to +200 legs"],
+  ["mix21", "2 favorites and 1 underdog"],
+  ["low3", "Low-variance 3-leg"],
+  ["yards3", "3 yardage legs near 80% each"],
+  ["ou4", "2 overs and 2 unders"],
+  ["alt3", "Alt lines, 3 legs, 85%+"],
+  ["games4", "4 legs, 4 different games"],
+  ["early3", "Early slate, 2 to 3 legs"],
+  ["prime3", "Prime time, 3 legs"],
+  ["weekend4", "Weekend special, 4 legs"],
 ];
 const OPEN_KINDS = [
   ["yards", "Yards"],
@@ -37,9 +50,15 @@ function openTickets() {
 }
 
 function legSport(leg) {
-  if (OPEN_SPORTS.includes(leg.sport)) return leg.sport;
-  const match = String(leg.label || "").match(/—\s*(NFL|MLB|NBA|NHL|WNBA|NCAAF|PGA)\b/);
-  return match ? match[1] : "";
+  if (leg.sport) return leg.sport;
+  const match = String(leg.label || "").match(/—\s*([^,]+),/);
+  return match ? match[1].trim() : "";
+}
+
+function sportsIn(names) {
+  const found = [...names].filter(Boolean);
+  const rest = found.filter((name) => !OPEN_SPORTS.includes(name)).sort();
+  return OPEN_SPORTS.filter((name) => found.includes(name)).concat(rest);
 }
 
 function legKinds(leg) {
@@ -116,7 +135,7 @@ function chip(group, value, label, on) {
 function drawOpenFilters(rows) {
   const box = document.getElementById("open-filters");
   if (!box) return;
-  const sports = OPEN_SPORTS.filter((sport) => rows.some((ticket) => ticketSports(ticket).has(sport)));
+  const sports = sportsIn(rows.flatMap((ticket) => [...ticketSports(ticket)]).concat(((window.state && window.state.board && window.state.board.games) || []).map((game) => game.sport)));
   const cards = OPEN_CARDS.filter(([id]) => rows.some((ticket) => ticket.card === id));
   const legCounts = ["2", "3", "4", "5"].filter((count) => rows.some((ticket) => String((ticket.legs || []).length) === count));
   const kinds = OPEN_KINDS.filter(([id]) => rows.some((ticket) => ticketKinds(ticket).includes(id)));
@@ -253,12 +272,12 @@ function recSpan(ticket) {
 }
 
 function recLeagues(ticket) {
-  const known = [...ticketSports(ticket)].filter((name) => OPEN_SPORTS.includes(name));
+  const known = [...ticketSports(ticket)].filter(Boolean);
   if (known.length) return [...new Set(known)];
   const game = String(ticket.game || "").replace(/\s*\([^)]*\)/g, "");
   const sides = game.split(/\s+at\s+|\s+@\s+/i).map((side) => side.trim().split(" ").pop()).filter((word) => word && word.length > 3);
   if (sides.length < 2) return [];
-  const hits = ((window.state && window.state.board && window.state.board.games) || []).filter((row) => OPEN_SPORTS.includes(row.sport) && sides.every((word) => String(row.match || "").includes(word)));
+  const hits = ((window.state && window.state.board && window.state.board.games) || []).filter((row) => row.sport && sides.every((word) => String(row.match || "").includes(word)));
   const sports = [...new Set(hits.map((row) => row.sport))];
   return sports.length === 1 ? sports : [];
 }
@@ -358,7 +377,7 @@ function recOrder(board) {
 
 function paintRecFilters(board) {
   const rows = listedRecs(board).map((row) => row.ticket);
-  const leagues = OPEN_SPORTS.filter((name) => rows.some((ticket) => recLeagues(ticket).includes(name)));
+  const leagues = sportsIn(rows.flatMap((ticket) => recLeagues(ticket)).concat(((window.state && window.state.board && window.state.board.games) || []).map((game) => game.sport)));
   const kinds = REC_KINDS.filter(([id]) => rows.some((ticket) => (ticket.legs || []).some((leg) => recLegKind(leg) === id)));
   const counts = [...new Set(rows.map((ticket) => (ticket.legs || []).length))].filter(Boolean).sort((a, b) => a - b);
   const games = [...new Set(rows.map((ticket) => ticket.game).filter(Boolean))].sort();

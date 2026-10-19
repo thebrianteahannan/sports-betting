@@ -46,12 +46,12 @@ function paintChoices() {
 
 function liveSports() {
   const block = ["props", "both", "tourney", "off"].includes(window.memberLaw || "");
-  return CHOICE_SPORTS.filter((sport) => !block || sport !== "NCAAF");
+  const found = [...new Set(((window.state && window.state.board && window.state.board.games) || []).map((game) => game.sport).filter(Boolean))];
+  const list = found.length ? CHOICE_SPORTS.filter((sport) => found.includes(sport)).concat(found.filter((sport) => !CHOICE_SPORTS.includes(sport)).sort()) : CHOICE_SPORTS;
+  return list.filter((sport) => !block || (sport !== "NCAAF" && sport !== "NCAAB"));
 }
 
-function chosenSports() {
-  return choice.sports.length ? choice.sports.filter((sport) => liveSports().includes(sport)) : liveSports();
-}
+function chosenSports() { return choice.sports.length ? choice.sports.filter((sport) => liveSports().includes(sport)) : liveSports(); }
 
 function paintKinds() {
   const kind = document.getElementById("choice-kind");
@@ -387,7 +387,7 @@ function swapCard(card) {
   if (card.id !== "choice-result") {
     const id = card.id || "";
     const sports = [...new Set(lis.map((li) => {
-      const hit = (li.querySelector(".leg-more")?.textContent || "").match(/—\s*(NFL|MLB|NBA|NHL|WNBA|NCAAF|PGA)\b/);
+      const hit = (li.querySelector(".leg-more")?.textContent || "").match(/—\s*([^,]+),/);
       return hit ? hit[1] : "";
     }).filter(Boolean))];
     choice.sports = sports;

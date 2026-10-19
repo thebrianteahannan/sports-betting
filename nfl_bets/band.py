@@ -15,7 +15,6 @@ from nfl_bets.choose import _clock, _fits, _parse, _place, offer_legs
 from nfl_bets.hedge import american_decimal, implied_prob
 
 _ET = ZoneInfo("America/New_York")
-_SPORTS = ("NFL", "MLB", "NBA", "NHL", "WNBA", "PGA")
 _LOW = -150
 _HIGH = 100
 
@@ -26,6 +25,7 @@ def build_band(games: list[dict[str, Any]], now: datetime | None = None, shown: 
     combos = _search(pools)
     chosen, only, marks = _next(combos, shown or [])
     card = _card(chosen)
+    card["offers"] = [{"title": str(alt.get("american") if alt.get("american") is not None else ""), "price": alt.get("american"), "impliedPct": alt.get("impliedPct"), "legs": alt.get("legs") or []} for alt in (_card(combo) for combo in combos) if alt.get("legs")]
     card["freshMarks"] = marks
     if only and chosen:
         card["note"] = f"{card.get('note') or ''} This is the only bet that fits, so it keeps showing up.".strip()
@@ -37,7 +37,7 @@ def _today(games: list[dict[str, Any]], now: datetime) -> list[dict[str, Any]]:
     start = now
     rows = []
     for game in games:
-        if str(game.get("sport") or "") not in _SPORTS:
+        if not str(game.get("sport") or ""):
             continue
         stamp = _parse(str(game.get("kickoff") or ""))
         if stamp is None or stamp < start or stamp.astimezone(_ET).date() != today:

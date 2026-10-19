@@ -90,7 +90,7 @@ function lawNote() {
 function blockCollege(card) {
   if (!["props", "both", "tourney", "off"].includes(window.memberLaw || "")) return false;
   const legs = [...(card.legs || []), ...((card.groups || []).flatMap((group) => group.legs || []))];
-  return legs.some((leg) => leg.sport === "NCAAF" || /\bNCAAF\b/.test(leg.label || ""));
+  return legs.some((leg) => /NCAA/.test(`${leg.sport || ""} ${leg.label || ""}`));
 }
 
 function applyMember(code) {

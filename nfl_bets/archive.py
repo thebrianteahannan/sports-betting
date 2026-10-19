@@ -14,7 +14,7 @@ _ET = ZoneInfo("America/New_York")
 _RESULTS = {"won", "lost", "push"}
 _TTL = 120.0
 _CACHE: dict[str, tuple[float, Any]] = {}
-_CARDS = ("chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive", "weekSafe", "weekEven")
+_CARDS = ("chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive", "weekSafe", "weekEven", "safe2", "mid3", "win4", "plusLegs", "mix21", "low3", "yards3", "ou4", "alt3", "games4", "early3", "prime3", "weekend4")
 _PATHS = {
     "NFL": "football/nfl", "NCAAF": "football/college-football", "Football": "football/college-football",
     "WNBA": "basketball/wnba", "NBA": "basketball/nba", "NCAAB": "basketball/mens-college-basketball",
@@ -109,7 +109,7 @@ def _from_board(board: dict[str, Any], games: dict[str, dict], stamp: str) -> li
         card = board.get(card_id)
         if not isinstance(card, dict):
             continue
-        groups = [group for group in card.get("groups") or [] if isinstance(group, dict)]
+        groups = [group for group in [*(card.get("groups") or []), *(card.get("offers") or [])] if isinstance(group, dict)]
         if groups:
             for group in groups:
                 legs = [_leg(leg, card, games) for leg in group.get("legs") or [] if isinstance(leg, dict)]
@@ -136,7 +136,7 @@ def _ticket(card_id: str, card: dict, games: dict, stamp: str, legs: list[dict],
         "sport": str(game.get("sport") or ""),
         "kickoff": str(game.get("kickoff") or ""),
         "american": price,
-        "impliedPct": card.get("impliedPct"),
+        "impliedPct": (group or {}).get("impliedPct", card.get("impliedPct")),
         "offeredAt": stamp,
         "lastSeenAt": stamp,
         "live": bool(card.get("live")),

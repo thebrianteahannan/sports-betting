@@ -102,16 +102,16 @@ function showMember(payload) {
 }
 
 const CARD_NAMES = {
-  band: "−150 to +100 window",
-  todayBet: "Highest chance parlay today",
-  chalk: "−400 to −700 legs, near −180",
-  four: "Four yardage legs near 85% each",
-  plus: "Four yardage legs near +250",
-  hits: "Five near 90% vs four near 80%",
-  weekThree: "3 legs, different days, near −200",
-  weekFive: "5 legs, different days, near −200",
-  weekSafe: "3 legs, different days, near −350",
-  weekEven: "3 legs, different days, near −100",
+  band: "−150 to +100 window", safe2: "Safe 2-leg, both 75%+",
+  todayBet: "Highest chance parlay today", mid3: "3 legs, −250 to −400",
+  chalk: "−400 to −700 legs, near −180", win4: "4 legs, −150 to −300",
+  four: "Four yardage legs near 85% each", plusLegs: "+100 to +200 legs",
+  plus: "Four yardage legs near +250", mix21: "2 favorites and 1 underdog",
+  hits: "Five near 90% vs four near 80%", low3: "Low-variance 3-leg",
+  weekThree: "3 legs, different days, near −200", yards3: "3 yardage legs near 80% each",
+  weekFive: "5 legs, different days, near −200", ou4: "2 overs and 2 unders",
+  weekSafe: "3 legs, different days, near −350", alt3: "Alt lines, 3 legs, 85%+",
+  weekEven: "3 legs, different days, near −100", games4: "4 legs, 4 different games", early3: "Early slate, 2 to 3 legs", prime3: "Prime time, 3 legs", weekend4: "Weekend special, 4 legs",
 };
 
 async function refreshActivity() {

@@ -139,6 +139,13 @@ def _run() -> dict[str, Any]:
         errors.append(f"Sway: {exc}")
         payload["errors"] = errors
     try:
+        from nfl_bets.strategies import build_new
+
+        payload.update(build_new(games))
+    except Exception as exc:  # noqa: BLE001
+        errors.append(f"Strategies: {exc}")
+        payload["errors"] = errors
+    try:
         from nfl_bets.archive import record_offers
 
         record_offers(payload)
@@ -160,7 +167,7 @@ def _parlays(games: list[dict[str, Any]], errors: list[str]) -> dict[str, Any]:
     blank = {"title": "No parlay", "goal": "", "copy": "No game on the board yet.", "legs": []}
     upcoming = [
         game for game in games
-        if game.get("kickoff") and str(game.get("sport") or "NFL") == "NFL"
+        if game.get("kickoff") and game.get("sport")
     ]
     if not upcoming:
         return {"chalk": blank, "four": blank, "plus": blank, "hits": blank}
@@ -173,7 +180,6 @@ def _parlays(games: list[dict[str, Any]], errors: list[str]) -> dict[str, Any]:
         return {"chalk": missed, "four": missed, "plus": missed, "hits": missed}
 
 
-_TODAY_SPORTS = {"NFL", "NHL", "NBA", "MLB", "NCAAF", "WNBA"}
 _ET = ZoneInfo("America/New_York")
 
 
@@ -200,11 +206,17 @@ def _today_bet(games: list[dict[str, Any]], now: datetime, errors: list[str]) ->
             cross = None
         if cross:
             offers.extend(_offers(cross))
-    best = max(
-        offers,
-        key=lambda offer: (float(offer.get("impliedPct") or -1), 0 if offer.get("live") else 1),
-        default=None,
-    )
+    ranked = sorted(offers, key=lambda offer: (-float(offer.get("impliedPct") or -1), 0 if offer.get("live") else 1))
+    kept, seen = [], set()
+    for offer in ranked:
+        mark = tuple(str(leg.get("label") or "") for leg in offer.get("legs") or [])
+        if not mark or mark in seen:
+            continue
+        seen.add(mark)
+        kept.append(offer)
+        if len(kept) == 6:
+            break
+    best = kept[0] if kept else None
     if not best:
         return {
             "title": "Highest chance parlay today",
@@ -226,6 +238,7 @@ def _today_bet(games: list[dict[str, Any]], now: datetime, errors: list[str]) ->
         "note": best.get("note") or "",
         "copy": "",
         "legs": best.get("legs") or [],
+        "offers": [{"title": str(item.get("american") if item.get("american") is not None else ""), "price": item.get("american"), "impliedPct": item.get("impliedPct"), "legs": item.get("legs") or []} for item in kept],
     }
 
 
@@ -242,7 +255,7 @@ def _today_games(games: list[dict[str, Any]], now: datetime) -> list[dict[str, A
     grouped: dict[str, list[tuple[datetime, dict[str, Any]]]] = {}
     for game in games:
         sport = str(game.get("sport") or "")
-        if sport not in _TODAY_SPORTS:
+        if not sport:
             continue
         stamp = _parse(str(game.get("kickoff") or ""))
         if stamp is None or stamp.astimezone(_ET).date() != today:
