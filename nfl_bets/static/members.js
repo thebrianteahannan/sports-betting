@@ -377,7 +377,7 @@ function birdMenu(kind) {
         head.textContent = [shown, pct, mark].filter(Boolean).join(" · ") || name;
         const gist = document.createElement("p");
         gist.className = "rec-gist";
-        gist.textContent = ticket.legs.map((leg) => String(leg.label || "").split(/,|\s+—\s+/)[0].trim()).filter(Boolean).join(", ");
+        gist.innerHTML = ticket.legs.map((leg) => { const bit = String(leg.label || "").split(/,|\s+—\s+/)[0].trim(); if (!bit) return ""; const cut = bit.match(/^(.*?)(?:\s*:\s*|\s+)((?:\d+(?:\.\d+)?\+|[+-]\d|over\b|under\b).+)$/i); return cut ? `<i>${esc(cut[1])}</i> ${esc(cut[2])}` : `<i>${esc(bit)}</i>`; }).filter(Boolean).join(", ");
         bet.append(head, gist);
         ticket.legs.forEach((leg) => { const line = document.createElement("span"); const odds = Number(leg.odds); const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : ""; line.textContent = [tag, leg.label].filter(Boolean).join(" "); bet.append(line); });
         block.append(bet);

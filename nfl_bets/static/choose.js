@@ -444,7 +444,7 @@ function recLeg(leg) {
   const who = esc(String(leg.player || parts[0] || "").split(/\d/)[0].trim().toLowerCase());
   const line = esc((String(parts[0]).match(/(\d+(?:\.\d+)?)/) || [])[1] || "");
   const word = esc((String(parts[0]).toLowerCase().match(/shots|threes|assists|rebounds|points|yards|receptions|strikeouts|hits|goals|saves|touchdowns/) || [])[0] || "");
-  const clock = leg.kickoff && typeof when === "function" && !/\d{1,2}:\d{2}\s*[AP]M/i.test(leg.label || "") ? ` · ${when(leg.kickoff)} ET` : "";
+  const clock = !recLeg.one && leg.kickoff && typeof when === "function" && !/\d{1,2}:\d{2}\s*[AP]M/i.test(leg.label || "") ? ` · ${when(leg.kickoff)} ET` : "";
   const more = `${parts.length > 1 ? ` — ${esc(parts.slice(1).join(" — "))}` : ""}${esc(clock)}`;
   return `<li data-drop="${who}" data-line="${line}" data-word="${word}"><b>${esc(tag)}</b><span>${esc(parts[0])}<span class="leg-more">${more}</span></span><em>${esc(leg.pct || "")}</em></li>`;
 }
@@ -469,10 +469,9 @@ function openRec(index) {
   const bits = (ticket.legs || []).map((leg) => String(leg.pct || "").trim()).filter(Boolean);
   const legsLine = bits.length > 1 ? `The legs are ${bits.slice(0, -1).join(", ")}, and ${bits[bits.length - 1]}` : "";
   const priceLine = shown && pct ? `The parlay is ${shown}, about ${pct}${recWin(price)}` : "";
-  const copy = [sports, ticket.game, legsLine, priceLine].filter(Boolean).join(". ");
+  const copy = [sports, [ticket.game, (recLeg.one = (ticket.legs || []).length > 1 && new Set((ticket.legs || []).map((leg) => leg.gameId || leg.match || "").filter(Boolean)).size === 1, recLeg.one) && typeof when === "function" && ((ticket.legs || []).find((leg) => leg.kickoff) || {}).kickoff ? `${when((ticket.legs || []).find((leg) => leg.kickoff).kickoff)} ET` : ""].filter(Boolean).join(", "), legsLine, priceLine].filter(Boolean).join(". ");
   const stars = typeof starHtml === "function" ? starHtml(typeof cardGood === "function" ? cardGood(ticket.card, ticket) : 0, ticket.card, "", "") : "";
-  const link = typeof fanLink === "function" ? fanLink() : "";
-  card.innerHTML = `<h2>${esc(row.name || ticket.title || "This bet")}</h2><p>${esc(copy)}</p><ol>${(ticket.legs || []).map(recLeg).join("")}</ol><p class="pick-save">${link}${stars}</p>`;
+  card.innerHTML = `<h2>${esc(row.name || ticket.title || "This bet")}</h2><p>${esc(copy)}</p><ol>${(ticket.legs || []).map(recLeg).join("")}</ol><p class="pick-save">${stars}</p>`;
   card.hidden = false;
   const glass = document.getElementById("desk-glass-in");
   if (glass && !glass.contains(card)) glass.append(card);

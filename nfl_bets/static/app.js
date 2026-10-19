@@ -123,11 +123,6 @@ function unitOf(leg) {
   return words.find((word) => text.includes(word)) || "";
 }
 
-function fanLink() {
-  const book = window.bookLink ? bookLink() : { name: "FanDuel", href: "https://sportsbook.fanduel.com/" };
-  return `<a class="ghost" href="${book.href}" target="_blank" rel="noopener" aria-label="Open in ${book.name}" title="Open in ${book.name}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 5h5v5M19 5l-9 9M17 13v6H5V7h6"/></svg></a>`;
-}
-
 function renderFeatured(prefix, best, heading, aim) {
   const box = $(prefix);
   if (!best) {
@@ -158,7 +153,7 @@ function renderFeatured(prefix, best, heading, aim) {
   $(`${prefix}-note`).textContent = dropMiss(best.note || "");
   const shaped = best.group ? { legs: best.legs } : best.card;
   const mine = cardGood(best.id, shaped);
-  $(`${prefix}-save`).innerHTML = `${pullButton(best.id)}${fanLink()}${starHtml(mine, best.id, best.group, "")}`;
+  $(`${prefix}-save`).innerHTML = `${pullButton(best.id)}${starHtml(mine, best.id, best.group, "")}`;
 }
 
 function bandWhy(best) {
@@ -269,7 +264,7 @@ function renderParlay(id, card) {
     box.appendChild(save);
   }
   const mine = cardGood(id, card);
-  save.innerHTML = `${pullButton(id)}${fanLink()}${starHtml(mine, id, "", "")}`;
+  save.innerHTML = `${pullButton(id)}${starHtml(mine, id, "", "")}`;
 }
 
 function pulledText(card) {
@@ -439,7 +434,7 @@ function pickRow(pick, archive) {
   const clock = when(rated ? (pick.goodAt || pick.offeredAt) : archive ? pick.offeredAt : pick.savedAt);
   const word = rated ? "Rated" : archive ? "Pulled" : "Saved";
   const playing = [pick.game, eventClock(pick, pick.legs)].filter(Boolean).join(" · ");
-  return `<article class="ticket">${clock ? `<p class="pulled">${word} ${esc(clock)} ET</p>` : ""}<h3>${esc(pick.title)}${price ? ` ${esc(price)}` : ""}</h3><p class="quiet">${esc(playing)}</p><ol class="chalk-legs">${legs}</ol><p class="pick-save">${good}${mark}${fanLink()}</p></article>`;
+  return `<article class="ticket">${clock ? `<p class="pulled">${word} ${esc(clock)} ET</p>` : ""}<h3>${esc(pick.title)}${price ? ` ${esc(price)}` : ""}</h3><p class="quiet">${esc(playing)}</p><ol class="chalk-legs">${legs}</ol><p class="pick-save">${good}${mark}</p></article>`;
 }
 
 function goodControl(pick, archive) {

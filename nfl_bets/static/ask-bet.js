@@ -24,16 +24,9 @@ function paintDig() {
       if (desk && desk.classList.contains("dug")) hideInfo();
       else showInfo(card);
     });
-    const ask = barButton("bet-ask-open", "Ask Parlay the Parrot");
-    ask.setAttribute("aria-label", "Ask Parlay the Parrot about this bet");
-    ask.addEventListener("pointerdown", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      openBet(card);
-    });
     const anchor = bar.querySelector(".leg-edit") || bar.querySelector("[data-save], [data-unsave], #choice-save");
-    if (anchor) anchor.after(more, ask);
-    else bar.prepend(more, ask);
+    if (anchor) anchor.after(more);
+    else bar.prepend(more);
   });
   syncMore();
 }
@@ -79,12 +72,6 @@ function showInfo(card) {
   const line = document.getElementById("bird-line");
   if (line) line.classList.remove("answer");
   syncMore();
-}
-
-function openBet(card) {
-  askTrail = [];
-  window.digCard = card;
-  askBet();
 }
 
 let askTrail = [];
