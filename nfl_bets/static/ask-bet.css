@@ -28,6 +28,16 @@
   animation: desk-bob 3.2s ease-in-out infinite;
 }
 #desk.tv-full #desk-glass, #desk.tv-full #desk-glass-in { background: rgba(7, 19, 26, 0.55); }
+@media (min-aspect-ratio: 959 / 1024) {
+  #desk.tv-full #desk-actor,
+  #desk.tv-full #desk-glow,
+  #desk.tv-full #desk-sign,
+  #desk.tv-full #desk-neon { visibility: hidden; }
+  #desk.tv-full #desk-bg {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 74%, #000 84%);
+    mask-image: linear-gradient(to bottom, transparent 74%, #000 84%);
+  }
+}
 #desk.tv-full.bird-on:not(.dug) #bird-guide:not([hidden]) { top: 3.6rem; background: transparent; }
 #desk.tv-full #desk-glass-in { padding-top: 3.6rem; }
 @media (max-width: 560px) {

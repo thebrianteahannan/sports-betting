@@ -95,7 +95,8 @@ function place(x, y, scale, box) {
 
 function shot() {
   const { w, h } = viewSize();
-  return place(480, 512, Math.min(w / 959, h / 1024));
+  const wide = document.getElementById("desk")?.classList.contains("tv-full") && w > h * 959 / 1024;
+  return place(480, wide ? 1024 : 512, wide ? Math.max(w / 959, h / 1024) : Math.min(w / 959, h / 1024));
 }
 
 function setMenu(on) {
@@ -117,6 +118,8 @@ function toggleTv() {
   const on = desk.classList.toggle("tv-full");
   if (on) desk.insertBefore(glass, document.getElementById("desk-dock"));
   else glow.after(glass);
+  cam = shot();
+  apply();
   if (!btn) return;
   btn.setAttribute("aria-pressed", on ? "true" : "false");
   btn.setAttribute("aria-label", on ? "Close the TV" : "Make the TV full screen");
