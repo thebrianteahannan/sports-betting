@@ -473,4 +473,15 @@ document.getElementById("desk-back").addEventListener("click", (event) => {
 }, true);
 
 document.getElementById("desk-ask").addEventListener("click", () => askBet("general"));
-document.getElementById("desk-name").addEventListener("click", () => { const desk = document.getElementById("desk"); if (desk && desk.classList.contains("tv-full")) askBet("general"); });
+document.getElementById("desk-name").addEventListener("click", () => {
+  const desk = document.getElementById("desk");
+  if (!desk || !desk.classList.contains("tv-full")) return;
+  window.recOpen = false;
+  const card = document.getElementById("rec-open");
+  if (card) { card.classList.remove("solo-on"); card.hidden = true; }
+  const full = document.getElementById("desk-full");
+  if (full) full.click();
+  if (typeof showTab === "function") showTab("today");
+  const home = document.getElementById("desk-home");
+  if (home) home.click();
+});

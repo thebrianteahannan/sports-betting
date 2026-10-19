@@ -350,6 +350,8 @@ function recOrder(board) {
   });
   blocks.forEach((block) => {
     board.append(block);
+    const rate = parseFloat((block.dataset.rates || "").split(",")[index]);
+    block.classList.toggle("rec-cold", Number.isFinite(index) && !(Number.isFinite(rate) && rate >= 65));
     block.querySelectorAll(".rec-history span").forEach((mark) => mark.classList.toggle("on", mark.dataset.rate === recSort));
   });
 }
