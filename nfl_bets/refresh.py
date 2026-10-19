@@ -214,8 +214,6 @@ def _today_bet(games: list[dict[str, Any]], now: datetime, errors: list[str]) ->
             continue
         seen.add(mark)
         kept.append(offer)
-        if len(kept) == 6:
-            break
     best = kept[0] if kept else None
     if not best:
         return {

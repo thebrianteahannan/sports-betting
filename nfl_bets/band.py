@@ -76,6 +76,7 @@ def _search(pools: list[tuple[dict[str, Any], list[dict[str, Any]], bool]]) -> l
                 if american is None or american < _LOW or american > _HIGH:
                     continue
                 _hold(found, (implied_prob(american), -size), combo)
+    found.sort(key=lambda item: item[0], reverse=True)
     return [combo for _, combo, _ in found]
 
 
@@ -85,11 +86,8 @@ def _hold(found: list[tuple[tuple, list[tuple[dict, dict, bool]], str]], rank: t
         if prior == mark:
             if rank > old:
                 found[index] = (rank, list(combo), mark)
-                found.sort(key=lambda item: item[0], reverse=True)
             return
     found.append((rank, list(combo), mark))
-    found.sort(key=lambda item: item[0], reverse=True)
-    del found[6:]
 
 
 def _next(combos: list[list[tuple[dict, dict, bool]]], shown: list[str]) -> tuple[list[tuple[dict, dict, bool]], bool, list[str]]:

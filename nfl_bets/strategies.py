@@ -18,7 +18,6 @@ from nfl_bets.hedge import american_decimal, implied_prob
 
 _ET = ZoneInfo("America/New_York")
 _CAP = 16
-_KEEP = 6
 Row = tuple[dict[str, Any], dict[str, Any]]
 
 
@@ -105,7 +104,7 @@ def _search(rows: list[tuple[dict[str, Any], list[dict[str, Any]]]], count: int,
     menus = menus[:10]
     if len(menus) < count:
         return []
-    found: list[tuple[float, str, list[Row]]] = []
+    found: dict[str, tuple[float, list[Row]]] = {}
     for group in combinations(range(len(menus)), count):
         choices = [menus[index][1] for index in group]
         games = [menus[index][0] for index in group]
@@ -124,20 +123,14 @@ def _search(rows: list[tuple[dict[str, Any], list[dict[str, Any]]]], count: int,
                 continue
             mark = "|".join(sorted(str(leg.get("label") or "") for leg, _game in paired))
             rank = score(paired)
-            prior = next((index for index, item in enumerate(found) if item[1] == mark), None)
-            if prior is not None:
-                if rank < found[prior][0]:
-                    found[prior] = (rank, mark, paired)
-                    found.sort(key=lambda item: item[0])
-                continue
-            found.append((rank, mark, paired))
-            found.sort(key=lambda item: item[0])
-            del found[_KEEP:]
-    return [item[2] for item in found]
+            prior = found.get(mark)
+            if prior is None or rank < prior[0]:
+                found[mark] = (rank, paired)
+    return [paired for _rank, paired in sorted(found.values(), key=lambda item: item[0])]
 
 
 def _with(combos: list[list[Row]], count: int, title: str, goal: str) -> dict[str, Any]:
-    ready = [combo for combo in combos if len(combo) >= count][:_KEEP]
+    ready = [combo for combo in combos if len(combo) >= count]
     card = _ticket(ready[0] if ready else [], count, title, goal)
     card["offers"] = []
     for combo in ready:

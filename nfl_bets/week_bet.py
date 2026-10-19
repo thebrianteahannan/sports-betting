@@ -201,8 +201,6 @@ def _choose(menu: dict[str, list[tuple[dict, dict, bool]]], count: int, target: 
             continue
         marks.add(mark)
         kept.append(combo)
-        if len(kept) == 6:
-            break
     return kept
 
 
