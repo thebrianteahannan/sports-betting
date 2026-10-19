@@ -26,6 +26,8 @@
   animation: desk-bob 3.2s ease-in-out infinite;
 }
 #desk.tv-full #desk-glass, #desk.tv-full #desk-glass-in { background: rgba(7, 19, 26, 0.55); }
+#desk-glass #rec-open { border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.5); box-shadow: none; }
+#desk.tv-full #desk-glass #rec-open { width: min(880px, calc(100% - 4.5rem)); margin: 1.1rem auto 1.5rem; }
 #desk.tv-full.bird-on:not(.dug) #bird-guide:not([hidden]) { top: 3.6rem; background: transparent; }
 #desk.tv-full #desk-glass-in { padding-top: 3.6rem; }
 @media (max-width: 560px) {
@@ -196,20 +198,12 @@
   font-family: "Outfit", sans-serif; font-size: 15px; line-height: 1.4; color: #d5deea;
 }
 #desk-glass .leg-edit,
-#desk.tv-full #desk-glass .leg-edit,
-#desk-glass .half-go,
-#desk.tv-full #desk-glass .half-go {
-  display: inline-block; width: auto; height: auto; min-height: 0; margin: 0.1rem 0.9rem 0.55rem 0;
+#desk.tv-full #desk-glass .leg-edit {
+  display: inline-block; width: auto; height: auto; min-height: 0; margin: 0.1rem 0 0.55rem;
   padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
   color: #9dffc0; font-family: "Outfit", sans-serif; font-size: 15px; font-weight: 600;
   letter-spacing: 0; text-transform: none; text-decoration: underline; cursor: pointer;
 }
-#desk-glass .half-go.on { color: #f4fff6; }
-#desk-glass .half-box { margin: 0.2rem 0 0.8rem; }
-#desk-glass .half-title, #desk-glass .half-name {
-  font-family: "Rajdhani", sans-serif; font-weight: 700; color: #f4fff6; letter-spacing: 0.02em;
-}
-#desk-glass .half-name { margin-top: 0.15rem; }
 #bird-picks #bet-mic {
   background: transparent; color: #9dffc0; border: 1px solid #3dff6e; box-shadow: none; flex: 0 0 auto;
 }

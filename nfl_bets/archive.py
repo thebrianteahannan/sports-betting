@@ -163,7 +163,7 @@ def _leg(raw: dict[str, Any], card: dict, games: dict) -> dict[str, Any]:
         "scope": _scope(text),
         "sport": sport or str(raw.get("sport") or game.get("sport") or card.get("sport") or ""),
         "match": match,
-        "gameId": str(raw.get("gameId") or card.get("gameId") or game.get("id") or ""),
+        "gameId": str(raw.get("gameId") or card.get("gameId") or ""),
         "espnId": str(game.get("espnId") or ""),
         "kickoff": str(raw.get("kickoff") or game.get("kickoff") or card.get("kickoff") or ""),
         "result": "open",
