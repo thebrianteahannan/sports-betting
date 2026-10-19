@@ -27,20 +27,22 @@ async function paintGateRecord() {
 }
 
 function birdBrag() {
-  const pct = window.birdPct;
-  if (pct == null) return "";
-  return `Not to brag or anything, but ${pct}% of my recommended bets are winning. Are you sure you're smarter than a bird?`;
+  const archive = ((window.state && window.state.board && window.state.board.archive) || []);
+  const picks = Object.entries(CARD_NAMES).flatMap(([id, name]) => (id === "hits" ? [["hits", "Five near 90% each", "five"], ["hits", "Four near 80% each", "four"]] : [[id, name, ""]])).flatMap(([id, name, part]) => {
+    const done = archive.filter((ticket) => ticket.card === id && (ticket.result === "won" || ticket.result === "lost") && (!part || hitsPart(ticket) === part));
+    const rates = [7, 30].map((span) => ({ span: span === 7 ? "week" : "month", pct: parseFloat(recPct(done, Date.now() - 86400000 * span)), n: recPct.n })).filter((row) => row.n >= 5 && row.pct >= 75).sort((a, b) => b.pct - a.pct);
+    return rates[0] ? [{ id, name, part, span: rates[0].span, pct: rates[0].pct }] : [];
+  }).sort((a, b) => b.pct - a.pct);
+  if (!picks.length) { window.birdHot = null; return ""; }
+  const hot = picks[window.birdTurn || 0]; window.birdTurn = ((window.birdTurn || 0) + 1) % picks.length;
+  return (window.birdHot = Object.assign(hot, { text: `Not to brag, but ${hot.name} hit ${hot.pct.toFixed(1)}% this ${hot.span}.` })).text;
 }
-
-async function loadBirdPct() {
-  if (window.birdPct != null) return;
-  try {
-    const response = await memberFetch("/api/record", { cache: "no-store" });
-    if (!response.ok) return;
-    const row = await response.json();
-    const pct = Number(row.pct);
-    if (Number.isFinite(pct)) window.birdPct = pct.toFixed(1);
-  } catch (error) {}
+function birdBragGo(text) {
+  const hot = window.birdHot; if (!hot || hot.text !== text) return false;
+  if (window.goFull) goFull(); birdMenu("bets");
+  const block = [...document.querySelectorAll("#bird-picks .rec-strategy")].find((node) => node.dataset.card === hot.id && (node.dataset.part || "") === hot.part);
+  if (block) { block.classList.add("open"); block.scrollIntoView({ block: "start" }); }
+  return true;
 }
 function showGate() {
   document.body.classList.add("needs-member");
@@ -54,7 +56,7 @@ function showGate() {
   if (window.deskGate) window.deskGate();
 }
 
-window.birdBrag = birdBrag;
+window.birdBrag = birdBrag; window.birdBragGo = birdBragGo;
 
 function showMember(payload) {
   document.body.classList.remove("needs-member");
@@ -73,7 +75,6 @@ function showMember(payload) {
   window.fullAt = member.fullAt || "";
   if (window.applyMember) applyMember(window.memberState);
   window.memberReady = true;
-  loadBirdPct();
   const call = document.getElementById("call-name");
   if (call && document.activeElement !== call) call.value = member.name || "";
   const spoken = document.getElementById("bird-line");
@@ -315,7 +316,7 @@ function recPct(rows, since) {
     const prior = seen.get(key);
     if (key && Number.isFinite(when) && when >= since && (!prior || when >= prior.when)) seen.set(key, { when, won: ticket.result === "won" });
   });
-  const list = [...seen.values()];
+  const list = [...seen.values()]; recPct.n = list.length;
   return list.length ? `${((list.filter((row) => row.won).length / list.length) * 100).toFixed(1)}%` : "—";
 }
 
@@ -346,7 +347,7 @@ function birdMenu(kind) {
   const empty = [];
   strategies.forEach(([id, name, part]) => {
     const block = document.createElement("section");
-    block.className = "rec-strategy";
+    block.className = "rec-strategy"; block.dataset.card = id; block.dataset.part = part;
     const heading = document.createElement("h3");
     heading.innerHTML = `${name} <span class="rec-count"></span>`;
     block.append(heading);
@@ -366,7 +367,7 @@ function birdMenu(kind) {
         if (seen.has(key)) return;
         seen.add(key);
         const bet = document.createElement("div");
-        bet.className = "rec-bet";
+        bet.className = "rec-bet"; bet.dataset.key = key;
         if (ticket.result === "won" || ticket.result === "lost") bet.classList.add(ticket.result);
         bet.dataset.rec = String((window.recTickets = window.recTickets || []).push({ ticket, name }) - 1);
         const price = Number(ticket.american);
@@ -393,7 +394,7 @@ function birdMenu(kind) {
   filled.forEach((block) => board.append(block));
   empty.forEach((block) => board.append(block));
   if (window.paintRecFilters) paintRecFilters(board);
-  row.append(board);
+  row.append(board); if (window.recKeep) { const keep = window.recKeep; window.recKeep = null; board.querySelectorAll(".rec-strategy").forEach((node) => node.classList.toggle("open", keep.strategies.includes(`${node.dataset.card}|${node.dataset.part || ""}`))); board.querySelectorAll(".rec-bet").forEach((node) => node.classList.toggle("open", keep.bets.includes(node.dataset.key))); const guide = document.getElementById("bird-guide"); if (guide) guide.scrollTop = keep.scroll; }
 }
 
 function goFull() {

@@ -316,7 +316,7 @@ function bootDesk() {
   if (menu) menu.addEventListener("click", (event) => {
     event.stopPropagation();
     if (window.goFull) goFull();
-    if (birdPending) { const pending = birdPending; birdPending = null; menu.classList.remove("bird-has"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Ask Parlay the Parrot"); birdSay(pending[0], pending[1]); return; }
+    if (birdPending) { const pending = birdPending; birdPending = null; menu.classList.remove("bird-has", "bird-brag"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Ask Parlay the Parrot"); if (!(window.birdBragGo && birdBragGo(pending[0]))) birdSay(pending[0], pending[1]); return; }
     if (window.askBet) askBet("general");
   });
   document.addEventListener("click", (event) => {
@@ -390,7 +390,7 @@ function birdBump() {
     const nudge = BIRD_NUDGES[birdNudge % BIRD_NUDGES.length];
     birdNudge += 1;
     const text = nudge[2] === "brag" && window.birdBrag ? birdBrag() : nudge[0];
-    if (text) { birdPending = [text, nudge[1]]; const menu = document.getElementById("desk-menu"); if (menu) { menu.classList.add("bird-has"); const words = text.split(/\s+/); menu.dataset.say = words.slice(0, 6).join(" ") + (words.length > 6 ? " ..." : ""); menu.setAttribute("aria-label", "Parlay has something to say"); } }
+    if (text) { birdPending = [text, nudge[1]]; const menu = document.getElementById("desk-menu"); if (menu) { menu.classList.add("bird-has"); menu.classList.toggle("bird-brag", nudge[2] === "brag"); const words = text.split(/\s+/); const cap = nudge[2] === "brag" ? words.length : 6; menu.dataset.say = words.slice(0, cap).join(" ") + (words.length > cap ? " ..." : ""); menu.setAttribute("aria-label", "Parlay has something to say"); } }
     birdBump();
   }, BIRD_WAIT);
 }

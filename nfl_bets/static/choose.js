@@ -458,7 +458,7 @@ function recWin(price) {
 function openRec(index) {
   const row = (window.recTickets || [])[Number(index)];
   if (!row) return;
-  const ticket = row.ticket;
+  const ticket = row.ticket; window.recKeep = { strategies: [...document.querySelectorAll("#bird-picks .rec-strategy.open")].map((node) => `${node.dataset.card}|${node.dataset.part || ""}`), bets: [...document.querySelectorAll("#bird-picks .rec-bet.open")].map((node) => node.dataset.key), scroll: (document.getElementById("bird-guide") || {}).scrollTop || 0 };
   const card = document.getElementById("rec-open") || document.createElement("section");
   card.id = "rec-open";
   card.className = "chalk";
