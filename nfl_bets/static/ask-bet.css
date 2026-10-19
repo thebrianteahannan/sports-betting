@@ -81,6 +81,8 @@
 #bird-picks .rec-strategy { padding: 0.5rem 0.7rem 0.55rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.92); cursor: pointer; }
 #bird-picks .rec-strategy h3 { margin: 0; color: #f4fff6; font-size: 15px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; }
 #bird-picks .rec-strategy h3::after { content: " +"; color: #3dff6e; }
+#bird-picks .rec-strategy h3 .rec-count { color: #3dff6e; }
+#bird-picks .rec-strategy h3 .rec-count::before { content: " · "; }
 #bird-picks .rec-strategy.open h3::after { content: " –"; }
 #bird-picks .rec-strategy > :not(h3):not(.rec-history) { display: none; }
 #bird-picks .rec-strategy.open > .rec-bet,
@@ -94,11 +96,15 @@
 #bird-picks .rec-bet.open span { display: block; }
 #bird-picks .rec-bet .rec-gist { margin: 0.2rem 0 0; color: #3dff6e; font-size: 14px; font-weight: 700; line-height: 1.3; text-transform: none; }
 #bird-picks .rec-history { margin: 0.15rem 0 0; color: #3dff6e; font-size: 14px; font-weight: 700; line-height: 1.3; }
+#bird-picks .rec-history span + span::before { content: ", "; }
+#bird-picks .rec-history span.on { color: #f4fff6; text-decoration: underline; }
 #bird-picks .rec-strategy.open .rec-history { margin-bottom: 0.5rem; }
 @media (min-width: 721px) {
   #bird-picks .rec-strategy { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; column-gap: 1rem; }
   #bird-picks .rec-strategy h3 { flex: 1 1 auto; }
   #bird-picks .rec-history { flex: 0 0 auto; margin: 0; white-space: nowrap; }
+  #bird-picks .rec-filters .rec-sort { justify-content: flex-end; padding-right: 0.15rem; }
+  #bird-picks .rec-filters .rec-sort .name { margin-right: auto; }
   #bird-picks .rec-strategy.open .rec-history { margin-bottom: 0; }
   #bird-picks .rec-strategy > .rec-bet,
   #bird-picks .rec-strategy > p:not(.rec-history) { flex: 1 0 100%; }
@@ -112,6 +118,8 @@
 #bird-picks .rec-filters:not(.open) .row { display: none; }
 #bird-picks .rec-filters .rec-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 #bird-picks .rec-filters .rec-tools { display: flex; align-items: center; gap: 0.35rem; }
+#bird-picks .rec-filters .rec-sort { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+#desk.tv-full #desk-glass #bird-picks .rec-filters .rec-sort button { font-size: 13px; padding: 0.28rem 0.55rem; }
 #bird-picks .rec-bet.won b { color: #3dff6e; }
 #bird-picks .rec-bet.lost b { color: #ffb4b4; }
 #bird-picks .rec-filters .rec-fold::after { content: " +"; color: #3dff6e; }
@@ -137,28 +145,28 @@
 }
 #desk.tv-full #desk-glass #bird-picks .ask-model { font-size: 14px; }
 #bird-picks:has(#bet-ask) { flex-wrap: nowrap; }
-#bird-picks:has(#bet-ask):has(.ask-ideas) { flex-wrap: wrap; }
-#bird-picks:has(.ask-ideas) #bet-ask,
-#bird-picks:has(.ask-ideas) #bet-ask-go,
-#bird-picks:has(.ask-ideas) #bet-mic { order: -1; }
-#bird-picks .ask-ideas { flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 0.4rem; }
-#bird-picks .ask-ideas button.ask-rest {
-  background: none; box-shadow: none; padding: 0.15rem 0;
-  color: #9dffc0; font-family: "Outfit", sans-serif; font-size: 15px;
-  font-weight: 600; text-decoration: underline;
+#bird-guide:has(> .ask-ideas) #bird-picks { flex-wrap: wrap; }
+#bird-guide:has(> .ask-ideas) #bet-ask,
+#bird-guide:has(> .ask-ideas) #bet-mic { order: -1; }
+#bird-guide:has(> .ask-ideas) #bet-ask-go { flex: 1 0 100%; justify-content: center; text-align: center; }
+#bird-guide > .ask-ideas {
+  align-self: flex-end; width: auto; flex: 0 0 auto; margin: 0;
+  padding: 0.35rem 0.7rem; border: 0; border-radius: 8px;
+  background: #3dff6e; color: #04140c; font-family: "Rajdhani", sans-serif;
+  font-weight: 700; letter-spacing: 0.04em; cursor: pointer; text-align: center;
 }
+#desk.tv-full #desk-glass #bird-guide > .ask-ideas { font-size: 18px; }
+#bird-guide:not(:has(#bet-ask)) > .ask-ideas { display: none; }
 @media (max-width: 720px) {
   #desk.tv-full.bird-on #bird-guide:has(#bet-ask) { justify-content: flex-start; }
   #desk.tv-full #desk-glass #bird-guide:has(#bet-ask) #bird-line:not(.answer) {
     font-size: 16px; line-height: 1.25; padding: 12px 14px;
   }
-  #desk.tv-full #desk-glass #bird-picks .ask-ideas button.ask-idea {
-    padding: 0.18rem 0.45rem; font-size: 14px; line-height: 1.15; border-radius: 7px;
-  }
 }
 #bird-picks:has(#bet-ask):has(.ask-bet-card),
 #bird-picks:has(#bet-ask):has(.ask-more) { flex-wrap: wrap; }
-#bird-picks #bet-ask { width: auto; flex: 1 1 0; min-width: 0; }
+#bird-picks:has(#bet-ask) { align-items: flex-start; }
+#bird-picks #bet-ask { width: auto; flex: 1 1 auto; align-self: flex-start; min-width: 0; max-height: 10rem; resize: none; overflow: auto; line-height: 1.35; }
 #desk-glass #bird-picks section.ask-bet-card,
 #desk.tv-full #desk-glass #bird-picks section.ask-bet-card {
   flex: 1 0 100%; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box;

@@ -348,12 +348,14 @@ function birdMenu(kind) {
     const block = document.createElement("section");
     block.className = "rec-strategy";
     const heading = document.createElement("h3");
-    heading.textContent = name;
+    heading.innerHTML = `${name} <span class="rec-count"></span>`;
     block.append(heading);
     const done = archive.filter((ticket) => ticket.card === id && (ticket.result === "won" || ticket.result === "lost") && (!part || hitsPart(ticket) === part));
     const history = document.createElement("p");
     history.className = "rec-history";
-    history.textContent = [day, day * 7, day * 30, day * 365].map((span) => recPct(done, now - span)).join(", ");
+    const rates = [day, day * 7, day * 30, day * 365].map((span) => recPct(done, now - span));
+    history.innerHTML = rates.map((text, index) => `<span data-rate="${index}">${text}</span>`).join("");
+    block.dataset.rates = rates.map((text) => parseFloat(text)).join(",");
     block.append(history);
     const seen = new Set();
     const live = (ticket) => ![ticket.kickoff, ...(ticket.legs || []).map((leg) => leg.kickoff)].some((iso) => Number.isFinite(Date.parse(iso || "")) && Date.parse(iso || "") <= now);
@@ -380,6 +382,7 @@ function birdMenu(kind) {
         ticket.legs.forEach((leg) => { const line = document.createElement("span"); const odds = Number(leg.odds); const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : ""; line.textContent = [tag, leg.label].filter(Boolean).join(" "); bet.append(line); });
         block.append(bet);
       });
+    heading.querySelector(".rec-count").textContent = seen.size;
     if (!block.querySelector(".rec-bet")) {
       const note = document.createElement("p");
       note.textContent = past ? "None finished yet." : "None you can place right now.";
@@ -483,7 +486,7 @@ function hearAsk(box) {
     ear.lang = "en-US";
     ear.interimResults = true;
     ear.onresult = (event) => {
-      box.value = [...event.results].map((row) => row[0].transcript).join(" ").trim();
+      box.value = [...event.results].map((row) => row[0].transcript).join(" ").trim(); box.dispatchEvent(new Event("input"));
     };
     const done = () => { if (askEar === ear) askEar = null; mic.classList.remove("on"); mic.textContent = "Speak"; };
     ear.onend = done;

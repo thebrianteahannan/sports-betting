@@ -105,45 +105,33 @@ function askBet(kind, kept) {
   const row = document.getElementById("bird-picks");
   if (!row) return;
   const placeholder = general ? "Ask me anything" : "Ask about this bet";
-  row.innerHTML = `<input id="bet-ask" maxlength="160" placeholder="${placeholder}" autocomplete="off"><button type="button" id="bet-mic" aria-label="Speak your question">Speak</button><button type="button" id="bet-ask-go">Ask</button>`;
+  row.innerHTML = `<textarea id="bet-ask" rows="1" maxlength="160" placeholder="${placeholder}" autocomplete="off"></textarea><button type="button" id="bet-mic" aria-label="Speak your question">Speak</button><button type="button" id="bet-ask-go">Ask</button>`;
   const box = document.getElementById("bet-ask"); if (window.hearAsk) hearAsk(box);
   const go = () => replyBet();
-  box.addEventListener("keydown", (event) => { if (event.key === "Enter") go(); });
+  box.addEventListener("keydown", (event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); go(); } });
+  box.addEventListener("input", () => growAsk(box));
+  growAsk(box);
   document.getElementById("bet-ask-go").addEventListener("click", go);
   if (general) paintIdeas(row);
   else if (window.digCard && window.digCard.querySelector("ol li")) row.prepend(betPreview(window.digCard));
   focusAsk(box);
 }
 
-const ASK_IDEAS = ["−150 to +100 window", "Highest chance parlay today", "−400 to −700 legs, near −180", "Four yardage legs near 85% each", "Four yardage legs near +250", "Five near 90% each", "Four near 80% each", "3 legs, different days, near −200", "5 legs, different days, near −200", "3 legs, different days, near −350", "3 legs, different days, near −100"];
+function growAsk(box) {
+  box.style.height = "auto";
+  if (box.scrollHeight > box.clientHeight + 1) box.style.height = `${box.scrollHeight}px`;
+}
 
-function paintIdeas(row) {
-  const wrap = document.createElement("div");
-  wrap.className = "ask-ideas";
-  ASK_IDEAS.forEach((label, index) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "ask-idea";
-    button.textContent = label;
-    if (index >= 5 && innerWidth < 721) button.hidden = true;
-    button.addEventListener("click", () => {
-      const field = document.getElementById("bet-ask");
-      if (field) field.value = label;
-      replyBet();
-    });
-    wrap.append(button);
-  });
-  const more = document.createElement("button");
-  more.type = "button";
-  more.className = "ask-rest";
-  more.hidden = innerWidth >= 721;
-  more.textContent = "Show more";
-  more.addEventListener("click", () => {
-    wrap.querySelectorAll(".ask-idea[hidden]").forEach((button) => { button.hidden = false; });
-    more.hidden = true;
-  });
-  wrap.append(more);
-  row.prepend(wrap);
+function paintIdeas() {
+  const guide = document.getElementById("bird-guide");
+  if (!guide) return;
+  guide.querySelectorAll(":scope > .ask-ideas").forEach((node) => node.remove());
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "ask-ideas";
+  button.textContent = "Recommended bets";
+  button.addEventListener("click", () => { if (window.birdMenu) birdMenu("bets"); });
+  guide.prepend(button);
 }
 
 function focusAsk(box) {
@@ -205,9 +193,11 @@ function cardPack(question) {
 function askAgain() {
   const row = document.getElementById("bird-picks");
   if (!row) return;
-  row.insertAdjacentHTML("beforeend", `<input id="bet-ask" maxlength="160" placeholder="Ask another question" autocomplete="off"><button type="button" id="bet-mic" aria-label="Speak your question">Speak</button><button type="button" id="bet-ask-go">Ask</button>`);
+  row.insertAdjacentHTML("beforeend", `<textarea id="bet-ask" rows="1" maxlength="160" placeholder="Ask another question" autocomplete="off"></textarea><button type="button" id="bet-mic" aria-label="Speak your question">Speak</button><button type="button" id="bet-ask-go">Ask</button>`);
   const again = document.getElementById("bet-ask"); if (window.hearAsk) hearAsk(again);
-  again.addEventListener("keydown", (event) => { if (event.key === "Enter") replyBet(); });
+  again.addEventListener("keydown", (event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); replyBet(); } });
+  again.addEventListener("input", () => growAsk(again));
+  growAsk(again);
   document.getElementById("bet-ask-go").addEventListener("click", replyBet);
   again.focus();
 }
