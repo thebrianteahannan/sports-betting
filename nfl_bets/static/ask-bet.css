@@ -119,6 +119,24 @@
 #bird-picks .rec-bet.rec-edge, #choice-result .rec-bet.rec-edge { border-color: #ffe14a; box-shadow: inset 3px 0 0 #ffe14a; }
 #bird-picks .rec-bet.rec-edge .rec-gist em, #choice-result .rec-bet.rec-edge .rec-gist em { color: #ffe14a; }
 #choice-result .rec-bet .rec-gist em.rec-known, #choice-result .rec-bet.rec-edge .rec-gist em.rec-known { color: #3dff6e; }
+#admin-rates { font-family: "Outfit", sans-serif; text-align: left; }
+#admin-rates .rec-bet { margin: 0 0 0.45rem; padding: 0.55rem 0.7rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.72); cursor: pointer; }
+#admin-rates .rec-bet b { display: block; color: #f4fff6; font-size: 16px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+#admin-rates .rec-bet b::after { content: " +"; color: #3dff6e; }
+#admin-rates .rec-bet.open b::after { content: " –"; }
+#admin-rates .rec-bet > span { display: none; margin-top: 0.2rem; color: #d5deea; font-size: 14px; line-height: 1.3; }
+#admin-rates .rec-bet.open > span { display: block; }
+#admin-rates .rec-bet .rec-gist { margin: 0.2rem 0 0; color: #f4fff6; font-size: 14px; font-weight: 700; line-height: 1.3; text-transform: none; letter-spacing: 0; }
+#admin-rates .rec-bet .rec-gist i { color: #3dff6e; font-style: normal; font-weight: 700; }
+#admin-rates .rec-bet .rec-gist em { display: block; margin-top: 0.2rem; color: #d7e2ea; font-style: normal; font-weight: 700; text-align: left; }
+#admin-rates .rec-bet b .stars { display: inline-flex; margin-left: 0.35rem; vertical-align: -0.12rem; }
+#admin-rates .rec-bet b .stars button { width: auto; height: auto; min-height: 0; padding: 0 0.05rem; font-size: 16px; line-height: 1; pointer-events: none; }
+@media (min-width: 721px) {
+  #admin-rates .rec-bet { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; column-gap: 1rem; }
+  #admin-rates .rec-bet b { flex: 0 0 auto; }
+  #admin-rates .rec-bet .rec-gist { flex: 1 1 12rem; margin: 0; text-align: right; }
+  #admin-rates .rec-bet > span { flex: 1 0 100%; }
+}
 #desk.tv-full #desk-glass #choice-result > h2, #choice-result > h2 { margin: 0 0 0.55rem; color: #f4fff6; font-size: 16px; letter-spacing: 0.02em; text-transform: uppercase; }
 #bird-picks .rec-history { margin: 0.15rem 0 0; color: #3dff6e; font-size: 14px; font-weight: 700; line-height: 1.3; }
 #bird-picks .rec-history span + span::before { content: ", "; }

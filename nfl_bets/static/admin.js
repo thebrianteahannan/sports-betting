@@ -84,10 +84,12 @@ function paintRates(payload) {
   }
   list.innerHTML = rows.map((row) => {
     const clock = row.at && typeof when === "function" ? `${when(row.at)} ET` : "";
-    const price = row.american == null || row.american === "" ? "" : ` ${typeof american === "function" ? american(row.american) : row.american}`;
-    const lines = (row.lines || []).map(builtLine).join("") || "<p>That bet is no longer on the record.</p>";
-    const stars = `${row.stars} star${row.stars === 1 ? "" : "s"}`;
-    return `<article class="report-card"><p><b>${esc(row.name || "Member")}</b> · ${esc(stars)} · ${esc(clock)}</p><p>${esc(row.title || "Bet")}${esc(String(price))}</p>${lines}</article>`;
+    const price = row.american == null || row.american === "" ? "" : (typeof american === "function" ? american(row.american) : String(row.american));
+    const stars = `<span class="stars">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="star${n <= row.stars ? " on" : ""}" tabindex="-1" aria-hidden="true">★</button>`).join("")}</span>`;
+    const gist = (row.lines || []).map((line) => (window.legGist ? legGist({ label: line }) : "")).filter(Boolean).join(", ");
+    const lines = (row.lines || []).map((line) => `<span>${esc(line)}</span>`).join("");
+    const who = [row.name || "Member", clock].filter(Boolean).join(" · ");
+    return `<div class="rec-bet"><b>${esc(price)} ${stars}</b><p class="rec-gist">${esc(row.title || "Bet")}${gist ? ` ${gist}` : " That bet is no longer on the record."}<em>${esc(who)}</em></p>${lines}</div>`;
   }).join("");
 }
 
@@ -233,6 +235,11 @@ function bindAdmin() {
   });
   const del = document.getElementById("ignore-delete");
   if (del) del.addEventListener("click", () => { deleteIgnored().catch((error) => { document.getElementById("ignore-note").textContent = String(error.message || error); }); });
+  const rates = document.getElementById("admin-rates");
+  if (rates) rates.addEventListener("click", (event) => {
+    const bet = event.target.closest(".rec-bet");
+    if (bet) bet.classList.toggle("open");
+  });
   const built = document.getElementById("admin-built");
   if (built) built.addEventListener("click", (event) => {
     const button = event.target.closest("[data-make-strategy]");
