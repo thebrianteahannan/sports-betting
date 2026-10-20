@@ -8,8 +8,9 @@
 #desk.tv-full #desk-logo { display: none; }
 #desk.tv-full #desk-glass #desk-back { display: inline-flex; }
 #desk.tv-full #desk-name {
-  z-index: 14; top: 0.55rem; left: 3.15rem; transform: none;
-  height: 2.55rem; width: auto; max-width: min(52vw, 220px);
+  z-index: 14; top: 0.28rem; left: 3.15rem; transform: none;
+  height: auto; width: auto; max-height: 5.4rem; max-width: min(42vw, 200px);
+  object-fit: contain; object-position: left top;
   pointer-events: auto; cursor: pointer;
 }
 #desk.tv-full #desk-glass .chalk > .pick-save { left: 10.8rem; }
