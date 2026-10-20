@@ -368,12 +368,12 @@ function birdSay(text, picks) {
   if (desk) { desk.classList.add("bird-on"); tvPaint(); }
   line.textContent = text; line.classList.toggle("warn", /ruin people's lives/i.test(text)); line.classList.toggle("pow", text === "Squawk!!!");
   row.replaceChildren();
-  (picks || []).forEach(([tab, label, aim]) => {
+  (picks || []).forEach(([tab, label, aim, off]) => {
     const button = document.createElement("button");
     button.type = "button";
     if (tab === "quiz" || tab === "ask" || tab === "menu" || tab === "parrot") button.dataset[tab] = aim || "";
     else { button.dataset.tab = tab; if (aim) button.dataset.aim = aim; }
-    button.textContent = label;
+    button.textContent = label; if (off) button.disabled = true;
     row.append(button);
   });
   box.hidden = false;

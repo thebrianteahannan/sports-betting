@@ -457,10 +457,13 @@ if (sayBird) {
   };
 }
 
+window.askBack = () => { const steps = window.askSteps; const past = window.askPast; const pick = window.choice; if (!window.asking || !steps || !past || !past.length || !pick) return false; const step = past.pop(); const order = ["when", "sport", "game", "kind", "legs"].concat(window.askFree ? ["aim"] : []); steps.splice(0, steps.length, ...order.slice(Math.max(0, order.indexOf(step)))); if (step === "sport") pick.sports = []; else if (step === "kind") pick.kind = "any"; else if (step === "legs") pick.legs = 3; else if (step === "game") pick.gameIds = []; else if (step === "aim") pick.aim = ""; else if (step === "when") pick.when = "today"; if (window.paintChoices) paintChoices(); if (window.askStep) askStep(); return true; };
+
 document.getElementById("desk-back").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
   if (!desk || !desk.classList.contains("tv-full")) return;
   event.stopImmediatePropagation();
+  if (window.askBack && askBack()) return;
   const shot = askTrail.pop();
   if (shot) { restoreAsk(shot); return; }
   if (window.recBack && recBack()) return;

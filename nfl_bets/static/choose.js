@@ -9,11 +9,11 @@ const SPORT_KINDS = {
 };
 const AIM_LABEL = { top: "1 safest", safe: "Safe", good: "Good", payout: "Best payout" };
 const GO_LABEL = { top: "Show the safest", safe: "Show a safe bet", good: "Show a good bet", payout: "Show the best payout" };
-const choice = { sports: [], kind: "any", legs: 3, gameIds: [], when: "today", aim: "top" };
+const choice = window.choice = { sports: [], kind: "any", legs: 3, gameIds: [], when: "today", aim: "top" };
 const seenBets = {};
 
-function choiceButton(label, on, attr, value) {
-  return `<button type="button" class="${on ? "on" : ""}" ${attr}="${value}">${label}</button>`;
+function choiceButton(label, on, attr, value, off) {
+  return `<button type="button" class="${on ? "on" : ""}" ${off ? "disabled" : ""} ${attr}="${value}">${label}</button>`;
 }
 
 function paintChoices() {
@@ -27,7 +27,7 @@ function paintChoices() {
     )).join("");
   }
   sports.innerHTML = liveSports().map((sport) => (
-    choiceButton(sport, choice.sports.includes(sport), "data-sport", sport)
+    choiceButton(sport, choice.sports.includes(sport), "data-sport", sport, !sportOn(sport))
   )).join("");
   legs.innerHTML = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
     choiceButton(count === 0 ? "Any number" : count === 1 ? "1 pick" : `${count} picks`, choice.legs === count, "data-legs", String(count))
@@ -51,16 +51,17 @@ function liveSports() {
   return list.filter((sport) => !block || (sport !== "NCAAF" && sport !== "NCAAB"));
 }
 
-function chosenSports() { return choice.sports.length ? choice.sports.filter((sport) => liveSports().includes(sport)) : liveSports(); }
+function sportOn(name) { const games = (window.state && window.state.board && window.state.board.games) || []; return games.some((game) => (!name || game.sport === name) && Number.isFinite(Date.parse(game.kickoff || "")) && choiceWindow(Date.parse(game.kickoff))); }
+function chosenSports() { const open = liveSports().filter(sportOn); return choice.sports.length ? choice.sports.filter((sport) => open.includes(sport)) : open; }
 
 function paintKinds() {
   const kind = document.getElementById("choice-kind");
   if (!kind) return;
   const allowed = new Set(chosenSports().flatMap((sport) => SPORT_KINDS[sport] || []));
-  const kinds = ["any"].concat(KIND_ORDER.filter((name) => allowed.has(name)));
-  if (!kinds.includes(choice.kind)) choice.kind = "any";
+  const kinds = ["any"].concat(KIND_ORDER);
+  if (choice.kind !== "any" && !allowed.has(choice.kind)) choice.kind = "any";
   kind.innerHTML = kinds.map((name) => (
-    `<option value="${name}">${name === "any" ? "Any player prop" : KIND_LABELS[name]}</option>`
+    `<option value="${name}"${name !== "any" && !allowed.has(name) ? " disabled" : ""}>${name === "any" ? "Any player prop" : KIND_LABELS[name]}</option>`
   )).join("");
   kind.value = choice.kind;
 }
@@ -69,17 +70,17 @@ function paintGames() {
   const select = document.getElementById("choice-game");
   const board = window.state && window.state.board;
   if (!select || !board) return;
-  const sports = new Set(chosenSports());
+  const sports = new Set(choice.sports.length ? chosenSports() : liveSports());
   const games = (board.games || []).filter((game) => {
     if (!sports.has(game.sport)) return false;
     const kick = Date.parse(game.kickoff || "");
-    return Number.isFinite(kick) && choiceWindow(kick);
+    return Number.isFinite(kick) && kick > Date.now();
   });
-  games.sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
+  games.sort((a, b) => Number(choiceWindow(Date.parse(b.kickoff))) - Number(choiceWindow(Date.parse(a.kickoff))) || Date.parse(a.kickoff) - Date.parse(b.kickoff));
   select.innerHTML = games.map((game) => {
     const clock = typeof when === "function" ? when(game.kickoff) : "";
     const label = `${game.sport} · ${game.match}${clock ? ` · ${clock} ET` : ""}`;
-    return `<option value="${String(game.id)}">${esc(label)}</option>`;
+    return `<option value="${String(game.id)}"${choiceWindow(Date.parse(game.kickoff)) ? "" : " disabled"}>${esc(label)}</option>`;
   }).join("");
   const wanted = new Set(choice.gameIds);
   [...select.options].forEach((option) => { option.selected = wanted.has(option.value); });
@@ -182,8 +183,8 @@ function askStart(aim) {
   choice.aim = aim || "";
   choice.hold = [];
   choice.drop = [];
-  window.asking = true;
-  ask = ["when", "sport", "game", "kind", "legs"];
+  window.asking = true; window.askPast = []; window.askFree = !aim;
+  ask = window.askSteps = ["when", "sport", "game", "kind", "legs"];
   if (!aim) ask.push("aim");
   birdBump();
   askStep();
@@ -192,15 +193,14 @@ function askStart(aim) {
 function askAnswer(token) {
   if (!ask) return;
   const cut = token.indexOf(":");
-  const key = token.slice(0, cut);
-  const value = token.slice(cut + 1);
+  const key = token.slice(0, cut); const value = token.slice(cut + 1); if (key === "back") { if (window.askBack) askBack(); return; }
   if (key === "when") choice.when = value;
   else if (key === "sport") choice.sports = value ? [value] : [];
   else if (key === "kind") choice.kind = value;
   else if (key === "legs") choice.legs = Number(value);
   else if (key === "game") choice.gameIds = value ? [value] : [];
   else if (key === "aim") choice.aim = value;
-  ask.shift();
+  window.askPast.push(ask[0]); ask.shift();
   paintChoices();
   askStep();
 }
@@ -212,20 +212,22 @@ function askButtons(step) {
       : choice.aim === "payout"
         ? "A bigger payout loses more often. "
         : "";
-    return [`${lead}Today, or this week?`, [["ask", "Today", "when:today"], ["ask", "This week", "when:week"]]];
+    return [`${lead}Today, or this week?`, ["today", "week"].map((span) => { const saved = choice.when; choice.when = span; const on = sportOn(""); choice.when = saved; return ["ask", span === "today" ? "Today" : "This week", `when:${span}`, on ? "" : "off"]; })];
   }
   if (step === "sport") {
-    return ["Which league? All of them is fine.", [["ask", "All of them", "sport:"]].concat(liveSports().map((name) => ["ask", name, `sport:${name}`]))];
+    const open = liveSports().some(sportOn);
+    return ["Which league? All of them is fine.", [["ask", "All of them", "sport:", open ? "" : "off"]].concat(liveSports().map((name) => ["ask", name, `sport:${name}`, sportOn(name) ? "" : "off"]))];
   }
   if (step === "game") {
     const opts = [...document.querySelectorAll("#choice-game option")];
-    if (opts.length < 1 || opts.length > 32) return null;
-    return ["Any game, or one of these?", [["ask", "Any game", "game:"]].concat(opts.map((opt) => ["ask", opt.textContent, `game:${opt.value}`]))];
+    const play = opts.filter((opt) => !opt.disabled).length;
+    if (!opts.length || play > 32) return null;
+    return ["Any game, or one of these?", [["ask", "Any game", "game:", play ? "" : "off"]].concat(opts.map((opt) => ["ask", opt.textContent, `game:${opt.value}`, opt.disabled ? "off" : ""]))];
   }
   if (step === "kind") {
     const opts = [...document.querySelectorAll("#choice-kind option")];
     if (opts.length < 2) return null;
-    return ["Any stat, or one of these?", opts.map((opt) => ["ask", opt.textContent, `kind:${opt.value}`])];
+    return ["Any stat, or one of these?", opts.map((opt) => ["ask", opt.textContent, `kind:${opt.value}`, opt.disabled ? "off" : ""])];
   }
   if (step === "legs") {
     return ["How many picks?", [["ask", "Any number", "legs:0"]].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => ["ask", n === 1 ? "1 pick" : `${n} picks`, `legs:${n}`]))];
@@ -269,7 +271,7 @@ function askGo() {
   });
 }
 
-window.askStart = askStart;
+window.askStart = askStart; window.askStep = askStep;
 window.askAnswer = askAnswer;
 
 
@@ -432,8 +434,7 @@ document.addEventListener("change", (event) => {
   if (go) go.disabled = !card.querySelector(".leg-check:checked");
 });
 
-window.paintChoices = paintChoices;
-window.paintEdits = paintEdits;
+window.paintChoices = paintChoices; window.paintEdits = paintEdits;
 paintChoices();
 
 function recLeg(leg) {
