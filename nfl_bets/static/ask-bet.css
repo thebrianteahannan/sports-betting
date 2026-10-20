@@ -114,6 +114,9 @@
 #bird-picks .rec-bet.open span { display: block; }
 #bird-picks .rec-bet .rec-gist { margin: 0.2rem 0 0; color: #f4fff6; font-size: 14px; font-weight: 700; line-height: 1.3; text-transform: none; }
 #bird-picks .rec-bet .rec-gist i { color: #3dff6e; font-style: normal; font-weight: 700; }
+#bird-picks .rec-bet .rec-gist em { display: block; margin-top: 0.2rem; color: #d7e2ea; font-style: normal; font-weight: 700; text-align: left; }
+#bird-picks .rec-bet.rec-edge { border-color: #ffe14a; box-shadow: inset 3px 0 0 #ffe14a; }
+#bird-picks .rec-bet.rec-edge .rec-gist em { color: #ffe14a; }
 #bird-picks .rec-history { margin: 0.15rem 0 0; color: #3dff6e; font-size: 14px; font-weight: 700; line-height: 1.3; }
 #bird-picks .rec-history span + span::before { content: ", "; }
 #bird-picks .rec-history span.on { color: #f4fff6; text-decoration: underline; }

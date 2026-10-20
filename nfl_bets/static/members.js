@@ -361,24 +361,24 @@ function birdMenu(kind) {
     const seen = new Set();
     const live = (ticket) => ![ticket.kickoff, ...(ticket.legs || []).map((leg) => leg.kickoff)].some((iso) => Number.isFinite(Date.parse(iso || "")) && Date.parse(iso || "") <= now);
     archive.filter((ticket) => ticket.card === id && (!part || hitsPart(ticket) === part) && ticket.legs && ticket.legs.length && (past ? (ticket.result === "won" || ticket.result === "lost") : ((!ticket.result || ticket.result === "open") && live(ticket))))
-      .sort((a, b) => String((past ? b.settledAt : b.offeredAt) || "").localeCompare(String((past ? a.settledAt : a.offeredAt) || "")))
+      .sort((a, b) => (past ? 0 : ((b.edge === true) - (a.edge === true) || (b.why ? 1 : 0) - (a.why ? 1 : 0))) || String((past ? b.settledAt : b.offeredAt) || "").localeCompare(String((past ? a.settledAt : a.offeredAt) || "")))
       .forEach((ticket) => {
         const key = `${past ? ticket.settledAt : ticket.american}|${ticket.result || ""}|${ticket.legs.map((leg) => leg.label).join("|")}`;
         if (seen.has(key)) return;
         seen.add(key);
         const bet = document.createElement("div");
-        bet.className = "rec-bet"; bet.dataset.key = key;
+        bet.className = ticket.edge ? "rec-bet rec-edge" : "rec-bet"; bet.dataset.key = key;
         if (ticket.result === "won" || ticket.result === "lost") bet.classList.add(ticket.result);
         bet.dataset.rec = String((window.recTickets = window.recTickets || []).push({ ticket, name }) - 1);
         const price = Number(ticket.american);
         const shown = Number.isFinite(price) ? (price > 0 ? `+${price}` : String(price)) : "";
         const pct = ticket.impliedPct != null && ticket.impliedPct !== "" ? `${ticket.impliedPct}%` : "";
-        const mark = ticket.result === "won" ? "Won" : ticket.result === "lost" ? "Lost" : "";
+        const mark = ticket.result === "won" ? "Won" : ticket.result === "lost" ? "Lost" : ticket.edge ? "Better" : "";
         const head = document.createElement("b");
         head.textContent = [shown, pct, mark].filter(Boolean).join(" · ") || name;
         const gist = document.createElement("p");
         gist.className = "rec-gist";
-        gist.innerHTML = ticket.legs.map((leg) => { const bit = String(leg.label || "").split(/,|\s+—\s+/)[0].trim(); if (!bit) return ""; const cut = bit.match(/^(.*?)(?:\s*:\s*|\s+)((?:\d+(?:\.\d+)?\+|[+-]\d|over\b|under\b).+)$/i); const prop = !cut && /\s+or\s+|\s+&\s+/i.test(bit) ? String(leg.market || "").split(/\s+-\s+/).pop().replace(/^Either Player\s*/i, "").trim() : ""; return cut ? `<i>${esc(cut[1])}</i> ${esc(cut[2])}` : prop ? `<i>${esc(bit)}</i> ${esc(prop)}` : `<i>${esc(bit)}</i>`; }).filter(Boolean).join(", ");
+        gist.innerHTML = ticket.legs.map((leg) => { const bit = String(leg.label || "").split(/,|\s+—\s+/)[0].trim(); if (!bit) return ""; const cut = bit.match(/^(.*?)(?:\s*:\s*|\s+)((?:\d+(?:\.\d+)?\+|[+-]\d|over\b|under\b).+)$/i); const prop = !cut && /\s+or\s+|\s+&\s+/i.test(bit) ? String(leg.market || "").split(/\s+-\s+/).pop().replace(/^Either Player\s*/i, "").trim() : ""; return cut ? `<i>${esc(cut[1])}</i> ${esc(cut[2])}` : prop ? `<i>${esc(bit)}</i> ${esc(prop)}` : `<i>${esc(bit)}</i>`; }).filter(Boolean).join(", ") + (ticket.why ? `<em>${esc(ticket.why)}</em>` : "");
         bet.append(head, gist);
         ticket.legs.forEach((leg) => { const line = document.createElement("span"); const odds = Number(leg.odds); const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : ""; line.textContent = [tag, leg.label].filter(Boolean).join(" "); bet.append(line); });
         block.append(bet);

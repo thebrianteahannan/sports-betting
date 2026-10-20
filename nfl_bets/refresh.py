@@ -146,6 +146,13 @@ def _run() -> dict[str, Any]:
         errors.append(f"Strategies: {exc}")
         payload["errors"] = errors
     try:
+        from nfl_bets.edge import mark_board
+
+        mark_board(payload)
+    except Exception as exc:  # noqa: BLE001
+        errors.append(f"Edge: {exc}")
+        payload["errors"] = errors
+    try:
         from nfl_bets.archive import record_offers
 
         record_offers(payload)

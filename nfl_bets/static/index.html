@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="/app.css?v=46"/>
 <link rel="stylesheet" href="/desk.css?v=60"/>
 <link rel="stylesheet" href="/states.css?v=3"/>
-<link rel="stylesheet" href="/ask-bet.css?v=97"/>
+<link rel="stylesheet" href="/ask-bet.css?v=98"/>
 <style>
 #page-title { display: none; }
 #who { position: fixed; right: 0.7rem; bottom: 0.7rem; z-index: 20; margin: 0; }
@@ -376,6 +376,7 @@ body.day-board #parrot-load[hidden] { display: none; }
     <button type="button" class="tab" data-admin-tab="habits">Habits</button>
     <button type="button" class="tab" data-admin-tab="ignore">Ignoring</button>
     <button type="button" class="tab" data-admin-tab="strategy">Strategy</button>
+    <button type="button" class="tab" data-admin-tab="reads">Reads</button>
     <button type="button" class="tab" data-admin-tab="docs">Docs</button>
     <button type="button" class="tab" data-admin-tab="built">Built bets</button>
     <button type="button" class="tab" data-admin-tab="asks">Asked</button>
@@ -418,6 +419,18 @@ body.day-board #parrot-load[hidden] { display: none; }
     <h2>What has hit more often</h2>
     <article class="report-card"><p>NFL receiving yards, stack hits, and the −180 stack are the shapes the win filter can keep. Past results do not promise the next ticket.</p></article>
   </div>
+  <div id="admin-reads" hidden>
+    <p class="quiet">Reads that can separate two tickets with the same FanDuel price. The desk already uses the injury report, the building, the weekday, the time of day, rest, rivalry, and wind. <a href="/doc-view.html?file=attributes.pdf" target="_blank" rel="noopener">Open the PDF</a></p>
+    <article class="report-card"><p><b>Schedule and the trip</b></p><p>Second night of a back-to-back. Third game in four nights. Game number on the road trip, first stop versus the fifth. Miles traveled since the last game. Time zones crossed on the trip. A West Coast team playing an early East Coast start. Coming off a bye. Rest advantage, one team with three days and the other with eight. A look-ahead spot, with a bigger game next. A letdown spot, the game after a rivalry or a prime-time game.</p></article>
+    <article class="report-card"><p><b>The opponent</b></p><p>How many of this stat the opponent has allowed lately. Opponent pace. Opponent rank against this exact stat. Home and road splits for this stat. The last two weeks, not the season average. Division game. Former team. A confirmed starter on the other side versus a day-to-day one.</p></article>
+    <article class="report-card"><p><b>The player's role</b></p><p>Minutes or snap share trending up or down. Usage when a teammate is out. First game back from an injury. A minutes limit. Starter versus bench. Last three games, separate from the last five. Home split and road split. Performance after a short week. Performance in prime time. Sample size on the split: 4 of 4 is a different read from 22 of 30.</p></article>
+    <article class="report-card"><p><b>Who is missing</b></p><p>The quarterback, plus the backup's history. The corner who travels with this receiver. The center or the point guard, when the bet is rebounds or assists. A star teammate out. The starting pitcher versus the bullpen. The opposing goalie's save percentage. A game-time decision, listed separately from out.</p></article>
+    <article class="report-card"><p><b>The building</b></p><p>Dome versus outdoors. Grass versus turf. Altitude, Denver and Mexico City. Park factor for hits and home runs. Cold, which changes a passing game differently from wind. Indoor tennis versus outdoor, and the surface: hard, clay, or grass.</p></article>
+    <article class="report-card"><p><b>The number</b></p><p>Whether this prop has moved since the desk first saw it. The spread or total moving while this prop has not. Juice on the leg. An alternate line versus the main line. The same player offered in two tickets at two different numbers.</p></article>
+    <article class="report-card"><p><b>The parlay itself</b></p><p>One cold leg inside an otherwise strong ticket. Two legs from the same game. A quarterback and his receiver on the same ticket. A player and the opposing defense on the same ticket. Legs spread across days versus legs that all start in the same hour.</p></article>
+    <article class="report-card"><p><b>By sport, where a feed exists</b></p><p>Baseball: left-handed or right-handed pitcher, park, umpire strikeout tendency. Hockey: goalie, back-to-back, shots allowed. Basketball: referee foul rate, pace, rest. Football: turf, wind, the shadow corner, coming off a bye. Soccer: days since the midweek game, travel from Europe. Tennis: surface, yesterday's match length, head-to-head. Esports and table tennis need a roster change or a patch, and there is no clean public log for those yet.</p></article>
+    <article class="report-card"><p><b>Where to start</b></p><p>Back-to-backs, time zones, opponent pace and rank against the stat, home and road splits, first game back, the shadow corner, prop-line movement, and the lefty-righty or park split in baseball.</p></article>
+  </div>
   <div id="admin-built" hidden></div>
   <div id="admin-asks" hidden>
     <p class="quiet">Spoken bets that Build a Bet does not offer.</p>
@@ -458,6 +471,7 @@ body.day-board #parrot-load[hidden] { display: none; }
     <p><a href="/doc-view.html?file=marketing-overview.pdf" target="_blank" rel="noopener">Marketing overview</a></p>
     <p><a href="/doc-view.html?file=marketing-posts.pdf" target="_blank" rel="noopener">Social posts</a></p>
     <p><a href="/doc-view.html?file=payments.pdf" target="_blank" rel="noopener">Membership payments</a></p>
+    <p><a href="/doc-view.html?file=attributes.pdf" target="_blank" rel="noopener">Reads that separate a bet</a></p>
   </div>
 </section>
 </div>
@@ -468,13 +482,13 @@ body.day-board #parrot-load[hidden] { display: none; }
 </footer>
 <script src="/app.js?v=101"></script>
 <script src="/desk.js?v=81"></script>
-<script src="/members.js?v=73"></script>
+<script src="/members.js?v=74"></script>
 <script src="/stars.js?v=8"></script>
 <script src="/choose.js?v=59"></script>
 <script src="/lessons.js?v=8"></script>
 <script src="/filters.js?v=22"></script>
 <script src="/reports.js?v=1"></script>
-<script src="/admin.js?v=26"></script>
+<script src="/admin.js?v=27"></script>
 <script src="/sharecard.js?v=29"></script>
 <script src="/states.js?v=9"></script>
 <script src="/ask-bet.js?v=64"></script>

@@ -35,14 +35,18 @@ def record_offers(board: dict[str, Any]) -> list[dict[str, Any]]:
     with _LOCK:
         rows = _load()
         games = {str(game.get("id") or ""): game for game in board.get("games") or [] if isinstance(game, dict)}
-        stamp = str(board.get("updatedAt") or "")
-        for ticket in _from_board(board, games, stamp):
+        stamp = str(board.get("updatedAt") or ""); fresh = list(_from_board(board, games, stamp)); seen = {_signature(ticket) for ticket in fresh}
+        for ticket in fresh:
             prior = next((row for row in rows if _signature(row) == _signature(ticket)), None)
             if prior:
-                prior["lastSeenAt"] = stamp or prior.get("lastSeenAt")
-                continue
+                prior["lastSeenAt"] = stamp or prior.get("lastSeenAt"); prior["why"] = str(ticket.get("why") or ""); prior.pop("why", None) if not prior["why"] else None
+                (prior.__setitem__("edge", True) if ticket.get("edge") else prior.pop("edge", None)); continue
             rows.append(ticket)
-        _grade(rows)
+        cards = {ticket.get("card") for ticket in fresh}
+        for row in rows:
+            if str(row.get("result") or "") == "open" and row.get("card") in cards and _signature(row) not in seen:
+                row.pop("edge", None); row.pop("why", None)
+        _grade(rows); from nfl_bets.listed import mark_listed; mark_listed(rows)
         _write(rows)
         return _sorted(rows)
 def grade_open() -> list[dict[str, Any]]:
@@ -141,7 +145,7 @@ def _ticket(card_id: str, card: dict, games: dict, stamp: str, legs: list[dict],
         "lastSeenAt": stamp,
         "live": bool(card.get("live")),
         "result": "open",
-        "legs": legs,
+        "legs": legs, **({"edge": True} if (group or {}).get("edge") else {}), **({"why": str((group or {}).get("why"))} if (group or {}).get("why") else {}),
     }
 def _leg(raw: dict[str, Any], card: dict, games: dict) -> dict[str, Any]:
     label = str(raw.get("label") or "")
@@ -462,22 +466,18 @@ def _signature(row: dict[str, Any]) -> tuple:
 
 def _ymd(kickoff: str) -> str:
     try:
-        stamp = datetime.fromisoformat(kickoff.replace("Z", "+00:00"))
+        return datetime.fromisoformat(kickoff.replace("Z", "+00:00")).astimezone(_ET).strftime("%Y%m%d")
     except ValueError:
         return ""
-    return stamp.astimezone(_ET).strftime("%Y%m%d")
 
 def _cached(key: str, fetch) -> Any:
-    now = time.time()
-    hit = _CACHE.get(key)
-    ttl = 15.0 if "/summary?" in key else _TTL
+    now, hit, ttl = time.time(), _CACHE.get(key), 15.0 if "/summary?" in key else _TTL
     if hit and now - hit[0] < ttl:
         return hit[1]
     try:
         data = fetch()
     except Exception:  # noqa: BLE001
-        data = None
-        now -= _TTL - 30
+        data, now = None, now - (_TTL - 30)
     _CACHE[key] = (now, data)
     return data
 
@@ -486,8 +486,7 @@ def _sorted(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return rows
 
 def _load() -> list[dict[str, Any]]:
-    data = read_json(out_dir() / "archive.json", {"tickets": []})
-    rows = data.get("tickets") if isinstance(data, dict) else []
+    data = read_json(out_dir() / "archive.json", {"tickets": []}); rows = data.get("tickets") if isinstance(data, dict) else []
     return [row for row in rows or [] if isinstance(row, dict)]
 
 def _write(rows: list[dict[str, Any]]) -> None:
