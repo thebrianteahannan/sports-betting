@@ -473,6 +473,15 @@ document.getElementById("desk-back").addEventListener("click", (event) => {
 }, true);
 
 document.getElementById("desk-ask").addEventListener("click", () => askBet("general"));
+function openBuilt(index) {
+  const ticket = (window.builtPile || [])[Number(index)];
+  if (!ticket || !window.openRec) return;
+  const glass = document.getElementById("desk-glass-in");
+  window.builtKeep = { scroll: glass ? glass.scrollTop : 0 };
+  window.builtBack = true;
+  openRec((window.recTickets = window.recTickets || []).push({ ticket, name: ticket.title || "This bet" }) - 1);
+}
+window.openBuilt = openBuilt;
 document.getElementById("desk-name").addEventListener("click", () => {
   const desk = document.getElementById("desk");
   if (!desk || !desk.classList.contains("tv-full")) return;

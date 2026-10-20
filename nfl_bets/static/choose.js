@@ -29,8 +29,8 @@ function paintChoices() {
   sports.innerHTML = liveSports().map((sport) => (
     choiceButton(sport, choice.sports.includes(sport), "data-sport", sport)
   )).join("");
-  legs.innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
-    choiceButton(count === 1 ? "1 pick" : `${count} picks`, choice.legs === count, "data-legs", String(count))
+  legs.innerHTML = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
+    choiceButton(count === 0 ? "Any number" : count === 1 ? "1 pick" : `${count} picks`, choice.legs === count, "data-legs", String(count))
   )).join("");
   const aim = document.getElementById("choice-aim");
   const go = document.getElementById("choice-go");
@@ -115,11 +115,11 @@ async function runChoice() {
   const mark = (card.players || []).slice().sort().join("|");
   if (mark) seenBets[key] = card.only || card.again ? [mark] : (seenBets[key] || []).concat(mark).slice(-24);
   if (window.noteTaste && (card.legs || []).length) noteTaste("found", { title: card.title || "", when: choice.when, aim: choice.aim || "top", kind: choice.kind, sports: [...new Set((card.legs || []).map((leg) => leg.sport).filter(Boolean))] });
-  const pile = [card].concat(card.offers || []).filter((row) => (row.legs || []).length);
-  if (pile.length > 1 && !card.why) { card.edge = true; card.why = { payout: "This parlay pays the most of these.", top: "This parlay has the highest chance of these.", safe: "This is the safest of these.", good: "This is the closest to even money." }[choice.aim]; }
+  const pile = (window.builtPile = [card].concat(card.offers || []).filter((row) => (row.legs || []).length).sort((a, b) => (b.edge === true) - (a.edge === true)));
+  if (pile.length > 1 && !pile.some((row) => row.edge) && pile.slice(1).every((row) => row.american !== card.american)) { card.edge = true; card.why = { payout: "This parlay pays the most of these.", top: "This parlay has the highest chance of these.", safe: "This is the safest of these.", good: "This is the closest to even money." }[choice.aim]; }
   const gist = (leg) => { const bit = String(leg.label || "").split(/,|\s+—\s+/)[0].trim(); const cut = bit.match(/^(.*?)(?:\s*:\s*|\s+)((?:\d+(?:\.\d+)?\+|[+-]\d|over\b|under\b).+)$/i); return bit ? (cut ? `<i>${esc(cut[1])}</i> ${esc(cut[2])}` : `<i>${esc(bit)}</i>`) : ""; };
   window.builtLegs = card.legs || [];
-  const bets = pile.map((row, index) => { const price = Number(row.american); const shown = Number.isFinite(price) ? (price > 0 ? `+${price}` : String(price)) : ""; const pct = row.impliedPct != null && row.impliedPct !== "" ? `${row.impliedPct}%` : ""; const head = [shown, pct, row.edge ? "Better" : ""].filter(Boolean).join(" · "); const lines = (row.legs || []).map((leg) => { const odds = Number(leg.odds); const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : ""; const who = esc(String(leg.runner || leg.label || "").split(/\d/)[0].trim().toLowerCase()); const line = esc((String(leg.label || "").match(/(\d+(?:\.\d+)?)/) || [])[1] || ""); const word = esc((String(leg.label || "").toLowerCase().match(/shots|threes|assists|rebounds|points|yards|receptions|strikeouts|hits|goals|saves/) || [])[0] || ""); return `<span data-drop="${who}" data-line="${line}" data-word="${word}">${esc([tag, leg.label].filter(Boolean).join(" "))}</span>`; }).join(""); return `<div class="rec-bet${index ? "" : " open"}${row.edge ? " rec-edge" : ""}"><b>${esc(head)}</b><p class="rec-gist">${(row.legs || []).map(gist).filter(Boolean).join(", ")}${row.why ? `<em>${esc(row.why)}</em>` : ""}</p>${lines}</div>`; }).join("");
+  const bets = pile.map((row, index) => { const price = Number(row.american); const shown = Number.isFinite(price) ? (price > 0 ? `+${price}` : String(price)) : ""; const pct = row.impliedPct != null && row.impliedPct !== "" ? `${row.impliedPct}%` : ""; const head = [shown, pct, row.edge ? "Better" : ""].filter(Boolean).join(" · "); const lines = (row.legs || []).map((leg) => { const odds = Number(leg.odds); const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : ""; const who = esc(String(leg.runner || leg.label || "").split(/\d/)[0].trim().toLowerCase()); const line = esc((String(leg.label || "").match(/(\d+(?:\.\d+)?)/) || [])[1] || ""); const word = esc((String(leg.label || "").toLowerCase().match(/shots|threes|assists|rebounds|points|yards|receptions|strikeouts|hits|goals|saves/) || [])[0] || ""); return `<span data-drop="${who}" data-line="${line}" data-word="${word}">${esc([tag, leg.label].filter(Boolean).join(" "))}</span>`; }).join(""); return `<div class="rec-bet${index ? "" : " open"}${row.edge ? " rec-edge" : ""}" data-built="${index}"><b>${esc(head)}</b><p class="rec-gist">${(row.legs || []).map(gist).filter(Boolean).join(", ")}${row.why ? `<em>${esc(row.why)}</em>` : ""}</p>${lines}</div>`; }).join("");
   const stars = (card.legs || []).length ? `<span class="stars" id="choice-stars">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="star" data-built-star="${n}" aria-label="${n} star${n > 1 ? "s" : ""}">★</button>`).join("")}</span>` : "";
   const note = String(card.note || "").replace(/(?:Each leg is (?:a different game|on a different day, in a different game)|These (?:legs|four) are in different games), so (?:FanDuel prices this as |this is )a regular parlay\.?\s*/g, "").trim();
   box.innerHTML = `<h2>${esc(card.title || "Safest parlay")}</h2>${bets}${note ? `<p class="quiet">${esc(note)}</p>` : ""}`;
@@ -228,7 +228,7 @@ function askButtons(step) {
     return ["Any stat, or one of these?", opts.map((opt) => ["ask", opt.textContent, `kind:${opt.value}`])];
   }
   if (step === "legs") {
-    return ["How many picks?", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => ["ask", n === 1 ? "1 pick" : `${n} picks`, `legs:${n}`])];
+    return ["How many picks?", [["ask", "Any number", "legs:0"]].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => ["ask", n === 1 ? "1 pick" : `${n} picks`, `legs:${n}`]))];
   }
   if (step === "aim") {
     return ["How do you want this to pay? Safest wins the most. On Safe, five dollars wins about $2.50. Good wins about as often as it loses. Best payout pays the most, and it loses more often.", [["ask", "1 safest", "aim:top"], ["ask", "Safe", "aim:safe"], ["ask", "Good", "aim:good"], ["ask", "Best payout", "aim:payout"]]];
@@ -341,7 +341,7 @@ function paintEdits() {
   const link = `<button type="button" class="leg-edit">Edit this bet</button>`;
   document.querySelectorAll("#desk-glass .chalk > .pick-save").forEach((bar) => {
     const card = editCard(bar);
-    if (!card || card.querySelector(".leg-edit") || !cardLegs(card).length) return;
+    if (!card || card.id === "choice-result" || card.querySelector(".leg-edit") || !cardLegs(card).length) return;
     const title = card.querySelector(":scope > h2") || card.querySelector("h2");
     if (!title) return;
     card.classList.remove("editing");
@@ -410,7 +410,7 @@ function swapCard(card) {
 
 document.addEventListener("click", (event) => {
   const built = event.target.closest("#choice-result .rec-bet");
-  if (built && !event.target.closest("button")) { built.classList.toggle("open"); return; }
+  if (built && !event.target.closest("button")) { if (window.openBuilt) openBuilt(built.dataset.built); return; }
   const edit = event.target.closest(".leg-edit");
   if (edit) {
     const card = editCard(edit);
@@ -492,6 +492,7 @@ function recBack() {
   if (card) { card.classList.remove("solo-on"); card.hidden = true; }
   const desk = document.getElementById("desk");
   if (desk) desk.classList.remove("solo", "dug");
+  if (window.builtBack) { window.builtBack = false; const glass = document.getElementById("desk-glass-in"); if (glass && window.builtKeep) glass.scrollTop = window.builtKeep.scroll || 0; return true; }
   if (window.birdMenu) birdMenu("bets");
   return true;
 }

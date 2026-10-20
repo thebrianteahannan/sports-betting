@@ -7,7 +7,7 @@ const KINDS = {
   yards: ["yard", "yd"], points: ["point"], assists: ["assist"], shots: ["shot"],
   strikeouts: ["strikeout"], hits: ["to record a hit", "to hit"],
 };
-const SKIP = ["spread", "moneyline", "money line", "puck line", "puckline", "run line", "handicap", "total", "alternate total", "alt total", "team to score", "first pitch", "pitch result", "kicking"];
+const SKIP = ["spread", "moneyline", "money line", "puck line", "puckline", "run line", "handicap", "total", "alternate total", "alt total", "team to score", "correct score", "exact score", "winning margin", "final score", "first pitch", "pitch result", "kicking"];
 const AIM = { safe: -200, good: -100 };
 const UNITS = ["shots on goal", "receiving yards", "rushing yards", "passing yards", "receptions", "rebounds", "strikeouts", "assists", "puck line", "run line", "saves", "points", "goals", "shots", "made threes", "threes", "spread", "yards"];
 
@@ -190,13 +190,13 @@ async function offerLegs(game) {
 
 function teamLeg(leg, game) {
   const blob = `${leg.runner || ""} ${leg.label || ""}`.toLowerCase();
-  return String(game.match || "").split(" @ ").map((part) => part.split("(")[0].trim().toLowerCase()).some((team) => team && blob.includes(team));
+  return String(game.match || "").split(" @ ").some((part) => { const team = part.split("(")[0].trim().toLowerCase(); const nick = team.split(/\s+/).pop(); return (team && blob.includes(team)) || (nick.length > 3 && blob.includes(nick)); });
 }
 
 function fits(leg, kind) {
   const text = `${leg.market || ""} ${leg.runner || ""} ${leg.label || ""}`.toLowerCase();
   const runner = String(leg.runner || "").trim().toLowerCase();
-  if (SKIP.some((skip) => text.includes(skip)) || runner === "yes" || runner === "no" || runner.endsWith(" over") || runner.endsWith(" under")) return false;
+  if (SKIP.some((skip) => text.includes(skip)) || /\d+\s*-\s*\d+/.test(runner) || runner === "yes" || runner === "no" || runner.endsWith(" over") || runner.endsWith(" under")) return false;
   if (text.includes("?") || text.includes("combine") || text.includes("either")) return false;
   if (!/\d/.test(text) && !text.includes("to record a hit") && !text.includes("to score") && !text.includes("scorer") && !text.includes("touchdown")) return false;
   const name = who(leg);
@@ -279,18 +279,19 @@ async function gather(games, kind) {
 
 function spaced(rows, width, aim) {
   const sorted = rows.slice().sort((a, b) => a[0].odds - b[0].odds);
-  if (!sorted.length) return [];
-  let spots;
-  if (width <= 1) spots = new Set([aim === "payout" ? sorted.length - 1 : 0]);
-  else if (sorted.length <= width) spots = new Set(sorted.map((_, index) => index));
-  else spots = new Set(Array.from({ length: width }, (_, index) => Math.round(index * (sorted.length - 1) / (width - 1))));
+  let ordered = aim === "payout" ? sorted.slice().reverse() : sorted;
+  if (aim !== "payout") {
+    const cap = aim === "good" ? 100 : -110;
+    const band = sorted.filter((row) => row[0].odds <= cap);
+    const fill = sorted.filter((row) => row[0].odds <= 150);
+    ordered = band.length >= width ? band : fill.length ? fill : sorted;
+  }
   const kept = [];
   const seen = new Set();
-  [...spots].sort((a, b) => a - b).forEach((index) => {
-    const player = who(sorted[index][0]);
-    if (!player || seen.has(player)) return;
-    seen.add(player);
-    kept.push(sorted[index]);
+  ordered.some((row) => {
+    const player = who(row[0]);
+    if (player && !seen.has(player)) { seen.add(player); kept.push(row); }
+    return kept.length >= width;
   });
   return kept;
 }
@@ -358,7 +359,7 @@ function pick(pools, count, aim, skip, holdList, dropList) {
   const asked = (holdList || []).map(pinOf).filter((row) => row.name);
   const hold = [...new Set(asked.map((row) => row.name))];
   const source = drop.size ? pools.map(([game, legs, live]) => [game, legs.filter((leg) => !drop.has(who(leg))), live]) : pools;
-  const width = count >= 8 ? 1 : count >= 5 ? 2 : 4;
+  const width = count >= 8 ? 1 : count >= 5 ? 2 : 8;
   const menus = source.map(([game, legs, live]) => spaced(legs.map((leg) => [leg, game, live]), width, aim)).filter((rows) => rows.length);
   hold.forEach((name) => {
     if (menus.some((rows) => rows.some((row) => who(row[0]) === name))) return;
@@ -463,7 +464,8 @@ async function chooseBet(body, board) {
   const universe = sports.length ? sports : [...new Set((Array.isArray(board.games) ? board.games : []).map((game) => String(game.sport || "")).filter(Boolean))];
   const picked = (universe.length ? universe : SPORTS.slice()).filter((sport) => body.college !== false || (sport !== "NCAAF" && sport !== "NCAAB"));
   const ids = (Array.isArray(body.gameIds) ? body.gameIds : [body.gameId]).map((item) => String(item || "")).filter(Boolean);
-  const count = Math.min(10, Math.max(1, Number(body.legs) || 3));
+  const any = body.legs === 0 || body.legs === "0";
+  const count = any ? 0 : Math.min(10, Math.max(1, Number(body.legs) || 3));
   const kind = ["any", "yards", "points", "assists", "shots", "strikeouts", "hits"].includes(body.kind) ? body.kind : "any";
   const aim = ["top", "safe", "good", "payout"].includes(body.aim) ? body.aim : "top";
   const span = body.when === "week" ? "week" : "today";
@@ -483,12 +485,13 @@ async function chooseBet(body, board) {
   const hold = Array.isArray(body.hold) ? body.hold : [];
   const drop = Array.isArray(body.drop) ? body.drop : [];
   const skip = new Set((Array.isArray(body.skip) ? body.skip : []).map(String).filter(Boolean));
-  const pickedCombo = pick(pools, count, aim, skip, hold, drop);
-  if (pickedCombo.combo.length < count) return empty(miss(pools, picked, count, span), aim);
-  const built = card(pickedCombo.combo, picked, kind, count, aim, pickedCombo.only);
+  const pickedCombo = any ? [2, 3, 4, 5, 6].map((n) => pick(pools, n, aim, skip, hold, drop)).filter((row) => row.combo.length).sort((a, b) => scoreOf(decimalOf(a.combo), aim) - scoreOf(decimalOf(b.combo), aim))[0] || { combo: [] } : pick(pools, count, aim, skip, hold, drop);
+  const used = pickedCombo.combo.length;
+  if (!used || (!any && used < count)) return empty(miss(pools, picked, any ? 2 : count, span), aim);
+  const built = card(pickedCombo.combo, picked, kind, used, aim, pickedCombo.only);
   built.again = pickedCombo.again;
-  built.offers = (pickedCombo.alts || []).slice(0, 8).map((combo) => card(combo, picked, kind, count, aim, false));
-  if (built.offers.length) { built.edge = true; built.why = { payout: "This parlay pays the most of these.", top: "This parlay has the highest chance of these.", safe: "This is the safest of these.", good: "This is the closest to even money." }[aim]; }
+  built.offers = (pickedCombo.alts || []).slice(0, 8).map((combo) => card(combo, picked, kind, used, aim, false));
+  try { const ranked = JSON.parse(require("child_process").execFileSync("python3", ["-m", "nfl_bets.listed"], { input: JSON.stringify({ rows: [built].concat(built.offers || []), games }), encoding: "utf8", timeout: 25000, cwd: __dirname })); ranked.forEach((row, index) => { const host = index ? built.offers[index - 1] : built; if (!host) return; if (row.edge) { host.edge = true; host.why = row.why || ""; } else { delete host.edge; delete host.why; } }); } catch (error) { if (built.offers.length && built.offers.every((offer) => offer.american !== built.american)) { built.edge = true; built.why = { payout: "This parlay pays the most of these.", top: "This parlay has the highest chance of these.", safe: "This is the safest of these.", good: "This is the closest to even money." }[aim]; } }
   if (hold.length && pickedCombo.kept === false) built.note = `${built.note} A leg you wanted to keep did not fit, so this one replaced it too.`.trim();
   await addSway(built.legs, games);
   return built;

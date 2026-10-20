@@ -414,11 +414,11 @@ function startGuide() {
   const hello = () => {
     birdOn = true;
     birdHeld = false;
-    window.squawkUntil = Date.now() + 1400; birdSay("Squawk!!!", []);
+    window.squawkUntil = Date.now() + 900; birdSay("Squawk!!!", []);
     setTimeout(() => {
       if (!birdOn || birdHeld || window.asking || document.body.classList.contains("needs-member")) return;
       if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"], ["parrot", "Ask Parlay the Parrot"]]);
-    }, 1400);
+    }, 900);
     birdBump();
   };
   if (!document.body.classList.contains("needs-member")) hello();

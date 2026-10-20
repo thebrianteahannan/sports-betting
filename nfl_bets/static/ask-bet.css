@@ -278,7 +278,7 @@
 @keyframes bet-shadow { 0%, 100% { transform: scaleX(1); opacity: 0.55; } 50% { transform: scaleX(0.62); opacity: 0.22; } }
 #desk-menu .desk-face { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; background: #05080c; transform: scaleX(-1); }
 #desk-menu img { position: absolute; top: 0; left: -66.07%; width: 214.29%; height: auto; max-width: none; pointer-events: none; }
-#bird-line.pow, #desk.tv-full #desk-glass #bird-line.pow { width: fit-content; margin: 0.6rem auto 0; padding: 0.1rem 0.7rem 0.15rem; border: 4px solid #10140c; border-radius: 14px; background: #e8ff4a; color: #10140c; font-family: "Oswald", sans-serif; font-size: 58px; font-weight: 600; letter-spacing: 0.04em; line-height: 1; text-transform: uppercase; transform: rotate(-8deg); box-shadow: 6px 6px 0 #10140c, 0 0 22px rgba(232, 255, 74, 0.7); animation: squawk-pow 0.35s ease-out; }
+#bird-line.pow, #desk.tv-full #desk-glass #bird-line.pow { width: fit-content; margin: 0.6rem auto 0; padding: 0.1rem 0.7rem 0.15rem; border: 4px solid #10140c; border-radius: 14px; background: #ff2a2a; color: #10140c; font-family: "Oswald", sans-serif; font-size: 58px; font-weight: 600; letter-spacing: 0.04em; line-height: 1; text-transform: uppercase; transform: rotate(-8deg); box-shadow: 6px 6px 0 #10140c, 0 0 22px rgba(255, 42, 42, 0.7); animation: squawk-pow 0.35s ease-out; }
 #bird-line.pow::before { content: none; }
 #bird-line.pow::after { display: none; }
 #desk.tv-full #desk-glass #bird-line.pow { font-size: 72px; }

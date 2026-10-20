@@ -58,6 +58,46 @@ def mark_listed(rows: list[dict[str, Any]]) -> None:
             row["why"] = str(winner[1].get("why") or "")
 
 
+def mark_choice(rows: list[dict[str, Any]], games: list[dict[str, Any]]) -> None:
+    """Same reads as a recommended list. A tied price stays unmarked."""
+    live = [row for row in rows if isinstance(row, dict) and row.get("legs")]
+    if len(live) < 2:
+        return
+    by_id = {str(game.get("id") or ""): game for game in games if isinstance(game, dict)}
+    packed = []
+    pairs = []
+    for row in live:
+        row.pop("edge", None)
+        row.pop("why", None)
+        offer = {"impliedPct": row.get("impliedPct"), "legs": row.get("legs")}
+        try:
+            notes, _score = _offer(offer, by_id, games)
+        except Exception:  # noqa: BLE001
+            notes = []
+        packed.append((notes, offer))
+        pairs.append((row, offer))
+    failed = False
+    try:
+        settle(packed, by_id, games)
+    except Exception:  # noqa: BLE001
+        failed = True
+    winner = None if failed else next(((row, offer) for row, offer in pairs if offer.get("edge")), None)
+    same = len({row.get("american") for row in live}) == 1
+    chance = "This parlay has the highest chance in this list."
+    if winner is None:
+        if same:
+            return
+        row = max(live, key=lambda item: float(item.get("impliedPct") or 0))
+        row["edge"] = True
+        row["why"] = chance
+        return
+    why = str(winner[1].get("why") or "")
+    if same and (not why or why == chance):
+        return
+    winner[0]["edge"] = True
+    winner[0]["why"] = why or chance
+
+
 def _ahead(row: dict[str, Any], now: float) -> bool:
     stamps = [row.get("kickoff")]
     stamps.extend(leg.get("kickoff") for leg in row.get("legs") or [] if isinstance(leg, dict))
@@ -66,3 +106,18 @@ def _ahead(row: dict[str, Any], now: float) -> bool:
         if stamp is not None and stamp.timestamp() <= now:
             return False
     return True
+
+
+def _main() -> None:
+    import json
+    import sys
+
+    body = json.load(sys.stdin)
+    rows = [row for row in (body.get("rows") or []) if isinstance(row, dict)]
+    games = [game for game in (body.get("games") or []) if isinstance(game, dict)]
+    mark_choice(rows, games)
+    json.dump(rows, sys.stdout)
+
+
+if __name__ == "__main__":
+    _main()
