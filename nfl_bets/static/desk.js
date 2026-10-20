@@ -316,10 +316,12 @@ function bootDesk() {
   if (menu) menu.addEventListener("click", (event) => {
     event.stopPropagation();
     if (window.goFull) goFull();
-    if (birdPending) { const pending = birdPending; birdPending = null; menu.classList.remove("bird-has", "bird-brag"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Ask Parlay the Parrot"); if (!(window.birdBragGo && birdBragGo(pending[0]))) birdSay(pending[0], pending[1]); return; }
+    if (menu.classList.contains("bird-has") && event.clientX < menu.getBoundingClientRect().left) { if (window.matchMedia("(hover: none), (pointer: coarse)").matches) menu.classList.toggle("say-open"); return; }
+    if (birdPending) { const pending = birdPending; birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Ask Parlay the Parrot"); if (!(window.birdBragGo && birdBragGo(pending[0]))) birdSay(pending[0], pending[1]); return; }
     if (window.askBet) askBet("general");
   });
   document.addEventListener("click", (event) => {
+    if (menu && !event.target.closest("#desk-menu")) menu.classList.remove("say-open");
     const desk = document.getElementById("desk");
     if (!desk || !desk.classList.contains("menu-open")) return;
     if (event.target.closest("#desk-dock")) {
@@ -390,7 +392,7 @@ function birdBump() {
     const nudge = BIRD_NUDGES[birdNudge % BIRD_NUDGES.length];
     birdNudge += 1;
     const text = nudge[2] === "brag" && window.birdBrag ? birdBrag() : nudge[0];
-    if (text) { birdPending = [text, nudge[1]]; const menu = document.getElementById("desk-menu"); if (menu) { menu.classList.add("bird-has"); menu.classList.toggle("bird-brag", nudge[2] === "brag"); const words = text.split(/\s+/); const cap = nudge[2] === "brag" ? words.length : 6; menu.dataset.say = words.slice(0, cap).join(" ") + (words.length > cap ? " ..." : ""); menu.setAttribute("aria-label", "Parlay has something to say"); } }
+    if (text) { birdPending = [text, nudge[1]]; const menu = document.getElementById("desk-menu"); if (menu) { menu.classList.add("bird-has"); menu.classList.remove("say-open"); menu.classList.toggle("bird-brag", nudge[2] === "brag"); menu.dataset.say = text; menu.setAttribute("aria-label", "Parlay has something to say"); } }
     birdBump();
   }, BIRD_WAIT);
 }

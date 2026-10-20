@@ -117,6 +117,16 @@
 #bird-picks .rec-bet .rec-gist em { display: block; margin-top: 0.2rem; color: #d7e2ea; font-style: normal; font-weight: 700; text-align: left; }
 #bird-picks .rec-bet.rec-edge { border-color: #ffe14a; box-shadow: inset 3px 0 0 #ffe14a; }
 #bird-picks .rec-bet.rec-edge .rec-gist em { color: #ffe14a; }
+#choice-result .rec-bet { margin: 0 0 0.45rem; padding: 0.55rem 0.7rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.72); cursor: pointer; font-family: "Outfit", sans-serif; text-align: left; }
+#choice-result .rec-bet b { display: block; color: #f4fff6; font-size: 16px; font-weight: 700; }
+#choice-result .rec-bet span { display: none; margin-top: 0.2rem; color: #d5deea; font-size: 14px; line-height: 1.3; }
+#choice-result .rec-bet.open span { display: block; }
+#choice-result .rec-gist { margin: 0.2rem 0 0; color: #f4fff6; font-size: 14px; font-weight: 700; line-height: 1.3; text-transform: none; }
+#choice-result .rec-gist i { color: #3dff6e; font-style: normal; font-weight: 700; }
+#choice-result .rec-gist em { display: block; margin-top: 0.2rem; color: #d7e2ea; font-style: normal; font-weight: 700; text-align: left; }
+#choice-result .rec-edge { border-color: #ffe14a; box-shadow: inset 3px 0 0 #ffe14a; }
+#choice-result .rec-edge .rec-gist em { color: #ffe14a; }
+#desk.tv-full #desk-glass #choice-result > h2, #choice-result > h2 { margin: 0 0 0.55rem; color: #f4fff6; font-size: 16px; letter-spacing: 0.02em; text-transform: uppercase; }
 #bird-picks .rec-history { margin: 0.15rem 0 0; color: #3dff6e; font-size: 14px; font-weight: 700; line-height: 1.3; }
 #bird-picks .rec-history span + span::before { content: ", "; }
 #bird-picks .rec-history span.on { color: #f4fff6; text-decoration: underline; }
@@ -254,6 +264,10 @@
   box-shadow: 0 0 12px rgba(61, 255, 110, 0.45);
 }
 #desk-menu.bird-has.bird-brag::after { width: min(18rem, calc(100vw - 6.5rem)); max-width: min(18rem, calc(100vw - 6.5rem)); white-space: normal; text-overflow: clip; }
+@media (hover: hover) and (pointer: fine) {
+  #desk-menu.bird-has:hover::after { white-space: normal; overflow: visible; text-overflow: clip; width: max-content; max-width: min(22rem, calc(100vw - 6.5rem)); }
+}
+#desk-menu.bird-has.say-open::after { white-space: normal; overflow: visible; text-overflow: clip; width: max-content; max-width: min(22rem, calc(100vw - 6.5rem)); }
 #choice-result:has(.bet-load) { display: flex; align-items: center; justify-content: center; min-height: 22rem; }
 #choice-result .bet-load { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; width: 100%; text-align: center; }
 #choice-result .bet-load .bet-bird { position: relative; width: min(18rem, 86%); aspect-ratio: 600 / 430; overflow: hidden; }

@@ -115,19 +115,14 @@ async function runChoice() {
   const mark = (card.players || []).slice().sort().join("|");
   if (mark) seenBets[key] = card.only || card.again ? [mark] : (seenBets[key] || []).concat(mark).slice(-24);
   if (window.noteTaste && (card.legs || []).length) noteTaste("found", { title: card.title || "", when: choice.when, aim: choice.aim || "top", kind: choice.kind, sports: [...new Set((card.legs || []).map((leg) => leg.sport).filter(Boolean))] });
-  const legs = (window.builtLegs = card.legs || []).map((leg) => {
-    const sway = [leg.fact, leg.sway, String(leg.form || "").replace(/^In form:\s*/i, ""), leg.weather].filter(Boolean).join(" ");
-    const fact = sway ? `<span class="quiet">${esc(sway)}</span>` : "";
-    const who = esc(String(leg.runner || leg.label || "").split(/\d/)[0].trim().toLowerCase());
-    const line = esc((String(leg.label || "").match(/(\d+(?:\.\d+)?)/) || [])[1] || "");
-    const word = esc((String(leg.label || "").toLowerCase().match(/shots|threes|assists|rebounds|points|yards|receptions|strikeouts|hits|goals|saves/) || [])[0] || "");
-    return `<li data-drop="${who}" data-line="${line}" data-word="${word}"><b>${esc(american(leg.odds))}</b><span>${esc(String(leg.label || "").split(" — ")[0])}${fact}<span class="leg-more">${String(leg.label || "").includes(" — ") ? ` — ${esc(String(leg.label).split(" — ").slice(1).join(" — "))}` : ""}</span></span><em>${esc(leg.pct || "")}</em></li>`;
-  }).join("");
-  const kicks = [...new Set((card.legs || []).map((leg) => leg.kickoff).filter(Boolean))];
-  const whenLine = kicks.length === 1 ? `<p class="when">${esc(when(kicks[0]))} ET</p>` : "";
+  const pile = [card].concat(card.offers || []).filter((row) => (row.legs || []).length);
+  if (pile.length > 1 && !card.why) { card.edge = true; card.why = { payout: "This parlay pays the most of these.", top: "This parlay has the highest chance of these.", safe: "This is the safest of these.", good: "This is the closest to even money." }[choice.aim]; }
+  const gist = (leg) => { const bit = String(leg.label || "").split(/,|\s+—\s+/)[0].trim(); const cut = bit.match(/^(.*?)(?:\s*:\s*|\s+)((?:\d+(?:\.\d+)?\+|[+-]\d|over\b|under\b).+)$/i); return bit ? (cut ? `<i>${esc(cut[1])}</i> ${esc(cut[2])}` : `<i>${esc(bit)}</i>`) : ""; };
+  window.builtLegs = card.legs || [];
+  const bets = pile.map((row, index) => { const price = Number(row.american); const shown = Number.isFinite(price) ? (price > 0 ? `+${price}` : String(price)) : ""; const pct = row.impliedPct != null && row.impliedPct !== "" ? `${row.impliedPct}%` : ""; const head = [shown, pct, row.edge ? "Better" : ""].filter(Boolean).join(" · "); const lines = (row.legs || []).map((leg) => { const odds = Number(leg.odds); const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : ""; const who = esc(String(leg.runner || leg.label || "").split(/\d/)[0].trim().toLowerCase()); const line = esc((String(leg.label || "").match(/(\d+(?:\.\d+)?)/) || [])[1] || ""); const word = esc((String(leg.label || "").toLowerCase().match(/shots|threes|assists|rebounds|points|yards|receptions|strikeouts|hits|goals|saves/) || [])[0] || ""); return `<span data-drop="${who}" data-line="${line}" data-word="${word}">${esc([tag, leg.label].filter(Boolean).join(" "))}</span>`; }).join(""); return `<div class="rec-bet${index ? "" : " open"}${row.edge ? " rec-edge" : ""}"><b>${esc(head)}</b><p class="rec-gist">${(row.legs || []).map(gist).filter(Boolean).join(", ")}${row.why ? `<em>${esc(row.why)}</em>` : ""}</p>${lines}</div>`; }).join("");
   const stars = (card.legs || []).length ? `<span class="stars" id="choice-stars">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="star" data-built-star="${n}" aria-label="${n} star${n > 1 ? "s" : ""}">★</button>`).join("")}</span>` : "";
   const note = String(card.note || "").replace(/(?:Each leg is (?:a different game|on a different day, in a different game)|These (?:legs|four) are in different games), so (?:FanDuel prices this as |this is )a regular parlay\.?\s*/g, "").trim();
-  box.innerHTML = `<h2>${esc(card.title || "Safest parlay")}</h2>${whenLine}<p>${esc(card.game ? `${card.game}. ` : "")}${esc(card.copy || "")}</p><ol class="chalk-legs">${legs}</ol>${note ? `<p class="quiet">${esc(note)}</p>` : ""}`;
+  box.innerHTML = `<h2>${esc(card.title || "Safest parlay")}</h2>${bets}${note ? `<p class="quiet">${esc(note)}</p>` : ""}`;
   if (stars) {
     const again = document.getElementById("choice-again"); again.hidden = (again.insertAdjacentHTML("afterbegin", stars), false);
     document.getElementById("choice-stars").addEventListener("click", (event) => {
@@ -332,6 +327,8 @@ function legWho(li) {
 }
 
 function cardLegs(card) {
+  const shown = card.id === "choice-result" ? [...card.querySelectorAll(":scope > .rec-edge span[data-drop]")] : [];
+  if (shown.length) return shown;
   const ol = card.querySelector(":scope > ol");
   return ol ? [...ol.children].filter((li) => li.dataset.drop) : [];
 }
@@ -355,14 +352,14 @@ function paintEdits() {
 
 function armCard(card, on) {
   card.classList.toggle("editing", on);
+  if (on && card.id === "choice-result") card.querySelector(".rec-edge")?.classList.add("open");
   cardLegs(card).forEach((li) => {
     let box = li.querySelector(".leg-check");
     if (on && !box) {
       box = document.createElement("input");
       box.type = "checkbox";
       box.className = "leg-check";
-      const span = li.querySelector("span");
-      if (span) span.prepend(box);
+      (li.querySelector("span") || li).prepend(box);
     }
     if (!on && box) box.remove();
   });
@@ -375,7 +372,7 @@ function armCard(card, on) {
   button.disabled = true;
   button.textContent = "Similar bet, without the ones you checked";
   const ol = card.querySelector(":scope > ol");
-  if (ol) ol.insertAdjacentElement("beforebegin", button);
+  if (ol) ol.insertAdjacentElement("beforebegin", button); else card.querySelector(".rec-edge")?.append(button);
 }
 
 function swapCard(card) {
@@ -412,6 +409,8 @@ function swapCard(card) {
 }
 
 document.addEventListener("click", (event) => {
+  const built = event.target.closest("#choice-result .rec-bet");
+  if (built && !event.target.closest("button")) { built.classList.toggle("open"); return; }
   const edit = event.target.closest(".leg-edit");
   if (edit) {
     const card = editCard(edit);

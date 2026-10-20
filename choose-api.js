@@ -393,18 +393,18 @@ function pick(pools, count, aim, skip, holdList, dropList) {
     let rankedHold = need ? search(rest.slice(0, 14), need, aim, true) : [[]];
     if (need && !rankedHold.length) rankedHold = search(rest.flatMap((menu) => menu.map((row) => [row])).slice(0, 24), need, aim, false);
     const combo = pins.concat(rankedHold[0] || []);
-    if (combo.length >= count) return { combo: combo.slice(0, count), only: rankedHold.length === 1, again: false, kept: pins.length === hold.length };
+    if (combo.length >= count) return { combo: combo.slice(0, count), alts: rankedHold.slice(1, 9).map((rest) => pins.concat(rest).slice(0, count)), only: rankedHold.length === 1, again: false, kept: pins.length === hold.length };
   }
   let ranked = search(menus.slice(0, 14), count, aim, true);
   if (!ranked.length) {
     const flat = menus.flatMap((menu) => menu.map((row) => [row]));
     ranked = search(flat.slice(0, count >= 8 ? 18 : 24), count, aim, false);
   }
-  if ((aim === "top" || aim === "payout") && ranked.length) return { combo: ranked[0], only: ranked.length === 1, again: false };
+  if ((aim === "top" || aim === "payout") && ranked.length) return { combo: ranked[0], alts: ranked.slice(1, 9), only: ranked.length === 1, again: false };
   const fresh = ranked.filter((combo) => !skip.has(mark(combo)));
-  if (fresh.length) return { combo: fresh[0], only: ranked.length === 1, again: false };
-  if (ranked.length) return { combo: ranked[0], only: ranked.length === 1, again: ranked.length > 1 };
-  return { combo: [], only: true, again: false };
+  if (fresh.length) return { combo: fresh[0], alts: fresh.slice(1, 9), only: ranked.length === 1, again: false };
+  if (ranked.length) return { combo: ranked[0], alts: ranked.slice(1, 9), only: ranked.length === 1, again: ranked.length > 1 };
+  return { combo: [], alts: [], only: true, again: false };
 }
 
 function shown(leg) {
@@ -429,12 +429,7 @@ function card(combo, sports, kind, count, aim, only) {
     return { market: row[0].market || "", runner: row[0].runner || "", label, odds: row[0].odds, kickoff: row[1].kickoff || "", gameId: String(row[1].id || ""), sport: row[1].sport || "", pct: `${(impliedProb(row[0].odds) * 100).toFixed(1)}%` };
   });
   const name = { top: "Safest", safe: "Safe", good: "Good", payout: "Best payout" }[aim];
-  const aimed = {
-    top: "This is the safest price from these props.",
-    safe: "Aimed at -200, so a $5 bet wins about $2.50.",
-    good: "Aimed at -100, so a $5 bet wins $5.",
-    payout: "The longest price from these props, so the payout is the largest.",
-  }[aim];
+  const aimed = { top: "This is the safest price from these props.", safe: "Aimed at -200, so a $5 bet wins about $2.50.", good: "Aimed at -100, so a $5 bet wins $5.", payout: "The longest price from these props, so the payout is the largest." }[aim];
   const signed = american > 0 ? `+${american}` : String(american);
   return {
     title: `${name} ${count}-leg`, game: titleGame, kind: kindName, american, impliedPct: chance, profit,
@@ -492,6 +487,8 @@ async function chooseBet(body, board) {
   if (pickedCombo.combo.length < count) return empty(miss(pools, picked, count, span), aim);
   const built = card(pickedCombo.combo, picked, kind, count, aim, pickedCombo.only);
   built.again = pickedCombo.again;
+  built.offers = (pickedCombo.alts || []).slice(0, 8).map((combo) => card(combo, picked, kind, count, aim, false));
+  if (built.offers.length) { built.edge = true; built.why = { payout: "This parlay pays the most of these.", top: "This parlay has the highest chance of these.", safe: "This is the safest of these.", good: "This is the closest to even money." }[aim]; }
   if (hold.length && pickedCombo.kept === false) built.note = `${built.note} A leg you wanted to keep did not fit, so this one replaced it too.`.trim();
   await addSway(built.legs, games);
   return built;
