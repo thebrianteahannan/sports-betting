@@ -46,7 +46,6 @@
   #desk.tv-full #desk-glass #rec-open ol { margin-top: 0.4rem; }
 }
 #desk.tv-full.bird-on:not(.dug) #bird-guide:not([hidden]) { top: 3.6rem; background: transparent; }
-#desk.tv-full.bird-on:has(#bird-line.build) #bird-guide:not([hidden]) { justify-content: flex-start; padding-top: 0.35rem; }
 #desk.tv-full #desk-glass-in { padding-top: 3.6rem; }
 @media (max-width: 560px) {
   #desk.tv-full #desk-glass h2,
@@ -107,26 +106,17 @@
 #bird-picks .rec-strategy.open > .rec-bet,
 #bird-picks .rec-strategy.open > p:not(.rec-history) { display: block; }
 #bird-picks .rec-strategy p { margin: 0; color: #9aa8b5; font-size: 14px; }
-#bird-picks .rec-bet { margin: 0 0 0.45rem; padding: 0.55rem 0.7rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.72); cursor: pointer; }
-#bird-picks .rec-bet b { display: block; color: #f4fff6; font-size: 16px; }
-#bird-picks .rec-bet b::after { content: " +"; color: #3dff6e; }
-#bird-picks .rec-bet.open b::after { content: " –"; }
-#bird-picks .rec-bet span { display: none; margin-top: 0.2rem; color: #d5deea; font-size: 14px; line-height: 1.3; }
-#bird-picks .rec-bet.open span { display: block; }
-#bird-picks .rec-bet .rec-gist { margin: 0.2rem 0 0; color: #f4fff6; font-size: 14px; font-weight: 700; line-height: 1.3; text-transform: none; }
-#bird-picks .rec-bet .rec-gist i { color: #3dff6e; font-style: normal; font-weight: 700; }
-#bird-picks .rec-bet .rec-gist em { display: block; margin-top: 0.2rem; color: #d7e2ea; font-style: normal; font-weight: 700; text-align: left; }
-#bird-picks .rec-bet.rec-edge { border-color: #ffe14a; box-shadow: inset 3px 0 0 #ffe14a; }
-#bird-picks .rec-bet.rec-edge .rec-gist em { color: #ffe14a; }
-#choice-result .rec-bet { margin: 0 0 0.45rem; padding: 0.55rem 0.7rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.72); cursor: pointer; font-family: "Outfit", sans-serif; text-align: left; }
-#choice-result .rec-bet b { display: block; color: #f4fff6; font-size: 16px; font-weight: 700; }
-#choice-result .rec-bet span { display: none; margin-top: 0.2rem; color: #d5deea; font-size: 14px; line-height: 1.3; }
-#choice-result .rec-bet.open span { display: block; }
-#choice-result .rec-gist { margin: 0.2rem 0 0; color: #f4fff6; font-size: 14px; font-weight: 700; line-height: 1.3; text-transform: none; }
-#choice-result .rec-gist i { color: #3dff6e; font-style: normal; font-weight: 700; }
-#choice-result .rec-gist em { display: block; margin-top: 0.2rem; color: #d7e2ea; font-style: normal; font-weight: 700; text-align: left; }
-#choice-result .rec-edge { border-color: #ffe14a; box-shadow: inset 3px 0 0 #ffe14a; }
-#choice-result .rec-edge .rec-gist em { color: #ffe14a; }
+#bird-picks .rec-bet, #choice-result .rec-bet { margin: 0 0 0.45rem; padding: 0.55rem 0.7rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.72); cursor: pointer; }
+#bird-picks .rec-bet b, #choice-result .rec-bet b { display: block; color: #f4fff6; font-size: 16px; }
+#bird-picks .rec-bet b::after, #choice-result .rec-bet b::after { content: " +"; color: #3dff6e; }
+#bird-picks .rec-bet.open b::after, #choice-result .rec-bet.open b::after { content: " –"; }
+#bird-picks .rec-bet span, #choice-result .rec-bet span { display: none; margin-top: 0.2rem; color: #d5deea; font-size: 14px; line-height: 1.3; }
+#bird-picks .rec-bet.open span, #choice-result .rec-bet.open span { display: block; }
+#bird-picks .rec-bet .rec-gist, #choice-result .rec-bet .rec-gist { margin: 0.2rem 0 0; color: #f4fff6; font-size: 14px; font-weight: 700; line-height: 1.3; text-transform: none; }
+#bird-picks .rec-bet .rec-gist i, #choice-result .rec-bet .rec-gist i { color: #3dff6e; font-style: normal; font-weight: 700; }
+#bird-picks .rec-bet .rec-gist em, #choice-result .rec-bet .rec-gist em { display: block; margin-top: 0.2rem; color: #d7e2ea; font-style: normal; font-weight: 700; text-align: left; }
+#bird-picks .rec-bet.rec-edge, #choice-result .rec-bet.rec-edge { border-color: #ffe14a; box-shadow: inset 3px 0 0 #ffe14a; }
+#bird-picks .rec-bet.rec-edge .rec-gist em, #choice-result .rec-bet.rec-edge .rec-gist em { color: #ffe14a; }
 #desk.tv-full #desk-glass #choice-result > h2, #choice-result > h2 { margin: 0 0 0.55rem; color: #f4fff6; font-size: 16px; letter-spacing: 0.02em; text-transform: uppercase; }
 #bird-picks .rec-history { margin: 0.15rem 0 0; color: #3dff6e; font-size: 14px; font-weight: 700; line-height: 1.3; }
 #bird-picks .rec-history span + span::before { content: ", "; }
@@ -142,10 +132,10 @@
   #bird-picks .rec-strategy > .rec-bet,
   #bird-picks .rec-strategy > p:not(.rec-history) { flex: 1 0 100%; }
   #bird-picks .rec-strategy.open > .rec-bet:first-of-type { margin-top: 0.45rem; }
-  #bird-picks .rec-strategy.open > .rec-bet { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; column-gap: 1rem; }
-  #bird-picks .rec-bet b { flex: 0 0 auto; }
-  #bird-picks .rec-bet .rec-gist { flex: 1 1 12rem; margin: 0; text-align: right; }
-  #bird-picks .rec-bet > span { flex: 1 0 100%; }
+  #bird-picks .rec-strategy.open > .rec-bet, #choice-result .rec-bet { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; column-gap: 1rem; }
+  #bird-picks .rec-bet b, #choice-result .rec-bet b { flex: 0 0 auto; }
+  #bird-picks .rec-bet .rec-gist, #choice-result .rec-bet .rec-gist { flex: 1 1 12rem; margin: 0; text-align: right; }
+  #bird-picks .rec-bet > span, #choice-result .rec-bet > span { flex: 1 0 100%; }
 }
 #bird-picks .rec-filters { display: flex; flex-direction: column; gap: 0.45rem; margin: 0 0 0.15rem; padding: 0.4rem 0.55rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.92); }
 #bird-picks .rec-filters:not(.open) .row { display: none; }
@@ -153,8 +143,8 @@
 #bird-picks .rec-filters .rec-tools { display: flex; align-items: center; gap: 0.35rem; }
 #bird-picks .rec-filters .rec-sort { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
 #desk.tv-full #desk-glass #bird-picks .rec-filters .rec-sort button { font-size: 13px; padding: 0.28rem 0.55rem; }
-#bird-picks .rec-bet.won b { color: #3dff6e; }
-#bird-picks .rec-bet.lost b { color: #ffb4b4; }
+#bird-picks .rec-bet.won b, #choice-result .rec-bet.won b { color: #3dff6e; }
+#bird-picks .rec-bet.lost b, #choice-result .rec-bet.lost b { color: #ffb4b4; }
 #bird-picks .rec-filters .rec-fold::after { content: " +"; color: #3dff6e; }
 #bird-picks .rec-filters.open .rec-fold::after { content: " –"; }
 #bird-picks .rec-filters .rec-fold.on::after { color: #04140c; }
@@ -257,6 +247,19 @@
   width: min(100%, 28rem); box-sizing: border-box; text-align: center;
   padding: 0.8rem 1rem; font-size: 18px;
 }
+@media (min-width: 800px) {
+  #desk.tv-full.bird-on #bird-guide:has(button[data-menu]) { align-items: center; }
+  #desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #bird-line {
+    width: min(36rem, 100%); box-sizing: border-box;
+  }
+  #desk.tv-full.bird-on #bird-picks:has(button[data-menu]) {
+    flex-direction: row; justify-content: center; align-items: stretch; width: min(36rem, 100%);
+  }
+  #desk.tv-full.bird-on #bird-picks:has(button[data-menu]) button {
+    width: auto; flex: 1 1 0; min-width: min-content; padding-left: 0.45rem; padding-right: 0.45rem;
+    display: flex; align-items: center; justify-content: center; text-wrap: balance;
+  }
+}
 #desk-menu.bird-has { overflow: visible; }
 #desk-menu.bird-has::after {
   content: "\201C" attr(data-say) "\201D";
@@ -269,18 +272,18 @@
 }
 #desk-menu.bird-has.bird-brag::after { width: min(18rem, calc(100vw - 6.5rem)); max-width: min(18rem, calc(100vw - 6.5rem)); white-space: normal; text-overflow: clip; }
 @media (hover: hover) and (pointer: fine) {
-  #desk-menu.bird-has:hover::after { white-space: normal; overflow: visible; text-overflow: clip; width: max-content; max-width: min(22rem, calc(100vw - 6.5rem)); }
+  #desk-menu.bird-has:not(.bird-brag):hover::after { white-space: normal; overflow: visible; text-overflow: clip; width: max-content; max-width: min(22rem, calc(100vw - 6.5rem)); }
 }
-#desk-menu.bird-has.say-open::after { white-space: normal; overflow: visible; text-overflow: clip; width: max-content; max-width: min(22rem, calc(100vw - 6.5rem)); }
+#desk-menu.bird-has.say-open:not(.bird-brag)::after { white-space: normal; overflow: visible; text-overflow: clip; width: max-content; max-width: min(22rem, calc(100vw - 6.5rem)); }
 #desk.tv-full #desk-glass:has(.bet-load) #desk-glass-in { height: 100%; padding: 0; }
 #desk.tv-full #desk-glass:has(.bet-load) #chooser.built { position: absolute; inset: 0; height: auto; max-width: none; margin: 0; padding: 0; }
 #choice-result:has(.bet-load) { position: absolute; inset: 0; z-index: 2; display: flex; min-height: 0; }
-#choice-result .bet-load { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 100%; height: 100%; text-align: center; }
-#choice-result .bet-load .bet-bird { position: absolute; inset: 0; overflow: hidden; }
+#choice-result .bet-load { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 100%; height: 100%; text-align: center; background: #07131a; }
+#choice-result .bet-load .bet-bird { position: absolute; inset: 0 0 3.2rem; overflow: hidden; }
 #choice-result .bet-load .bet-bird::before { content: none; }
-#choice-result .bet-load img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 22%; animation: bet-look 0.9s ease-in-out infinite; transform-origin: 50% 40%; filter: drop-shadow(0 10px 16px rgba(61, 255, 110, 0.35)); }
+#choice-result .bet-load img { position: absolute; left: 50%; top: 56%; width: auto; height: 124%; max-width: none; object-fit: contain; animation: bet-look 0.9s ease-in-out infinite; transform-origin: 68% 26%; filter: drop-shadow(0 10px 16px rgba(61, 255, 110, 0.35)); }
 #choice-result .bet-load p { position: relative; z-index: 1; margin: 0 0 1.4rem; color: #f4fff6; font-family: "Outfit", sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0; text-transform: none; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8); }
-@keyframes bet-look { 0%, 100% { transform: translateY(0) scale(1.08) rotate(-2deg); } 50% { transform: translateY(-8px) scale(1.12) rotate(2deg); } }
+@keyframes bet-look { 0%, 100% { transform: translate(-68%, -26%) scale(1.04) rotate(-2deg); } 50% { transform: translate(-68%, calc(-26% - 8px)) scale(1.08) rotate(2deg); } }
 @keyframes bet-shadow { 0%, 100% { transform: scaleX(1); opacity: 0.55; } 50% { transform: scaleX(0.62); opacity: 0.22; } }
 #desk-menu .desk-face { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; background: #05080c; transform: scaleX(-1); }
 #desk-menu img { position: absolute; top: 0; left: -66.07%; width: 214.29%; height: auto; max-width: none; pointer-events: none; }

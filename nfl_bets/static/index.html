@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="/app.css?v=46"/>
 <link rel="stylesheet" href="/desk.css?v=60"/>
 <link rel="stylesheet" href="/states.css?v=3"/>
-<link rel="stylesheet" href="/ask-bet.css?v=106"/>
+<link rel="stylesheet" href="/ask-bet.css?v=117"/>
 <style>
 #page-title { display: none; }
 #who { position: fixed; right: 0.7rem; bottom: 0.7rem; z-index: 20; margin: 0; }
@@ -64,7 +64,7 @@ body.day-board #parrot-load[hidden] { display: none; }
     <div class="warp" id="desk-note"><div class="warp-in" id="desk-note-in"></div></div>
     <img id="desk-books" alt="" src="/scene/books.png">
     <div id="desk-actor">
-      <img id="desk-body" alt="" src="/scene/parrot-body.png?v=3">
+      <img id="desk-body" alt="" src="/scene/parrot-body.png?v=9">
       <div id="desk-head">
         <img id="desk-parrot" alt="" src="/scene/parrot-head.png?v=4">
         <div id="desk-glint" aria-hidden="true"></div>
@@ -79,7 +79,7 @@ body.day-board #parrot-load[hidden] { display: none; }
   </div>
   <div id="desk-fade" aria-hidden="true">
     <div id="desk-fade-bird">
-      <img alt="" src="/scene/parrot-body.png?v=3">
+      <img alt="" src="/scene/parrot-body.png?v=9">
       <div id="desk-fade-head"><img alt="" src="/scene/parrot-head.png?v=4"></div>
     </div>
   </div>
@@ -279,12 +279,12 @@ body.day-board #parrot-load[hidden] { display: none; }
 </div>
 <div class="pane" id="pane-build" hidden>
 <div class="poster-frame" id="build-frame">
-<img class="scene-fill" alt="" src="/share-template.jpg?v=5">
+<img class="scene-fill" alt="" src="/share-template.jpg?v=6">
 <div class="poster-stage">
-<img id="build-share" alt="Build a bet" src="/share-template.jpg?v=5">
+<img id="build-share" alt="Build a bet" src="/share-template.jpg?v=6">
 <section class="chalk chooser" id="chooser">
   <div id="choice-filters">
-    <p class="aim">Pick today or this week, the league, the stat, and how many picks. Leave the league and the games blank to use all of them. Safest wins the most. On Safe, five dollars wins about $2.50. Good wins about as often as it loses. Best payout pays the most, and it loses more often. Tap Safe, Good, or Best payout again for a different bet. If only one bet fits, the card says so.</p>
+    <p class="aim">Pick today or this week, the league, the stat, and how many picks. Leave the league and the games blank to use all of them. Safest wins the most. On Safe, five dollars wins about $2.50. Good wins about as often as it loses. Big payout pays the most, and it loses more often. Tap Safe, Good, or Big payout again for a different bet. If only one bet fits, the card says so.</p>
     <h2>Build a bet</h2>
     <p class="pick-save"><button type="button" id="choice-speak">Speak a bet</button></p>
     <p class="quiet" id="choice-heard"></p>
@@ -400,6 +400,7 @@ body.day-board #parrot-load[hidden] { display: none; }
   </div>
   <div id="admin-strategy" hidden>
     <p class="quiet">The bet rules this desk is using. This does not send a bet.</p>
+    <div id="admin-picked"></div>
     <h2>Standing rules</h2>
     <article class="report-card"><p><b>No college player props</b></p><p>FanDuel does not allow player prop bets in college. Pennsylvania lists the game and no player props. Leave college player props off the cards.</p></article>
     <article class="report-card"><p><b>The desk does not send the bet</b></p><p>A member types the line into their own FanDuel account. 21+. Gambling problem? Call 1-800-GAMBLER.</p></article>
@@ -481,17 +482,17 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
 <script src="/app.js?v=101"></script>
-<script src="/desk.js?v=84"></script>
-<script src="/members.js?v=74"></script>
+<script src="/desk.js?v=85"></script>
+<script src="/members.js?v=76"></script>
 <script src="/stars.js?v=8"></script>
-<script src="/choose.js?v=67"></script>
+<script src="/choose.js?v=80"></script>
 <script src="/lessons.js?v=8"></script>
 <script src="/filters.js?v=22"></script>
 <script src="/reports.js?v=1"></script>
-<script src="/admin.js?v=27"></script>
+<script src="/admin.js?v=28"></script>
 <script src="/sharecard.js?v=29"></script>
 <script src="/states.js?v=9"></script>
-<script src="/ask-bet.js?v=66"></script>
+<script src="/ask-bet.js?v=70"></script>
 <script>
 function fitPoster() {
   const view = window.visualViewport;

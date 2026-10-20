@@ -378,7 +378,7 @@ function birdMenu(kind) {
         head.textContent = [shown, pct, mark].filter(Boolean).join(" · ") || name;
         const gist = document.createElement("p");
         gist.className = "rec-gist";
-        gist.innerHTML = ticket.legs.map((leg) => { const bit = String(leg.label || "").split(/,|\s+—\s+/)[0].trim(); if (!bit) return ""; const cut = bit.match(/^(.*?)(?:\s*:\s*|\s+)((?:\d+(?:\.\d+)?\+|[+-]\d|over\b|under\b).+)$/i); const prop = !cut && /\s+or\s+|\s+&\s+/i.test(bit) ? String(leg.market || "").split(/\s+-\s+/).pop().replace(/^Either Player\s*/i, "").trim() : ""; return cut ? `<i>${esc(cut[1])}</i> ${esc(cut[2])}` : prop ? `<i>${esc(bit)}</i> ${esc(prop)}` : `<i>${esc(bit)}</i>`; }).filter(Boolean).join(", ") + (ticket.why ? `<em>${esc(ticket.why)}</em>` : "");
+        gist.innerHTML = ticket.legs.map((leg) => window.legGist ? legGist(leg) : "").filter(Boolean).join(", ") + (ticket.why ? `<em>${esc(ticket.why)}</em>` : "");
         bet.append(head, gist);
         ticket.legs.forEach((leg) => { const line = document.createElement("span"); const odds = Number(leg.odds); const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : ""; line.textContent = [tag, leg.label].filter(Boolean).join(" "); bet.append(line); });
         block.append(bet);
@@ -447,7 +447,7 @@ document.getElementById("pane-laws").addEventListener("click", (event) => {
 });
 window.birdGreet = birdGreet;
 function noteTaste(kind, detail) {
-  memberFetch("/api/taste", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slot: kind, ...(detail || {}) }) }).catch(() => {});
+  return memberFetch("/api/taste", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slot: kind, ...(detail || {}) }) }).catch(() => {});
 }
 window.noteTaste = noteTaste;
 document.getElementById("gate-join").addEventListener("click", () => showGateMode("join"));

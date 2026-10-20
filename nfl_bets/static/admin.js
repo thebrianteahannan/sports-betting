@@ -35,20 +35,42 @@ function builtLine(line) {
   return `<p class="built-leg"><b>${esc(parts[0] || "")}</b>${where}</p>`;
 }
 
+function builtSay(row) {
+  const when = row.when === "week" ? "This week" : "Today";
+  const sports = (row.sports || []).length ? row.sports.join(", ") : "all leagues";
+  const kind = { any: "any player prop", yards: "yards", points: "points", assists: "assists", shots: "shots", strikeouts: "strikeouts", hits: "hits" }[row.kind] || "any player prop";
+  const aim = { top: "the safest price", safe: "a safe price", good: "a price near −100", payout: "the longest price" }[row.aim] || "the safest price";
+  return `${when}, ${sports}, ${kind}, ${row.legs || 3} legs, ${aim}.`;
+}
+
 function paintBuilt(payload) {
   const list = document.getElementById("admin-built");
   if (!list) return;
   const rows = (payload && payload.built) || [];
+  window.builtTypes = rows;
+  const made = new Set(((payload && payload.strategies) || []).map((row) => row.key));
   if (!rows.length) {
-    list.innerHTML = "<p>No one has rated a built bet yet.</p>";
+    list.innerHTML = "<p>No one has finished a build yet.</p>";
     return;
   }
-  list.innerHTML = `<p class="quiet">These are built bets a member rated.</p>${rows.map((row) => {
+  list.innerHTML = `<p class="quiet">These are the bets people finished building.</p>${rows.map((row) => {
     const clock = row.at && typeof when === "function" ? `${when(row.at)} ET` : "";
-    const sports = (row.sports || []).length ? row.sports.join(", ") : "All leagues";
-    const price = row.american == null || row.american === "" ? "" : ` ${row.american}`;
+    const who = (row.names || []).join(", ") || "Member";
+    const times = `${row.count} ${row.count === 1 ? "person has" : "people have"} built this.`;
     const lines = (row.lines || []).map(builtLine).join("");
-    return `<article class="report-card"><p><b>${esc(row.name || "Member")}</b> · ${esc(clock)}</p><p>${esc(row.title || "Build a bet")}${esc(String(price))} · ${esc(sports)} · ${esc(row.kind || "any")} · ${esc(row.when || "")}</p><p>${esc(row.copy || "")}</p>${lines}</article>`;
+    const action = made.has(row.key) ? `<p class="quiet">This is a strategy.</p>` : `<p class="pick-save"><button type="button" data-make-strategy="${esc(row.key)}">Make this a strategy</button></p>`;
+    return `<article class="report-card"><p><b>${esc(who)}</b> · ${esc(clock)}</p><p>${esc(builtSay(row))} ${esc(times)}</p>${row.title ? `<p>${esc(row.title)}</p>` : ""}${lines}${action}</article>`;
+  }).join("")}`;
+}
+
+function paintPicked(payload) {
+  const list = document.getElementById("admin-picked");
+  if (!list) return;
+  const rows = (payload && payload.strategies) || [];
+  if (!rows.length) { list.innerHTML = ""; return; }
+  list.innerHTML = `<h2>Picked from built bets</h2>${rows.map((row) => {
+    const lines = (row.lines || []).map(builtLine).join("");
+    return `<article class="report-card"><p><b>${esc(builtSay(row))}</b></p>${row.title ? `<p>${esc(row.title)}</p>` : ""}${lines}</article>`;
   }).join("")}`;
 }
 
@@ -96,6 +118,7 @@ function paintHabits(payload) {
 function paintAdmin(payload) {
   paintRefresh();
   paintBuilt(payload);
+  paintPicked(payload);
   paintRates(payload);
   paintAsks(payload);
   paintHabits(payload);
@@ -202,7 +225,7 @@ function bindAdmin() {
     const button = event.target.closest("[data-admin-tab]");
     if (button) {
       showAdminTab(button.dataset.adminTab);
-      if (button.dataset.adminTab === "built" || button.dataset.adminTab === "asks" || button.dataset.adminTab === "habits" || button.dataset.adminTab === "rates") loadAdmin();
+      if (button.dataset.adminTab === "built" || button.dataset.adminTab === "asks" || button.dataset.adminTab === "habits" || button.dataset.adminTab === "rates" || button.dataset.adminTab === "strategy") loadAdmin();
       if (button.dataset.adminTab === "notes") loadNotes().catch((error) => { const msg = document.getElementById("note-msg"); if (msg) msg.textContent = String(error.message || error); });
       if (button.dataset.adminTab === "laws" && window.paintLaws) window.paintLaws();
       if (button.dataset.adminTab === "card" && window.fillShareCards) window.fillShareCards();
@@ -210,6 +233,14 @@ function bindAdmin() {
   });
   const del = document.getElementById("ignore-delete");
   if (del) del.addEventListener("click", () => { deleteIgnored().catch((error) => { document.getElementById("ignore-note").textContent = String(error.message || error); }); });
+  const built = document.getElementById("admin-built");
+  if (built) built.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-make-strategy]");
+    const row = button && (window.builtTypes || []).find((item) => item.key === button.dataset.makeStrategy);
+    if (!row || !window.noteTaste) return;
+    button.disabled = true;
+    noteTaste("strategy", row).then(() => loadAdmin());
+  });
   const users = document.getElementById("admin-users");
   if (users) users.addEventListener("click", (event) => {
     const button = event.target.closest("[data-admin-email]");

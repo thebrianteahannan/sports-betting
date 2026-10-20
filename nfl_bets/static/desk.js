@@ -496,5 +496,5 @@ showTab = (name) => {
 
 window.deskFrame = deskFrame;
 window.deskGate = showGateScene;
-window.birdSay = birdSay;
+window.birdSay = birdSay; window.tvBack = tvBack;
 bootDesk();

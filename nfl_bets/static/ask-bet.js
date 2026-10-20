@@ -303,7 +303,7 @@ function betChoice(card) {
   const copy = [...card.querySelectorAll(":scope > p")].map((node) => node.textContent.trim()).join(" ");
   const found = copy.match(/about ([\d.]+%)/) || copy.match(/parlay is ([\d.]+%)/);
   const pct = found ? found[1] : "";
-  const money = (copy.match(/A \$5 bet would win \$[\d.]+/) || [])[0] || "";
+  const money = (copy.match(/A \$5 bet would (?:win \$[\d.]+|become \$[\d.]+ with a profit of \$[\d.]+)/) || [])[0] || "";
   const name = document.createElement("b");
   name.textContent = title;
   button.append(name);
@@ -457,16 +457,17 @@ if (sayBird) {
   };
 }
 
-window.askBack = () => { const steps = window.askSteps; const past = window.askPast; const pick = window.choice; if (!window.asking || !steps || !past || !past.length || !pick) return false; const step = past.pop(); const order = ["when", "sport", "game", "kind", "legs"].concat(window.askFree ? ["aim"] : []); steps.splice(0, steps.length, ...order.slice(Math.max(0, order.indexOf(step)))); if (step === "sport") pick.sports = []; else if (step === "kind") pick.kind = "any"; else if (step === "legs") pick.legs = 3; else if (step === "game") pick.gameIds = []; else if (step === "aim") pick.aim = ""; else if (step === "when") pick.when = "today"; if (window.paintChoices) paintChoices(); if (window.askStep) askStep(); return true; };
+window.askBack = () => { const line = document.getElementById("bird-line"); const desk = document.getElementById("desk"); const steps = window.askSteps; const past = window.askPast; const pick = window.choice; if (!desk || desk.classList.contains("solo") || !desk.classList.contains("bird-on") || !line || !line.classList.contains("build") || !steps || !past || !past.length || !pick) return false; const step = past.pop(); const order = ["when", "sport", "game", "kind", "legs"].concat(window.askFree ? ["aim"] : [], ["mix"]); steps.splice(0, steps.length, ...order.slice(Math.max(0, order.indexOf(step)))); if (step === "sport") pick.sports = []; else if (step === "kind") pick.kind = "any"; else if (step === "legs") pick.legs = 3; else if (step === "game") pick.gameIds = []; else if (step === "aim") pick.aim = ""; else if (step === "mix") pick.mix = "even"; else if (step === "when") pick.when = "today"; if (window.askStep) askStep(); return true; };
 
 document.getElementById("desk-back").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
   if (!desk || !desk.classList.contains("tv-full")) return;
   event.stopImmediatePropagation();
+  if (window.recBack && recBack()) return;
   if (window.askBack && askBack()) return;
   const shot = askTrail.pop();
   if (shot) { restoreAsk(shot); return; }
-  if (window.recBack && recBack()) return;
+  if (desk.classList.contains("bird-on") && /trying to do today/i.test((document.getElementById("bird-line") || {}).textContent || "") && window.tvBack) { tvBack(); return; }
   window.askGeneral = false;
   window.asking = false;
   window.digOn = false;

@@ -300,18 +300,24 @@ function mark(combo) {
   return combo.map((row) => who(row[0])).sort().join("|");
 }
 
-function scoreOf(decimal, aim) {
-  if (aim === "payout") return -decimal;
-  if (aim === "top") return decimal;
+function scoreOf(decimal, aim, combo, mix) {
+  const probs = (combo || []).map((row) => impliedProb(row[0].odds)).sort((a, b) => a - b);
+  const mean = probs.reduce((sum, prob) => sum + prob, 0) / (probs.length || 1);
+  const rest = mix === "safer" ? probs.slice(0, -1) : mix === "long" ? probs.slice(1) : probs;
+  const restMean = rest.reduce((sum, prob) => sum + prob, 0) / (rest.length || 1);
+  const gap = mix === "safer" ? probs.at(-1) - restMean : mix === "long" ? restMean - probs[0] : 1;
+  const mixCost = probs.length < 2 ? 0 : rest.reduce((sum, prob) => sum + Math.abs(prob - (mix === "safer" || mix === "long" ? restMean : mean)), 0) * 1.2 + (mix === "safer" || mix === "long" ? Math.max(0, 0.15 - gap) * 5 : 0);
+  if (aim === "payout") return -decimal + mixCost;
+  if (aim === "top") return decimal + mixCost;
   const goal = americanDecimal(AIM[aim]);
-  return Math.abs(decimal - goal) + (aim === "good" && decimal < goal ? 10 : 0);
+  return Math.abs(decimal - goal) + (aim === "good" && decimal < goal ? 10 : 0) + mixCost;
 }
 
 function decimalOf(combo) {
   return combo.reduce((decimal, row) => decimal * americanDecimal(row[0].odds), 1);
 }
 
-function search(menus, count, aim, split) {
+function search(menus, count, aim, split, mix) {
   const found = [];
   function keep(comboScore, combo) {
     const token = mark(combo);
@@ -326,7 +332,7 @@ function search(menus, count, aim, split) {
     found.splice(24);
   }
   function walk(start, need, decimal, players, games, combo) {
-    if (need === 0) { keep(scoreOf(decimal, aim), combo); return; }
+    if (need === 0) { keep(scoreOf(decimal, aim, combo, mix), combo); return; }
     if (menus.length - start < need) return;
     for (let index = start; index <= menus.length - need; index += 1) {
       menus[index].forEach((row) => {
@@ -347,14 +353,7 @@ function search(menus, count, aim, split) {
   return found.map((row) => row[1]).filter((combo) => combo.length >= count);
 }
 
-function windowOf(ranked, aim) {
-  if (!ranked.length) return [];
-  const scored = ranked.map((combo) => [scoreOf(decimalOf(combo), aim), combo]);
-  const best = scored[0][0];
-  return scored.filter((row) => row[0] <= (aim === "payout" ? best * 0.85 : best + 0.4)).map((row) => row[1]);
-}
-
-function pick(pools, count, aim, skip, holdList, dropList) {
+function pick(pools, count, aim, skip, holdList, dropList, mix) {
   const drop = new Set((dropList || []).map((name) => pinOf(name).name).filter(Boolean));
   const asked = (holdList || []).map(pinOf).filter((row) => row.name);
   const hold = [...new Set(asked.map((row) => row.name))];
@@ -391,15 +390,15 @@ function pick(pools, count, aim, skip, holdList, dropList) {
     const pinGames = new Set(pins.map((row) => String(row[1].id || "")));
     const rest = menus.map((menu) => menu.filter((row) => !used.has(who(row[0])) && !pinGames.has(String(row[1].id || "")))).filter((menu) => menu.length);
     const need = Math.max(0, count - pins.length);
-    let rankedHold = need ? search(rest.slice(0, 14), need, aim, true) : [[]];
-    if (need && !rankedHold.length) rankedHold = search(rest.flatMap((menu) => menu.map((row) => [row])).slice(0, 24), need, aim, false);
+    let rankedHold = need ? search(rest.slice(0, 14), need, aim, true, mix) : [[]];
+    if (need && !rankedHold.length) rankedHold = search(rest.flatMap((menu) => menu.map((row) => [row])).slice(0, 24), need, aim, false, mix);
     const combo = pins.concat(rankedHold[0] || []);
     if (combo.length >= count) return { combo: combo.slice(0, count), alts: rankedHold.slice(1, 9).map((rest) => pins.concat(rest).slice(0, count)), only: rankedHold.length === 1, again: false, kept: pins.length === hold.length };
   }
-  let ranked = search(menus.slice(0, 14), count, aim, true);
+  let ranked = search(menus.slice(0, 14), count, aim, true, mix);
   if (!ranked.length) {
     const flat = menus.flatMap((menu) => menu.map((row) => [row]));
-    ranked = search(flat.slice(0, count >= 8 ? 18 : 24), count, aim, false);
+    ranked = search(flat.slice(0, count >= 8 ? 18 : 24), count, aim, false, mix);
   }
   if ((aim === "top" || aim === "payout") && ranked.length) return { combo: ranked[0], alts: ranked.slice(1, 9), only: ranked.length === 1, again: false };
   const fresh = ranked.filter((combo) => !skip.has(mark(combo)));
@@ -468,6 +467,7 @@ async function chooseBet(body, board) {
   const count = any ? 0 : Math.min(10, Math.max(1, Number(body.legs) || 3));
   const kind = ["any", "yards", "points", "assists", "shots", "strikeouts", "hits"].includes(body.kind) ? body.kind : "any";
   const aim = ["top", "safe", "good", "payout"].includes(body.aim) ? body.aim : "top";
+  const mix = ["even", "safer", "long"].includes(body.mix) ? body.mix : "even";
   const span = body.when === "week" ? "week" : "today";
   const games = slate(Array.isArray(board.games) ? board.games : [], picked, ids, span);
   const safeAim = aim;
@@ -485,7 +485,7 @@ async function chooseBet(body, board) {
   const hold = Array.isArray(body.hold) ? body.hold : [];
   const drop = Array.isArray(body.drop) ? body.drop : [];
   const skip = new Set((Array.isArray(body.skip) ? body.skip : []).map(String).filter(Boolean));
-  const pickedCombo = any ? [2, 3, 4, 5, 6].map((n) => pick(pools, n, aim, skip, hold, drop)).filter((row) => row.combo.length).sort((a, b) => scoreOf(decimalOf(a.combo), aim) - scoreOf(decimalOf(b.combo), aim))[0] || { combo: [] } : pick(pools, count, aim, skip, hold, drop);
+  const pickedCombo = any ? [2, 3, 4, 5, 6].map((n) => pick(pools, n, aim, skip, hold, drop, mix)).filter((row) => row.combo.length).sort((a, b) => scoreOf(decimalOf(a.combo), aim, a.combo, mix) - scoreOf(decimalOf(b.combo), aim, b.combo, mix))[0] || { combo: [] } : pick(pools, count, aim, skip, hold, drop, mix);
   const used = pickedCombo.combo.length;
   if (!used || (!any && used < count)) return empty(miss(pools, picked, any ? 2 : count, span), aim);
   const built = card(pickedCombo.combo, picked, kind, used, aim, pickedCombo.only);

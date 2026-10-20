@@ -100,19 +100,30 @@ function createAdmins(readKey, writeKey) {
     });
   }
 
+  function typeKey(row) {
+    const sports = Array.isArray(row.sports) ? row.sports.map(String).filter(Boolean).sort() : [];
+    return [row.when === "week" ? "week" : "today", sports.join(","), row.kind || "any", Number(row.legs) || 3, row.aim || "top"].join("|");
+  }
+
   function builtOf(data) {
-    const names = {};
-    data.users.forEach((row) => { names[row.id] = row.name || "Member"; });
-    return data.activity.filter((row) => row.kind === "rate" && row.detail && row.detail.built && Number(row.detail.stars) > 0).slice(0, 60).map((row) => ({
-      at: row.at || "",
-      name: names[row.userId] || "Member",
-      title: row.detail.title || "",
-      american: row.detail.american,
-      copy: row.detail.copy || "",
-      sports: row.detail.sports || [],
-      kind: row.detail.kind || "any",
-      when: row.detail.when || "",
-      lines: (row.detail.legs || []).map((leg) => leg.label || ""),
+    const groups = new Map();
+    data.users.forEach((user) => {
+      tasteOf(user).found.forEach((row) => {
+        const key = typeKey(row);
+        const hit = groups.get(key) || { key, when: row.when === "week" ? "week" : "today", sports: Array.isArray(row.sports) ? row.sports.map(String).filter(Boolean) : [], kind: row.kind || "any", legs: Number(row.legs) || 3, aim: row.aim || "top", names: [], at: "", title: "", lines: [], count: 0 };
+        hit.count += 1;
+        const name = user.name || "Member";
+        if (!hit.names.includes(name)) hit.names.push(name);
+        if (!hit.at || String(row.at || "") > hit.at) { hit.at = row.at || ""; hit.title = row.title || ""; hit.lines = Array.isArray(row.lines) ? row.lines : []; }
+        groups.set(key, hit);
+      });
+    });
+    return [...groups.values()].sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(0, 40);
+  }
+
+  function strategiesOf(data) {
+    return data.activity.filter((row) => row.kind === "strategy" && row.detail).slice(0, 30).map((row) => ({
+      at: row.at || "", key: row.detail.key || typeKey(row.detail), when: row.detail.when || "today", sports: row.detail.sports || [], kind: row.detail.kind || "any", legs: Number(row.detail.legs) || 3, aim: row.detail.aim || "top", title: row.detail.title || "", lines: row.detail.lines || [],
     }));
   }
 
@@ -190,6 +201,19 @@ function createAdmins(readKey, writeKey) {
         await writeKey("bets/members.json", data);
         return { ok: true };
       }
+      if (kind === "strategy") {
+        const data = await load();
+        const who = data.users.find((item) => item.id === user.id);
+        if (!who || !marked(who)) return { ok: false };
+        const sports = (Array.isArray(detail.sports) ? detail.sports : []).map(String).filter(Boolean).slice(0, 12);
+        const saved = { when: detail.when === "week" ? "week" : "today", aim: ["top", "safe", "good", "payout"].includes(detail.aim) ? detail.aim : "top", kind: ["any", "yards", "points", "assists", "shots", "strikeouts", "hits"].includes(detail.kind) ? detail.kind : "any", legs: Math.min(10, Math.max(1, Number(detail.legs) || 3)), sports, title: String(detail.title || "").slice(0, 80), lines: (Array.isArray(detail.lines) ? detail.lines : []).map((line) => String(line).slice(0, 140)).filter(Boolean).slice(0, 8) };
+        saved.key = typeKey(saved);
+        if (data.activity.some((row) => row.kind === "strategy" && row.detail && row.detail.key === saved.key)) return { ok: true, already: true };
+        data.activity.unshift({ id: Math.random().toString(16).slice(2, 14), userId: user.id, kind: "strategy", at: new Date().toISOString(), detail: saved });
+        data.activity = data.activity.slice(0, 400);
+        await writeKey("bets/members.json", data);
+        return { ok: true };
+      }
       const slot = ["quiz", "open", "found"].includes(kind) ? kind : "";
       if (!slot) return { ok: false };
       const data = await load();
@@ -197,9 +221,10 @@ function createAdmins(readKey, writeKey) {
       if (!row) return { ok: false };
       const taste = tasteOf(row);
       const sports = (Array.isArray(detail.sports) ? detail.sports : []).map(String).filter(Boolean).slice(0, 12);
+      const lines = (Array.isArray(detail.lines) ? detail.lines : []).map((line) => String(line).slice(0, 140)).filter(Boolean).slice(0, 8);
       const item = slot === "open"
         ? { at: new Date().toISOString(), card: ["today", "week", "open"].includes(detail.card) ? detail.card : "" }
-        : { at: new Date().toISOString(), when: detail.when === "week" ? "week" : "today", aim: ["top", "safe", "good", "payout"].includes(detail.aim) ? detail.aim : "top", kind: ["any", "yards", "points", "assists", "shots", "strikeouts", "hits"].includes(detail.kind) ? detail.kind : "any", legs: Math.min(10, Math.max(1, Number(detail.legs) || 3)), sports, title: String(detail.title || "").slice(0, 80) };
+        : { at: new Date().toISOString(), when: detail.when === "week" ? "week" : "today", aim: ["top", "safe", "good", "payout"].includes(detail.aim) ? detail.aim : "top", kind: ["any", "yards", "points", "assists", "shots", "strikeouts", "hits"].includes(detail.kind) ? detail.kind : "any", legs: Math.min(10, Math.max(1, Number(detail.legs) || 3)), sports, title: String(detail.title || "").slice(0, 80), lines };
       if (slot === "open" && !item.card) return { ok: false };
       const prior = taste[slot][0];
       if (prior && Date.now() - Date.parse(prior.at || "") < 120000 && JSON.stringify({ ...prior, at: "" }) === JSON.stringify({ ...item, at: "" })) return { ok: true, already: true };
@@ -215,7 +240,7 @@ function createAdmins(readKey, writeKey) {
       const data = await load();
       const archived = (await readKey("bets/archive.json")) || {};
       const tickets = Array.isArray(archived.tickets) ? archived.tickets : [];
-      return { users: rows(data.users), asks: asksOf(data), habits: habitsOf(data), built: builtOf(data), rates: ratesOf(data, tickets) };
+      return { users: rows(data.users), asks: asksOf(data), habits: habitsOf(data), built: builtOf(data), strategies: strategiesOf(data), rates: ratesOf(data, tickets) };
     },
     noteTaste(user, kind, detail) {
       const run = tasteChain.then(() => saveTaste(user, kind, detail));
