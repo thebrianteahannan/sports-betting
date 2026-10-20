@@ -118,6 +118,7 @@
 #bird-picks .rec-bet .rec-gist em, #choice-result .rec-bet .rec-gist em { display: block; margin-top: 0.2rem; color: #d7e2ea; font-style: normal; font-weight: 700; text-align: left; }
 #bird-picks .rec-bet.rec-edge, #choice-result .rec-bet.rec-edge { border-color: #ffe14a; box-shadow: inset 3px 0 0 #ffe14a; }
 #bird-picks .rec-bet.rec-edge .rec-gist em, #choice-result .rec-bet.rec-edge .rec-gist em { color: #ffe14a; }
+#choice-result .rec-bet .rec-gist em.rec-known, #choice-result .rec-bet.rec-edge .rec-gist em.rec-known { color: #3dff6e; }
 #desk.tv-full #desk-glass #choice-result > h2, #choice-result > h2 { margin: 0 0 0.55rem; color: #f4fff6; font-size: 16px; letter-spacing: 0.02em; text-transform: uppercase; }
 #bird-picks .rec-history { margin: 0.15rem 0 0; color: #3dff6e; font-size: 14px; font-weight: 700; line-height: 1.3; }
 #bird-picks .rec-history span + span::before { content: ", "; }
@@ -174,12 +175,16 @@
 #bird-guide:has(> .ask-ideas) #bet-mic { order: -1; }
 #bird-guide:has(> .ask-ideas) #bet-ask-go { flex: 1 0 100%; justify-content: center; text-align: center; }
 #bird-guide > .ask-ideas {
-  align-self: flex-end; width: auto; flex: 0 0 auto; margin: 0;
-  padding: 0.35rem 0.7rem; border: 0; border-radius: 8px;
+  align-self: flex-end; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.4rem;
+  width: auto; margin: 0;
+}
+#bird-guide > .ask-ideas button {
+  width: auto; flex: 0 0 auto; margin: 0;
+  padding: 0.35rem 0.7rem; border: 0; border-radius: 8px; box-shadow: none;
   background: #3dff6e; color: #04140c; font-family: "Rajdhani", sans-serif;
   font-weight: 700; letter-spacing: 0.04em; cursor: pointer; text-align: center;
 }
-#desk.tv-full #desk-glass #bird-guide > .ask-ideas { font-size: 18px; }
+#desk.tv-full #desk-glass #bird-guide > .ask-ideas button { font-size: 18px; }
 #bird-guide:not(:has(#bet-ask)) > .ask-ideas { display: none; }
 @media (max-width: 720px) {
   #desk.tv-full.bird-on #bird-guide:has(#bet-ask) { justify-content: flex-start; }

@@ -101,7 +101,7 @@ function showMember(payload) {
   if (admin && window.loadAdmin) window.loadAdmin();
 }
 
-const CARD_NAMES = {
+const CARD_NAMES = window.CARD_NAMES = {
   band: "−150 to +100 window", safe2: "Safe 2-leg, both 75%+",
   todayBet: "Highest chance parlay today", mid3: "3 legs, −250 to −400",
   chalk: "−400 to −700 legs, near −180", win4: "4 legs, −150 to −300",

@@ -113,12 +113,11 @@ function paintIdeas() {
   const guide = document.getElementById("bird-guide");
   if (!guide) return;
   guide.querySelectorAll(":scope > .ask-ideas").forEach((node) => node.remove());
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "ask-ideas";
-  button.textContent = "Recommended bets";
-  button.addEventListener("click", () => { if (window.birdMenu) birdMenu("bets"); });
-  guide.prepend(button);
+  const row = document.createElement("div");
+  row.className = "ask-ideas";
+  row.innerHTML = `<button type="button" data-quiz>Build a bet</button><button type="button">Recommended bets</button>`;
+  row.lastElementChild.addEventListener("click", () => { if (window.birdMenu) birdMenu("bets"); });
+  guide.prepend(row);
 }
 
 function focusAsk(box) {
