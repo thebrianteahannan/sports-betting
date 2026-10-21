@@ -310,6 +310,7 @@ function recPct(rows, since) {
   return list.length ? `${((list.filter((row) => row.won).length / list.length) * 100).toFixed(1)}%` : "—";
 }
 
+window.recPct = recPct;
 function recBlurb(ticket, shown, pct, price) { return shown && pct && window.recWin ? recWin(price) : ""; }
 
 function recLine(leg) {

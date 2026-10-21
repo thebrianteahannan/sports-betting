@@ -463,7 +463,7 @@ document.getElementById("desk-back").addEventListener("click", (event) => {
   if (!desk || !desk.classList.contains("tv-full")) return;
   event.stopImmediatePropagation();
   if (window.shareBack && shareBack()) return; if (window.recBack && recBack()) return;
-  if (window.askBack && askBack()) return;
+  if (document.querySelector(".rec-board") && !desk.classList.contains("bird-on")) askTrail = []; else if (window.askBack && askBack()) return;
   const shot = askTrail.pop();
   if (shot) { restoreAsk(shot); return; }
   if (desk.classList.contains("bird-on") && /trying to do today/i.test((document.getElementById("bird-line") || {}).textContent || "") && window.tvBack) { tvBack(); return; }
@@ -471,7 +471,7 @@ document.getElementById("desk-back").addEventListener("click", (event) => {
   window.asking = false;
   window.digOn = false;
   desk.classList.remove("dug", "solo");
-  if (window.birdGreet) birdGreet();
+  if (window.birdGreet) { birdGreet(); if (document.querySelector(".rec-board") && typeof showTab === "function") showTab("today"); }
   else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"], ["parrot", "Ask Parlay the Parrot"]]);
 }, true);
 

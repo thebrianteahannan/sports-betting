@@ -252,8 +252,8 @@ let recAllOpen = false;
 let recPast = false;
 let recSort = "1";
 let recSortHigh = true;
-const REC_KINDS = [["yards", "Yards"], ["points", "Points"], ["assists", "Assists"], ["shots", "Shots"], ["strikeouts", "Strikeouts"], ["hits", "Hits"]];
 const REC_PAY = [["top", "Safest"], ["safe", "Safe"], ["good", "Good"], ["payout", "Big payout"]];
+let recKinds = [], recKindsKey = "";
 
 function recDayKey(ms) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(ms);
@@ -283,14 +283,23 @@ function recLeagues(ticket) {
 }
 
 function recLegKind(leg) {
-  const text = `${leg.label || ""} ${leg.market || ""}`.toLowerCase();
-  if (/yard/.test(text)) return "yards";
-  if (/strikeout/.test(text)) return "strikeouts";
-  if (/assist/.test(text)) return "assists";
-  if (/shot/.test(text)) return "shots";
-  if (/\bhits?\b|to record a hit/.test(text)) return "hits";
-  if (/point/.test(text)) return "points";
-  return "";
+  const market = String(leg.market || "");
+  const source = /^game specials/i.test(market) ? String(leg.runner || leg.label || "").replace(/^.*?(?=\d)/, "") : market.split(" - ").pop();
+  const scope = (market.toLowerCase().match(/\b(\d+(?:st|nd|rd|th)\s+drive)\b/) || [])[1] || "";
+  let text = `${scope} ${source}`.toLowerCase().replace(/\([^)]*\)/g, " ").replace(/\b(alt|alternate)\b/g, " ").replace(/\d+(?:\.\d+)?\s*\+/g, " ").replace(/\b(player to record|player to score|player to hit|to record|to score|to hit|a|an|the)\b/g, " ").replace(/\byds\b/g, "yards").replace(/\btds\b/g, "touchdowns").replace(/\btd\b/g, "touchdown").replace(/\bpts\b/g, "points").replace(/\breb\b/g, "rebounds").replace(/\bast\b/g, "assists").replace(/[^a-z0-9+ ]/g, " ").replace(/\s+/g, " ").trim().replace(/^(record|score)\s+/, "");
+  if (text === "hit") text = "hits"; else if (text.endsWith(" hit")) text = `${text.slice(0, -3)}hits`;
+  return /^(popular|passing|receiving|rushing)$/.test(text) ? "" : text;
+}
+function recKindGames() { const game = recFilter.game && ((window.state && window.state.board && window.state.board.games) || []).find((row) => row.match === recFilter.game); return game && game.id ? [String(game.id)] : []; }
+function recEnsureKinds(board) {
+  const sports = recFilter.sports.slice().sort(), when = recFilter.when === "today" ? "today" : "week", gameIds = recKindGames(), key = `${when}|${sports.join(",")}|${gameIds.join(",")}`;
+  if (key === recKindsKey) return;
+  recKindsKey = key; recKinds = [];
+  fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "kinds", sports: recFilter.sports, gameIds, when, college: !["props", "both", "tourney", "off"].includes(window.memberLaw || "") }) }).then((res) => res.json()).then((data) => {
+    if (recKindsKey !== key || !board.isConnected) return;
+    recKinds = data.kinds || []; if (recFilter.kind && !recKinds.includes(recFilter.kind)) recFilter.kind = "";
+    const bar = board.querySelector(".rec-filters"), note = board.querySelector(".rec-none"); if (bar) bar.remove(); if (note) note.remove(); paintRecFilters(board);
+  }).catch(() => { if (recKindsKey === key) recKindsKey = ""; });
 }
 
 function recPay(ticket) {
@@ -409,7 +418,7 @@ function recGameHit(ticket, name) {
 function recSay() {
   const sports = recFilter.sports;
   const league = sports.length > 1 ? `${sports.slice(0, -1).join(", ")} and ${sports.at(-1)}` : (sports[0] || "");
-  const kind = { yards: "yardage", points: "points", assists: "assists", shots: "shots", strikeouts: "strikeout", hits: "hit" }[recFilter.kind] || "";
+  const kind = recFilter.kind || "";
   const picks = recFilter.legs === "1" ? "1-pick" : recFilter.legs ? `${recFilter.legs}-pick` : "";
   const pay = { safe: "safe", good: "good", payout: "best-paying" }[recFilter.aim] || "";
   const bits = [pay, picks, league, kind].filter(Boolean).join(" ");
@@ -422,6 +431,7 @@ function recSay() {
 }
 
 function paintRecFilters(board) {
+  if (recFiltersOpen) recEnsureKinds(board);
   const rows = listedRecs(board).map((row) => row.ticket);
   const leagues = sportsIn(rows.flatMap((ticket) => recLeagues(ticket)).concat(((window.state && window.state.board && window.state.board.games) || []).map((game) => game.sport)));
   const games = recGameOptions(rows);
@@ -432,14 +442,14 @@ function paintRecFilters(board) {
   bar.className = "rec-filters";
   if (recFiltersOpen) bar.classList.add("open");
   bar.innerHTML = [
-    `<div class="rec-head"><span class="rec-tools"><button type="button" class="rec-fold${on ? " on" : ""}" data-rec="fold">Filters</button><button type="button" class="rec-past${recPast ? " on" : ""}" data-rec="past">History</button></span><button type="button" class="rec-expand" data-rec="expand">${recAllOpen ? "Collapse all" : "Expand all"}</button></div>`,
+    `<div class="rec-head"><span class="rec-tools"><button type="button" class="rec-fold${on ? " on" : ""}" data-rec="fold">Filters</button><button type="button" class="rec-past${recPast ? " on" : ""}" data-rec="past">History</button>${on ? recChip("clear", "1", "Clear", false) : ""}</span><button type="button" class="rec-expand" data-rec="expand">${recAllOpen ? "Collapse all" : "Expand all"}</button></div>`,
     `<div class="rec-sort"><span class="name">Sort</span>${["Day", "Week", "Month", "Year"].map((label, index) => recChip("sort", String(index), recSort === String(index) ? `${label} ${recSortHigh ? "↓" : "↑"}` : label, recSort === String(index))).join("")}</div>`,
     line("When", recChip("when", "today", "Today", recFilter.when === "today") + recChip("when", "week", "This week", recFilter.when === "week")),
     line("League", leagues.map((name) => recChip("sports", name, name, recFilter.sports.includes(name))).join("")),
     line("Game", games.length ? `<select data-rec="game"><option value="">Any game</option>${games.map((game) => `<option value="${esc(game)}"${game === recFilter.game ? " selected" : ""}>${esc(game)}</option>`).join("")}</select>` : ""),
-    line("Stat", recChip("kind", "", "Any player prop", !recFilter.kind) + REC_KINDS.map(([id, label]) => recChip("kind", id, label, recFilter.kind === id)).join("")),
+    line("Stat", recChip("kind", "", "Any player prop", !recFilter.kind) + recKinds.map((name) => recChip("kind", name, name.replace(/\b[a-z]/g, (letter) => letter.toUpperCase()), recFilter.kind === name)).join("")),
     line("Picks", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => recChip("legs", count ? String(count) : "", count ? (count === 1 ? "1 pick" : `${count} picks`) : "Any number", count ? recFilter.legs === String(count) : !recFilter.legs)).join("")),
-    line("Pay", REC_PAY.map(([id, label]) => recChip("aim", id, label, recFilter.aim === id)).join("") + (on ? recChip("clear", "1", "Clear", false) : "")),
+    line("Pay", REC_PAY.map(([id, label]) => recChip("aim", id, label, recFilter.aim === id)).join("")),
     `<p class="rec-say">${esc(recSay())}</p>`,
   ].join("");
   const note = document.createElement("p");
@@ -451,7 +461,7 @@ function paintRecFilters(board) {
   bar.addEventListener("click", (event) => {
     const button = event.target.closest("[data-rec]");
     if (!button || button.dataset.rec === "game") return;
-    if (button.dataset.rec === "fold") { recFiltersOpen = !recFiltersOpen; bar.classList.toggle("open", recFiltersOpen); return; }
+    if (button.dataset.rec === "fold") { recFiltersOpen = !recFiltersOpen; bar.classList.toggle("open", recFiltersOpen); if (recFiltersOpen) recEnsureKinds(board); return; }
     if (button.dataset.rec === "past") { recPast = !recPast; window.recPast = recPast; recAllOpen = false; if (window.birdMenu) birdMenu("bets"); return; }
     if (button.dataset.rec === "sort") { if (recSort === button.dataset.value) recSortHigh = !recSortHigh; else { recSort = button.dataset.value; recSortHigh = true; } bar.remove(); note.remove(); paintRecFilters(board); return; }
     if (button.dataset.rec === "expand") { recAllOpen = !recAllOpen; board.querySelectorAll(".rec-strategy, .rec-bet").forEach((item) => item.classList.toggle("open", recAllOpen)); button.textContent = recAllOpen ? "Collapse all" : "Expand all"; return; }

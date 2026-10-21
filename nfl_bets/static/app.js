@@ -53,6 +53,8 @@ function render() {
   }
   oddsByHead = null;
   const board = state.board || {};
+  const hit = document.getElementById("greet-rate");
+  if (hit && window.recPct) { const done = (board.archive || []).filter((ticket) => ticket.result === "won" || ticket.result === "lost"); const pct = recPct(done, Date.now() - 86400000 * 7); hit.textContent = recPct.n ? `Recommended bets are hitting ${pct} this week.` : ""; }
   const waiting = !board.updatedAt;
   $("lede").textContent = board.updatedAt ? `FanDuel ${when(board.updatedAt)} ET.` : "Loading the latest board.";
   const parrot = $("parrot-load");

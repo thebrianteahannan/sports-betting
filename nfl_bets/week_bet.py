@@ -6,8 +6,10 @@ builds a new pair. This does not send a bet.
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, time, timedelta
 from itertools import combinations
+import bisect
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -17,9 +19,9 @@ from nfl_bets.hedge import american_decimal, implied_prob
 from nfl_bets.store import now_iso, out_dir, read_json, write_json
 
 _ET = ZoneInfo("America/New_York")
-_PER_DAY = 3
 _HOLD_HOURS = 6
-_SPREAD = "variety"
+_SPREAD = "open"
+_ANCHORS = (-800, -400, -300, -250, -200, -170, -150, -130, -110, 100, 150, 220)
 _GOOD = -200
 _SAFE = -350
 _EVEN = -100
@@ -114,34 +116,30 @@ def _slate(games: list[dict[str, Any]]) -> list[dict[str, Any]]:
     now = datetime.now(_ET)
     start = now
     end = datetime.combine((now + timedelta(days=13)).date(), time(23, 59), _ET)
-    grouped: dict[str, list[tuple[datetime, dict[str, Any]]]] = {}
+    chosen = []
     for game in games:
         if not str(game.get("sport") or ""):
             continue
         stamp = _parse(str(game.get("kickoff") or ""))
         if stamp is None or stamp < start or stamp > end:
             continue
-        grouped.setdefault(stamp.astimezone(_ET).date().isoformat(), []).append((stamp, game))
-    chosen = []
-    for rows in grouped.values():
-        rows.sort(key=lambda item: item[0])
-        chosen.extend(game for _, game in rows[:_PER_DAY])
+        chosen.append(game)
     return chosen
 
 
 def _pools(games: list[dict[str, Any]]) -> list[tuple[dict[str, Any], list[dict[str, Any]], bool]]:
-    pools = []
-    for game in games:
+    def load(game: dict[str, Any]):
         try:
             legs, live = offer_legs(game)
         except Exception:  # noqa: BLE001
-            continue
+            return None
         kept = [leg for leg in legs if _fits(leg, "any")]
         kept = _catches_to_yards(legs, kept)
         kept.sort(key=lambda leg: leg["odds"])
-        if kept:
-            pools.append((game, kept, live))
-    return pools
+        return (game, kept, live) if kept else None
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        return [row for row in pool.map(load, games) if row]
 
 
 def _menu(pools: list[tuple[dict[str, Any], list[dict[str, Any]], bool]]) -> dict[str, list[tuple[dict, dict, bool]]]:
@@ -156,19 +154,21 @@ def _menu(pools: list[tuple[dict[str, Any], list[dict[str, Any]], bool]]) -> dic
 
 
 def _thin(rows: list[tuple[dict, dict, bool]]) -> list[tuple[dict, dict, bool]]:
-    rows = sorted(rows, key=lambda item: item[0]["odds"])
-    if not rows:
-        return []
-    spots = sorted({round(index * (len(rows) - 1) / 5) for index in range(6)})
     kept: list[tuple[dict, dict, bool]] = []
-    seen: set[str] = set()
-    for index in spots:
-        leg, game, live = rows[index]
-        player = _who(leg) or str(game.get("id") or "")
-        if not player or player in seen:
-            continue
-        seen.add(player)
-        kept.append((leg, game, live))
+    seen: set[tuple[str, str]] = set()
+    for anchor in _ANCHORS:
+        goal = american_decimal(anchor)
+        order = sorted(rows, key=lambda item: abs(american_decimal(item[0]["odds"]) - goal))
+        added = 0
+        for leg, game, live in order:
+            key = (str(game.get("id") or ""), _who(leg) or "")
+            if not key[1] or key in seen:
+                continue
+            seen.add(key)
+            kept.append((leg, game, live))
+            added += 1
+            if added == 2:
+                break
     return kept
 
 
@@ -205,6 +205,15 @@ def _choose(menu: dict[str, list[tuple[dict, dict, bool]]], count: int, target: 
 
 
 def _search(day_legs: list[list[tuple[dict, dict, bool]]], target: int, at_least: bool) -> list[tuple[dict, dict, bool]]:
+    width = 1
+    for day in day_legs:
+        width *= max(len(day), 1)
+        if width > 250_000:
+            return _meet(day_legs, target, at_least)
+    return _walk(day_legs, target, at_least)
+
+
+def _walk(day_legs: list[list[tuple[dict, dict, bool]]], target: int, at_least: bool) -> list[tuple[dict, dict, bool]]:
     goal = american_decimal(target)
     best: tuple[float, list[tuple[dict, dict, bool]]] | None = None
 
@@ -227,6 +236,50 @@ def _search(day_legs: list[list[tuple[dict, dict, bool]]], target: int, at_least
 
     walk(0, 1.0, set(), [])
     return best[1] if best else []
+
+
+def _meet(day_legs: list[list[tuple[dict, dict, bool]]], target: int, at_least: bool) -> list[tuple[dict, dict, bool]]:
+    goal = american_decimal(target)
+    mid = max(1, len(day_legs) // 2)
+    left = _products(day_legs[:mid])
+    right = _products(day_legs[mid:])
+    right.sort(key=lambda item: item[0])
+    decimals = [item[0] for item in right]
+    best: tuple[float, list[tuple[dict, dict, bool]]] | None = None
+    for dec, combo in left:
+        if dec <= 0:
+            continue
+        spot = bisect.bisect_left(decimals, goal / dec)
+        for index in range(max(0, spot - 20), min(len(right), spot + 21)):
+            if index < 0 or index >= len(right):
+                continue
+            other_dec, other = right[index]
+            whole = combo + other
+            players = [_who(leg) for leg, _, _ in whole]
+            if any(not player for player in players) or len(set(players)) < len(players):
+                continue
+            decimal = dec * other_dec
+            score = abs(decimal - goal) + (10 if at_least and decimal < goal else 0)
+            if best is None or score < best[0]:
+                best = (score, whole)
+    return best[1] if best else []
+
+
+def _products(day_legs: list[list[tuple[dict, dict, bool]]]) -> list[tuple[float, list[tuple[dict, dict, bool]]]]:
+    rows: list[tuple[float, list[tuple[dict, dict, bool]]]] = [(1.0, [])]
+    for day in day_legs:
+        nxt = []
+        for dec, combo in rows:
+            players = {_who(leg) for leg, _, _ in combo}
+            for leg, game, live in day:
+                player = _who(leg)
+                if not player or player in players:
+                    continue
+                nxt.append((dec * american_decimal(leg["odds"]), [*combo, (leg, game, live)]))
+        rows = nxt
+        if not rows:
+            return []
+    return [(dec, combo) for dec, combo in rows if combo]
 
 
 def _card(combo: list[tuple[dict, dict, bool]], count: int, label: str, title: str, aim: int) -> dict[str, Any]:

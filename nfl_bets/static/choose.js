@@ -486,9 +486,9 @@ function openRec(index) {
 }
 window.openRec = openRec;
 function recBack() {
-  if (!window.recOpen && !(document.getElementById("rec-open") || {}).classList.contains("solo-on")) return false;
-  window.recOpen = false;
   const card = document.getElementById("rec-open");
+  if (!window.recOpen && !(card && card.classList.contains("solo-on"))) return false;
+  window.recOpen = false;
   if (card) { card.classList.remove("solo-on"); card.hidden = true; }
   const desk = document.getElementById("desk");
   if (desk) desk.classList.remove("solo", "dug");

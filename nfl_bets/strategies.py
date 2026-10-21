@@ -7,8 +7,7 @@ This does not send a bet.
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
-from itertools import combinations, product
+from datetime import datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -17,7 +16,6 @@ from nfl_bets.choose import _clock, _fits, _parse, _place, offer_legs
 from nfl_bets.hedge import american_decimal, implied_prob
 
 _ET = ZoneInfo("America/New_York")
-_CAP = 16
 Row = tuple[dict[str, Any], dict[str, Any]]
 
 
@@ -42,7 +40,7 @@ def build_from(pools: list[tuple[dict[str, Any], list[dict[str, Any]]]]) -> dict
         "ou4": _with(_search(sides, 4, _split_sides, _likely), 4, "2 overs and 2 unders", "Two overs and two unders, each from a different game."),
         "alt3": _with(_search(props, 3, _every(_alt85), _likely), 3, "Alt lines, 3 legs, 85%+", "Three alt lines, each at 85% or better."),
         "games4": _with(_search(props, 4, _every(lambda leg: -280 <= leg["odds"] <= -140), _near(-200)), 4, "4 legs, 4 different games", "One player from each of four games."),
-        "early3": _with(_search(early, 3, _every(_playable), _likely) or _search(early, 2, _every(_playable), _likely), 2, "Early slate, 2 to 3 legs", "Legs from games that start before 4:00 PM ET."),
+        "early3": _with(_search(early, 3, _every(_playable), _likely) + _search(early, 2, _every(_playable), _likely), 2, "Early slate, 2 to 3 legs", "Legs from games that start before 4:00 PM ET."),
         "prime3": _with(_search(prime, 3, _every(_playable), _likely), 3, "Prime time, 3 legs", "Three legs from games that start at 7:00 PM ET or later."),
         "weekend4": _with(_search(weekend, 4, _every(lambda leg: -260 <= leg["odds"] <= -140), _near(-200)), 4, "Weekend special, 4 legs", "Four legs from Saturday and Sunday games."),
     }
@@ -54,39 +52,22 @@ def build_from(pools: list[tuple[dict[str, Any], list[dict[str, Any]]]]) -> dict
 
 def _slate(games: list[dict[str, Any]]) -> list[dict[str, Any]]:
     now = datetime.now(_ET)
-    grouped: dict[str, list[tuple[datetime, dict[str, Any]]]] = {}
+    horizon = now + timedelta(days=14)
+    picked = []
     for game in games:
-        sport = str(game.get("sport") or "")
-        if not sport:
+        if not str(game.get("sport") or ""):
             continue
         stamp = _parse(str(game.get("kickoff") or ""))
-        if stamp is None or stamp < now:
+        if stamp is None or stamp < now or stamp > horizon:
             continue
-        grouped.setdefault(sport, []).append((stamp, game))
-    for rows in grouped.values():
-        rows.sort(key=lambda item: item[0])
-    order = sorted(grouped, key=lambda sport: grouped[sport][0][0])
-    picked: list[dict[str, Any]] = []
-    round_n = 0
-    while len(picked) < _CAP:
-        added = False
-        for sport in order:
-            rows = grouped[sport]
-            if round_n >= len(rows):
-                continue
-            picked.append(rows[round_n][1])
-            added = True
-            if len(picked) >= _CAP:
-                break
-        if not added:
-            break
-        round_n += 1
+        picked.append(game)
+    picked.sort(key=lambda game: str(game.get("kickoff") or ""))
     return picked
 
 
 def _pools(games: list[dict[str, Any]]) -> list[tuple[dict[str, Any], list[dict[str, Any]]]]:
     picked = _slate(list(games or []))
-    with ThreadPoolExecutor(max_workers=6) as pool:
+    with ThreadPoolExecutor(max_workers=8) as pool:
         loaded = list(pool.map(_load, picked))
     return [(game, legs) for game, legs in loaded if legs]
 
@@ -100,33 +81,209 @@ def _load(game: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
 
 
 def _search(rows: list[tuple[dict[str, Any], list[dict[str, Any]]]], count: int, accept, score) -> list[list[Row]]:
-    menus = [(game, _sample(legs)) for game, legs in rows if legs]
-    menus = menus[:10]
-    if len(menus) < count:
-        return []
     found: dict[str, tuple[float, list[Row]]] = {}
-    for group in combinations(range(len(menus)), count):
-        choices = [menus[index][1] for index in group]
-        games = [menus[index][0] for index in group]
-        for picks in product(*choices):
-            players: list[str] = []
-            paired: list[Row] = []
-            skip = False
-            for pos, leg in enumerate(picks):
-                player = _player(leg)
-                if not player or player in players:
-                    skip = True
-                    break
-                players.append(player)
-                paired.append((leg, games[pos]))
-            if skip or not accept(paired):
-                continue
-            mark = "|".join(sorted(str(leg.get("label") or "") for leg, _game in paired))
-            rank = score(paired)
-            prior = found.get(mark)
-            if prior is None or rank < prior[0]:
-                found[mark] = (rank, paired)
+    _cover(rows, count, accept, score, found, True)
+    by_sport: dict[str, list[tuple[dict[str, Any], list[dict[str, Any]]]]] = {}
+    for game, legs in rows:
+        if legs:
+            by_sport.setdefault(str(game.get("sport") or ""), []).append((game, legs))
+    for batch in by_sport.values():
+        _cover(batch, count, accept, score, found, False)
     return [paired for _rank, paired in sorted(found.values(), key=lambda item: item[0])]
+
+
+def _cover(rows: list[tuple[dict[str, Any], list[dict[str, Any]]]], count: int, accept, score, found: dict[str, tuple[float, list[Row]]], single: bool) -> None:
+    if accept is _split_sides:
+        _cover_sides(rows, accept, score, found, single)
+        return
+    if accept is _mix:
+        _cover_mix(rows, accept, score, found, single)
+        return
+    if getattr(score, "flat", False):
+        _cover_flat(rows, count, accept, score, found, single)
+        return
+    each = getattr(accept, "each", None)
+    picks: list[Row] = []
+    for game, legs in rows:
+        eligible = [leg for leg in legs if _player(leg) and (each is None or each(leg))]
+        if eligible:
+            picks.append((min(eligible, key=lambda leg: score([(leg, game)])), game))
+    ranked = sorted(picks, key=lambda row: score([row]))
+    if len(ranked) < count:
+        return
+    combos = [_take(ranked, None, count)]
+    if not single:
+        combos.extend(_take(ranked, row, count) for row in ranked)
+    for combo in combos:
+        if combo:
+            _store(found, combo, accept, score)
+
+
+def _take(ranked: list[Row], required: Row | None, count: int) -> list[Row] | None:
+    picked: list[Row] = []
+    players: set[str] = set()
+    games: set[str] = set()
+    ordered = [required] if required is not None else []
+    ordered.extend(row for row in ranked if row is not required)
+    for leg, game in ordered:
+        gid = str(game.get("id") or "")
+        player = _player(leg)
+        if gid in games or not player or player in players:
+            continue
+        games.add(gid)
+        players.add(player)
+        picked.append((leg, game))
+        if len(picked) == count:
+            return picked
+    return None
+
+
+def _cover_flat(rows: list[tuple[dict[str, Any], list[dict[str, Any]]]], count: int, accept, score, found: dict[str, tuple[float, list[Row]]], single: bool) -> None:
+    each = getattr(accept, "each", None)
+    ordered = []
+    for game, legs in rows:
+        for leg in legs:
+            if _player(leg) and (each is None or each(leg)):
+                ordered.append((leg, game, implied_prob(leg["odds"])))
+    ordered.sort(key=lambda item: item[2])
+    best: tuple[float, list[Row]] | None = None
+    by_game: dict[str, tuple[float, list[Row]]] = {}
+    for index, item in enumerate(ordered):
+        combo = _nearest(ordered, index, count)
+        if not combo:
+            continue
+        rank = score(combo)
+        gid = str(item[1].get("id") or "")
+        prior = by_game.get(gid)
+        if prior is None or rank < prior[0]:
+            by_game[gid] = (rank, combo)
+        if best is None or rank < best[0]:
+            best = (rank, combo)
+    chosen = [best[1]] if single and best else [combo for _rank, combo in by_game.values()]
+    for combo in chosen:
+        _store(found, combo, accept, score)
+
+
+def _nearest(ordered: list[tuple[dict[str, Any], dict[str, Any], float]], index: int, count: int) -> list[Row] | None:
+    _leg, game, prob = ordered[index]
+    chosen: list[Row] = [(ordered[index][0], game)]
+    seen_g = {str(game.get("id") or "")}
+    seen_p = {_player(ordered[index][0])}
+    left, right = index - 1, index + 1
+    while len(chosen) < count and (left >= 0 or right < len(ordered)):
+        take_left = right >= len(ordered) or (left >= 0 and abs(ordered[left][2] - prob) <= abs(ordered[right][2] - prob))
+        item = ordered[left] if take_left else ordered[right]
+        left, right = (left - 1, right) if take_left else (left, right + 1)
+        gid = str(item[1].get("id") or "")
+        player = _player(item[0])
+        if gid in seen_g or not player or player in seen_p:
+            continue
+        seen_g.add(gid)
+        seen_p.add(player)
+        chosen.append((item[0], item[1]))
+    return chosen if len(chosen) == count else None
+
+
+def _cover_mix(rows: list[tuple[dict[str, Any], list[dict[str, Any]]]], accept, score, found: dict[str, tuple[float, list[Row]]], single: bool) -> None:
+    favs: list[Row] = []
+    dogs: list[Row] = []
+    for game, legs in rows:
+        fav = [leg for leg in legs if -300 <= leg["odds"] <= -120 and _player(leg)]
+        dog = [leg for leg in legs if 100 <= leg["odds"] <= 220 and _player(leg)]
+        if fav:
+            favs.append((min(fav, key=lambda leg: -implied_prob(leg["odds"])), game))
+        if dog:
+            dogs.append((min(dog, key=lambda leg: -implied_prob(leg["odds"])), game))
+    favs.sort(key=lambda row: score([row]))
+    dogs.sort(key=lambda row: score([row]))
+    combos = []
+    if single:
+        if len(favs) >= 2 and dogs:
+            combos.append(_mix_of(dogs[0], favs))
+    else:
+        for dog in dogs:
+            combos.append(_mix_of(dog, favs))
+        for fav in favs:
+            combos.append(_mix_of(fav, favs, dogs))
+    for combo in combos:
+        if combo:
+            _store(found, combo, accept, score)
+
+
+def _mix_of(required: Row, favs: list[Row], dogs: list[Row] | None = None) -> list[Row] | None:
+    rid = str(required[1].get("id") or "")
+    if dogs is None:
+        combo = [row for row in favs if str(row[1].get("id") or "") != rid][:2]
+        combo.append(required)
+    else:
+        second = next((row for row in favs if row is not required and str(row[1].get("id") or "") != rid), None)
+        dog = next((row for row in (dogs or []) if str(row[1].get("id") or "") not in {rid, str(second[1].get("id") or "") if second else ""}), None)
+        if second is None or dog is None:
+            return None
+        combo = [required, second, dog]
+    games = {str(item[1].get("id") or "") for item in combo}
+    players = {_player(item[0]) for item in combo}
+    if len(combo) != 3 or len(games) < 3 or len(players) < 3:
+        return None
+    return combo
+
+
+def _cover_sides(rows: list[tuple[dict[str, Any], list[dict[str, Any]]]], accept, score, found: dict[str, tuple[float, list[Row]]], single: bool) -> None:
+    overs: list[Row] = []
+    unders: list[Row] = []
+    for game, legs in rows:
+        over = [leg for leg in legs if _ou(leg) == "over" and _player(leg)]
+        under = [leg for leg in legs if _ou(leg) == "under" and _player(leg)]
+        if over:
+            overs.append((max(over, key=lambda leg: implied_prob(leg["odds"])), game))
+        if under:
+            unders.append((max(under, key=lambda leg: implied_prob(leg["odds"])), game))
+    overs.sort(key=lambda row: -implied_prob(row[0]["odds"]))
+    unders.sort(key=lambda row: -implied_prob(row[0]["odds"]))
+    seeds = [None] if single else [None, *overs, *unders]
+    for seed in seeds:
+        combo = _sides_of(overs, unders, seed)
+        if combo:
+            _store(found, combo, accept, score)
+
+
+def _sides_of(overs: list[Row], unders: list[Row], required: Row | None) -> list[Row] | None:
+    chosen: list[Row] = []
+    games: set[str] = set()
+    players: set[str] = set()
+
+    def add(row: Row) -> bool:
+        leg, game = row
+        gid = str(game.get("id") or "")
+        player = _player(leg)
+        if gid in games or not player or player in players:
+            return False
+        games.add(gid)
+        players.add(player)
+        chosen.append(row)
+        return True
+
+    if required is not None:
+        add(required)
+    for row in overs:
+        if sum(_ou(leg) == "over" for leg, _game in chosen) >= 2:
+            break
+        add(row)
+    for row in unders:
+        if sum(_ou(leg) == "under" for leg, _game in chosen) >= 2:
+            break
+        add(row)
+    return chosen if len(chosen) == 4 and _split_sides(chosen) else None
+
+
+def _store(found: dict[str, tuple[float, list[Row]]], combo: list[Row], accept, score) -> None:
+    if not accept(combo):
+        return
+    mark = "|".join(sorted(str(leg.get("label") or "") for leg, _game in combo))
+    rank = score(combo)
+    prior = found.get(mark)
+    if prior is None or rank < prior[0]:
+        found[mark] = (rank, combo)
 
 
 def _with(combos: list[list[Row]], count: int, title: str, goal: str) -> dict[str, Any]:
@@ -139,14 +296,6 @@ def _with(combos: list[list[Row]], count: int, title: str, goal: str) -> dict[st
             continue
         card["offers"].append({"title": str(alt.get("american") if alt.get("american") is not None else ""), "price": alt.get("american"), "impliedPct": alt.get("impliedPct"), "legs": alt["legs"]})
     return card
-
-
-def _sample(legs: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    ordered = sorted(legs, key=lambda leg: leg["odds"])
-    if len(ordered) <= 4:
-        return ordered
-    spots = sorted({round(index * (len(ordered) - 1) / 3) for index in range(4)})
-    return [ordered[index] for index in spots]
 
 
 def _ticket(combo: list[Row], count: int, title: str, goal: str) -> dict[str, Any]:
@@ -188,7 +337,10 @@ def _ticket(combo: list[Row], count: int, title: str, goal: str) -> dict[str, An
 
 
 def _every(test):
-    return lambda paired: all(test(leg) for leg, _game in paired)
+    def accept(paired: list[Row]) -> bool:
+        return all(test(leg) for leg, _game in paired)
+    accept.each = test
+    return accept
 
 
 def _likely(paired: list[Row]) -> float:
@@ -206,6 +358,9 @@ def _flat(paired: list[Row]) -> float:
     probs = [implied_prob(leg["odds"]) for leg, _game in paired]
     mean = sum(probs) / len(probs)
     return sum((prob - mean) ** 2 for prob in probs)
+
+
+_flat.flat = True
 
 
 def _yards_rank(paired: list[Row]) -> float:

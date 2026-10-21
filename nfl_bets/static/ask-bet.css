@@ -318,6 +318,16 @@
     width: auto; flex: 1 1 0; min-width: min-content; padding-left: 0.45rem; padding-right: 0.45rem;
     display: flex; align-items: center; justify-content: center; text-wrap: balance;
   }
+  #desk.tv-full.bird-on:not(.dug) #bird-guide:has(#bird-line.build),
+  #desk.tv-full.bird-on:not(.dug) #bird-guide:has(#bet-ask) { align-items: center; }
+  #desk.tv-full.bird-on:not(.dug) #bird-guide:has(#bird-line.build) #bird-line,
+  #desk.tv-full.bird-on:not(.dug) #bird-guide:has(#bet-ask) #bird-line {
+    width: fit-content; max-width: min(36rem, 100%); box-sizing: border-box;
+  }
+  #desk.tv-full.bird-on:not(.dug) #bird-guide:has(#bird-line.build) #bird-picks,
+  #desk.tv-full.bird-on:not(.dug) #bird-guide:has(#bet-ask) #bird-picks {
+    width: min(36rem, 100%); box-sizing: border-box; justify-content: center;
+  }
 }
 #desk-menu.bird-has { overflow: visible; }
 #desk-menu.bird-has::after {
@@ -351,5 +361,24 @@
 #bird-line.pow::after { display: none; }
 #desk.tv-full #desk-glass #bird-line.pow { font-size: 72px; }
 @keyframes squawk-pow { 0% { transform: rotate(-8deg) scale(0.35); } 60% { transform: rotate(-8deg) scale(1.14); } 100% { transform: rotate(-8deg) scale(1); } }
+#greet-rate, #greet-legal { display: none; }
+#desk.bird-on #bird-guide:has(button[data-menu]) { padding-top: 3.2rem; padding-bottom: 4.6rem; }
+#desk.bird-on #bird-guide:has(button[data-menu]) #greet-rate {
+  display: block; position: absolute; top: 0.85rem; left: 1.1rem; right: 1.1rem; margin: 0;
+  text-align: center; font-family: "Outfit", sans-serif; font-size: 16px; font-weight: 600;
+  letter-spacing: 0; text-transform: none; color: #f4fff6; pointer-events: none;
+  text-shadow: 0 1px 2px #07131a, 0 0 12px #07131a;
+}
+#desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-rate { font-size: 20px; }
+#desk.bird-on #bird-guide:has(button[data-menu]) #greet-rate:empty { display: none; }
+#desk.bird-on #bird-guide:has(button[data-menu]) #greet-legal {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 0.12rem;
+  position: absolute; right: 0.85rem; bottom: 0.7rem; margin: 0; text-align: right;
+  font-family: "Outfit", sans-serif; font-size: 13px; font-weight: 500; line-height: 1.3;
+  letter-spacing: 0; text-transform: none; color: #e7eef4; pointer-events: none;
+  text-shadow: 0 1px 2px #07131a, 0 0 10px #07131a;
+}
+#desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-legal { bottom: 4.4rem; font-size: 14px; }
+#greet-legal span { display: block; }
 body.needs-member #who { display: none; }
 #desk-menu:hover, #desk.menu-open #desk-menu { background: rgba(4, 16, 12, 0.88); color: #3dff6e; }
