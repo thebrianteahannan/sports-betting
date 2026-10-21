@@ -74,7 +74,7 @@ function render() {
   ["chalk", "four", "plus", "hits"].forEach((id) => renderParlay(id, board[id]));
   renderArchive(board.archive || []);
   renderPicks(board.archive || []);
-  showTab(state.tab);
+  if (!window.recOpen) showTab(state.tab);
   if (window.paintChoices) window.paintChoices();
   if (window.paintRefresh) window.paintRefresh();
   if (window.paintDayShare) window.paintDayShare(board);

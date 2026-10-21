@@ -432,7 +432,7 @@ document.addEventListener("change", (event) => {
 });
 
 window.legGist = (leg) => { const bit = String(leg.label || "").split(/,|\s+—\s+/)[0].trim(); if (!bit) return ""; const cut = bit.match(/^(.*?)(?:\s*:\s*|\s+)((?:\d+(?:\.\d+)?\+|[+-]\d|over\b|under\b).+)$/i); const say = !cut && bit.match(/^(.*?)\s+(to\s+.+)$/i); const prop = !cut && !say && /\s+or\s+|\s+&\s+/i.test(bit) ? String(leg.market || "").split(/\s+-\s+/).pop().replace(/^Either Player\s*/i, "").trim() : ""; return cut ? `<i>${esc(cut[1])}</i> ${esc(cut[2])}` : say ? `<i>${esc(say[1])}</i> ${esc(say[2])}` : prop ? `<i>${esc(bit)}</i> ${esc(prop)}` : `<i>${esc(bit)}</i>`; };
-window.paintChoices = paintChoices; window.paintEdits = paintEdits;
+window.recWin = recWin; window.paintChoices = paintChoices; window.paintEdits = paintEdits;
 paintChoices();
 
 function recLeg(leg) {
@@ -475,7 +475,7 @@ function openRec(index) {
   const glass = document.getElementById("desk-glass-in");
   if (glass && !glass.contains(card)) glass.append(card);
   const desk = document.getElementById("desk");
-  if (desk) { desk.classList.add("solo", "has-back"); desk.classList.remove("bird-on", "dug"); }
+  if (desk) { desk.classList.add("solo", "has-back", "dug"); desk.classList.remove("bird-on"); }
   document.querySelectorAll(".solo-on").forEach((node) => node.classList.remove("solo-on"));
   card.classList.add("solo-on");
   const guide = document.getElementById("bird-guide");

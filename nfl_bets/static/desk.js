@@ -118,7 +118,7 @@ function toggleTv() {
   const on = desk.classList.toggle("tv-full");
   if (on) desk.insertBefore(glass, document.getElementById("desk-dock"));
   else glow.after(glass);
-  cam = shot();
+  tweenId += 1; cam = shot();
   apply();
   if (!btn) return;
   btn.setAttribute("aria-pressed", on ? "true" : "false");

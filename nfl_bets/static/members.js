@@ -310,6 +310,17 @@ function recPct(rows, since) {
   return list.length ? `${((list.filter((row) => row.won).length / list.length) * 100).toFixed(1)}%` : "—";
 }
 
+function recBlurb(ticket, shown, pct, price) {
+  const legs = ticket.legs || [];
+  const sport = [...new Set(legs.map((leg) => leg.sport).filter(Boolean))].join(", ");
+  const bits = legs.map((leg) => String(leg.pct || "").trim()).filter(Boolean);
+  const say = bits.length > 1 ? `The legs are ${bits.slice(0, -1).join(", ")}, and ${bits[bits.length - 1]}` : "";
+  const kick = new Set(legs.map((leg) => leg.gameId || leg.match || "").filter(Boolean)).size === 1 && (legs.find((leg) => leg.kickoff) || {}).kickoff;
+  const clock = kick && typeof when === "function" ? `${when(kick)} ET` : "";
+  const money = shown && pct ? `The parlay is ${shown}, about ${pct}${window.recWin ? recWin(price) : ""}` : "";
+  return [sport, [ticket.game, clock].filter(Boolean).join(", "), say, money].filter(Boolean).join(". ");
+}
+
 function birdMenu(kind) {
   if (kind !== "bets") return;
   window.asking = true;
@@ -369,8 +380,11 @@ function birdMenu(kind) {
         const gist = document.createElement("p");
         gist.className = "rec-gist";
         gist.innerHTML = ticket.legs.map((leg) => window.legGist ? legGist(leg) : "").filter(Boolean).join(", ") + (ticket.why ? `<em>${esc(ticket.why)}</em>` : "");
-        bet.append(head, gist); bet.insertAdjacentHTML("beforeend", `<button type="button" class="share-bet" data-share="rec" data-share-id="${bet.dataset.rec}" aria-label="Share this bet"></button>`);
-        ticket.legs.forEach((leg) => { const line = document.createElement("span"); const odds = Number(leg.odds); const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : ""; line.textContent = [tag, leg.label].filter(Boolean).join(" "); bet.append(line); });
+        const copy = document.createElement("p");
+        copy.className = "rec-copy";
+        copy.textContent = recBlurb(ticket, shown, pct, price);
+        bet.append(head, gist, copy); bet.insertAdjacentHTML("beforeend", `<button type="button" class="share-bet" data-share="rec" data-share-id="${bet.dataset.rec}" aria-label="Share this bet"></button>`);
+        ticket.legs.forEach((leg) => { const line = document.createElement("span"); const odds = Number(leg.odds); const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : ""; line.textContent = [tag, leg.label, leg.pct].filter(Boolean).join(" · "); bet.append(line); });
         block.append(bet);
       });
     heading.querySelector(".rec-count").textContent = seen.size;
