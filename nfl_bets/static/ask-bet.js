@@ -14,7 +14,7 @@ function paintDig() {
   document.querySelectorAll("section.chalk > .pick-save").forEach((bar) => {
     if (bar.querySelector(".bet-more")) return;
     const card = bar.closest(".chalk");
-    if (!card || !card.querySelector("ol li")) return;
+    if (!card || !card.querySelector("ol li") || (!card.querySelector(".aim") && !card.querySelector("li .quiet"))) return;
     const more = barButton("bet-more", "Show More Info");
     more.setAttribute("aria-label", "Show more info about this bet");
     more.addEventListener("pointerdown", (event) => {

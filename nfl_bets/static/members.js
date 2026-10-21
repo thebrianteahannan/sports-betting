@@ -140,6 +140,8 @@ async function sendMember(path, fields, errorId) {
   if (window.state) window.state.tab = "today";
   showMember(payload.activity ? payload : { member: payload.member, activity: [] });
   if (window.startDesk) window.startDesk();
+  const desk = document.getElementById("desk"); const full = document.getElementById("desk-full"); if (desk && full && desk.classList.contains("tv-full")) full.click();
+  if (typeof showTab === "function") showTab("today");
   const home = document.getElementById("desk-home");
   if (home) home.click();
 }
@@ -147,7 +149,7 @@ async function sendMember(path, fields, errorId) {
 async function signOut() {
   await memberFetch("/api/logout", { method: "POST" });
   if (window.state && window.state.timer) clearTimeout(window.state.timer);
-  showGate();
+  location.replace("/");
 }
 
 async function bootMember() {

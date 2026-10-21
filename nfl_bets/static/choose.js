@@ -444,7 +444,7 @@ function recLeg(leg) {
   const word = esc((String(parts[0]).toLowerCase().match(/shots|threes|assists|rebounds|points|yards|receptions|strikeouts|hits|goals|saves|touchdowns/) || [])[0] || "");
   const clock = !recLeg.one && leg.kickoff && typeof when === "function" && !/\d{1,2}:\d{2}\s*[AP]M/i.test(leg.label || "") ? ` · ${when(leg.kickoff)} ET` : "";
   const more = `${parts.length > 1 ? ` — ${esc(parts.slice(1).join(" — "))}` : ""}${esc(clock)}`;
-  return `<li data-drop="${who}" data-line="${line}" data-word="${word}"><b>${esc(tag)}</b><span>${esc(parts[0])}<span class="leg-more">${more}</span></span><em>${esc(leg.pct || "")}</em></li>`;
+  return `<li data-drop="${who}" data-line="${line}" data-word="${word}"><b>${esc(tag)}</b><span>${esc(parts[0])}<span class="leg-more">${more}</span>${(read => read ? `<span class="quiet">${esc(read)}</span>` : "")([leg.fact, leg.sway, String(leg.form || "").replace(/^In form:\s*/i, ""), leg.weather].filter(Boolean).join(" "))}${typeof legOdds === "function" ? legOdds(leg) : ""}</span><em>${esc(leg.pct || "")}</em></li>`;
 }
 
 function recWin(price) {
@@ -470,7 +470,7 @@ function openRec(index) {
   const priceLine = shown && pct ? `The parlay is ${shown}, about ${pct}${recWin(price)}` : "";
   const copy = [sports, [ticket.game, (recLeg.one = (ticket.legs || []).length > 1 && new Set((ticket.legs || []).map((leg) => leg.gameId || leg.match || "").filter(Boolean)).size === 1, recLeg.one) && typeof when === "function" && ((ticket.legs || []).find((leg) => leg.kickoff) || {}).kickoff ? `${when((ticket.legs || []).find((leg) => leg.kickoff).kickoff)} ET` : ""].filter(Boolean).join(", "), legsLine, priceLine].filter(Boolean).join(". ");
   const stars = typeof starHtml === "function" ? starHtml(typeof cardGood === "function" ? cardGood(ticket.card, ticket) : 0, ticket.card, "", "") : "";
-  card.innerHTML = `<h2>${esc(row.name || ticket.title || "This bet")}${ticket.same ? " · Recommended" : ""}</h2><p>${esc(copy)}${ticket.same ? ` This is already a recommended bet, ${esc(ticket.same)}.` : ""}</p><ol>${(ticket.legs || []).map(recLeg).join("")}</ol><p class="pick-save">${stars}<button type="button" class="share-bet" data-share="rec" data-share-id="${index}" aria-label="Share this bet"></button></p>`;
+  card.innerHTML = `<h2>${esc(row.name || ticket.title || "This bet")}${ticket.same ? " · Recommended" : ""}</h2><p>${esc(copy)}${ticket.same ? ` This is already a recommended bet, ${esc(ticket.same)}.` : ""}</p>${ticket.why ? `<p class="aim">${esc(ticket.why)}</p>` : ""}<ol>${(ticket.legs || []).map(recLeg).join("")}</ol><p class="pick-save">${stars}<button type="button" class="share-bet" data-share="rec" data-share-id="${index}" aria-label="Share this bet"></button></p>`;
   card.hidden = false;
   const glass = document.getElementById("desk-glass-in");
   if (glass && !glass.contains(card)) glass.append(card);

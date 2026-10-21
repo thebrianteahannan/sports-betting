@@ -9,7 +9,7 @@
 #desk.tv-full #desk-glass #desk-back { display: inline-flex; }
 #desk.tv-full #desk-name {
   z-index: 14; top: 0.28rem; left: 3.15rem; transform: none;
-  height: auto; width: auto; max-height: 5.4rem; max-width: min(42vw, 200px);
+  height: auto; width: auto; max-height: 4.25rem; max-width: min(42vw, 200px);
   object-fit: contain; object-position: left top;
   pointer-events: auto; cursor: pointer;
 }
