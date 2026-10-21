@@ -95,31 +95,32 @@
 }
 #bird-line.answer strong { display: block; color: #b8ffd2; font-weight: 700; margin-bottom: 0.45rem; }
 #bird-line.answer::after { content: none; }
-#bird-picks .rec-board { flex: 1 0 100%; display: flex; flex-direction: column; gap: 0.55rem; font-family: "Outfit", sans-serif; text-align: left; }
-#bird-picks .rec-strategy { padding: 0.5rem 0.7rem 0.55rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.92); cursor: pointer; }
-#bird-picks .rec-strategy.rec-cold { filter: grayscale(1) brightness(0.72); border-color: #6e7780; }
-#bird-picks .rec-strategy h3 { margin: 0; color: #f4fff6; font-size: 15px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; }
-#bird-picks .rec-strategy h3::after { content: " +"; color: #3dff6e; }
-#bird-picks .rec-strategy h3 .rec-count { color: #3dff6e; }
-#bird-picks .rec-strategy h3 .rec-count::before { content: " · "; }
-#bird-picks .rec-strategy.open h3::after { content: " –"; }
-#bird-picks .rec-strategy > :not(h3):not(.rec-history) { display: none; }
-#bird-picks .rec-strategy.open > .rec-bet,
-#bird-picks .rec-strategy.open > p:not(.rec-history) { display: block; }
-#bird-picks .rec-strategy p { margin: 0; color: #9aa8b5; font-size: 14px; }
-#bird-picks .rec-bet, #choice-result .rec-bet { margin: 0 0 0.45rem; padding: 0.55rem 0.7rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.72); cursor: pointer; }
-#bird-picks .rec-bet b, #choice-result .rec-bet b { display: block; color: #f4fff6; font-size: 16px; }
-#bird-picks .rec-bet b::after, #choice-result .rec-bet b::after { content: " +"; color: #3dff6e; }
-#bird-picks .rec-bet.open b::after, #choice-result .rec-bet.open b::after { content: " –"; }
-#bird-picks .rec-bet b::after { content: none; }
-#bird-picks .rec-bet span, #choice-result .rec-bet span { display: none; margin-top: 0.2rem; color: #d5deea; font-size: 14px; line-height: 1.3; }
-#bird-picks .rec-bet.open span, #choice-result .rec-bet.open span, #bird-picks .rec-bet > span { display: block; }
-#bird-picks .rec-bet .rec-copy { flex: 1 0 100%; margin: 0.35rem 0 0; color: #d5deea; font-size: 14px; font-weight: 400; line-height: 1.35; text-align: left; }
-#bird-picks .rec-bet .rec-gist, #choice-result .rec-bet .rec-gist { margin: 0.2rem 0 0; color: #f4fff6; font-size: 14px; font-weight: 700; line-height: 1.3; text-transform: none; }
-#bird-picks .rec-bet .rec-gist i, #choice-result .rec-bet .rec-gist i { color: #3dff6e; font-style: normal; font-weight: 700; }
-#bird-picks .rec-bet .rec-gist em, #choice-result .rec-bet .rec-gist em { display: block; margin-top: 0.2rem; color: #d7e2ea; font-style: normal; font-weight: 700; text-align: left; }
-#bird-picks .rec-bet.rec-edge, #choice-result .rec-bet.rec-edge { border-color: #ffe14a; box-shadow: inset 3px 0 0 #ffe14a; }
-#bird-picks .rec-bet.rec-edge .rec-gist em, #choice-result .rec-bet.rec-edge .rec-gist em { color: #ffe14a; }
+.rec-board { display: flex; flex-direction: column; gap: 0.55rem; box-sizing: border-box; min-height: 100%; padding: 16px 14px 24px; background: #07131a; font-family: "Outfit", sans-serif; text-align: left; }
+#desk-glass .rec-board > h2, #desk.tv-full #desk-glass .rec-board > h2 { margin: 0 0 0.45rem; color: #f4fff6; font-family: "Bradley Hand", "Marker Felt", cursive; font-size: 32px; letter-spacing: 0; text-transform: none; }
+.rec-board .rec-strategy { padding: 0.5rem 0.7rem 0.55rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.92); cursor: pointer; }
+.rec-board .rec-strategy.rec-cold { filter: grayscale(1) brightness(0.72); border-color: #6e7780; }
+.rec-board .rec-strategy h3 { margin: 0; color: #f4fff6; font-size: 15px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; }
+.rec-board .rec-strategy h3::after { content: " +"; color: #3dff6e; }
+.rec-board .rec-strategy h3 .rec-count { color: #3dff6e; }
+.rec-board .rec-strategy h3 .rec-count::before { content: " · "; }
+.rec-board .rec-strategy.open h3::after { content: " –"; }
+.rec-board .rec-strategy > :not(h3):not(.rec-history) { display: none; }
+.rec-board .rec-strategy.open > .rec-bet,
+.rec-board .rec-strategy.open > p:not(.rec-history) { display: block; }
+.rec-board .rec-strategy p { margin: 0; color: #9aa8b5; font-size: 14px; }
+.rec-board .rec-bet, #choice-result .rec-bet { margin: 0 0 0.45rem; padding: 0.55rem 0.7rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.72); cursor: pointer; }
+.rec-board .rec-bet b, #choice-result .rec-bet b { display: block; color: #f4fff6; font-size: 16px; }
+.rec-board .rec-bet b::after, #choice-result .rec-bet b::after { content: " +"; color: #3dff6e; }
+.rec-board .rec-bet.open b::after, #choice-result .rec-bet.open b::after { content: " –"; }
+.rec-board .rec-bet b::after, .rec-board .rec-bet.open b::after, #choice-result .rec-bet b::after, #choice-result .rec-bet.open b::after { content: none; }
+.rec-board .rec-bet span, #choice-result .rec-bet span { display: none; margin-top: 0.2rem; color: #d5deea; font-size: 14px; line-height: 1.3; }
+.rec-board .rec-bet.open span, #choice-result .rec-bet.open span, .rec-board .rec-bet > span, #choice-result .rec-bet > span { display: block; }
+.rec-board .rec-bet .rec-copy, #choice-result .rec-bet .rec-copy { flex: 1 0 100%; margin: 0.35rem 0 0; color: #d5deea; font-size: 14px; font-weight: 400; line-height: 1.35; text-align: left; }
+.rec-board .rec-bet .rec-gist, #choice-result .rec-bet .rec-gist { margin: 0.2rem 0 0; color: #f4fff6; font-size: 14px; font-weight: 700; line-height: 1.3; text-transform: none; }
+.rec-board .rec-bet .rec-gist i, #choice-result .rec-bet .rec-gist i { color: #3dff6e; font-style: normal; font-weight: 700; }
+.rec-board .rec-bet .rec-gist em, #choice-result .rec-bet .rec-gist em { display: block; margin-top: 0.2rem; color: #d7e2ea; font-style: normal; font-weight: 700; text-align: left; }
+.rec-board .rec-bet.rec-edge, #choice-result .rec-bet.rec-edge { border-color: #ffe14a; box-shadow: inset 3px 0 0 #ffe14a; }
+.rec-board .rec-bet.rec-edge .rec-gist em, #choice-result .rec-bet.rec-edge .rec-gist em { color: #ffe14a; }
 #choice-result .rec-bet .rec-gist em.rec-known, #choice-result .rec-bet.rec-edge .rec-gist em.rec-known { color: #3dff6e; }
 #profile-admin { font-family: "Outfit", sans-serif; text-align: left; }
 #profile-admin .rec-bet { margin: 0 0 0.45rem; padding: 0.55rem 0.7rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.72); }
@@ -145,62 +146,70 @@
   #profile-admin .rec-bet > span,
   #profile-admin .rec-bet .pick-save { flex: 1 0 100%; }
 }
-#bird-picks .rec-bet, #choice-result .rec-bet, #profile-admin .rec-bet, #rec-open { position: relative; }
-#bird-picks .rec-bet b, #choice-result .rec-bet b, #profile-admin .rec-bet:has(.share-bet) b, #rec-open h2 { padding-right: 2rem; }
-#bird-picks .rec-bet .rec-gist, #choice-result .rec-bet .rec-gist, #profile-admin .rec-bet:has(.share-bet) .rec-gist { padding-right: 2.1rem; }
+.rec-board .rec-bet, #choice-result .rec-bet, #profile-admin .rec-bet, #rec-open { position: relative; }
+.rec-board .rec-bet b, #choice-result .rec-bet b, #profile-admin .rec-bet:has(.share-bet) b, #rec-open h2 { padding-right: 2rem; }
+.rec-board .rec-bet .rec-gist, #choice-result .rec-bet .rec-gist, #profile-admin .rec-bet:has(.share-bet) .rec-gist { padding-right: 2.1rem; }
 #desk.tv-full #desk-glass button.share-bet,
 #desk.tv-full #desk-glass #profile-admin .rec-bet button.share-bet {
   position: absolute; top: 0.42rem; right: 0.42rem; z-index: 2;
   width: 1.7rem; height: 1.7rem; min-height: 0; margin: 0; padding: 0; font-size: 0;
   border: 1px solid #3dff6e; border-radius: 8px; box-shadow: none;
-  background: #07140f url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%233dff6e' d='M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z'/%3E%3C/svg%3E") center / 14px 14px no-repeat;
+  background: #07140f url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233dff6e' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 14.5V3.5'/%3E%3Cpath d='M8 7.5 12 3.5 16 7.5'/%3E%3Cpath d='M8 11H6.2A1.8 1.8 0 0 0 4.4 12.8V19a1.8 1.8 0 0 0 1.8 1.8h11.6A1.8 1.8 0 0 0 19.6 19v-6.2A1.8 1.8 0 0 0 17.8 11H16'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
 }
 #share-view { position: fixed; z-index: 12; top: 0; left: 0; right: 0; bottom: 0; overflow: auto; background: #07090e; padding: 3.1rem 1rem 1.4rem; }
 #desk.tv-full #desk-glass #share-back { position: absolute; top: 8px; left: 8px; z-index: 2; width: 2rem; height: 2rem; min-height: 0; margin: 0; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #3dff6e; border-radius: 8px; background: #07140f; color: #3dff6e; box-shadow: none; }
 #share-view .pick-save, #share-view .quiet { text-align: center; }
 #share-view .quiet { color: #d5deea; }
 #desk.tv-full #desk-glass #choice-result > h2, #choice-result > h2 { margin: 0 0 0.55rem; color: #f4fff6; font-size: 16px; letter-spacing: 0.02em; text-transform: uppercase; }
-#bird-picks .rec-history { margin: 0.15rem 0 0; color: #3dff6e; font-size: 14px; font-weight: 700; line-height: 1.3; }
-#bird-picks .rec-history span + span::before { content: ", "; }
-#bird-picks .rec-history span.on { color: #f4fff6; text-decoration: underline; }
-#bird-picks .rec-strategy.open .rec-history { margin-bottom: 0.5rem; }
+.rec-board .rec-history { margin: 0.15rem 0 0; color: #3dff6e; font-size: 14px; font-weight: 700; line-height: 1.3; }
+.rec-board .rec-history span + span::before { content: ", "; }
+.rec-board .rec-history span.on { color: #f4fff6; text-decoration: underline; }
+.rec-board .rec-strategy.open .rec-history { margin-bottom: 0.5rem; }
 @media (min-width: 721px) {
-  #bird-picks .rec-strategy { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; column-gap: 1rem; }
-  #bird-picks .rec-strategy h3 { flex: 1 1 auto; }
-  #bird-picks .rec-history { flex: 0 0 auto; margin: 0; white-space: nowrap; }
-  #bird-picks .rec-filters .rec-sort { justify-content: flex-end; padding-right: 0.15rem; }
-  #bird-picks .rec-filters .rec-sort .name { margin-right: auto; }
-  #bird-picks .rec-strategy.open .rec-history { margin-bottom: 0; }
-  #bird-picks .rec-strategy > .rec-bet,
-  #bird-picks .rec-strategy > p:not(.rec-history) { flex: 1 0 100%; }
-  #bird-picks .rec-strategy.open > .rec-bet:first-of-type { margin-top: 0.45rem; }
-  #bird-picks .rec-strategy.open > .rec-bet, #choice-result .rec-bet { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; column-gap: 1rem; }
-  #bird-picks .rec-bet b, #choice-result .rec-bet b { flex: 0 0 auto; }
-  #bird-picks .rec-bet .rec-gist, #choice-result .rec-bet .rec-gist { flex: 1 1 12rem; margin: 0; text-align: right; }
-  #bird-picks .rec-bet > span, #choice-result .rec-bet > span { flex: 1 0 100%; }
+  .rec-board .rec-strategy { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; column-gap: 1rem; }
+  .rec-board .rec-strategy h3 { flex: 1 1 auto; }
+  .rec-board .rec-history { flex: 0 0 auto; margin: 0; white-space: nowrap; }
+  .rec-board .rec-filters .rec-sort { justify-content: flex-end; padding-right: 0.15rem; }
+  .rec-board .rec-filters .rec-sort .name { margin-right: auto; }
+  .rec-board .rec-strategy.open .rec-history { margin-bottom: 0; }
+  .rec-board .rec-strategy > .rec-bet,
+  .rec-board .rec-strategy > p:not(.rec-history) { flex: 1 0 100%; }
+  .rec-board .rec-strategy.open > .rec-bet:first-of-type { margin-top: 0.45rem; }
+  .rec-board .rec-strategy.open > .rec-bet, #choice-result .rec-bet { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; column-gap: 1rem; }
+  .rec-board .rec-bet b, #choice-result .rec-bet b { flex: 0 0 auto; }
+  .rec-board .rec-bet .rec-gist, #choice-result .rec-bet .rec-gist { flex: 1 1 12rem; margin: 0; text-align: right; }
+  .rec-board .rec-bet > span, #choice-result .rec-bet > span { flex: 1 0 100%; }
 }
-#bird-picks .rec-bet b { flex: 1 0 100%; }
-#bird-picks .rec-bet .rec-gist { flex: 1 0 100%; margin: 0.2rem 0 0; text-align: left; }
-#bird-picks .rec-filters { display: flex; flex-direction: column; gap: 0.45rem; margin: 0 0 0.15rem; padding: 0.4rem 0.55rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.92); }
-#bird-picks .rec-filters:not(.open) .row { display: none; }
-#bird-picks .rec-filters .rec-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-#bird-picks .rec-filters .rec-tools { display: flex; align-items: center; gap: 0.35rem; }
-#bird-picks .rec-filters .rec-sort { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
-#desk.tv-full #desk-glass #bird-picks .rec-filters .rec-sort button { font-size: 13px; padding: 0.28rem 0.55rem; }
-#bird-picks .rec-bet.won b, #choice-result .rec-bet.won b { color: #3dff6e; }
-#bird-picks .rec-bet.lost b, #choice-result .rec-bet.lost b { color: #ffb4b4; }
-#bird-picks .rec-filters .rec-fold::after { content: " +"; color: #3dff6e; }
-#bird-picks .rec-filters.open .rec-fold::after { content: " –"; }
-#bird-picks .rec-filters .rec-fold.on::after { color: #04140c; }
-#bird-picks .rec-filters button.rec-expand,
-#desk.tv-full #desk-glass #bird-picks .rec-filters button.rec-expand { width: auto; margin: 0; padding: 0.1rem 0.4rem; font-size: 11px; }
-#bird-picks .rec-filters .row { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
-#bird-picks .rec-filters .name { color: #9aa8b5; font-family: "Outfit", sans-serif; font-size: 13px; font-weight: 700; min-width: 4.4rem; letter-spacing: 0; text-transform: none; }
-#bird-picks .rec-filters button { padding: 0.28rem 0.55rem; border: 1px solid #3dff6e; background: transparent; color: #d8ffe4; box-shadow: none; font-family: "Outfit", sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0; text-transform: none; }
-#bird-picks .rec-filters button.on { background: #3dff6e; color: #04140c; }
-#bird-picks .rec-filters select { margin: 0; max-width: 100%; padding: 0.28rem 0.45rem; border: 1px solid #3dff6e; border-radius: 8px; background: #07140f; color: #d8ffe4; font-family: "Outfit", sans-serif; font-size: 13px; font-weight: 700; }
-#bird-picks .rec-none { margin: 0.15rem 0 0; color: #f4fff6; font-family: "Outfit", sans-serif; font-size: 15px; font-weight: 700; }
-#bird-picks .rec-bet.rec-off, #bird-picks .rec-strategy.rec-off { display: none !important; }
+.rec-board .rec-bet b, #choice-result .rec-bet b { flex: 1 0 100%; }
+.rec-board .rec-bet .rec-gist, #choice-result .rec-bet .rec-gist { flex: 1 0 100%; margin: 0.2rem 0 0; text-align: left; }
+.rec-board .rec-bet > span, #choice-result .rec-bet > span { margin: 0.4rem 0 0; padding-top: 0.35rem; border-top: 1px solid rgba(61, 255, 110, 0.28); }
+.rec-board .rec-bet > span b, #choice-result .rec-bet > span b { display: block; flex: none; padding-right: 0; color: #3dff6e; font-size: 15px; font-weight: 700; line-height: 1.3; }
+.rec-board .rec-bet > span b i, #choice-result .rec-bet > span b i { color: #3dff6e; font-style: normal; }
+.rec-board .rec-bet > span > i, #choice-result .rec-bet > span > i { display: block; margin-top: 0.08rem; color: #d5deea; font-style: normal; font-weight: 400; font-size: 13px; line-height: 1.35; }
+.rec-board .rec-bet .rec-gist:empty, #choice-result .rec-bet .rec-gist:empty { display: none; }
+#desk-glass #rec-open li .leg-more { display: block; margin-top: 0.08rem; color: #d5deea; font-weight: 400; }
+.rec-board .rec-filters { display: flex; flex-direction: column; gap: 0.45rem; margin: 0 0 0.15rem; padding: 0.4rem 0.55rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.92); }
+.rec-board .rec-filters:not(.open) .row { display: none; }
+.rec-board .rec-filters .rec-say { margin: 0.15rem 0 0; color: #f4fff6; font-family: "Outfit", sans-serif; font-size: 14px; font-weight: 400; line-height: 1.35; }
+.rec-board .rec-filters.open .rec-say { display: none; }
+.rec-board .rec-filters .rec-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.rec-board .rec-filters .rec-tools { display: flex; align-items: center; gap: 0.35rem; }
+.rec-board .rec-filters .rec-sort { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+#desk.tv-full #desk-glass .rec-board .rec-filters .rec-sort button { font-size: 13px; padding: 0.28rem 0.55rem; }
+.rec-board .rec-bet.won b, #choice-result .rec-bet.won b { color: #3dff6e; }
+.rec-board .rec-bet.lost b, #choice-result .rec-bet.lost b { color: #ffb4b4; }
+.rec-board .rec-filters .rec-fold::after { content: " +"; color: #3dff6e; }
+.rec-board .rec-filters.open .rec-fold::after { content: " –"; }
+.rec-board .rec-filters .rec-fold.on::after { color: #04140c; }
+.rec-board .rec-filters button.rec-expand,
+#desk.tv-full #desk-glass .rec-board .rec-filters button.rec-expand { width: auto; margin: 0; padding: 0.1rem 0.4rem; font-size: 11px; }
+.rec-board .rec-filters .row { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+.rec-board .rec-filters .name { color: #9aa8b5; font-family: "Outfit", sans-serif; font-size: 13px; font-weight: 700; min-width: 4.4rem; letter-spacing: 0; text-transform: none; }
+.rec-board .rec-filters button { padding: 0.28rem 0.55rem; border: 1px solid #3dff6e; background: transparent; color: #d8ffe4; box-shadow: none; font-family: "Outfit", sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+.rec-board .rec-filters button.on { background: #3dff6e; color: #04140c; }
+.rec-board .rec-filters select { margin: 0; max-width: 100%; padding: 0.28rem 0.45rem; border: 1px solid #3dff6e; border-radius: 8px; background: #07140f; color: #d8ffe4; font-family: "Outfit", sans-serif; font-size: 13px; font-weight: 700; }
+.rec-board .rec-none { margin: 0.15rem 0 0; color: #f4fff6; font-family: "Outfit", sans-serif; font-size: 15px; font-weight: 700; }
+.rec-board .rec-bet.rec-off, .rec-board .rec-strategy.rec-off { display: none !important; }
 #bird-line.build strong {
   display: block; margin-bottom: 0.35rem;
   font-family: "Outfit", sans-serif; font-size: 15px; font-weight: 700;

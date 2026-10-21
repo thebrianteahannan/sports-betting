@@ -117,7 +117,7 @@ function toggleTv() {
   if (!desk || !glass || !glow) return;
   const on = desk.classList.toggle("tv-full");
   if (on) desk.insertBefore(glass, document.getElementById("desk-dock"));
-  else glow.after(glass);
+  else { glow.after(glass); if (document.querySelector(".rec-board") && window.birdGreet) birdGreet(); }
   tweenId += 1; cam = shot();
   apply();
   if (!btn) return;

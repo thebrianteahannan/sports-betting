@@ -40,7 +40,7 @@ function birdBrag() {
 function birdBragGo(text) {
   const hot = window.birdHot; if (!hot || hot.text !== text) return false;
   if (window.goFull) goFull(); birdMenu("bets");
-  const block = [...document.querySelectorAll("#bird-picks .rec-strategy")].find((node) => node.dataset.card === hot.id && (node.dataset.part || "") === hot.part);
+  const block = [...document.querySelectorAll(".rec-board .rec-strategy")].find((node) => node.dataset.card === hot.id && (node.dataset.part || "") === hot.part);
   if (block) { block.classList.add("open"); block.scrollIntoView({ block: "start" }); }
   return true;
 }
@@ -56,7 +56,7 @@ function showGate() {
   if (window.deskGate) window.deskGate();
 }
 
-window.birdBrag = birdBrag; window.birdBragGo = birdBragGo;
+window.birdBrag = birdBrag; window.birdBragGo = birdBragGo; window.recBlurb = recBlurb;
 
 function showMember(payload) {
   document.body.classList.remove("needs-member");
@@ -310,26 +310,26 @@ function recPct(rows, since) {
   return list.length ? `${((list.filter((row) => row.won).length / list.length) * 100).toFixed(1)}%` : "—";
 }
 
-function recBlurb(ticket, shown, pct, price) {
-  const legs = ticket.legs || [];
-  const sport = [...new Set(legs.map((leg) => leg.sport).filter(Boolean))].join(", ");
-  const bits = legs.map((leg) => String(leg.pct || "").trim()).filter(Boolean);
-  const say = bits.length > 1 ? `The legs are ${bits.slice(0, -1).join(", ")}, and ${bits[bits.length - 1]}` : "";
-  const kick = new Set(legs.map((leg) => leg.gameId || leg.match || "").filter(Boolean)).size === 1 && (legs.find((leg) => leg.kickoff) || {}).kickoff;
-  const clock = kick && typeof when === "function" ? `${when(kick)} ET` : "";
-  const money = shown && pct ? `The parlay is ${shown}, about ${pct}${window.recWin ? recWin(price) : ""}` : "";
-  return [sport, [ticket.game, clock].filter(Boolean).join(", "), say, money].filter(Boolean).join(". ");
+function recBlurb(ticket, shown, pct, price) { return shown && pct && window.recWin ? recWin(price) : ""; }
+
+function recLine(leg) {
+  const odds = Number(leg.odds), tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : "";
+  const parts = String(leg.label || "").split(/\s+—\s+/), head = parts[0] || "";
+  const where = parts.slice(1).join(" — ") || [leg.sport, leg.kickoff && typeof when === "function" ? `${when(leg.kickoff)} ET` : ""].filter(Boolean).join(" · ") || leg.match || "";
+  const market = String(leg.market || "").split(/\s+-\s+/).pop().replace(/^Either Player\s*/i, "").trim();
+  const title = market && /\s+or\s+|\s+&\s+/i.test(head) && !head.toLowerCase().includes(market.toLowerCase()) ? `${head} · ${market}` : head;
+  return `<span><b>${esc(title)}</b><i>${esc([tag, leg.pct, where].filter(Boolean).join(" · "))}</i></span>`;
 }
 
 function birdMenu(kind) {
   if (kind !== "bets") return;
-  window.asking = true;
-  if (window.birdQuiet) birdQuiet();
-  birdSay(window.recPast ? "Finished bets, by strategy." : "Recommended bets, by strategy.", []);
-  const row = document.getElementById("bird-picks");
+  window.asking = true; if (window.goFull) goFull(); if (window.birdQuiet) birdQuiet();
+  const desk = document.getElementById("desk"); if (!desk || !desk.classList.contains("tv-full")) { window.asking = false; if (window.birdGreet) birdGreet(); return; }
+  desk.classList.remove("bird-on", "solo", "dug"); window.recOpen = false; const guide = document.getElementById("bird-guide"); if (guide) guide.hidden = true;
+  const row = document.getElementById("desk-glass-in");
   if (!row) return;
-  const board = document.createElement("div");
-  board.className = "rec-board";
+  document.querySelectorAll(".rec-board").forEach((node) => node.remove());
+  const board = document.createElement("div"); board.className = "rec-board"; board.insertAdjacentHTML("afterbegin", `<h2>${window.recPast ? "Finished bets, by strategy." : "Recommended bets, by strategy."}</h2>`);
   const archive = ((window.state && window.state.board && window.state.board.archive) || []);
   const now = Date.now();
   const day = 86400000;
@@ -379,12 +379,11 @@ function birdMenu(kind) {
         head.textContent = [shown, pct, mark].filter(Boolean).join(" · ") || name;
         const gist = document.createElement("p");
         gist.className = "rec-gist";
-        gist.innerHTML = ticket.legs.map((leg) => window.legGist ? legGist(leg) : "").filter(Boolean).join(", ") + (ticket.why ? `<em>${esc(ticket.why)}</em>` : "");
+        gist.innerHTML = ticket.why ? `<em>${esc(ticket.why)}</em>` : "";
         const copy = document.createElement("p");
         copy.className = "rec-copy";
         copy.textContent = recBlurb(ticket, shown, pct, price);
-        bet.append(head, gist, copy); bet.insertAdjacentHTML("beforeend", `<button type="button" class="share-bet" data-share="rec" data-share-id="${bet.dataset.rec}" aria-label="Share this bet"></button>`);
-        ticket.legs.forEach((leg) => { const line = document.createElement("span"); const odds = Number(leg.odds); const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : ""; line.textContent = [tag, leg.label, leg.pct].filter(Boolean).join(" · "); bet.append(line); });
+        bet.append(head); if (gist.innerHTML) bet.append(gist); bet.insertAdjacentHTML("beforeend", `${ticket.legs.map(recLine).join("")}<button type="button" class="share-bet" data-share="rec" data-share-id="${bet.dataset.rec}" aria-label="Share this bet"></button>`); if (copy.textContent) bet.append(copy);
         block.append(bet);
       });
     heading.querySelector(".rec-count").textContent = seen.size;
@@ -397,8 +396,8 @@ function birdMenu(kind) {
   });
   filled.forEach((block) => board.append(block));
   empty.forEach((block) => board.append(block));
-  if (window.paintRecFilters) paintRecFilters(board);
-  row.append(board); if (window.recKeep) { const keep = window.recKeep; window.recKeep = null; board.querySelectorAll(".rec-strategy").forEach((node) => node.classList.toggle("open", keep.strategies.includes(`${node.dataset.card}|${node.dataset.part || ""}`))); board.querySelectorAll(".rec-bet").forEach((node) => node.classList.toggle("open", keep.bets.includes(node.dataset.key))); const guide = document.getElementById("bird-guide"); if (guide) guide.scrollTop = keep.scroll; }
+  if (window.paintRecFilters) paintRecFilters(board); const title = board.querySelector("h2"); if (title) board.prepend(title);
+  const hold = document.getElementById("desk-hold"); if (hold) [...row.children].forEach((node) => hold.append(node)); row.append(board); if (window.recKeep) { const keep = window.recKeep; window.recKeep = null; board.querySelectorAll(".rec-strategy").forEach((node) => node.classList.toggle("open", keep.strategies.includes(`${node.dataset.card}|${node.dataset.part || ""}`))); board.querySelectorAll(".rec-bet").forEach((node) => node.classList.toggle("open", keep.bets.includes(node.dataset.key))); row.scrollTop = keep.scroll; } else row.scrollTop = 0;
 }
 
 function goFull() {
