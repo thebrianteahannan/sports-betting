@@ -12,14 +12,26 @@ from nfl_bets.hedge import american_decimal, implied_prob
 
 _ET = ZoneInfo("America/New_York")
 _SPORTS = ("NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA")
-_KINDS = {
-    "yards": ("yard", "yd"),
-    "points": ("point",),
-    "assists": ("assist",),
-    "shots": ("shot",),
-    "strikeouts": ("strikeout",),
-    "hits": ("to record a hit", "to hit"),
-}
+def _family(leg: dict[str, Any]) -> str:
+    market = str(leg.get("market") or "")
+    source = market.split(" - ")[-1]
+    if market.lower().startswith("game specials"):
+        source = str(leg.get("runner") or "")[len(_who(leg)):]
+    scope = re.search(r"\b(\d+(?:st|nd|rd|th)\s+drive)\b", market.lower())
+    text = f"{scope.group(1) if scope else ''} {source}".lower()
+    text = re.sub(r"\([^)]*\)", " ", text)
+    text = re.sub(r"\b(alt|alternate)\b", " ", text)
+    text = re.sub(r"\d+(?:\.\d+)?\s*\+", " ", text)
+    text = re.sub(r"\b(player to record|player to score|player to hit|to record|to score|to hit|a|an|the)\b", " ", text)
+    for src, dst in (("yds", "yards"), ("tds", "touchdowns"), ("td", "touchdown"), ("pts", "points"), ("reb", "rebounds"), ("ast", "assists")):
+        text = re.sub(rf"\b{src}\b", dst, text)
+    text = re.sub(r"[^a-z0-9+ ]", " ", text)
+    text = re.sub(r"^(record|score)\s+", "", " ".join(text.split()))
+    if text == "hit":
+        text = "hits"
+    elif text.endswith(" hit"):
+        text = f"{text[:-3]}hits"
+    return "" if text in {"popular", "passing", "receiving", "rushing"} else text
 _SKIP = (
     "spread", "moneyline", "money line", "puck line", "puckline", "run line", "handicap",
     "total", "alternate total", "alt total", "team to score", "first pitch", "pitch result", "kicking",
@@ -42,7 +54,7 @@ def choose(board: dict[str, Any], sports: list[str], kind: str, count: int, game
     picked = named or sorted({str(game.get("sport") or "") for game in board.get("games") or [] if game.get("sport")}) or list(_SPORTS)
     ids = _ids(game_ids)
     count = min(10, max(1, int(count or 3)))
-    kind = kind if kind in _KINDS else "any"
+    kind = "any" if not str(kind or "").strip() or str(kind) == "any" else str(kind)[:80]
     aim = aim if aim in _AIMS else "top"
     span = "week" if when == "week" else "today"
     games = _slate(list(board.get("games") or []), picked, ids, span)
@@ -143,9 +155,9 @@ def _fits(leg: dict[str, Any], kind: str) -> bool:
         return False
     if not _who(leg) or _who(leg) in {"over", "under"}:
         return False
-    if kind == "any":
+    if kind in {"any", "list"}:
         return True
-    return any(word in text for word in _KINDS[kind])
+    return _family(leg) == kind
 
 
 def _pick(pools: list[tuple[dict[str, Any], list[dict[str, Any]], bool]], count: int, aim: str, skip: set[str]) -> tuple[list[tuple[dict, dict, bool]], bool, bool]:

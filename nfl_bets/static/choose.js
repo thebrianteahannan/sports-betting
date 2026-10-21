@@ -1,12 +1,5 @@
 const CHOICE_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA"];
-const KIND_ORDER = ["yards", "points", "assists", "shots", "strikeouts", "hits"];
-const KIND_LABELS = {
-  yards: "Yards", points: "Points", assists: "Assists", shots: "Shots", strikeouts: "Strikeouts", hits: "Hits",
-};
-const SPORT_KINDS = {
-  NFL: ["yards"], NCAAF: ["yards"], MLB: ["strikeouts", "hits"], NBA: ["points", "assists"],
-  WNBA: ["points", "assists"], NHL: ["shots", "points", "assists"], PGA: [],
-};
+function kindLabel(name) { return name ? name.replace(/\b[a-z]/g, (letter) => letter.toUpperCase()) : "Any player prop"; }
 const AIM_LABEL = { top: "Safest", safe: "Safe", good: "Good", payout: "Big payout" };
 const GO_LABEL = { top: "Show the safest", safe: "Show a safe bet", good: "Show a good bet", payout: "Show the best payout" };
 const choice = window.choice = { sports: [], kind: "any", legs: 3, gameIds: [], when: "today", aim: "top", mix: "even" };
@@ -58,13 +51,19 @@ function chosenSports() { const open = liveSports().filter(sportOn); return choi
 function paintKinds() {
   const kind = document.getElementById("choice-kind");
   if (!kind) return;
-  const allowed = new Set(chosenSports().flatMap((sport) => SPORT_KINDS[sport] || []));
-  const kinds = ["any"].concat(KIND_ORDER);
-  if (choice.kind !== "any" && !allowed.has(choice.kind)) choice.kind = "any";
-  kind.innerHTML = kinds.map((name) => (
-    `<option value="${name}"${name !== "any" && !allowed.has(name) ? " disabled" : ""}>${name === "any" ? "Any player prop" : KIND_LABELS[name]}</option>`
-  )).join("");
+  const names = window.askKinds || [];
+  if (choice.kind !== "any" && !names.includes(choice.kind)) choice.kind = "any";
+  kind.innerHTML = `<option value="any">Any player prop</option>${names.map((name) => `<option value="${name}">${kindLabel(name)}</option>`).join("")}`;
   kind.value = choice.kind;
+}
+
+function loadKinds() {
+  if (window.askKindsLoading) return;
+  window.askKindsLoading = true;
+  birdSay("Checking FanDuel.", []);
+  const line = document.getElementById("bird-line");
+  if (line) { line.classList.add("build"); const title = document.createElement("strong"); title.textContent = "Build Your Own Bet"; line.prepend(title); }
+  fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "kinds", sports: choice.sports, gameIds: choice.gameIds, when: choice.when, college: !["props", "both", "tourney", "off"].includes(window.memberLaw || "") }) }).then((res) => res.json()).then((data) => { window.askKinds = data.kinds || []; }).catch(() => { window.askKinds = []; }).finally(() => { window.askKindsLoading = false; askStep(); });
 }
 
 function paintGames() {
@@ -199,11 +198,11 @@ function askAnswer(token) {
   if (!ask) return;
   const cut = token.indexOf(":");
   const key = token.slice(0, cut); const value = token.slice(cut + 1); if (key === "back") { if (window.askBack) askBack(); return; }
-  if (key === "when") choice.when = value;
-  else if (key === "sport") choice.sports = value ? [value] : [];
+  if (key === "when") { choice.when = value; window.askKinds = null; }
+  else if (key === "sport") { choice.sports = value ? [value] : []; window.askKinds = null; }
   else if (key === "kind") choice.kind = value;
   else if (key === "legs") choice.legs = Number(value);
-  else if (key === "game") choice.gameIds = value ? [value] : [];
+  else if (key === "game") { choice.gameIds = value ? [value] : []; window.askKinds = null; }
   else if (key === "aim") choice.aim = value; else if (key === "mix") choice.mix = value;
   window.askPast.push(ask[0]); ask.shift();
   askStep();
@@ -243,9 +242,14 @@ function askButtons(step) {
   return null;
 }
 
+function askSoFar() {
+  const past = window.askPast || [], game = choice.gameIds[0] && document.querySelector(`#choice-game option[value="${CSS.escape(choice.gameIds[0])}"]`), words = { when: choice.when === "week" ? "This week" : "Today", sport: choice.sports[0] || "All leagues", game: game ? game.textContent : "Any game", kind: choice.kind && choice.kind !== "any" ? kindLabel(choice.kind) : "Any player prop", legs: choice.legs ? (choice.legs === 1 ? "1 pick" : `${choice.legs} picks`) : "Any number", aim: AIM_LABEL[choice.aim] || "", mix: { even: "Same chance", safer: "One safer", long: "One longer" }[choice.mix] || "" };
+  return [...new Set((!window.askFree && words.aim ? ["aim"] : []).concat(["when", "sport", "game", "kind", "legs", "aim", "mix"].filter((step) => past.includes(step))))].map((step) => words[step]).filter(Boolean).join(", ");
+}
 function askStep() {
   if (!(ask = ask || window.askSteps)) return; if (!ask.length) return askGo();
   while (ask.length) {
+    if (ask[0] === "kind" && !window.askKinds) { loadKinds(); return; }
     if (ask[0] === "game" || ask[0] === "kind") paintForm();
     const next = askButtons(ask[0]);
     if (!next) { ask.shift(); continue; }
@@ -253,9 +257,8 @@ function askStep() {
     const line = document.getElementById("bird-line");
     if (line) {
       line.classList.add("build");
-      const title = document.createElement("strong");
-      title.textContent = "Build Your Own Bet";
-      line.prepend(title);
+      const title = document.createElement("strong"); title.textContent = "Build Your Own Bet"; line.prepend(title);
+      const sofar = askSoFar(); if (sofar) { const note = document.createElement("em"); note.textContent = `So far: ${sofar}`; title.after(note); }
     }
     return;
   }

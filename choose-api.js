@@ -3,34 +3,24 @@
 const { addSway } = require("./sway-api");
 const AK = "FhMFpcPWXMeyZxOx";
 const SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA"];
-const KINDS = {
-  yards: ["yard", "yd"], points: ["point"], assists: ["assist"], shots: ["shot"],
-  strikeouts: ["strikeout"], hits: ["to record a hit", "to hit"],
-};
+function propFamily(leg) {
+  const market = String(leg.market || "");
+  let source = market.split(" - ").pop();
+  if (/^game specials/i.test(market)) source = String(leg.runner || "").slice(who(leg).length);
+  const scope = (market.toLowerCase().match(/\b(\d+(?:st|nd|rd|th)\s+drive)\b/) || [])[1] || "";
+  let text = `${scope} ${source}`.toLowerCase().replace(/\([^)]*\)/g, " ").replace(/\b(alt|alternate)\b/g, " ").replace(/\d+(?:\.\d+)?\s*\+/g, " ").replace(/\b(player to record|player to score|player to hit|to record|to score|to hit|a|an|the)\b/g, " ").replace(/\byds\b/g, "yards").replace(/\btds\b/g, "touchdowns").replace(/\btd\b/g, "touchdown").replace(/\bpts\b/g, "points").replace(/\breb\b/g, "rebounds").replace(/\bast\b/g, "assists").replace(/[^a-z0-9+ ]/g, " ").replace(/\s+/g, " ").trim().replace(/^(record|score)\s+/, "");
+  if (text === "hit") text = "hits";
+  else if (text.endsWith(" hit")) text = `${text.slice(0, -3)}hits`;
+  return /^(popular|passing|receiving|rushing)$/.test(text) ? "" : text;
+}
 const SKIP = ["spread", "moneyline", "money line", "puck line", "puckline", "run line", "handicap", "total", "alternate total", "alt total", "team to score", "correct score", "exact score", "winning margin", "final score", "first pitch", "pitch result", "kicking"];
 const AIM = { safe: -200, good: -100 };
 const UNITS = ["shots on goal", "receiving yards", "rushing yards", "passing yards", "receptions", "rebounds", "strikeouts", "assists", "puck line", "run line", "saves", "points", "goals", "shots", "made threes", "threes", "spread", "yards"];
 
-function americanDecimal(odds) {
-  const n = Number(odds);
-  if (!n) throw new Error("odds cannot be 0");
-  return n > 0 ? 1 + n / 100 : 1 + 100 / Math.abs(n);
-}
-
-function impliedProb(odds) {
-  const n = Number(odds);
-  return n < 0 ? Math.abs(n) / (Math.abs(n) + 100) : 100 / (n + 100);
-}
-
-function fromDecimal(decimal) {
-  if (decimal <= 1) return null;
-  if (decimal >= 2) return Math.round((decimal - 1) * 100);
-  return Math.round(-100 / (decimal - 1));
-}
-
-function who(leg) {
-  return String(leg.runner || leg.label || "").split(/\d/)[0].trim().toLowerCase();
-}
+function americanDecimal(odds) { const n = Number(odds); if (!n) throw new Error("odds cannot be 0"); return n > 0 ? 1 + n / 100 : 1 + 100 / Math.abs(n); }
+function impliedProb(odds) { const n = Number(odds); return n < 0 ? Math.abs(n) / (Math.abs(n) + 100) : 100 / (n + 100); }
+function fromDecimal(decimal) { if (decimal <= 1) return null; if (decimal >= 2) return Math.round((decimal - 1) * 100); return Math.round(-100 / (decimal - 1)); }
+function who(leg) { return String(leg.runner || leg.label || "").split(/\d/)[0].trim().toLowerCase(); }
 
 function pinOf(token) {
   const [name, size, word] = String(token || "").toLowerCase().split("|");
@@ -201,8 +191,8 @@ function fits(leg, kind) {
   if (!/\d/.test(text) && !text.includes("to record a hit") && !text.includes("to score") && !text.includes("scorer") && !text.includes("touchdown")) return false;
   const name = who(leg);
   if (!name || name === "over" || name === "under") return false;
-  if (kind === "any") return true;
-  return (KINDS[kind] || []).some((word) => text.includes(word));
+  if (kind === "any" || kind === "list") return true;
+  return propFamily(leg) === kind;
 }
 
 function receivingYards(leg) {
@@ -457,6 +447,15 @@ function miss(pools, sports, count, span) {
   return `FanDuel has player props for ${names.size} ${noun} across ${places}, so a ${count}-leg parlay does not fit yet.`;
 }
 
+async function listKinds(games) {
+  const seen = new Set();
+  const sample = games.filter((game) => { const sport = String(game.sport || ""); if (seen.has(sport)) return false; seen.add(sport); return true; });
+  const { pools } = await gather(sample, "list");
+  const names = new Set();
+  pools.forEach((row) => row[1].forEach((leg) => { const name = propFamily(leg); if (name && !/\b(winner|result|margin|correct score|both teams|wdw)\b/.test(name)) names.add(name); }));
+  return { kinds: [...names].sort() };
+}
+
 async function chooseBet(body, board) {
   const asked = Array.isArray(body.sports) ? body.sports.map(String) : [];
   const sports = asked.filter(Boolean);
@@ -465,11 +464,12 @@ async function chooseBet(body, board) {
   const ids = (Array.isArray(body.gameIds) ? body.gameIds : [body.gameId]).map((item) => String(item || "")).filter(Boolean);
   const any = body.legs === 0 || body.legs === "0";
   const count = any ? 0 : Math.min(10, Math.max(1, Number(body.legs) || 3));
-  const kind = ["any", "yards", "points", "assists", "shots", "strikeouts", "hits"].includes(body.kind) ? body.kind : "any";
+  const kind = String(body.kind || "any").slice(0, 80) || "any";
   const aim = ["top", "safe", "good", "payout"].includes(body.aim) ? body.aim : "top";
   const mix = ["even", "safer", "long"].includes(body.mix) ? body.mix : "even";
   const span = body.when === "week" ? "week" : "today";
   const games = slate(Array.isArray(board.games) ? board.games : [], picked, ids, span);
+  if (body.list === "kinds") return listKinds(games);
   const safeAim = aim;
   if (!games.length) {
     const rows = Array.isArray(board.games) ? board.games : [];
