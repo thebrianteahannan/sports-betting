@@ -364,12 +364,18 @@
 #greet-rate, #greet-legal { display: none; }
 #desk.bird-on #bird-guide:has(button[data-menu]) { padding-top: 3.2rem; padding-bottom: 4.6rem; }
 #desk.bird-on #bird-guide:has(button[data-menu]) #greet-rate {
-  display: block; position: absolute; top: 0.85rem; left: 1.1rem; right: 1.1rem; margin: 0;
-  text-align: center; font-family: "Outfit", sans-serif; font-size: 16px; font-weight: 600;
-  letter-spacing: 0; text-transform: none; color: #f4fff6; pointer-events: none;
+  display: block; position: absolute; top: 4.6rem; left: 0.7rem; right: 0.7rem; margin: 0;
+  text-align: center; font-family: "Outfit", sans-serif; font-size: 14px; font-weight: 600;
+  line-height: 1.25; letter-spacing: 0; text-transform: none; color: #f4fff6; pointer-events: none;
   text-shadow: 0 1px 2px #07131a, 0 0 12px #07131a;
 }
-#desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-rate { font-size: 20px; }
+#desk.bird-on #bird-guide:has(button[data-menu]) #greet-rate b {
+  display: block; margin: 0 0 0.15rem; font-family: "Oswald", sans-serif; font-size: 2.5rem;
+  font-weight: 600; line-height: 0.85; color: #3dff6e; letter-spacing: 0.02em;
+  text-shadow: 0 0 22px rgba(61, 255, 110, 0.7);
+}
+#desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-rate { top: 12%; font-size: 22px; line-height: 1.35; }
+#desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-rate b { margin-bottom: 0.35rem; font-size: 6.6rem; }
 #desk.bird-on #bird-guide:has(button[data-menu]) #greet-rate:empty { display: none; }
 #desk.bird-on #bird-guide:has(button[data-menu]) #greet-legal {
   display: flex; flex-direction: column; align-items: flex-end; gap: 0.12rem;

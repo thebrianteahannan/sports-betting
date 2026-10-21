@@ -54,7 +54,7 @@ function render() {
   oddsByHead = null;
   const board = state.board || {};
   const hit = document.getElementById("greet-rate");
-  if (hit && window.recPct) { const done = (board.archive || []).filter((ticket) => ticket.result === "won" || ticket.result === "lost"); const pct = recPct(done, Date.now() - 86400000 * 7); hit.textContent = recPct.n ? `Recommended bets are hitting ${pct} this week.` : ""; }
+  if (hit && window.recPct) { const done = (board.archive || []).filter((ticket) => ticket.result === "won" || ticket.result === "lost"); const since = Date.now() - 86400000 * 7; const pct = recPct(done, since); const pay = window.weekPay ? weekPay(done, since) : 0; hit.innerHTML = recPct.n ? `<b>${pct}</b>I love these strategies. Five dollars makes about $${pay}.` : ""; }
   const waiting = !board.updatedAt;
   $("lede").textContent = board.updatedAt ? `FanDuel ${when(board.updatedAt)} ET.` : "Loading the latest board.";
   const parrot = $("parrot-load");

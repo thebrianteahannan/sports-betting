@@ -71,7 +71,6 @@ function showMember(payload) {
   window.memberName = member.name || "";
   window.memberState = member.state || "";
   window.memberBook = member.book || "";
-  if (payload.model) window.askModel = payload.model;
   window.fullAt = member.fullAt || "";
   if (window.applyMember) applyMember(window.memberState);
   window.memberReady = true;
@@ -185,7 +184,7 @@ function birdGreet() {
   if (birdAskBook()) return;
   if (birdLaw()) return;
   window.asking = false;
-  birdSay(`Hey, ${called}. What are you trying to do today?`, [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"], ["parrot", "Ask Parlay the Parrot"]]);
+  birdSay(`Hey, ${called}. What are you trying to do today?`, [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]);
 }
 
 function birdLaw() {
@@ -310,7 +309,21 @@ function recPct(rows, since) {
   return list.length ? `${((list.filter((row) => row.won).length / list.length) * 100).toFixed(1)}%` : "—";
 }
 
+function weekPay(rows, since) {
+  const seen = new Map();
+  rows.forEach((ticket) => {
+    const when = Date.parse(ticket.settledAt || ticket.offeredAt || "");
+    const key = (ticket.legs || []).map((leg) => leg.label).join("|");
+    const price = Number(ticket.american);
+    const pay = price < 0 ? 500 / -price : price > 0 ? price / 20 : NaN;
+    const prior = seen.get(key);
+    if (key && Number.isFinite(when) && when >= since && Number.isFinite(pay) && (!prior || when >= prior.when)) seen.set(key, { when, pay });
+  });
+  const list = [...seen.values()].map((row) => row.pay).sort((a, b) => a - b);
+  return list.length ? Math.round(list[list.length >> 1]) : 0;
+}
 window.recPct = recPct;
+window.weekPay = weekPay;
 function recBlurb(ticket, shown, pct, price) { return shown && pct && window.recWin ? recWin(price) : ""; }
 
 function recLine(leg) {
@@ -432,8 +445,6 @@ window.birdMenu = birdMenu;
 document.getElementById("bird-guide").addEventListener("click", (event) => {
   const menu = event.target.closest("[data-menu]");
   if (menu) { goFull(); birdMenu(menu.dataset.menu); return; }
-  const parrot = event.target.closest("[data-parrot]");
-  if (parrot && window.askBet) { goFull(); askBet("general"); return; }
   if (!event.target.closest("#bird-picks button")) return;
   const line = (document.getElementById("bird-line") || {}).textContent || "";
   const note = window.lawNote ? lawNote() : "";
@@ -472,29 +483,3 @@ document.getElementById("login-form").addEventListener("submit", (event) => {
 });
 
 bootMember();
-
-let askEar = null;
-function hearAsk(box) {
-  const mic = document.getElementById("bet-mic");
-  const Hear = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!mic) return;
-  if (askEar) { try { askEar.stop(); } catch (error) { askEar = null; } }
-  if (!Hear) { mic.hidden = true; return; }
-  mic.addEventListener("click", () => {
-    if (askEar) { try { askEar.stop(); } catch (error) { askEar = null; } return; }
-    const ear = new Hear();
-    askEar = ear;
-    ear.lang = "en-US";
-    ear.interimResults = true;
-    ear.onresult = (event) => {
-      box.value = [...event.results].map((row) => row[0].transcript).join(" ").trim(); box.dispatchEvent(new Event("input"));
-    };
-    const done = () => { if (askEar === ear) askEar = null; mic.classList.remove("on"); mic.textContent = "Speak"; };
-    ear.onend = done;
-    ear.onerror = done;
-    mic.classList.add("on");
-    mic.textContent = "Stop";
-    try { ear.start(); } catch (error) { done(); }
-  });
-}
-window.hearAsk = hearAsk;

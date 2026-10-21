@@ -9,10 +9,7 @@
  * Environment (do not commit these):
  *   SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
- *   GEMINI_API_KEY
  * Local Mac reads the same names from .env. Hostinger sets them in hPanel.
- * GEMINI_API_KEY is a free Google AI Studio key with no billing account.
- * Without it, this Mac answers from Ollama. Hostinger needs the key.
  *
  * The Mac keeps pulling FanDuel and writes bets/board.json and bets/archive.json.
  */
@@ -23,7 +20,6 @@ const crypto = require("crypto");
 const { createIgnore } = require("./desk-ignore");
 const { createAdmins } = require("./desk-admins");
 const { createDocs } = require("./desk-docs"); const { chooseBet } = require("./choose-api");
-const { askBet, birdModel } = require("./bet-ask");
 const { createPull } = require("./desk-pull");
 const { createNotes } = require("./desk-notes");
 const ROOT = __dirname;
@@ -321,7 +317,7 @@ async function memberFrom(req) {
 
 function memberProfile(data, user) {
   const activity = data.activity.filter((row) => row.userId === user.id).slice(0, 30);
-  return { member: publicMember(user), activity, model: birdModel() };
+  return { member: publicMember(user), activity };
 }
 
 async function openSession(data, user) {
@@ -448,7 +444,6 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST") {
       const body = await readBody(req);
       if (url.pathname === "/api/choose") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await chooseBet(body, await board())); return; }
-      if (url.pathname === "/api/bet-ask") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await askBet(body.question, body.card)); return; }
       if (url.pathname === "/api/admin/pull") {
         const user = await memberFrom(req);
         if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }

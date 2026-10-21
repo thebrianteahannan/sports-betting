@@ -317,8 +317,7 @@ function bootDesk() {
     event.stopPropagation();
     if (window.goFull) goFull();
     if (menu.classList.contains("bird-has") && event.clientX < menu.getBoundingClientRect().left) { if (window.matchMedia("(hover: none), (pointer: coarse)").matches) menu.classList.toggle("say-open"); return; }
-    if (birdPending) { const pending = birdPending; birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Ask Parlay the Parrot"); if (!(window.birdBragGo && birdBragGo(pending[0]))) birdSay(pending[0], pending[1]); return; }
-    if (window.askBet) askBet("general");
+    if (birdPending) { const pending = birdPending; birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Recommended bets"); if (!(window.birdBragGo && birdBragGo(pending[0]))) birdSay(pending[0], pending[1]); return; } if (window.birdMenu) birdMenu("bets");
   });
   document.addEventListener("click", (event) => {
     if (menu && !event.target.closest("#desk-menu")) menu.classList.remove("say-open");
@@ -337,11 +336,11 @@ function bootDesk() {
   const go = document.getElementById("choice-go");
   if (go) go.addEventListener("click", tvPush);
   const home = document.getElementById("desk-home");
-  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"], ["parrot", "Ask Parlay the Parrot"]]); tvSkip = false; birdBump(); });
+  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]); tvSkip = false; birdBump(); });
 }
 const BIRD_WAIT = 18000;
 const BIRD_NUDGES = [
-  ["Hey, want to find a bet you want to make?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"], ["parrot", "Ask Parlay the Parrot"]]],
+  ["Hey, want to find a bet you want to make?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]],
   ["Hey, try a safer bet. Five dollars wins about $2.50. It still loses sometimes. It just loses less often than the ones that pay a lot.", [["quiz", "Try Safe Bet", "safe"]]],
   ["Hey, a safer bet is a smaller win. A bigger payout is more fun to talk about with friends, and it loses more often.", [["quiz", "Build a higher payout", "payout"]]],
   ["Best Bets of the Week puts each pick on a different day. Want a look?", [["week", "Best Bets of the Week"]]],
@@ -417,7 +416,7 @@ function startGuide() {
     window.squawkUntil = Date.now() + 900; birdSay("Squawk!!!", []);
     setTimeout(() => {
       if (!birdOn || birdHeld || window.asking || document.body.classList.contains("needs-member")) return;
-      if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"], ["parrot", "Ask Parlay the Parrot"]]);
+      if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]);
     }, 900);
     birdBump();
   };
