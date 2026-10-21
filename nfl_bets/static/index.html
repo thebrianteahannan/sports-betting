@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/app.css?v=46"/>
-<link rel="stylesheet" href="/desk.css?v=60"/>
+<link rel="stylesheet" href="/desk.css?v=61"/>
 <link rel="stylesheet" href="/states.css?v=3"/>
 <link rel="stylesheet" href="/ask-bet.css?v=145"/>
 <style>
@@ -118,8 +118,9 @@ body.day-board #parrot-load[hidden] { display: none; }
   </div>
   <form id="member-form" hidden>
     <h2>Create a free membership</h2>
-    <p class="aim">Enter your name, email, and a password of at least 8 characters. We need your state so the desk only shows bets you are allowed to place there.</p>
+    <p class="aim">Enter your name, date of birth, email, and a password of at least 8 characters. You have to be 21. We need your state so the desk only shows bets you are allowed to place there.</p>
     <label class="choice-line">Name <input id="member-name" autocomplete="name" required></label>
+    <label class="choice-line">Date of birth <input id="member-born" type="date" autocomplete="bday" required></label>
     <label class="choice-line">State <select id="member-state" required></select></label>
     <label class="choice-line">Email <input id="member-email" type="email" autocomplete="username" required></label>
     <label class="choice-line">Password <input id="member-pass" type="password" minlength="8" autocomplete="new-password" required></label>
@@ -454,7 +455,7 @@ body.day-board #parrot-load[hidden] { display: none; }
 </footer>
 <script src="/app.js?v=105"></script>
 <script src="/desk.js?v=90"></script>
-<script src="/members.js?v=92"></script>
+<script src="/members.js?v=93"></script>
 <script src="/stars.js?v=8"></script>
 <script src="/choose.js?v=95"></script>
 <script src="/lessons.js?v=8"></script>

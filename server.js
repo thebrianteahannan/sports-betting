@@ -287,8 +287,25 @@ function cleanBook(value) {
   return book;
 }
 
+function cleanBorn(value) {
+  const born = String(value || "").trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(born);
+  if (!match) throw new Error("Enter your date of birth.");
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) throw new Error("Enter your date of birth.");
+  const [ty, tm, td] = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()).split("-").map(Number);
+  let age = ty - year;
+  if (tm < month || (tm === month && td < day)) age -= 1;
+  if (age < 21) throw new Error("You have to be 21 to use this desk.");
+  if (year < ty - 120) throw new Error("Enter your date of birth.");
+  return born;
+}
+
 function publicMember(user) {
-  return { id: user.id, name: user.name, email: user.email, plan: "free", admin: isAdmin(user), state: user.state || "", book: user.book || "", fullAt: user.fullAt || "" };
+  return { id: user.id, name: user.name, email: user.email, plan: "free", admin: isAdmin(user), state: user.state || "", book: user.book || "", born: user.born || "", fullAt: user.fullAt || "" };
 }
 
 async function loadMembers() {
@@ -475,6 +492,18 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, { member: publicMember(row) });
         return;
       }
+      if (url.pathname === "/api/born") {
+        const user = await memberFrom(req);
+        if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
+        const born = cleanBorn(body.born);
+        const data = await loadMembers();
+        const row = data.users.find((item) => item.id === user.id);
+        if (!row) throw new Error("That membership is not here.");
+        row.born = born;
+        await writeKey("bets/members.json", data);
+        sendJson(res, { member: publicMember(row) });
+        return;
+      }
       if (url.pathname === "/api/book") {
         const user = await memberFrom(req);
         if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
@@ -500,10 +529,11 @@ const server = http.createServer(async (req, res) => {
         if (url.pathname === "/api/join") {
           const name = String(body.name || "").replace(/\s+/g, " ").trim();
           const state = cleanState(body.state);
+          const born = cleanBorn(body.born);
           if (name.length < 2) throw new Error("Enter your name.");
           if (user) throw new Error("That email already has a membership.");
           const salt = crypto.randomBytes(16).toString("hex");
-          user = { id: crypto.randomBytes(8).toString("hex"), name, email, state, salt, hash: passHash(password, salt), plan: "free", createdAt: new Date().toISOString(), lastLogin: new Date().toISOString() };
+          user = { id: crypto.randomBytes(8).toString("hex"), name, email, state, born, salt, hash: passHash(password, salt), plan: "free", createdAt: new Date().toISOString(), lastLogin: new Date().toISOString() };
           data.users.push(user);
         } else {
           const digest = user ? passHash(password, user.salt) : "";

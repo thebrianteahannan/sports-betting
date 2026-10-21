@@ -6,6 +6,7 @@ function showGateMode(mode) {
   document.getElementById("gate-pick").hidden = mode !== "pick";
   document.getElementById("member-form").hidden = mode !== "join";
   document.getElementById("login-form").hidden = mode !== "login";
+  if (mode === "join") bornRange(document.getElementById("member-born"));
 }
 
 async function paintGateRecord() {
@@ -69,6 +70,7 @@ function showMember(payload) {
   const heading = document.querySelector("#activity h2");
   if (heading) heading.textContent = member.name || "Your membership";
   window.memberName = member.name || "";
+  window.memberBorn = member.born || "";
   window.memberState = member.state || "";
   window.memberBook = member.book || "";
   window.fullAt = member.fullAt || "";
@@ -79,7 +81,7 @@ function showMember(payload) {
   const spoken = document.getElementById("bird-line");
   const said = spoken ? spoken.textContent : "";
   const desk = document.getElementById("desk");
-  if (desk && desk.classList.contains("bird-on") && ((said === "Squawk!!!" && Date.now() > (window.squawkUntil || 0)) || said.startsWith("Hey. What") || said.startsWith("What should I call you") || said.startsWith("Which state") || said.startsWith("Which sportsbook"))) birdGreet();
+  if (desk && desk.classList.contains("bird-on") && ((said === "Squawk!!!" && Date.now() > (window.squawkUntil || 0)) || said.startsWith("Hey. What") || said.startsWith("What should I call you") || said.startsWith("When were you born") || said.startsWith("Which state") || said.startsWith("Which sportsbook"))) birdGreet();
   const adminBox = document.getElementById("profile-admin");
   if (adminBox) adminBox.hidden = !admin;
   const plan = document.getElementById("activity-plan");
@@ -180,6 +182,7 @@ function birdGreet() {
   if (!window.memberReady || document.body.classList.contains("needs-member") || !window.birdSay) return;
   const called = calledName();
   if (!called) { birdAskName(); return; }
+  if (!window.memberBorn) { birdAskBorn(); return; }
   if (!window.memberState) { birdAskState(); return; }
   if (birdAskBook()) return;
   if (birdLaw()) return;
@@ -203,6 +206,33 @@ function birdLaw() {
     });
   }
   return true;
+}
+
+function bornRange(input) {
+  if (!input) return;
+  const now = new Date(), stamp = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  input.max = stamp(new Date(now.getFullYear() - 21, now.getMonth(), now.getDate()));
+  input.min = stamp(new Date(now.getFullYear() - 120, now.getMonth(), now.getDate()));
+}
+function birdAskBorn() {
+  window.asking = true;
+  birdSay("When were you born? You have to be 21 to use this desk.", []);
+  const row = document.getElementById("bird-picks");
+  if (!row) return;
+  row.innerHTML = `<input id="bird-born" type="date" autocomplete="bday"><button type="button" id="bird-born-go">That's my birthday</button><p id="bird-born-error"></p>`;
+  const field = row.querySelector("#bird-born");
+  bornRange(field);
+  field.addEventListener("keydown", (event) => { if (event.key === "Enter") saveBorn(field.value); });
+  row.querySelector("#bird-born-go").addEventListener("click", () => saveBorn(field.value));
+}
+async function saveBorn(raw) {
+  const born = String(raw || ""), error = document.getElementById("bird-born-error");
+  if (!born) { if (error) error.textContent = "Enter your date of birth."; return; }
+  const response = await memberFetch("/api/born", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ born }) });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) { if (error) error.textContent = payload.error || "Enter your date of birth."; return; }
+  window.memberBorn = (payload.member && payload.member.born) || "";
+  if (((document.getElementById("bird-line") || {}).textContent || "").startsWith("When were you born")) birdGreet();
 }
 
 function birdAskState() {
@@ -471,6 +501,7 @@ document.getElementById("member-form").addEventListener("submit", (event) => {
     name: "member-name",
     email: "member-email",
     password: "member-pass",
+    born: "member-born",
     state: "member-state",
   }, "member-error");
 });
