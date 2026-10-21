@@ -168,18 +168,6 @@ window.fetch = async function memberAwareFetch(url, options) {
   return response;
 };
 
-async function hardRefresh() {
-  const stamp = Date.now();
-  try {
-    if (window.caches) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map((key) => caches.delete(key)));
-    }
-    await fetch("/?fresh=" + stamp, { cache: "reload" });
-  } catch (error) {}
-  location.replace(location.pathname + "?fresh=" + stamp);
-}
-
 document.getElementById("who").addEventListener("click", (event) => {
   if (event.target.closest("#member-profile")) { goFull(); showTab("profile"); }
 });
@@ -335,7 +323,7 @@ function birdMenu(kind) {
   const past = !!window.recPast;
   board.addEventListener("click", (event) => {
     const bet = event.target.closest(".rec-bet");
-    if (bet) { if (window.openRec) openRec(bet.dataset.rec); return; }
+    if (bet) { if (event.target.closest(".share-bet")) return; if (window.openRec) openRec(bet.dataset.rec); return; }
     const strategy = event.target.closest(".rec-strategy");
     if (strategy) strategy.classList.toggle("open");
   });
@@ -379,7 +367,7 @@ function birdMenu(kind) {
         const gist = document.createElement("p");
         gist.className = "rec-gist";
         gist.innerHTML = ticket.legs.map((leg) => window.legGist ? legGist(leg) : "").filter(Boolean).join(", ") + (ticket.why ? `<em>${esc(ticket.why)}</em>` : "");
-        bet.append(head, gist);
+        bet.append(head, gist); bet.insertAdjacentHTML("beforeend", `<button type="button" class="share-bet" data-share="rec" data-share-id="${bet.dataset.rec}" aria-label="Share this bet"></button>`);
         ticket.legs.forEach((leg) => { const line = document.createElement("span"); const odds = Number(leg.odds); const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : ""; line.textContent = [tag, leg.label].filter(Boolean).join(" "); bet.append(line); });
         block.append(bet);
       });
@@ -440,10 +428,6 @@ document.getElementById("pane-profile").addEventListener("click", (event) => {
   if (event.target.closest("#call-save")) saveCalledName(document.getElementById("call-name").value);
   if (event.target.closest("#state-save")) saveState(document.getElementById("call-state").value);
   if (event.target.closest("#book-save")) saveBook(document.getElementById("call-book").value);
-  if (event.target.closest("#hard-refresh")) hardRefresh();
-});
-document.getElementById("pane-laws").addEventListener("click", (event) => {
-  if (event.target.closest("#laws-save")) saveState(document.getElementById("laws-state").value);
 });
 window.birdGreet = birdGreet;
 function noteTaste(kind, detail) {

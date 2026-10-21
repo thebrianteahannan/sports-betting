@@ -462,7 +462,7 @@ document.getElementById("desk-back").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
   if (!desk || !desk.classList.contains("tv-full")) return;
   event.stopImmediatePropagation();
-  if (window.recBack && recBack()) return;
+  if (window.shareBack && shareBack()) return; if (window.recBack && recBack()) return;
   if (window.askBack && askBack()) return;
   const shot = askTrail.pop();
   if (shot) { restoreAsk(shot); return; }

@@ -109,7 +109,7 @@ function paintLaws() {
   const detail = document.getElementById("laws-detail");
   if (!map || !you || !detail) return;
   const mine = STATE_LAW[window.memberState || ""];
-  you.textContent = mine ? `Your state is ${mine.name}.` : "Your state is not set yet. Choose it below.";
+  you.textContent = mine ? `Your state is ${mine.name}.` : "Your state is not set yet. Set it on your membership.";
   fillStateSelect(document.getElementById("laws-state"), window.memberState);
   const show = (code) => {
     const row = STATE_LAW[code];

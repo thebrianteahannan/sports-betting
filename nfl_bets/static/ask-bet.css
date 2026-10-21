@@ -119,24 +119,44 @@
 #bird-picks .rec-bet.rec-edge, #choice-result .rec-bet.rec-edge { border-color: #ffe14a; box-shadow: inset 3px 0 0 #ffe14a; }
 #bird-picks .rec-bet.rec-edge .rec-gist em, #choice-result .rec-bet.rec-edge .rec-gist em { color: #ffe14a; }
 #choice-result .rec-bet .rec-gist em.rec-known, #choice-result .rec-bet.rec-edge .rec-gist em.rec-known { color: #3dff6e; }
-#admin-rates { font-family: "Outfit", sans-serif; text-align: left; }
-#admin-rates .rec-bet { margin: 0 0 0.45rem; padding: 0.55rem 0.7rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.72); cursor: pointer; }
-#admin-rates .rec-bet b { display: block; color: #f4fff6; font-size: 16px; font-weight: 700; letter-spacing: 0; text-transform: none; }
-#admin-rates .rec-bet b::after { content: " +"; color: #3dff6e; }
-#admin-rates .rec-bet.open b::after { content: " –"; }
-#admin-rates .rec-bet > span { display: none; margin-top: 0.2rem; color: #d5deea; font-size: 14px; line-height: 1.3; }
-#admin-rates .rec-bet.open > span { display: block; }
-#admin-rates .rec-bet .rec-gist { margin: 0.2rem 0 0; color: #f4fff6; font-size: 14px; font-weight: 700; line-height: 1.3; text-transform: none; letter-spacing: 0; }
-#admin-rates .rec-bet .rec-gist i { color: #3dff6e; font-style: normal; font-weight: 700; }
-#admin-rates .rec-bet .rec-gist em { display: block; margin-top: 0.2rem; color: #d7e2ea; font-style: normal; font-weight: 700; text-align: left; }
-#admin-rates .rec-bet b .stars { display: inline-flex; margin-left: 0.35rem; vertical-align: -0.12rem; }
-#admin-rates .rec-bet b .stars button { width: auto; height: auto; min-height: 0; padding: 0 0.05rem; font-size: 16px; line-height: 1; pointer-events: none; }
+#profile-admin { font-family: "Outfit", sans-serif; text-align: left; }
+#profile-admin .rec-bet { margin: 0 0 0.45rem; padding: 0.55rem 0.7rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.72); }
+#profile-admin a.rec-bet { display: block; color: #f4fff6; font-weight: 700; text-decoration: none; }
+#profile-admin .rec-bet:has(> span) { cursor: pointer; }
+#profile-admin .rec-bet b { display: block; color: #f4fff6; font-size: 16px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+#profile-admin .rec-bet:has(> span) > b::after { content: " +"; color: #3dff6e; }
+#profile-admin .rec-bet.open > b::after { content: " –"; }
+#profile-admin .rec-bet > span { display: none; margin-top: 0.2rem; color: #d5deea; font-size: 14px; line-height: 1.3; }
+#profile-admin .rec-bet.open > span { display: block; }
+#profile-admin .rec-bet .rec-gist { margin: 0.2rem 0 0; color: #f4fff6; font-size: 14px; font-weight: 700; line-height: 1.3; text-transform: none; letter-spacing: 0; }
+#profile-admin .rec-bet .rec-gist i { color: #3dff6e; font-style: normal; font-weight: 700; }
+#profile-admin .rec-bet .rec-gist em { display: block; margin-top: 0.2rem; color: #d7e2ea; font-style: normal; font-weight: 700; text-align: left; }
+#profile-admin .rec-bet b .stars { display: inline-flex; margin-left: 0.35rem; vertical-align: -0.12rem; }
+#profile-admin .rec-bet b .stars button { width: auto; height: auto; min-height: 0; padding: 0 0.05rem; font-size: 16px; line-height: 1; pointer-events: none; }
+#profile-admin .rec-bet .pick-save { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.45rem 0 0; }
+#desk.tv-full #desk-glass #profile-admin .rec-bet button:not(.star),
+#desk.tv-full #desk-glass #profile-admin .rec-bet input { width: auto; height: auto; min-height: 0; margin: 0; padding: 0.28rem 0.6rem; font-size: 14px; }
 @media (min-width: 721px) {
-  #admin-rates .rec-bet { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; column-gap: 1rem; }
-  #admin-rates .rec-bet b { flex: 0 0 auto; }
-  #admin-rates .rec-bet .rec-gist { flex: 1 1 12rem; margin: 0; text-align: right; }
-  #admin-rates .rec-bet > span { flex: 1 0 100%; }
+  #profile-admin .rec-bet { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; column-gap: 1rem; }
+  #profile-admin .rec-bet b { flex: 0 0 auto; }
+  #profile-admin .rec-bet .rec-gist { flex: 1 1 12rem; margin: 0; text-align: right; }
+  #profile-admin .rec-bet > span,
+  #profile-admin .rec-bet .pick-save { flex: 1 0 100%; }
 }
+#bird-picks .rec-bet, #choice-result .rec-bet, #profile-admin .rec-bet, #rec-open { position: relative; }
+#bird-picks .rec-bet b, #choice-result .rec-bet b, #profile-admin .rec-bet:has(.share-bet) b, #rec-open h2 { padding-right: 2rem; }
+#bird-picks .rec-bet .rec-gist, #choice-result .rec-bet .rec-gist, #profile-admin .rec-bet:has(.share-bet) .rec-gist { padding-right: 2.1rem; }
+#desk.tv-full #desk-glass button.share-bet,
+#desk.tv-full #desk-glass #profile-admin .rec-bet button.share-bet {
+  position: absolute; top: 0.42rem; right: 0.42rem; z-index: 2;
+  width: 1.7rem; height: 1.7rem; min-height: 0; margin: 0; padding: 0; font-size: 0;
+  border: 1px solid #3dff6e; border-radius: 8px; box-shadow: none;
+  background: #07140f url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%233dff6e' d='M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z'/%3E%3C/svg%3E") center / 14px 14px no-repeat;
+}
+#share-view { position: fixed; z-index: 12; top: 0; left: 0; right: 0; bottom: 0; overflow: auto; background: #07090e; padding: 3.1rem 1rem 1.4rem; }
+#desk.tv-full #desk-glass #share-back { position: absolute; top: 8px; left: 8px; z-index: 2; width: 2rem; height: 2rem; min-height: 0; margin: 0; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #3dff6e; border-radius: 8px; background: #07140f; color: #3dff6e; box-shadow: none; }
+#share-view .pick-save, #share-view .quiet { text-align: center; }
+#share-view .quiet { color: #d5deea; }
 #desk.tv-full #desk-glass #choice-result > h2, #choice-result > h2 { margin: 0 0 0.55rem; color: #f4fff6; font-size: 16px; letter-spacing: 0.02em; text-transform: uppercase; }
 #bird-picks .rec-history { margin: 0.15rem 0 0; color: #3dff6e; font-size: 14px; font-weight: 700; line-height: 1.3; }
 #bird-picks .rec-history span + span::before { content: ", "; }

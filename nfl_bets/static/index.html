@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="/app.css?v=46"/>
 <link rel="stylesheet" href="/desk.css?v=60"/>
 <link rel="stylesheet" href="/states.css?v=3"/>
-<link rel="stylesheet" href="/ask-bet.css?v=121"/>
+<link rel="stylesheet" href="/ask-bet.css?v=126"/>
 <style>
 #page-title { display: none; }
 #who { position: fixed; right: 0.7rem; bottom: 0.7rem; z-index: 20; margin: 0; }
@@ -366,7 +366,6 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p class="pick-save"><select id="call-state"></select><button type="button" class="ghost" id="state-save">Save state</button></p>
   <p class="quiet">Which sportsbook are you using? These prices are FanDuel's. Another book's number is usually close, and sometimes the same.</p>
   <p class="pick-save"><select id="call-book"></select><button type="button" class="ghost" id="book-save">Save book</button></p>
-  <p class="pick-save"><button type="button" class="ghost" id="hard-refresh">Reload the page</button></p>
 </section>
 <section class="tracked" id="profile-admin" hidden>
   <h2>Admin</h2>
@@ -377,10 +376,8 @@ body.day-board #parrot-load[hidden] { display: none; }
     <button type="button" class="tab" data-admin-tab="ignore">Ignoring</button>
     <button type="button" class="tab" data-admin-tab="strategy">Strategy</button>
     <button type="button" class="tab" data-admin-tab="reads">Reads</button>
-    <button type="button" class="tab" data-admin-tab="docs">Docs</button>
     <button type="button" class="tab" data-admin-tab="built">Built bets</button>
     <button type="button" class="tab" data-admin-tab="asks">Asked</button>
-    <button type="button" class="tab" data-admin-tab="card">Share card</button>
     <button type="button" class="tab" data-admin-tab="notes">Notepad</button>
     <button type="button" class="tab" data-admin-tab="laws">States</button>
   </nav>
@@ -399,50 +396,38 @@ body.day-board #parrot-load[hidden] { display: none; }
     <div id="ignore-list"></div>
   </div>
   <div id="admin-strategy" hidden>
-    <p class="quiet">The bet rules this desk is using. This does not send a bet.</p>
-    <div id="admin-picked"></div>
+    <p class="quiet">These are the recommended bets on the desk. This does not send a bet.</p>
     <h2>Standing rules</h2>
-    <article class="report-card"><p><b>No college player props</b></p><p>FanDuel does not allow player prop bets in college. Pennsylvania lists the game and no player props. Leave college player props off the cards.</p></article>
-    <article class="report-card"><p><b>The desk does not send the bet</b></p><p>A member types the line into their own FanDuel account. 21+. Gambling problem? Call 1-800-GAMBLER.</p></article>
-    <article class="report-card"><p><b>Same-game price can differ</b></p><p>Legs in one game move together. FanDuel's same-game button can charge a different number than the multiplied price on the card.</p></article>
-    <h2>Cards</h2>
-    <article class="report-card"><p><b>−150 to +100 window</b></p><p>The ticket on today's slate whose price lands between −150 and +100. The highest chance inside that window is the one on the main page. Shorter prices, like −800, stay off this card.</p></article>
-    <article class="report-card"><p><b>3-leg and 5-leg, different days, near −200</b></p><p>Player props on different days, aimed at −200, so a $5 bet wins about $2.50. The 3-leg near −100 is even money, so a $5 bet wins $5. The 3-leg near −350 on the same tab is the shorter price.</p></article>
-    <article class="report-card"><p><b>Highest chance parlay today</b></p><p>The parlay on today's slate with the highest chance. It sits behind More bets.</p></article>
-    <article class="report-card"><p><b>−400 to −700 legs, near −180</b></p><p>Legs priced from −400 to −700 that multiply to about −180.</p></article>
-    <article class="report-card"><p><b>Four yardage legs near 85% each</b></p><p>Four small yardage prices, each near an 85% chance. Together that is about a coin flip, not an 85% parlay.</p></article>
-    <article class="report-card"><p><b>Four yardage legs near +250</b></p><p>Four small yardage legs aimed at +250. That price is about 29%, so it misses more often than it hits.</p></article>
-    <article class="report-card"><p><b>Five near 90% vs four near 80%</b></p><p>Five legs near 90% set next to four legs near 80%. The higher combined chance is the stack that hits more often. A 90% leg is not a 90% parlay.</p></article>
-    <h2>Left off the record</h2>
-    <article class="report-card"><p><b>Under half the line</b></p><p>A lost leg that finished under half the number. Open bets, wins, and losses that match are removed.</p></article>
-    <article class="report-card"><p><b>One miss, legs still open</b></p><p>One lost leg while other legs are still open. One miss ends the parlay.</p></article>
-    <article class="report-card"><p><b>College receiving yards</b></p><p>Any college receiving-yards leg. These are set aside with the other ignored bets.</p></article>
-    <h2>What has hit more often</h2>
-    <article class="report-card"><p>NFL receiving yards, stack hits, and the −180 stack are the shapes the win filter can keep. Past results do not promise the next ticket.</p></article>
+    <div class="rec-bet"><b>No college player props</b><p class="rec-gist">FanDuel does not allow player prop bets in college. Pennsylvania lists the game and no player props. Leave college player props off the cards.</p></div>
+    <div class="rec-bet"><b>The desk does not send the bet</b><p class="rec-gist">A member types the line into their own FanDuel account.</p></div>
+    <div class="rec-bet"><b>Same-game price can differ</b><p class="rec-gist">Legs in one game move together. FanDuel's same-game button can charge a different number than the multiplied price on the card.</p></div>
+    <h2>Recommended bets</h2>
+    <div id="admin-strategy-cards"></div>
   </div>
   <div id="admin-reads" hidden>
-    <p class="quiet">Reads that can separate two tickets with the same FanDuel price. The desk already uses the injury report, the building, the weekday, the time of day, rest, rivalry, and wind. <a href="/doc-view.html?file=attributes.pdf" target="_blank" rel="noopener">Open the PDF</a></p>
-    <article class="report-card"><p><b>Schedule and the trip</b></p><p>Second night of a back-to-back. Third game in four nights. Game number on the road trip, first stop versus the fifth. Miles traveled since the last game. Time zones crossed on the trip. A West Coast team playing an early East Coast start. Coming off a bye. Rest advantage, one team with three days and the other with eight. A look-ahead spot, with a bigger game next. A letdown spot, the game after a rivalry or a prime-time game.</p></article>
-    <article class="report-card"><p><b>The opponent</b></p><p>How many of this stat the opponent has allowed lately. Opponent pace. Opponent rank against this exact stat. Home and road splits for this stat. The last two weeks, not the season average. Division game. Former team. A confirmed starter on the other side versus a day-to-day one.</p></article>
-    <article class="report-card"><p><b>The player's role</b></p><p>Minutes or snap share trending up or down. Usage when a teammate is out. First game back from an injury. A minutes limit. Starter versus bench. Last three games, separate from the last five. Home split and road split. Performance after a short week. Performance in prime time. Sample size on the split: 4 of 4 is a different read from 22 of 30.</p></article>
-    <article class="report-card"><p><b>Who is missing</b></p><p>The quarterback, plus the backup's history. The corner who travels with this receiver. The center or the point guard, when the bet is rebounds or assists. A star teammate out. The starting pitcher versus the bullpen. The opposing goalie's save percentage. A game-time decision, listed separately from out.</p></article>
-    <article class="report-card"><p><b>The building</b></p><p>Dome versus outdoors. Grass versus turf. Altitude, Denver and Mexico City. Park factor for hits and home runs. Cold, which changes a passing game differently from wind. Indoor tennis versus outdoor, and the surface: hard, clay, or grass.</p></article>
-    <article class="report-card"><p><b>The number</b></p><p>Whether this prop has moved since the desk first saw it. The spread or total moving while this prop has not. Juice on the leg. An alternate line versus the main line. The same player offered in two tickets at two different numbers.</p></article>
-    <article class="report-card"><p><b>The parlay itself</b></p><p>One cold leg inside an otherwise strong ticket. Two legs from the same game. A quarterback and his receiver on the same ticket. A player and the opposing defense on the same ticket. Legs spread across days versus legs that all start in the same hour.</p></article>
-    <article class="report-card"><p><b>By sport, where a feed exists</b></p><p>Baseball: left-handed or right-handed pitcher, park, umpire strikeout tendency. Hockey: goalie, back-to-back, shots allowed. Basketball: referee foul rate, pace, rest. Football: turf, wind, the shadow corner, coming off a bye. Soccer: days since the midweek game, travel from Europe. Tennis: surface, yesterday's match length, head-to-head. Esports and table tennis need a roster change or a patch, and there is no clean public log for those yet.</p></article>
-    <article class="report-card"><p><b>Where to start</b></p><p>Back-to-backs, time zones, opponent pace and rank against the stat, home and road splits, first game back, the shadow corner, prop-line movement, and the lefty-righty or park split in baseball.</p></article>
+    <p class="quiet">A read only shows up when it can change that leg.</p>
+    <h2>On the desk today</h2>
+    <div class="rec-bet"><b>Who is out</b><p class="rec-gist">The injury report. A game-time decision. The quarterback. A corner out on a receiving bet. The center on a rebounds bet. The point guard on an assists bet. The goalie on a shots bet.</p></div>
+    <div class="rec-bet"><b>The building</b><p class="rec-gist">Indoors. Turf. Altitude in Denver, Mexico City, and Salt Lake City. A cold passing game. A game outside the usual US building.</p></div>
+    <div class="rec-bet"><b>The day and the hour</b><p class="rec-gist">How this player has done on this weekday, and in this part of the day.</p></div>
+    <div class="rec-bet"><b>Rest</b><p class="rec-gist">A back-to-back. Days since the last game. An NFL bye. More rest than the other team. A short week. The first game back.</p></div>
+    <div class="rec-bet"><b>The trip</b><p class="rec-gist">A third game in four nights. Game number on the road trip. Two time zones. A West Coast team in an early East Coast start.</p></div>
+    <div class="rec-bet"><b>Rivalry</b><p class="rec-gist">This matchup. The game after a rivalry. A rivalry next.</p></div>
+    <div class="rec-bet"><b>Wind and rain</b><p class="rec-gist">Wind at 20 mph or more outdoors. Rain in the forecast.</p></div>
+    <div class="rec-bet"><b>The number</b><p class="rec-gist">The last five, and the last three. Home and road. The opponent's last two weeks. Minutes or targets moving. The spread or the total moved, and this player's number did not. The easier number when the same player is offered twice.</p></div>
+    <div class="rec-bet"><b>The parlay</b><p class="rec-gist">Two legs from one game. Legs on different days. Legs that start in the same hour. A quarterback and his receiver on the same ticket.</p></div>
+    <h2>Not on the desk yet</h2>
+    <p class="quiet">The longer notes are in the <a href="/doc-view.html?file=attributes.pdf" target="_blank" rel="noopener">reads PDF</a>.</p>
+    <div class="rec-bet"><b>The trip, in miles</b><p class="rec-gist">Miles since the last game.</p></div>
+    <div class="rec-bet"><b>Baseball specifics</b><p class="rec-gist">Park factor as its own number. Whether the pitcher throws left or right. An umpire's strikeout tendency.</p></div>
+    <div class="rec-bet"><b>Who is assigned</b><p class="rec-gist">Which corner travels with this receiver. A goalie's save percentage. A referee's foul rate.</p></div>
+    <div class="rec-bet"><b>Where the prop opened</b><p class="rec-gist">The first number on this prop.</p></div>
+    <div class="rec-bet"><b>No public log</b><p class="rec-gist">Esports and table tennis need a roster change or a patch. There is no clean public log for those yet.</p></div>
   </div>
   <div id="admin-built" hidden></div>
   <div id="admin-asks" hidden>
     <p class="quiet">Spoken bets that Build a Bet does not offer.</p>
     <div id="admin-ask-list"></div>
-  </div>
-  <div id="admin-card" hidden>
-    <p class="quiet">Pick a bet. The image uses the share layout with that bet on the board. Copy it, then paste it into a post. This does not send a bet.</p>
-    <label class="choice-line">Bet <select id="share-card-bet"></select></label>
-    <p class="pick-save"><button type="button" id="share-card-go">Make the image</button><button type="button" class="ghost" id="share-card-download" hidden>Copy</button></p>
-    <p class="quiet" id="share-card-note"></p>
-    <canvas id="share-card-canvas" hidden style="width:100%;max-width:100%;min-width:0;height:auto;display:block;"></canvas>
   </div>
   <div id="admin-laws" hidden>
     <section class="tracked" id="pane-laws">
@@ -452,8 +437,7 @@ body.day-board #parrot-load[hidden] { display: none; }
       <p id="laws-key"><i class="none"></i>No limits <i class="some"></i>Some limits <i class="lot"></i>A lot of limits</p>
       <div id="laws-map"></div>
       <p id="laws-detail"></p>
-      <p class="quiet">If you switch states, some bets may no longer show up.</p>
-      <p class="pick-save"><select id="laws-state"></select><button type="button" id="laws-save">Save state</button></p>
+      <p class="quiet">If you switch states, some bets may no longer show up. Set your state on your membership.</p>
     </section>
   </div>
   <div id="admin-notes" hidden>
@@ -461,18 +445,6 @@ body.day-board #parrot-load[hidden] { display: none; }
     <div id="note-list"></div>
     <p class="pick-save"><input id="note-new" maxlength="180" placeholder="A new line"><button type="button" id="note-add">Add</button></p>
     <p class="quiet" id="note-msg"></p>
-  </div>
-  <div id="admin-docs" hidden>
-    <p class="quiet">These notes are for admins.</p>
-    <p><a href="/doc-view.html?file=readme.pdf" target="_blank" rel="noopener">Overview</a></p>
-    <p><a href="/doc-view.html?file=product.pdf" target="_blank" rel="noopener">What the desk does</a></p>
-    <p><a href="/doc-view.html?file=risks.pdf" target="_blank" rel="noopener">Risks</a></p>
-    <p><a href="/doc-view.html?file=business-model.pdf" target="_blank" rel="noopener">Business model</a></p>
-    <p><a href="/doc-view.html?file=agreement.pdf" target="_blank" rel="noopener">Draft agreement</a></p>
-    <p><a href="/doc-view.html?file=marketing-overview.pdf" target="_blank" rel="noopener">Marketing overview</a></p>
-    <p><a href="/doc-view.html?file=marketing-posts.pdf" target="_blank" rel="noopener">Social posts</a></p>
-    <p><a href="/doc-view.html?file=payments.pdf" target="_blank" rel="noopener">Membership payments</a></p>
-    <p><a href="/doc-view.html?file=attributes.pdf" target="_blank" rel="noopener">Reads that separate a bet</a></p>
   </div>
 </section>
 </div>
@@ -482,17 +454,17 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
 <script src="/app.js?v=101"></script>
-<script src="/desk.js?v=85"></script>
-<script src="/members.js?v=77"></script>
+<script src="/desk.js?v=86"></script>
+<script src="/members.js?v=79"></script>
 <script src="/stars.js?v=8"></script>
-<script src="/choose.js?v=81"></script>
+<script src="/choose.js?v=82"></script>
 <script src="/lessons.js?v=8"></script>
 <script src="/filters.js?v=22"></script>
 <script src="/reports.js?v=1"></script>
-<script src="/admin.js?v=29"></script>
-<script src="/sharecard.js?v=29"></script>
-<script src="/states.js?v=9"></script>
-<script src="/ask-bet.js?v=71"></script>
+<script src="/admin.js?v=32"></script>
+<script src="/sharecard.js?v=33"></script>
+<script src="/states.js?v=10"></script>
+<script src="/ask-bet.js?v=72"></script>
 <script>
 function fitPoster() {
   const view = window.visualViewport;

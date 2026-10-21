@@ -12,11 +12,12 @@ const NAMED_BETS = [
   ["plus", "Four yardage legs near +250", "FOUR NEAR +250"],
 ];
 
-let shareChoices = [];
 let shareTemplate = null;
 
 function sharePct(value) {
-  const n = Number(String(value ?? "").replace("%", ""));
+  const raw = String(value ?? "").replace("%", "").trim();
+  if (!raw) return "";
+  const n = Number(raw);
   return Number.isFinite(n) ? n.toFixed(1) : "";
 }
 
@@ -99,60 +100,57 @@ function savedShare(row) {
   }, "BUILT BET", row.title || "Built bet");
 }
 
-function boardChoices() {
-  const board = (window.state && window.state.board) || {};
-  const rows = [];
-  NAMED_BETS.forEach(([id, label, kicker]) => {
-    const card = board[id];
-    if (!card || !(card.legs || []).length) return;
-    rows.push({ key: id, label, card: shareFrom(card, kicker, label) });
-  });
-  ((board.hits && board.hits.groups) || []).forEach((group, index) => {
-    if (!(group.legs || []).length) return;
-    const pct = sharePct(group.pct);
-    rows.push({
-      key: `hits-${index}`,
-      label: group.title || "Stack",
-      card: shareFrom({
-        title: group.title, game: board.hits.game, legs: group.legs,
-        impliedPct: pct, american: group.price, strategy: board.hits.title || "",
-      }, "WHICH STACK", group.title),
-    });
-  });
-  return rows;
+function shareKicker(ticket, label) {
+  const named = NAMED_BETS.find((row) => row[0] === (ticket && ticket.card));
+  if (named) return named[2];
+  if (ticket && ticket.card === "hits") return "WHICH STACK";
+  return String(label || (ticket && ticket.title) || "PARLAY").toUpperCase();
 }
 
-async function fillShareCards() {
-  const select = document.getElementById("share-card-bet");
-  const note = document.getElementById("share-card-note");
-  if (!select) return;
-  if (!(window.state && window.state.board)) {
-    setTimeout(fillShareCards, 400);
-    return;
+function shareBox() {
+  let box = document.getElementById("share-view");
+  if (box) return box;
+  box = document.createElement("section");
+  box.id = "share-view";
+  box.hidden = true;
+  box.innerHTML = `<button type="button" id="share-back" aria-label="Back"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button><canvas id="share-card-canvas" hidden></canvas><p class="pick-save"><button type="button" id="share-card-download" hidden>Copy</button></p><p class="quiet" id="share-card-note"></p>`;
+  (document.getElementById("desk-glass") || document.body).append(box);
+  const copy = box.querySelector("#share-card-download");
+  if (copy) copy.addEventListener("click", () => { copyShare(); });
+  const back = box.querySelector("#share-back");
+  if (back) back.addEventListener("click", () => { shareBack(); });
+  return box;
+}
+
+function shareTicket(button) {
+  const id = Number(button.dataset.shareId);
+  const kind = button.dataset.share;
+  if (kind === "rec") {
+    const row = (window.recTickets || [])[id];
+    return row && row.ticket ? { ticket: row.ticket, label: row.name || row.ticket.title, kicker: shareKicker(row.ticket, row.name) } : null;
   }
-  const previous = select.value;
-  shareChoices = boardChoices();
-  try {
-    const response = await fetch("/api/admin", { cache: "no-store" });
-    if (response.ok) {
-      const payload = await response.json();
-      (payload.built || []).forEach((row, index) => {
-        const card = savedShare(row);
-        if (!card.legs.length) return;
-        shareChoices.push({ key: `saved-${index}`, label: `${row.name || "Member"} rated ${row.title || "a bet"}`, card });
-      });
-    }
-  } catch (error) {
-    if (note) note.textContent = "";
+  if (kind === "built") {
+    const ticket = (window.builtPile || [])[id];
+    return ticket ? { ticket, label: ticket.title, kicker: "BUILT BET" } : null;
   }
-  select.innerHTML = shareChoices.map((row) => `<option value="${esc(row.key)}">${esc(row.label)}</option>`).join("");
-  if (previous && shareChoices.some((row) => row.key === previous)) select.value = previous;
-  if (!shareChoices.length) {
-    if (note) note.textContent = "No bet is on the board yet.";
-    return;
-  }
-  if (note) note.textContent = "";
-  drawShare();
+  const lists = { saved: window.builtTypes, rate: window.rateShare, picked: window.pickedShare };
+  const row = ((lists[kind]) || [])[id];
+  return row ? { saved: row } : null;
+}
+
+async function openShare(button) {
+  const found = shareTicket(button);
+  if (!found) return;
+  const bet = found.saved ? savedShare(found.saved) : shareFrom(found.ticket, found.kicker || shareKicker(found.ticket, found.label), found.label);
+  if (!bet.legs.length) return;
+  await drawShare(bet);
+}
+
+function shareBack() {
+  const box = document.getElementById("share-view");
+  if (!box || box.hidden) return false;
+  box.hidden = true;
+  return true;
 }
 
 function loadTemplate() {
@@ -325,12 +323,13 @@ function drawFound(ctx, bet) {
 function coverNfl(ctx, image) {
   ctx.drawImage(image, 152, 318, 52, 58, 2, 294, 116, 118);
 }
-async function drawShare() {
-  const select = document.getElementById("share-card-bet");
+async function drawShare(bet) {
+  const box = shareBox();
   const canvas = document.getElementById("share-card-canvas");
   const note = document.getElementById("share-card-note");
-  const chosen = shareChoices.find((row) => row.key === (select && select.value));
-  if (!canvas || !chosen) return;
+  if (!canvas || !bet) return;
+  box.hidden = false;
+  box.scrollTop = 0;
   let image;
   try {
     image = await loadTemplate();
@@ -345,8 +344,8 @@ async function drawShare() {
   const ctx = canvas.getContext("2d");
   ctx.drawImage(image, 0, 0);
   coverNfl(ctx, image);
-  drawBoard(ctx, chosen.card);
-  drawFound(ctx, chosen.card);
+  drawBoard(ctx, bet);
+  drawFound(ctx, bet);
   canvas.hidden = false;
   const copy = document.getElementById("share-card-download");
   if (copy) { copy.hidden = false; copy.textContent = "Copy"; }
@@ -354,21 +353,15 @@ async function drawShare() {
 }
 
 function fitShareCanvas(canvas) {
-  const pane = document.getElementById("admin-card");
-  if (pane) { pane.style.maxWidth = "100%"; pane.style.minWidth = "0"; pane.style.overflow = "hidden"; }
-  const pick = document.getElementById("share-card-bet");
-  if (pick) { pick.style.maxWidth = "100%"; pick.style.minWidth = "0"; }
-  canvas.style.width = "0px";
+  const pane = document.getElementById("share-view");
   canvas.style.maxWidth = "100%";
   canvas.style.minWidth = "0";
-  const wide = Math.max(220, (pane && pane.clientWidth) || ((document.documentElement.clientWidth || window.innerWidth) - 48));
+  const wide = Math.max(220, Math.min(520, ((pane && pane.clientWidth) || window.innerWidth) - 32));
   canvas.style.width = `${wide}px`;
   canvas.style.height = `${Math.round(wide * canvas.height / canvas.width)}px`;
-  canvas.style.aspectRatio = "auto";
   canvas.style.display = "block";
-  canvas.style.boxSizing = "border-box";
+  canvas.style.margin = "0 auto";
   canvas.style.borderRadius = "12px";
-  canvas.style.marginTop = "0.8rem";
 }
 
 async function copyShare() {
@@ -392,15 +385,16 @@ async function copyShare() {
 }
 
 function bindShareCard() {
-  const go = document.getElementById("share-card-go");
-  const download = document.getElementById("share-card-download");
-  const select = document.getElementById("share-card-bet");
-  if (go) go.addEventListener("click", () => { drawShare(); });
-  if (download) download.addEventListener("click", () => { copyShare(); });
-  if (select) select.addEventListener("change", () => { drawShare(); });
+  document.addEventListener("click", (event) => {
+    const share = event.target.closest(".share-bet");
+    if (!share) return;
+    event.preventDefault();
+    openShare(share);
+  });
   window.addEventListener("resize", () => {
     const canvas = document.getElementById("share-card-canvas");
-    if (canvas && !canvas.hidden && canvas.width) fitShareCanvas(canvas);
+    const box = document.getElementById("share-view");
+    if (canvas && box && !box.hidden && canvas.width) fitShareCanvas(canvas);
   });
 }
 
@@ -471,5 +465,5 @@ function paintWeekShare(board) {
 
 window.paintDayShare = paintDayShare;
 window.paintWeekShare = paintWeekShare;
-window.fillShareCards = fillShareCards;
+window.shareBack = shareBack;
 bindShareCard();

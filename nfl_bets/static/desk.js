@@ -325,7 +325,7 @@ function bootDesk() {
     const desk = document.getElementById("desk");
     if (!desk || !desk.classList.contains("menu-open")) return;
     if (event.target.closest("#desk-dock")) {
-      if (event.target.closest("[data-tab], [data-quiz], [data-parrot], #member-profile, #hard-refresh")) setMenu(false);
+      if (event.target.closest("[data-tab], [data-quiz], [data-parrot], #member-profile")) setMenu(false);
       return;
     }
     setMenu(false);
