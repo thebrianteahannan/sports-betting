@@ -35,16 +35,17 @@ def record_offers(board: dict[str, Any]) -> list[dict[str, Any]]:
     with _LOCK:
         rows = _load()
         games = {str(game.get("id") or ""): game for game in board.get("games") or [] if isinstance(game, dict)}
-        stamp = str(board.get("updatedAt") or ""); fresh = list(_from_board(board, games, stamp)); seen = {_signature(ticket) for ticket in fresh}
+        stamp = str(board.get("updatedAt") or ""); fresh = list(_from_board(board, games, stamp)); bet = lambda row: (row.get("card"), tuple(str(leg.get("label") or "") for leg in row.get("legs") or [])); seen = {bet(ticket) for ticket in fresh}
         for ticket in fresh:
-            prior = next((row for row in rows if _signature(row) == _signature(ticket)), None)
+            prior = next((row for row in rows if str(row.get("result") or "open") == "open" and bet(row) == bet(ticket)), None)
             if prior:
-                prior["lastSeenAt"] = stamp or prior.get("lastSeenAt"); prior["why"] = str(ticket.get("why") or ""); prior.pop("why", None) if not prior["why"] else None
+                prior["lastSeenAt"] = stamp or prior.get("lastSeenAt"); prior["american"] = ticket.get("american"); prior["impliedPct"] = ticket.get("impliedPct"); prior["title"] = ticket.get("title") or prior.get("title"); [old.update(odds=new.get("odds"), pct=new.get("pct")) for old, new in zip(prior.get("legs") or [], ticket.get("legs") or [])]
+                prior["why"] = str(ticket.get("why") or ""); prior.pop("why", None) if not prior["why"] else None
                 (prior.__setitem__("edge", True) if ticket.get("edge") else prior.pop("edge", None)); continue
             rows.append(ticket)
         cards = {ticket.get("card") for ticket in fresh}
         for row in rows:
-            if str(row.get("result") or "") == "open" and row.get("card") in cards and _signature(row) not in seen:
+            if str(row.get("result") or "") == "open" and row.get("card") in cards and bet(row) not in seen:
                 row.pop("edge", None); row.pop("why", None)
         _grade(rows); from nfl_bets.listed import mark_listed; mark_listed(rows)
         _write(rows)
@@ -490,9 +491,9 @@ def _load() -> list[dict[str, Any]]:
     return [row for row in rows or [] if isinstance(row, dict)]
 
 def _write(rows: list[dict[str, Any]]) -> None:
-    from nfl_bets.ignore import keep_public
+    from nfl_bets.cloud import thin_archive; from nfl_bets.ignore import keep_public
     have = {_signature(row) for row in rows}
-    rows[:] = keep_public([*rows, *[row for row in _load() if _signature(row) not in have]])
+    rows[:] = thin_archive(keep_public([*rows, *[row for row in _load() if _signature(row) not in have]]))
     write_json(out_dir() / "archive.json", {"tickets": rows})
 
 def _now() -> str:

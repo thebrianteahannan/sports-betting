@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -32,18 +33,83 @@ def publish_board(board: dict[str, Any]) -> None:
     """Push the cards and a merged archive. Picks stay where the site saved them."""
     if not configured():
         return
-    local = _local_archive()
-    remote = _get(_KEYS["archive"]) or {"tickets": []}
-    merged = _merge_archive(local, remote.get("tickets") if isinstance(remote, dict) else [])
+    local = thin_archive(_local_archive())
+    remote_rows: list[Any] = []
+    try:
+        remote = _get(_KEYS["archive"]) or {}
+        remote_rows = remote.get("tickets") if isinstance(remote, dict) else []
+    except RuntimeError:
+        remote_rows = []
+    merged = thin_archive(_merge_archive(local, remote_rows))
     if merged != local:
         write_json(out_dir() / "archive.json", {"tickets": merged})
     _put(_KEYS["board"], _slim(board))
-    _put(_KEYS["archive"], {"tickets": merged})
+    if merged != remote_rows:
+        _put(_KEYS["archive"], {"tickets": merged})
     _put("bets/ignored.json", read_json(out_dir() / "ignored.json", {"tickets": []}))
 
 
+def thin_archive(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Settled parlays, saved ones, and the newest open copy of each bet still ahead."""
+    now = datetime.now(timezone.utc)
+    newest: dict[Any, str] = {}
+    for row in rows:
+        if str(row.get("result") or "open") != "open":
+            continue
+        stamp = str(row.get("lastSeenAt") or row.get("offeredAt") or "")
+        if stamp > newest.get(row.get("card"), ""):
+            newest[row.get("card")] = stamp
+    kept: list[dict[str, Any]] = []
+    seen: set[tuple] = set()
+    for row in rows:
+        if str(row.get("result") or "open") != "open" or row.get("good") or row.get("stars"):
+            kept.append(row)
+            continue
+        kicks = []
+        for iso in [row.get("kickoff"), *[leg.get("kickoff") for leg in row.get("legs") or [] if isinstance(leg, dict)]]:
+            if not iso:
+                continue
+            try:
+                kicks.append(datetime.fromisoformat(str(iso).replace("Z", "+00:00")))
+            except ValueError:
+                continue
+        if kicks and all(stamp <= now for stamp in kicks):
+            continue
+        if str(row.get("lastSeenAt") or row.get("offeredAt") or "") != newest.get(row.get("card"), ""):
+            continue
+        key = (row.get("card"), tuple(str(leg.get("label") or "") for leg in row.get("legs") or []))
+        if key in seen:
+            continue
+        seen.add(key)
+        kept.append(row)
+    return [_lean(row) for row in kept]
+
+
+def _lean(row: dict[str, Any]) -> dict[str, Any]:
+    for key in ("game", "gameId", "espnId", "sport", "why", "how", "live", "stars", "good"):
+        if not row.get(key):
+            row.pop(key, None)
+    if row.get("lastSeenAt") == row.get("offeredAt"):
+        row.pop("lastSeenAt", None)
+    for leg in row.get("legs") or []:
+        if not isinstance(leg, dict):
+            continue
+        if leg.get("note") == "Waiting on the box score.":
+            leg.pop("note", None)
+        if not leg.get("espnId"):
+            leg.pop("espnId", None)
+        if leg.get("have") is None:
+            leg.pop("have", None)
+    return row
+
+
 def _slim(board: dict[str, Any]) -> dict[str, Any]:
-    data = {key: board.get(key) for key in _CARD_KEYS}
+    data = {}
+    for key in _CARD_KEYS:
+        card = board.get(key)
+        if isinstance(card, dict) and card.get("offers"):
+            card = {field: value for field, value in card.items() if field != "offers"}
+        data[key] = card
     data["games"] = _games(board)
     return data
 
