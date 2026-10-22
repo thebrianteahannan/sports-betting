@@ -445,8 +445,9 @@ function recLeg(leg) {
   const who = esc(String(leg.player || parts[0] || "").split(/\d/)[0].trim().toLowerCase());
   const line = esc((String(parts[0]).match(/(\d+(?:\.\d+)?)/) || [])[1] || "");
   const word = esc((String(parts[0]).toLowerCase().match(/shots|threes|assists|rebounds|points|yards|receptions|strikeouts|hits|goals|saves|touchdowns/) || [])[0] || "");
-  const clock = !recLeg.one && leg.kickoff && typeof when === "function" && !/\d{1,2}:\d{2}\s*[AP]M/i.test(leg.label || "") ? ` · ${when(leg.kickoff)} ET` : "";
-  const more = `${parts.length > 1 ? ` — ${esc(parts.slice(1).join(" — "))}` : ""}${esc(clock)}${!parts[1] && !clock && leg.match ? ` · ${esc(leg.match)}` : ""}`;
+  const clock = leg.kickoff && typeof when === "function" && !/\d{1,2}:\d{2}\s*[AP]M/i.test(leg.label || "") ? `${when(leg.kickoff)} ET` : "";
+  const own = [leg.sport, leg.match, clock].filter(Boolean).join(", ");
+  const more = parts.length > 1 ? ` — ${esc(parts.slice(1).join(" — "))}` : (own ? ` · ${esc(own)}` : "");
   return `<li data-drop="${who}" data-line="${line}" data-word="${word}"><b>${esc(tag)}</b><span>${esc(parts[0])}<span class="leg-more">${more}</span>${(read => read ? `<span class="quiet">${esc(read)}</span>` : "")([leg.fact, leg.sway, String(leg.form || "").replace(/^In form:\s*/i, ""), leg.weather].filter(Boolean).join(" "))}${typeof legOdds === "function" ? legOdds(leg) : ""}</span><em>${esc(leg.pct || "")}</em></li>`;
 }
 
@@ -467,7 +468,6 @@ function openRec(index) {
   const price = Number(ticket.american);
   const shown = Number.isFinite(price) ? (price > 0 ? `+${price}` : String(price)) : "";
   const pct = ticket.impliedPct != null && ticket.impliedPct !== "" ? `${ticket.impliedPct}%` : "";
-  recLeg.one = (ticket.legs || []).length > 1 && new Set((ticket.legs || []).map((leg) => leg.gameId || leg.match || "").filter(Boolean)).size === 1;
   const copy = window.recBlurb ? recBlurb(ticket, shown, pct, price) : "";
   const stars = typeof starHtml === "function" ? starHtml(typeof cardGood === "function" ? cardGood(ticket.card, ticket) : 0, ticket.card, "", "") : "";
   card.innerHTML = `<h2>${esc([row.name || ticket.title || "This bet", shown, pct].filter(Boolean).join(" · "))}${ticket.same ? " · Recommended" : ""}</h2>${copy ? `<p>${esc(copy)}</p>` : ""}${ticket.same ? `<p>This is already a recommended bet, ${esc(ticket.same)}.</p>` : ""}${ticket.why ? `<p class="aim">${esc(ticket.why)}</p>` : ""}<ol>${(ticket.legs || []).map(recLeg).join("")}</ol><p class="pick-save">${stars}<button type="button" class="share-bet" data-share="rec" data-share-id="${index}" aria-label="Share this bet"></button></p>`;

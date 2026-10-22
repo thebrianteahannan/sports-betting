@@ -195,7 +195,7 @@ def _grade(rows: list[dict[str, Any]]) -> None:
             continue
         game = str(ticket.get("game") or "")
         for leg in ticket.get("legs") or []:
-            if not leg.get("match") and game:
+            if not leg.get("match") and game and any(len(part) > 3 and part in f"{leg.get('label') or ''} {leg.get('market') or ''}".lower() for part in re.split(r"\s+at\s+|\s+@\s+", game.lower())):
                 leg["match"] = game.replace(" at ", " @ ")
             if not leg.get("kickoff"):
                 leg["kickoff"] = str(ticket.get("kickoff") or "")

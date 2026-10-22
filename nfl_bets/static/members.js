@@ -359,7 +359,7 @@ function recBlurb(ticket, shown, pct, price) { return shown && pct && window.rec
 function recLine(leg) {
   const odds = Number(leg.odds), tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : "";
   const parts = String(leg.label || "").split(/\s+—\s+/), head = parts[0] || "";
-  const where = parts.slice(1).join(" — ") || [leg.sport, leg.kickoff && typeof when === "function" ? `${when(leg.kickoff)} ET` : ""].filter(Boolean).join(" · ") || leg.match || "";
+  const where = parts.slice(1).join(" — ") || [leg.sport, leg.match, leg.kickoff && typeof when === "function" ? `${when(leg.kickoff)} ET` : ""].filter(Boolean).join(" · ") || "";
   const market = String(leg.market || "").split(/\s+-\s+/).pop().replace(/^Either Player\s*/i, "").trim();
   const title = market && /\s+or\s+|\s+&\s+/i.test(head) && !head.toLowerCase().includes(market.toLowerCase()) ? `${head} · ${market}` : head;
   return `<span><b>${esc(title)}</b><i>${esc([tag, leg.pct, where].filter(Boolean).join(" · "))}</i></span>`;

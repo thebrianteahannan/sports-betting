@@ -33,7 +33,19 @@ def build_parlays(game: dict[str, Any]) -> dict[str, Any]:
     for card in cards.values():
         card["live"] = live
         card["kickoff"] = str(game.get("kickoff") or "")
+        _own(card.get("legs") or [], game)
+        for group in card.get("groups") or []:
+            _own(group.get("legs") or [], game)
     return cards
+
+
+def _own(legs: list[dict[str, Any]], game: dict[str, Any]) -> None:
+    """The line under a leg is this game, the one the prop was taken from."""
+    for leg in legs:
+        leg["sport"] = game.get("sport") or ""
+        leg["match"] = game.get("match") or ""
+        leg["gameId"] = str(game.get("id") or "")
+        leg["kickoff"] = game.get("kickoff") or ""
 
 
 def _chalk_card(event_id: str, title: str, legs: list[dict[str, Any]]) -> dict[str, Any]:
