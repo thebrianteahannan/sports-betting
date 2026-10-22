@@ -139,6 +139,7 @@ document.getElementById("desk-full").addEventListener("click", () => {
 document.getElementById("desk-glass").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
   if (!desk || desk.classList.contains("tv-full")) return;
+  if (event.target.closest("#bird-born, #bird-born-go")) return;
   const button = event.target.closest("button");
   event.preventDefault(); event.stopPropagation(); document.getElementById("desk-full").click();
   if (button && desk.contains(button)) setTimeout(() => button.click(), 0);

@@ -368,19 +368,25 @@ def _player_log(sport: str, path: tuple[str, str], name: str) -> dict[str, Any] 
     if isinstance(cached, dict) and time.time() - float(cached.get("at") or 0) < _TTL:
         return cached
     sport_name, league = path
-    found = _search(name, sport_name, league)
-    if not found:
+    try:
+        found = _search(name, sport_name, league)
+        if not found:
+            _remember(key, "", [], [])
+            return None
+        athlete_id, team = found
+        names, rows, year = _season(sport_name, league, athlete_id, None)
+        if year and sum(1 for row in rows if row.get("opponent")) < 8:
+            older_names, older_rows, _ = _season(sport_name, league, athlete_id, year - 1)
+            names = names or older_names
+            seen = {(row.get("date"), row.get("opponent")) for row in rows}
+            rows.extend(row for row in older_rows if (row.get("date"), row.get("opponent")) not in seen)
+            rows.sort(key=lambda row: str(row.get("date") or ""), reverse=True)
+        return _remember(key, team, names, rows[:80])
+    except RuntimeError as exc:
+        if "HTTP 404" not in str(exc):
+            raise
         _remember(key, "", [], [])
         return None
-    athlete_id, team = found
-    names, rows, year = _season(sport_name, league, athlete_id, None)
-    if year and sum(1 for row in rows if row.get("opponent")) < 8:
-        older_names, older_rows, _ = _season(sport_name, league, athlete_id, year - 1)
-        names = names or older_names
-        seen = {(row.get("date"), row.get("opponent")) for row in rows}
-        rows.extend(row for row in older_rows if (row.get("date"), row.get("opponent")) not in seen)
-        rows.sort(key=lambda row: str(row.get("date") or ""), reverse=True)
-    return _remember(key, team, names, rows[:80])
 
 
 def _remember(key: str, team: str, names: list[str], rows: list[dict[str, Any]]) -> dict[str, Any]:

@@ -145,6 +145,7 @@
   #profile-admin .rec-bet .rec-gist { flex: 1 1 12rem; margin: 0; text-align: right; }
   #profile-admin .rec-bet > span,
   #profile-admin .rec-bet .pick-save { flex: 1 0 100%; }
+  #admin-errors .rec-bet, #admin-errors .rec-bet b { flex: 1 1 100%; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 }
 .rec-board .rec-bet, #choice-result .rec-bet, #profile-admin .rec-bet, #rec-open { position: relative; }
 .rec-board .rec-bet b, #choice-result .rec-bet b, #profile-admin .rec-bet:has(.share-bet) b, #rec-open h2 { padding-right: 2rem; }
@@ -377,19 +378,22 @@
 #desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-rate { top: 12%; font-size: 22px; line-height: 1.35; }
 #desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-rate b { margin-bottom: 0.35rem; font-size: 6.6rem; }
 #desk.bird-on #bird-guide:has(button[data-menu]) #greet-rate:empty { display: none; }
-#desk.bird-on #bird-guide:has(button[data-menu]) #greet-legal {
+#desk.bird-on #bird-guide:has(button[data-menu]) #greet-legal,
+#desk.bird-on #bird-guide:has(#bird-born) #greet-legal {
   display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem;
   position: absolute; right: 0.85rem; bottom: 0.7rem; margin: 0; text-align: right;
   font-family: "Outfit", sans-serif; font-size: 13px; font-weight: 500; line-height: 1.3;
   letter-spacing: 0; text-transform: none; color: #e7eef4; pointer-events: none;
   text-shadow: 0 1px 2px #07131a, 0 0 10px #07131a;
 }
-#desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-legal { bottom: 4.4rem; font-size: 15px; }
+#desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-legal,
+#desk.tv-full.bird-on #bird-guide:has(#bird-born) #greet-legal { bottom: 4.4rem; font-size: 15px; }
 #greet-legal .age {
-  font-family: "Oswald", sans-serif; font-size: 2.8rem; font-weight: 600; line-height: 0.85;
+  display: block; margin: 0 0 0.25rem; font-family: "Oswald", sans-serif; font-size: 2.8rem; font-weight: 600; line-height: 1;
   letter-spacing: 0.04em; color: #ff4d4d; text-shadow: 0 0 16px rgba(255, 60, 60, 0.7);
 }
-#desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-legal .age { font-size: 4.2rem; }
+#desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-legal .age,
+#desk.tv-full.bird-on #bird-guide:has(#bird-born) #greet-legal .age { font-size: 4.2rem; }
 #greet-warn {
   position: absolute; right: 0; bottom: calc(100% + 0.55rem); width: min(18rem, 70vw);
   padding: 0.45rem 0.65rem; border: 2px solid #ff4d4d; border-radius: 12px;
@@ -404,5 +408,9 @@
   98%, 100% { opacity: 0; }
 }
 #greet-legal span { display: block; }
+@media (max-width: 560px) {
+  #desk.bird-on #bird-guide:has(button[data-menu]) #greet-legal span:last-child,
+  #desk.bird-on #bird-guide:has(#bird-born) #greet-legal span:last-child { max-width: 11rem; }
+}
 body.needs-member #who { display: none; }
 #desk-menu:hover, #desk.menu-open #desk-menu { background: rgba(4, 16, 12, 0.88); color: #3dff6e; }

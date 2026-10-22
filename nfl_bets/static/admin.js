@@ -9,7 +9,7 @@ function loginWhen(stamp) {
 }
 
 function showAdminTab(name) {
-  ["members", "rates", "habits", "ignore", "strategy", "reads", "built", "asks", "notes", "laws"].forEach((id) => {
+  ["members", "rates", "habits", "ignore", "strategy", "reads", "built", "asks", "notes", "laws", "errors"].forEach((id) => {
     const pane = document.getElementById(`admin-${id}`);
     if (pane) pane.hidden = id !== name;
     const button = document.querySelector(`[data-admin-tab="${id}"]`);
@@ -27,6 +27,16 @@ function paintRefresh() {
   const stamp = board && board.updatedAt;
   const pulled = stamp && typeof when === "function" ? ` Last check ${when(stamp)} ET.` : "";
   note.textContent = `FanDuel is checked ${every}.${pulled}`;
+  paintBoardErrors((board && board.errors) || []);
+}
+
+function paintBoardErrors(errors) {
+  const list = document.getElementById("admin-errors");
+  const button = document.querySelector('[data-admin-tab="errors"]');
+  const rows = (errors || []).map((item) => String(item || "").trim()).filter(Boolean);
+  if (button) button.textContent = rows.length ? `Errors (${rows.length})` : "Errors";
+  if (!list) return;
+  list.innerHTML = rows.length ? rows.map((item) => adminCard(esc(item), "", [])).join("") : "<p>No errors from the last check.</p>";
 }
 
 function adminCard(head, gist, lines, extra) {

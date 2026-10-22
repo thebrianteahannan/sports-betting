@@ -62,11 +62,7 @@ function render() {
     parrot.hidden = !waiting;
     parrot.style.display = waiting ? "block" : "none";
   }
-  const banner = $("banner");
-  if (board.errors && board.errors.length) {
-    banner.hidden = false;
-    banner.textContent = board.errors.join(" ");
-  } else { banner.hidden = true; const x = document.getElementById("banner-x"); if (x) x.hidden = true; }
+  $("banner").hidden = true; const bannerX = document.getElementById("banner-x"); if (bannerX) bannerX.hidden = true;
   const bandAim = (board.band && board.band.goal) || "Priced from −150 to +100.";
   renderFeatured("best", weekCard(board.band, "band"), "−150 to +100 window", bandAim);
   [["week", "weekThree", "3 legs, different days, near −200"], ["week5", "weekFive", "5 legs, different days, near −200"], ["safe", "weekSafe", "3 legs, different days, near −350"], ["even", "weekEven", "3 legs, different days, near −100"]].forEach(([prefix, key, title]) => {
