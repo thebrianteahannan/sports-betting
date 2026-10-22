@@ -192,7 +192,6 @@
 .rec-board .rec-filters { display: flex; flex-direction: column; gap: 0.45rem; margin: 0 0 0.15rem; padding: 0.4rem 0.55rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.92); }
 .rec-board .rec-filters:not(.open) .row { display: none; }
 .rec-board .rec-filters .rec-say { margin: 0.15rem 0 0; color: #f4fff6; font-family: "Outfit", sans-serif; font-size: 14px; font-weight: 400; line-height: 1.35; }
-.rec-board .rec-filters.open .rec-say { display: none; }
 .rec-board .rec-filters .rec-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .rec-board .rec-filters .rec-tools { display: flex; align-items: center; gap: 0.35rem; }
 .rec-board .rec-filters .rec-sort { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
@@ -205,6 +204,11 @@
 .rec-board .rec-filters button.rec-expand,
 #desk.tv-full #desk-glass .rec-board .rec-filters button.rec-expand { width: auto; margin: 0; padding: 0.1rem 0.4rem; font-size: 11px; }
 .rec-board .rec-filters .row { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+.rec-board .rec-filters .row.fold .name { cursor: pointer; }
+.rec-board .rec-filters .row.fold .name::after { content: " –"; color: #3dff6e; }
+.rec-board .rec-filters .row.fold.tuck .name::after { content: " +"; }
+.rec-board .rec-filters .row.tuck > button:not(.on),
+.rec-board .rec-filters .row.tuck > button[data-value=""] { display: none; }
 .rec-board .rec-filters .name { color: #9aa8b5; font-family: "Outfit", sans-serif; font-size: 13px; font-weight: 700; min-width: 4.4rem; letter-spacing: 0; text-transform: none; }
 .rec-board .rec-filters button { padding: 0.28rem 0.55rem; border: 1px solid #3dff6e; background: transparent; color: #d8ffe4; box-shadow: none; font-family: "Outfit", sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0; text-transform: none; }
 .rec-board .rec-filters button.on { background: #3dff6e; color: #04140c; }
