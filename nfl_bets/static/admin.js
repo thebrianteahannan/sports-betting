@@ -104,6 +104,8 @@ function paintStrategies() {
     early3: "Legs from games that start before 4:00 PM ET.",
     prime3: "Three legs from games that start at 7:00 PM ET or later.",
     weekend4: "Four legs from Saturday and Sunday games.",
+    td2: "Two NFL players, each scoring one touchdown, in a game totaled at 47 or higher.",
+    td3: "Three NFL players, each scoring one touchdown, in a game totaled at 47 or higher.",
   };
   const rows = Object.entries(names).flatMap(([id, name]) => id === "hits" ? [["Five near 90% each", say.hits], ["Four near 80% each", say.hits]] : [[name, say[id] || ""]]);
   list.innerHTML = rows.map(([name, line]) => adminCard(esc(name), esc(line))).join("");

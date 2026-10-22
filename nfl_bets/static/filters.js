@@ -22,7 +22,7 @@ const OPEN_CARDS = [
   ["games4", "4 legs, 4 different games"],
   ["early3", "Early slate, 2 to 3 legs"],
   ["prime3", "Prime time, 3 legs"],
-  ["weekend4", "Weekend special, 4 legs"],
+  ["weekend4", "Weekend special, 4 legs"], ["td2", "2 NFL players, 1 TD each"], ["td3", "3 NFL players, 1 TD each"],
 ];
 const OPEN_KINDS = [
   ["yards", "Yards"],
@@ -381,7 +381,7 @@ function recOrder(board) {
   blocks.forEach((block) => {
     board.append(block);
     const rate = parseFloat((block.dataset.rates || "").split(",")[index]);
-    block.classList.toggle("rec-cold", Number.isFinite(index) && !(Number.isFinite(rate) && rate >= 65));
+    block.classList.toggle("rec-cold", Number.isFinite(index) && Number.isFinite(rate) && rate < 65);
     block.querySelectorAll(".rec-history span").forEach((mark) => mark.classList.toggle("on", mark.dataset.rate === recSort));
   });
 }

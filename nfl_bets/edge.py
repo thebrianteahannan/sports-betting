@@ -148,11 +148,6 @@ def _counted(rows: list[dict], bar: float, under: bool, price: float, nick: str,
     day_gap = _slice(day_rows, other_days, bar, under)
     if day_gap is not None:
         notes.append((day_gap[0], f"On {when.strftime('%A')}s, {nick} {did} it in {'only ' if day_gap[0] < 0 else ''}{_hits(day_rows, bar, under)} of {len(day_rows)}. Other days are different."))
-    hour_rows = [row for row in rows if _bucket(_stamp(row["date"])) == _bucket(when)]
-    other_hours = [row for row in rows if row not in hour_rows]
-    hour_gap = _slice(hour_rows, other_hours, bar, under)
-    if hour_gap is not None:
-        notes.append((hour_gap[0], f"{_part(when)}, {nick} {did} it in {'only ' if hour_gap[0] < 0 else ''}{_hits(hour_rows, bar, under)} of {len(hour_rows)}. Other hours are different."))
     if rows and _stamp(rows[0]["date"]):
         rest = (when.date() - _stamp(rows[0]["date"]).astimezone(_ET).date()).days
         sport = str((game or {}).get("sport") or "")
@@ -380,22 +375,6 @@ def _player_out(name: str, sit: dict) -> str:
         if status in {"out", "doubtful"} and _same(str(row.get("player") or ""), name):
             return status
     return ""
-
-
-def _bucket(stamp: datetime | None) -> str:
-    if stamp is None:
-        return ""
-    hour = stamp.astimezone(_ET).hour
-    if hour < 13:
-        return "early"
-    if hour < 19:
-        return "day"
-    return "night"
-
-
-def _part(stamp: datetime) -> str:
-    bucket = _bucket(stamp)
-    return {"early": "In the early window", "day": "In the afternoon", "night": "At night"}.get(bucket, "At this hour")
 
 
 def _stamp(raw: str) -> datetime | None:

@@ -25,6 +25,9 @@ def mark_listed(rows: list[dict[str, Any]]) -> None:
         labels = tuple(str(leg.get("label") or "") for leg in row["legs"] if isinstance(leg, dict))
         groups.setdefault(str(row.get("card") or ""), {}).setdefault((row.get("american"), labels), []).append(row)
     for group in groups.values():
+        sample = next(iter(group.values()), [])
+        if sample and str(sample[0].get("card") or "") in {"td2", "td3"}:
+            continue
         for bunch in group.values():
             for row in bunch:
                 row.pop("edge", None)

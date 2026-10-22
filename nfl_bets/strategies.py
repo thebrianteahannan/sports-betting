@@ -29,6 +29,8 @@ def build_from(pools: list[tuple[dict[str, Any], list[dict[str, Any]]]]) -> dict
     early = [(game, legs) for game, legs in props if _hour(game) < 16]
     prime = [(game, legs) for game, legs in props if _hour(game) >= 19]
     weekend = [(game, legs) for game, legs in props if _weekend(game)]
+    touch = [(game, [leg for leg in legs if _anytime_td(leg)]) for game, legs in props if str(game.get("sport") or "") == "NFL"]
+    touch = [(game, legs) for game, legs in touch if legs]
     cards = {
         "safe2": _with(_search(props, 2, _every(lambda leg: implied_prob(leg["odds"]) >= 0.75), _likely), 2, "Safe 2-leg, both 75%+", "Both legs are 75% or better."),
         "mid3": _with(_search(props, 3, _every(lambda leg: -400 <= leg["odds"] <= -250), _near(-325)), 3, "3 legs, −250 to −400", "Every leg is priced from −250 to −400."),
@@ -43,6 +45,8 @@ def build_from(pools: list[tuple[dict[str, Any], list[dict[str, Any]]]]) -> dict
         "early3": _with(_search(early, 3, _every(_playable), _likely) + _search(early, 2, _every(_playable), _likely), 2, "Early slate, 2 to 3 legs", "Legs from games that start before 4:00 PM ET."),
         "prime3": _with(_search(prime, 3, _every(_playable), _likely), 3, "Prime time, 3 legs", "Three legs from games that start at 7:00 PM ET or later."),
         "weekend4": _with(_search(weekend, 4, _every(lambda leg: -260 <= leg["odds"] <= -140), _near(-200)), 4, "Weekend special, 4 legs", "Four legs from Saturday and Sunday games."),
+        "td2": _td_card(touch, 2, "2 NFL players, 1 TD each", "Two NFL players, each scoring one touchdown, in a game totaled at 47 or higher."),
+        "td3": _td_card(touch, 3, "3 NFL players, 1 TD each", "Three NFL players, each scoring one touchdown, in a game totaled at 47 or higher."),
     }
     found = cards["early3"]
     if len(found.get("legs") or []) == 3:
@@ -401,6 +405,30 @@ def _ou(leg: dict[str, Any]) -> str:
 def _split_sides(paired: list[Row]) -> bool:
     sides = [_ou(leg) for leg, _game in paired]
     return sides.count("over") == 2 and sides.count("under") == 2
+
+
+def _td_card(rows: list[tuple[dict[str, Any], list[dict[str, Any]]]], count: int, title: str, goal: str) -> dict[str, Any]:
+    from nfl_bets.td_read import td_parlays
+
+    found = td_parlays(rows, count)
+    if not found:
+        fallback = "Two NFL players to score a touchdown, each in a different game." if count == 2 else "Three NFL players to score a touchdown, each in a different game."
+        return _with(_search(rows, count, _every(_anytime_td), _likely), count, title, fallback)
+    card = _with([item["combo"] for item in found], count, title, goal)
+    card["note"] = "FanDuel's same-game button can charge a different number."
+    says = {tuple(sorted(str(leg.get("runner") or "") for leg, _game in item["combo"])): item["say"] for item in found}
+    for offer in card.get("offers") or []:
+        key = tuple(sorted(str(leg.get("runner") or "") for leg in offer.get("legs") or []))
+        if key in says:
+            offer["why"] = says[key]
+    return card
+
+
+def _anytime_td(leg: dict[str, Any]) -> bool:
+    market = str(leg.get("market") or "").lower()
+    if "any time touchdown scorer" not in market and "anytime touchdown scorer" not in market:
+        return False
+    return not any(word in market for word in ("half", "quarter", "1st", "first", "last", "either", "2+", "3+"))
 
 
 def _player(leg: dict[str, Any]) -> str:

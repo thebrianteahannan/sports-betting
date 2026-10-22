@@ -43,7 +43,7 @@ def _write(path: Path) -> None:
         Paragraph(f"{today:%B} {today.day}, {today.year} · FanDuel price stays the price · admin note", style["sub"]),
         Paragraph(
             "Two tickets can carry the same FanDuel number and still be different bets. "
-            "The desk already uses the injury report, the building, the weekday, the time of day, "
+            "The desk already uses the injury report, the building, the weekday, "
             "rest, rivalry, and wind. This is the longer list.",
             style["verdict"],
         ),

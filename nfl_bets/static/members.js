@@ -112,7 +112,7 @@ const CARD_NAMES = window.CARD_NAMES = {
   weekThree: "3 legs, different days, near −200", yards3: "3 yardage legs near 80% each",
   weekFive: "5 legs, different days, near −200", ou4: "2 overs and 2 unders",
   weekSafe: "3 legs, different days, near −350", alt3: "Alt lines, 3 legs, 85%+",
-  weekEven: "3 legs, different days, near −100", games4: "4 legs, 4 different games", early3: "Early slate, 2 to 3 legs", prime3: "Prime time, 3 legs", weekend4: "Weekend special, 4 legs",
+  weekEven: "3 legs, different days, near −100", games4: "4 legs, 4 different games", early3: "Early slate, 2 to 3 legs", prime3: "Prime time, 3 legs", weekend4: "Weekend special, 4 legs", td2: "2 NFL players, 1 TD each", td3: "3 NFL players, 1 TD each",
 };
 
 async function refreshActivity() {
@@ -361,8 +361,8 @@ function recLine(leg) {
   const parts = String(leg.label || "").split(/\s+—\s+/), head = parts[0] || "";
   const where = parts.slice(1).join(" — ") || [leg.sport, leg.match, leg.kickoff && typeof when === "function" ? `${when(leg.kickoff)} ET` : ""].filter(Boolean).join(" · ") || "";
   const market = String(leg.market || "").split(/\s+-\s+/).pop().replace(/^Either Player\s*/i, "").trim();
-  const title = market && /\s+or\s+|\s+&\s+/i.test(head) && !head.toLowerCase().includes(market.toLowerCase()) ? `${head} · ${market}` : head;
-  return `<span><b>${esc(title)}</b><i>${esc([tag, leg.pct, where].filter(Boolean).join(" · "))}</i></span>`;
+  const title = market && /\s+or\s+|\s+&\s+/i.test(head) && !head.toLowerCase().includes(market.toLowerCase()) ? `${head} · ${market}` : head, say = title.match(/^(.*?)\s+(to\s+.+)$/i), cut = !say && title.match(/^(.*?)(?:\s*:\s*|\s+)((?:\d+(?:\.\d+)?\+|[+-]\d|over\b|under\b).+)$/i), year = !say && !cut && title.match(/^(.*?)(,\s*.+)$/), named = say && say[1] ? `<i>${esc(say[1])}</i> ${esc(say[2])}` : cut && cut[1] ? `<i>${esc(cut[1])}</i> ${esc(cut[2])}` : year && year[1] ? `<i>${esc(year[1])}</i>${esc(year[2])}` : `<i>${esc(title)}</i>`;
+  return `<span><b>${named}</b><i>${esc([tag, leg.pct, where].filter(Boolean).join(" · "))}</i></span>`;
 }
 
 function birdMenu(kind) {
@@ -405,7 +405,7 @@ function birdMenu(kind) {
     block.append(history);
     const seen = new Set();
     const live = (ticket) => ![ticket.kickoff, ...(ticket.legs || []).map((leg) => leg.kickoff)].some((iso) => Number.isFinite(Date.parse(iso || "")) && Date.parse(iso || "") <= now);
-    archive.filter((ticket) => ticket.card === id && (!part || hitsPart(ticket) === part) && ticket.legs && ticket.legs.length && (past ? (ticket.result === "won" || ticket.result === "lost") : ((!ticket.result || ticket.result === "open") && live(ticket))))
+    archive.filter((ticket) => ticket.card === id && (!part || hitsPart(ticket) === part) && ticket.legs && ticket.legs.length && !(window.blockCollege && blockCollege(ticket)) && (past ? (ticket.result === "won" || ticket.result === "lost") : ((!ticket.result || ticket.result === "open") && live(ticket))))
       .sort((a, b) => (past ? 0 : ((b.edge === true) - (a.edge === true) || (b.why ? 1 : 0) - (a.why ? 1 : 0))) || String((past ? b.settledAt : b.offeredAt) || "").localeCompare(String((past ? a.settledAt : a.offeredAt) || "")))
       .forEach((ticket) => {
         const key = `${past ? ticket.settledAt : ticket.american}|${ticket.result || ""}|${ticket.legs.map((leg) => leg.label).join("|")}`;
@@ -420,7 +420,7 @@ function birdMenu(kind) {
         const pct = ticket.impliedPct != null && ticket.impliedPct !== "" ? `${ticket.impliedPct}%` : "";
         const mark = ticket.result === "won" ? "Won" : ticket.result === "lost" ? "Lost" : ticket.edge ? "Better" : "";
         const head = document.createElement("b");
-        head.textContent = [shown, pct, mark].filter(Boolean).join(" · ") || name;
+        head.textContent = [shown, pct, mark, name].filter(Boolean).join(" · ");
         const gist = document.createElement("p");
         gist.className = "rec-gist";
         gist.innerHTML = ticket.why ? `<em>${esc(ticket.why)}</em>` : "";
