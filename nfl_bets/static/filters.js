@@ -22,7 +22,7 @@ const OPEN_CARDS = [
   ["games4", "4 legs, 4 different games"],
   ["early3", "Early slate, 2 to 3 legs"],
   ["prime3", "Prime time, 3 legs"],
-  ["weekend4", "Weekend special, 4 legs"], ["td2", "2 NFL players, 1 TD each"], ["td3", "3 NFL players, 1 TD each"],
+  ["weekend4", "Weekend special, 4 legs"], ["td2", "2 NFL players, 1 anytime TD each"], ["td3", "3 NFL players, 1 anytime TD each"],
 ];
 const OPEN_KINDS = [
   ["yards", "Yards"],

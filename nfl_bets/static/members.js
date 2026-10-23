@@ -106,7 +106,7 @@ const CARD_NAMES = window.CARD_NAMES = {
   weekThree: "3 legs, different days, near −200", yards3: "3 yardage legs near 80% each",
   weekFive: "5 legs, different days, near −200", ou4: "2 overs and 2 unders",
   weekSafe: "3 legs, different days, near −350", alt3: "Alt lines, 3 legs, 85%+",
-  weekEven: "3 legs, different days, near −100", games4: "4 legs, 4 different games", early3: "Early slate, 2 to 3 legs", prime3: "Prime time, 3 legs", weekend4: "Weekend special, 4 legs", td2: "2 NFL players, 1 TD each", td3: "3 NFL players, 1 TD each",
+  weekEven: "3 legs, different days, near −100", games4: "4 legs, 4 different games", early3: "Early slate, 2 to 3 legs", prime3: "Prime time, 3 legs", weekend4: "Weekend special, 4 legs", td2: "2 NFL players, 1 anytime TD each", td3: "3 NFL players, 1 anytime TD each",
 };
 
 async function refreshActivity() {
@@ -343,16 +343,16 @@ function weekPay(rows, since) {
   const list = [...seen.values()].map((row) => row.pay).sort((a, b) => a - b);
   return list.length ? Math.round(list[list.length >> 1]) : 0;
 }
-window.recPct = recPct;
-window.weekPay = weekPay;
+window.recPct = recPct; window.weekPay = weekPay; window.hitsPart = hitsPart;
 function recThing(head, market) {
-  const text = String(head || ""), raw = String(market || "").replace(/\s+-\s+.*$/, "").replace(/\s+\d+$/, "").trim(), first = text.split("\n")[0], who = first.replace(/\s+(yes|no)$/i, "");
-  if (!raw || /\d/.test(text)) return text;
-  let phrase = (raw.toLowerCase().startsWith(who.toLowerCase()) ? raw.slice(who.length).trim() : raw).replace(/^player\s+/i, "").replace(/^(?:team\s+)?(?:to\s+)?have\s+/i, "").replace(/^to\s+record\s+(?:a\s+)?/i, "").replace(/^a\s+/i, "").replace(/(\d+)\s+or\s+more\b/i, "$1+").replace(/\s+/g, " ").trim().toLowerCase();
-  const words = phrase.split(/[^a-z0-9+]+/).filter((word) => word.length > 2 && !/^(the|and|for|player|record|have|more|than)$/.test(word));
-  if (!phrase || (!/\d/.test(phrase) && /\bto\b/i.test(text)) || (words.length && words.every((word) => text.toLowerCase().includes(word)) && !(/\d/.test(phrase) && !/\d/.test(text)))) return text;
-  const bit = phrase, tail = first.split(/\s+/).pop();
-  return tail && bit.includes(tail.toLowerCase()) && tail.length > 2 ? text.replace(new RegExp(`\\s+${tail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"), ` ${bit}`) : text.replace(first, `${first} ${bit}`);
+  const text = String(head || ""), raw = String(market || "").split(/\s+-\s+/).pop().replace(/\s+\d+$/, "").trim(), first = text.split("\n")[0], who = first.replace(/\s+(yes|no)$/i, "");
+  if (!raw) return text;
+  const phrase = (raw.toLowerCase().startsWith(who.toLowerCase()) ? raw.slice(who.length).trim() : raw).replace(/^player\s+/i, "").replace(/^team\s+/i, "").replace(/(\d+)\s+or\s+more\b/i, "$1+").replace(/\s+/g, " ").trim().toLowerCase();
+  const words = phrase.split(/[^a-z0-9+]+/).filter((word) => word.length > 2 && !/^(the|and|for|player|team|record|have|more|than|yes|no|alt|alternate|betting|combo)$/.test(word));
+  const nums = phrase.match(/\d+(?:\.\d+)?\+?/g) || [], said = text.toLowerCase().replace(/\byards?\b/g, "yd").replace(/\byds\b/g, "yd").replace(/\bpoints?\b/g, "pt").replace(/\bpts\b/g, "pt").replace(/\brebounds?\b/g, "reb").replace(/\bassists?\b/g, "ast").replace(/\btouchdowns?\b/g, "td").replace(/\btds\b/g, "td");
+  if (!phrase || !words.length || (words.every((word) => said.includes(word.replace(/yards?/g, "yd").replace(/yds/g, "yd").replace(/points?/g, "pt").replace(/pts/g, "pt").replace(/rebounds?/g, "reb").replace(/assists?/g, "ast").replace(/touchdowns?/g, "td").replace(/tds/g, "td"))) && nums.every((num) => text.includes(num)))) return text;
+  const lowFirst = first.toLowerCase(), hole = nums.find((num) => !text.includes(num)), tail = (first.match(/\S+$/) || [""])[0].toLowerCase(), known = hole && words.every((word) => said.includes(word.replace(/yards?/g, "yd").replace(/yds/g, "yd").replace(/points?/g, "pt").replace(/pts/g, "pt").replace(/rebounds?/g, "reb").replace(/assists?/g, "ast"))) && words.some((word) => tail.startsWith(word.slice(0, 4)) || word.startsWith(tail.slice(0, 4))); let extra = phrase; if (!known) phrase.split(" ").forEach((word, i, all) => { const lead = all.slice(0, i + 1).join(" "); if (lowFirst.endsWith(lead)) extra = all.slice(i + 1).join(" "); });
+  return text.replace(first, known ? `${first.replace(/\s+\S+$/, "")} ${hole} ${first.match(/\S+$/)[0]}`.replace(/\s+/g, " ").trim() : extra ? `${extra === phrase && /\s/.test(first) && phrase.split(/[^a-z0-9+]+/).includes(tail) ? first.replace(/\s+\S+$/, "") : first} ${extra}`.replace(/\s+/g, " ").trim() : first);
 }
 function recBlurb(ticket, shown, pct, price) { return shown && pct && window.recWin ? recWin(price) : ""; }
 

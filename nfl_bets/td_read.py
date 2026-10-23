@@ -108,7 +108,7 @@ def _say(game: dict[str, Any], total: float, legs: list[dict[str, Any]]) -> str:
     place = f"{game.get('awayNick') or ''} at {game.get('homeNick') or ''}".strip()
     parts = []
     for leg in legs:
-        parts.append(f"{leg.get('runner')} scores {_span(leg)}")
+        parts.append(f"{leg.get('runner')} {_span(leg)}")
     scorers = _join(parts)
     line = f"{scorers}, in a {place} game totaled at {total:g}."
     faced = [f"{_last(leg.get('runner'))} faces a {leg.get('_mark')}" for leg in legs if leg.get("_mark")]
@@ -365,7 +365,7 @@ def _span(leg: dict[str, Any]) -> str:
     now, last, career = _pace(leg.get("_now")), _pace(leg.get("_last")), _pace(leg.get("_career"))
     if now == "no games":
         return f"has no games this year, {last} last year, and {career} career"
-    return f"scores {now} this year, {last} last year, and {career} career"
+    return f"scores an anytime touchdown, {now} this year, {last} last year, and {career} career"
 
 
 def _rate(now: dict[str, Any], last: dict[str, Any], career: dict[str, Any]) -> float:

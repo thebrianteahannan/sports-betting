@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="/app.css?v=46"/>
 <link rel="stylesheet" href="/desk.css?v=61"/>
 <link rel="stylesheet" href="/states.css?v=3"/>
-<link rel="stylesheet" href="/ask-bet.css?v=168"/>
+<link rel="stylesheet" href="/ask-bet.css?v=170"/>
 <style>
 #page-title { display: none; } #who { position: fixed; right: 0.7rem; bottom: 0.7rem; z-index: 20; margin: 0; }
 #member-profile { width: 2.7rem; height: 2.7rem; padding: 0; display: grid; place-items: center; border: 1px solid rgba(61, 255, 110, 0.85); border-radius: 8px; background: rgba(4, 16, 12, 0.88); color: #3dff6e; box-shadow: 0 0 14px rgba(61, 255, 110, 0.35); }
@@ -290,8 +290,8 @@ body.day-board #parrot-load[hidden] { display: none; }
 <img id="build-share" alt="Build a bet" src="/share-template.jpg?v=6">
 <section class="chalk chooser" id="chooser">
   <div id="choice-filters">
-    <p class="aim">Pick today or this week, the league, the stat, and how many picks. Leave the league and the games blank to use all of them. Safest wins the most. On Safe, five dollars wins about $2.50. Good wins about as often as it loses. Big payout pays the most, and it loses more often. Tap Safe, Good, or Big payout again for a different bet. If only one bet fits, the card says so.</p>
-    <h2>Build a bet</h2>
+    <p class="aim">Pick today or this week, the league, the stat, and how many picks. Leave the league and the games blank to use all of them. Type the bet and the profit you want. That says if it is safest, safe, moderate, risky, or riskiest. If only one bet fits, the card says so.</p>
+    <h2>Build a bet</h2><label class="choice-line money">Bet $<input id="choice-stake" type="number" min="1" step="1" value="5" inputmode="decimal"> Profit $<input id="choice-profit" type="number" min="0" step="1" inputmode="decimal" placeholder="any"></label>
     <p class="pick-save"><button type="button" id="choice-speak">Speak a bet</button></p>
     <p class="quiet" id="choice-heard"></p>
     <div class="choices" id="choice-when"></div>
@@ -301,8 +301,8 @@ body.day-board #parrot-load[hidden] { display: none; }
       <option value="any">Any stat</option>
     </select></label>
     <div class="choices" id="choice-legs"></div>
-    <div class="choices" id="choice-aim"></div>
-    <p class="pick-save"><button type="button" id="choice-go">Show the safest</button></p>
+    <p class="aim" id="choice-risk" hidden></p>
+    <p class="pick-save"><button type="button" id="choice-go">Show the bet</button></p>
   </div>
   <div id="choice-result"></div>
   <p class="pick-save" id="choice-again" hidden></p>
@@ -318,7 +318,7 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p><b>Analyze</b></p>
   <p class="quiet">The card names the stat, so a price has a job. A −550 on 5 receiving yards and a −550 on a score are different bets. Four prices near 85% multiply to about a coin flip. Prices like −800 stay off the −150 to +100 window.</p>
   <p><b>Make the picks</b></p>
-  <p class="quiet">Today is the ticket whose price lands between −150 and +100, and the highest chance inside that window. The week is a 3-leg and a 5-leg aimed at −200, so a $5 bet wins about $2.50, plus a 3-leg at −100 and a 3-leg aimed at −350. Each leg is a different day. Build a bet can ask for the highest chance, a safe −200, a good −100, or the longest price.</p>
+  <p class="quiet">Today is the ticket whose price lands between −150 and +100, and the highest chance inside that window. The week is a 3-leg and a 5-leg aimed at −200, so a $5 bet wins about $2.50, plus a 3-leg at −100 and a 3-leg aimed at −350. Each leg is a different day. Build a bet asks for the bet and the profit, then says if that is safest, safe, moderate, risky, or riskiest.</p>
   <p><b>Cash</b></p>
   <p class="quiet">You place it. This desk does not send it. Type the line into your own FanDuel account if you want it. A $5 night stays a $5 night. 21+. Gambling problem? Call 1-800-GAMBLER. Past results do not promise the next ticket.</p>
 </section>
@@ -460,18 +460,18 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p>21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
-<script src="/app.js?v=106"></script>
+<script src="/app.js?v=107"></script>
 <script src="/desk.js?v=90"></script>
-<script src="/members.js?v=107"></script>
+<script src="/members.js?v=114"></script>
 <script src="/stars.js?v=8"></script>
-<script src="/choose.js?v=100"></script>
+<script src="/choose.js?v=103"></script>
 <script src="/lessons.js?v=8"></script>
-<script src="/filters.js?v=43"></script>
+<script src="/filters.js?v=44"></script>
 <script src="/reports.js?v=1"></script>
-<script src="/admin.js?v=36"></script>
+<script src="/admin.js?v=37"></script>
 <script src="/sharecard.js?v=33"></script>
 <script src="/states.js?v=10"></script>
-<script src="/ask-bet.js?v=77"></script><script src="/bet-ask.js?v=14"></script>
+<script src="/ask-bet.js?v=79"></script><script src="/bet-ask.js?v=14"></script>
 <script>
 function fitPoster() {
   const view = window.visualViewport;

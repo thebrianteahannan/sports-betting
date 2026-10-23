@@ -45,8 +45,8 @@ def build_from(pools: list[tuple[dict[str, Any], list[dict[str, Any]]]]) -> dict
         "early3": _with(_search(early, 3, _every(_playable), _likely) + _search(early, 2, _every(_playable), _likely), 2, "Early slate, 2 to 3 legs", "Legs from games that start before 4:00 PM ET."),
         "prime3": _with(_search(prime, 3, _every(_playable), _likely), 3, "Prime time, 3 legs", "Three legs from games that start at 7:00 PM ET or later."),
         "weekend4": _with(_search(weekend, 4, _every(lambda leg: -260 <= leg["odds"] <= -140), _near(-200)), 4, "Weekend special, 4 legs", "Four legs from Saturday and Sunday games."),
-        "td2": _td_card(touch, 2, "2 NFL players, 1 TD each", "Two NFL players, each scoring one touchdown, in a game totaled at 47 or higher."),
-        "td3": _td_card(touch, 3, "3 NFL players, 1 TD each", "Three NFL players, each scoring one touchdown, in a game totaled at 47 or higher."),
+        "td2": _td_card(touch, 2, "2 NFL players, 1 anytime TD each", "Two NFL players, each scoring one anytime touchdown, in a game totaled at 47 or higher."),
+        "td3": _td_card(touch, 3, "3 NFL players, 1 anytime TD each", "Three NFL players, each scoring one anytime touchdown, in a game totaled at 47 or higher."),
     }
     found = cards["early3"]
     if len(found.get("legs") or []) == 3:

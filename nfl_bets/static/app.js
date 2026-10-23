@@ -44,6 +44,14 @@ async function load() {
   state.timer = setTimeout(load, 120000);
 }
 
+function greetPct(value, plus) { const whole = Math.abs(value - Math.round(value)) < 0.05; return `${whole ? Math.round(value) : value.toFixed(1)}%${plus ? "+" : ""}`; }
+function weekHigh(done, since) {
+  const groups = new Map();
+  done.forEach((ticket) => { const id = `${ticket.card || ""}|${ticket.card === "hits" && window.hitsPart ? hitsPart(ticket) : ""}`; (groups.get(id) || groups.set(id, []).get(id)).push(ticket); });
+  let best = NaN;
+  groups.forEach((rows) => { const pct = parseFloat(recPct(rows, since)); if (Number.isFinite(pct) && !(pct <= best)) best = pct; });
+  return best;
+}
 let renderLater = 0;
 function render() {
   if (window.asking) {
@@ -54,7 +62,7 @@ function render() {
   oddsByHead = null;
   const board = state.board || {};
   const hit = document.getElementById("greet-rate");
-  if (hit && window.recPct) { const done = (board.archive || []).filter((ticket) => ticket.result === "won" || ticket.result === "lost"); const since = Date.now() - 86400000 * 7; const pct = recPct(done, since); const pay = window.weekPay ? weekPay(done, since) : 0; hit.innerHTML = recPct.n ? `<b>${pct}</b>I love these strategies. Five dollars makes about $${pay}.` : ""; }
+  if (hit && window.recPct) { const done = (board.archive || []).filter((ticket) => ticket.result === "won" || ticket.result === "lost"); const since = Date.now() - 86400000 * 7; const high = weekHigh(done, since); const pct = parseFloat(recPct(done, since)); const pay = window.weekPay ? weekPay(done, since) : 0; const plus = Number.isFinite(high) && high > pct; const best = plus ? ` Some of these hit ${greetPct(high)} this week.` : ""; hit.innerHTML = recPct.n ? `<b>${greetPct(pct, plus)}</b>I love these strategies.${best} Five dollars makes about $${pay}.` : ""; }
   const waiting = !board.updatedAt;
   $("lede").textContent = board.updatedAt ? `FanDuel ${when(board.updatedAt)} ET.` : "Loading the latest board.";
   const parrot = $("parrot-load");
