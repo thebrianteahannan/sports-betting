@@ -390,6 +390,7 @@
 #desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-rate { top: 12%; font-size: 22px; line-height: 1.35; }
 @media (max-width: 720px) {
   #desk.bird-on:not(.tv-full) #bird-guide:has(button[data-menu]) #greet-rate { top: 8.5rem; }
+  #desk.bird-on:not(.tv-full) #bird-guide:has(button[data-menu]) #bird-line { margin-top: 5rem; }
 }
 #desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-rate b { margin-bottom: 0.35rem; font-size: 6.6rem; }
 #desk.bird-on #bird-guide:has(button[data-menu]) #greet-rate:empty { display: none; }
