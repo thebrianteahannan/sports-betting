@@ -1,8 +1,9 @@
 """Who has been scoring, and what the defense has allowed.
 
 A touchdown parlay uses a high total, how the player scores, and the matching
-defense. The line is touchdowns per game they have played: this year, last
-year, and career. A rusher is judged on yards per carry, rushing touchdowns,
+defense. The line is touchdowns per game they have played, then how many
+of those games had a touchdown: this year, last year, and career. A rusher
+is judged on yards per carry, rushing touchdowns,
 and red-zone touchdown rate. A receiver is judged on yards per throw and
 passing touchdowns. There is no separate goal-line split. Cached for a few hours.
 """
@@ -68,7 +69,7 @@ def td_parlays(rows: list[tuple[dict[str, Any], list[dict[str, Any]]]], count: i
                 soft = (float(side.get("passYpa") or 0), float(side.get("passTd") or 0), 0)
             copy = dict(leg)
             label = str(leg.get("label") or leg.get("runner") or "").strip()
-            copy["label"] = f"{label}, {_rates(fact)}"
+            copy["label"] = _label(label, fact)
             copy["_rate"] = rate
             copy["_now"], copy["_last"], copy["_career"] = now, last, career
             copy["_kind"] = kind
@@ -157,7 +158,7 @@ def _last(name: Any) -> str:
 def _players(names: list[str]) -> dict[str, dict[str, Any]]:
     cache = _load()
     bag = cache.setdefault("players", {})
-    need = [name for name in dict.fromkeys(names) if not (isinstance(bag.get(name), dict) and _fresh(bag.get(name)) and "now" in bag[name])]
+    need = [name for name in dict.fromkeys(names) if not (isinstance(bag.get(name), dict) and _fresh(bag.get(name)) and "scored" in (bag[name].get("now") or {}))]
     if need:
         with ThreadPoolExecutor(max_workers=6) as pool:
             for name, fact in pool.map(lambda name: (name, _player(name)), need):
@@ -168,7 +169,7 @@ def _players(names: list[str]) -> dict[str, dict[str, Any]]:
 
 
 def _player(name: str) -> dict[str, Any]:
-    empty = {"games": 0, "tds": 0, "rush": 0, "rec": 0}
+    empty = {"games": 0, "tds": 0, "rush": 0, "rec": 0, "scored": None}
     try:
         url = f"https://site.web.api.espn.com/apis/common/v3/search?query={quote(name)}&limit=5&type=player"
         data = get_json(url, referer=_REFERER, timeout=12)
@@ -199,6 +200,10 @@ def _player(name: str) -> dict[str, Any]:
         now = _window(rush_years, rec_years, season)
         last = _window(rush_years, rec_years, season - 1)
         career = _career(cats.get("rushing") or {}, cats.get("receiving") or {})
+        counts, years = _touch_counts(athlete_id)
+        now["scored"] = counts.get(season)
+        last["scored"] = counts.get(season - 1)
+        career["scored"] = sum(counts[year] for year in years) if years and set(years) <= set(counts) else (sum(counts.values()) if counts and not years else None)
         sample = now if int(now["tds"]) else last if int(last["tds"]) else career
         return {"team": team, "kind": _kind(int(sample["rush"]), int(sample["rec"]), pos), "now": now, "last": last, "career": career}
     except Exception:  # noqa: BLE001
@@ -269,8 +274,91 @@ def _num(text: Any) -> int:
         return 0
 
 
+def _label(label: str, fact: dict[str, Any]) -> str:
+    head, sep, tail = label.partition(" — ")
+    lines = [head, _rates(fact)]
+    scored = _scored(fact)
+    if scored:
+        lines.append(scored)
+    body = "\n".join(lines)
+    return f"{body} — {tail}" if sep else body
+
+
 def _rates(fact: dict[str, Any]) -> str:
     return f"{_pace(fact.get('now'))} this year, {_pace(fact.get('last'))} last year, {_pace(fact.get('career'))} career"
+
+
+def _scored(fact: dict[str, Any]) -> str:
+    bits = []
+    for key, tail in (("now", "this year"), ("last", "last year"), ("career", "career")):
+        text = _games(fact.get(key), lead=not bits)
+        if text:
+            bits.append(f"{text} {tail}")
+    return ", ".join(bits)
+
+
+def _touch_counts(athlete_id: str) -> tuple[dict[int, int], list[int]]:
+    data = _gamelog(athlete_id, 0)
+    years = _log_years(data)
+    counts: dict[int, int] = {}
+    if data:
+        got = _count_log(data)
+        if got is not None:
+            counts[years[0] if years else _season()] = got
+    for year in years[1:]:
+        got = _count_log(_gamelog(athlete_id, year))
+        if got is not None:
+            counts[year] = got
+    return counts, years
+
+
+def _log_years(data: dict[str, Any]) -> list[int]:
+    for item in data.get("filters") or []:
+        if item.get("name") != "season":
+            continue
+        years = []
+        for option in item.get("options") or []:
+            try:
+                years.append(int(option.get("value")))
+            except (TypeError, ValueError):
+                continue
+        return years
+    return []
+
+
+def _gamelog(athlete_id: str, year: int) -> dict[str, Any]:
+    url = f"https://site.web.api.espn.com/apis/common/v3/sports/football/nfl/athletes/{athlete_id}/gamelog"
+    if year:
+        url += f"?season={year}"
+    try:
+        data = get_json(url, referer=_REFERER, timeout=12)
+    except Exception:  # noqa: BLE001
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _count_log(data: dict[str, Any]) -> int | None:
+    names = [str(item) for item in data.get("names") or []]
+    if "rushingTouchdowns" not in names and "receivingTouchdowns" not in names:
+        return None
+    rush_i = names.index("rushingTouchdowns") if "rushingTouchdowns" in names else -1
+    rec_i = names.index("receivingTouchdowns") if "receivingTouchdowns" in names else -1
+    seen: set[str] = set()
+    count = 0
+    for season in data.get("seasonTypes") or []:
+        for cat in season.get("categories") or []:
+            for item in cat.get("events") or []:
+                event_id = str(item.get("eventId") or "")
+                if event_id and event_id in seen:
+                    continue
+                if event_id:
+                    seen.add(event_id)
+                stats = item.get("stats") or []
+                rush = _num(stats[rush_i]) if 0 <= rush_i < len(stats) else 0
+                rec = _num(stats[rec_i]) if 0 <= rec_i < len(stats) else 0
+                if rush + rec > 0:
+                    count += 1
+    return count
 
 
 def _span(leg: dict[str, Any]) -> str:
@@ -308,7 +396,20 @@ def _pace(row: Any) -> str:
         return "no games"
     rate = int((row or {}).get("tds") or 0) / games
     text = f"{rate:.2f}".rstrip("0").rstrip(".")
-    return f"{text} a game in {games}"
+    return f"{text} per game in {games}"
+
+
+def _games(row: Any, lead: bool = True) -> str:
+    games = int((row or {}).get("games") or 0)
+    if games <= 0:
+        return "" if not lead else "no games"
+    if (row or {}).get("scored") is None:
+        return ""
+    count = int(row.get("scored") or 0)
+    if not lead:
+        return str(count)
+    word = "game" if count == 1 else "games"
+    return f"{count} {word} with a touchdown"
 
 
 def _defense(abbr: str) -> dict[str, Any]:

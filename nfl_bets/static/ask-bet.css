@@ -188,6 +188,7 @@
 .rec-board .rec-bet > span, #choice-result .rec-bet > span { margin: 0.4rem 0 0; padding-top: 0.35rem; border-top: 1px solid rgba(61, 255, 110, 0.28); }
 .rec-board .rec-bet > span b, #choice-result .rec-bet > span b { display: block; flex: none; padding-right: 0; color: #fff; font-size: 15px; font-weight: 700; line-height: 1.3; }
 .rec-board .rec-bet > span b i, #choice-result .rec-bet > span b i { color: #3dff6e; font-style: normal; }
+.rec-board .rec-bet > span b em, #choice-result .rec-bet > span b em, #desk-glass #rec-open li.rec-leg > span b em { display: block; margin-top: 0.12rem; color: #d5deea; font-style: normal; font-weight: 400; font-size: 13px; line-height: 1.3; }
 .rec-board .rec-bet > span > i, #choice-result .rec-bet > span > i { display: block; margin-top: 0.08rem; color: #d5deea; font-style: normal; font-weight: 400; font-size: 13px; line-height: 1.35; }
 .rec-board .rec-bet .rec-gist:empty, #choice-result .rec-bet .rec-gist:empty { display: none; }
 #desk-glass #rec-open h2 { letter-spacing: 0; line-height: 1.2; text-transform: none; }
