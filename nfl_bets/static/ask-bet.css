@@ -222,6 +222,11 @@
 .rec-board .rec-filters button .n { margin-left: 0.2rem; font-size: 10px; font-weight: 600; color: #8ea0b3; }
 .rec-board .rec-filters button.on .n { color: #04140c; opacity: 0.62; }
 .rec-board .rec-filters select { margin: 0; max-width: 100%; padding: 0.28rem 0.45rem; border: 1px solid #3dff6e; border-radius: 8px; background: #07140f; color: #d8ffe4; font-family: "Outfit", sans-serif; font-size: 13px; font-weight: 700; }
+.rec-board .rec-filters .rec-find { position: relative; display: block; }
+.rec-board .rec-filters .rec-find input, #desk.tv-full #desk-glass .rec-board .rec-filters .rec-find input { width: 100%; height: auto; min-height: 0; margin: 0; padding: 0.35rem 0.6rem; border: 1px solid #3dff6e; border-radius: 8px; background: #07140f; color: #f4fff6; font-family: "Outfit", sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.rec-board .rec-filters .rec-hints { position: absolute; z-index: 6; left: 0; right: 0; top: calc(100% + 0.2rem); display: flex; flex-direction: column; gap: 0.15rem; padding: 0.3rem; border: 1px solid #3dff6e; border-radius: 8px; background: #07140f; box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45); }
+.rec-board .rec-filters .rec-hints[hidden] { display: none; }
+.rec-board .rec-filters .rec-hints button, #desk.tv-full #desk-glass .rec-board .rec-filters .rec-hints button { width: 100%; min-height: 0; margin: 0; padding: 0.28rem 0.5rem; text-align: left; text-transform: none; font-size: 13px; }
 .rec-board .rec-none { margin: 0.15rem 0 0; color: #f4fff6; font-family: "Outfit", sans-serif; font-size: 15px; font-weight: 700; }
 .rec-board .rec-bet.rec-off, .rec-board .rec-strategy.rec-off { display: none !important; }
 #bird-line.build strong {

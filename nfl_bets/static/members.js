@@ -1,11 +1,8 @@
 const memberFetch = window.fetch.bind(window);
 
 function showGateMode(mode) {
-  const wait = document.getElementById("gate-wait");
-  if (wait) wait.hidden = true;
-  document.getElementById("gate-pick").hidden = mode !== "pick";
-  document.getElementById("member-form").hidden = mode !== "join";
-  document.getElementById("login-form").hidden = mode !== "login";
+  const wait = document.getElementById("gate-wait"); if (wait) wait.hidden = true;
+  document.getElementById("gate-pick").hidden = mode !== "pick"; document.getElementById("member-form").hidden = mode !== "join"; document.getElementById("login-form").hidden = mode !== "login";
   if (mode === "join") bornRange(document.getElementById("member-born"));
 }
 
@@ -15,10 +12,7 @@ async function paintGateRecord() {
   try {
     const response = await memberFetch("/api/record", { cache: "no-store" });
     if (!response.ok) return;
-    const row = await response.json();
-    const pct = Number(row.pct);
-    const won = Number(row.won);
-    const lost = Number(row.lost);
+    const row = await response.json(), pct = Number(row.pct), won = Number(row.won), lost = Number(row.lost);
     if (!Number.isFinite(pct) || !Number.isFinite(won) || !Number.isFinite(lost)) return;
     line.dataset.ready = "1";
     line.hidden = false;
@@ -181,11 +175,8 @@ function calledName() {
 function birdGreet() {
   if (!window.memberReady || document.body.classList.contains("needs-member") || !window.birdSay) return;
   const called = calledName();
-  if (!called) { birdAskName(); return; }
-  if (!window.memberBorn) { birdAskBorn(); return; }
-  if (!window.memberState) { birdAskState(); return; }
-  if (birdAskBook()) return;
-  if (birdLaw()) return;
+  if (!called) return birdAskName();
+  if (!window.memberBorn) return birdAskBorn(); if (!window.memberState) return birdAskState(); if (birdAskBook() || birdLaw()) return;
   window.asking = false;
   birdSay(`Hey, ${called}. What are you trying to do today?`, [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]);
 }
@@ -354,13 +345,22 @@ function weekPay(rows, since) {
 }
 window.recPct = recPct;
 window.weekPay = weekPay;
+function recThing(head, market) {
+  const text = String(head || ""), raw = String(market || "").replace(/\s+-\s+.*$/, "").replace(/\s+\d+$/, "").trim(), first = text.split("\n")[0], who = first.replace(/\s+(yes|no)$/i, "");
+  if (!raw || /\d/.test(text)) return text;
+  let phrase = (raw.toLowerCase().startsWith(who.toLowerCase()) ? raw.slice(who.length).trim() : raw).replace(/^player\s+/i, "").replace(/^(?:team\s+)?(?:to\s+)?have\s+/i, "").replace(/^to\s+record\s+(?:a\s+)?/i, "").replace(/^a\s+/i, "").replace(/(\d+)\s+or\s+more\b/i, "$1+").replace(/\s+/g, " ").trim().toLowerCase();
+  const words = phrase.split(/[^a-z0-9+]+/).filter((word) => word.length > 2 && !/^(the|and|for|player|record|have|more|than)$/.test(word));
+  if (!phrase || (!/\d/.test(phrase) && /\bto\b/i.test(text)) || (words.length && words.every((word) => text.toLowerCase().includes(word)) && !(/\d/.test(phrase) && !/\d/.test(text)))) return text;
+  const bit = phrase, tail = first.split(/\s+/).pop();
+  return tail && bit.includes(tail.toLowerCase()) && tail.length > 2 ? text.replace(new RegExp(`\\s+${tail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"), ` ${bit}`) : text.replace(first, `${first} ${bit}`);
+}
 function recBlurb(ticket, shown, pct, price) { return shown && pct && window.recWin ? recWin(price) : ""; }
 
 function recLine(leg) {
   const odds = Number(leg.odds), tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : "";
   const parts = String(leg.label || "").split(/\s+—\s+/), head = parts[0] || "";
   const where = parts.slice(1).join(" — ") || [leg.sport, leg.match, leg.kickoff && typeof when === "function" ? `${when(leg.kickoff)} ET` : ""].filter(Boolean).join(" · ") || "";
-  const market = String(leg.market || "").split(/\s+-\s+/).pop().replace(/^Either Player\s*/i, "").replace(/\s+\d+$/, "").trim(), low = head.toLowerCase(), race = market.match(/^race to\s+(\d+(?:\.\d+)?)\s+(.+)$/i), bare = market.match(/^(\d+(?:\.\d+)?\+?)\s+([a-z].+)$/i), unit = (market.match(/\b(points|tries|goals)\b/i) || [])[1], filled = race && !/race to/.test(low) ? `${head.replace(/\s+(points|tries|goals)$/i, "")} race to ${race[1]} ${race[2].toLowerCase()}` : bare && !/\d/.test(head) ? `${head} ${bare[1]} ${bare[2].toLowerCase()}` : /winning margin/i.test(market) && !/win by|\bby\s+\d|margin/i.test(low) ? head.replace(/(\d+(?:\.\d+)?\+)$/, "to win by $1") : unit && !low.includes(unit.toLowerCase()) && /\d/.test(head) ? `${head} ${unit.toLowerCase()}` : head;
+  const market = String(leg.market || "").split(/\s+-\s+/).pop().replace(/^Either Player\s*/i, "").replace(/\s+\d+$/, "").trim(), low = head.toLowerCase(), race = market.match(/^race to\s+(\d+(?:\.\d+)?)\s+(.+)$/i), bare = market.match(/^(\d+(?:\.\d+)?\+?)\s+([a-z].+)$/i), unit = (market.match(/\b(points|tries|goals)\b/i) || [])[1], filled = race && !/race to/.test(low) ? `${head.replace(/\s+(points|tries|goals)$/i, "")} race to ${race[1]} ${race[2].toLowerCase()}` : bare && !/\d/.test(head) ? `${head} ${bare[1]} ${bare[2].toLowerCase()}` : /winning margin/i.test(market) && !/win by|\bby\s+\d|margin/i.test(low) ? head.replace(/(\d+(?:\.\d+)?\+)$/, "to win by $1") : unit && !low.includes(unit.toLowerCase()) && /\d/.test(head) ? `${head} ${unit.toLowerCase()}` : recThing(head, market);
   const title = market && /\s+or\s+|\s+&\s+/i.test(filled) && !filled.toLowerCase().includes(market.toLowerCase()) ? `${filled} · ${market}` : filled, lines = title.split("\n"), say = lines.length < 2 && title.match(/^(.*?)\s+((?:to|race to)\s+.+)$/i), cut = lines.length < 2 && !say && title.match(/^(.*?)(?:\s*:\s*|\s+)((?:\d+(?:\.\d+)?\+|[+-]\d|over\b|under\b).+)$/i), year = lines.length < 2 && !say && !cut && title.match(/^(.*?)(,\s*.+)$/), pace = year && /per game|a game|no games/.test(year[2]), named = lines.length > 1 ? `<i>${esc(lines[0])}</i>${lines.slice(1).map((line) => `<em>${esc(line)}</em>`).join("")}` : say && say[1] ? `<i>${esc(say[1])}</i> ${esc(say[2])}` : cut && cut[1] ? `<i>${esc(cut[1])}</i> ${esc(cut[2])}` : pace ? `<i>${esc(year[1])}</i><em>${esc(year[2].replace(/^,\s*/, ""))}</em>` : year && year[1] ? `<i>${esc(year[1])}</i>${esc(year[2])}` : `<i>${esc(title)}</i>`;
   return `<span><b>${named}</b><i>${esc([tag, leg.pct, where].filter(Boolean).join(" · "))}</i></span>`;
 }
