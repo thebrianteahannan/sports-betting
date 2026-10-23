@@ -361,7 +361,7 @@ function recApply(board) {
 }
 
 function recChip(group, value, label, on) {
-  return `<button type="button" data-rec="${group}" data-value="${esc(value)}" class="${on ? "on" : ""}">${esc(label)}</button>`;
+  return `<button type="button" data-rec="${group}" data-value="${esc(value)}" class="${on ? "on" : ""}">${esc(label).replace(/ (\d+)$/, ' <span class="n">$1</span>')}</button>`;
 }
 
 function recOrder(board) {

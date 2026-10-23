@@ -7,11 +7,20 @@ import re
 _UNITS = (
     "shots on goal", "receiving yards", "rushing yards", "passing yards",
     "receptions", "rebounds", "strikeouts", "assists", "puck line", "run line",
-    "saves", "points", "goals", "shots", "made threes", "threes", "spread", "yards",
+    "saves", "points", "goals", "shots", "made threes", "threes", "tries", "spread", "yards",
 )
 
 
 def label(market: str, runner: str) -> str:
+    plain = re.sub(r"\s+\d+$", "", market).strip()
+    race = re.match(r"race to\s+(\d+(?:\.\d+)?)\s+(points|tries|goals)\b", plain, re.I)
+    if race and runner.strip() and not re.search(r"\d", runner):
+        return f"{runner.strip()} race to {race.group(1)} {race.group(2).lower()}"
+    if re.search(r"winning margin", plain, re.I) and not re.search(r"win by|\bby\s+\d|margin", runner, re.I):
+        text = re.sub(r"(\d+(?:\.\d+)?\+)$", r"to win by \1", runner.strip())
+        text = re.sub(r"(\d+(?:\.\d+)?\s+to\s+\d+(?:\.\d+)?)$", r"to win by \1", text)
+        if text != runner.strip():
+            return " ".join(text.split())
     if runner.lower() in {"over", "under"} or runner[:4].lower() in {"over", "unde"}:
         return f"{market}: {runner}"
     kind = _kind(market)

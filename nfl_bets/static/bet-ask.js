@@ -6,46 +6,54 @@ const BET_ASKS = [
   ["total", "The total"],
   ["recent", "Recent games"],
   ["rivalry", "Rivalry"],
-  ["worth", "Worth Risk?"],
 ];
 
-function paintBetAsk() {
-  const card = document.getElementById("rec-open");
+function paintBetAsk(host, bet) {
+  const card = host || document.getElementById("rec-open");
+  const scope = bet || card;
   if (!card || card.querySelector(".bet-ask")) return;
   const box = document.createElement("div");
   box.className = "bet-ask";
-  box.innerHTML = `<p>Ask the parrot about this game.</p><div class="bet-ask-picks"></div><form><input name="q" placeholder="Or ask your own question" autocomplete="off" maxlength="240"><button type="submit">Look it up</button></form><p class="bet-ask-say" hidden></p>`;
+  const brief = !!(host && host.classList.contains("rec-more"));
+  box.innerHTML = `${brief ? "" : `<p>Ask the parrot about this game.</p><div class="bet-ask-picks"></div>`}<form><input name="q" placeholder="Or ask your own question" autocomplete="off" maxlength="240"><button type="submit">Ask Parlay the Parrot</button></form><p class="bet-ask-say" hidden></p>`;
   const picks = box.querySelector(".bet-ask-picks");
-  BET_ASKS.forEach(([id, label]) => {
+  if (brief) {
+    const facts = document.createElement("div");
+    facts.className = "bet-brief";
+    box.append(facts);
+  }
+  (picks ? [...BET_ASKS] : []).forEach(([id, label]) => {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = label;
-    button.addEventListener("click", () => askBet(id, label));
+    button.addEventListener("click", () => askBet(id, label, scope));
     picks.append(button);
   });
   box.querySelector("form").addEventListener("submit", (event) => {
     event.preventDefault();
     const question = box.querySelector("input").value.trim();
-    if (question) askBet("", question);
+    if (question) askBet("", question, scope);
   });
-  const save = card.querySelector(".pick-save");
+  const save = card.id === "rec-open" ? card.querySelector(".pick-save") : null;
   if (save) save.before(box);
   else card.append(box);
 }
 
-function betTitle() {
-  const card = document.getElementById("rec-open");
-  return (card && card.querySelector("h2") && card.querySelector("h2").textContent) || "";
+function betTitle(card) {
+  const node = card || document.getElementById("rec-open");
+  const head = node && (node.querySelector("h2") || node.querySelector(":scope > b"));
+  return (head && head.textContent) || "";
 }
 
-function betAim() {
-  const card = document.getElementById("rec-open");
-  return (card && card.querySelector(".aim") && card.querySelector(".aim").textContent) || "";
+function betAim(card) {
+  const node = card || document.getElementById("rec-open");
+  const aim = node && (node.querySelector(".aim") || node.querySelector(".rec-gist em"));
+  return (aim && aim.textContent) || "";
 }
 
-function betLegs() {
-  const card = document.getElementById("rec-open");
-  const row = (window.recTickets || [])[Number(card && card.dataset.rec)];
+function betLegs(card) {
+  const node = card || document.getElementById("rec-open");
+  const row = (window.recTickets || [])[Number(node && node.dataset.rec)];
   const ticket = row && row.ticket;
   return ((ticket && ticket.legs) || []).map((leg) => ({
     label: leg.label || "",
@@ -60,16 +68,20 @@ function showAsk(say, text) {
   say.replaceChildren();
   lines.forEach((line) => {
     const row = document.createElement("span");
-    row.textContent = line;
-    if (list && line.indexOf(",") === -1 && / at /.test(line)) row.className = "bet-ask-game";
-    else if (list && line.indexOf(",") === -1) row.className = "bet-ask-team";
+    if (line.startsWith("# ")) {
+      row.textContent = line.slice(2);
+      row.className = / at /.test(line) ? "bet-ask-game" : "bet-ask-head";
+    } else {
+      row.textContent = line;
+      if (list && line.indexOf(",") === -1 && !/[.]/.test(line) && line.length < 42) row.className = "bet-ask-team";
+    }
     say.append(row);
   });
 }
 
-function worthFacts() {
-  const card = document.getElementById("rec-open");
-  const row = (window.recTickets || [])[Number(card && card.dataset.rec)];
+function worthFacts(card) {
+  const node = card || document.getElementById("rec-open");
+  const row = (window.recTickets || [])[Number(node && node.dataset.rec)];
   const ticket = row && row.ticket;
   const price = Number(ticket && ticket.american);
   if (!ticket || !Number.isFinite(price) || !price) return "The price is not on this bet.";
@@ -83,28 +95,57 @@ function worthFacts() {
   const rate = typeof recPct === "function" ? recPct(archive, 0) : "—";
   const hit = /%$/.test(String(rate)) ? Number(String(rate).replace("%", "")) : NaN;
   const base = `A $${stake} bet at ${shown} returns $${back.toFixed(2)}, so the profit is $${profit.toFixed(2)} and a miss loses $${stake}. It has to win ${need.toFixed(1)}% of the time to break even.`;
-  if (!Number.isFinite(hit)) return `${base} This strategy has no settled bets yet, so the long run is not known.`;
+  if (!Number.isFinite(hit)) return base;
   const each = Math.round((hit / 100 * profit - (1 - hit / 100) * stake) * 100) / 100;
   const hundred = Math.round(each * 100 * 100) / 100;
   const side = each >= 0 ? "a profit" : "a loss";
   return `${base} This strategy has hit ${rate} of ${recPct.n} settled bets. That is ${hit >= need ? "above" : "below"} the break-even. Repeating the $${stake} bet expects ${side} of $${Math.abs(each).toFixed(2)} each time, about $${Math.abs(hundred).toFixed(2)} over 100 bets.`;
 }
 
-async function askBet(attribute, question) {
-  const card = document.getElementById("rec-open");
-  const say = card && card.querySelector(".bet-ask-say");
+function worthSay(node) {
+  let say = node.querySelector(":scope > .worth-say");
+  if (say) return say;
+  say = document.createElement("p");
+  say.className = "bet-ask-say worth-say";
+  const copy = node.querySelector(".rec-copy");
+  if (copy) copy.after(say);
+  else node.append(say);
+  return say;
+}
+
+async function askBet(attribute, question, card, sayNode) {
+  const node = card || document.getElementById("rec-open");
+  if (attribute === "worth" && node) {
+    const facts = worthFacts(node);
+    const say = worthSay(node);
+    say.hidden = false;
+    say.textContent = facts;
+    node.querySelectorAll(".worth-bet").forEach((button) => button.classList.add("on"));
+    try {
+      const response = await fetch("/api/bet-ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attribute: "worth", question, worth: facts, title: betTitle(node), aim: betAim(node), legs: [] }),
+      });
+      const data = await response.json();
+      say.textContent = data.answer || data.error || facts;
+    } catch (err) { /* the price math stays on the card */ }
+    return;
+  }
+  let say = sayNode || (node && node.querySelector(".bet-ask > .bet-ask-say"));
+  if (node && !say) { say = document.createElement("p"); say.className = "bet-ask-say"; node.append(say); }
   if (!say) return;
-  const ai = !attribute || attribute === "worth";
+  const ai = !attribute;
   say.hidden = false;
-  say.textContent = ai ? "Asking the parrot." : "Checking the public log.";
-  card.querySelectorAll(".bet-ask-picks button").forEach((button) => {
-    button.classList.toggle("on", attribute && button.textContent === question);
+  say.textContent = attribute === "all" ? "Checking the games." : ai ? "Asking the parrot." : "Checking the public log.";
+  node.querySelectorAll(".bet-ask-picks button, .worth-bet").forEach((button) => {
+    button.classList.toggle("on", attribute === "worth" ? button.classList.contains("worth-bet") : attribute && attribute !== "all" && button.textContent === question);
   });
   try {
     const response = await fetch("/api/bet-ask", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ attribute: attribute === "worth" ? "worth" : attribute, question, worth: attribute === "worth" ? worthFacts() : "", title: betTitle(), aim: betAim(), legs: betLegs() }),
+      body: JSON.stringify({ attribute: attribute === "worth" ? "worth" : attribute, question, worth: attribute === "worth" ? worthFacts(node) : "", title: betTitle(node), aim: betAim(node), legs: betLegs(node) }),
     });
     const data = await response.json();
     showAsk(say, data.answer || data.error || (ai ? "The parrot did not answer." : "That did not come back."));
@@ -112,6 +153,43 @@ async function askBet(attribute, question) {
     say.textContent = ai ? "The parrot did not answer." : "That did not come back.";
   }
 }
+
+function showMore(bet) {
+  const button = bet.querySelector(".more-bet");
+  const open = bet.querySelector(".rec-more");
+  if (open) {
+    const said = open.querySelector(".bet-ask-say");
+    if (said && said.textContent) bet.append(said);
+    open.remove();
+    if (button) button.textContent = "More Info";
+    return;
+  }
+  const box = document.createElement("div");
+  box.className = "rec-more";
+  const row = (window.recTickets || [])[Number(bet.dataset.rec)];
+  const ticket = row && row.ticket;
+  if (ticket && typeof starHtml === "function") {
+    const stars = document.createElement("p");
+    stars.className = "pick-save";
+    stars.innerHTML = starHtml(typeof cardGood === "function" ? cardGood(ticket.card, ticket) : 0, ticket.card, "", "");
+    box.append(stars);
+  }
+  bet.append(box);
+  paintBetAsk(box, bet);
+  const brief = box.querySelector(".bet-brief");
+  if (brief) askBet("all", "", bet, brief);
+  const stray = bet.querySelector(":scope > .bet-ask-say");
+  const slot = box.querySelector(".bet-ask-say");
+  if (stray && slot) slot.replaceWith(stray);
+  if (button) button.textContent = "Hide Info";
+}
+
+document.addEventListener("click", (event) => {
+  const worth = event.target.closest(".rec-board .worth-bet");
+  if (worth) { askBet("worth", "Worth Risk?", worth.closest(".rec-bet")); return; }
+  const more = event.target.closest(".rec-board .more-bet");
+  if (more) showMore(more.closest(".rec-bet"));
+});
 
 if (typeof window.openRec === "function") {
   const openRecWas = window.openRec;

@@ -360,8 +360,8 @@ function recLine(leg) {
   const odds = Number(leg.odds), tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : "";
   const parts = String(leg.label || "").split(/\s+—\s+/), head = parts[0] || "";
   const where = parts.slice(1).join(" — ") || [leg.sport, leg.match, leg.kickoff && typeof when === "function" ? `${when(leg.kickoff)} ET` : ""].filter(Boolean).join(" · ") || "";
-  const market = String(leg.market || "").split(/\s+-\s+/).pop().replace(/^Either Player\s*/i, "").trim();
-  const title = market && /\s+or\s+|\s+&\s+/i.test(head) && !head.toLowerCase().includes(market.toLowerCase()) ? `${head} · ${market}` : head, say = title.match(/^(.*?)\s+(to\s+.+)$/i), cut = !say && title.match(/^(.*?)(?:\s*:\s*|\s+)((?:\d+(?:\.\d+)?\+|[+-]\d|over\b|under\b).+)$/i), year = !say && !cut && title.match(/^(.*?)(,\s*.+)$/), named = say && say[1] ? `<i>${esc(say[1])}</i> ${esc(say[2])}` : cut && cut[1] ? `<i>${esc(cut[1])}</i> ${esc(cut[2])}` : year && year[1] ? `<i>${esc(year[1])}</i>${esc(year[2])}` : `<i>${esc(title)}</i>`;
+  const market = String(leg.market || "").split(/\s+-\s+/).pop().replace(/^Either Player\s*/i, "").replace(/\s+\d+$/, "").trim(), low = head.toLowerCase(), race = market.match(/^race to\s+(\d+(?:\.\d+)?)\s+(.+)$/i), bare = market.match(/^(\d+(?:\.\d+)?\+?)\s+([a-z].+)$/i), unit = (market.match(/\b(points|tries|goals)\b/i) || [])[1], filled = race && !/race to/.test(low) ? `${head.replace(/\s+(points|tries|goals)$/i, "")} race to ${race[1]} ${race[2].toLowerCase()}` : bare && !/\d/.test(head) ? `${head} ${bare[1]} ${bare[2].toLowerCase()}` : /winning margin/i.test(market) && !/win by|\bby\s+\d|margin/i.test(low) ? head.replace(/(\d+(?:\.\d+)?\+)$/, "to win by $1") : unit && !low.includes(unit.toLowerCase()) && /\d/.test(head) ? `${head} ${unit.toLowerCase()}` : head;
+  const title = market && /\s+or\s+|\s+&\s+/i.test(filled) && !filled.toLowerCase().includes(market.toLowerCase()) ? `${filled} · ${market}` : filled, say = title.match(/^(.*?)\s+((?:to|race to)\s+.+)$/i), cut = !say && title.match(/^(.*?)(?:\s*:\s*|\s+)((?:\d+(?:\.\d+)?\+|[+-]\d|over\b|under\b).+)$/i), year = !say && !cut && title.match(/^(.*?)(,\s*.+)$/), named = say && say[1] ? `<i>${esc(say[1])}</i> ${esc(say[2])}` : cut && cut[1] ? `<i>${esc(cut[1])}</i> ${esc(cut[2])}` : year && year[1] ? `<i>${esc(year[1])}</i>${esc(year[2])}` : `<i>${esc(title)}</i>`;
   return `<span><b>${named}</b><i>${esc([tag, leg.pct, where].filter(Boolean).join(" · "))}</i></span>`;
 }
 
@@ -380,7 +380,7 @@ function birdMenu(kind) {
   const past = !!window.recPast;
   board.addEventListener("click", (event) => {
     const bet = event.target.closest(".rec-bet");
-    if (bet) { if (event.target.closest(".share-bet")) return; if (window.openRec) openRec(bet.dataset.rec); return; }
+    if (bet) return;
     const strategy = event.target.closest(".rec-strategy");
     if (strategy) strategy.classList.toggle("open");
   });
@@ -427,7 +427,7 @@ function birdMenu(kind) {
         const copy = document.createElement("p");
         copy.className = "rec-copy";
         copy.textContent = recBlurb(ticket, shown, pct, price);
-        bet.append(head); if (gist.innerHTML) bet.append(gist); bet.insertAdjacentHTML("beforeend", `${ticket.legs.map(recLine).join("")}<button type="button" class="share-bet" data-share="rec" data-share-id="${bet.dataset.rec}" aria-label="Share this bet"></button>`); if (copy.textContent) bet.append(copy);
+        bet.append(head); if (gist.innerHTML) bet.append(gist); bet.insertAdjacentHTML("beforeend", `${ticket.legs.map(recLine).join("")}<button type="button" class="worth-bet" aria-label="Worth the risk?">Worth the risk?</button><button type="button" class="share-bet" data-share="rec" data-share-id="${bet.dataset.rec}" aria-label="Share this bet"></button>`); if (copy.textContent) bet.append(copy); bet.insertAdjacentHTML("beforeend", `<button type="button" class="more-bet">More Info</button>`);
         block.append(bet);
       });
     heading.querySelector(".rec-count").textContent = seen.size;

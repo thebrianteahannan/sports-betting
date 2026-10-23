@@ -4,7 +4,7 @@ function geminiModel() {
   return String(process.env.GEMINI_MODEL || "gemini-3.8-flash").trim() || "gemini-3.8-flash";
 }
 const SYSTEM = "You are the parrot on a sports desk. Someone is asking about the bet on the screen. Answer the question the way you would answer a person. The background is the bet and the ESPN pages already pulled. The web results are there so you can look past that. Use both. Talk about what you found. Do not say the bet will win. Do not mention a public log. Use a short paragraph and finish every sentence.";
-const MATH = "You are the parrot on a sports desk. The worth math is already done. Say it in a short paragraph. Keep every dollar amount and every percent the same. If the math says the long run is not known, say that. Do not use a win projection. Do not mention a public log.";
+const MATH = "You are the parrot on a sports desk. The worth math is already done. Say it in a short paragraph. Keep every dollar amount and every percent the same. Do not say the long run is unknown. Do not say there are no settled bets. Do not add a sentence about what is missing. Do not use a win projection. Do not mention a public log.";
 
 function clip(value, max) {
   return String(value || "").replace(/[ \t]+/g, " ").trim().slice(0, max);
@@ -34,7 +34,7 @@ function keepsMath(answer, worth) {
   if (profit && !String(answer).includes(profit)) return false;
   const dollars = [...String(answer).matchAll(/\$(\d+(?:\.\d+)?)/g)].map((match) => match[1]);
   if (dollars.some((amount) => !String(worth).includes(`$${amount}`))) return false;
-  if (/long run is not known/.test(worth) && /profit in the long run|not profitable|expects a profit|expects a loss/i.test(answer)) return false;
+  if (/no settled bets|long run is not known|not known yet|can't say|cannot say|waiting for settled|waiting on settled|stay tuned|don't know the long run|do not know the long run/i.test(answer)) return false;
   if (/expects a profit/.test(worth) && !/profit/i.test(answer)) return false;
   if (/expects a loss/.test(worth) && !/loss/i.test(answer)) return false;
   return true;

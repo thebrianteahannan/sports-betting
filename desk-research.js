@@ -60,6 +60,7 @@ function getJson(url) {
 
 function wanted(attribute, question) {
   const key = String(attribute || "").trim();
+  if (key === "all") return ["out", "rest", "building", "weather", "total", "recent", "rivalry"];
   if (key) return [key];
   const q = String(question || "").toLowerCase();
   const hits = [];
@@ -391,7 +392,9 @@ function createResearch(readKey) {
         return { error: error.message || "The bird could not think of that." };
       }
     }
+    const all = body.attribute === "all";
     const topics = wanted(body.attribute, question);
+    const heads = { out: "Who is out", rest: "Rest", building: "The building", weather: "Wind and rain", total: "The total", recent: "Recent games", rivalry: "Rivalry" };
     const board = (await readKey("bets/board.json")) || {};
     const games = [];
     legs.forEach((leg) => {
@@ -460,19 +463,25 @@ function createResearch(readKey) {
       catch (err) { lines.push(`The public log did not come back for ${game.match || "this game"}.`); continue; }
       const block = [];
       for (const topic of topics) {
+        let piece = [];
         if (topic === "recent") {
-          try { block.push(...await meetingLines(data, path)); }
-          catch (err) { block.push("Recent games between these teams did not come back."); }
-        } else block.push(...topicLines(topic, data, game, question));
+          try { piece = await meetingLines(data, path); }
+          catch (err) { piece = ["Recent games between these teams did not come back."]; }
+        } else piece = topicLines(topic, data, game, question);
+        const rows = piece.flatMap((line) => String(line).split("\n")).filter(Boolean);
+        if (all && rows.length) block.push(`# ${heads[topic] || topic}`, ...rows);
+        else block.push(...piece);
       }
+      if (all && block.length && games.length > 1) lines.push(`# ${matchName(game) || "This game"}`, ...block);
+      else if (all && block.length) lines.push(...block);
       const grouped = block.some((line) => line.includes("\n"));
-      if (games.length > 1 && block.length) {
+      if (!all && games.length > 1 && block.length) {
         const title = matchName(game) || "This game";
         lines.push(grouped ? `${title}\n${block.join("\n")}` : `${title}. ${block.join(" ")}`);
-      } else lines.push(...block);
+      } else if (!all) lines.push(...block);
     }
     const broken = lines.some((line) => line.includes("\n"));
-    const answer = [lead, ...lines].filter(Boolean).join(broken ? "\n" : " ");
+    const answer = [lead, ...lines].filter(Boolean).join(all || broken ? "\n" : " ");
     return { answer: answer || "The public log does not have that for this game." };
   };
 }
