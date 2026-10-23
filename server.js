@@ -22,6 +22,7 @@ const { createAdmins } = require("./desk-admins");
 const { createDocs } = require("./desk-docs"); const { chooseBet } = require("./choose-api");
 const { createPull } = require("./desk-pull");
 const { createNotes } = require("./desk-notes");
+const { createResearch } = require("./desk-research");
 const ROOT = __dirname;
 loadEnv(path.join(ROOT, ".env"));
 const sendDoc = createDocs(ROOT);
@@ -100,6 +101,7 @@ const { ignoreView, sweepIgnored } = createIgnore(readKey, writeKey, archive);
 const pullLive = createPull(readKey, writeKey, ROOT);
 const { adminList, setMemberAdmin, saveAsk, noteTaste, saveRated } = createAdmins(readKey, writeKey);
 const { list: noteList, save: noteSave } = createNotes(readKey, writeKey);
+const researchBet = createResearch(readKey);
 
 async function picks() {
   const data = (await readKey("bets/picks.json")) || { picks: [] };
@@ -398,7 +400,7 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/ask-bet.css", "/us-map.svg", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/bet-ask.js", "/ask-bet.css", "/us-map.svg", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
       serveStatic(res, url.pathname.slice(1));
       return;
     }
@@ -461,6 +463,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST") {
       const body = await readBody(req);
       if (url.pathname === "/api/choose") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await chooseBet(body, await board())); return; }
+      if (url.pathname === "/api/bet-ask") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await researchBet(body)); return; }
       if (url.pathname === "/api/admin/pull") {
         const user = await memberFrom(req);
         if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }

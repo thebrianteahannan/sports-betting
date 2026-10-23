@@ -420,16 +420,16 @@ function recGameHit(ticket, name) {
 function recSay() {
   const sports = recFilter.sports;
   const league = sports.length > 1 ? `${sports.slice(0, -1).join(", ")} and ${sports.at(-1)}` : (sports[0] || "");
-  const kind = recFilter.kind || "";
   const picks = recFilter.legs === "1" ? "1-pick" : recFilter.legs ? `${recFilter.legs}-pick` : "";
   const pay = { safe: "safe", good: "good", payout: "best-paying" }[recFilter.aim] || "";
-  const bits = [pay, picks, league, kind].filter(Boolean).join(" ");
+  const bits = [pay, picks, league, recFilter.kind || ""].filter(Boolean).join(" ");
   const time = recFilter.when === "today" ? " from today" : recFilter.when === "week" ? " from this week" : "";
   const game = recFilter.game ? ` for ${recFilter.game}` : "";
+  const order = `Parlay the Parrot picked these strategies, ${recSortHigh ? "highest" : "lowest"} ${["today", "this week", "this month", "this year"][Number(recSort)] || "this week"} first.`;
   const tail = `${bits ? `${bits} ` : ""}${recPast ? "finished bets" : "bets"}${time}${game}`;
-  if (recFilter.aim === "top") return `The safest of these ${tail}.`;
-  if (!recFilter.when && !sports.length && !recFilter.game && !recFilter.kind && !recFilter.legs && !pay) return `${recPast ? "Every finished recommended bet" : "Every recommended bet you can place"}, grouped by strategy, ${recSortHigh ? "highest" : "lowest"} ${["today", "this week", "this month", "this year"][Number(recSort)] || "this week"} first.`;
-  return `${tail.charAt(0).toUpperCase()}${tail.slice(1)}.`;
+  if (recFilter.aim === "top") return `The safest of these ${tail}. ${order}`;
+  if (!recFilter.when && !sports.length && !recFilter.game && !recFilter.kind && !recFilter.legs && !pay) return `${recPast ? "Every finished bet" : "Every bet you can place"}. ${order}`;
+  return `${tail.charAt(0).toUpperCase()}${tail.slice(1)}. ${order}`;
 }
 
 function recTally(rows, key, value) {

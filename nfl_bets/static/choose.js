@@ -439,16 +439,11 @@ window.recWin = recWin; window.paintChoices = paintChoices; window.paintEdits = 
 paintChoices();
 
 function recLeg(leg) {
-  const odds = Number(leg.odds);
-  const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : "";
   const parts = String(leg.label || "").split(" — ");
   const who = esc(String(leg.player || parts[0] || "").split(/\d/)[0].trim().toLowerCase());
   const line = esc((String(parts[0]).match(/(\d+(?:\.\d+)?)/) || [])[1] || "");
   const word = esc((String(parts[0]).toLowerCase().match(/shots|threes|assists|rebounds|points|yards|receptions|strikeouts|hits|goals|saves|touchdowns/) || [])[0] || "");
-  const clock = leg.kickoff && typeof when === "function" && !/\d{1,2}:\d{2}\s*[AP]M/i.test(leg.label || "") ? `${when(leg.kickoff)} ET` : "";
-  const own = [leg.sport, leg.match, clock].filter(Boolean).join(", ");
-  const more = parts.length > 1 ? ` — ${esc(parts.slice(1).join(" — "))}` : (own ? ` · ${esc(own)}` : "");
-  return `<li data-drop="${who}" data-line="${line}" data-word="${word}"><b>${esc(tag)}</b><span>${esc(parts[0])}<span class="leg-more">${more}</span>${(read => read ? `<span class="quiet">${esc(read)}</span>` : "")([leg.fact, leg.sway, String(leg.form || "").replace(/^In form:\s*/i, ""), leg.weather].filter(Boolean).join(" "))}${typeof legOdds === "function" ? legOdds(leg) : ""}</span><em>${esc(leg.pct || "")}</em></li>`;
+  return `<li class="rec-leg" data-drop="${who}" data-line="${line}" data-word="${word}">${recLine(leg)}</li>`;
 }
 
 function recWin(price) {

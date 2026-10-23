@@ -34,7 +34,7 @@
   #desk.tv-full #desk-glass #rec-open.chalk:not(#chooser) {
     width: calc(100% - 1.1rem); margin: 0.3rem auto 0.7rem; padding: 0.55rem 0.7rem 0.7rem;
   }
-  #desk.tv-full #desk-glass #rec-open h2 { font-size: 22px; line-height: 1.05; letter-spacing: 0.02em; margin: 0 0 0.2rem; }
+  #desk.tv-full #desk-glass #rec-open h2 { font-size: 22px; line-height: 1.2; letter-spacing: 0; text-transform: none; margin: 0 0 0.35rem; }
   #desk.tv-full #desk-glass #rec-open > .pick-save {
     position: static; top: auto; left: auto; right: auto; width: auto; margin: 0 0 0.4rem;
     flex-wrap: wrap; justify-content: flex-start; gap: 0.35rem;
@@ -188,7 +188,11 @@
 .rec-board .rec-bet > span b i, #choice-result .rec-bet > span b i { color: #3dff6e; font-style: normal; }
 .rec-board .rec-bet > span > i, #choice-result .rec-bet > span > i { display: block; margin-top: 0.08rem; color: #d5deea; font-style: normal; font-weight: 400; font-size: 13px; line-height: 1.35; }
 .rec-board .rec-bet .rec-gist:empty, #choice-result .rec-bet .rec-gist:empty { display: none; }
-#desk-glass #rec-open li .leg-more { display: block; margin-top: 0.08rem; color: #d5deea; font-weight: 400; }
+#desk-glass #rec-open h2 { letter-spacing: 0; line-height: 1.2; text-transform: none; }
+#desk.tv-full #desk-glass #rec-open li.rec-leg { display: block; padding: 0.55rem 0; border-top: 1px solid rgba(61, 255, 110, 0.28); }
+#desk-glass #rec-open li.rec-leg > span b { display: block; color: #fff; font-family: inherit; font-size: 15px; font-weight: 700; line-height: 1.35; letter-spacing: 0; text-transform: none; }
+#desk-glass #rec-open li.rec-leg > span b i { color: #3dff6e; font-style: normal; }
+#desk-glass #rec-open li.rec-leg > span > i { display: block; margin-top: 0.12rem; color: #d5deea; font-style: normal; font-weight: 400; font-size: 13px; line-height: 1.35; }
 .rec-board .rec-filters { display: flex; flex-direction: column; gap: 0.45rem; margin: 0 0 0.15rem; padding: 0.4rem 0.55rem; border: 1px solid #3dff6e; border-radius: 10px; background: rgba(4, 16, 24, 0.92); }
 .rec-board .rec-filters:not(.open) .row { display: none; }
 .rec-board .rec-filters .rec-say { margin: 0.15rem 0 0; color: #f4fff6; font-family: "Outfit", sans-serif; font-size: 14px; font-weight: 400; line-height: 1.35; }
@@ -417,4 +421,22 @@
   #desk.bird-on #bird-guide:has(#bird-born) #greet-legal span:last-child { max-width: 11rem; }
 }
 body.needs-member #who { display: none; }
+.bet-ask { margin: 0.7rem 0 0.2rem; }
+.bet-ask > p { margin: 0 0 0.4rem; color: #e7c15a; }
+.bet-ask-picks { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.bet-ask-picks button, .bet-ask form button {
+  border: 1px solid #3dff6e; border-radius: 999px; background: transparent; color: #fff;
+  font: inherit; font-size: 13px; padding: 0.28rem 0.65rem; cursor: pointer;
+}
+.bet-ask-picks button.on { background: #143222; }
+.bet-ask form { display: flex; gap: 0.4rem; margin-top: 0.45rem; }
+.bet-ask input {
+  flex: 1; min-width: 0; border: 1px solid #3a4d44; border-radius: 8px; background: #07140f;
+  color: #fff; font: inherit; font-size: 14px; padding: 0.35rem 0.55rem;
+}
+.bet-ask-say { color: #fff !important; margin-top: 0.55rem !important; line-height: 1.35; }
+.bet-ask-say span { display: block; }
+.bet-ask-say .bet-ask-game { margin-top: 0.65rem; color: #e7c15a; font-weight: 700; }
+.bet-ask-say .bet-ask-game:first-child { margin-top: 0; }
+.bet-ask-say .bet-ask-team { margin-top: 0.4rem; color: #3dff6e; font-weight: 700; }
 #desk-menu:hover, #desk.menu-open #desk-menu { background: rgba(4, 16, 12, 0.88); color: #3dff6e; }
