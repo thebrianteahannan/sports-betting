@@ -263,15 +263,15 @@ async function gather(games, kind) {
       }
     }
   }
-  await Promise.all(Array.from({ length: Math.min(6, games.length) }, worker));
+  await Promise.all(Array.from({ length: Math.min(12, games.length) }, worker));
   return { pools, trouble };
 }
 
-function spaced(rows, width, aim) {
+function spaced(rows, width, aim, count) {
   const sorted = rows.slice().sort((a, b) => a[0].odds - b[0].odds);
-  let ordered = aim === "payout" || (aim === "pay" && payGoal > 8) ? sorted.slice().reverse() : sorted;
-  if (aim !== "payout" && !(aim === "pay" && payGoal > 8)) {
-    const cap = aim === "pay" ? 150 : aim === "good" ? 100 : -110;
+  let ordered = aim === "payout" ? sorted.slice().reverse() : sorted;
+  if (aim === "pay" && count > 1) { const each = Math.pow(Math.max(payGoal, 1.01), 1 / count); ordered = sorted.slice().sort((a, b) => Math.abs(americanDecimal(a[0].odds) - each) - Math.abs(americanDecimal(b[0].odds) - each)); } else if (aim !== "payout") {
+    const cap = aim === "good" ? 100 : -110;
     const band = sorted.filter((row) => row[0].odds <= cap);
     const fill = sorted.filter((row) => row[0].odds <= 150);
     ordered = band.length >= width ? band : fill.length ? fill : sorted;
@@ -296,11 +296,11 @@ function scoreOf(decimal, aim, combo, mix) {
   const rest = mix === "safer" ? probs.slice(0, -1) : mix === "long" ? probs.slice(1) : probs;
   const restMean = rest.reduce((sum, prob) => sum + prob, 0) / (rest.length || 1);
   const gap = mix === "safer" ? probs.at(-1) - restMean : mix === "long" ? restMean - probs[0] : 1;
-  const mixCost = probs.length < 2 ? 0 : rest.reduce((sum, prob) => sum + Math.abs(prob - (mix === "safer" || mix === "long" ? restMean : mean)), 0) * 1.2 + (mix === "safer" || mix === "long" ? Math.max(0, 0.15 - gap) * 5 : 0);
+  const mixCost = mix === "any" || probs.length < 2 ? 0 : rest.reduce((sum, prob) => sum + Math.abs(prob - (mix === "safer" || mix === "long" ? restMean : mean)), 0) * 1.2 + (mix === "safer" || mix === "long" ? Math.max(0, 0.15 - gap) * 5 : 0);
   if (aim === "payout") return -decimal + mixCost;
   if (aim === "top") return decimal + mixCost;
   const goal = aim === "pay" ? payGoal : americanDecimal(AIM[aim]);
-  return Math.abs(decimal - goal) + (aim === "good" && decimal < goal ? 10 : 0) + mixCost;
+  return (aim === "pay" && decimal > goal ? (decimal - goal) * (decimal > goal * 1.35 ? 8 : 1) : Math.abs(decimal - goal)) + (aim === "good" && decimal < goal ? 10 : 0) + mixCost;
 }
 
 function decimalOf(combo) {
@@ -347,9 +347,9 @@ function pick(pools, count, aim, skip, holdList, dropList, mix) {
   const drop = new Set((dropList || []).map((name) => pinOf(name).name).filter(Boolean));
   const asked = (holdList || []).map(pinOf).filter((row) => row.name);
   const hold = [...new Set(asked.map((row) => row.name))];
-  const source = drop.size ? pools.map(([game, legs, live]) => [game, legs.filter((leg) => !drop.has(who(leg))), live]) : pools;
-  const width = count >= 8 ? 1 : count >= 5 ? 2 : 8;
-  const menus = source.map(([game, legs, live]) => spaced(legs.map((leg) => [leg, game, live]), width, aim)).filter((rows) => rows.length);
+  const source = (drop.size ? pools.map(([game, legs, live]) => [game, legs.filter((leg) => !drop.has(who(leg))), live]) : pools).slice(); if (aim === "pay" && count > 1) { const each = Math.pow(Math.max(payGoal, 1.01), 1 / count); const near = (legs) => legs.reduce((best, leg) => Math.min(best, Math.abs(americanDecimal(leg.odds) - each)), 99); source.sort((a, b) => near(a[1]) - near(b[1])); }
+  const width = count >= 8 ? 1 : count >= 5 ? 2 : count >= 4 ? 3 : 6;
+  const menus = source.map(([game, legs, live]) => spaced(legs.map((leg) => [leg, game, live]), width, aim, count)).filter((rows) => rows.length);
   hold.forEach((name) => {
     if (menus.some((rows) => rows.some((row) => who(row[0]) === name))) return;
     source.some(([game, legs, live]) => {
@@ -380,12 +380,12 @@ function pick(pools, count, aim, skip, holdList, dropList, mix) {
     const pinGames = new Set(pins.map((row) => String(row[1].id || "")));
     const rest = menus.map((menu) => menu.filter((row) => !used.has(who(row[0])) && !pinGames.has(String(row[1].id || "")))).filter((menu) => menu.length);
     const need = Math.max(0, count - pins.length);
-    let rankedHold = need ? search(rest.slice(0, 14), need, aim, true, mix) : [[]];
+    let rankedHold = need ? search(rest.slice(0, count >= 5 ? 16 : count >= 4 ? 24 : 48), need, aim, true, mix) : [[]];
     if (need && !rankedHold.length) rankedHold = search(rest.flatMap((menu) => menu.map((row) => [row])).slice(0, 24), need, aim, false, mix);
     const combo = pins.concat(rankedHold[0] || []);
     if (combo.length >= count) return { combo: combo.slice(0, count), alts: rankedHold.slice(1, 9).map((rest) => pins.concat(rest).slice(0, count)), only: rankedHold.length === 1, again: false, kept: pins.length === hold.length };
   }
-  let ranked = search(menus.slice(0, 14), count, aim, true, mix);
+  let ranked = search(menus.slice(0, count >= 5 ? 16 : count >= 4 ? 24 : 48), count, aim, true, mix);
   if (!ranked.length) {
     const flat = menus.flatMap((menu) => menu.map((row) => [row]));
     ranked = search(flat.slice(0, count >= 8 ? 18 : 24), count, aim, false, mix);
@@ -466,7 +466,7 @@ async function chooseBet(body, board) {
   const count = any ? 0 : Math.min(10, Math.max(1, Number(body.legs) || 3));
   const kind = String(body.kind || "any").slice(0, 80) || "any";
   betStake = Math.min(100000, Math.max(0.5, Math.round((Number(body.stake) || 5) * 100) / 100)); payGoal = Number(body.profit) > 0 ? 1 + Number(body.profit) / betStake : 0; const aim = payGoal ? "pay" : (["top", "safe", "good", "payout"].includes(body.aim) ? body.aim : "top");
-  const mix = ["even", "safer", "long"].includes(body.mix) ? body.mix : "even";
+  const mix = ["any", "even", "safer", "long"].includes(body.mix) ? body.mix : "even";
   const span = body.when === "week" ? "week" : "today";
   const games = slate(Array.isArray(board.games) ? board.games : [], picked, ids, span);
   if (body.list === "kinds") return listKinds(games);
@@ -480,7 +480,7 @@ async function chooseBet(body, board) {
       : (sports.length ? `No game in ${sports.join(", ")} is on today.` : "No game is on today.");
     return empty(span === "week" ? (sports.length ? `No game in ${sports.join(", ")} is left this week.` : "No game is left this week.") : todayNote, safeAim);
   }
-  const { pools, trouble } = await gather(games.slice(0, 30), kind);
+  const { pools, trouble } = await gather(games, kind);
   if (trouble && !pools.length) return empty(trouble, aim);
   const hold = Array.isArray(body.hold) ? body.hold : [];
   const drop = Array.isArray(body.drop) ? body.drop : [];
@@ -491,7 +491,7 @@ async function chooseBet(body, board) {
   const built = card(pickedCombo.combo, picked, kind, used, aim, pickedCombo.only);
   built.again = pickedCombo.again;
   built.offers = (pickedCombo.alts || []).slice(0, 8).map((combo) => card(combo, picked, kind, used, aim, false));
-  try { const ranked = JSON.parse(require("child_process").execFileSync("python3", ["-m", "nfl_bets.listed"], { input: JSON.stringify({ rows: [built].concat(built.offers || []), games }), encoding: "utf8", timeout: 25000, cwd: __dirname })); ranked.forEach((row, index) => { const host = index ? built.offers[index - 1] : built; if (!host) return; if (row.edge) { host.edge = true; host.why = row.why || ""; } else { delete host.edge; delete host.why; } }); } catch (error) { if (built.offers.length && built.offers.every((offer) => offer.american !== built.american)) { built.edge = true; built.why = { payout: "This parlay pays the most of these.", top: "This parlay has the highest chance of these.", safe: "This is the safest of these.", good: "This is the closest to even money.", pay: "This parlay is the closest to the profit you asked for." }[aim]; } }
+  try { const ranked = JSON.parse(require("child_process").execFileSync("python3", ["-m", "nfl_bets.listed"], { input: JSON.stringify({ rows: [built].concat(built.offers || []), games }), encoding: "utf8", timeout: 25000, cwd: __dirname })); ranked.forEach((row, index) => { const host = index ? built.offers[index - 1] : built; if (!host) return; if (aim === "pay") { delete host.edge; delete host.why; return; } if (row.edge) { host.edge = true; host.why = row.why || ""; } else { delete host.edge; delete host.why; } }); if (aim === "pay") { built.edge = true; built.why = "This parlay is the closest to the profit you asked for."; } } catch (error) { if (built.offers.length && built.offers.every((offer) => offer.american !== built.american)) { built.edge = true; built.why = { payout: "This parlay pays the most of these.", top: "This parlay has the highest chance of these.", safe: "This is the safest of these.", good: "This is the closest to even money.", pay: "This parlay is the closest to the profit you asked for." }[aim]; } }
   if (hold.length && pickedCombo.kept === false) built.note = `${built.note} A leg you wanted to keep did not fit, so this one replaced it too.`.trim();
   await addSway(built.legs, games);
   return built;

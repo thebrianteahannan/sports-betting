@@ -233,12 +233,12 @@ function askButtons(step) {
   }
   if (step === "money") return [choice.needProfit ? "Type the profit you want off that bet." : "How much do you want to bet, and how much profit do you want off it?", [["ask", "Use this", "money:go"]]];
   if (step === "risk") return [riskSay(choice.stake, choice.profit) || "Type the profit you want off that bet.", [["ask", "Find it", "risk:go"]]];
-  if (step === "mix") return choice.legs === 1 ? null : ["Same chance on every leg, or let one stand out?", [["ask", "Same chance", "mix:even"], ["ask", "One safer", "mix:safer"], ["ask", "One longer", "mix:long"]]];
+  if (step === "mix") return choice.legs === 1 ? null : ["Same chance on every leg, or let one stand out?", [["ask", "Any", "mix:any"], ["ask", "Same chance", "mix:even"], ["ask", "One safer", "mix:safer"], ["ask", "One longer", "mix:long"]]];
   return null;
 }
 
 function askSoFar() {
-  const past = window.askPast || [], game = choice.gameIds[0] && document.querySelector(`#choice-game option[value="${CSS.escape(choice.gameIds[0])}"]`), words = { when: choice.when === "week" ? "This week" : "Today", sport: choice.sports[0] || "All leagues", game: game ? game.textContent : "Any game", kind: choice.kind && choice.kind !== "any" ? kindLabel(choice.kind) : "Any player prop", legs: choice.legs ? (choice.legs === 1 ? "1 pick" : `${choice.legs} picks`) : "Any number", money: choice.profit > 0 ? `$${choice.stake} bet, $${choice.profit} profit` : (choice.stake && choice.stake !== 5 ? `$${choice.stake} bet` : ""), risk: riskWord(choice.stake, choice.profit), mix: { even: "Same chance", safer: "One safer", long: "One longer" }[choice.mix] || "" };
+  const past = window.askPast || [], game = choice.gameIds[0] && document.querySelector(`#choice-game option[value="${CSS.escape(choice.gameIds[0])}"]`), words = { when: choice.when === "week" ? "This week" : "Today", sport: choice.sports[0] || "All leagues", game: game ? game.textContent : "Any game", kind: choice.kind && choice.kind !== "any" ? kindLabel(choice.kind) : "Any player prop", legs: choice.legs ? (choice.legs === 1 ? "1 pick" : `${choice.legs} picks`) : "Any number", money: choice.profit > 0 ? `$${choice.stake} bet, $${choice.profit} profit` : (choice.stake && choice.stake !== 5 ? `$${choice.stake} bet` : ""), risk: riskWord(choice.stake, choice.profit), mix: { any: "Any", even: "Same chance", safer: "One safer", long: "One longer" }[choice.mix] || "" };
   return ["when", "sport", "game", "kind", "legs", "money", "risk", "mix"].filter((step) => past.includes(step)).map((step) => words[step]).filter(Boolean).join(", ");
 }
 function askStep() {
