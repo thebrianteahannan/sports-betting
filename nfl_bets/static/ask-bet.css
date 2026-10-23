@@ -482,3 +482,5 @@ body.needs-member #who { display: none; }
 #bird-picks label.money { display: flex; align-items: center; gap: 0.3rem; color: #f4fff6; font-size: 15px; }
 #bird-picks label.money input, #desk.tv-full #desk-glass #bird-picks label.money input, .choice-line.money input, #desk.tv-full #desk-glass .choice-line.money input { width: 5rem; min-height: 0; height: auto; margin: 0; padding: 0.3rem 0.45rem; }
 .choice-line.money { flex-wrap: wrap; color: #f4fff6; }
+.rec-board .rec-filters .rec-money { display: flex; align-items: center; gap: 0.3rem; color: #f4fff6; font-family: "Outfit", sans-serif; font-size: 13px; font-weight: 700; }
+.rec-board .rec-filters .rec-money input, #desk.tv-full #desk-glass .rec-board .rec-filters .rec-money input { width: 4.2rem; min-height: 0; height: auto; margin: 0; padding: 0.28rem 0.4rem; border: 1px solid #3dff6e; border-radius: 8px; background: #07140f; color: #f4fff6; font-size: 13px; }
