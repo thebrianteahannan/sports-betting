@@ -85,7 +85,8 @@ function worthFacts(card) {
   const ticket = row && row.ticket;
   const price = Number(ticket && ticket.american);
   if (!ticket || !Number.isFinite(price) || !price) return "The price is not on this bet.";
-  const stake = 5;
+  const raw = Number(node && node.dataset.stake);
+  const stake = raw > 0 ? Math.round(raw * 100) / 100 : 5;
   const profit = Math.round(stake * (price > 0 ? price / 100 : 100 / Math.abs(price)) * 100) / 100;
   const back = Math.round((stake + profit) * 100) / 100;
   const implied = Number(ticket.impliedPct);
@@ -184,7 +185,41 @@ function showMore(bet) {
   if (button) button.textContent = "Hide Info";
 }
 
+function editStake(button) {
+  const bet = button.closest(".rec-bet");
+  if (!bet) return;
+  const input = document.createElement("input");
+  input.type = "number";
+  input.className = "stake";
+  input.min = "1";
+  input.max = "100000";
+  input.step = "1";
+  input.setAttribute("aria-label", "Bet size");
+  input.value = button.textContent.replace(/[^0-9.]/g, "") || "5";
+  button.replaceWith(input);
+  input.focus();
+  input.select();
+  const finish = () => {
+    if (!input.isConnected) return;
+    const amount = Number(input.value);
+    const stake = Number.isFinite(amount) && amount > 0 ? Math.round(Math.min(amount, 100000) * 100) / 100 : 5;
+    bet.dataset.stake = String(stake);
+    const row = (window.recTickets || [])[Number(bet.dataset.rec)];
+    const price = Number(row && row.ticket && row.ticket.american);
+    const copy = bet.querySelector(".rec-copy");
+    if (copy && window.recWin) copy.innerHTML = recWin(price, stake);
+    if (bet.querySelector(":scope > .worth-say")) askBet("worth", "Worth Risk?", bet);
+  };
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") { event.preventDefault(); input.blur(); }
+    if (event.key === "Escape") { input.value = button.textContent; input.blur(); }
+  });
+  input.addEventListener("blur", finish);
+}
+
 document.addEventListener("click", (event) => {
+  const stake = event.target.closest(".rec-board .rec-copy button.stake");
+  if (stake) { editStake(stake); return; }
   const worth = event.target.closest(".rec-board .worth-bet");
   if (worth) { askBet("worth", "Worth Risk?", worth.closest(".rec-bet")); return; }
   const more = event.target.closest(".rec-board .more-bet");

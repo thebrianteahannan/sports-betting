@@ -426,7 +426,7 @@ function birdMenu(kind) {
         gist.innerHTML = ticket.why ? `<em>${esc(ticket.why)}</em>` : "";
         const copy = document.createElement("p");
         copy.className = "rec-copy";
-        copy.textContent = recBlurb(ticket, shown, pct, price);
+        copy.innerHTML = recBlurb(ticket, shown, pct, price);
         bet.append(head); if (gist.innerHTML) bet.append(gist); bet.insertAdjacentHTML("beforeend", `${ticket.legs.map(recLine).join("")}<button type="button" class="worth-bet" aria-label="Worth the risk?">Worth the risk?</button><button type="button" class="share-bet" data-share="rec" data-share-id="${bet.dataset.rec}" aria-label="Share this bet"></button>`); if (copy.textContent) bet.append(copy); bet.insertAdjacentHTML("beforeend", `<button type="button" class="more-bet">More Info</button>`);
         block.append(bet);
       });

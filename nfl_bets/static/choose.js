@@ -446,11 +446,12 @@ function recLeg(leg) {
   return `<li class="rec-leg" data-drop="${who}" data-line="${line}" data-word="${word}">${recLine(leg)}</li>`;
 }
 
-function recWin(price) {
+function recWin(price, stake) {
+  const bet = Number(stake) > 0 ? Math.round(Number(stake) * 100) / 100 : 5;
   if (!Number.isFinite(price) || !price) return "";
-  const decimal = price > 0 ? 1 + price / 100 : 1 + 100 / Math.abs(price);
-  const profit = Math.round(5 * (decimal - 1) * 100) / 100;
-  return `A $5 bet would become $${(5 + profit).toFixed(2)} with a profit of $${profit.toFixed(2)}.`;
+  const profit = Math.round(bet * (price > 0 ? price / 100 : 100 / Math.abs(price)) * 100) / 100;
+  const shown = Number.isInteger(bet) ? String(bet) : bet.toFixed(2);
+  return `A <button type="button" class="stake" aria-label="Change the bet size">$${shown}</button> bet would become $${(bet + profit).toFixed(2)} with a profit of $${profit.toFixed(2)}.`;
 }
 
 function openRec(index) {
