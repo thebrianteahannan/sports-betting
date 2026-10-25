@@ -126,8 +126,9 @@ function paintRates(payload) {
     const gist = (row.lines || []).map((line) => (window.legGist ? legGist({ label: line }) : "")).filter(Boolean).join(", ");
     const lines = (row.lines || []).map((line) => `<span>${esc(line)}</span>`).join("");
     const who = [row.name || "Member", clock].filter(Boolean).join(" · ");
+    const serial = typeof betSerial === "function" ? betSerial({ legs: (row.lines || []).map((label) => ({ label })) }) : "";
     const share = (row.lines || []).length ? `<button type="button" class="share-bet" data-share="rate" data-share-id="${index}" aria-label="Share this bet"></button>` : "";
-    return `<div class="rec-bet">${share}<b>${esc(price)} ${stars}</b><p class="rec-gist">${esc(row.title || "Bet")}${gist ? ` ${gist}` : " That bet is no longer on the record."}<em>${esc(who)}</em></p>${lines}</div>`;
+    return `<div class="rec-bet">${share}<b>${esc([serial, price].filter(Boolean).join(" · "))} ${stars}</b><p class="rec-gist">${esc(row.title || "Bet")}${gist ? ` ${gist}` : " That bet is no longer on the record."}<em>${esc(who)}</em></p>${lines}</div>`;
   }).join("");
 }
 

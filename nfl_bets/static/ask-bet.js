@@ -155,7 +155,31 @@ if (sayBird) {
   };
 }
 
-window.askBack = () => { const line = document.getElementById("bird-line"); const desk = document.getElementById("desk"); const steps = window.askSteps; const past = window.askPast; const pick = window.choice; if (!desk || desk.classList.contains("solo") || !desk.classList.contains("bird-on") || !line || !line.classList.contains("build") || !steps || !past || !past.length || !pick) return false; const step = past.pop(); const order = ["when", "sport", "game", "kind", "legs", "money", "risk", "mix"]; steps.splice(0, steps.length, ...order.slice(Math.max(0, order.indexOf(step)))); if (step === "sport") pick.sports = []; else if (step === "kind") pick.kind = "any"; else if (step === "legs") pick.legs = 3; else if (step === "game") pick.gameIds = []; else if (step === "aim") pick.aim = ""; else if (step === "money") { if (pick.aim === "pay") pick.aim = ""; } else if (step === "mix") pick.mix = "even"; else if (step === "when") pick.when = "today"; if (window.askStep) askStep(); return true; };
+window.askBack = () => {
+  const line = document.getElementById("bird-line");
+  const desk = document.getElementById("desk");
+  const steps = window.askSteps;
+  const past = window.askPast;
+  const pick = window.choice;
+  const chooser = document.getElementById("chooser");
+  const onQuiz = !!(desk && desk.classList.contains("bird-on") && line && line.classList.contains("build"));
+  const onResult = !!(desk && !desk.classList.contains("bird-on") && !desk.classList.contains("solo") && window.state && window.state.tab === "build" && chooser && chooser.classList.contains("built"));
+  if (!desk || desk.classList.contains("solo") || !line || !steps || !past || !past.length || !pick || (!onQuiz && !onResult)) return false;
+  if (onResult) {
+    chooser.classList.remove("built");
+    const again = document.getElementById("choice-again");
+    const box = document.getElementById("choice-result");
+    if (again) again.hidden = true;
+    if (box) box.textContent = "";
+    window.asking = true;
+  }
+  const step = past.pop();
+  const order = ["when", "sport", "game", "kind", "legs", "money", "risk", "mix"];
+  steps.splice(0, steps.length, ...order.slice(Math.max(0, order.indexOf(step))));
+  if (step === "sport") pick.sports = []; else if (step === "kind") pick.kind = "any"; else if (step === "legs") pick.legs = 3; else if (step === "game") pick.gameIds = []; else if (step === "aim") pick.aim = ""; else if (step === "money") { if (pick.aim === "pay") pick.aim = ""; } else if (step === "mix") pick.mix = "even"; else if (step === "when") pick.when = "today";
+  if (window.askStep) askStep();
+  return true;
+};
 
 document.getElementById("desk-back").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");

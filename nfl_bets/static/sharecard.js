@@ -84,7 +84,7 @@ function shareFrom(card, kicker, label) {
   if (game === "Across the slate" && kicker === "BET OF THE DAY") game = "Today";
   return {
     kicker, title: card.title || label || "Parlay", strategy, game,
-    when: whenLine(card), found: foundLine(card), why: whyLines(card, kicker), legs, pct: sharePct(card.impliedPct), profit,
+    when: whenLine(card), found: foundLine(card), why: whyLines(card, kicker), legs, pct: sharePct(card.impliedPct), profit, serial: typeof betSerial === "function" ? betSerial(card) : "", strategyNo: typeof strategyNo === "function" ? strategyNo(card.card, card.card === "hits" && typeof hitsPart === "function" ? hitsPart(card) : "") : "",
   };
 }
 
@@ -204,7 +204,9 @@ function drawBoard(ctx, bet) {
   const title = bet.kicker || String(bet.title || "PARLAY").toUpperCase();
   const titleSize = fitText(ctx, title, right - left, 40, SHARE_FONT);
   ctx.fillText(title, left, cursor);
-  cursor += titleSize + 6;
+  cursor += titleSize + 4;
+  const mark = [bet.strategyNo, bet.serial].filter(Boolean).join("   ");
+  if (mark) { ctx.fillStyle = "#f4f7fb"; ctx.font = `700 18px ${SHARE_FONT}`; ctx.fillText(mark, left, cursor); cursor += 24; }
   ctx.fillStyle = "#f4f7fb";
   ctx.font = `600 18px ${SHARE_TEXT}`;
   if (bet.when) {

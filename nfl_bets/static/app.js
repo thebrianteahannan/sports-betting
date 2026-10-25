@@ -71,20 +71,20 @@ function render() {
     parrot.style.display = waiting ? "block" : "none";
   }
   $("banner").hidden = true; const bannerX = document.getElementById("banner-x"); if (bannerX) bannerX.hidden = true;
-  const bandAim = (board.band && board.band.goal) || "Priced from −150 to +100.";
-  renderFeatured("best", weekCard(board.band, "band"), "−150 to +100 window", bandAim);
-  [["week", "weekThree", "3 legs, different days, near −200"], ["week5", "weekFive", "5 legs, different days, near −200"], ["safe", "weekSafe", "3 legs, different days, near −350"], ["even", "weekEven", "3 legs, different days, near −100"]].forEach(([prefix, key, title]) => {
-    renderFeatured(prefix, weekCard(board[key], key), title, (board[key] && board[key].goal) || "Each leg is a different day.");
-  });
-  renderFeatured("today", todayCandidate(board), "Highest chance parlay today", "The highest-chance parlay on today's slate.");
-  ["chalk", "four", "plus", "hits"].forEach((id) => renderParlay(id, board[id]));
-  renderArchive(board.archive || []);
-  renderPicks(board.archive || []);
   if (!window.recOpen) showTab(state.tab);
-  if (window.paintChoices) window.paintChoices();
-  if (window.paintRefresh) window.paintRefresh();
-  if (window.paintDayShare) window.paintDayShare(board);
-  if (window.paintWeekShare) window.paintWeekShare(board); if (window.paintWeather) window.paintWeather(); if (window.paintEdits) paintEdits(); window.render = render; window.legStarted = legStarted;
+  const greetHold = () => window.asking || !!document.querySelector("#bird-guide:not([hidden])");
+  const paintRest = () => {
+    if (greetHold()) { renderLater = setTimeout(paintRest, 120); return; }
+    const bandAim = (board.band && board.band.goal) || "Priced from −150 to +100.";
+    renderFeatured("best", weekCard(board.band, "band"), "−150 to +100 window", bandAim);
+    [["week", "weekThree", "3 legs, different days, near −200"], ["week5", "weekFive", "5 legs, different days, near −200"], ["safe", "weekSafe", "3 legs, different days, near −350"], ["even", "weekEven", "3 legs, different days, near −100"]].forEach(([prefix, key, title]) => { renderFeatured(prefix, weekCard(board[key], key), title, (board[key] && board[key].goal) || "Each leg is a different day."); });
+    renderFeatured("today", todayCandidate(board), "Highest chance parlay today", "The highest-chance parlay on today's slate.");
+    ["chalk", "four", "plus", "hits"].forEach((id) => renderParlay(id, board[id]));
+    renderArchive(board.archive || []); renderPicks(board.archive || []);
+    renderLater = setTimeout(() => { if (greetHold()) { renderLater = setTimeout(paintRest, 120); return; } if (window.paintChoices) window.paintChoices(); if (window.paintRefresh) window.paintRefresh(); if (window.paintDayShare) window.paintDayShare(board); if (window.paintWeekShare) window.paintWeekShare(board); if (window.paintWeather) window.paintWeather(); if (window.paintEdits) paintEdits(); }, 0);
+  };
+  clearTimeout(renderLater); renderLater = setTimeout(paintRest, 0);
+  window.render = render; window.legStarted = legStarted;
 }
 
 function dropMiss(text) {

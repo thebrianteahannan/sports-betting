@@ -485,16 +485,16 @@ def _cached(key: str, fetch) -> Any:
 def _sorted(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows.sort(key=lambda row: str(row.get("offeredAt") or ""), reverse=True)
     return rows
-
 def _load() -> list[dict[str, Any]]:
     data = read_json(out_dir() / "archive.json", {"tickets": []}); rows = data.get("tickets") if isinstance(data, dict) else []
     return [row for row in rows or [] if isinstance(row, dict)]
-
 def _write(rows: list[dict[str, Any]]) -> None:
     from nfl_bets.cloud import thin_archive; from nfl_bets.ignore import keep_public
     have = {_signature(row) for row in rows}
     rows[:] = thin_archive(keep_public([*rows, *[row for row in _load() if _signature(row) not in have]]))
+    pending = sorted((row for row in rows if not str(row.get("serial") or "").isdigit()), key=lambda row: (str(row.get("offeredAt") or ""), str(row.get("id") or "")))
+    start = max([int(row["serial"]) for row in rows if str(row.get("serial") or "").isdigit()] or [0])
+    [row.__setitem__("serial", start + index) for index, row in enumerate(pending, 1)]
     write_json(out_dir() / "archive.json", {"tickets": rows})
-
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()

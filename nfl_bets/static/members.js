@@ -394,13 +394,13 @@ function birdMenu(kind) {
     const block = document.createElement("section");
     block.className = "rec-strategy"; block.dataset.card = id; block.dataset.part = part;
     const heading = document.createElement("h3");
-    heading.innerHTML = `${name} <span class="rec-count"></span>`;
+    heading.innerHTML = `${window.strategyNo ? `<span class="rec-no">${strategyNo(id, part)}</span>` : ""} ${name} <span class="rec-count"></span>`;
     block.append(heading);
     const done = archive.filter((ticket) => ticket.card === id && (ticket.result === "won" || ticket.result === "lost") && (!part || hitsPart(ticket) === part));
     const history = document.createElement("p");
     history.className = "rec-history";
     const rates = [day, day * 7, day * 30, day * 365].map((span) => recPct(done, now - span));
-    history.innerHTML = rates.map((text, index) => `<span data-rate="${index}">${text}</span>`).join("");
+    history.innerHTML = rates.map((text, index) => index && text !== "—" ? `<span data-rate="${index}">${text}</span>` : "").join("");
     block.dataset.rates = rates.map((text) => parseFloat(text)).join(",");
     block.append(history);
     const seen = new Set();
@@ -420,7 +420,7 @@ function birdMenu(kind) {
         const pct = ticket.impliedPct != null && ticket.impliedPct !== "" ? `${ticket.impliedPct}%` : "";
         const mark = ticket.result === "won" ? "Won" : ticket.result === "lost" ? "Lost" : ticket.edge ? "Better" : "";
         const head = document.createElement("b");
-        head.textContent = [shown, pct, mark, name].filter(Boolean).join(" · ");
+        head.textContent = [window.betSerial ? betSerial(ticket) : "", shown, pct, mark, name].filter(Boolean).join(" · ");
         const gist = document.createElement("p");
         gist.className = "rec-gist";
         gist.innerHTML = ticket.why ? `<em>${esc(ticket.why)}</em>` : "";
@@ -472,9 +472,9 @@ function openRecommended(id) {
 
 window.birdMenu = birdMenu;
 
-document.getElementById("bird-guide").addEventListener("click", (event) => {
+document.getElementById("bird-guide").addEventListener("pointerdown", (event) => {
   const menu = event.target.closest("[data-menu]");
-  if (menu) { goFull(); birdMenu(menu.dataset.menu); return; }
+  if (menu) { event.preventDefault(); window.asking = true; goFull(); birdMenu(menu.dataset.menu); return; }
   if (!event.target.closest("#bird-picks button")) return;
   const line = (document.getElementById("bird-line") || {}).textContent || "";
   const note = window.lawNote ? lawNote() : "";

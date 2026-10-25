@@ -413,7 +413,7 @@ function startGuide() {
   const hello = () => {
     birdOn = true;
     birdHeld = false;
-    window.squawkUntil = Date.now() + 900; birdSay("Squawk!!!", []);
+    window.squawkUntil = Date.now() + 900; if (window.goFull) goFull(); birdSay("Squawk!!!", []);
     setTimeout(() => {
       if (!birdOn || birdHeld || window.asking || document.body.classList.contains("needs-member")) return;
       if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]);
@@ -424,11 +424,10 @@ function startGuide() {
   else { const watch = new MutationObserver(() => { if (document.body.classList.contains("needs-member")) return; watch.disconnect(); hello(); }); watch.observe(document.body, { attributes: true, attributeFilter: ["class"] }); }
   document.addEventListener("pointerdown", birdBump);
   document.addEventListener("keydown", birdBump);
+  document.addEventListener("pointerdown", (event) => { const quiz = event.target.closest("[data-quiz]"); if (!(quiz && window.askStart)) return; event.preventDefault(); window.asking = true; if (window.goFull) goFull(); askStart(quiz.dataset.quiz); });
   document.addEventListener("click", (event) => {
     const stay = event.target.closest("[data-stay]");
     if (stay) { while (tvStack.length && tvStack.at(-1).bird) tvStack.pop(); tvBack(); return; }
-    const quiz = event.target.closest("[data-quiz]");
-    if (quiz && window.askStart) { if (window.goFull) goFull(); askStart(quiz.dataset.quiz); return; }
     const asked = event.target.closest("#bird-guide [data-ask]");
     if (asked && window.askAnswer) { askAnswer(asked.dataset.ask); return; }
     const tab = event.target.closest("[data-tab], #member-profile");
