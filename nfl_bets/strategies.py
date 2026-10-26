@@ -47,6 +47,12 @@ def build_from(pools: list[tuple[dict[str, Any], list[dict[str, Any]]]]) -> dict
         "weekend4": _with(_search(weekend, 4, _every(lambda leg: -260 <= leg["odds"] <= -140), _near(-200)), 4, "Weekend special, 4 legs", "Four legs from Saturday and Sunday games."),
         "td2": _td_card(touch, 2, "2 NFL players, 1 anytime TD each", "Two NFL players, each scoring one anytime touchdown, in a game totaled at 47 or higher."),
         "td3": _td_card(touch, 3, "3 NFL players, 1 anytime TD each", "Three NFL players, each scoring one anytime touchdown, in a game totaled at 47 or higher."),
+        "pay5": _payout(props, 5),
+        "pay10": _payout(props, 10),
+        "pay15": _payout(props, 15),
+        "pay20": _payout(props, 20),
+        "pay25": _payout(props, 25),
+        "pay50": _payout(props, 50),
     }
     found = cards["early3"]
     if len(found.get("legs") or []) == 3:
@@ -452,3 +458,39 @@ def _hour(game: dict[str, Any]) -> int:
 def _weekend(game: dict[str, Any]) -> bool:
     stamp = _parse(str(game.get("kickoff") or ""))
     return stamp is not None and stamp.astimezone(_ET).weekday() >= 5
+
+
+def _payout(rows: list[tuple[dict[str, Any], list[dict[str, Any]]]], profit: int) -> dict[str, Any]:
+    from itertools import combinations
+
+    goal = 1 + profit / 5
+    title, line = f"A $5 bet wins ${profit}", f"Built so a $5 bet wins about ${profit}."
+    raw: list[tuple[str, str, dict[str, Any], dict[str, Any]]] = []
+    for game, legs in rows:
+        gid = str(game.get("id") or "")
+        for leg in legs:
+            who, odds = _player(leg), leg.get("odds")
+            if who and isinstance(odds, int) and -800 <= odds <= 600:
+                raw.append((gid, who, leg, game))
+    best: tuple[float, list[Row]] | None = None
+    for size in (2, 3, 4):
+        root = goal ** (1 / size)
+        nearest: dict[tuple[str, str], Row] = {}
+        for gid, who, leg, game in raw:
+            prior = nearest.get((gid, who))
+            if prior is None or abs(american_decimal(leg["odds"]) - root) < abs(american_decimal(prior[0]["odds"]) - root):
+                nearest[(gid, who)] = (leg, game)
+        short = sorted(nearest.values(), key=lambda item: abs(american_decimal(item[0]["odds"]) - root))[:12]
+        for combo in combinations(short, size):
+            games = {str(item[1].get("id") or "") for item in combo}
+            players = {_player(leg) for leg, _game in combo}
+            if len(games) < size or len(players) < size:
+                continue
+            decimal = 1.0
+            for leg, _game in combo:
+                decimal *= american_decimal(leg["odds"])
+            gap = abs(decimal - goal)
+            if best is None or gap < best[0]:
+                best = (gap, list(combo))
+    picked = best[1] if best and best[0] <= 0.4 else []
+    return _ticket(picked, len(picked) or 2, title, line)

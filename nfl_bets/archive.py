@@ -14,7 +14,7 @@ _ET = ZoneInfo("America/New_York")
 _RESULTS = {"won", "lost", "push"}
 _TTL = 120.0
 _CACHE: dict[str, tuple[float, Any]] = {}
-_CARDS = ("chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive", "weekSafe", "weekEven", "safe2", "mid3", "win4", "plusLegs", "mix21", "low3", "yards3", "ou4", "alt3", "games4", "early3", "prime3", "weekend4", "td2", "td3")
+_CARDS = ("chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive", "weekSafe", "weekEven", "safe2", "mid3", "win4", "plusLegs", "mix21", "low3", "yards3", "ou4", "alt3", "games4", "early3", "prime3", "weekend4", "td2", "td3", "pay5", "pay10", "pay15", "pay20", "pay25", "pay50")
 _PATHS = {
     "NFL": "football/nfl", "NCAAF": "football/college-football", "Football": "football/college-football",
     "WNBA": "basketball/wnba", "NBA": "basketball/nba", "NCAAB": "basketball/mens-college-basketball",

@@ -162,7 +162,6 @@
 #share-view { position: absolute; z-index: 40; left: 0; top: 0; overflow: hidden; background: #07090e; }
 #share-stage { position: absolute; left: 0; top: 0; width: 959px; height: 1024px; transform-origin: 0 0; }
 #share-view img { display: block; width: 959px; height: 1024px; max-width: none; border-radius: 0; }
-#share-card-debug { position: absolute; z-index: 3; left: 8px; top: 2.6rem; right: 8px; margin: 0; color: #ffe08a; font: 12px/1.35 ui-monospace, monospace; white-space: pre-wrap; text-align: left; }
 #desk.tv-full #desk-glass #share-back, #share-back { position: absolute; top: 8px; left: 8px; z-index: 3; width: 2rem; height: 2rem; min-height: 0; margin: 0; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #3dff6e; border-radius: 8px; background: #07140f; color: #3dff6e; box-shadow: none; }
 #share-view .pick-save { position: absolute; z-index: 3; left: 0; right: 0; bottom: 2.4rem; margin: 0; justify-content: center; }
 #share-view .quiet { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0.7rem; margin: 0; text-align: center; color: #d5deea; }
@@ -412,7 +411,7 @@
   #desk.bird-on:not(.tv-full) #bird-guide:has(button[data-menu]) #greet-rate { top: 8.5rem; }
   #desk.bird-on:not(.tv-full) #bird-guide:has(button[data-menu]) #bird-line { margin-top: 5rem; }
 }
-#desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-rate b { margin-bottom: 0.35rem; font-size: 6.6rem; }
+#desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-rate b { margin-bottom: 0.35rem; font-size: 5.2rem; }
 #desk.bird-on #bird-guide:has(button[data-menu]) #greet-rate:empty { display: none; }
 #desk.bird-on #bird-guide:has(button[data-menu]) #greet-legal,
 #desk.bird-on #bird-guide:has(#bird-born) #greet-legal {

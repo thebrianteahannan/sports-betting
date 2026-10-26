@@ -22,7 +22,7 @@ const OPEN_CARDS = [
   ["games4", "4 legs, 4 different games"],
   ["early3", "Early slate, 2 to 3 legs"],
   ["prime3", "Prime time, 3 legs"],
-  ["weekend4", "Weekend special, 4 legs"], ["td2", "2 NFL players, 1 anytime TD each"], ["td3", "3 NFL players, 1 anytime TD each"],
+  ["weekend4", "Weekend special, 4 legs"], ["td2", "2 NFL players, 1 anytime TD each"], ["td3", "3 NFL players, 1 anytime TD each"], ["pay5", "A $5 bet wins $5"], ["pay10", "A $5 bet wins $10"], ["pay15", "A $5 bet wins $15"], ["pay20", "A $5 bet wins $20"], ["pay25", "A $5 bet wins $25"], ["pay50", "A $5 bet wins $50"],
 ];
 const OPEN_KINDS = [
   ["yards", "Yards"],
@@ -404,7 +404,7 @@ function recSay() {
   if (!recFilter.when && !sports.length && !recFilter.game && !recFilter.kind && !recFilter.legs && !pay && !recFilter.find.trim()) return `${recPast ? "Every finished bet" : "Every bet you can place"}. ${order}`;
   return `${tail.charAt(0).toUpperCase()}${tail.slice(1)}. ${order}`;
 }
-function strategyNo(card, part) { const order = ["band","safe2","todayBet","mid3","chalk","win4","four","plusLegs","plus","mix21","hits|five","hits|four","low3","weekThree","yards3","weekFive","ou4","weekSafe","alt3","weekEven","games4","early3","prime3","weekend4","td2","td3"]; const at = order.indexOf(part ? `${card}|${part}` : String(card || "")); return at < 0 ? "" : `S${String(at + 1).padStart(2, "0")}`; }
+function strategyNo(card, part) { const order = ["band","safe2","todayBet","mid3","chalk","win4","four","plusLegs","plus","mix21","hits|five","hits|four","low3","weekThree","yards3","weekFive","ou4","weekSafe","alt3","weekEven","games4","early3","prime3","weekend4","td2","td3","pay5","pay10","pay15","pay20","pay25","pay50"]; const at = order.indexOf(part ? `${card}|${part}` : String(card || "")); return at < 0 ? "" : `S${String(at + 1).padStart(2, "0")}`; }
 window.strategyNo = strategyNo;
 function betSerial(ticket) {
   const rows = ((window.state && window.state.board && window.state.board.archive) || []);

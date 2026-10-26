@@ -14,7 +14,6 @@ const NAMED_BETS = [
 
 let shareTemplate = null;
 let shareBits = null;
-let shareTitleSize = 0;
 
 function sharePct(value) {
   const raw = String(value ?? "").replace("%", "").trim();
@@ -115,7 +114,7 @@ function shareBox() {
   box = document.createElement("section");
   box.id = "share-view";
   box.hidden = true;
-  box.innerHTML = `<div id="share-stage"><img id="share-card-photo" alt="" width="959" height="1024" hidden></div><button type="button" id="share-back" aria-label="Back"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button><p id="share-card-debug"></p><p class="pick-save"><button type="button" id="share-card-download" hidden>Copy</button></p><p class="quiet" id="share-card-note"></p>`;
+  box.innerHTML = `<div id="share-stage"><img id="share-card-photo" alt="" width="959" height="1024" hidden></div><button type="button" id="share-back" aria-label="Back"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button><p class="pick-save"><button type="button" id="share-card-download" hidden>Copy</button></p><p class="quiet" id="share-card-note"></p>`;
   (document.getElementById("desk") || document.body).append(box);
   const copy = box.querySelector("#share-card-download");
   if (copy) copy.addEventListener("click", () => { copyShare(); });
@@ -204,7 +203,7 @@ function drawBoard(ctx, bet) {
   ctx.textAlign = "left";
   ctx.fillStyle = "#3dff6e";
   const title = bet.kicker || String(bet.title || "PARLAY").toUpperCase();
-  const titleSize = shareTitleSize = fitText(ctx, title, right - left, 40, SHARE_FONT);
+  const titleSize = fitText(ctx, title, right - left, 40, SHARE_FONT);
   ctx.fillText(title, left, cursor);
   cursor += titleSize + 4;
   const mark = [bet.strategyNo, bet.serial].filter(Boolean).join("   ");
@@ -356,8 +355,6 @@ async function drawShare(bet) {
   drawBoard(ctx, bet);
   drawFound(ctx, bet);
   shareBits = board;
-  const edge = ctx.getImageData(Math.min(board.width - 1, 954), 24, 1, 1).data;
-  photo.dataset.draw = `src ${image.naturalWidth} ${board.width} edge ${edge[0]},${edge[1]},${edge[2]} title ${shareTitleSize}`;
   photo.src = board.toDataURL("image/jpeg", 0.9);
   photo.hidden = false;
   const copy = document.getElementById("share-card-download");
@@ -376,24 +373,6 @@ function shareFit() {
   const scale = Math.min(w / 959, h / 1024);
   if (box) { box.style.left = "0px"; box.style.top = "0px"; box.style.width = `${w}px`; box.style.height = `${h}px`; }
   if (stage) stage.style.transform = `translate(${(w - 959 * scale) / 2}px, ${(h - 1024 * scale) / 2}px) scale(${scale})`;
-  shareDebug();
-}
-
-function shareDebug() {
-  const photo = document.getElementById("share-card-photo");
-  const box = document.getElementById("share-view");
-  const desk = document.getElementById("desk");
-  const line = document.getElementById("share-card-debug");
-  const view = window.visualViewport;
-  if (!line || !photo || !box) return;
-  const p = photo.getBoundingClientRect();
-  const b = box.getBoundingClientRect();
-  const vw = view ? view.width : window.innerWidth;
-  const off = view ? view.offsetLeft : 0;
-  const clip = p.width > 2 && p.right > off + vw + 1;
-  const fit = Math.min((desk ? desk.clientWidth : window.innerWidth) / 959, (desk ? desk.clientHeight : window.innerHeight) / 1024);
-  line.textContent = [`v52 ${clip ? "CLIP" : "in"}`, `desk ${desk ? desk.clientWidth : 0} visual ${Math.round(vw)} tv ${fit.toFixed(3)}`, `window ${window.innerWidth} scroll ${document.documentElement.scrollWidth} screen ${window.screen.width}`, `pane ${Math.round(b.left)}-${Math.round(b.right)} photo ${Math.round(p.left)}-${Math.round(p.right)} nat ${photo.naturalWidth || 0} draw ${photo.dataset.draw || ""}`].join("\n");
-  console.log(line.textContent);
 }
 
 async function copyShare() {

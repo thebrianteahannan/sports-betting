@@ -106,7 +106,7 @@ const CARD_NAMES = window.CARD_NAMES = {
   weekThree: "3 legs, different days, near −200", yards3: "3 yardage legs near 80% each",
   weekFive: "5 legs, different days, near −200", ou4: "2 overs and 2 unders",
   weekSafe: "3 legs, different days, near −350", alt3: "Alt lines, 3 legs, 85%+",
-  weekEven: "3 legs, different days, near −100", games4: "4 legs, 4 different games", early3: "Early slate, 2 to 3 legs", prime3: "Prime time, 3 legs", weekend4: "Weekend special, 4 legs", td2: "2 NFL players, 1 anytime TD each", td3: "3 NFL players, 1 anytime TD each",
+  weekEven: "3 legs, different days, near −100", games4: "4 legs, 4 different games", early3: "Early slate, 2 to 3 legs", prime3: "Prime time, 3 legs", weekend4: "Weekend special, 4 legs", td2: "2 NFL players, 1 anytime TD each", td3: "3 NFL players, 1 anytime TD each", pay5: "A $5 bet wins $5", pay10: "A $5 bet wins $10", pay15: "A $5 bet wins $15", pay20: "A $5 bet wins $20", pay25: "A $5 bet wins $25", pay50: "A $5 bet wins $50",
 };
 
 async function refreshActivity() {

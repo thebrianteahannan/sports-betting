@@ -106,6 +106,12 @@ function paintStrategies() {
     weekend4: "Four legs from Saturday and Sunday games.",
     td2: "Two NFL players, each scoring one anytime touchdown, in a game totaled at 47 or higher.",
     td3: "Three NFL players, each scoring one anytime touchdown, in a game totaled at 47 or higher.",
+    pay5: "A $5 bet aimed at winning $5.",
+    pay10: "A $5 bet aimed at winning $10.",
+    pay15: "A $5 bet aimed at winning $15.",
+    pay20: "A $5 bet aimed at winning $20.",
+    pay25: "A $5 bet aimed at winning $25.",
+    pay50: "A $5 bet aimed at winning $50.",
   };
   const rows = Object.entries(names).flatMap(([id, name]) => id === "hits" ? [["Five near 90% each", say.hits], ["Four near 80% each", say.hits]] : [[name, say[id] || ""]]);
   list.innerHTML = rows.map(([name, line]) => adminCard(esc(name), esc(line))).join("");
