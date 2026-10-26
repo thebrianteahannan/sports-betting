@@ -459,7 +459,7 @@ function tvPaint() {
 function tvPush() {
   if (tvSkip) return;
   const shot = tvShot();
-  if ((shot.bird && !shot.picks.length) || tvSame(shot, tvStack.at(-1))) return;
+  if ((shot.bird && !shot.picks.length) || (shot.tab === "build" && !shot.built) || tvSame(shot, tvStack.at(-1))) return;
   tvStack.push(shot);
   if (tvStack.length > 12) tvStack.shift();
   tvPaint();
@@ -474,8 +474,8 @@ function tvUnbuild() {
   if (box) box.textContent = "";
 }
 function tvBack() {
-  const prev = tvStack.pop();
-  if (!prev) { window.asking = false; birdHide(); return; }
+  let prev = tvStack.pop(); while (prev && prev.tab === "build" && !prev.built) prev = tvStack.pop();
+  if (!prev) { window.asking = false; birdHide(); if (window.state && state.tab === "build") { tvSkip = true; showTab("today"); tvSkip = false; } return; }
   tvPaint();
   tvSkip = true;
   if (prev.bird) birdSay(prev.text, prev.picks);
