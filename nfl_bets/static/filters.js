@@ -297,7 +297,7 @@ function recProfit(ticket) { const price = Number(ticket.american), bet = recFil
 function recPayFit(stake, profit) { return !(profit > 0) ? "" : recBand(profit / (stake > 0 ? stake : 5)); }
 
 function listedRecs(board) {
-  return [...board.querySelectorAll(".rec-bet")].map((bet) => (window.recTickets || [])[Number(bet.dataset.rec)]).filter(Boolean);
+  return [...board.querySelectorAll(":scope > .rec-strategy .rec-bet")].map((bet) => (window.recTickets || [])[Number(bet.dataset.rec)]).filter(Boolean);
 }
 
 function recMatch(ticket) {
@@ -318,13 +318,13 @@ function recMatch(ticket) {
 }
 
 function recApply(board) {
-  const picks = [...board.querySelectorAll(".rec-bet")];
+  const picks = [...board.querySelectorAll(":scope > .rec-strategy .rec-bet")];
   const shown = picks.filter((bet) => recMatch((window.recTickets[Number(bet.dataset.rec)] || {}).ticket || {}));
   const keep = new Set(shown);
   const narrowed = recFilter.when || recFilter.sports.length || recFilter.game || recFilter.kind || recFilter.legs || recFilter.aim || recFilter.find.trim() || recFilter.profit > 0;
   picks.forEach((bet) => bet.classList.toggle("rec-off", narrowed && !keep.has(bet)));
   const want = ((text) => { const match = String(text || "").trim().match(/^s(\d{1,2})$/i); return match ? `s${match[1].padStart(2, "0")}` : ""; })(recFilter.find);
-  board.querySelectorAll(".rec-strategy").forEach((block) => {
+  board.querySelectorAll(":scope > .rec-strategy").forEach((block) => {
     const code = (window.strategyNo ? strategyNo(block.dataset.card, block.dataset.part) : "").toLowerCase();
     const strategyHit = !!want && code === want;
     if (want) block.querySelectorAll(".rec-bet").forEach((bet) => bet.classList.toggle("rec-off", !strategyHit));
@@ -335,7 +335,7 @@ function recApply(board) {
     if (count) count.textContent = bets.length;
   });
   const note = board.querySelector(".rec-none");
-  if (note) note.hidden = !narrowed || shown.length > 0 || !!board.querySelector(".rec-strategy:not(.rec-off)");
+  if (note) note.hidden = !narrowed || shown.length > 0 || !!board.querySelector(":scope > .rec-strategy:not(.rec-off)");
 }
 
 function recChip(group, value, label, on, mark) {
@@ -343,7 +343,7 @@ function recChip(group, value, label, on, mark) {
 }
 
 function recOrder(board) {
-  const blocks = [...board.querySelectorAll(".rec-strategy")];
+  const blocks = [...board.querySelectorAll(":scope > .rec-strategy")];
   const key = (block) => `${block.dataset.card}|${block.dataset.part || ""}`;
   blocks.forEach((block, index) => { if (block.dataset.order == null) block.dataset.order = String(index); });
   const index = recSort === "" ? NaN : Number(recSort);
@@ -357,10 +357,10 @@ function recOrder(board) {
   });
   if (!recPast) recOrder.live = blocks.map(key);
   blocks.forEach((block) => {
-    board.append(block);
+    const shelf = board.querySelector(":scope > .rec-shelf"); if (shelf) board.insertBefore(block, shelf); else board.append(block);
     const shown = rate(block);
-    block.classList.toggle("rec-cold", !recPast && Number.isFinite(index) && Number.isFinite(shown) && shown < 65);
-    block.querySelectorAll(".rec-history span").forEach((mark) => mark.classList.toggle("on", mark.dataset.rate === recSort));
+    block.classList.toggle("rec-cold", !recPast && !block.classList.contains("rec-plus") && Number.isFinite(index) && Number.isFinite(shown) && shown < 65);
+    block.querySelectorAll(".rec-history [data-rate]").forEach((mark) => mark.classList.toggle("on", mark.dataset.rate === recSort));
   });
 }
 
@@ -398,7 +398,7 @@ function recGameHit(ticket, name) {
 function recSay() {
   const sports = recFilter.sports, league = sports.length > 1 ? `${sports.slice(0, -1).join(", ")} and ${sports.at(-1)}` : (sports[0] || ""), picks = recFilter.legs === "1" ? "1-pick" : recFilter.legs ? `${recFilter.legs}-pick` : "", pay = { top: "safest", safe: "safe", good: "good", payout: "big payout", huge: "huge payout" }[recFilter.aim] || "";
   const bits = [pay, picks, league, recFilter.kind || ""].filter(Boolean).join(" "), time = recFilter.when === "today" ? " from today" : recFilter.when === "week" ? " from this week" : "", game = `${recFilter.game ? ` for ${recFilter.game}` : ""}${recFilter.find.trim() ? ` for ${recFilter.find.trim()}` : ""}`;
-  const order = `Parlay the Parrot picked these strategies, ${recSortHigh ? "highest" : "lowest"} ${["today", "this week", "this month", "this year"][Number(recSort)] || "this week"} first.`;
+  const order = `Parlay the Parrot picked these strategies, ${recSortHigh ? "highest" : "lowest"} ${{ 1: "this week", 2: "this month", 3: "this year", 4: "risk rating" }[Number(recSort)] || "this week"} first.`;
   const tail = `${bits ? `${bits} ` : ""}${recPast ? "finished bets" : "bets"}${time}${game}`;
   if (recFilter.profit > 0) { const band = { top: "Safest", safe: "Safe", good: "Good", payout: "Big payout", huge: "Huge payout" }[recPayFit(recFilter.stake, recFilter.profit)] || ""; const bet = recFilter.stake > 0 ? recFilter.stake : 5; const cash = (n) => (Math.abs(n - Math.round(n)) < 0.005 ? String(Math.round(n)) : n.toFixed(2)); return `${band}. A $${cash(bet)} bet to make $${cash(recFilter.profit)} has to win about ${Math.round(100 * bet / (bet + recFilter.profit))}% of the time. ${tail.charAt(0).toUpperCase()}${tail.slice(1)} near that profit. ${order}`; }
   if (!recFilter.when && !sports.length && !recFilter.game && !recFilter.kind && !recFilter.legs && !pay && !recFilter.find.trim()) return `${recPast ? "Every finished bet" : "Every bet you can place"}. ${order}`;
@@ -451,9 +451,9 @@ function paintRecFilters(board) {
   bar.className = "rec-filters";
   if (recFiltersOpen) bar.classList.add("open");
   bar.innerHTML = [
-    `<div class="rec-head"><span class="rec-tools"><button type="button" class="rec-fold${on ? " on" : ""}" data-rec="fold">Filters</button><button type="button" class="rec-past${recPast ? " on" : ""}" data-rec="past">History</button>${on ? recChip("clear", "1", "Clear", false) : ""}</span><span class="rec-side"><button type="button" class="rec-seek${paintRecFilters.seek || recFilter.find.trim() ? " on" : ""}" data-rec="seek" aria-label="Search"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="6"/><path d="M16 16l5 5"/></svg></button><button type="button" class="rec-expand" data-rec="expand">${recAllOpen ? "Collapse all" : "Expand all"}</button></span></div>`,
+    `<div class="rec-head"><span class="rec-tools"><button type="button" class="rec-fold${on ? " on" : ""}" data-rec="fold">Filters</button><button type="button" class="rec-past${recPast ? " on" : ""}" data-rec="past">History</button>${on ? recChip("clear", "1", "Clear", false) : ""}</span><span class="rec-side">${window.state && state.admin ? `<button type="button" class="shelve-go" data-shelve-go>${state.shelving ? "Done archiving" : "Start archiving"}</button>` : ""}<button type="button" class="rec-seek${paintRecFilters.seek || recFilter.find.trim() ? " on" : ""}" data-rec="seek" aria-label="Search"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="6"/><path d="M16 16l5 5"/></svg></button><button type="button" class="rec-expand" data-rec="expand">${recAllOpen ? "Collapse all" : "Expand all"}</button></span></div>`,
     `<label class="rec-find${paintRecFilters.seek ? " on" : ""}"><input type="search" placeholder="Player, team, bet, or strategy number" value="${esc(recFilter.find)}" autocomplete="off"><span class="rec-hints" hidden></span></label>`,
-    `<div class="rec-sort"><span class="name">Sort</span>${[["1", "Week"], ["2", "Month"], ["3", "Year"]].map(([value, label]) => recChip("sort", value, recSort === value ? `${label} ${recSortHigh ? "↓" : "↑"}` : label, recSort === value)).join("")}</div>`,
+    `<div class="rec-sort"><span class="name">Sort</span>${[["1", "Week"], ["2", "Month"], ["3", "Year"], ["4", "Risk"]].map(([value, label]) => recChip("sort", value, recSort === value ? `${label} ${recSortHigh ? "↓" : "↑"}` : label, recSort === value)).join("")}</div>`,
     line("When", recChip("when", "today", `Today ${recTally(rows, "when", "today")}`, recFilter.when === "today") + recChip("when", "week", `This week ${recTally(rows, "when", "week")}`, recFilter.when === "week")),
     line("League", leagues.map((name) => recChip("sports", name, `${name} ${recTally(rows, "sports", name)}`, recFilter.sports.includes(name))).join(""), true),
     line("Game", recChip("game", "", `Any game ${recTally(rows, "game", "")}`, !recFilter.game) + games.map((game) => recChip("game", game, `${game} ${recTally(rows, "game", game)}`, recFilter.game === game)).join(""), true),
@@ -475,7 +475,7 @@ function paintRecFilters(board) {
     if (button.dataset.rec === "fold") { recFiltersOpen = !recFiltersOpen; bar.classList.toggle("open", recFiltersOpen); if (recFiltersOpen) recEnsureKinds(board); return; }
     if (button.dataset.rec === "past") { recPast = !recPast; window.recPast = recPast; recAllOpen = false; if (window.birdMenu) birdMenu("bets"); return; }
     if (button.dataset.rec === "sort") { if (recSort === button.dataset.value) recSortHigh = !recSortHigh; else { recSort = button.dataset.value; recSortHigh = true; } bar.remove(); note.remove(); paintRecFilters(board); return; }
-    if (button.dataset.rec === "seek") { paintRecFilters.seek = !paintRecFilters.seek; const find = bar.querySelector(".rec-find"); find.classList.toggle("on", !!paintRecFilters.seek); button.classList.toggle("on", !!paintRecFilters.seek || !!recFilter.find.trim()); if (paintRecFilters.seek) find.querySelector("input").focus(); return; } if (button.dataset.rec === "expand") { recAllOpen = !recAllOpen; board.querySelectorAll(".rec-strategy, .rec-bet").forEach((item) => item.classList.toggle("open", recAllOpen)); button.textContent = recAllOpen ? "Collapse all" : "Expand all"; return; }
+    if (button.dataset.rec === "seek") { paintRecFilters.seek = !paintRecFilters.seek; const find = bar.querySelector(".rec-find"); find.classList.toggle("on", !!paintRecFilters.seek); button.classList.toggle("on", !!paintRecFilters.seek || !!recFilter.find.trim()); if (paintRecFilters.seek) find.querySelector("input").focus(); return; } if (button.dataset.rec === "expand") { recAllOpen = !recAllOpen; board.querySelectorAll(":scope > .rec-strategy, :scope > .rec-strategy .rec-bet").forEach((item) => item.classList.toggle("open", recAllOpen)); button.textContent = recAllOpen ? "Collapse all" : "Expand all"; return; }
     if (button.dataset.rec === "clear") { recFilter.when = ""; recFilter.sports = []; recFilter.game = ""; recFilter.kind = ""; recFilter.legs = ""; recFilter.aim = ""; recFilter.find = ""; recFilter.profit = 0; recFilter.stake = 5; } else if (button.dataset.rec === "sports") {
       const list = recFilter.sports;
       const index = list.indexOf(button.dataset.value);

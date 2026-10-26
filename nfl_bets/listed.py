@@ -51,14 +51,13 @@ def mark_listed(rows: list[dict[str, Any]]) -> None:
             failed = True
         winner = None if failed else next(((bunch, offer) for bunch, offer in pairs if offer.get("edge")), None)
         if winner is None:
-            bunch = max(group.values(), key=lambda rows: float(rows[0].get("impliedPct") or 0))
-            for row in bunch:
-                row["edge"] = True
-                row["why"] = "This parlay has the highest chance in this list."
+            continue
+        why = str(winner[1].get("why") or "")
+        if not why:
             continue
         for row in winner[0]:
             row["edge"] = True
-            row["why"] = str(winner[1].get("why") or "")
+            row["why"] = why
 
 
 def mark_choice(rows: list[dict[str, Any]], games: list[dict[str, Any]]) -> None:
@@ -85,20 +84,13 @@ def mark_choice(rows: list[dict[str, Any]], games: list[dict[str, Any]]) -> None
     except Exception:  # noqa: BLE001
         failed = True
     winner = None if failed else next(((row, offer) for row, offer in pairs if offer.get("edge")), None)
-    same = len({row.get("american") for row in live}) == 1
-    chance = "This parlay has the highest chance in this list."
     if winner is None:
-        if same:
-            return
-        row = max(live, key=lambda item: float(item.get("impliedPct") or 0))
-        row["edge"] = True
-        row["why"] = chance
         return
     why = str(winner[1].get("why") or "")
-    if same and (not why or why == chance):
+    if not why:
         return
     winner[0]["edge"] = True
-    winner[0]["why"] = why or chance
+    winner[0]["why"] = why
 
 
 def _ahead(row: dict[str, Any], now: float) -> bool:

@@ -365,6 +365,20 @@ if (noteAdd) noteAdd.addEventListener("click", () => {
   saveNote({ op: "add", text: field ? field.value : "" }).catch((error) => { const msg = document.getElementById("note-msg"); if (msg) msg.textContent = String(error.message || error); });
 });
 
+async function shelveStrategy(card, part) {
+  if (shelveStrategy.busy) return;
+  shelveStrategy.busy = true;
+  const key = part ? `${card}|${part}` : card;
+  const has = ((window.state && state.board && state.board.shelved) || []).includes(key);
+  try {
+    const response = await fetch("/api/admin/shelve", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ card, part, on: !has }) });
+    const payload = await response.json();
+    if (!response.ok) return;
+    if (window.state && state.board) state.board.shelved = payload.cards || [];
+    if (window.birdMenu) birdMenu("bets");
+  } finally { shelveStrategy.busy = false; }
+}
+window.shelveStrategy = shelveStrategy;
 window.loadAdmin = loadAdmin;
 window.paintRefresh = paintRefresh;
 bindAdmin();

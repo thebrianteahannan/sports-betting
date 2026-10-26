@@ -16,9 +16,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/app.css?v=46"/>
-<link rel="stylesheet" href="/desk.css?v=62"/>
+<link rel="stylesheet" href="/desk.css?v=64"/>
 <link rel="stylesheet" href="/states.css?v=3"/>
-<link rel="stylesheet" href="/ask-bet.css?v=190"/>
+<link rel="stylesheet" href="/ask-bet.css?v=205"/>
 <style>
 #page-title { display: none; } #who { position: fixed; right: 0.7rem; bottom: 0.7rem; z-index: 20; margin: 0; }
 #member-profile { width: 2.7rem; height: 2.7rem; padding: 0; display: grid; place-items: center; border: 1px solid rgba(61, 255, 110, 0.85); border-radius: 8px; background: rgba(4, 16, 12, 0.88); color: #3dff6e; box-shadow: 0 0 14px rgba(61, 255, 110, 0.35); }
@@ -68,7 +68,7 @@ body.day-board #parrot-load[hidden] { display: none; }
     <img id="desk-pad" alt="" src="/scene/notepad.png?v=6">
     <div class="warp" id="desk-url"><p>https://parlayoftheday.com</p></div>
     <div class="warp" id="desk-note"><div class="warp-in" id="desk-note-in"></div></div>
-    <img id="desk-books" alt="" src="/scene/books.png">
+    <img id="desk-books" alt="" src="/scene/books.png?v=3">
     <div id="desk-actor">
       <img id="desk-body" alt="" src="/scene/parrot-body.png?v=9">
       <div id="desk-head">
@@ -79,8 +79,8 @@ body.day-board #parrot-load[hidden] { display: none; }
     <img id="desk-sign" alt="" src="/scene/sign-words.png?v=1">
     <div class="warp" id="desk-laptop"><div class="warp-in" id="desk-laptop-in"></div></div>
     <button type="button" class="hot" id="desk-home" aria-label="Parlay of the Day" style="left:8px;top:4px;width:410px;height:270px"></button>
-    <button type="button" class="hot" data-tab="how" aria-label="How we pick" style="left:640px;top:688px;width:280px;height:150px"></button>
-    <button type="button" class="hot" data-tab="history" aria-label="History" style="left:860px;top:740px;width:99px;height:190px"></button>
+    <button type="button" class="hot" aria-label="Listen to Parlay, Trust the Strategies, Build Your Own, Cash Money" style="left:640px;top:688px;width:280px;height:150px"></button>
+    <button type="button" class="hot" aria-label="Football" style="left:860px;top:740px;width:99px;height:190px"></button>
   </div>
   <div id="desk-fade" aria-hidden="true">
     <div id="desk-fade-bird">
@@ -89,7 +89,7 @@ body.day-board #parrot-load[hidden] { display: none; }
     </div>
   </div>
   <a id="desk-logo" href="/"><img src="/logo.png?v=5" alt="Parlay of the Day"></a>
-  <img id="desk-name" alt="" src="/scene/wordmark.png?v=3">
+  <img id="desk-name" alt="" src="/scene/wordmark.png?v=4">
   <button type="button" id="desk-menu" aria-label="Recommended bets">
     <span class="desk-face"><img src="/scene/parrot.png" alt=""></span>
   </button>
@@ -321,7 +321,7 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p class="quiet">Today is the ticket whose price lands between −150 and +100, and the highest chance inside that window. The week is a 3-leg and a 5-leg aimed at −200, so a $5 bet wins about $2.50, plus a 3-leg at −100 and a 3-leg aimed at −350. Each leg is a different day. Build a bet asks for the bet and the profit, then says if that is safest, safe, moderate, risky, or riskiest.</p>
   <p><b>Cash</b></p>
   <p class="quiet">You place it. This desk does not send it. Type the line into your own FanDuel account if you want it. A $5 night stays a $5 night. 21+. Gambling problem? Call 1-800-GAMBLER. Past results do not promise the next ticket.</p>
-</section>
+</section><section class="tracked" id="pane-help" hidden><h2>Gambling</h2><p class="warn">Gambling can take a paycheck, a week, and the people around you with it. A loss does not get paid back by the next bet. Chasing it is how a small night turns into a problem.</p><p class="warn call">If you need help, call 1-800-GAMBLER.</p><p class="age">You have to be 21 to use this desk. The membership asks for a birthday, and it stays closed until that birthday says 21.</p></section>
 <div class="pane" id="pane-open" hidden>
 <section class="tracked">
   <h2>Our Bets</h2>
@@ -460,18 +460,18 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p>21+. This desk does not send bets. Type a line into your own FanDuel account if you want it.</p>
   <p>Gambling problem? Call 1-800-GAMBLER.</p>
 </footer>
-<script src="/app.js?v=109"></script>
-<script src="/desk.js?v=93"></script>
-<script src="/members.js?v=122"></script>
+<script src="/app.js?v=116"></script>
+<script src="/desk.js?v=96"></script>
+<script src="/members.js?v=133"></script>
 <script src="/stars.js?v=8"></script>
 <script src="/choose.js?v=108"></script>
 <script src="/lessons.js?v=8"></script>
-<script src="/filters.js?v=60"></script>
+<script src="/filters.js?v=64"></script>
 <script src="/reports.js?v=1"></script>
-<script src="/admin.js?v=40"></script>
+<script src="/admin.js?v=41"></script>
 <script src="/sharecard.js?v=53"></script>
 <script src="/states.js?v=10"></script>
-<script src="/ask-bet.js?v=82"></script><script src="/bet-ask.js?v=14"></script><script src="/prop-lines.js?v=1"></script>
+<script src="/ask-bet.js?v=87"></script><script src="/bet-ask.js?v=14"></script><script src="/prop-lines.js?v=1"></script>
 <script>
 function fitPoster() {
   const view = window.visualViewport;

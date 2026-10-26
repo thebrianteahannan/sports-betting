@@ -72,7 +72,7 @@ body.needs-member .hot { display: none; }
   margin: 0.4rem 0 0;
   color: #8ea0b3;
   font-size: 12px;
-  line-height: 1.35;
+  line-height: 1.35; cursor: pointer;
 }
 #desk-glass #gate .squawk {
   flex: 1;
@@ -348,8 +348,8 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
   background: #07090e;
   z-index: 13;
 }
-#desk-full { right: 0.6rem; }
-#desk-menu { right: 3.8rem; }
+#desk-full { display: none; }
+#desk-menu { right: 0.6rem; }
 #desk.menu-open #desk-menu { background: #3dff6e; color: #04140c; }
 #desk-full .shut { display: none; }
 #desk.tv-full #desk-full .open { display: none; }
@@ -490,7 +490,7 @@ body.day-board .banner:not([hidden]) {
 #bird-line {
   position: relative; margin: 0; padding: 16px 14px; border: 2px solid #3dff6e; border-radius: 16px;
   background: #07180f; font-size: 26px; line-height: 1.25; box-shadow: 0 0 18px rgba(61, 255, 110, 0.28);
-} #bird-line.warn { font-family: "Outfit", sans-serif; font-size: 34px; font-weight: 700; line-height: 1.2; color: #ffe4e4; background: #1a0808; border-color: #ff4d4d; box-shadow: 0 0 26px rgba(255, 60, 60, 0.5); }
+} #bird-line.warn { font-family: "Outfit", sans-serif; font-size: 34px; font-weight: 700; line-height: 1.2; color: #ffe4e4; background: #1a0808; border-color: #ff4d4d; box-shadow: 0 0 26px rgba(255, 60, 60, 0.5); cursor: pointer; }
 #bird-line::before { content: ""; position: absolute; left: -14px; top: 22px; border: 8px solid transparent; border-right-color: #3dff6e; } #bird-line.warn::before { border-right-color: #ff4d4d; }
 #bird-line::after { content: ""; display: inline-block; width: 8px; height: 0.95em; margin-left: 3px; background: #3dff6e; vertical-align: text-bottom; animation: desk-caret 0.7s steps(1) infinite; } #bird-line.warn::after { background: #ff4d4d; }
 #bird-picks { display: flex; flex-wrap: wrap; gap: 0.4rem; }

@@ -123,8 +123,6 @@ function remindFull() {
   row.append(open);
 }
 
-setTimeout(remindFull, 20000);
-
 document.getElementById("desk-full").addEventListener("click", () => {
   const desk = document.getElementById("desk");
   if (desk && desk.classList.contains("tv-full")) markFull();
@@ -134,12 +132,13 @@ document.getElementById("desk-full").addEventListener("click", () => {
   window.digOn = false;
   window.asking = false;
   if (window.birdGreet) birdGreet();
-  else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]);
+  else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "bets"], ["quiz", "Build Your Own Bet"]]);
 });
 document.getElementById("desk-glass").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
   if (!desk || desk.classList.contains("tv-full")) return;
-  if (event.target.closest("#bird-born, #bird-born-go")) return;
+  if (!event.target.closest("button, a, input, select") && event.target.closest("#greet-rate, #best, #today, #chalk, #four, #plus, #hits, #week, #week5, #safe, #even")) return;
+  if (event.target.closest("#bird-born, #bird-born-go, #greet-legal span, #bird-line.warn, .gate-legal")) return;
   const button = event.target.closest("button");
   event.preventDefault(); event.stopPropagation(); document.getElementById("desk-full").click();
   if (button && desk.contains(button)) setTimeout(() => button.click(), 0);
@@ -193,7 +192,7 @@ document.getElementById("desk-back").addEventListener("click", (event) => {
   window.digOn = false;
   desk.classList.remove("dug", "solo");
   if (window.birdGreet) { birdGreet(); if (document.querySelector(".rec-board") && typeof showTab === "function") showTab("today"); }
-  else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]);
+  else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "bets"], ["quiz", "Build Your Own Bet"]]);
 }, true);
 
 function openBuilt(index) {
@@ -216,4 +215,25 @@ document.getElementById("desk-name").addEventListener("click", () => {
   if (typeof showTab === "function") showTab("today");
   const home = document.getElementById("desk-home");
   if (home) home.click();
+});
+function openStrategy(card, part) {
+  if (!card || !window.birdMenu) return;
+  const keys = card === "hits" && !part ? ["hits|five", "hits|four"] : [`${card}|${part || ""}`];
+  window.recKeep = { scroll: 0, strategies: keys, bets: [] };
+  birdMenu("bets");
+  const blocks = [...document.querySelectorAll(".rec-board .rec-strategy")].filter((node) => keys.includes(`${node.dataset.card}|${node.dataset.part || ""}`));
+  blocks.forEach((node) => node.classList.add("open"));
+  if (!blocks[0]) return;
+  const glass = document.getElementById("desk-glass-in");
+  const name = document.getElementById("desk-name");
+  const cover = name && getComputedStyle(name).display !== "none" ? name.getBoundingClientRect().bottom + 10 : 8;
+  blocks[0].scrollIntoView({ block: "start" });
+  if (glass) glass.scrollTop += blocks[0].getBoundingClientRect().top - cover;
+}
+window.openStrategy = openStrategy;
+const tvStrategy = { best: "band", today: "todayBet", chalk: "chalk", four: "four", plus: "plus", hits: "hits", week: "weekThree", week5: "weekFive", safe: "weekSafe", even: "weekEven" };
+document.addEventListener("click", (event) => {
+  if (event.target.closest("button, a, input, select, textarea")) return;
+  const card = event.target.closest("#best, #today, #chalk, #four, #plus, #hits, #week, #week5, #safe, #even");
+  if (card && tvStrategy[card.id]) openStrategy(tvStrategy[card.id], "");
 });

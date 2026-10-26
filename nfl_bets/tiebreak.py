@@ -77,8 +77,10 @@ def _finish(built: list[list[Any]]) -> None:
     if len(ranked) < 2:
         return
     _total, _price, why, offer = ranked[0]
+    if not why:
+        return
     offer["edge"] = True
-    offer["why"] = why or "This parlay has the highest chance in this list."
+    offer["why"] = why
 
 def _line(bag: dict[str, int], delta: dict[str, float], texts: dict[str, str], held: dict[str, int]) -> str:
     positives = sorted(((diff, texts[key]) for key, diff in delta.items() if bag.get(key, 0) > 0 and diff >= 3), reverse=True)

@@ -45,12 +45,12 @@ async function load() {
 }
 
 function greetPct(value, plus) { const whole = Math.abs(value - Math.round(value)) < 0.05; return `${whole ? Math.round(value) : value.toFixed(1)}%${plus ? "+" : ""}`; }
-function weekHigh(done, since) {
-  const groups = new Map();
-  done.forEach((ticket) => { const id = `${ticket.card || ""}|${ticket.card === "hits" && window.hitsPart ? hitsPart(ticket) : ""}`; (groups.get(id) || groups.set(id, []).get(id)).push(ticket); });
-  let best = NaN;
-  groups.forEach((rows) => { const pct = parseFloat(recPct(rows, since)); if (Number.isFinite(pct) && !(pct <= best)) best = pct; });
-  return best;
+function weekStars(done, since) {
+  const names = window.CARD_NAMES || {}, groups = new Map();
+  done.forEach((ticket) => { const part = ticket.card === "hits" && window.hitsPart ? hitsPart(ticket) : ""; const id = `${ticket.card || ""}|${part}`; (groups.get(id) || groups.set(id, []).get(id)).push(ticket); });
+  const rows = [];
+  groups.forEach((tickets, id) => { const [card, part] = id.split("|"); const pct = parseFloat(recPct(tickets, since)); if (recPct.n < 3 || !Number.isFinite(pct) || ((state.board && state.board.shelved) || []).includes(part ? `${card}|${part}` : card)) return; const name = card === "hits" ? (part === "five" ? "Five near 90% each" : "Four near 80% each") : names[card]; if (!name) return; rows.push({ no: window.strategyNo ? strategyNo(card, part) : "", name, pct, pay: window.weekPay ? weekPay(tickets, since) : 0, card, part }); });
+  return rows.filter((row) => row.pct >= 65).sort((a, b) => b.pct - a.pct);
 }
 let renderLater = 0;
 function render() {
@@ -62,7 +62,7 @@ function render() {
   oddsByHead = null;
   const board = state.board || {};
   const hit = document.getElementById("greet-rate");
-  if (hit && window.recPct) { const done = (board.archive || []).filter((ticket) => ticket.result === "won" || ticket.result === "lost"); const since = Date.now() - 86400000 * 7; const high = weekHigh(done, since); const pct = parseFloat(recPct(done, since)); const pay = window.weekPay ? weekPay(done, since) : 0; const plus = Number.isFinite(high) && high > pct; hit.innerHTML = recPct.n ? `<b>${greetPct(pct, plus)}</b>Five dollars makes about $${pay}.` : ""; }
+  if (hit && window.recPct) { const done = (board.archive || []).filter((ticket) => ticket.result === "won" || ticket.result === "lost"); const since = Date.now() - 86400000 * 7; const stars = weekStars(done, since); const sell = (row) => row.pay ? `Five dollars makes about $${row.pay}.` : ""; const paint = () => { if (!stars.length) { hit.innerHTML = (recPct(done, since), recPct.n ? `<b>${greetPct(parseFloat(recPct(done, since)))}</b>Five dollars makes about $${window.weekPay ? weekPay(done, since) : 0}.` : ""); return; } const row = stars[(state.greetSpin || 0) % stars.length]; hit.innerHTML = `<span data-card="${row.card}" data-part="${row.part || ""}"><b>${greetPct(row.pct)}</b> ${[row.no, row.name].filter(Boolean).join(" ")}${sell(row) ? `<i>${sell(row)}</i>` : ""}</span>`; }; paint(); clearTimeout(state.greetTimer); if (stars.length > 1) state.greetTimer = setTimeout(function spin() { state.greetSpin = (state.greetSpin || 0) + 1; paint(); state.greetTimer = setTimeout(spin, 4500); }, 4500); }
   const waiting = !board.updatedAt;
   $("lede").textContent = board.updatedAt ? `FanDuel ${when(board.updatedAt)} ET.` : "Loading the latest board.";
   const parrot = $("parrot-load");
@@ -179,7 +179,7 @@ function legStarted(card) {
 
 function todayCandidate(board) {
   const card = board.todayBet;
-  if (!card || (window.blockCollege && blockCollege(card)) || legStarted(card)) return null;
+  if (!card || (window.blockCollege && blockCollege(card)) || legStarted(card) || (board.shelved || []).includes("todayBet")) return null;
   const legs = card.legs || [];
   const pct = Number(card.impliedPct);
   if (!legs.length || !Number.isFinite(pct)) {
@@ -196,7 +196,7 @@ function todayCandidate(board) {
 }
 
 function weekCard(card, id) {
-  if (!card || (window.blockCollege && blockCollege(card)) || legStarted(card)) return null;
+  if (!card || (window.blockCollege && blockCollege(card)) || legStarted(card) || ((state.board && state.board.shelved) || []).includes(id)) return null;
   const legs = card.legs || [];
   const pct = Number(card.impliedPct);
   if (!legs.length || !Number.isFinite(pct)) {
@@ -248,7 +248,7 @@ const PARLAY_TITLES = {
 
 function renderParlay(id, card) {
   const box = $(id);
-  if (!card || (window.blockCollege && blockCollege(card)) || legStarted(card)) {
+  if (!card || (window.blockCollege && blockCollege(card)) || legStarted(card) || ((state.board && state.board.shelved) || []).includes(id) || (id === "hits" && ["hits|five", "hits|four"].some((key) => ((state.board && state.board.shelved) || []).includes(key)))) {
     box.hidden = true;
     return;
   }
@@ -363,10 +363,10 @@ function renderArchive(tickets) {
 
 function showTab(name) {
   state.tab = name;
-  const titles = { today: "Today", week: "Week", build: "Build a bet", open: "Our Bets", history: "History", profile: "Profile", how: "How we pick", laws: "State rules" };
+  const titles = { today: "Today", week: "Week", build: "Build a bet", open: "Our Bets", history: "History", profile: "Profile", how: "How we pick", laws: "State rules", help: "Gambling" };
   $("page-title").textContent = titles[name] || titles.today;
   document.body.classList.add("day-board");
-  ["today", "week", "build", "open", "history", "profile", "how"].forEach((id) => {
+  ["today", "week", "build", "open", "history", "profile", "how", "help"].forEach((id) => {
     $(`pane-${id}`).hidden = id !== name;
     document.querySelectorAll(`[data-tab="${id}"]`).forEach((tab) => tab.classList.toggle("on", id === name));
   });

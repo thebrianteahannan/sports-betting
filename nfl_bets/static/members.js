@@ -22,11 +22,11 @@ async function paintGateRecord() {
 }
 
 function birdBrag() {
-  const archive = ((window.state && window.state.board && window.state.board.archive) || []);
+  const archive = ((window.state && window.state.board && window.state.board.archive) || []); const parked = new Set(((window.state && window.state.board && window.state.board.shelved) || []));
   const picks = Object.entries(CARD_NAMES).flatMap(([id, name]) => (id === "hits" ? [["hits", "Five near 90% each", "five"], ["hits", "Four near 80% each", "four"]] : [[id, name, ""]])).flatMap(([id, name, part]) => {
     const done = archive.filter((ticket) => ticket.card === id && (ticket.result === "won" || ticket.result === "lost") && (!part || hitsPart(ticket) === part));
     const rates = [7, 30].map((span) => ({ span: span === 7 ? "week" : "month", pct: parseFloat(recPct(done, Date.now() - 86400000 * span)), n: recPct.n })).filter((row) => row.n >= 5 && row.pct >= 75).sort((a, b) => b.pct - a.pct);
-    return rates[0] ? [{ id, name, part, span: rates[0].span, pct: rates[0].pct }] : [];
+    return rates[0] && !parked.has(part ? `${id}|${part}` : id) ? [{ id, name, part, span: rates[0].span, pct: rates[0].pct }] : [];
   }).sort((a, b) => b.pct - a.pct);
   if (!picks.length) { window.birdHot = null; return ""; }
   const hot = picks[window.birdTurn || 0]; window.birdTurn = ((window.birdTurn || 0) + 1) % picks.length;
@@ -178,7 +178,7 @@ function birdGreet() {
   if (!called) return birdAskName();
   if (!window.memberBorn) return birdAskBorn(); if (!window.memberState) return birdAskState(); if (birdAskBook() || birdLaw()) return;
   window.asking = false;
-  birdSay(`Hey, ${called}. What are you trying to do today?`, [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]);
+  birdSay(`Hey, ${called}. What are you trying to do today?`, [["menu", "Parlay's Picks", "bets"], ["quiz", "Build Your Own Bet"]]);
 }
 
 function birdLaw() {
@@ -378,30 +378,26 @@ function birdMenu(kind) {
   const now = Date.now();
   const day = 86400000;
   const past = !!window.recPast;
-  board.addEventListener("click", (event) => {
-    const bet = event.target.closest(".rec-bet");
-    if (bet) return;
-    const strategy = event.target.closest(".rec-strategy");
-    if (strategy) strategy.classList.toggle("open");
-  });
+  const onRec = (event) => { const go = event.target.closest("[data-shelve-go]"); if (go) { const row = document.getElementById("desk-glass-in"); state.shelving = !state.shelving; window.recKeep = { scroll: row ? row.scrollTop : 0, strategies: [...document.querySelectorAll(".rec-strategy.open")].map((node) => `${node.dataset.card}|${node.dataset.part || ""}`), bets: [...document.querySelectorAll(".rec-bet.open")].map((node) => node.dataset.key) }; birdMenu("bets"); return; } const shelve = event.target.closest("[data-shelve]"); if (shelve) { if (window.shelveStrategy) shelveStrategy(shelve.dataset.shelve, shelve.dataset.part); return; } if (event.target.closest(".rec-bet")) return; const strategy = event.target.closest(".rec-strategy"); if (strategy) strategy.classList.toggle("open"); };
+  board.addEventListener("click", onRec);
   window.recTickets = [];
   const strategies = Object.entries(CARD_NAMES).flatMap(([id, name]) => (
     id === "hits" ? [["hits", "Five near 90% each", "five"], ["hits", "Four near 80% each", "four"]] : [[id, name, ""]]
   ));
-  const filled = [];
-  const empty = [];
+  const filled = [], empty = [], shelf = [], parked = new Set(((window.state && window.state.board && window.state.board.shelved) || []));
   strategies.forEach(([id, name, part]) => {
     const block = document.createElement("section");
     block.className = "rec-strategy"; block.dataset.card = id; block.dataset.part = part;
     const heading = document.createElement("h3");
     heading.innerHTML = `${window.strategyNo ? `<span class="rec-no">${strategyNo(id, part)}</span>` : ""} ${name} <span class="rec-count"></span>`;
+    if (window.state && state.admin && state.shelving) heading.insertAdjacentHTML("beforeend", `<button type="button" class="shelve" data-shelve="${id}" data-part="${part}">${parked.has(part ? `${id}|${part}` : id) ? "Put back" : "Archive"}</button>`);
     block.append(heading);
     const done = archive.filter((ticket) => ticket.card === id && (ticket.result === "won" || ticket.result === "lost") && (!part || hitsPart(ticket) === part));
     const history = document.createElement("p");
     history.className = "rec-history";
-    const rates = [day, day * 7, day * 30, day * 365].map((span) => recPct(done, now - span));
-    history.innerHTML = rates.map((text, index) => index && text !== "—" ? `<span data-rate="${index}">${text}</span>` : "").join("");
-    block.dataset.rates = rates.map((text) => parseFloat(text)).join(",");
+    const rates = [day, day * 7, day * 30, day * 365].map((span) => recPct(done, now - span)); const all = recPct(done, 0), hit = parseFloat(all), needs = archive.filter((ticket) => ticket.card === id && (!part || hitsPart(ticket) === part)).map((ticket) => { const implied = Number(ticket.impliedPct); if (ticket.impliedPct != null && ticket.impliedPct !== "" && Number.isFinite(implied)) return implied; const price = Number(ticket.american); return price > 0 ? (100 / (price + 100)) * 100 : price < 0 ? (Math.abs(price) / (Math.abs(price) + 100)) * 100 : NaN; }).filter((n) => Number.isFinite(n)).sort((a, b) => a - b), need = needs.length ? needs[needs.length >> 1] : NaN, risk = recPct.n >= 3 && Number.isFinite(hit) && Number.isFinite(need) ? Math.round((need - hit) * 10) / 10 : NaN; if (recPct.n >= 3 && hit > need) block.classList.add("rec-plus");
+    history.innerHTML = rates.map((text, index) => index && text !== "—" ? `<span data-rate="${index}">${text}</span>` : "").join("") + (Number.isFinite(risk) ? `<i class="rec-pay" data-rate="4">Hits ${all}. Needs ${need.toFixed(1)}%. Risk ${risk > 0 ? "+" : ""}${risk.toFixed(1)}.</i>` : "");
+    block.dataset.rates = rates.map((text) => parseFloat(text)).concat(risk).join(",");
     block.append(history);
     const seen = new Set();
     const live = (ticket) => ![ticket.kickoff, ...(ticket.legs || []).map((leg) => leg.kickoff)].some((iso) => Number.isFinite(Date.parse(iso || "")) && Date.parse(iso || "") <= now);
@@ -412,26 +408,27 @@ function birdMenu(kind) {
         if (seen.has(key)) return;
         seen.add(key);
         const bet = document.createElement("div");
-        bet.className = ticket.edge ? "rec-bet rec-edge" : "rec-bet"; bet.dataset.key = key;
+        const told = ticket.why && ticket.why !== "This parlay has the highest chance in this list."; bet.className = ticket.edge && told ? "rec-bet rec-edge" : "rec-bet"; bet.dataset.key = key;
         if (ticket.result === "won" || ticket.result === "lost") bet.classList.add(ticket.result);
         bet.dataset.rec = String((window.recTickets = window.recTickets || []).push({ ticket, name }) - 1);
         const price = Number(ticket.american);
         const shown = Number.isFinite(price) ? (price > 0 ? `+${price}` : String(price)) : "";
         const pct = ticket.impliedPct != null && ticket.impliedPct !== "" ? `${ticket.impliedPct}%` : "";
-        const mark = ticket.result === "won" ? "Won" : ticket.result === "lost" ? "Lost" : ticket.edge ? "Better" : "";
+        const mark = ticket.result === "won" ? "Won" : ticket.result === "lost" ? "Lost" : ticket.edge && told ? "Better" : "";
         const head = document.createElement("b");
-        head.textContent = [window.betSerial ? betSerial(ticket) : "", shown, pct, mark, name].filter(Boolean).join(" · ");
+        const betWon = Number.isFinite(price) && price ? Math.round((price < 0 ? 500 / -price : price / 20) * 100) / 100 : NaN; head.textContent = [window.betSerial ? betSerial(ticket) : "", shown, pct, Number.isFinite(betWon) ? `$5 profits $${Math.abs(betWon - Math.round(betWon)) < 0.005 ? Math.round(betWon) : betWon.toFixed(2)}` : "", mark, name].filter(Boolean).join(" · ");
         const gist = document.createElement("p");
         gist.className = "rec-gist";
-        gist.innerHTML = ticket.why ? `<em>${esc(ticket.why)}</em>` : "";
+        gist.innerHTML = told ? `<em>${esc(ticket.why)}</em>` : "";
         const copy = document.createElement("p");
         copy.className = "rec-copy";
         copy.innerHTML = recBlurb(ticket, shown, pct, price);
         bet.append(head); if (gist.innerHTML) bet.append(gist); bet.insertAdjacentHTML("beforeend", `${ticket.legs.map(recLine).join("")}<button type="button" class="worth-bet" aria-label="Worth the risk?">Worth the risk?</button><button type="button" class="share-bet" data-share="rec" data-share-id="${bet.dataset.rec}" aria-label="Share this bet"></button>`); if (copy.textContent) bet.append(copy); bet.insertAdjacentHTML("beforeend", `<button type="button" class="more-bet">More Info</button>`);
         block.append(bet);
       });
-    heading.querySelector(".rec-count").textContent = seen.size;
-    if (!block.querySelector(".rec-bet")) {
+    heading.querySelector(".rec-count").textContent = seen.size; const pays = [...block.querySelectorAll(".rec-bet b")].map((node) => { const hit = node.textContent.match(/\$5 profits \$([0-9.]+)/); return hit ? Number(hit[1]) : NaN; }).filter((n) => Number.isFinite(n)).sort((a, b) => a - b), mid = pays.length ? pays[pays.length >> 1] : (Number.isFinite(need) && need > 0 && need < 100 ? Math.round(5 * (100 / need - 1) * 100) / 100 : NaN), bucks = Number.isFinite(mid) ? `$${Math.abs(mid - Math.round(mid)) < 0.005 ? Math.round(mid) : mid.toFixed(2)}` : ""; if (bucks) { const line = history.querySelector(".rec-pay"); if (line) line.textContent += ` $5 profits ${bucks}.`; else history.insertAdjacentHTML("beforeend", `<i class="rec-pay">$5 profits ${bucks}.</i>`); }
+    if (parked.has(part ? `${id}|${part}` : id)) shelf.push(block);
+    else if (!block.querySelector(".rec-bet")) {
       const note = document.createElement("p");
       note.textContent = past ? "None finished yet." : "None you can place right now.";
       block.append(note);
@@ -441,6 +438,9 @@ function birdMenu(kind) {
   filled.forEach((block) => board.append(block));
   empty.forEach((block) => board.append(block));
   if (window.paintRecFilters) paintRecFilters(board); const title = board.querySelector("h2"); if (title) board.prepend(title);
+  if (shelf.length) {
+    const aside = document.createElement("div"); aside.className = "rec-shelf"; aside.innerHTML = "<h2>Archived strategies.</h2>"; shelf.forEach((block) => aside.append(block)); board.append(aside);
+  }
   const hold = document.getElementById("desk-hold"); if (hold) [...row.children].forEach((node) => hold.append(node)); row.append(board); if (window.recKeep) { const keep = window.recKeep; window.recKeep = null; board.querySelectorAll(".rec-strategy").forEach((node) => node.classList.toggle("open", keep.strategies.includes(`${node.dataset.card}|${node.dataset.part || ""}`))); board.querySelectorAll(".rec-bet").forEach((node) => node.classList.toggle("open", keep.bets.includes(node.dataset.key))); row.scrollTop = keep.scroll; } else row.scrollTop = 0;
 }
 
@@ -473,7 +473,7 @@ function openRecommended(id) {
 window.birdMenu = birdMenu;
 
 document.getElementById("bird-guide").addEventListener("pointerdown", (event) => {
-  const menu = event.target.closest("[data-menu]");
+  const star = event.target.closest("#greet-rate [data-card]"); if (star && window.openStrategy) { event.preventDefault(); openStrategy(star.dataset.card, star.dataset.part || ""); return; } const menu = event.target.closest("[data-menu]");
   if (menu) { event.preventDefault(); window.asking = true; goFull(); birdMenu(menu.dataset.menu); return; }
   if (!event.target.closest("#bird-picks button")) return;
   const line = (document.getElementById("bird-line") || {}).textContent || "";

@@ -6,7 +6,7 @@ const PANES = {
   week: ["week", "week5", "safe"],
   build: ["chooser"],
   open: ["pane-open"],
-  how: ["pane-how"],
+  how: ["pane-how"], help: ["pane-help"],
   history: ["pane-history"],
   profile: ["pane-profile"],
 };
@@ -285,7 +285,7 @@ function showGateScene() {
 
 function deskFrame(name) {
   const desk = document.getElementById("desk");
-  if (!desk || document.body.classList.contains("needs-member")) return;
+  if (!desk || (document.body.classList.contains("needs-member") && name !== "help")) return;
   warp();
   mount(name);
   paintNote();
@@ -314,9 +314,10 @@ function bootDesk() {
   if (full) full.addEventListener("click", toggleTv);
   const menu = document.getElementById("desk-menu");
   if (menu) menu.addEventListener("click", (event) => {
-    event.stopPropagation();
+    event.stopPropagation(); if (menu.classList.contains("bird-has") && event.clientX < menu.getBoundingClientRect().left && /GAMBLER|ruin people's lives/i.test(menu.dataset.say || "")) { openHelp(); return; }
     if (window.goFull) goFull();
     if (menu.classList.contains("bird-has") && event.clientX < menu.getBoundingClientRect().left) { if (window.matchMedia("(hover: none), (pointer: coarse)").matches) menu.classList.toggle("say-open"); return; }
+    if (document.querySelector("#desk-glass-in .rec-board") && !document.getElementById("desk").classList.contains("bird-on") && !document.getElementById("desk").classList.contains("solo") && window.askStart) { birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); askStart(""); return; }
     if (birdPending) { const pending = birdPending; birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Recommended bets"); if (!(window.birdBragGo && birdBragGo(pending[0]))) birdSay(pending[0], pending[1]); return; } if (window.birdMenu) birdMenu("bets");
   });
   document.addEventListener("click", (event) => {
@@ -336,16 +337,16 @@ function bootDesk() {
   const go = document.getElementById("choice-go");
   if (go) go.addEventListener("click", tvPush);
   const home = document.getElementById("desk-home");
-  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]); tvSkip = false; birdBump(); });
+  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "bets"], ["quiz", "Build Your Own Bet"]]); tvSkip = false; birdBump(); });
 }
 const BIRD_WAIT = 18000;
 const BIRD_NUDGES = [
-  ["Hey, want to find a bet you want to make?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]],
+  ["Hey, want to find a bet you want to make?", [["menu", "Parlay's Picks", "bets"], ["quiz", "Build Your Own Bet"]]],
   ["Hey, try a safer bet. Five dollars wins about $2.50. It still loses sometimes. It just loses less often than the ones that pay a lot.", [["quiz", "Try Safe Bet", "safe"]]],
   ["Hey, a safer bet is a smaller win. A bigger payout is more fun to talk about with friends, and it loses more often.", [["quiz", "Build a higher payout", "payout"]]],
   ["Best Bets of the Week puts each pick on a different day. Want a look?", [["week", "Best Bets of the Week"]]],
   ["Tonight's bet is ready. Want a look?", [["today", "Show tonight's bet"]]],
-  ["", [["menu", "View Our Recommended Bets", "bets"]], "brag"],
+  ["", [["menu", "Parlay's Picks", "bets"]], "brag"],
   ["Gambling can really ruin people's lives. Only bet money you can afford to lose. If you need help, call 1‑800‑GAMBLER.", []],
 ];
 let birdTimer = 0; let birdNudge = 0; let birdPending = null;
@@ -416,7 +417,7 @@ function startGuide() {
     window.squawkUntil = Date.now() + 900; birdSay("Squawk!!!", []);
     setTimeout(() => {
       if (!birdOn || birdHeld || window.asking || document.body.classList.contains("needs-member")) return;
-      if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]);
+      if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "bets"], ["quiz", "Build Your Own Bet"]]);
     }, 900);
     birdBump();
   };
@@ -426,6 +427,7 @@ function startGuide() {
   document.addEventListener("keydown", birdBump);
   document.addEventListener("pointerdown", (event) => { const quiz = event.target.closest("[data-quiz]"); if (!(quiz && window.askStart)) return; event.preventDefault(); window.asking = true; if (window.goFull) goFull(); askStart(quiz.dataset.quiz); });
   document.addEventListener("click", (event) => {
+    const help = event.target.closest("#greet-legal span, #bird-line.warn, .gate-legal, footer p"); if (help && /21\+|GAMBLER|ruin people's lives/i.test(help.textContent || "")) { openHelp(); return; }
     const stay = event.target.closest("[data-stay]");
     if (stay) { while (tvStack.length && tvStack.at(-1).bird) tvStack.pop(); tvBack(); return; }
     const asked = event.target.closest("#bird-guide [data-ask]");
@@ -436,9 +438,8 @@ function startGuide() {
   });
 }
 
-let tvStack = [];
-let tvSkip = false;
-let tvSeen = false;
+let tvStack = []; let tvSkip = false; let tvSeen = false;
+function openHelp() { const desk = document.getElementById("desk"); if (document.body.classList.contains("needs-member")) { if (!(tvStack.at(-1) && tvStack.at(-1).gate)) tvStack.push({ gate: 1 }); } else if (desk && desk.classList.contains("bird-on")) { const shot = tvShot(); if (!tvSame(shot, tvStack.at(-1))) tvStack.push(shot); } if (tvStack.length > 12) tvStack.shift(); tvPaint(); showTab("help"); if (desk && desk.classList.contains("bird-on")) { birdOn = true; birdHeld = true; window.asking = false; birdHide(); } }
 function tvShot() {
   const desk = document.getElementById("desk");
   if (desk && desk.classList.contains("bird-on")) {
@@ -478,6 +479,7 @@ function tvBack() {
   tvPaint();
   tvSkip = true;
   if (prev.bird) birdSay(prev.text, prev.picks);
+  else if (prev.gate) showGateScene();
   else { window.asking = false; birdHide(); if (!prev.built) tvUnbuild(); showTab(prev.tab); }
   tvSkip = false;
 }
