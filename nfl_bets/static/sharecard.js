@@ -346,18 +346,18 @@ async function drawShare(bet) {
     return;
   }
   const board = document.createElement("canvas");
-  board.width = image.naturalWidth;
-  board.height = image.naturalHeight;
+  board.width = 959;
+  board.height = 1024;
   const ctx = board.getContext("2d");
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(image, 0, 0);
+  ctx.drawImage(image, 0, 0, 959, 1024);
   coverNfl(ctx, image);
   drawBoard(ctx, bet);
   drawFound(ctx, bet);
   shareBits = board;
   const edge = ctx.getImageData(Math.min(board.width - 1, 954), 24, 1, 1).data;
-  photo.dataset.draw = `${board.width} edge ${edge[0]},${edge[1]},${edge[2]} title ${shareTitleSize}`;
+  photo.dataset.draw = `src ${image.naturalWidth} ${board.width} edge ${edge[0]},${edge[1]},${edge[2]} title ${shareTitleSize}`;
   photo.src = board.toDataURL("image/jpeg", 0.9);
   photo.hidden = false;
   const copy = document.getElementById("share-card-download");
@@ -392,7 +392,7 @@ function shareDebug() {
   const off = view ? view.offsetLeft : 0;
   const clip = p.width > 2 && p.right > off + vw + 1;
   const fit = Math.min((desk ? desk.clientWidth : window.innerWidth) / 959, (desk ? desk.clientHeight : window.innerHeight) / 1024);
-  line.textContent = [`v51 ${clip ? "CLIP" : "in"}`, `desk ${desk ? desk.clientWidth : 0} visual ${Math.round(vw)} tv ${fit.toFixed(3)}`, `window ${window.innerWidth} scroll ${document.documentElement.scrollWidth} screen ${window.screen.width}`, `pane ${Math.round(b.left)}-${Math.round(b.right)} photo ${Math.round(p.left)}-${Math.round(p.right)} nat ${photo.naturalWidth || 0} draw ${photo.dataset.draw || ""}`].join("\n");
+  line.textContent = [`v52 ${clip ? "CLIP" : "in"}`, `desk ${desk ? desk.clientWidth : 0} visual ${Math.round(vw)} tv ${fit.toFixed(3)}`, `window ${window.innerWidth} scroll ${document.documentElement.scrollWidth} screen ${window.screen.width}`, `pane ${Math.round(b.left)}-${Math.round(b.right)} photo ${Math.round(p.left)}-${Math.round(p.right)} nat ${photo.naturalWidth || 0} draw ${photo.dataset.draw || ""}`].join("\n");
   console.log(line.textContent);
 }
 
