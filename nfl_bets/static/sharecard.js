@@ -115,7 +115,7 @@ function shareBox() {
   box = document.createElement("section");
   box.id = "share-view";
   box.hidden = true;
-  box.innerHTML = `<button type="button" id="share-back" aria-label="Back"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button><p id="share-card-debug"></p><img id="share-card-photo" alt="" hidden><p class="pick-save"><button type="button" id="share-card-download" hidden>Copy</button></p><p class="quiet" id="share-card-note"></p>`;
+  box.innerHTML = `<div id="share-stage"><img id="share-card-photo" alt="" width="959" height="1024" hidden></div><button type="button" id="share-back" aria-label="Back"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button><p id="share-card-debug"></p><p class="pick-save"><button type="button" id="share-card-download" hidden>Copy</button></p><p class="quiet" id="share-card-note"></p>`;
   (document.getElementById("desk") || document.body).append(box);
   const copy = box.querySelector("#share-card-download");
   if (copy) copy.addEventListener("click", () => { copyShare(); });
@@ -189,7 +189,7 @@ function roundBox(ctx, x, y, w, h, r) {
 function drawBoard(ctx, bet) {
   const x = 574;
   const y = 0;
-  const w = 366;
+  const w = 382;
   const h = 648;
   const left = x + 16;
   const right = x + w - 16;
@@ -346,11 +346,9 @@ async function drawShare(bet) {
     return;
   }
   const board = document.createElement("canvas");
-  const sharp = Math.min(2, 1200 / image.naturalWidth);
-  board.width = Math.round(image.naturalWidth * sharp);
-  board.height = Math.round(image.naturalHeight * sharp);
+  board.width = image.naturalWidth;
+  board.height = image.naturalHeight;
   const ctx = board.getContext("2d");
-  ctx.setTransform(sharp, 0, 0, sharp, 0, 0);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   ctx.drawImage(image, 0, 0);
@@ -358,7 +356,7 @@ async function drawShare(bet) {
   drawBoard(ctx, bet);
   drawFound(ctx, bet);
   shareBits = board;
-  const edge = ctx.getImageData(Math.min(board.width - 1, Math.round(938 * sharp)), Math.round(24 * sharp), 1, 1).data;
+  const edge = ctx.getImageData(Math.min(board.width - 1, 954), 24, 1, 1).data;
   photo.dataset.draw = `${board.width} edge ${edge[0]},${edge[1]},${edge[2]} title ${shareTitleSize}`;
   photo.src = board.toDataURL("image/jpeg", 0.9);
   photo.hidden = false;
@@ -371,13 +369,13 @@ async function drawShare(bet) {
 
 function shareFit() {
   const box = document.getElementById("share-view");
-  const photo = document.getElementById("share-card-photo");
+  const stage = document.getElementById("share-stage");
   const desk = document.getElementById("desk");
-  const view = window.visualViewport;
-  const w = Math.min((desk && desk.clientWidth) || innerWidth, view ? view.width : innerWidth, innerWidth, screen.width || innerWidth);
-  const h = Math.min((desk && desk.clientHeight) || innerHeight, view ? view.height : innerHeight, innerHeight);
-  if (box) { box.style.left = "0px"; box.style.top = "0px"; box.style.right = "auto"; box.style.bottom = "auto"; box.style.width = `${w}px`; box.style.height = `${h}px`; }
-  if (photo) { const wide = Math.max(1, w - 32); photo.style.width = `${wide}px`; photo.style.maxWidth = `${wide}px`; photo.style.height = "auto"; }
+  const w = (desk && desk.clientWidth) || innerWidth;
+  const h = (desk && desk.clientHeight) || innerHeight;
+  const scale = Math.min(w / 959, h / 1024);
+  if (box) { box.style.left = "0px"; box.style.top = "0px"; box.style.width = `${w}px`; box.style.height = `${h}px`; }
+  if (stage) stage.style.transform = `translate(${(w - 959 * scale) / 2}px, ${(h - 1024 * scale) / 2}px) scale(${scale})`;
   shareDebug();
 }
 
@@ -393,7 +391,8 @@ function shareDebug() {
   const vw = view ? view.width : window.innerWidth;
   const off = view ? view.offsetLeft : 0;
   const clip = p.width > 2 && p.right > off + vw + 1;
-  line.textContent = [`v48 ${clip ? "CLIP" : "in"}`, `desk ${desk ? desk.clientWidth : 0} visual ${Math.round(vw)} scale ${view ? view.scale : 1} off ${Math.round(off)}`, `window ${window.innerWidth} scroll ${document.documentElement.scrollWidth} screen ${window.screen.width}`, `pane ${Math.round(b.left)}-${Math.round(b.right)} photo ${Math.round(p.left)}-${Math.round(p.right)} nat ${photo.naturalWidth || 0} draw ${photo.dataset.draw || ""}`].join("\n");
+  const fit = Math.min((desk ? desk.clientWidth : window.innerWidth) / 959, (desk ? desk.clientHeight : window.innerHeight) / 1024);
+  line.textContent = [`v51 ${clip ? "CLIP" : "in"}`, `desk ${desk ? desk.clientWidth : 0} visual ${Math.round(vw)} tv ${fit.toFixed(3)}`, `window ${window.innerWidth} scroll ${document.documentElement.scrollWidth} screen ${window.screen.width}`, `pane ${Math.round(b.left)}-${Math.round(b.right)} photo ${Math.round(p.left)}-${Math.round(p.right)} nat ${photo.naturalWidth || 0} draw ${photo.dataset.draw || ""}`].join("\n");
   console.log(line.textContent);
 }
 
