@@ -186,7 +186,7 @@ function showMore(bet) {
 }
 
 function editStake(button) {
-  const bet = button.closest(".rec-bet");
+  const bet = button.closest(".rec-bet, #rec-open");
   if (!bet) return;
   const input = document.createElement("input");
   input.type = "number";
@@ -218,7 +218,7 @@ function editStake(button) {
 }
 
 document.addEventListener("click", (event) => {
-  const stake = event.target.closest(".rec-board .rec-copy button.stake");
+  const stake = event.target.closest(".rec-copy button.stake");
   if (stake) { editStake(stake); return; }
   const worth = event.target.closest(".rec-board .worth-bet");
   if (worth) { askBet("worth", "Worth Risk?", worth.closest(".rec-bet")); return; }

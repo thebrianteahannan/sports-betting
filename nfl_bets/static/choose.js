@@ -104,7 +104,6 @@ function takeMoney() { const stake = document.getElementById("choice-stake"), pr
 function moneySay(price) { const bet = choice.stake > 0 ? choice.stake : 5; if (!Number.isFinite(price) || !price) return ""; const won = Math.round(bet * (price > 0 ? price / 100 : 100 / Math.abs(price)) * 100) / 100; const cash = (n) => (Math.abs(n - Math.round(n)) < 0.005 ? String(Math.round(n)) : n.toFixed(2)); return `${choice.profit > 0 ? `${riskWord(bet, choice.profit)}. ` : ""}A $${cash(bet)} bet would win $${cash(won)}.${choice.profit > 0 ? ` You wanted about $${cash(choice.profit)} profit.` : ""}`; }
 async function runChoice() { takeMoney();
   const box = document.getElementById("choice-result");
-  if (!(choice.profit > 0)) { box.textContent = "Type the profit you want off that bet."; return; }
   const key = choiceKey(); document.getElementById("choice-stars")?.remove();
   document.getElementById("choice-again").hidden = (document.getElementById("chooser").classList.add("built"), true);
   if (window.memberLaw === "off" && !(window.booksHere && booksHere().some((book) => book.id !== "fanduel"))) { box.textContent = "No sportsbook on this desk is offered in your state, so this bet cannot be placed there."; return; }
@@ -205,8 +204,8 @@ function askAnswer(token) {
   else if (key === "kind") { if (value === "groups" || value.startsWith("group:")) { askButtons.group = value.startsWith("group:") ? value.slice(6) : ""; askStep(); return; } choice.kind = value || "any"; askButtons.group = ""; }
   else if (key === "legs") choice.legs = Number(value);
   else if (key === "game") { choice.gameIds = value ? [value] : []; window.askKinds = null; askButtons.group = ""; }
-  else if (key === "money") { const row = document.getElementById("bird-picks"); const stake = Number(row && (row.querySelector("[name=stake]") || {}).value); const profit = Number(row && (row.querySelector("[name=profit]") || {}).value); choice.stake = stake > 0 ? Math.min(100000, Math.round(stake * 100) / 100) : 5; choice.profit = profit > 0 ? Math.round(profit * 100) / 100 : 0; const stakeBox = document.getElementById("choice-stake"); const profitBox = document.getElementById("choice-profit"); if (stakeBox) stakeBox.value = String(choice.stake); if (profitBox) profitBox.value = choice.profit ? String(choice.profit) : ""; if (choice.profit > 0) choice.aim = "pay"; else if (choice.aim === "pay") choice.aim = ""; } else if (key === "aim") choice.aim = value; else if (key === "mix") choice.mix = value;
-  if (key === "money" && !(choice.profit > 0)) { choice.needProfit = true; askStep(); return; }
+  else if (key === "money") { const row = document.getElementById("bird-picks"); const stake = Number(row && (row.querySelector("[name=stake]") || {}).value); const profit = value === "any" ? 0 : Number(row && (row.querySelector("[name=profit]") || {}).value); choice.stake = stake > 0 ? Math.min(100000, Math.round(stake * 100) / 100) : 5; choice.profit = profit > 0 ? Math.round(profit * 100) / 100 : 0; const stakeBox = document.getElementById("choice-stake"); const profitBox = document.getElementById("choice-profit"); if (stakeBox) stakeBox.value = String(choice.stake); if (profitBox) profitBox.value = choice.profit ? String(choice.profit) : ""; if (choice.profit > 0) choice.aim = "pay"; else if (choice.aim === "pay") choice.aim = ""; } else if (key === "aim") choice.aim = value; else if (key === "mix") choice.mix = value;
+  if (key === "money" && value !== "any" && !(choice.profit > 0)) { choice.needProfit = true; askStep(); return; }
   if (key === "money") choice.needProfit = false;
   window.askPast.push(ask[0]); ask.shift();
   askStep();
@@ -236,14 +235,14 @@ function askButtons(step) {
   if (step === "legs") {
     return ["How many picks?", [["ask", "Any number", "legs:0"]].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => ["ask", n === 1 ? "1 pick" : `${n} picks`, `legs:${n}`]))];
   }
-  if (step === "money") return [choice.needProfit ? "Type the profit you want off that bet." : "How much do you want to bet, and how much profit do you want off it?", [["ask", "Use this", "money:go"]]];
-  if (step === "risk") return [riskSay(choice.stake, choice.profit) || "Type the profit you want off that bet.", [["ask", "Find it", "risk:go"]]];
+  if (step === "money") return [choice.needProfit ? "Type the profit you want off that bet." : "How much do you want to bet, and how much profit do you want off it?", [["ask", "Use this", "money:go"], ["ask", "Any profit", "money:any"]]];
+  if (step === "risk") { const said = riskSay(choice.stake, choice.profit); return said ? [said, [["ask", "Find it", "risk:go"]]] : null; }
   if (step === "mix") return choice.legs === 1 ? null : ["Same chance on every leg, or let one stand out?", [["ask", "Any", "mix:any"], ["ask", "Same chance", "mix:even"], ["ask", "One safer", "mix:safer"], ["ask", "One longer", "mix:long"]]];
   return null;
 }
 
 function askSoFar() {
-  const past = window.askPast || [], game = choice.gameIds[0] && document.querySelector(`#choice-game option[value="${CSS.escape(choice.gameIds[0])}"]`), words = { when: choice.when === "week" ? "This week" : "Today", sport: choice.sports.length ? choice.sports.join(", ") : "All leagues", game: game ? game.textContent : "Any game", kind: choice.kind && choice.kind !== "any" ? kindLabel(choice.kind) : "Any player prop", legs: choice.legs ? (choice.legs === 1 ? "1 pick" : `${choice.legs} picks`) : "Any number", money: choice.profit > 0 ? `$${choice.stake} bet, $${choice.profit} profit` : (choice.stake && choice.stake !== 5 ? `$${choice.stake} bet` : ""), risk: riskWord(choice.stake, choice.profit), mix: { any: "Any", even: "Same chance", safer: "One safer", long: "One longer" }[choice.mix] || "" };
+  const past = window.askPast || [], game = choice.gameIds[0] && document.querySelector(`#choice-game option[value="${CSS.escape(choice.gameIds[0])}"]`), words = { when: choice.when === "week" ? "This week" : "Today", sport: choice.sports.length ? choice.sports.join(", ") : "All leagues", game: game ? game.textContent : "Any game", kind: choice.kind && choice.kind !== "any" ? kindLabel(choice.kind) : "Any player prop", legs: choice.legs ? (choice.legs === 1 ? "1 pick" : `${choice.legs} picks`) : "Any number", money: choice.profit > 0 ? `$${choice.stake} bet, $${choice.profit} profit` : `$${choice.stake || 5} bet, any profit`, risk: riskWord(choice.stake, choice.profit), mix: { any: "Any", even: "Same chance", safer: "One safer", long: "One longer" }[choice.mix] || "" };
   return ["when", "sport", "game", "kind", "legs", "money", "risk", "mix"].filter((step) => past.includes(step)).map((step) => words[step]).filter(Boolean).join(", ");
 }
 function askStep() {
@@ -468,7 +467,7 @@ function openRec(index) {
   const pct = ticket.impliedPct != null && ticket.impliedPct !== "" ? `${ticket.impliedPct}%` : "";
   const copy = window.recBlurb ? recBlurb(ticket, shown, pct, price) : "";
   const stars = typeof starHtml === "function" ? starHtml(typeof cardGood === "function" ? cardGood(ticket.card, ticket) : 0, ticket.card, "", "") : "";
-  card.innerHTML = `<h2>${esc([row.name || ticket.title || "This bet", shown, pct].filter(Boolean).join(" · "))}${ticket.same ? " · Recommended" : ""}</h2>${copy ? `<p>${esc(copy)}</p>` : ""}${ticket.same ? `<p>This is already a recommended bet, ${esc(ticket.same)}.</p>` : ""}${ticket.why ? `<p class="aim">${esc(ticket.why)}</p>` : ""}<ol>${(ticket.legs || []).map(recLeg).join("")}</ol><p class="pick-save">${stars}<button type="button" class="share-bet" data-share="rec" data-share-id="${index}" aria-label="Share this bet"></button></p>`;
+  card.innerHTML = `<h2>${esc([row.name || ticket.title || "This bet", shown, pct].filter(Boolean).join(" · "))}${ticket.same ? " · Recommended" : ""}</h2>${copy ? `<p class="rec-copy">${copy}</p>` : ""}${ticket.same ? `<p>This is already a recommended bet, ${esc(ticket.same)}.</p>` : ""}${ticket.why ? `<p class="aim">${esc(ticket.why)}</p>` : ""}<ol>${(ticket.legs || []).map(recLeg).join("")}</ol><p class="pick-save">${stars}<button type="button" class="share-bet" data-share="rec" data-share-id="${index}" aria-label="Share this bet"></button></p>`;
   card.hidden = false;
   const glass = document.getElementById("desk-glass-in");
   if (glass && !glass.contains(card)) glass.append(card);

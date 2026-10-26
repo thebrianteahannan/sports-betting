@@ -239,11 +239,10 @@ bindOpenFilters();
 
 const recFilter = { when: "", sports: keptLeagues(), game: "", kind: "", legs: "", aim: "", find: "", stake: 5, profit: 0 };
 let recFiltersOpen = false;
-let recAllOpen = false;
 let recPast = false;
-let recSort = "1";
-let recSortHigh = true;
-const REC_PAY = [["top", "Safest"], ["safe", "Safe"], ["good", "Good"], ["payout", "Big payout"], ["huge", "Huge payout"]];
+let recSort = "4";
+let recSortHigh = false;
+const REC_PAY = [["top", "Safest"], ["safe", "Safe"], ["good", "Good"], ["payout", "Big payout"], ["huge", "Biggest payout"]];
 let recKinds = [], recKindsKey = "";
 
 function recDayKey(ms) { return (recDayKey.fmt || (recDayKey.fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }))).format(ms); }
@@ -291,10 +290,9 @@ function recEnsureKinds(board) {
   }).catch(() => { if (recKindsKey === key) recKindsKey = ""; });
 }
 
-function recBand(ratio) { return ratio < 0.5 ? "top" : ratio < 1 ? "safe" : ratio <= 4 ? "good" : ratio < 40 ? "payout" : "huge"; }
-function recPay(ticket) { const price = Number(ticket.american); if (!Number.isFinite(price) || !price) return ""; return recBand(price > 0 ? price / 100 : 100 / Math.abs(price)); }
+function recAims(ticket) { const price = Number(ticket.american), ratio = Number.isFinite(price) && price ? (price > 0 ? price / 100 : 100 / Math.abs(price)) : NaN, row = (window.recTickets || []).find((item) => item && item.ticket === ticket), risk = parseFloat(String((row && row.rates) || "").split(",")[4]), aims = []; if (risk < 40) aims.push("top"); else if (risk < 50) aims.push("safe"); else if (risk < 60) aims.push("good"); if (ratio >= 3 && ratio < 4) aims.push("payout"); else if (ratio >= 4) aims.push("huge"); return aims; }
 function recProfit(ticket) { const price = Number(ticket.american), bet = recFilter.stake > 0 ? recFilter.stake : 5; return !Number.isFinite(price) || !price ? NaN : Math.round(bet * (price > 0 ? price / 100 : 100 / Math.abs(price)) * 100) / 100; }
-function recPayFit(stake, profit) { return !(profit > 0) ? "" : recBand(profit / (stake > 0 ? stake : 5)); }
+function recPayFit(stake, profit) { const ratio = profit / (stake > 0 ? stake : 5); return !(profit > 0) ? "" : ratio >= 4 ? "huge" : ratio >= 3 ? "payout" : ""; }
 
 function listedRecs(board) {
   return [...board.querySelectorAll(":scope > .rec-strategy .rec-bet")].map((bet) => (window.recTickets || [])[Number(bet.dataset.rec)]).filter(Boolean);
@@ -312,7 +310,7 @@ function recMatch(ticket) {
     if (!kinds.some((kind) => kind === recFilter.kind) || kinds.some((kind) => kind && kind !== recFilter.kind)) return false;
   }
   if (recFilter.legs && String((ticket.legs || []).length) !== recFilter.legs) return false;
-  if (recFilter.aim && recPay(ticket) !== recFilter.aim) return false;
+  if (recFilter.aim && !recAims(ticket).includes(recFilter.aim)) return false;
   if (recFilter.profit > 0) { const won = recProfit(ticket); if (!(won > 0) || Math.abs(won - recFilter.profit) > recFilter.profit * 0.35) return false; }
   return recHit(ticket, recFilter.find);
 }
@@ -323,14 +321,15 @@ function recApply(board) {
   const keep = new Set(shown);
   const narrowed = recFilter.when || recFilter.sports.length || recFilter.game || recFilter.kind || recFilter.legs || recFilter.aim || recFilter.find.trim() || recFilter.profit > 0;
   picks.forEach((bet) => bet.classList.toggle("rec-off", narrowed && !keep.has(bet)));
-  const want = ((text) => { const match = String(text || "").trim().match(/^s(\d{1,2})$/i); return match ? `s${match[1].padStart(2, "0")}` : ""; })(recFilter.find);
+  const want = ((text) => { const match = String(text || "").trim().match(/^s-?(\d{1,2})$/i); return match ? `s-${match[1].padStart(2, "0")}` : ""; })(recFilter.find);
   board.querySelectorAll(":scope > .rec-strategy").forEach((block) => {
     const code = (window.strategyNo ? strategyNo(block.dataset.card, block.dataset.part) : "").toLowerCase();
     const strategyHit = !!want && code === want;
     if (want) block.querySelectorAll(".rec-bet").forEach((bet) => bet.classList.toggle("rec-off", !strategyHit));
-    const bets = [...block.querySelectorAll(".rec-bet")].filter((bet) => !bet.classList.contains("rec-off"));
-    block.classList.toggle("rec-off", want ? !strategyHit : narrowed && !bets.length);
-    if (strategyHit || (narrowed && bets.length && /^p\d+$/i.test(recFilter.find.trim()))) block.classList.add("open");
+    const bets = [...block.querySelectorAll(".rec-bet:not(.rec-was)")].filter((bet) => !bet.classList.contains("rec-off"));
+    const band = { top: [0, 40], safe: [40, 50], good: [50, 60] }[recFilter.aim], risk = parseFloat((block.dataset.rates || "").split(",")[4]);
+    block.classList.toggle("rec-off", want ? !strategyHit : narrowed && !bets.length && !(band && risk >= band[0] && risk < band[1]));
+    if (strategyHit || (narrowed && bets.length && /^p-?\d+$/i.test(recFilter.find.trim()))) block.classList.add("open");
     const count = block.querySelector(".rec-count");
     if (count) count.textContent = bets.length;
   });
@@ -358,8 +357,8 @@ function recOrder(board) {
   if (!recPast) recOrder.live = blocks.map(key);
   blocks.forEach((block) => {
     const shelf = board.querySelector(":scope > .rec-shelf"); if (shelf) board.insertBefore(block, shelf); else board.append(block);
-    const shown = rate(block);
-    block.classList.toggle("rec-cold", !recPast && !block.classList.contains("rec-plus") && Number.isFinite(index) && Number.isFinite(shown) && shown < 65);
+    const risk = parseFloat((block.dataset.rates || "").split(",")[4]);
+    block.classList.remove("rec-low", "rec-mid", "rec-hot", "rec-high"); if (Number.isFinite(risk)) block.classList.add(risk < 40 ? "rec-low" : risk < 50 ? "rec-mid" : risk < 60 ? "rec-hot" : "rec-high");
     block.querySelectorAll(".rec-history [data-rate]").forEach((mark) => mark.classList.toggle("on", mark.dataset.rate === recSort));
   });
 }
@@ -396,28 +395,28 @@ function recGameHit(ticket, name) {
 }
 
 function recSay() {
-  const sports = recFilter.sports, league = sports.length > 1 ? `${sports.slice(0, -1).join(", ")} and ${sports.at(-1)}` : (sports[0] || ""), picks = recFilter.legs === "1" ? "1-pick" : recFilter.legs ? `${recFilter.legs}-pick` : "", pay = { top: "safest", safe: "safe", good: "good", payout: "big payout", huge: "huge payout" }[recFilter.aim] || "";
+  const sports = recFilter.sports, league = sports.length > 1 ? `${sports.slice(0, -1).join(", ")} and ${sports.at(-1)}` : (sports[0] || ""), picks = recFilter.legs === "1" ? "1-pick" : recFilter.legs ? `${recFilter.legs}-pick` : "", pay = { top: "safest", safe: "safe", good: "good", payout: "big payout", huge: "biggest payout" }[recFilter.aim] || "";
   const bits = [pay, picks, league, recFilter.kind || ""].filter(Boolean).join(" "), time = recFilter.when === "today" ? " from today" : recFilter.when === "week" ? " from this week" : "", game = `${recFilter.game ? ` for ${recFilter.game}` : ""}${recFilter.find.trim() ? ` for ${recFilter.find.trim()}` : ""}`;
   const order = `Parlay the Parrot picked these strategies, ${recSortHigh ? "highest" : "lowest"} ${{ 1: "this week", 2: "this month", 3: "this year", 4: "risk rating" }[Number(recSort)] || "this week"} first.`;
   const tail = `${bits ? `${bits} ` : ""}${recPast ? "finished bets" : "bets"}${time}${game}`;
-  if (recFilter.profit > 0) { const band = { top: "Safest", safe: "Safe", good: "Good", payout: "Big payout", huge: "Huge payout" }[recPayFit(recFilter.stake, recFilter.profit)] || ""; const bet = recFilter.stake > 0 ? recFilter.stake : 5; const cash = (n) => (Math.abs(n - Math.round(n)) < 0.005 ? String(Math.round(n)) : n.toFixed(2)); return `${band}. A $${cash(bet)} bet to make $${cash(recFilter.profit)} has to win about ${Math.round(100 * bet / (bet + recFilter.profit))}% of the time. ${tail.charAt(0).toUpperCase()}${tail.slice(1)} near that profit. ${order}`; }
+  if (recFilter.profit > 0) { const band = { payout: "Big payout", huge: "Biggest payout" }[recPayFit(recFilter.stake, recFilter.profit)] || ""; const bet = recFilter.stake > 0 ? recFilter.stake : 5; const cash = (n) => (Math.abs(n - Math.round(n)) < 0.005 ? String(Math.round(n)) : n.toFixed(2)); return `${band ? `${band}. ` : ""}A $${cash(bet)} bet to make $${cash(recFilter.profit)} has to win about ${Math.round(100 * bet / (bet + recFilter.profit))}% of the time. ${tail.charAt(0).toUpperCase()}${tail.slice(1)} near that profit. ${order}`; }
   if (!recFilter.when && !sports.length && !recFilter.game && !recFilter.kind && !recFilter.legs && !pay && !recFilter.find.trim()) return `${recPast ? "Every finished bet" : "Every bet you can place"}. ${order}`;
   return `${tail.charAt(0).toUpperCase()}${tail.slice(1)}. ${order}`;
 }
-function strategyNo(card, part) { const order = ["band","safe2","todayBet","mid3","chalk","win4","four","plusLegs","plus","mix21","hits|five","hits|four","low3","weekThree","yards3","weekFive","ou4","weekSafe","alt3","weekEven","games4","early3","prime3","weekend4","td2","td3","pay5","pay10","pay15","pay20","pay25","pay50"]; const at = order.indexOf(part ? `${card}|${part}` : String(card || "")); return at < 0 ? "" : `S${String(at + 1).padStart(2, "0")}`; }
+function strategyNo(card, part) { const order = ["band","safe2","todayBet","mid3","chalk","win4","four","plusLegs","plus","mix21","hits|five","hits|four","low3","weekThree","yards3","weekFive","ou4","weekSafe","alt3","weekEven","games4","early3","prime3","weekend4","td2","td3","pay5","pay10","pay15","pay20","pay25","pay50"]; const at = order.indexOf(part ? `${card}|${part}` : String(card || "")); return at < 0 ? "" : `S-${String(at + 1).padStart(2, "0")}`; }
 window.strategyNo = strategyNo;
 function betSerial(ticket) {
   const rows = ((window.state && window.state.board && window.state.board.archive) || []);
   if (betSerial.rows !== rows) { const map = new Map(); let top = 0; rows.forEach((row) => { const n = Number(row.serial); if (Number.isInteger(n) && n > 0) { map.set(String(row.id), n); if (n > top) top = n; } }); rows.slice().sort((a, b) => String(a.offeredAt || "").localeCompare(String(b.offeredAt || "")) || String(a.id || "").localeCompare(String(b.id || ""))).forEach((row) => { if (!map.has(String(row.id))) map.set(String(row.id), ++top); }); betSerial.rows = rows; betSerial.map = map; }
   let id = String((ticket && ticket.id) || "");
   if (!betSerial.map.has(id)) { const legs = (ticket && ticket.legs || []).map((leg) => String(leg.label || "")).join("|"); const hit = legs && rows.find((row) => (!ticket.card || row.card === ticket.card) && (row.legs || []).map((leg) => String(leg.label || "")).join("|") === legs); id = String((hit && hit.id) || ""); }
-  const n = betSerial.map.get(id); return n ? `P${n}` : "";
+  const n = betSerial.map.get(id); return n ? `P-${n}` : "";
 }
 window.betSerial = betSerial;
 function seekSerial(board) {
-  const q = String(recFilter.find || "").trim(); if (!/^p\d+$/i.test(q)) return;
+  const q = String(recFilter.find || "").trim(); if (!/^p-?\d+$/i.test(q)) return;
   const here = [...board.querySelectorAll(".rec-bet")].some((bet) => recHit(((window.recTickets || [])[Number(bet.dataset.rec)] || {}).ticket, q)); if (here) return;
-  const hit = ((window.state && window.state.board && window.state.board.archive) || []).find((ticket) => betSerial(ticket).toLowerCase() === q.toLowerCase());
+  const hit = ((window.state && window.state.board && window.state.board.archive) || []).find((ticket) => betSerial(ticket).toLowerCase().replace("-", "") === q.toLowerCase().replace("-", ""));
   if (!hit) return; const finished = hit.result === "won" || hit.result === "lost"; if (finished === !!recPast) return;
   recPast = finished; window.recPast = recPast; if (window.birdMenu) birdMenu("bets");
 }
@@ -426,7 +425,7 @@ function recWho(ticket) {
   (ticket.legs || []).forEach((leg) => { add(leg.player || String(leg.label || "").split(",")[0]); String(leg.match || ticket.game || "").split(/\s+at\s+|\s+@\s+|\s+v\s+|\s+vs\.?\s+/i).forEach((side) => add(side, true)); });
   return [...bag];
 }
-function recHit(ticket, query) { const q = String(query || "").trim().toLowerCase(); const code = betSerial(ticket).toLowerCase(); return !q || (code && /^p\d+$/i.test(q) && code === q) || recWho(ticket).some((name) => name.toLowerCase().includes(q)); }
+function recHit(ticket, query) { const q = String(query || "").trim().toLowerCase(); const code = betSerial(ticket).toLowerCase(); return !q || (code && /^p-?\d+$/i.test(q) && code.replace("-", "") === q.replace("-", "")) || recWho(ticket).some((name) => name.toLowerCase().includes(q)); }
 function recHints(list, query) {
   const q = String(query || "").trim().toLowerCase(), names = q ? [...new Set(list.flatMap(recWho))] : [];
   return names.filter((name) => name.toLowerCase().startsWith(q)).concat(names.filter((name) => { const low = name.toLowerCase(); return !low.startsWith(q) && low.includes(q); })).slice(0, 8);
@@ -434,8 +433,8 @@ function recHints(list, query) {
 
 function recTally(rows, key, value) {
   if (recTally.rows !== rows) {
-    recTally.rows = rows; const fact = rows.map((ticket) => ({ ticket, span: recSpan(ticket), leagues: [...new Set(recLeagues(ticket))], legs: String((ticket.legs || []).length), pay: recPay(ticket) })); const keep = (row, skip) => (skip === "when" || ((recFilter.when !== "today" || row.span === "today") && (recFilter.when !== "week" || row.span === "today" || row.span === "week"))) && (skip === "sports" || !recFilter.sports.length || (row.leagues.length && row.leagues.every((name) => recFilter.sports.includes(name)))) && (skip === "game" || !recFilter.game || recGameHit(row.ticket, recFilter.game)) && (skip === "legs" || !recFilter.legs || row.legs === recFilter.legs) && (skip === "aim" || !recFilter.aim || row.pay === recFilter.aim) && (!(recFilter.profit > 0) || ((won) => won > 0 && Math.abs(won - recFilter.profit) <= recFilter.profit * 0.35)(recProfit(row.ticket))) && (skip === "kind" || !recFilter.kind || ((row.kinds || (row.kinds = (row.ticket.legs || []).map(recLegKind))).includes(recFilter.kind) && row.kinds.every((kind) => !kind || kind === recFilter.kind)) && recHit(row.ticket, recFilter.find)); const hit = (skip) => fact.filter((row) => keep(row, skip));
-    const bag = { when: {}, sports: {}, game: {}, kind: {}, legs: {}, aim: {} }, add = (group, id) => { group[id] = (group[id] || 0) + 1; }, open = paintRecFilters.shut || {}; hit("when").forEach((row) => add(bag.when, row.span)); bag.when.week = (bag.when.today || 0) + (bag.when.week || 0); hit("sports").forEach((row) => { if (row.leagues.length === 1) add(bag.sports, row.leagues[0]); }); hit("legs").forEach((row) => { add(bag.legs, row.legs); add(bag.legs, ""); }); hit("aim").forEach((row) => { if (row.pay) add(bag.aim, row.pay); }); if (open.Prop === false || recFilter.kind) hit("kind").forEach((row) => { const names = [...new Set((row.kinds || (row.kinds = (row.ticket.legs || []).map(recLegKind))).filter(Boolean))]; if (names.length === 1) add(bag.kind, names[0]); add(bag.kind, ""); }); const wanted = open.Game === false ? (recTally.games || []) : (recFilter.game ? [recFilter.game] : []), found = hit("game"); bag.game[""] = found.length; if (wanted.length) { const byName = new Map(((window.state && window.state.board && window.state.board.games) || []).filter((game) => game && game.match).map((game) => [game.match, String(game.id || "")])); const sides = new Map(wanted.map((name) => [name, String(name).replace(/\s*\([^)]*\)/g, "").split(/\s+at\s+|\s+@\s+|\s+v\s+|\s+vs\.?\s+/i).map((side) => side.trim().split(/\s+/).pop()).filter((word) => word && word.length > 3)])); found.forEach((row) => { const text = [row.ticket.game].concat((row.ticket.legs || []).map((leg) => `${leg.label || ""} ${leg.match || ""}`)).join(" "); const ids = new Set((row.ticket.legs || []).map((leg) => String(leg.gameId || ""))); wanted.forEach((name) => { const id = byName.get(name) || ""; const bits = sides.get(name) || []; if (row.ticket.game === name || (id && ids.has(id)) || (bits.length >= 2 && bits.every((word) => text.includes(word)))) add(bag.game, name); }); }); } recTally.bag = bag;
+    recTally.rows = rows; const fact = rows.map((ticket) => ({ ticket, span: recSpan(ticket), leagues: [...new Set(recLeagues(ticket))], legs: String((ticket.legs || []).length), pay: recAims(ticket) })); const keep = (row, skip) => (skip === "when" || ((recFilter.when !== "today" || row.span === "today") && (recFilter.when !== "week" || row.span === "today" || row.span === "week"))) && (skip === "sports" || !recFilter.sports.length || (row.leagues.length && row.leagues.every((name) => recFilter.sports.includes(name)))) && (skip === "game" || !recFilter.game || recGameHit(row.ticket, recFilter.game)) && (skip === "legs" || !recFilter.legs || row.legs === recFilter.legs) && (skip === "aim" || !recFilter.aim || row.pay.includes(recFilter.aim)) && (!(recFilter.profit > 0) || ((won) => won > 0 && Math.abs(won - recFilter.profit) <= recFilter.profit * 0.35)(recProfit(row.ticket))) && (skip === "kind" || !recFilter.kind || ((row.kinds || (row.kinds = (row.ticket.legs || []).map(recLegKind))).includes(recFilter.kind) && row.kinds.every((kind) => !kind || kind === recFilter.kind)) && recHit(row.ticket, recFilter.find)); const hit = (skip) => fact.filter((row) => keep(row, skip));
+    const bag = { when: {}, sports: {}, game: {}, kind: {}, legs: {}, aim: {} }, add = (group, id) => { group[id] = (group[id] || 0) + 1; }, open = paintRecFilters.shut || {}; hit("when").forEach((row) => add(bag.when, row.span)); bag.when.week = (bag.when.today || 0) + (bag.when.week || 0); hit("sports").forEach((row) => { if (row.leagues.length === 1) add(bag.sports, row.leagues[0]); }); hit("legs").forEach((row) => { add(bag.legs, row.legs); add(bag.legs, ""); }); hit("aim").forEach((row) => { row.pay.forEach((id) => add(bag.aim, id)); }); if (open.Prop === false || recFilter.kind) hit("kind").forEach((row) => { const names = [...new Set((row.kinds || (row.kinds = (row.ticket.legs || []).map(recLegKind))).filter(Boolean))]; if (names.length === 1) add(bag.kind, names[0]); add(bag.kind, ""); }); const wanted = open.Game === false ? (recTally.games || []) : (recFilter.game ? [recFilter.game] : []), found = hit("game"); bag.game[""] = found.length; if (wanted.length) { const byName = new Map(((window.state && window.state.board && window.state.board.games) || []).filter((game) => game && game.match).map((game) => [game.match, String(game.id || "")])); const sides = new Map(wanted.map((name) => [name, String(name).replace(/\s*\([^)]*\)/g, "").split(/\s+at\s+|\s+@\s+|\s+v\s+|\s+vs\.?\s+/i).map((side) => side.trim().split(/\s+/).pop()).filter((word) => word && word.length > 3)])); found.forEach((row) => { const text = [row.ticket.game].concat((row.ticket.legs || []).map((leg) => `${leg.label || ""} ${leg.match || ""}`)).join(" "); const ids = new Set((row.ticket.legs || []).map((leg) => String(leg.gameId || ""))); wanted.forEach((name) => { const id = byName.get(name) || ""; const bits = sides.get(name) || []; if (row.ticket.game === name || (id && ids.has(id)) || (bits.length >= 2 && bits.every((word) => text.includes(word)))) add(bag.game, name); }); }); } recTally.bag = bag;
   }
   return (recTally.bag[key] || {})[value] || 0;
 }
@@ -446,12 +445,12 @@ function paintRecFilters(board) {
   const games = recGameOptions(rows); recTally.games = games;
   if (recFilter.game && !games.includes(recFilter.game)) recFilter.game = "";
   const on = recFilter.when || recFilter.sports.length || recFilter.game || recFilter.kind || recFilter.legs || recFilter.aim || recFilter.find.trim() || recFilter.profit > 0;
-  const line = (name, html, fold) => (html ? `<div class="row${fold ? ` fold${(paintRecFilters.shut || (paintRecFilters.shut = {}))[name] === false ? "" : " tuck"}` : ""}"><span class="name">${name}</span>${html}</div>` : "");
+  const line = (name, html, fold) => (html ? `<div class="row${name === "When" || name === "Pay" ? " keep" : ""}${fold ? ` fold${(paintRecFilters.shut || (paintRecFilters.shut = {}))[name] === false ? "" : " tuck"}` : ""}"><span class="name">${name}</span>${html}</div>` : "");
   const bar = document.createElement("div");
   bar.className = "rec-filters";
   if (recFiltersOpen) bar.classList.add("open");
   bar.innerHTML = [
-    `<div class="rec-head"><span class="rec-tools"><button type="button" class="rec-fold${on ? " on" : ""}" data-rec="fold">Filters</button><button type="button" class="rec-past${recPast ? " on" : ""}" data-rec="past">History</button>${on ? recChip("clear", "1", "Clear", false) : ""}</span><span class="rec-side">${window.state && state.admin ? `<button type="button" class="shelve-go" data-shelve-go>${state.shelving ? "Done archiving" : "Start archiving"}</button>` : ""}<button type="button" class="rec-seek${paintRecFilters.seek || recFilter.find.trim() ? " on" : ""}" data-rec="seek" aria-label="Search"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="6"/><path d="M16 16l5 5"/></svg></button><button type="button" class="rec-expand" data-rec="expand">${recAllOpen ? "Collapse all" : "Expand all"}</button></span></div>`,
+    `<div class="rec-head"><span class="rec-tools"><button type="button" class="rec-fold${on ? " on" : ""}" data-rec="fold">Filters</button>${on ? recChip("clear", "1", "Clear", false) : ""}</span><span class="rec-side">${window.state && state.admin ? `<button type="button" class="shelve-go" data-shelve-go>${state.shelving ? "Done archiving" : "Start archiving"}</button>` : ""}<button type="button" class="rec-seek${paintRecFilters.seek || recFilter.find.trim() ? " on" : ""}" data-rec="seek" aria-label="Search"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="6"/><path d="M16 16l5 5"/></svg></button></span></div>`,
     `<label class="rec-find${paintRecFilters.seek ? " on" : ""}"><input type="search" placeholder="Player, team, bet, or strategy number" value="${esc(recFilter.find)}" autocomplete="off"><span class="rec-hints" hidden></span></label>`,
     `<div class="rec-sort"><span class="name">Sort</span>${[["1", "Week"], ["2", "Month"], ["3", "Year"], ["4", "Risk"]].map(([value, label]) => recChip("sort", value, recSort === value ? `${label} ${recSortHigh ? "↓" : "↑"}` : label, recSort === value)).join("")}</div>`,
     line("When", recChip("when", "today", `Today ${recTally(rows, "when", "today")}`, recFilter.when === "today") + recChip("when", "week", `This week ${recTally(rows, "when", "week")}`, recFilter.when === "week")),
@@ -473,9 +472,8 @@ function paintRecFilters(board) {
     if (event.target.closest(".row.fold .name")) { const row = event.target.closest(".row"); row.classList.toggle("tuck"); (paintRecFilters.shut = paintRecFilters.shut || {})[row.querySelector(".name").textContent] = row.classList.contains("tuck"); if (!row.classList.contains("tuck")) { bar.remove(); note.remove(); paintRecFilters(board); } return; }
     if (!button) return;
     if (button.dataset.rec === "fold") { recFiltersOpen = !recFiltersOpen; bar.classList.toggle("open", recFiltersOpen); if (recFiltersOpen) recEnsureKinds(board); return; }
-    if (button.dataset.rec === "past") { recPast = !recPast; window.recPast = recPast; recAllOpen = false; if (window.birdMenu) birdMenu("bets"); return; }
     if (button.dataset.rec === "sort") { if (recSort === button.dataset.value) recSortHigh = !recSortHigh; else { recSort = button.dataset.value; recSortHigh = true; } bar.remove(); note.remove(); paintRecFilters(board); return; }
-    if (button.dataset.rec === "seek") { paintRecFilters.seek = !paintRecFilters.seek; const find = bar.querySelector(".rec-find"); find.classList.toggle("on", !!paintRecFilters.seek); button.classList.toggle("on", !!paintRecFilters.seek || !!recFilter.find.trim()); if (paintRecFilters.seek) find.querySelector("input").focus(); return; } if (button.dataset.rec === "expand") { recAllOpen = !recAllOpen; board.querySelectorAll(":scope > .rec-strategy, :scope > .rec-strategy .rec-bet").forEach((item) => item.classList.toggle("open", recAllOpen)); button.textContent = recAllOpen ? "Collapse all" : "Expand all"; return; }
+    if (button.dataset.rec === "seek") { paintRecFilters.seek = !paintRecFilters.seek; const find = bar.querySelector(".rec-find"); find.classList.toggle("on", !!paintRecFilters.seek); button.classList.toggle("on", !!paintRecFilters.seek || !!recFilter.find.trim()); if (paintRecFilters.seek) find.querySelector("input").focus(); return; }
     if (button.dataset.rec === "clear") { recFilter.when = ""; recFilter.sports = []; recFilter.game = ""; recFilter.kind = ""; recFilter.legs = ""; recFilter.aim = ""; recFilter.find = ""; recFilter.profit = 0; recFilter.stake = 5; } else if (button.dataset.rec === "sports") {
       const list = recFilter.sports;
       const index = list.indexOf(button.dataset.value);

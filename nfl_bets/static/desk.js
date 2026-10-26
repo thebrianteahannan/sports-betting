@@ -366,7 +366,7 @@ function birdSay(text, picks) {
   }
   if (!tvSkip && desk && !desk.classList.contains("bird-on")) tvPush();
   if (desk) { desk.classList.add("bird-on"); tvPaint(); }
-  line.textContent = text; line.classList.toggle("warn", /ruin people's lives/i.test(text)); line.classList.toggle("pow", text === "Squawk!!!");
+  line.textContent = text; line.classList.toggle("warn", /ruin people's lives/i.test(text)); line.classList.toggle("pow", text === "Aight, bet!");
   row.replaceChildren();
   (picks || []).forEach(([tab, label, aim, off]) => {
     const button = document.createElement("button");
@@ -414,7 +414,7 @@ function startGuide() {
   const hello = () => {
     birdOn = true;
     birdHeld = false;
-    window.squawkUntil = Date.now() + 900; birdSay("Squawk!!!", []);
+    window.squawkUntil = Date.now() + 900; birdSay("Aight, bet!", []);
     setTimeout(() => {
       if (!birdOn || birdHeld || window.asking || document.body.classList.contains("needs-member")) return;
       if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "bets"], ["quiz", "Build Your Own Bet"]]);
