@@ -372,7 +372,7 @@ function birdSay(text, picks) {
     button.type = "button";
     if (tab === "quiz" || tab === "ask" || tab === "menu" || tab === "parrot") button.dataset[tab] = aim || "";
     else { button.dataset.tab = tab; if (aim) button.dataset.aim = aim; }
-    button.textContent = label; if (off) button.disabled = true;
+    button.textContent = label; if (off === "off") button.disabled = true; else if (off === "on") button.classList.add("on");
     row.append(button);
   });
   box.hidden = false;
@@ -413,7 +413,7 @@ function startGuide() {
   const hello = () => {
     birdOn = true;
     birdHeld = false;
-    window.squawkUntil = Date.now() + 900; if (window.goFull) goFull(); birdSay("Squawk!!!", []);
+    window.squawkUntil = Date.now() + 900; birdSay("Squawk!!!", []);
     setTimeout(() => {
       if (!birdOn || birdHeld || window.asking || document.body.classList.contains("needs-member")) return;
       if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "View Our Recommended Bets", "bets"], ["quiz", "Build Your Own Bet"]]);

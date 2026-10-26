@@ -1,5 +1,6 @@
 const CHOICE_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA"];
 function kindLabel(name) { return name ? name.replace(/\b[a-z]/g, (letter) => letter.toUpperCase()) : "Any player prop"; }
+function kindBucket(name) { const text = String(name || ""); if (/touchdown|2pt conversion/.test(text)) return "Touchdowns"; if (/reception/.test(text)) return "Receptions"; if (/yard/.test(text)) return "Yards"; if (/three/.test(text)) return "Threes"; if (/rebound|assist/.test(text)) return "Rebounds and assists"; if (/shot/.test(text)) return "Shots"; if (/save/.test(text)) return "Saves"; if (/goal/.test(text)) return "Goals"; if (/point/.test(text)) return "Points"; return "Other"; }
 function riskWord(stake, profit) { const ratio = profit / stake; return !(profit > 0) ? "" : ratio <= 0.3 ? "Safest" : ratio <= 0.8 ? "Safe" : ratio <= 1.6 ? "Moderate" : ratio <= 3.2 ? "Risky" : "Riskiest"; }
 function riskSay(stake, profit) { const bet = stake > 0 ? stake : 5, win = profit > 0 ? profit : 0; if (!(win > 0)) return ""; const cash = (n) => (Math.abs(n - Math.round(n)) < 0.005 ? String(Math.round(n)) : n.toFixed(2)); return `${riskWord(bet, win)}. A $${cash(bet)} bet to make $${cash(win)} has to win about ${Math.round(100 * bet / (bet + win))}% of the time.`; }
 const choice = window.choice = { sports: [], kind: "any", legs: 3, gameIds: [], when: "today", aim: "top", mix: "even", stake: 5, profit: 0 };
@@ -189,7 +190,7 @@ function askStart(aim) {
   choice.aim = aim || ""; choice.mix = "even"; choice.stake = 5; choice.profit = aim === "safe" ? 2.5 : aim === "payout" ? 20 : 0; choice.needProfit = false; const stakeBox = document.getElementById("choice-stake"); const profitBox = document.getElementById("choice-profit"); if (stakeBox) stakeBox.value = "5"; if (profitBox) profitBox.value = choice.profit ? String(choice.profit) : "";
   choice.hold = [];
   choice.drop = [];
-  window.asking = true; window.askPast = []; window.askFree = !aim;
+  window.asking = true; window.askPast = []; window.askFree = !aim; askButtons.group = "";
   ask = window.askSteps = ["when", "sport", "game", "kind", "legs", "money", "risk", "mix"];
   birdBump();
   askStep();
@@ -199,11 +200,11 @@ function askAnswer(token) {
   if (!ask) return;
   const cut = token.indexOf(":");
   const key = token.slice(0, cut); const value = token.slice(cut + 1); if (key === "back") { if (window.askBack) askBack(); return; }
-  if (key === "when") { choice.when = value; window.askKinds = null; }
-  else if (key === "sport") { choice.sports = value ? [value] : []; window.askKinds = null; }
-  else if (key === "kind") choice.kind = value;
+  if (key === "when") { choice.when = value; window.askKinds = null; askButtons.group = ""; }
+  else if (key === "sport") { const open = liveSports().filter(sportOn); if (value !== "go") { choice.sports = value ? (choice.sports.includes(value) ? choice.sports.filter((name) => name !== value) : choice.sports.concat(value)) : open.slice(); window.askKinds = null; askButtons.group = ""; askStep(); return; } if (open.length && choice.sports.length === open.length) choice.sports = []; window.askKinds = null; askButtons.group = ""; }
+  else if (key === "kind") { if (value === "groups" || value.startsWith("group:")) { askButtons.group = value.startsWith("group:") ? value.slice(6) : ""; askStep(); return; } choice.kind = value || "any"; askButtons.group = ""; }
   else if (key === "legs") choice.legs = Number(value);
-  else if (key === "game") { choice.gameIds = value ? [value] : []; window.askKinds = null; }
+  else if (key === "game") { choice.gameIds = value ? [value] : []; window.askKinds = null; askButtons.group = ""; }
   else if (key === "money") { const row = document.getElementById("bird-picks"); const stake = Number(row && (row.querySelector("[name=stake]") || {}).value); const profit = Number(row && (row.querySelector("[name=profit]") || {}).value); choice.stake = stake > 0 ? Math.min(100000, Math.round(stake * 100) / 100) : 5; choice.profit = profit > 0 ? Math.round(profit * 100) / 100 : 0; const stakeBox = document.getElementById("choice-stake"); const profitBox = document.getElementById("choice-profit"); if (stakeBox) stakeBox.value = String(choice.stake); if (profitBox) profitBox.value = choice.profit ? String(choice.profit) : ""; if (choice.profit > 0) choice.aim = "pay"; else if (choice.aim === "pay") choice.aim = ""; } else if (key === "aim") choice.aim = value; else if (key === "mix") choice.mix = value;
   if (key === "money" && !(choice.profit > 0)) { choice.needProfit = true; askStep(); return; }
   if (key === "money") choice.needProfit = false;
@@ -214,19 +215,23 @@ function askAnswer(token) {
 function askButtons(step) {
   if (step === "when") return ["Today, or this week?", ["today", "week"].map((span) => { const saved = choice.when; choice.when = span; const on = sportOn(""); choice.when = saved; return ["ask", span === "today" ? "Today" : "This week", `when:${span}`, on ? "" : "off"]; })];
   if (step === "sport") {
-    const open = liveSports().some(sportOn);
-    return ["Which league? All of them is fine.", [["ask", "All of them", "sport:", open ? "" : "off"]].concat(liveSports().map((name) => ["ask", name, `sport:${name}`, sportOn(name) ? "" : "off"]))];
+    const open = liveSports().filter(sportOn), every = open.length && choice.sports.length === open.length, picked = (name) => every || (!!choice.sports.length && choice.sports.includes(name));
+    return ["Which leagues? Tap a few, or all of them.", [["ask", "All of them", "sport:", open.length ? (!choice.sports.length || every ? "on" : "") : "off"], ["ask", "Use these", "sport:go", open.length ? "" : "off"]].concat(liveSports().map((name) => ["ask", name, `sport:${name}`, sportOn(name) ? (picked(name) ? "on" : "") : "off"]))];
   }
   if (step === "game") {
-    const opts = [...document.querySelectorAll("#choice-game option")];
-    const play = opts.filter((opt) => !opt.disabled).length;
-    if (!opts.length || play > 32) return null;
-    return ["Any game, or one of these?", [["ask", "Any game", "game:", play ? "" : "off"]].concat(opts.map((opt) => ["ask", opt.textContent, `game:${opt.value}`, opt.disabled ? "off" : ""]))];
+    const opts = [...document.querySelectorAll("#choice-game option")].filter((opt) => !opt.disabled);
+    if (!opts.length || opts.length > 32) return null;
+    return ["Any game, or one of these?", [["ask", "Any game", "game:"]].concat(opts.map((opt) => ["ask", opt.textContent, `game:${opt.value}`]))];
   }
   if (step === "kind") {
-    const opts = [...document.querySelectorAll("#choice-kind option")];
-    if (opts.length < 2) return null;
-    return ["Any stat, or one of these?", opts.map((opt) => ["ask", opt.textContent, `kind:${opt.value}`, opt.disabled ? "off" : ""])];
+    const opts = [...document.querySelectorAll("#choice-kind option")].filter((opt) => opt.value !== "any" && !opt.disabled);
+    if (!opts.length) return null;
+    const order = ["Touchdowns", "Goals", "Points", "Yards", "Receptions", "Rebounds and assists", "Threes", "Shots", "Saves", "Other"];
+    const buckets = order.filter((name) => opts.some((opt) => kindBucket(opt.value) === name));
+    const group = buckets.includes(askButtons.group) ? askButtons.group : "";
+    if (!group && buckets.length > 1) return ["What kind of stat?", [["ask", "Any player prop", "kind:any"]].concat(buckets.map((name) => ["ask", name, `kind:group:${name}`]))];
+    const rows = opts.filter((opt) => !group || kindBucket(opt.value) === group);
+    return [group ? `${group}. Which one?` : "Any stat, or one of these?", [["ask", group ? "All stats" : "Any player prop", group ? "kind:groups" : "kind:any"]].concat(rows.map((opt) => ["ask", opt.textContent, `kind:${opt.value}`]))];
   }
   if (step === "legs") {
     return ["How many picks?", [["ask", "Any number", "legs:0"]].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => ["ask", n === 1 ? "1 pick" : `${n} picks`, `legs:${n}`]))];
@@ -238,7 +243,7 @@ function askButtons(step) {
 }
 
 function askSoFar() {
-  const past = window.askPast || [], game = choice.gameIds[0] && document.querySelector(`#choice-game option[value="${CSS.escape(choice.gameIds[0])}"]`), words = { when: choice.when === "week" ? "This week" : "Today", sport: choice.sports[0] || "All leagues", game: game ? game.textContent : "Any game", kind: choice.kind && choice.kind !== "any" ? kindLabel(choice.kind) : "Any player prop", legs: choice.legs ? (choice.legs === 1 ? "1 pick" : `${choice.legs} picks`) : "Any number", money: choice.profit > 0 ? `$${choice.stake} bet, $${choice.profit} profit` : (choice.stake && choice.stake !== 5 ? `$${choice.stake} bet` : ""), risk: riskWord(choice.stake, choice.profit), mix: { any: "Any", even: "Same chance", safer: "One safer", long: "One longer" }[choice.mix] || "" };
+  const past = window.askPast || [], game = choice.gameIds[0] && document.querySelector(`#choice-game option[value="${CSS.escape(choice.gameIds[0])}"]`), words = { when: choice.when === "week" ? "This week" : "Today", sport: choice.sports.length ? choice.sports.join(", ") : "All leagues", game: game ? game.textContent : "Any game", kind: choice.kind && choice.kind !== "any" ? kindLabel(choice.kind) : "Any player prop", legs: choice.legs ? (choice.legs === 1 ? "1 pick" : `${choice.legs} picks`) : "Any number", money: choice.profit > 0 ? `$${choice.stake} bet, $${choice.profit} profit` : (choice.stake && choice.stake !== 5 ? `$${choice.stake} bet` : ""), risk: riskWord(choice.stake, choice.profit), mix: { any: "Any", even: "Same chance", safer: "One safer", long: "One longer" }[choice.mix] || "" };
   return ["when", "sport", "game", "kind", "legs", "money", "risk", "mix"].filter((step) => past.includes(step)).map((step) => words[step]).filter(Boolean).join(", ");
 }
 function askStep() {
@@ -249,7 +254,7 @@ function askStep() {
     const next = askButtons(ask[0]);
     if (!next) { ask.shift(); continue; }
     birdSay(next[0], next[1]);
-    if (ask[0] === "money") { const row = document.getElementById("bird-picks"); if (row) { const bet = document.createElement("label"); bet.className = "money"; bet.innerHTML = `Bet $<input name="stake" type="number" min="1" step="1" value="${choice.stake || 5}" inputmode="decimal">`; const win = document.createElement("label"); win.className = "money"; win.innerHTML = `Profit $<input name="profit" type="number" min="0" step="1" value="${choice.profit || ""}" placeholder="any" inputmode="decimal">`; row.prepend(win); row.prepend(bet); row.querySelectorAll("input").forEach((input) => input.addEventListener("keydown", (event) => { if (event.key === "Enter") askAnswer("money:go"); })); } }
+    if (ask[0] === "money") { const row = document.getElementById("bird-picks"); if (row) { const bet = document.createElement("label"); bet.className = "money"; bet.innerHTML = `Bet $<input name="stake" type="number" min="1" step="1" value="${choice.stake || 5}" inputmode="decimal">`; const win = document.createElement("label"); win.className = "money"; win.innerHTML = `Profit $<input name="profit" type="number" min="0" step="1" value="${choice.profit || ""}" placeholder="any" inputmode="decimal">`; row.prepend(win); row.prepend(bet); const paint = () => { const stake = Number((row.querySelector("[name=stake]") || {}).value); const profit = Number((row.querySelector("[name=profit]") || {}).value); const node = [...(document.getElementById("bird-line") || { childNodes: [] }).childNodes].find((child) => child.nodeType === 3); if (node) node.textContent = riskSay(stake, profit) || (choice.needProfit ? "Type the profit you want off that bet." : "How much do you want to bet, and how much profit do you want off it?"); }; row.querySelectorAll("input").forEach((input) => { input.addEventListener("keydown", (event) => { if (event.key === "Enter") askAnswer("money:go"); }); input.addEventListener("input", paint); }); paint(); } }
     const line = document.getElementById("bird-line");
     if (line) {
       line.classList.add("build");

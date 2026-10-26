@@ -173,10 +173,11 @@ window.askBack = () => {
     if (box) box.textContent = "";
     window.asking = true;
   }
+  if (onQuiz && steps[0] === "kind" && askButtons.group) { askButtons.group = ""; if (window.askStep) askStep(); return true; }
   const step = past.pop();
   const order = ["when", "sport", "game", "kind", "legs", "money", "risk", "mix"];
   steps.splice(0, steps.length, ...order.slice(Math.max(0, order.indexOf(step))));
-  if (step === "sport") pick.sports = []; else if (step === "kind") pick.kind = "any"; else if (step === "legs") pick.legs = 3; else if (step === "game") pick.gameIds = []; else if (step === "aim") pick.aim = ""; else if (step === "money") { if (pick.aim === "pay") pick.aim = ""; } else if (step === "mix") pick.mix = "even"; else if (step === "when") pick.when = "today";
+  if (step === "kind") { pick.kind = "any"; askButtons.group = ""; } else if (step === "legs") pick.legs = 3; else if (step === "game") pick.gameIds = []; else if (step === "aim") pick.aim = ""; else if (step === "money") { if (pick.aim === "pay") pick.aim = ""; } else if (step === "mix") pick.mix = "even"; else if (step === "when") pick.when = "today";
   if (window.askStep) askStep();
   return true;
 };

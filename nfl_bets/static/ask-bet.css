@@ -317,10 +317,13 @@
   background: transparent; color: #9dffc0; border: 1px solid #3dff6e; box-shadow: none; flex: 0 0 auto;
 }
 #bird-picks #bet-mic.on { background: #3dff6e; color: #04140c; }
+#bird-picks button[data-ask^="sport:"]:not([data-ask="sport:go"]):not(.on):not(:disabled) { background: transparent; color: #d8ffe4; border: 1px solid #3dff6e; box-shadow: none; }
+#bird-picks button[data-ask^="game:"] { flex: 1 0 100%; box-sizing: border-box; text-align: left; }
+#bird-picks button[data-ask="kind:groups"] { background: transparent; color: #d8ffe4; border: 1px solid #3dff6e; box-shadow: none; }
 #bird-picks button:disabled,
 #chooser button:disabled,
 #bird-picks button[data-book][disabled] {
-  background: #1c262c; color: #7d8b96; box-shadow: none; cursor: default;
+  background: #1c262c; color: #7d8b96; border-color: #3a4650; box-shadow: none; opacity: 1; cursor: default;
 }
 #choice-kind option:disabled { color: #7d8b96; }
 #call-book option:disabled { color: #8a97a3; }
