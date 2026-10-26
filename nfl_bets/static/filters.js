@@ -315,12 +315,14 @@ function recMatch(ticket) {
   return recHit(ticket, recFilter.find);
 }
 
+function recHistLabel(card) { const link = card.querySelector(".rec-hist"), on = card.classList.contains("show-past"), live = card.querySelectorAll(".rec-bet:not(.rec-was):not(.rec-off)").length, pastN = card.querySelectorAll(".rec-bet.rec-was:not(.rec-off)").length; if (link) link.textContent = on ? `${live} active` : `${pastN} in history`; const count = card.querySelector(".rec-count"); if (count) count.textContent = on ? pastN : live; }
+window.recHistLabel = recHistLabel;
 function recApply(board) {
   const picks = [...board.querySelectorAll(":scope > .rec-strategy .rec-bet")];
   const shown = picks.filter((bet) => recMatch((window.recTickets[Number(bet.dataset.rec)] || {}).ticket || {}));
   const keep = new Set(shown);
   const narrowed = recFilter.when || recFilter.sports.length || recFilter.game || recFilter.kind || recFilter.legs || recFilter.aim || recFilter.find.trim() || recFilter.profit > 0;
-  picks.forEach((bet) => bet.classList.toggle("rec-off", narrowed && !keep.has(bet)));
+  picks.forEach((bet) => bet.classList.toggle("rec-off", narrowed && !keep.has(bet) && !bet.classList.contains("rec-was")));
   const want = ((text) => { const match = String(text || "").trim().match(/^s-?(\d{1,2})$/i); return match ? `s-${match[1].padStart(2, "0")}` : ""; })(recFilter.find);
   board.querySelectorAll(":scope > .rec-strategy").forEach((block) => {
     const code = (window.strategyNo ? strategyNo(block.dataset.card, block.dataset.part) : "").toLowerCase();
@@ -330,8 +332,7 @@ function recApply(board) {
     const band = { top: [0, 40], safe: [40, 50], good: [50, 60] }[recFilter.aim], risk = parseFloat((block.dataset.rates || "").split(",")[4]);
     block.classList.toggle("rec-off", want ? !strategyHit : narrowed && !bets.length && !(band && risk >= band[0] && risk < band[1]));
     if (strategyHit || (narrowed && bets.length && /^p-?\d+$/i.test(recFilter.find.trim()))) block.classList.add("open");
-    const count = block.querySelector(".rec-count");
-    if (count) count.textContent = bets.length;
+    recHistLabel(block);
   });
   const note = board.querySelector(".rec-none");
   if (note) note.hidden = !narrowed || shown.length > 0 || !!board.querySelector(":scope > .rec-strategy:not(.rec-off)");
