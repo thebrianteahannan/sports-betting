@@ -346,7 +346,7 @@ async function drawShare(bet) {
     return;
   }
   const board = document.createElement("canvas");
-  const sharp = Math.min(window.devicePixelRatio || 1, 2);
+  const sharp = Math.min(2, 1200 / image.naturalWidth);
   board.width = Math.round(image.naturalWidth * sharp);
   board.height = Math.round(image.naturalHeight * sharp);
   const ctx = board.getContext("2d");
@@ -358,6 +358,8 @@ async function drawShare(bet) {
   drawBoard(ctx, bet);
   drawFound(ctx, bet);
   shareBits = board;
+  const edge = ctx.getImageData(Math.min(board.width - 1, Math.round(953 * sharp)), Math.round(24 * sharp), 1, 1).data;
+  photo.dataset.draw = `${board.width} edge ${edge[0]},${edge[1]},${edge[2]}`;
   photo.src = board.toDataURL("image/jpeg", 0.9);
   photo.hidden = false;
   const copy = document.getElementById("share-card-download");
@@ -391,7 +393,7 @@ function shareDebug() {
   const vw = view ? view.width : window.innerWidth;
   const off = view ? view.offsetLeft : 0;
   const clip = p.width > 2 && p.right > off + vw + 1;
-  line.textContent = [`v45 ${clip ? "CLIP" : "in"}`, `desk ${desk ? desk.clientWidth : 0} visual ${Math.round(vw)} scale ${view ? view.scale : 1} off ${Math.round(off)}`, `window ${window.innerWidth} scroll ${document.documentElement.scrollWidth} screen ${window.screen.width}`, `pane ${Math.round(b.left)}-${Math.round(b.right)} photo ${Math.round(p.left)}-${Math.round(p.right)} nat ${photo.naturalWidth || 0}`].join("\n");
+  line.textContent = [`v46 ${clip ? "CLIP" : "in"}`, `desk ${desk ? desk.clientWidth : 0} visual ${Math.round(vw)} scale ${view ? view.scale : 1} off ${Math.round(off)}`, `window ${window.innerWidth} scroll ${document.documentElement.scrollWidth} screen ${window.screen.width}`, `pane ${Math.round(b.left)}-${Math.round(b.right)} photo ${Math.round(p.left)}-${Math.round(p.right)} nat ${photo.naturalWidth || 0} draw ${photo.dataset.draw || ""}`].join("\n");
   console.log(line.textContent);
 }
 
