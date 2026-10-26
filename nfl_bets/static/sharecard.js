@@ -114,8 +114,8 @@ function shareBox() {
   box = document.createElement("section");
   box.id = "share-view";
   box.hidden = true;
-  box.innerHTML = `<button type="button" id="share-back" aria-label="Back"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button><img id="share-card-photo" alt="" hidden><p class="pick-save"><button type="button" id="share-card-download" hidden>Copy</button></p><p class="quiet" id="share-card-note"></p>`;
-  document.body.append(box);
+  box.innerHTML = `<button type="button" id="share-back" aria-label="Back"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button><p id="share-card-debug"></p><img id="share-card-photo" alt="" hidden><p class="pick-save"><button type="button" id="share-card-download" hidden>Copy</button></p><p class="quiet" id="share-card-note"></p>`;
+  (document.getElementById("desk") || document.body).append(box);
   const copy = box.querySelector("#share-card-download");
   if (copy) copy.addEventListener("click", () => { copyShare(); });
   const back = box.querySelector("#share-back");
@@ -363,7 +363,36 @@ async function drawShare(bet) {
   const copy = document.getElementById("share-card-download");
   if (copy) { copy.hidden = false; copy.textContent = "Copy"; }
   if (note) note.textContent = "Copy the image, then paste it into a post.";
-  photo.onload = () => { const shown = photo.getBoundingClientRect(); console.log("share fit", { left: Math.round(shown.left), right: Math.round(shown.right), width: Math.round(shown.width), inner: window.innerWidth, bitmap: board.width }); };
+  shareFit();
+  photo.onload = shareFit;
+}
+
+function shareFit() {
+  const box = document.getElementById("share-view");
+  const photo = document.getElementById("share-card-photo");
+  const desk = document.getElementById("desk");
+  const view = window.visualViewport;
+  const w = Math.min((desk && desk.clientWidth) || innerWidth, view ? view.width : innerWidth, innerWidth, screen.width || innerWidth);
+  const h = Math.min((desk && desk.clientHeight) || innerHeight, view ? view.height : innerHeight, innerHeight);
+  if (box) { box.style.left = "0px"; box.style.top = "0px"; box.style.right = "auto"; box.style.bottom = "auto"; box.style.width = `${w}px`; box.style.height = `${h}px`; }
+  if (photo) { const wide = Math.max(1, w - 32); photo.style.width = `${wide}px`; photo.style.maxWidth = `${wide}px`; photo.style.height = "auto"; }
+  shareDebug();
+}
+
+function shareDebug() {
+  const photo = document.getElementById("share-card-photo");
+  const box = document.getElementById("share-view");
+  const desk = document.getElementById("desk");
+  const line = document.getElementById("share-card-debug");
+  const view = window.visualViewport;
+  if (!line || !photo || !box) return;
+  const p = photo.getBoundingClientRect();
+  const b = box.getBoundingClientRect();
+  const vw = view ? view.width : window.innerWidth;
+  const off = view ? view.offsetLeft : 0;
+  const clip = p.width > 2 && p.right > off + vw + 1;
+  line.textContent = [`v45 ${clip ? "CLIP" : "in"}`, `desk ${desk ? desk.clientWidth : 0} visual ${Math.round(vw)} scale ${view ? view.scale : 1} off ${Math.round(off)}`, `window ${window.innerWidth} scroll ${document.documentElement.scrollWidth} screen ${window.screen.width}`, `pane ${Math.round(b.left)}-${Math.round(b.right)} photo ${Math.round(p.left)}-${Math.round(p.right)} nat ${photo.naturalWidth || 0}`].join("\n");
+  console.log(line.textContent);
 }
 
 async function copyShare() {
@@ -393,6 +422,9 @@ function bindShareCard() {
     event.preventDefault();
     openShare(share);
   });
+  const refit = () => { const box = document.getElementById("share-view"); if (box && !box.hidden) shareFit(); };
+  window.addEventListener("resize", refit);
+  if (window.visualViewport) visualViewport.addEventListener("resize", refit);
 }
 
 const posterMark = {};
