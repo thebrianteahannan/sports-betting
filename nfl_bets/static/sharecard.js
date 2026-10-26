@@ -114,7 +114,7 @@ function shareBox() {
   box = document.createElement("section");
   box.id = "share-view";
   box.hidden = true;
-  box.innerHTML = `<button type="button" id="share-back" aria-label="Back"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button><canvas id="share-card-canvas" hidden></canvas><p class="pick-save"><button type="button" id="share-card-download" hidden>Copy</button></p><p class="quiet" id="share-card-note"></p>`;
+  box.innerHTML = `<button type="button" id="share-back" aria-label="Back"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button><img id="share-card-photo" alt="" hidden><p class="pick-save"><button type="button" id="share-card-download" hidden>Copy</button></p><p class="quiet" id="share-card-note"></p>`;
   document.body.append(box);
   const copy = box.querySelector("#share-card-download");
   if (copy) copy.addEventListener("click", () => { copyShare(); });
@@ -330,9 +330,9 @@ function coverNfl(ctx, image) {
 }
 async function drawShare(bet) {
   const box = shareBox();
-  const canvas = document.getElementById("share-card-canvas");
+  const photo = document.getElementById("share-card-photo");
   const note = document.getElementById("share-card-note");
-  if (!canvas || !bet) return;
+  if (!photo || !bet) return;
   box.hidden = false;
   box.scrollTop = 0;
   document.documentElement.style.overflow = "hidden";
@@ -346,66 +346,36 @@ async function drawShare(bet) {
     return;
   }
   const board = document.createElement("canvas");
-  board.width = image.naturalWidth;
-  board.height = image.naturalHeight;
+  const sharp = Math.min(window.devicePixelRatio || 1, 2);
+  board.width = Math.round(image.naturalWidth * sharp);
+  board.height = Math.round(image.naturalHeight * sharp);
   const ctx = board.getContext("2d");
+  ctx.setTransform(sharp, 0, 0, sharp, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
   ctx.drawImage(image, 0, 0);
   coverNfl(ctx, image);
   drawBoard(ctx, bet);
   drawFound(ctx, bet);
   shareBits = board;
-  fitShareCanvas(canvas);
-  canvas.hidden = false;
+  photo.src = board.toDataURL("image/jpeg", 0.9);
+  photo.hidden = false;
   const copy = document.getElementById("share-card-download");
   if (copy) { copy.hidden = false; copy.textContent = "Copy"; }
   if (note) note.textContent = "Copy the image, then paste it into a post.";
-  shareLog(canvas);
-}
-
-function paintShare(canvas, wide, tall) {
-  const dpr = Math.min(window.devicePixelRatio || 1, 3);
-  canvas.width = Math.round(wide * dpr); canvas.height = Math.round(tall * dpr);
-  const ctx = canvas.getContext("2d");
-  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(shareBits, 0, 0, canvas.width, canvas.height);
-  canvas.style.cssText = `display:block;width:${wide}px;height:${tall}px;max-width:100%;margin:3.1rem auto 0.6rem`;
-}
-
-function fitShareCanvas(canvas) {
-  const pane = document.getElementById("share-view");
-  const view = window.visualViewport;
-  const desk = document.getElementById("desk");
-  const w = Math.min(view ? view.width : innerWidth, innerWidth, document.documentElement.clientWidth || innerWidth, (desk && desk.clientWidth) || innerWidth);
-  const h = Math.min(view ? view.height : innerHeight, innerHeight, (desk && desk.clientHeight) || innerHeight);
-  const x = view ? view.offsetLeft : 0, y = view ? view.offsetTop : 0;
-  if (pane) { pane.style.left = `${x}px`; pane.style.top = `${y}px`; pane.style.right = "auto"; pane.style.bottom = "auto"; pane.style.width = `${w}px`; pane.style.height = `${h}px`; }
-  canvas.hidden = false;
-  let wide = Math.max(1, Math.floor(w - 48));
-  let tall = Math.round(wide * shareBits.height / shareBits.width);
-  if (tall > h - 180) { tall = Math.max(1, h - 180); wide = Math.max(1, Math.floor(tall * shareBits.width / shareBits.height)); }
-  paintShare(canvas, wide, tall);
-  const shown = canvas.getBoundingClientRect();
-  const edge = x + w - 20;
-  if (shown.width > 1 && shown.right > edge) { wide = Math.max(1, Math.floor((edge - shown.left) * wide / shown.width)); tall = Math.round(wide * shareBits.height / shareBits.width); paintShare(canvas, wide, tall); }
-  shareLog(canvas);
-}
-
-function shareLog(canvas) {
-  const view = window.visualViewport, w = view ? view.width : window.innerWidth, shown = canvas.getBoundingClientRect();
-  console.log("share fit", { w, bitmap: canvas.width, css: canvas.style.width, left: Math.round(shown.left), right: Math.round(shown.right), dpr: window.devicePixelRatio });
-  if (shown.right > (view ? view.offsetLeft : 0) + w - 4) { const note = document.getElementById("share-card-note"); if (note) note.textContent = `Image runs ${Math.round(shown.left)} to ${Math.round(shown.right)} on a ${Math.round(w)} screen.`; }
+  photo.onload = () => { const shown = photo.getBoundingClientRect(); console.log("share fit", { left: Math.round(shown.left), right: Math.round(shown.right), width: Math.round(shown.width), inner: window.innerWidth, bitmap: board.width }); };
 }
 
 async function copyShare() {
-  const canvas = document.getElementById("share-card-canvas");
+  const photo = document.getElementById("share-card-photo");
   const note = document.getElementById("share-card-note");
   const button = document.getElementById("share-card-download");
-  if (!canvas || canvas.hidden) return;
+  if (!photo || photo.hidden || !shareBits) return;
   window.focus();
   try {
     const item = new ClipboardItem({
       "image/png": new Promise((resolve, reject) => {
-        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("no image"))), "image/png");
+        shareBits.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("no image"))), "image/png");
       }),
     });
     await navigator.clipboard.write([item]);
@@ -423,9 +393,6 @@ function bindShareCard() {
     event.preventDefault();
     openShare(share);
   });
-  const refit = () => { const canvas = document.getElementById("share-card-canvas"); const box = document.getElementById("share-view"); if (canvas && box && !box.hidden && canvas.width) fitShareCanvas(canvas); };
-  window.addEventListener("resize", refit);
-  if (window.visualViewport) { visualViewport.addEventListener("resize", refit); visualViewport.addEventListener("scroll", refit); }
 }
 
 const posterMark = {};
