@@ -362,26 +362,38 @@ async function drawShare(bet) {
   shareLog(canvas);
 }
 
+function paintShare(canvas, wide, tall) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  canvas.width = Math.round(wide * dpr); canvas.height = Math.round(tall * dpr);
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(shareBits, 0, 0, canvas.width, canvas.height);
+  canvas.style.cssText = `display:block;width:${wide}px;height:${tall}px;max-width:100%;margin:3.1rem auto 0.6rem`;
+}
+
 function fitShareCanvas(canvas) {
   const pane = document.getElementById("share-view");
-  const screen = typeof viewSize === "function" ? viewSize() : { w: window.innerWidth, h: window.innerHeight };
-  const board = shareBits || canvas;
-  if (pane) { pane.style.width = `${screen.w}px`; pane.style.height = `${screen.h}px`; }
-  const scale = Math.min((screen.w - 32) / board.width, (screen.h - 168) / board.height);
-  const wide = Math.max(1, Math.round(board.width * scale));
-  const tall = Math.max(1, Math.round(board.height * scale));
-  if (board !== canvas) { canvas.width = wide; canvas.height = tall; canvas.getContext("2d").drawImage(board, 0, 0, wide, tall); }
-  canvas.style.cssText = `position:static;display:block;width:${wide}px;height:${tall}px;max-width:100%;margin:3.1rem auto 0.6rem;transform:none`;
+  const view = window.visualViewport;
+  const desk = document.getElementById("desk");
+  const w = Math.min(view ? view.width : innerWidth, innerWidth, document.documentElement.clientWidth || innerWidth, (desk && desk.clientWidth) || innerWidth);
+  const h = Math.min(view ? view.height : innerHeight, innerHeight, (desk && desk.clientHeight) || innerHeight);
+  const x = view ? view.offsetLeft : 0, y = view ? view.offsetTop : 0;
+  if (pane) { pane.style.left = `${x}px`; pane.style.top = `${y}px`; pane.style.right = "auto"; pane.style.bottom = "auto"; pane.style.width = `${w}px`; pane.style.height = `${h}px`; }
+  canvas.hidden = false;
+  let wide = Math.max(1, Math.floor(w - 48));
+  let tall = Math.round(wide * shareBits.height / shareBits.width);
+  if (tall > h - 180) { tall = Math.max(1, h - 180); wide = Math.max(1, Math.floor(tall * shareBits.width / shareBits.height)); }
+  paintShare(canvas, wide, tall);
+  const shown = canvas.getBoundingClientRect();
+  const edge = x + w - 20;
+  if (shown.width > 1 && shown.right > edge) { wide = Math.max(1, Math.floor((edge - shown.left) * wide / shown.width)); tall = Math.round(wide * shareBits.height / shareBits.width); paintShare(canvas, wide, tall); }
   shareLog(canvas);
 }
 
 function shareLog(canvas) {
-  const screen = typeof viewSize === "function" ? viewSize() : { w: window.innerWidth, h: window.innerHeight };
-  const shown = canvas.getBoundingClientRect();
-  const world = document.getElementById("desk-world");
-  const worldBox = world ? world.getBoundingClientRect() : null;
-  console.log("share fit", { screen, desk: (document.getElementById("desk") || {}).clientWidth, world: worldBox && Math.round(worldBox.width), bitmap: canvas.width, shown: Math.round(shown.width), right: Math.round(shown.right), scroll: document.documentElement.scrollWidth });
-  if (shown.right > screen.w + 2 || shown.width > screen.w) { const note = document.getElementById("share-card-note"); if (note) note.textContent = `Image is ${Math.round(shown.width)} wide on a ${Math.round(screen.w)} screen.`; }
+  const view = window.visualViewport, w = view ? view.width : window.innerWidth, shown = canvas.getBoundingClientRect();
+  console.log("share fit", { w, bitmap: canvas.width, css: canvas.style.width, left: Math.round(shown.left), right: Math.round(shown.right), dpr: window.devicePixelRatio });
+  if (shown.right > (view ? view.offsetLeft : 0) + w - 4) { const note = document.getElementById("share-card-note"); if (note) note.textContent = `Image runs ${Math.round(shown.left)} to ${Math.round(shown.right)} on a ${Math.round(w)} screen.`; }
 }
 
 async function copyShare() {
