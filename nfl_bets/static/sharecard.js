@@ -14,6 +14,7 @@ const NAMED_BETS = [
 
 let shareTemplate = null;
 let shareBits = null;
+let shareTitleSize = 0;
 
 function sharePct(value) {
   const raw = String(value ?? "").replace("%", "").trim();
@@ -169,11 +170,9 @@ function loadTemplate() {
 
 function fitText(ctx, text, max, size, family) {
   let next = size;
-  ctx.font = `700 ${next}px ${family}`;
-  while (next > 13 && ctx.measureText(text).width > max) {
-    next -= 1;
-    ctx.font = `700 ${next}px ${family}`;
-  }
+  const wide = () => Math.max(ctx.measureText(text).width, text.length * next * 0.75);
+  ctx.font = `600 ${next}px ${family}`;
+  while (next > 10 && wide() > max) { next -= 1; ctx.font = `600 ${next}px ${family}`; }
   return next;
 }
 
@@ -190,7 +189,7 @@ function roundBox(ctx, x, y, w, h, r) {
 function drawBoard(ctx, bet) {
   const x = 574;
   const y = 0;
-  const w = 382;
+  const w = 366;
   const h = 648;
   const left = x + 16;
   const right = x + w - 16;
@@ -205,11 +204,11 @@ function drawBoard(ctx, bet) {
   ctx.textAlign = "left";
   ctx.fillStyle = "#3dff6e";
   const title = bet.kicker || String(bet.title || "PARLAY").toUpperCase();
-  const titleSize = fitText(ctx, title, right - left, 40, SHARE_FONT);
+  const titleSize = shareTitleSize = fitText(ctx, title, right - left, 40, SHARE_FONT);
   ctx.fillText(title, left, cursor);
   cursor += titleSize + 4;
   const mark = [bet.strategyNo, bet.serial].filter(Boolean).join("   ");
-  if (mark) { ctx.fillStyle = "#f4f7fb"; ctx.font = `700 18px ${SHARE_FONT}`; ctx.fillText(mark, left, cursor); cursor += 24; }
+  if (mark) { ctx.fillStyle = "#f4f7fb"; ctx.font = `600 18px ${SHARE_FONT}`; ctx.fillText(mark, left, cursor); cursor += 24; }
   ctx.fillStyle = "#f4f7fb";
   ctx.font = `600 18px ${SHARE_TEXT}`;
   if (bet.when) {
@@ -222,7 +221,7 @@ function drawBoard(ctx, bet) {
     ctx.fillStyle = "#ffffff";
     const game = String(bet.game).toUpperCase();
     const gameSize = fitText(ctx, game, right - left, 24, SHARE_FONT);
-    ctx.font = `700 ${gameSize}px ${SHARE_FONT}`;
+    ctx.font = `600 ${gameSize}px ${SHARE_FONT}`;
     ctx.fillText(game, left, cursor);
     cursor += gameSize + 8;
   }
@@ -230,7 +229,7 @@ function drawBoard(ctx, bet) {
     ctx.fillStyle = "#3dff6e";
     const line = `STRATEGY: ${String(bet.strategy).toUpperCase()}`;
     const size = fitText(ctx, line, right - left, 18, SHARE_TEXT);
-    ctx.font = `700 ${size}px ${SHARE_TEXT}`;
+    ctx.font = `600 ${size}px ${SHARE_TEXT}`;
     ctx.fillText(line, left, cursor);
     cursor += size + 8;
   }
@@ -268,7 +267,7 @@ function drawBoard(ctx, bet) {
     }
     if (leg.pct) {
       ctx.fillStyle = "#3dff6e";
-      ctx.font = `700 24px ${SHARE_FONT}`;
+      ctx.font = `600 24px ${SHARE_FONT}`;
       ctx.textAlign = "right";
       ctx.fillText(`${leg.pct}%`, right, cursor + 10);
       ctx.textAlign = "left";
@@ -284,13 +283,14 @@ function drawBoard(ctx, bet) {
   ctx.fillStyle = "#3dff6e";
   ctx.fillRect(x + 10, barY, w - 20, 44);
   ctx.fillStyle = "#07131a";
-  ctx.font = `700 24px ${SHARE_FONT}`;
-  ctx.fillText(`${bet.legs.length} LEG PARLAY`, left, barY + 8);
+  const bar = `${bet.legs.length} LEG PARLAY`;
+  ctx.font = `600 ${fitText(ctx, bar, right - left - 80, 24, SHARE_FONT)}px ${SHARE_FONT}`;
+  ctx.fillText(bar, left, barY + 8);
   ctx.textAlign = "right";
   if (bet.pct) ctx.fillText(`${bet.pct}%`, right, barY + 8);
   ctx.textAlign = "left";
   ctx.fillStyle = "#3dff6e";
-  ctx.font = `700 18px ${SHARE_FONT}`;
+  ctx.font = `600 18px ${SHARE_FONT}`;
   const win = bet.profit != null ? `$5 BET WOULD WIN $${Number(bet.profit).toFixed(2)}` : "21+";
   ctx.fillText(win, left, barY + 50);
   ctx.font = `600 13px ${SHARE_TEXT}`;
@@ -358,8 +358,8 @@ async function drawShare(bet) {
   drawBoard(ctx, bet);
   drawFound(ctx, bet);
   shareBits = board;
-  const edge = ctx.getImageData(Math.min(board.width - 1, Math.round(953 * sharp)), Math.round(24 * sharp), 1, 1).data;
-  photo.dataset.draw = `${board.width} edge ${edge[0]},${edge[1]},${edge[2]}`;
+  const edge = ctx.getImageData(Math.min(board.width - 1, Math.round(938 * sharp)), Math.round(24 * sharp), 1, 1).data;
+  photo.dataset.draw = `${board.width} edge ${edge[0]},${edge[1]},${edge[2]} title ${shareTitleSize}`;
   photo.src = board.toDataURL("image/jpeg", 0.9);
   photo.hidden = false;
   const copy = document.getElementById("share-card-download");
@@ -393,7 +393,7 @@ function shareDebug() {
   const vw = view ? view.width : window.innerWidth;
   const off = view ? view.offsetLeft : 0;
   const clip = p.width > 2 && p.right > off + vw + 1;
-  line.textContent = [`v46 ${clip ? "CLIP" : "in"}`, `desk ${desk ? desk.clientWidth : 0} visual ${Math.round(vw)} scale ${view ? view.scale : 1} off ${Math.round(off)}`, `window ${window.innerWidth} scroll ${document.documentElement.scrollWidth} screen ${window.screen.width}`, `pane ${Math.round(b.left)}-${Math.round(b.right)} photo ${Math.round(p.left)}-${Math.round(p.right)} nat ${photo.naturalWidth || 0} draw ${photo.dataset.draw || ""}`].join("\n");
+  line.textContent = [`v48 ${clip ? "CLIP" : "in"}`, `desk ${desk ? desk.clientWidth : 0} visual ${Math.round(vw)} scale ${view ? view.scale : 1} off ${Math.round(off)}`, `window ${window.innerWidth} scroll ${document.documentElement.scrollWidth} screen ${window.screen.width}`, `pane ${Math.round(b.left)}-${Math.round(b.right)} photo ${Math.round(p.left)}-${Math.round(p.right)} nat ${photo.naturalWidth || 0} draw ${photo.dataset.draw || ""}`].join("\n");
   console.log(line.textContent);
 }
 
