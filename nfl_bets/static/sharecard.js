@@ -352,22 +352,34 @@ async function drawShare(bet) {
   const copy = document.getElementById("share-card-download");
   if (copy) { copy.hidden = false; copy.textContent = "Copy"; }
   if (note) note.textContent = "Copy the image, then paste it into a post.";
+  shareLog(canvas);
 }
 
 function fitShareCanvas(canvas) {
   const pane = document.getElementById("share-view");
+  const view = window.visualViewport;
+  const screenW = Math.min(view ? view.width : window.innerWidth, window.innerWidth, document.documentElement.clientWidth || window.innerWidth);
+  const screenH = Math.min(view ? view.height : window.innerHeight, window.innerHeight);
+  if (pane) { pane.style.left = `${view ? view.offsetLeft : 0}px`; pane.style.top = `${view ? view.offsetTop : 0}px`; pane.style.width = `${screenW}px`; pane.style.height = `${screenH}px`; }
   const style = pane ? getComputedStyle(pane) : null;
   const pad = style ? (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0) : 0;
-  const view = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-  const room = Math.min(view, pane ? pane.clientWidth : view) - pad;
-  const wide = Math.max(160, Math.min(520, room));
-  canvas.style.aspectRatio = `${canvas.width} / ${canvas.height}`;
-  canvas.style.width = "100%";
-  canvas.style.maxWidth = `${wide}px`;
-  canvas.style.height = "auto";
+  const wide = Math.max(160, Math.min(520, screenW - pad));
+  const tall = Math.round(wide * canvas.height / canvas.width);
+  canvas.style.width = `${wide}px`;
+  canvas.style.height = `${tall}px`;
+  canvas.style.maxWidth = "100%";
   canvas.style.display = "block";
   canvas.style.margin = "0 auto";
   canvas.style.borderRadius = "12px";
+  shareLog(canvas, screenW, screenH, pane, wide, tall);
+}
+
+function shareLog(canvas, screenW, screenH, pane, wide, tall) {
+  const shown = canvas.getBoundingClientRect();
+  const view = window.visualViewport;
+  const screen = screenW || (view ? view.width : window.innerWidth);
+  console.log("share fit", { screenW: screen, screenH, pane: pane && pane.clientWidth, wide, tall, shown: Math.round(shown.width), right: Math.round(shown.right), inner: window.innerWidth });
+  if (shown.right > screen + 2) { const note = document.getElementById("share-card-note"); if (note) note.textContent = `Image is ${Math.round(shown.width)} wide on a ${Math.round(screen)} screen.`; }
 }
 
 async function copyShare() {
@@ -397,11 +409,9 @@ function bindShareCard() {
     event.preventDefault();
     openShare(share);
   });
-  window.addEventListener("resize", () => {
-    const canvas = document.getElementById("share-card-canvas");
-    const box = document.getElementById("share-view");
-    if (canvas && box && !box.hidden && canvas.width) fitShareCanvas(canvas);
-  });
+  const refit = () => { const canvas = document.getElementById("share-card-canvas"); const box = document.getElementById("share-view"); if (canvas && box && !box.hidden && canvas.width) fitShareCanvas(canvas); };
+  window.addEventListener("resize", refit);
+  if (window.visualViewport) { visualViewport.addEventListener("resize", refit); visualViewport.addEventListener("scroll", refit); }
 }
 
 const posterMark = {};
