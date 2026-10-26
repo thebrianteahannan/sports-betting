@@ -349,7 +349,6 @@ function recOrder(board) {
   const index = recSort === "" ? NaN : Number(recSort);
   const rate = (block) => parseFloat((block.dataset.rates || "").split(",")[index]);
   blocks.sort((a, b) => {
-    if (recPast && recOrder.live) return (recOrder.live.indexOf(key(a)) + 1 || 999) - (recOrder.live.indexOf(key(b)) + 1 || 999);
     if (!Number.isFinite(index)) return Number(a.dataset.order) - Number(b.dataset.order);
     const left = rate(a), right = rate(b), aOk = Number.isFinite(left), bOk = Number.isFinite(right);
     if (aOk !== bOk) return aOk ? -1 : 1;
@@ -475,7 +474,7 @@ function paintRecFilters(board) {
     if (!button) return;
     if (button.dataset.rec === "fold") { recFiltersOpen = !recFiltersOpen; bar.classList.toggle("open", recFiltersOpen); if (recFiltersOpen) recEnsureKinds(board); return; }
     if (button.dataset.rec === "past") { recPast = !recPast; window.recPast = recPast; recAllOpen = false; if (window.birdMenu) birdMenu("bets"); return; }
-    if (button.dataset.rec === "sort") { if (recPast) return; if (recSort === button.dataset.value) recSortHigh = !recSortHigh; else { recSort = button.dataset.value; recSortHigh = true; } bar.remove(); note.remove(); paintRecFilters(board); return; }
+    if (button.dataset.rec === "sort") { if (recSort === button.dataset.value) recSortHigh = !recSortHigh; else { recSort = button.dataset.value; recSortHigh = true; } bar.remove(); note.remove(); paintRecFilters(board); return; }
     if (button.dataset.rec === "seek") { paintRecFilters.seek = !paintRecFilters.seek; const find = bar.querySelector(".rec-find"); find.classList.toggle("on", !!paintRecFilters.seek); button.classList.toggle("on", !!paintRecFilters.seek || !!recFilter.find.trim()); if (paintRecFilters.seek) find.querySelector("input").focus(); return; } if (button.dataset.rec === "expand") { recAllOpen = !recAllOpen; board.querySelectorAll(".rec-strategy, .rec-bet").forEach((item) => item.classList.toggle("open", recAllOpen)); button.textContent = recAllOpen ? "Collapse all" : "Expand all"; return; }
     if (button.dataset.rec === "clear") { recFilter.when = ""; recFilter.sports = []; recFilter.game = ""; recFilter.kind = ""; recFilter.legs = ""; recFilter.aim = ""; recFilter.find = ""; recFilter.profit = 0; recFilter.stake = 5; } else if (button.dataset.rec === "sports") {
       const list = recFilter.sports;

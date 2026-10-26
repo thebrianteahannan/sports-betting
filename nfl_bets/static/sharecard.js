@@ -114,7 +114,7 @@ function shareBox() {
   box.id = "share-view";
   box.hidden = true;
   box.innerHTML = `<button type="button" id="share-back" aria-label="Back"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button><canvas id="share-card-canvas" hidden></canvas><p class="pick-save"><button type="button" id="share-card-download" hidden>Copy</button></p><p class="quiet" id="share-card-note"></p>`;
-  (document.getElementById("desk-glass") || document.body).append(box);
+  document.body.append(box);
   const copy = box.querySelector("#share-card-download");
   if (copy) copy.addEventListener("click", () => { copyShare(); });
   const back = box.querySelector("#share-back");
@@ -356,11 +356,15 @@ async function drawShare(bet) {
 
 function fitShareCanvas(canvas) {
   const pane = document.getElementById("share-view");
-  canvas.style.maxWidth = "100%";
-  canvas.style.minWidth = "0";
-  const wide = Math.max(220, Math.min(520, ((pane && pane.clientWidth) || window.innerWidth) - 32));
-  canvas.style.width = `${wide}px`;
-  canvas.style.height = `${Math.round(wide * canvas.height / canvas.width)}px`;
+  const style = pane ? getComputedStyle(pane) : null;
+  const pad = style ? (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0) : 0;
+  const view = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+  const room = Math.min(view, pane ? pane.clientWidth : view) - pad;
+  const wide = Math.max(160, Math.min(520, room));
+  canvas.style.aspectRatio = `${canvas.width} / ${canvas.height}`;
+  canvas.style.width = "100%";
+  canvas.style.maxWidth = `${wide}px`;
+  canvas.style.height = "auto";
   canvas.style.display = "block";
   canvas.style.margin = "0 auto";
   canvas.style.borderRadius = "12px";
