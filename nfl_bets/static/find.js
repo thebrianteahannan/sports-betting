@@ -26,6 +26,7 @@ function paintFind() {
   if (window.birdQuiet) birdQuiet();
   const desk = document.getElementById("desk");
   if (!desk || !desk.classList.contains("tv-full")) { window.asking = false; if (window.birdGreet) birdGreet(); return; }
+  if (window.tvPush) tvPush();
   desk.classList.remove("bird-on", "solo", "dug");
   window.recOpen = false;
   const guide = document.getElementById("bird-guide");
@@ -35,6 +36,7 @@ function paintFind() {
   document.querySelectorAll(".rec-board").forEach((node) => node.remove());
   const board = document.createElement("div");
   board.className = "rec-board find-board";
+  board.dataset.page = "find";
   board.innerHTML = `<div class="bet-load"><span class="bet-bird"><img src="/scene/parrot-head.png?v=4" alt=""></span><p>Looking up the board.</p></div>`;
   const hold = document.getElementById("desk-hold");
   if (hold) [...row.children].forEach((node) => hold.append(node));
@@ -193,15 +195,95 @@ function fillRoster(roster, team, list, hits, people) {
     lined.sort((a, b) => a.name.localeCompare(b.name));
     quiet.sort((a, b) => a.localeCompare(b));
     names.replaceChildren();
+    const picked = new Set();
+    const build = document.createElement("button");
+    build.type = "button";
+    build.className = "find-parlay";
+    build.hidden = true;
+    const refresh = () => {
+      const group = [...picked];
+      build.disabled = false;
+      build.hidden = group.length < 2;
+      build.textContent = group.length < 2 ? "Build a parlay" : `Build a ${group.length}-leg parlay`;
+      if (group.length === 1) showFind(list, hits, group[0], roster, people, true);
+      else if (group.length > 1) {
+        markFind.stamp = (markFind.stamp || 0) + 1;
+        const heading = list.querySelector("h3");
+        if (!heading || !/parlay/i.test(heading.textContent || "")) list.replaceChildren();
+      }
+    };
     lined.forEach((hit) => {
       const button = document.createElement("button");
       button.type = "button";
       button.textContent = hit.name;
-      button.addEventListener("click", () => showFind(list, hits, hit, roster, people, true));
+      button.addEventListener("click", () => {
+        if (!button.classList.contains("on") && picked.size >= 8) return;
+        const on = button.classList.toggle("on");
+        button.setAttribute("aria-pressed", on ? "true" : "false");
+        if (on) picked.add(hit); else picked.delete(hit);
+        refresh();
+      });
       names.append(button);
     });
     quiet.forEach((name) => { const span = document.createElement("span"); span.textContent = name; names.append(span); });
+    build.addEventListener("click", () => {
+      const group = [...picked];
+      if (group.length < 2) return;
+      build.disabled = true;
+      build.textContent = "Building the parlay.";
+      const kick = Date.parse((group[0].bets && group[0].bets[0] && group[0].bets[0].kickoff) || "");
+      const day = (stamp) => new Date(stamp).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+      const when = Number.isFinite(kick) && day(kick) === day(Date.now()) ? "today" : "week";
+      fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ shape: "parlay", sports: sport ? [sport] : [], kind: "any", legs: group.length, when, aim: "top", mix: "even", stake: 5, profit: 0, hold: group.map((person) => person.name.toLowerCase()), college: !["props", "both", "tourney", "off"].includes(window.memberLaw || "") }) }).then((res) => res.json()).then((card) => {
+        if (!build.isConnected) return;
+        paintRosterParlay(list, card, group.length);
+        refresh();
+      }).catch(() => { if (build.isConnected) refresh(); });
+    });
+    roster.append(build);
   }).catch(() => {});
+}
+
+function paintRosterParlay(list, card, count) {
+  markFind.stamp = (markFind.stamp || 0) + 1;
+  const games = list.parentElement && list.parentElement.querySelector(".find-games");
+  if (games) games.open = false;
+  list.replaceChildren();
+  const legs = Array.isArray(card.legs) ? card.legs : [];
+  const heading = document.createElement("h3");
+  const price = Number(card.american);
+  const shown = Number.isFinite(price) ? (price > 0 ? `+${price}` : String(price)) : "";
+  heading.textContent = legs.length ? `${count}-leg parlay${shown ? `, ${shown}` : ""}` : "No parlay";
+  list.append(heading);
+  if (!legs.length) {
+    const note = document.createElement("p");
+    note.className = "quiet";
+    note.textContent = card.copy || "Those players did not fit in one parlay.";
+    list.append(note);
+    return;
+  }
+  if (Number.isFinite(Number(card.profit))) {
+    const pay = document.createElement("p");
+    pay.className = "quiet";
+    pay.textContent = `A $5 bet would win $${Number(card.profit).toFixed(2)}.`;
+    list.append(pay);
+  }
+  if (card.note) {
+    const note = document.createElement("p");
+    note.className = "quiet";
+    note.textContent = String(card.note).replace(/\s*This is the only bet that fits, so it keeps showing up\.?/g, "").trim();
+    if (note.textContent) list.append(note);
+  }
+  legs.forEach((leg) => {
+    const row = document.createElement("div");
+    row.className = "rec-bet open";
+    const head = document.createElement("b");
+    const odds = Number(leg.odds);
+    const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : "";
+    head.textContent = [tag, leg.label || leg.runner || ""].filter(Boolean).join(" · ");
+    row.append(head);
+    list.append(row);
+  });
 }
 
 function showFind(list, hits, person, roster, people, keep) {

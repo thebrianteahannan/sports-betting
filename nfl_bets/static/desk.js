@@ -337,7 +337,7 @@ function bootDesk() {
   const go = document.getElementById("choice-go");
   if (go) go.addEventListener("click", tvPush);
   const home = document.getElementById("desk-home");
-  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "pick"], ["menu", "Player or team", "find"], ["quiz", "Build Your Own Bet"]]); tvSkip = false; birdBump(); }); const mug = document.getElementById("desk-mug"); if (mug) mug.addEventListener("click", () => { if (window.goFull) goFull(); if (window.paintTerms) paintTerms(); });
+  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. How are we going to find our favorite bet for today?", [["menu", "Parlay's Picks", "pick"], ["menu", "Player or team", "find"], ["quiz", "Build Your Own Bet"]]); tvSkip = false; birdBump(); }); const mug = document.getElementById("desk-mug"); if (mug) mug.addEventListener("click", () => { if (window.goFull) goFull(); if (window.paintTerms) paintTerms(); });
 }
 const BIRD_WAIT = 18000;
 const BIRD_NUDGES = [
@@ -364,7 +364,7 @@ function birdSay(text, picks) {
     if (desk) desk.classList.remove("bird-on");
     return;
   }
-  if (!tvSkip && desk && !desk.classList.contains("bird-on")) tvPush();
+  if (!tvSkip && !window.askRewind && !(window.asking && window.askPast && window.askPast.length)) tvPush();
   if (desk) { desk.classList.add("bird-on"); tvPaint(); }
   line.textContent = text; line.classList.toggle("warn", /ruin people's lives/i.test(text)); line.classList.toggle("pow", text === "Aight, bet!");
   row.replaceChildren();
@@ -417,7 +417,7 @@ function startGuide() {
     window.squawkUntil = Date.now() + 900; birdSay("Aight, bet!", []);
     setTimeout(() => {
       if (!birdOn || birdHeld || window.asking || document.body.classList.contains("needs-member")) return;
-      if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "pick"], ["menu", "Player or team", "find"], ["quiz", "Build Your Own Bet"]]);
+      if (window.birdGreet) birdGreet(); else birdSay("Hey. How are we going to find our favorite bet for today?", [["menu", "Parlay's Picks", "pick"], ["menu", "Player or team", "find"], ["quiz", "Build Your Own Bet"]]);
     }, 900);
     birdBump();
   };
@@ -442,16 +442,19 @@ let tvStack = []; let tvSkip = false; let tvSeen = false;
 function openHelp() { const desk = document.getElementById("desk"); if (document.body.classList.contains("needs-member")) { if (!(tvStack.at(-1) && tvStack.at(-1).gate)) tvStack.push({ gate: 1 }); } else if (desk && desk.classList.contains("bird-on")) { const shot = tvShot(); if (!tvSame(shot, tvStack.at(-1))) tvStack.push(shot); } if (tvStack.length > 12) tvStack.shift(); tvPaint(); showTab("help"); if (desk && desk.classList.contains("bird-on")) { birdOn = true; birdHeld = true; window.asking = false; birdHide(); } }
 function tvShot() {
   const desk = document.getElementById("desk");
+  const full = !!(desk && desk.classList.contains("tv-full"));
   if (desk && desk.classList.contains("bird-on")) {
-    const picks = [...document.querySelectorAll("#bird-picks button")].filter((b) => !b.dataset.stay && !b.dataset.rec).map((b) => ["quiz" in b.dataset ? "quiz" : "ask" in b.dataset ? "ask" : "parrot" in b.dataset ? "parrot" : b.dataset.tab, b.textContent, b.dataset.quiz || b.dataset.ask || b.dataset.parrot || b.dataset.aim || ""]);
-    return { bird: 1, text: document.getElementById("bird-line").textContent, picks };
+    const picks = [...document.querySelectorAll("#bird-picks button")].filter((b) => !b.dataset.stay && !b.dataset.rec && (["quiz", "ask", "parrot", "menu"].some((key) => key in b.dataset) || b.dataset.tab)).map((b) => { const kind = ["quiz", "ask", "parrot", "menu"].find((key) => key in b.dataset) || "tab"; return [kind === "tab" ? b.dataset.tab : kind, b.textContent, b.dataset[kind] || b.dataset.aim || ""]; });
+    return { bird: 1, text: document.getElementById("bird-line").textContent, picks, full };
   }
+  const board = document.querySelector("#desk-glass-in .rec-board");
+  if (board && board.dataset.page) return { board: board.dataset.page, past: !!window.recPast, full };
   const tab = (window.state && state.tab) || "today";
   const chooser = document.getElementById("chooser");
-  return { tab, built: tab === "build" && !!(chooser && chooser.classList.contains("built")) };
+  return { tab, built: tab === "build" && !!(chooser && chooser.classList.contains("built")), full };
 }
 function tvSame(a, b) {
-  return !!a && !!b && !!a.bird === !!b.bird && (a.bird ? a.text === b.text : a.tab === b.tab && !!a.built === !!b.built);
+  return !!a && !!b && !!a.bird === !!b.bird && (a.bird ? a.text === b.text : a.board ? a.board === b.board && !!a.past === !!b.past : a.tab === b.tab && !!a.built === !!b.built);
 }
 function tvPaint() {
   const desk = document.getElementById("desk"); desk.classList.toggle("has-back", tvStack.length > 0 || desk.classList.contains("bird-on"));
@@ -459,35 +462,32 @@ function tvPaint() {
 function tvPush() {
   if (tvSkip) return;
   const shot = tvShot();
-  if ((shot.bird && !shot.picks.length) || (shot.tab === "build" && !shot.built) || tvSame(shot, tvStack.at(-1))) return;
+  if ((shot.bird && !shot.picks.length) || (shot.tab === "build" && !shot.built) || (!tvSeen && shot.tab) || tvSame(shot, tvStack.at(-1))) return;
   tvStack.push(shot);
   if (tvStack.length > 12) tvStack.shift();
   tvPaint();
 }
 function tvUnbuild() {
-  const chooser = document.getElementById("chooser");
-  if (!chooser) return;
-  chooser.classList.remove("built");
-  const again = document.getElementById("choice-again");
-  const box = document.getElementById("choice-result");
-  if (again) again.hidden = true;
-  if (box) box.textContent = "";
+  const chooser = document.getElementById("chooser"); if (chooser) chooser.classList.remove("built"); const again = document.getElementById("choice-again"); const box = document.getElementById("choice-result"); if (again) again.hidden = true; if (box) box.textContent = "";
 }
 function tvBack() {
   let prev = tvStack.pop(); while (prev && prev.tab === "build" && !prev.built) prev = tvStack.pop();
-  if (!prev) { window.asking = false; birdHide(); if (window.state && state.tab === "build") { tvSkip = true; showTab("today"); tvSkip = false; } return; }
+  const desk = document.getElementById("desk"); const btn = document.getElementById("desk-full");
+  if (!prev) { window.asking = false; if (btn && desk && desk.classList.contains("tv-full")) { tvSkip = true; btn.click(); tvSkip = false; return; } birdHide(); if (window.state && state.tab === "build") { tvSkip = true; showTab("today"); tvSkip = false; } return; }
   tvPaint();
   tvSkip = true;
+  if (btn && desk && !prev.full && desk.classList.contains("tv-full")) btn.click();
   if (prev.bird) birdSay(prev.text, prev.picks);
   else if (prev.gate) showGateScene();
-  else { window.asking = false; birdHide(); if (!prev.built) tvUnbuild(); showTab(prev.tab); }
+  else if (prev.board && window.tvPage) tvPage(prev);
+  else { window.asking = false; birdHide(); if (!prev.built) tvUnbuild(); showTab(prev.tab || "today"); }
   tvSkip = false;
 }
 const goTab = showTab;
 showTab = (name) => {
   const desk = document.getElementById("desk"); if (desk) desk.classList.remove("solo");
   if (window.legStarted && !window.keepStarted && window.state && window.state.board) { const map = { best: "band", today: "todayBet", week: "weekThree", week5: "weekFive", safe: "weekSafe", even: "weekEven", chalk: "chalk", four: "four", plus: "plus", hits: "hits" }; Object.keys(map).forEach((id) => { const card = document.getElementById(id); const data = window.state.board[map[id]]; if (card && data && window.legStarted(data)) card.hidden = true; }); }
-  if (!tvSkip && !(desk && desk.classList.contains("bird-on"))) {
+  if (!tvSkip && !window.askShow && !(desk && desk.classList.contains("bird-on"))) {
     const here = tvShot();
     if (!tvSame(here, { tab: name, built: name === "build" && here.built })) { tvSeen = true; tvPush(); }
   }
@@ -496,5 +496,5 @@ showTab = (name) => {
 
 window.deskFrame = deskFrame;
 window.deskGate = showGateScene;
-window.birdSay = birdSay; window.tvBack = tvBack;
+window.birdSay = birdSay; window.tvBack = tvBack; window.tvPush = tvPush;
 bootDesk();

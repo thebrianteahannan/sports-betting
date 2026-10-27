@@ -6,6 +6,7 @@ function paintTerms() {
   if (window.birdQuiet) birdQuiet();
   const desk = document.getElementById("desk");
   if (!desk || !desk.classList.contains("tv-full")) { window.asking = false; if (window.birdGreet) birdGreet(); return; }
+  if (window.tvPush) tvPush();
   desk.classList.remove("bird-on", "solo", "dug");
   window.recOpen = false;
   const guide = document.getElementById("bird-guide");
@@ -15,6 +16,7 @@ function paintTerms() {
   document.querySelectorAll(".rec-board").forEach((node) => node.remove());
   const board = document.createElement("div");
   board.className = "rec-board find-board";
+  board.dataset.page = "terms";
   board.innerHTML = "<h2>What does that mean?</h2>";
   const quiet = document.createElement("p");
   quiet.className = "quiet";

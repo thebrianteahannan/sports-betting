@@ -6,6 +6,7 @@ function paintOnes() {
   if (window.birdQuiet) birdQuiet();
   const desk = document.getElementById("desk");
   if (!desk || !desk.classList.contains("tv-full")) { window.asking = false; if (window.birdGreet) birdGreet(); return; }
+  if (window.tvPush) tvPush();
   desk.classList.remove("bird-on", "solo", "dug");
   window.recOpen = false;
   const guide = document.getElementById("bird-guide");
@@ -15,6 +16,7 @@ function paintOnes() {
   document.querySelectorAll(".rec-board").forEach((node) => node.remove());
   const board = document.createElement("div");
   board.className = "rec-board ones-board";
+  board.dataset.page = "ones";
   board.innerHTML = `<div class="bet-load"><span class="bet-bird"><img src="/scene/parrot-head.png?v=4" alt=""></span><p>Looking through the counts.</p></div>`;
   const hold = document.getElementById("desk-hold");
   if (hold) [...row.children].forEach((node) => hold.append(node));

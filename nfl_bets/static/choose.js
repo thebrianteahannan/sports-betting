@@ -271,8 +271,8 @@ function askGo() {
   ask = null;
   window.askShow = true;
   birdLand();
-  window.askShow = false;
   showTab("build");
+  window.askShow = false;
   runChoice().catch((error) => {
     const box = document.getElementById("choice-result");
     if (box) box.textContent = String(error);
@@ -489,7 +489,6 @@ function recBack() {
   const desk = document.getElementById("desk");
   if (desk) desk.classList.remove("solo", "dug");
   if (window.builtBack) { window.builtBack = false; const glass = document.getElementById("desk-glass-in"); if (glass && window.builtKeep) glass.scrollTop = window.builtKeep.scroll || 0; return true; }
-  if (window.birdMenu) birdMenu("bets");
-  return true;
+  return !!(document.querySelector("#desk-glass-in .rec-board") || (document.getElementById("chooser") || {}).classList.contains("built"));
 }
 window.recBack = recBack;

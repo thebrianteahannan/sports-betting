@@ -25,25 +25,42 @@ def find_single(legs: list[dict[str, Any]], games: list[dict[str, Any]], skip: l
     seen = {part for mark in skip for part in str(mark).split("|") if part}
     kept = [leg for leg in legs if isinstance(leg, dict) and _open(leg, seen, stake, profit)]
     rosters = _rosters(kept)
-    cap = 24 if len(rosters) <= 1 else 12
+    cap = 48
     chosen: list[tuple[str, str]] = []
     while len(chosen) < cap and any(names for _gid, names, _rows_ in rosters):
         for gid, names, _rows_ in rosters:
             if names and len(chosen) < cap:
                 chosen.append((gid, names.pop(0)))
-    best: dict[str, Any] | None = None
+    found: list[dict[str, Any]] = []
+    used: set[str] = set()
     for gid, name in chosen:
         game = by_id.get(gid) or {}
         rows = next((rows for key, _names, rows in rosters if key == gid), [])
+        mine: list[dict[str, Any]] = []
         for leg in rows:
             if _mark(leg) != name:
                 continue
-            found = _look(leg, game)
-            if found and (best is None or (found["score"], found["sample"]) > (best["score"], best["sample"])):
-                best = found
-    if best is None:
+            hit = _look(leg, game)
+            if not hit:
+                continue
+            mark = f"{name}|{hit['leg'].get('label')}|{hit['leg'].get('odds')}"
+            if mark in used:
+                continue
+            used.add(mark)
+            mine.append(hit)
+        mine.sort(key=lambda row: (row["score"], row["sample"]), reverse=True)
+        found.extend(mine[:3])
+    found.sort(key=lambda row: (row["score"], row["sample"]), reverse=True)
+    found = found[:24]
+    if not found:
         return _miss()
-    return _card(best["leg"], best["game"], best["why"], stake)
+    card = _card(found[0]["leg"], found[0]["game"], found[0]["why"], stake)
+    card["title"] = "One pick" if len(found) == 1 else "One pick bets"
+    card["offers"] = [_card(row["leg"], row["game"], row["why"], stake) for row in found[1:]]
+    for offer in card["offers"]:
+        offer["edge"] = False
+        offer["title"] = card["title"]
+    return card
 
 
 def _open(leg: dict[str, Any], seen: set[str], stake: float, profit: float) -> bool:

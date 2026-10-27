@@ -132,7 +132,7 @@ document.getElementById("desk-full").addEventListener("click", () => {
   window.digOn = false;
   window.asking = false;
   if (window.birdGreet) birdGreet();
-  else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "pick"], ["menu", "Player or team", "find"], ["quiz", "Build Your Own Bet"]]);
+  else birdSay("Hey. How are we going to find our favorite bet for today?", [["menu", "Parlay's Picks", "pick"], ["menu", "Player or team", "find"], ["quiz", "Build Your Own Bet"]]);
 });
 document.getElementById("desk-glass").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
@@ -172,27 +172,32 @@ window.askBack = () => {
     if (box) box.textContent = "";
     window.asking = true;
   }
-  if (onQuiz && steps[0] === "kind" && askButtons.group) { askButtons.group = ""; if (window.askStep) askStep(); return true; }
+  if (onQuiz && steps[0] === "kind" && askButtons.group) { askButtons.group = ""; window.askRewind = true; if (window.askStep) askStep(); window.askRewind = false; return true; }
   const step = past.pop();
   const order = ["shape", "when", "sport", "game", "kind", "legs", "money", "risk", "mix"];
   steps.splice(0, steps.length, ...order.slice(Math.max(0, order.indexOf(step))));
   if (step === "kind") { pick.kind = "any"; askButtons.group = ""; } else if (step === "legs") pick.legs = 3; else if (step === "game") pick.gameIds = []; else if (step === "aim") pick.aim = ""; else if (step === "money") { if (pick.aim === "pay") pick.aim = ""; } else if (step === "mix") pick.mix = "even"; else if (step === "when") pick.when = "today"; else if (step === "shape") { pick.shape = "parlay"; pick.legs = 3; }
+  window.askRewind = true;
   if (window.askStep) askStep();
+  window.askRewind = false;
   return true;
+};
+
+window.tvPage = (prev) => {
+  if (prev.board === "find" && window.paintFind) paintFind();
+  else if (prev.board === "ones" && window.paintOnes) paintOnes();
+  else if (prev.board === "terms" && window.paintTerms) paintTerms();
+  else if (prev.board === "bets" && window.birdMenu) birdMenu("bets");
 };
 
 document.getElementById("desk-back").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
   if (!desk || !desk.classList.contains("tv-full")) return;
   event.stopImmediatePropagation();
-  if (window.shareBack && shareBack()) return; if (window.recBack && recBack()) return;
+  if (window.shareBack && shareBack()) return;
+  if (window.recBack && recBack()) return;
   if (window.askBack && askBack()) return;
-  if (desk.classList.contains("bird-on") && /trying to do today/i.test((document.getElementById("bird-line") || {}).textContent || "") && window.tvBack) { tvBack(); return; }
-  window.asking = false;
-  window.digOn = false;
-  desk.classList.remove("dug", "solo");
-  if (window.birdGreet) { birdGreet(); if (document.querySelector(".rec-board") && typeof showTab === "function") showTab("today"); }
-  else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "pick"], ["menu", "Player or team", "find"], ["quiz", "Build Your Own Bet"]]);
+  if (window.tvBack) tvBack();
 }, true);
 
 function openBuilt(index) {
