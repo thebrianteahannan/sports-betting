@@ -246,6 +246,102 @@ function fillRoster(roster, team, list, hits, people) {
   }).catch(() => {});
 }
 
+function rosterNear(card) {
+  const legs = Array.isArray(card.legs) ? card.legs : [];
+  if (legs.length < 2) return "";
+  const known = typeof recName === "function" ? recName(card) : "";
+  if (known) {
+    const hits = known === "Five near 90% each" ? "five" : known === "Four near 80% each" ? "four" : "";
+    const id = hits ? "hits" : Object.keys(window.CARD_NAMES || {}).find((key) => window.CARD_NAMES[key] === known) || "";
+    return `This is the one on the desk. ${rosterWho(id, hits, known)}.`;
+  }
+  const found = rosterScan(legs, Number(card.american));
+  if (!found.length) return "";
+  const [main, extra] = found;
+  const line = main.fit ? `This matches ${rosterWho(main.id, main.part, main.name)}.` : `This is close to ${rosterWho(main.id, main.part, main.name)}.${main.why ? ` ${main.why}` : ""}`;
+  return extra ? `${line} ${extra.fit ? "It also matches" : "It is also close to"} ${rosterWho(extra.id, extra.part, extra.name)}.` : line;
+}
+
+function rosterWho(id, part, name) {
+  const no = id && typeof strategyNo === "function" ? strategyNo(id, part || "") : "";
+  return [no, name].filter(Boolean).join(", ");
+}
+
+function rosterScan(legs, price) {
+  const n = legs.length;
+  const odds = legs.map((leg) => Number(leg.odds));
+  if (odds.some((o) => !Number.isFinite(o) || !o)) return [];
+  const chance = (o) => (o < 0 ? Math.abs(o) / (Math.abs(o) + 100) : 100 / (o + 100));
+  const probs = odds.map(chance);
+  const blob = (leg) => `${leg.market || ""} ${leg.label || ""} ${leg.runner || ""}`.toLowerCase();
+  const games = legs.map((leg) => String(leg.match || leg.gameId || ""));
+  const split = games.every(Boolean) && new Set(games).size === n;
+  const same = games.every(Boolean) && new Set(games).size === 1;
+  const when = legs.map((leg) => {
+    const t = Date.parse(leg.kickoff || "");
+    if (!Number.isFinite(t)) return null;
+    return {
+      day: new Date(t).toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
+      hour: Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", hourCycle: "h23" }).format(t)),
+      week: new Date(t).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short" }),
+    };
+  });
+  const timed = when.every(Boolean);
+  const days = timed && new Set(when.map((row) => row.day)).size === n;
+  const yard = legs.every((leg) => /yd|yard/.test(blob(leg)));
+  const alt = legs.every((leg) => /\balt\b|\+/.test(blob(leg)));
+  const td = legs.every((leg) => /anytime touchdown scorer|any time touchdown scorer/.test(blob(leg)) && !/half|quarter|\b1st\b|first|last|either|\b[23]\+/.test(blob(leg)));
+  const nfl = legs.every((leg) => String(leg.sport || "").toUpperCase() === "NFL");
+  const shy = legs.some((leg) => /reception/.test(blob(leg)) && Number((blob(leg).match(/(\d+(?:\.\d+)?)/) || [])[1]) >= 4.5);
+  const gap = (lo, hi) => Math.max(0, ...odds.map((o) => (o < lo ? lo - o : o > hi ? o - hi : 0)));
+  const under = (need) => Math.max(0, ...probs.map((c) => Math.max(0, need - c) * 100));
+  const side = (leg) => /^over\b/i.test(leg.runner || "") ? "over" : /^under\b/i.test(leg.runner || "") ? "under" : "";
+  const won = Number.isFinite(price) && price ? Math.round(5 * (price > 0 ? price / 100 : 100 / Math.abs(price)) * 100) / 100 : NaN;
+  const game = same ? "The legs are in one game." : "";
+  const rows = [];
+  const put = (id, name, part, fit, near, why, miss, pay) => { if (fit || near) rows.push({ id, name, part, fit: !!fit, why: fit ? "" : why, miss: fit ? 0 : miss, pay: !!pay }); };
+  const both = (bits) => { const said = bits.filter(Boolean).map((bit) => bit.replace(/\.$/, "")); return said.length < 2 ? (said[0] ? `${said[0]}.` : "") : `${said[0]}, and ${said[1][0].toLowerCase()}${said[1].slice(1)}.`; };
+  const short = probs.filter((c) => c < 0.75).length;
+  put("safe2", "Safe 2-leg, both 75%+", "", n === 2 && split && under(0.75) === 0, n === 2 && under(0.75) <= 8, both([short > 1 ? "Both legs are under 75%." : short ? "One leg is under 75%." : "", game]), under(0.75) + (split ? 0 : 4));
+  put("mid3", "3 legs, −250 to −400", "", n === 3 && split && gap(-400, -250) === 0, n === 3 && gap(-440, -210) <= 40, both([gap(-400, -250) ? "One leg is outside −250 to −400." : "", game]), gap(-400, -250) / 5 + (split ? 0 : 4));
+  put("win4", "4 legs, −150 to −300", "", n === 4 && split && gap(-300, -150) === 0, n === 4 && gap(-340, -110) <= 40, both([gap(-300, -150) ? "One leg is outside −150 to −300." : "", game]), gap(-300, -150) / 5 + (split ? 0 : 4));
+  put("plusLegs", "+100 to +200 legs", "", n === 2 && split && gap(100, 200) === 0, n === 2 && gap(60, 240) <= 40 && odds.every((o) => o > 0), both([gap(100, 200) ? "One leg is outside +100 to +200." : "", game]), gap(100, 200) / 5 + (split ? 0 : 4));
+  const fav = odds.filter((o) => o >= -300 && o <= -120).length, dog = odds.filter((o) => o >= 100 && o <= 220).length;
+  const favWide = odds.filter((o) => o >= -340 && o <= -100).length, dogWide = odds.filter((o) => o >= 70 && o <= 260).length;
+  put("mix21", "2 favorites and 1 underdog", "", n === 3 && split && fav === 2 && dog === 1, n === 3 && favWide === 2 && dogWide === 1, both([fav === 2 && dog === 1 ? "" : "The prices are a little outside the favorite and underdog window.", game]), (fav === 2 && dog === 1 ? 0 : 6) + (split ? 0 : 4));
+  const spread = Math.max(...odds) - Math.min(...odds);
+  put("low3", "Low-variance 3-leg", "", n === 3 && split && gap(-230, -170) === 0 && spread <= 60, n === 3 && split && gap(-260, -140) <= 30 && spread <= 90, gap(-230, -170) ? "The prices are a little further apart." : "", gap(-230, -170) / 5 + Math.max(0, spread - 60) / 10);
+  put("yards3", "3 yardage legs near 80% each", "", n === 3 && split && yard && probs.every((c) => c >= 0.75 && c <= 0.85), n === 3 && yard && probs.every((c) => c >= 0.67 && c <= 0.9), both([probs.some((c) => c < 0.75 || c > 0.85) ? "One leg is off an 80% price." : "", game]), Math.max(...probs.map((c) => Math.abs(c - 0.8) * 100)) + (split ? 0 : 4));
+  const overs = legs.filter((leg) => side(leg) === "over").length, unders = legs.filter((leg) => side(leg) === "under").length;
+  put("ou4", "2 overs and 2 unders", "", n === 4 && split && overs === 2 && unders === 2 && gap(-220, -110) === 0, n === 4 && overs === 2 && unders === 2 && gap(-260, -100) <= 40, both([gap(-220, -110) ? "One price is outside −220 to −110." : "", game]), gap(-220, -110) / 5 + (split ? 0 : 4));
+  put("alt3", "Alt lines, 3 legs, 85%+", "", n === 3 && split && alt && under(0.85) === 0, n === 3 && alt && under(0.85) <= 8, both([under(0.85) ? "One leg is under 85%." : "", game]), under(0.85) + (split ? 0 : 4));
+  put("games4", "4 legs, 4 different games", "", n === 4 && split && gap(-280, -140) === 0, n === 4 && gap(-320, -100) <= 40, both([gap(-280, -140) ? "One leg is outside −280 to −140." : "", split ? "" : "The legs are not four different games."]), gap(-280, -140) / 5 + (split ? 0 : 6));
+  put("early3", "Early slate, 2 to 3 legs", "", timed && (n === 2 || n === 3) && when.every((row) => row.hour < 16) && split && gap(-300, -130) === 0, timed && (n === 2 || n === 3) && when.every((row) => row.hour < 16) && gap(-340, -100) <= 40, both([gap(-300, -130) ? "One leg is outside −300 to −130." : "", game]), gap(-300, -130) / 5 + (split ? 0 : 4));
+  put("prime3", "Prime time, 3 legs", "", timed && n === 3 && when.every((row) => row.hour >= 19) && split && gap(-300, -130) === 0, timed && n === 3 && when.every((row) => row.hour >= 19) && gap(-340, -100) <= 40, both([gap(-300, -130) ? "One leg is outside −300 to −130." : "", game]), gap(-300, -130) / 5 + (split ? 0 : 4));
+  put("weekend4", "Weekend special, 4 legs", "", timed && n === 4 && when.every((row) => row.week === "Sat" || row.week === "Sun") && split && gap(-260, -140) === 0, timed && n === 4 && when.every((row) => row.week === "Sat" || row.week === "Sun") && gap(-300, -100) <= 40, both([gap(-260, -140) ? "One leg is outside −260 to −140." : "", game]), gap(-260, -140) / 5 + (split ? 0 : 4));
+  put("td2", "2 NFL players, 1 anytime TD each", "", n === 2 && td && nfl, n === 2 && td, nfl ? "" : "One leg is not NFL.", nfl ? 4 : 8);
+  put("td3", "3 NFL players, 1 anytime TD each", "", n === 3 && td && nfl, n === 3 && td, nfl ? "" : "One leg is not NFL.", nfl ? 4 : 8);
+  put("chalk", "−400 to −700 legs, near −180", "", n >= 2 && n <= 4 && gap(-700, -400) === 0 && Number.isFinite(price) && Math.abs(price + 180) <= 40, n >= 2 && n <= 4 && gap(-740, -360) <= 40 && Number.isFinite(price) && Math.abs(price + 180) <= 80, gap(-700, -400) ? "One leg is outside −400 to −700." : "The parlay price is a little off −180.", gap(-700, -400) / 5 + (Number.isFinite(price) ? Math.abs(price + 180) / 10 : 9));
+  put("four", "Four yardage legs near 85% each", "", n === 4 && yard && !shy && probs.every((c) => Math.abs(c - 0.85) <= 0.05), n === 4 && yard && !shy && probs.every((c) => Math.abs(c - 0.85) <= 0.08), "One leg is off an 85% price.", Math.max(...probs.map((c) => Math.abs(c - 0.85) * 100)));
+  put("plus", "Four yardage legs near +250", "", n === 4 && yard && !shy && Number.isFinite(price) && Math.abs(price - 250) <= 40 && probs.every((c) => Math.abs(c - 0.73) <= 0.12), n === 4 && yard && !shy && Number.isFinite(price) && Math.abs(price - 250) <= 80 && probs.every((c) => Math.abs(c - 0.73) <= 0.16), "The parlay price is a little off +250.", Number.isFinite(price) ? Math.abs(price - 250) / 10 : 9);
+  put("hits", "Five near 90% each", "five", n === 5 && yard && !shy && probs.every((c) => Math.abs(c - 0.9) <= 0.08), n === 5 && yard && !shy && probs.every((c) => Math.abs(c - 0.9) <= 0.12), "One leg is off a 90% price.", Math.max(...probs.map((c) => Math.abs(c - 0.9) * 100)));
+  put("hits", "Four near 80% each", "four", n === 4 && yard && !shy && probs.every((c) => Math.abs(c - 0.8) <= 0.08), n === 4 && yard && !shy && probs.every((c) => Math.abs(c - 0.8) <= 0.12), "One leg is off an 80% price.", Math.max(...probs.map((c) => Math.abs(c - 0.8) * 100)));
+  [[5, "pay5"], [10, "pay10"], [15, "pay15"], [20, "pay20"], [25, "pay25"], [50, "pay50"]].forEach(([target, id]) => {
+    const off = Math.abs(won - target);
+    put(id, `A $5 bet wins $${target}`, "", n >= 2 && n <= 4 && split && off <= 0.75, n >= 2 && n <= 4 && off <= 1.25, same ? "The legs are in one game." : "The price is a little off that win.", off * 4 + (split ? 0 : 4), true);
+  });
+  [["weekThree", "3 legs, different days, near −200", 3, -200], ["weekFive", "5 legs, different days, near −200", 5, -200], ["weekSafe", "3 legs, different days, near −350", 3, -350], ["weekEven", "3 legs, different days, near −100", 3, -100]].forEach(([id, name, count, aim]) => {
+    const off = Number.isFinite(price) ? Math.abs(price - aim) : 99;
+    put(id, name, "", n === count && days && off <= 40, n === count && days && off <= 80, "The price is a little off the one this strategy aims at.", off / 5);
+  });
+  const fits = rows.filter((row) => row.fit).sort((a, b) => a.pay - b.pay || a.miss - b.miss);
+  if (fits.length) return fits.slice(0, 2);
+  const near = rows.filter((row) => !row.pay && row.miss <= 12).sort((a, b) => a.miss - b.miss);
+  const paid = rows.filter((row) => row.pay && row.miss <= 8).sort((a, b) => a.miss - b.miss)[0];
+  if (near.length) return paid ? [near[0], paid] : [near[0]];
+  return paid ? [paid] : [];
+}
+
 function paintRosterParlay(list, card, count) {
   markFind.stamp = (markFind.stamp || 0) + 1;
   const games = list.parentElement && list.parentElement.querySelector(".find-games");
@@ -257,6 +353,8 @@ function paintRosterParlay(list, card, count) {
   const shown = Number.isFinite(price) ? (price > 0 ? `+${price}` : String(price)) : "";
   heading.textContent = legs.length ? `${count}-leg parlay${shown ? `, ${shown}` : ""}` : "No parlay";
   list.append(heading);
+  const near = rosterNear(card);
+  if (near) { const line = document.createElement("p"); line.className = "find-why"; line.textContent = near; list.append(line); }
   if (!legs.length) {
     const note = document.createElement("p");
     note.className = "quiet";
@@ -282,8 +380,13 @@ function paintRosterParlay(list, card, count) {
     const head = document.createElement("b");
     const odds = Number(leg.odds);
     const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : "";
-    head.textContent = [tag, leg.label || leg.runner || ""].filter(Boolean).join(" · ");
-    row.append(head);
+    const raw = String(leg.label || leg.runner || "").split(/\s+—\s+/)[0].trim();
+    const said = typeof recThing === "function" ? recThing(raw, leg.market || "") : raw;
+    head.textContent = [tag, findPct(odds), tag ? `$5 profits ${findCash(odds)}` : ""].filter(Boolean).join(" · ");
+    const line = document.createElement("p");
+    line.className = "rec-gist";
+    line.textContent = said;
+    row.append(head, line);
     list.append(row);
   });
 }

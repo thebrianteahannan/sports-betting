@@ -392,9 +392,9 @@
 #desk.tv-full #desk-glass #bird-line.pow { font-size: 72px; }
 @keyframes squawk-pow { 0% { transform: rotate(-8deg) scale(0.35); } 60% { transform: rotate(-8deg) scale(1.14); } 100% { transform: rotate(-8deg) scale(1); } }
 #greet-rate, #greet-legal { display: none; }
-#desk.bird-on #bird-guide:has(button[data-menu]) { padding-top: 3.2rem; padding-bottom: 4.6rem; }
+#desk.bird-on #bird-guide:has(button[data-menu]) { justify-content: flex-start; padding-top: 3.2rem; padding-bottom: 0.7rem; } #desk.tv-full.bird-on #bird-guide:has(button[data-menu]) { padding-bottom: 4.4rem; } #desk.bird-on #bird-guide:has(button[data-menu]) #bird-line { margin-top: auto; } #desk.bird-on #bird-guide:has(button[data-menu]) #bird-picks { margin-bottom: auto; }
 #desk.bird-on #bird-guide:has(button[data-menu]) #greet-rate {
-  display: block; position: absolute; top: 4.6rem; left: 0.7rem; right: 0.7rem; margin: 0;
+  display: block; position: relative; top: auto; left: auto; right: auto; margin: 0.4rem 0.7rem 0;
   text-align: center; font-family: "Outfit", sans-serif; font-size: 14px; font-weight: 600;
   line-height: 1.25; letter-spacing: 0; text-transform: none; color: #f4fff6; pointer-events: auto; cursor: pointer;
   text-shadow: 0 1px 2px #07131a, 0 0 12px #07131a;
@@ -404,10 +404,10 @@
   font-weight: 600; line-height: 1; color: #3dff6e; letter-spacing: 0.02em;
   text-shadow: 0 0 22px rgba(61, 255, 110, 0.7);
 }
-#desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-rate { top: 12%; font-size: 18px; line-height: 1.25; } #desk.bird-on #bird-guide:has(button[data-menu]) #greet-rate span { display: block; margin: 0.35rem 0; } #desk.bird-on #bird-guide:has(button[data-menu]) #greet-rate i { display: block; margin-top: 0.1rem; font-style: normal; font-weight: 500; color: #d7e2ea; } #desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-rate span { display: inline-block; max-width: 100%; box-sizing: border-box; margin: 0.35rem auto; padding: 0.45rem 0.95rem 0.4rem; border: 2px solid #3dff6e; border-radius: 16px; background: #07180f; box-shadow: 0 0 18px rgba(61, 255, 110, 0.28); }
+#desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-rate { top: auto; font-size: 18px; line-height: 1.25; } #desk.bird-on #bird-guide:has(button[data-menu]) #greet-rate span { display: block; margin: 0.35rem 0; } #desk.bird-on #bird-guide:has(button[data-menu]) #greet-rate i { display: block; margin-top: 0.1rem; font-style: normal; font-weight: 500; color: #d7e2ea; } #desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-rate span { display: inline-block; max-width: 100%; box-sizing: border-box; margin: 0.35rem auto; padding: 0.45rem 0.95rem 0.4rem; border: 2px solid #3dff6e; border-radius: 16px; background: #07180f; box-shadow: 0 0 18px rgba(61, 255, 110, 0.28); }
 @media (max-width: 720px) {
-  #desk.bird-on:not(.tv-full) #bird-guide:has(button[data-menu]) #greet-rate { top: 8.5rem; }
-  #desk.bird-on:not(.tv-full) #bird-guide:has(button[data-menu]) #bird-line { margin-top: 5rem; }
+  #desk.bird-on:not(.tv-full) #bird-guide:has(button[data-menu]) #greet-rate { top: auto; }
+  #desk.bird-on:not(.tv-full) #bird-guide:has(button[data-menu]) #bird-line { margin-top: auto; }
 }
 #desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-rate b { margin: 0 0.4rem 0 0; font-size: 1.8rem; }
 #desk.bird-on #bird-guide:has(button[data-menu]) #greet-rate:empty { display: none; }
@@ -434,7 +434,7 @@
   text-align: left; box-shadow: 0 0 22px rgba(255, 60, 60, 0.5); opacity: 0;
   animation: greet-warn 26s ease-in-out infinite;
 }
-#desk.tv-full.bird-on #greet-warn { width: min(24rem, 42vw); font-size: 18px; }
+#desk.tv-full.bird-on #greet-warn { width: min(24rem, 42vw); font-size: 18px; } #desk.bird-on #bird-guide:has(button[data-menu]) #greet-legal, #desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-legal { position: relative; right: auto; bottom: auto; align-self: flex-end; width: min(24rem, calc(100% - 1.7rem)); margin: 0.4rem 0.85rem 0 0; box-sizing: border-box; } #desk.bird-on #bird-guide:has(button[data-menu]) #greet-warn, #desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #greet-warn { position: relative; right: auto; bottom: auto; width: 100%; margin: 0 0 0.45rem; box-sizing: border-box; }
 @keyframes greet-warn {
   0%, 58% { opacity: 0; pointer-events: none; }
   66%, 90% { opacity: 1; pointer-events: auto; }
