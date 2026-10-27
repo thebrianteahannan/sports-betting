@@ -14,8 +14,8 @@ function paintOnes() {
   if (!row) return;
   document.querySelectorAll(".rec-board").forEach((node) => node.remove());
   const board = document.createElement("div");
-  board.className = "rec-board";
-  board.innerHTML = `<h2>One pick bets, by strategy.</h2><div class="bet-load"><span class="bet-bird"><img src="/scene/parrot-head.png?v=4" alt=""></span><p>Looking through the counts.</p></div>`;
+  board.className = "rec-board ones-board";
+  board.innerHTML = `<div class="bet-load"><span class="bet-bird"><img src="/scene/parrot-head.png?v=4" alt=""></span><p>Looking through the counts.</p></div>`;
   const hold = document.getElementById("desk-hold");
   if (hold) [...row.children].forEach((node) => hold.append(node));
   row.append(board);
@@ -30,6 +30,9 @@ function paintOnes() {
 function fillOnes(board, data) {
   const load = board.querySelector(".bet-load");
   if (load) load.remove();
+  const title = document.createElement("h2");
+  title.textContent = "One pick bets, by strategy.";
+  board.append(title);
   window.recTickets = [];
   const strategies = Array.isArray(data.strategies) ? data.strategies : [];
   const filled = [];

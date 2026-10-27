@@ -46,6 +46,20 @@ function paintFind() {
     .catch(() => fillFind(board, {}));
 }
 
+function gamesToday(people) {
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const seen = new Map();
+  people.forEach((person) => {
+    (person.bets || []).forEach((bet) => {
+      const kick = Date.parse(bet.kickoff || "");
+      if (!bet.match || !Number.isFinite(kick)) return;
+      if (new Date(kick).toLocaleDateString("en-CA", { timeZone: "America/New_York" }) !== today) return;
+      if (!seen.has(bet.match)) seen.set(bet.match, bet);
+    });
+  });
+  return [...seen.values()].sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
+}
+
 function fillFind(board, data) {
   const load = board.querySelector(".bet-load");
   if (load) load.remove();
@@ -69,13 +83,55 @@ function fillFind(board, data) {
   roster.hidden = true;
   const list = document.createElement("div");
   list.className = "find-list";
-  board.append(heading, limit, label, hits, roster, list);
+  const games = document.createElement("details");
+  games.className = "find-games";
+  const bySport = new Map();
+  gamesToday(people).forEach((game) => {
+    const sport = game.sport || "Other";
+    if (!bySport.has(sport)) bySport.set(sport, []);
+    bySport.get(sport).push(game);
+  });
+  const total = [...bySport.values()].reduce((sum, rows) => sum + rows.length, 0);
+  const head = document.createElement("summary");
+  head.textContent = `Games, ${total}`;
+  games.hidden = total === 0;
+  games.append(head);
+  [...bySport.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([sport, rows]) => {
+    const group = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = `${sport}, ${rows.length} ${rows.length === 1 ? "game" : "games"}`;
+    group.append(summary);
+    rows.forEach((game) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      const clock = game.kickoff && typeof window.when === "function" ? `${window.when(game.kickoff)} ET` : "";
+      button.textContent = [game.match, clock].filter(Boolean).join(", ");
+      button.addEventListener("click", () => {
+        const sides = game.match.split(" @ ").map((side) => side.replace(/\s*\([^)]*\)/g, "").trim().toLowerCase());
+        hits.replaceChildren();
+        sides.forEach((side) => {
+          const person = people.find((item) => item.name.toLowerCase() === side) || people.find((item) => side.includes(item.name.toLowerCase()) && item.name.length > 3);
+          if (!person || [...hits.children].some((node) => node.textContent === person.name)) return;
+          const pick = document.createElement("button");
+          pick.type = "button";
+          pick.textContent = person.name;
+          pick.addEventListener("click", () => showFind(list, hits, person, roster, people));
+          hits.append(pick);
+        });
+        if (hits.children.length) games.open = false;
+      });
+      group.append(button);
+    });
+    games.append(group);
+  });
+  board.append(heading, limit, label, hits, games, roster, list);
   let clubStamp = 0;
   input.addEventListener("input", () => {
     const q = input.value.trim().toLowerCase();
     const stamp = ++clubStamp;
     hits.replaceChildren();
     if (q.length < 2) { if (!list.querySelector(".rec-bet")) list.replaceChildren(); return; }
+    games.open = false;
     people.filter((person) => person.name.toLowerCase().includes(q)).slice(0, 8).forEach((person) => {
       const button = document.createElement("button");
       button.type = "button";
@@ -149,6 +205,8 @@ function fillRoster(roster, team, list, hits, people) {
 }
 
 function showFind(list, hits, person, roster, people, keep) {
+  const games = list.parentElement && list.parentElement.querySelector(".find-games");
+  if (games) games.open = false;
   hits.replaceChildren();
   if (roster && !keep) fillRoster(roster, person, list, hits, people);
   const bets = (person.bets || []).slice().sort((a, b) => findRank(b.odds) - findRank(a.odds));
@@ -187,7 +245,7 @@ function markFind(list, name, bets) {
     const marks = Array.isArray(data.marks) ? data.marks : [];
     const note = document.createElement("p");
     note.className = "quiet";
-    note.textContent = marks.length === 1 ? "1 of these is far enough off the count." : marks.length ? `${marks.length} of these are far enough off the count.` : "None of these are far enough off the count.";
+    note.textContent = marks.length === 1 ? `On 1 of these, ${name} has done it more often than the price says.` : marks.length ? `On ${marks.length} of these, ${name} has done it more often than the price says.` : `None of these show ${name} doing it more often than the price says.`;
     const heading = list.querySelector("h3");
     if (heading) heading.after(note);
     if (!marks.length) return;
