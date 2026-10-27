@@ -231,16 +231,8 @@ function fillRoster(roster, team, list, hits, people) {
     build.addEventListener("click", () => {
       const group = [...picked];
       if (group.length < 2) return;
-      build.disabled = true;
-      build.textContent = "Building the parlay.";
-      const kick = Date.parse((group[0].bets && group[0].bets[0] && group[0].bets[0].kickoff) || "");
-      const day = (stamp) => new Date(stamp).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-      const when = Number.isFinite(kick) && day(kick) === day(Date.now()) ? "today" : "week";
-      fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ shape: "parlay", sports: sport ? [sport] : [], kind: "any", legs: group.length, when, aim: "top", mix: "even", stake: 5, profit: 0, hold: group.map((person) => person.name.toLowerCase()), college: !["props", "both", "tourney", "off"].includes(window.memberLaw || "") }) }).then((res) => res.json()).then((card) => {
-        if (!build.isConnected) return;
-        paintRosterParlay(list, card, group.length);
-        refresh();
-      }).catch(() => { if (build.isConnected) refresh(); });
+      refresh();
+      paintRosterParlay(list, rosterMix(group), group.length);
     });
     roster.append(build);
   }).catch(() => {});
@@ -342,53 +334,81 @@ function rosterScan(legs, price) {
   return paid ? [paid] : [];
 }
 
-function paintRosterParlay(list, card, count) {
+function rosterMix(group) {
+  let books = group.map((person) => (person.bets || []).filter((bet) => Number(bet.odds)).sort((a, b) => findRank(a.odds) - findRank(b.odds)));
+  if (books.some((rows) => !rows.length)) return [];
+  const full = books.reduce((n, rows) => n * rows.length, 1);
+  if (full > 8000) { const keep = Math.max(2, Math.floor(8000 ** (1 / books.length))); books = books.map((rows) => rows.slice(0, keep)); }
+  let sets = [[]];
+  books.forEach((rows) => { const next = []; sets.forEach((set) => rows.forEach((bet) => next.push(set.concat(bet)))); sets = next; });
+  const cards = sets.map((legs) => {
+    const dec = legs.reduce((p, leg) => p * (1 + findRank(leg.odds)), 1);
+    const price = dec >= 2 ? Math.round((dec - 1) * 100) : Math.round(-100 / (dec - 1));
+    return { american: price, legs };
+  }).filter((card) => Number.isFinite(card.american)).sort((a, b) => findRank(a.american) - findRank(b.american));
+  cards.total = full;
+  return cards;
+}
+
+function paintRosterParlay(list, cards, count) {
   markFind.stamp = (markFind.stamp || 0) + 1;
   const games = list.parentElement && list.parentElement.querySelector(".find-games");
   if (games) games.open = false;
   list.replaceChildren();
-  const legs = Array.isArray(card.legs) ? card.legs : [];
+  const rows = Array.isArray(cards) ? cards : [];
   const heading = document.createElement("h3");
-  const price = Number(card.american);
-  const shown = Number.isFinite(price) ? (price > 0 ? `+${price}` : String(price)) : "";
-  heading.textContent = legs.length ? `${count}-leg parlay${shown ? `, ${shown}` : ""}` : "No parlay";
+  heading.textContent = rows.length ? `${rows.length === 1 ? `1 ${count}-leg parlay` : `${rows.length} ${count}-leg parlays`}` : "No parlay";
   list.append(heading);
-  const near = rosterNear(card);
-  if (near) { const line = document.createElement("p"); line.className = "find-why"; line.textContent = near; list.append(line); }
-  if (!legs.length) {
+  if (!rows.length) {
     const note = document.createElement("p");
     note.className = "quiet";
-    note.textContent = card.copy || "Those players did not fit in one parlay.";
+    note.textContent = "Those players did not fit in one parlay.";
     list.append(note);
     return;
   }
-  if (Number.isFinite(Number(card.profit))) {
-    const pay = document.createElement("p");
-    pay.className = "quiet";
-    pay.textContent = `A $5 bet would win $${Number(card.profit).toFixed(2)}.`;
-    list.append(pay);
+  if (cards.total > rows.length) {
+    const more = document.createElement("p");
+    more.className = "quiet";
+    more.textContent = `Showing ${rows.length} of ${cards.total}. These are the shortest prices.`;
+    list.append(more);
   }
-  if (card.note) {
+  const oneGame = rows.every((card) => new Set(card.legs.map((leg) => leg.match || "")).size === 1);
+  if (oneGame) {
     const note = document.createElement("p");
     note.className = "quiet";
-    note.textContent = String(card.note).replace(/\s*This is the only bet that fits, so it keeps showing up\.?/g, "").trim();
-    if (note.textContent) list.append(note);
+    note.textContent = "These legs are in one game, so FanDuel's same-game button can charge a different number.";
+    list.append(note);
   }
-  legs.forEach((leg) => {
-    const row = document.createElement("div");
-    row.className = "rec-bet open";
+  const pending = [];
+  rows.forEach((card) => {
+    const box = document.createElement("div");
+    box.className = "rec-bet open";
+    const price = Number(card.american);
+    const tag = Number.isFinite(price) ? (price > 0 ? `+${price}` : String(price)) : "";
     const head = document.createElement("b");
-    const odds = Number(leg.odds);
-    const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : "";
-    const raw = String(leg.label || leg.runner || "").split(/\s+—\s+/)[0].trim();
-    const said = typeof recThing === "function" ? recThing(raw, leg.market || "") : raw;
-    head.textContent = [tag, findPct(odds), tag ? `$5 profits ${findCash(odds)}` : ""].filter(Boolean).join(" · ");
-    const line = document.createElement("p");
-    line.className = "rec-gist";
-    line.textContent = said;
-    row.append(head, line);
-    list.append(row);
+    head.textContent = [tag, findPct(price), tag ? `$5 profits ${findCash(price)}` : ""].filter(Boolean).join(" · ");
+    box.append(head);
+    pending.push([box, card]);
+    const keys = [];
+    card.legs.forEach((leg) => {
+      const odds = Number(leg.odds);
+      const legTag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : "";
+      const raw = String(leg.label || "").split(/\s+—\s+/)[0].trim();
+      const said = typeof recThing === "function" ? recThing(raw, leg.market || "") : raw;
+      const line = document.createElement("p");
+      line.className = "rec-gist";
+      line.dataset.key = `${raw}|${odds}`;
+      line.dataset.who = raw.split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "").trim();
+      line.dataset.said = said;
+      line.textContent = [legTag, findPct(odds), legTag ? `$5 profits ${findCash(odds)}` : "", said].filter(Boolean).join(" · ");
+      box.append(line);
+      keys.push(line.dataset.key);
+    });
+    box.dataset.keys = keys.join("~");
+    box.dataset.won = String(Math.round((price < 0 ? 500 / -price : price / 20) * 100) / 100);
+    list.append(box);
   });
+  if (typeof siftParlays === "function") siftParlays(list, pending, count);
 }
 
 function showFind(list, hits, person, roster, people, keep) {

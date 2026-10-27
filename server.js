@@ -399,7 +399,7 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/ones.js", "/find.js", "/terms.js", "/prop-lines.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/bet-ask.js", "/ask-bet.css", "/us-map.svg", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/ones.js", "/find.js", "/sift.js", "/terms.js", "/prop-lines.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/bet-ask.js", "/ask-bet.css", "/us-map.svg", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
       serveStatic(res, url.pathname.slice(1));
       return;
     }
