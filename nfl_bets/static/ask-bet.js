@@ -132,7 +132,7 @@ document.getElementById("desk-full").addEventListener("click", () => {
   window.digOn = false;
   window.asking = false;
   if (window.birdGreet) birdGreet();
-  else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "bets"], ["quiz", "Build Your Own Bet"]]);
+  else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "pick"], ["menu", "Player or team", "find"], ["quiz", "Build Your Own Bet"]]);
 });
 document.getElementById("desk-glass").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
@@ -174,9 +174,9 @@ window.askBack = () => {
   }
   if (onQuiz && steps[0] === "kind" && askButtons.group) { askButtons.group = ""; if (window.askStep) askStep(); return true; }
   const step = past.pop();
-  const order = ["when", "sport", "game", "kind", "legs", "money", "risk", "mix"];
+  const order = ["shape", "when", "sport", "game", "kind", "legs", "money", "risk", "mix"];
   steps.splice(0, steps.length, ...order.slice(Math.max(0, order.indexOf(step))));
-  if (step === "kind") { pick.kind = "any"; askButtons.group = ""; } else if (step === "legs") pick.legs = 3; else if (step === "game") pick.gameIds = []; else if (step === "aim") pick.aim = ""; else if (step === "money") { if (pick.aim === "pay") pick.aim = ""; } else if (step === "mix") pick.mix = "even"; else if (step === "when") pick.when = "today";
+  if (step === "kind") { pick.kind = "any"; askButtons.group = ""; } else if (step === "legs") pick.legs = 3; else if (step === "game") pick.gameIds = []; else if (step === "aim") pick.aim = ""; else if (step === "money") { if (pick.aim === "pay") pick.aim = ""; } else if (step === "mix") pick.mix = "even"; else if (step === "when") pick.when = "today"; else if (step === "shape") { pick.shape = "parlay"; pick.legs = 3; }
   if (window.askStep) askStep();
   return true;
 };
@@ -192,7 +192,7 @@ document.getElementById("desk-back").addEventListener("click", (event) => {
   window.digOn = false;
   desk.classList.remove("dug", "solo");
   if (window.birdGreet) { birdGreet(); if (document.querySelector(".rec-board") && typeof showTab === "function") showTab("today"); }
-  else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "bets"], ["quiz", "Build Your Own Bet"]]);
+  else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "pick"], ["menu", "Player or team", "find"], ["quiz", "Build Your Own Bet"]]);
 }, true);
 
 function openBuilt(index) {

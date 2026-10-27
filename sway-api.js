@@ -99,8 +99,8 @@ function readSpec(text) {
   if (low.includes("rebound")) return { keys: ["totalRebounds"], noun: "rebounds", fixed: false };
   if (low.includes("assist")) return { keys: ["assists"], noun: "assists", fixed: false };
   if (low.includes("strikeout")) return { keys: ["strikeouts"], noun: "strikeouts", fixed: false };
-  if (/\bhits?\b/.test(low)) return { keys: ["hits"], noun: "hits", fixed: false };
   if (low.includes("home run")) return { keys: ["homeRuns"], noun: "home runs", fixed: false };
+  if (/\bhits?\b/.test(low)) return { keys: ["hits"], noun: "hits", fixed: false };
   if (/\bgoals?\b/.test(low)) return { keys: ["goals"], noun: "goals", fixed: false };
   if (/\bpoints?\b/.test(low)) return { keys: ["points"], noun: "points", fixed: false };
   return null;

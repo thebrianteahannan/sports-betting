@@ -257,10 +257,10 @@ def _spec(text: str) -> tuple[tuple[str, ...], str, bool] | None:
         return ("assists",), "assists", False
     if "strikeout" in low:
         return ("strikeouts",), "strikeouts", False
-    if re.search(r"\bhits?\b", low):
-        return ("hits",), "hits", False
     if "home run" in low:
         return ("homeRuns",), "home runs", False
+    if re.search(r"\bhits?\b", low):
+        return ("hits",), "hits", False
     if re.search(r"\bgoals?\b", low):
         return ("goals",), "goals", False
     if re.search(r"\bpoints?\b", low):

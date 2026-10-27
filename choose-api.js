@@ -1,6 +1,6 @@
 /** Build a bet on the website. Same rules as the local desk. */
 
-const { addSway } = require("./sway-api");
+const { addSway } = require("./sway-api"); const { singleFind, markPlayer } = require("./single-find"); const { onesList } = require("./ones-find"); const { playerNames, nameBook, playerClub, teamRoster } = require("./who-api");
 const AK = "FhMFpcPWXMeyZxOx";
 const SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA"];
 function propFamily(leg) {
@@ -20,7 +20,7 @@ const UNITS = ["shots on goal", "receiving yards", "rushing yards", "passing yar
 function americanDecimal(odds) { const n = Number(odds); if (!n) throw new Error("odds cannot be 0"); return n > 0 ? 1 + n / 100 : 1 + 100 / Math.abs(n); }
 function impliedProb(odds) { const n = Number(odds); return n < 0 ? Math.abs(n) / (Math.abs(n) + 100) : 100 / (n + 100); }
 function fromDecimal(decimal) { if (decimal <= 1) return null; if (decimal >= 2) return Math.round((decimal - 1) * 100); return Math.round(-100 / (decimal - 1)); }
-function who(leg) { return String(leg.runner || leg.label || "").split(/\d/)[0].trim().toLowerCase(); }
+function who(leg) { return String(leg.runner || leg.label || "").split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "").trim().toLowerCase(); }
 
 function pinOf(token) {
   const [name, size, word] = String(token || "").toLowerCase().split("|");
@@ -422,7 +422,7 @@ function card(combo, sports, kind, count, aim, only) {
   const aimed = aim === "pay" ? `Aimed at about $${(Math.round(betStake * (payGoal - 1) * 100) / 100).toFixed(2)} profit on a $${betStake} bet.` : { top: "This is the safest price from these props.", safe: "Aimed at -200, so a $5 bet wins about $2.50.", good: "Aimed at -100, so a $5 bet wins $5.", payout: "The longest price from these props, so the payout is the largest." }[aim];
   const signed = american > 0 ? `+${american}` : String(american);
   return {
-    title: `${name} ${count}-leg`, game: titleGame, kind: kindName, american, impliedPct: chance, profit,
+    title: count === 1 ? "One pick" : `${name} ${count}-leg`, game: titleGame, kind: kindName, american, impliedPct: chance, profit,
     copy: `${aimed} ${kindName[0].toUpperCase()}${kindName.slice(1)} that fit ${sports.join(", ")}. The parlay is ${signed}, about ${chance}%. A $${betStake} bet would win $${profit.toFixed(2)}.`,
     note: `${count > 1 && one ? "These legs are in one game, so FanDuel's same-game button can charge a different number." : ""}${only ? " This is the only bet that fits, so it keeps showing up." : ""}`.trim(),
     players: combo.map((row) => who(row[0])), only, again: false, legs,
@@ -463,15 +463,15 @@ async function chooseBet(body, board) {
   const picked = (universe.length ? universe : SPORTS.slice()).filter((sport) => body.college !== false || (sport !== "NCAAF" && sport !== "NCAAB"));
   const ids = (Array.isArray(body.gameIds) ? body.gameIds : [body.gameId]).map((item) => String(item || "")).filter(Boolean);
   const any = body.legs === 0 || body.legs === "0";
-  const count = any ? 0 : Math.min(10, Math.max(1, Number(body.legs) || 3));
+  const count = any ? 0 : Math.min(10, Math.max(1, Number(body.legs) || 3, Array.isArray(body.hold) ? body.hold.length : 0));
   const kind = String(body.kind || "any").slice(0, 80) || "any";
   betStake = Math.min(100000, Math.max(0.5, Math.round((Number(body.stake) || 5) * 100) / 100)); payGoal = Number(body.profit) > 0 ? 1 + Number(body.profit) / betStake : 0; const aim = payGoal ? "pay" : (["top", "safe", "good", "payout"].includes(body.aim) ? body.aim : "top");
   const mix = ["any", "even", "safer", "long"].includes(body.mix) ? body.mix : "even";
   const span = body.when === "week" ? "week" : "today";
   const games = slate(Array.isArray(board.games) ? board.games : [], picked, ids, span);
-  if (body.list === "kinds") return listKinds(games);
+  if (body.list === "kinds") return listKinds(games); if (body.list === "ones") return onesList(Array.isArray(board.games) ? board.games : []); if (body.list === "lookup") return nameBook(Array.isArray(board.games) ? board.games : [], offerLegs); if (body.list === "club") return playerClub(body.name); if (body.list === "roster") return teamRoster(body.name, body.sport); if (body.list === "mark") return markPlayer(body.name, body.bets);
   const safeAim = aim;
-  if (!games.length) {
+  if (!games.length) { if (body.list === "players") return { players: [] };
     const rows = Array.isArray(board.games) ? board.games : [];
     const begun = rows.some((game) => { const kick = Date.parse(game.kickoff || ""); return picked.includes(String(game.sport || "")) && Number.isFinite(kick) && kick <= Date.now() && etKey(new Date(kick)) === etKey(new Date()); });
     const later = rows.some((game) => picked.includes(String(game.sport || "")) && Date.parse(game.kickoff || "") > Date.now());
@@ -480,12 +480,13 @@ async function chooseBet(body, board) {
       : (sports.length ? `No game in ${sports.join(", ")} is on today.` : "No game is on today.");
     return empty(span === "week" ? (sports.length ? `No game in ${sports.join(", ")} is left this week.` : "No game is left this week.") : todayNote, safeAim);
   }
-  const { pools, trouble } = await gather(games, kind);
+  const { pools, trouble } = await gather(games, kind); if (body.list === "players") return playerNames(pools);
   if (trouble && !pools.length) return empty(trouble, aim);
   const hold = Array.isArray(body.hold) ? body.hold : [];
   const drop = Array.isArray(body.drop) ? body.drop : [];
   const skip = new Set((Array.isArray(body.skip) ? body.skip : []).map(String).filter(Boolean));
-  const pickedCombo = any ? [2, 3, 4, 5, 6].map((n) => pick(pools, n, aim, skip, hold, drop, mix)).filter((row) => row.combo.length).sort((a, b) => scoreOf(decimalOf(a.combo), aim, a.combo, mix) - scoreOf(decimalOf(b.combo), aim, b.combo, mix))[0] || { combo: [] } : pick(pools, count, aim, skip, hold, drop, mix);
+  if (body.shape === "single" && !hold.length) return singleFind(pools, games, { skip, stake: betStake, profit: Number(body.profit) || 0 });
+  const pickedCombo = any ? [2, 3, 4, 5, 6].filter((n) => n >= hold.length).map((n) => pick(pools, n, aim, skip, hold, drop, mix)).filter((row) => row.combo.length).sort((a, b) => scoreOf(decimalOf(a.combo), aim, a.combo, mix) - scoreOf(decimalOf(b.combo), aim, b.combo, mix))[0] || { combo: [] } : pick(pools, count, aim, skip, hold, drop, mix);
   const used = pickedCombo.combo.length;
   if (!used || (!any && used < count)) return empty(miss(pools, picked, any ? 2 : count, span), aim);
   const built = card(pickedCombo.combo, picked, kind, used, aim, pickedCombo.only);
@@ -496,5 +497,4 @@ async function chooseBet(body, board) {
   await addSway(built.legs, games);
   return built;
 }
-
 module.exports = { chooseBet };

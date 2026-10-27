@@ -178,7 +178,7 @@ function birdGreet() {
   if (!called) return birdAskName();
   if (!window.memberBorn) return birdAskBorn(); if (!window.memberState) return birdAskState(); if (birdAskBook() || birdLaw()) return;
   window.asking = false;
-  birdSay(`Hey, ${called}. What are you trying to do today?`, [["menu", "Parlay's Picks", "bets"], ["quiz", "Build Your Own Bet"]]);
+  birdSay(`Hey, ${called}. What are you trying to do today?`, [["menu", "Parlay's Picks", "pick"], ["menu", "Player or team", "find"], ["quiz", "Build Your Own Bet"]]);
 }
 
 function birdLaw() {
@@ -366,7 +366,7 @@ function recLine(leg) {
 }
 
 function birdMenu(kind) {
-  if (kind !== "bets") return;
+  if (kind === "pick") { if (window.birdSay) birdSay("One pick bets, or parlays?", [["menu", "One pick bets", "ones"], ["menu", "Parlays", "bets"]]); return; } if (kind === "find" && window.paintFind) { paintFind(); return; } if (kind === "ones" && window.paintOnes) { paintOnes(); return; } if (kind !== "bets") return;
   window.asking = true; if (window.goFull) goFull(); if (window.birdQuiet) birdQuiet();
   const desk = document.getElementById("desk"); if (!desk || !desk.classList.contains("tv-full")) { window.asking = false; if (window.birdGreet) birdGreet(); return; }
   desk.classList.remove("bird-on", "solo", "dug"); window.recOpen = false; const guide = document.getElementById("bird-guide"); if (guide) guide.hidden = true;

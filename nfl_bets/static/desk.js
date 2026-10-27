@@ -318,7 +318,7 @@ function bootDesk() {
     if (window.goFull) goFull();
     if (menu.classList.contains("bird-has") && event.clientX < menu.getBoundingClientRect().left) { if (window.matchMedia("(hover: none), (pointer: coarse)").matches) menu.classList.toggle("say-open"); return; }
     if (document.querySelector("#desk-glass-in .rec-board") && !document.getElementById("desk").classList.contains("bird-on") && !document.getElementById("desk").classList.contains("solo") && window.askStart) { birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); askStart(""); return; }
-    if (birdPending) { const pending = birdPending; birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Recommended bets"); if (!(window.birdBragGo && birdBragGo(pending[0]))) birdSay(pending[0], pending[1]); return; } if (window.birdMenu) birdMenu("bets");
+    if (birdPending) { const pending = birdPending; birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Recommended bets"); if (!(window.birdBragGo && birdBragGo(pending[0]))) birdSay(pending[0], pending[1]); return; } if (window.birdMenu) birdMenu("pick");
   });
   document.addEventListener("click", (event) => {
     if (menu && !event.target.closest("#desk-menu")) menu.classList.remove("say-open");
@@ -337,16 +337,16 @@ function bootDesk() {
   const go = document.getElementById("choice-go");
   if (go) go.addEventListener("click", tvPush);
   const home = document.getElementById("desk-home");
-  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "bets"], ["quiz", "Build Your Own Bet"]]); tvSkip = false; birdBump(); });
+  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "pick"], ["menu", "Player or team", "find"], ["quiz", "Build Your Own Bet"]]); tvSkip = false; birdBump(); }); const mug = document.getElementById("desk-mug"); if (mug) mug.addEventListener("click", () => { if (window.goFull) goFull(); if (window.paintTerms) paintTerms(); });
 }
 const BIRD_WAIT = 18000;
 const BIRD_NUDGES = [
-  ["Hey, want to find a bet you want to make?", [["menu", "Parlay's Picks", "bets"], ["quiz", "Build Your Own Bet"]]],
+  ["Hey, want to find a bet you want to make?", [["menu", "Parlay's Picks", "pick"], ["menu", "Player or team", "find"], ["quiz", "Build Your Own Bet"]]],
   ["Hey, try a safer bet. Five dollars wins about $2.50. It still loses sometimes. It just loses less often than the ones that pay a lot.", [["quiz", "Try Safe Bet", "safe"]]],
   ["Hey, a safer bet is a smaller win. A bigger payout is more fun to talk about with friends, and it loses more often.", [["quiz", "Build a higher payout", "payout"]]],
   ["Best Bets of the Week puts each pick on a different day. Want a look?", [["week", "Best Bets of the Week"]]],
   ["Tonight's bet is ready. Want a look?", [["today", "Show tonight's bet"]]],
-  ["", [["menu", "Parlay's Picks", "bets"]], "brag"],
+  ["", [["menu", "Parlay's Picks", "pick"]], "brag"],
   ["Gambling can really ruin people's lives. Only bet money you can afford to lose. If you need help, call 1‑800‑GAMBLER.", []],
 ];
 let birdTimer = 0; let birdNudge = 0; let birdPending = null;
@@ -417,7 +417,7 @@ function startGuide() {
     window.squawkUntil = Date.now() + 900; birdSay("Aight, bet!", []);
     setTimeout(() => {
       if (!birdOn || birdHeld || window.asking || document.body.classList.contains("needs-member")) return;
-      if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "bets"], ["quiz", "Build Your Own Bet"]]);
+      if (window.birdGreet) birdGreet(); else birdSay("Hey. What are you trying to do today?", [["menu", "Parlay's Picks", "pick"], ["menu", "Player or team", "find"], ["quiz", "Build Your Own Bet"]]);
     }, 900);
     birdBump();
   };

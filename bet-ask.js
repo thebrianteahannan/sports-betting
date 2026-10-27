@@ -168,4 +168,73 @@ async function askBet(question, card) {
   }
 }
 
-module.exports = { askBet };
+const TERMS = "You are the parrot on a sports desk. Someone heard a betting word or a price and wants it in plain language. Use the facts when they are there, and keep every dollar amount and every percent. Two or three sentences. Do not say the bet will win. Do not invent a dollar amount or a price. Do not add a gambling warning.";
+
+function termFacts(question) {
+  const text = String(question).replace(/[−–]/g, "-");
+  const seen = [];
+  const prices = [...text.matchAll(/(^|[^\d])([+-]\d{3,4})(?!\d)/g)].map((match) => Number(match[2])).filter((n) => Math.abs(n) >= 100 && Math.abs(n) < 10000 && (seen.includes(n) ? false : seen.push(n)));
+  return prices.map((n) => {
+    const chance = (n < 0 ? Math.abs(n) / (Math.abs(n) + 100) : 100 / (n + 100)) * 100;
+    const five = Math.round((n < 0 ? 500 / Math.abs(n) : n / 20) * 100) / 100;
+    const shown = Math.abs(five - Math.round(five)) < 0.005 ? String(Math.round(five)) : five.toFixed(2);
+    const lay = n < 0 ? `You risk $${Math.abs(n)} to win $100.` : `You risk $100 to win $${n}.`;
+    return `${n > 0 ? "+" : ""}${n} is an American price. ${lay} A $5 bet wins $${shown}. The price says about ${chance.toFixed(1)}%.`;
+  }).join(" ");
+}
+
+async function askTermModel(question, facts) {
+  const prompt = `Facts:\n${facts}\n\nQuestion: ${question}`;
+  if (onMac()) {
+    const response = await fetch(`${OLLAMA}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(45000),
+      body: JSON.stringify({ model: LOCAL_MODEL, stream: false, think: false, messages: [{ role: "system", content: TERMS }, { role: "user", content: prompt }], options: { temperature: 0.2, num_predict: 220 } }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    const text = clean(payload.message && payload.message.content);
+    if (!response.ok || !text) throw new Error("Ollama did not answer. Start it on this Mac and ask again.");
+    return text;
+  }
+  if (!geminiKey()) throw new Error("This server has no GEMINI_API_KEY. Add that name in Hostinger and restart the Node app.");
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel()}:generateContent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": geminiKey() },
+    signal: AbortSignal.timeout(45000),
+    body: JSON.stringify({ systemInstruction: { parts: [{ text: TERMS }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 320 } }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  const text = said(payload);
+  if (!response.ok || !text) throw new Error(geminiFail(response.status, payload));
+  return text;
+}
+
+function grounded(spoken, question, facts) {
+  const allowed = `${question} ${facts}`.replace(/[−–]/g, "-");
+  return String(spoken).split(/(?<=[.!?])\s+/).filter((line) => {
+    const money = [...line.matchAll(/\$(\d+(?:\.\d+)?)/g)].map((match) => match[1]);
+    const prices = [...line.replace(/[−–]/g, "-").matchAll(/[+-]\d{3,4}/g)].map((match) => match[0]);
+    return money.every((bit) => allowed.includes(bit)) && prices.every((bit) => allowed.includes(bit));
+  }).join(" ").trim();
+}
+
+async function askTerm(question) {
+  const q = clip(question, 240);
+  if (q.length < 2) throw new Error("Type the term.");
+  const facts = termFacts(q);
+  try {
+    const spoken = grounded(await askTermModel(q, facts || "No price was in the question. Explain the betting words. Do not invent a price."), q, facts);
+    if (!spoken) return { answer: facts || "The bird could not think of that." };
+    const cash = [...facts.matchAll(/wins \$([\d.]+)/g)].map((match) => match[1]);
+    const pcts = [...facts.matchAll(/about ([\d.]+)%/g)].map((match) => String(Math.round(Number(match[1]))));
+    if (cash.some((amount) => !spoken.includes(amount)) || pcts.some((n) => !spoken.includes(n))) return { answer: facts };
+    return { answer: spoken };
+  } catch (error) {
+    if (facts) return { answer: facts };
+    if (error.name === "TimeoutError" || error.name === "AbortError") throw new Error("That took too long. Ask again.");
+    throw error;
+  }
+}
+
+module.exports = { askBet, askTerm };
