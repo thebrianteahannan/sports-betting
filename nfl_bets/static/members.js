@@ -178,7 +178,7 @@ function birdGreet() {
   if (!called) return birdAskName();
   if (!window.memberBorn) return birdAskBorn(); if (!window.memberState) return birdAskState(); if (birdAskBook() || birdLaw()) return;
   window.asking = false;
-  birdSay(`Hey, ${called}. How are we going to find our favorite bet for today?`, [["menu", "Parlay's Picks", "pick"], ["menu", "Player or team", "find"], ["quiz", "Build Your Own Bet"]]);
+  birdSay(`Hey, ${called}. How are we going to find our favorite bet for today?`, [["menu", "Parlay's Picks", "pick"], ["menu", "Search Player or Team", "find"], ["quiz", "Build Your Own Bet"]]);
 }
 
 function birdLaw() {

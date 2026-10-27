@@ -98,10 +98,12 @@ function fillFind(board, data) {
   head.textContent = `Games, ${total}`;
   games.hidden = total === 0;
   games.append(head);
-  [...bySport.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([sport, rows]) => {
+  const usa = ["NFL", "NBA", "MLB", "NHL", "WNBA"];
+  [...bySport.entries()].sort((a, b) => ((usa.indexOf(a[0]) + 1) || 99) - ((usa.indexOf(b[0]) + 1) || 99) || a[0].localeCompare(b[0])).forEach(([sport, rows]) => {
     const group = document.createElement("details");
     const summary = document.createElement("summary");
-    summary.textContent = `${sport}, ${rows.length} ${rows.length === 1 ? "game" : "games"}`;
+    const name = sport === "Basketball" ? "Basketball (Other)" : sport;
+    summary.textContent = `${name}, ${rows.length} ${rows.length === 1 ? "game" : "games"}`;
     group.append(summary);
     rows.forEach((game) => {
       const button = document.createElement("button");

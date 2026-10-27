@@ -30,9 +30,19 @@ function shareSigned(value) {
 
 function splitLeg(label) {
   const clean = String(label || "").split(" — ")[0].trim();
+  const told = clean.match(/^(.*?)\s+((?:to|race to)\s+.+)$/i);
+  if (told && told[1] && /\d/.test(told[2])) return { name: told[1].trim(), prop: told[2].trim() };
   const at = clean.search(/\d/);
   if (at > 1) return { name: clean.slice(0, at).trim(), prop: clean.slice(at).trim() };
   return { name: clean, prop: "" };
+}
+
+function shareLabel(leg) {
+  const raw = String(leg.label || "");
+  const head = raw.split(/\s+—\s+/)[0];
+  if (/\d/.test(head) || typeof recThing !== "function" || !leg.market) return raw;
+  const said = recThing(head, leg.market);
+  return said === head ? raw : `${said}${raw.slice(head.length)}`;
 }
 
 function gameLine(card) {
@@ -73,7 +83,7 @@ function foundLine(card) {
 }
 function shareFrom(card, kicker, label) {
   const legs = (card.legs || []).filter((leg) => leg && leg.label).map((leg) => ({
-    label: String(leg.label),
+    label: shareLabel(leg),
     pct: sharePct(leg.pct),
     form: String(leg.form || "").replace(/^In form:\s*/i, ""),
   }));
