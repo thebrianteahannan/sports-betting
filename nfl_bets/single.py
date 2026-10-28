@@ -12,8 +12,8 @@ from typing import Any
 
 from nfl_bets.edge import _bar, _foe, _hits, _place, _player_out, _report, _rows, _situation
 from nfl_bets.hedge import american_decimal, implied_prob
-from nfl_bets.sway import _PATH, _nick, _player, _player_log, _same, _spec
-from nfl_bets.tiebreak import _ET, _building, _parse, _person, _schedule
+from nfl_bets.sway import _PATH, _nick, _player, _player_log, _same, _spec, _value
+from nfl_bets.tiebreak import _ET, _building, _parse, _person, _schedule, _sites
 
 _PART = re.compile(r"\b(quarter|half|period|inning)\b", re.I)
 _OTHER = re.compile(r"\b(first|last|1st|2nd|3rd)\b", re.I)
@@ -158,13 +158,13 @@ def _counts(leg: dict[str, Any], game: dict[str, Any], pack: dict[str, Any], tea
         if gap is not None and other:
             found.append((gap, len(foe), f"Against the {other}, {nick} {_verb(spec, bar, under)} in {hits} of {len(foe)}. FanDuel has this at {round(price * 100)}%."))
     kick = _parse(str(game.get("kickoff") or ""))
-    if kick is not None:
-        day = [row for row in rows if (stamp := _parse(row["date"])) and stamp.astimezone(_ET).weekday() == kick.astimezone(_ET).weekday()]
-        if len(day) >= 3:
-            hits = _hits(day, bar, under)
-            gap = _gap(hits, len(day), price)
+    if kick is not None and kick.astimezone(_ET).hour >= 19:
+        prime = [row for row in rows if (stamp := _parse(row["date"])) and stamp.astimezone(_ET).hour >= 19]
+        if len(prime) >= 3:
+            hits = _hits(prime, bar, under)
+            gap = _gap(hits, len(prime), price)
             if gap is not None:
-                found.append((gap, len(day), f"On {kick.astimezone(_ET).strftime('%A')}s, {nick} {_verb(spec, bar, under)} in {hits} of {len(day)}. FanDuel has this at {round(price * 100)}%."))
+                found.append((gap, len(prime), f"In prime time, {nick} {_verb(spec, bar, under)} in {hits} of {len(prime)}. FanDuel has this at {round(price * 100)}%."))
     return found
 
 
@@ -275,7 +275,7 @@ def _card(leg: dict[str, Any], game: dict[str, Any], why: str, stake: float) -> 
     }
 
 
-def mark_player(name: str, legs: list[dict[str, Any]]) -> dict[str, Any]:
+def mark_player(name: str, legs: list[dict[str, Any]], games: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     rows = [leg for leg in legs if isinstance(leg, dict)]
     sport = next((str(leg.get("sport") or "") for leg in rows if leg.get("sport")), "")
     path = _PATH.get(sport)
@@ -283,6 +283,7 @@ def mark_player(name: str, legs: list[dict[str, Any]]) -> dict[str, Any]:
     if not pack or not pack.get("rows"):
         return {"known": False, "marks": []}
     team = str(pack.get("team") or "")
+    board = [game for game in (games or []) if isinstance(game, dict)]
     marks = []
     for index, leg in enumerate(rows):
         text = _text(leg)
@@ -292,13 +293,136 @@ def mark_player(name: str, legs: list[dict[str, Any]]) -> dict[str, Any]:
             price = implied_prob(float(leg.get("odds")))
         except (TypeError, ValueError):
             continue
-        found = _counts(leg, _game_of(leg), pack, team, name, price)
+        game = _board_game(leg, board)
+        found = _counts(leg, game, pack, team, name, price)
         if not found:
             continue
         gap, _sample, why = max(found, key=lambda row: (row[0], row[1]))
-        marks.append({"index": index, "gap": gap, "why": why})
+        marks.append({"index": index, "gap": gap, "why": why, "notes": _extra(name, pack, team, game, leg, why)})
     marks.sort(key=lambda row: row["gap"], reverse=True)
     return {"known": True, "marks": marks}
+
+
+def _board_game(leg: dict[str, Any], games: list[dict[str, Any]]) -> dict[str, Any]:
+    sport, kick, match = str(leg.get("sport") or ""), str(leg.get("kickoff") or ""), str(leg.get("match") or "").lower()
+    picked = next((game for game in games if (not sport or game.get("sport") == sport) and (not kick or game.get("kickoff") == kick) and (title := str(game.get("match") or "").lower()) and match and (match in title or title in match)), {})
+    names = _game_of(leg)
+    merged = dict(picked or names)
+    for key in ("awayName", "homeName", "match", "sport", "kickoff"):
+        if not merged.get(key):
+            merged[key] = names.get(key) or ""
+    return merged
+def _extra(name: str, pack: dict[str, Any], team: str, game: dict[str, Any], leg: dict[str, Any], why: str) -> list[str]:
+    reads = _reads(leg, game, name, team)
+    site = next((line for _score, line in reads if line.startswith(("At home", "On the road"))), "")
+    found = [line for line in (site or _where(name, pack, team, game, leg), _usage(pack), _prime_minutes(pack, game), _book(game, team)) if line]
+    said = f"{why} {' '.join(found)}"
+    for _score, line in reads:
+        if not line or line == site or "minutes are" in line or line in said:
+            continue
+        found.append(line)
+        said = f"{said} {line}"
+        if len(found) >= 6:
+            break
+    rest = _since(pack, game, name)
+    if rest and rest not in said and len(found) < 6 and not any(word in said for word in ("back-to-back", "days", "bye", "short week", "first game")):
+        found.append(rest)
+    return found[:6]
+def _reads(leg: dict[str, Any], game: dict[str, Any], name: str, team: str) -> list[tuple[int, str]]:
+    notes: list[tuple[int, str]] = []
+    try:
+        notes.extend(_flat(_person(leg, game, name)))
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        sit = _situation(game) if game else {}
+    except Exception:  # noqa: BLE001
+        sit = {}
+    notes.extend(_flat(_report(_text(leg), name, team, game, sit)))
+    if game:
+        notes.extend(_flat(_place(game, leg)))
+        try:
+            notes.extend(_flat(_building(game, leg)))
+        except Exception:  # noqa: BLE001
+            pass
+    notes.sort(key=lambda row: abs(row[0]), reverse=True)
+    return notes
+def _where(name: str, pack: dict[str, Any], team: str, game: dict[str, Any], leg: dict[str, Any]) -> str:
+    home, away = str(game.get("homeName") or ""), str(game.get("awayName") or "")
+    if not team or not (_same(team, home) or _same(team, away)):
+        return ""
+    at_home = _same(team, home)
+    place = "At home" if at_home else "On the road"
+    spec = _spec(_text(leg))
+    rows = _rows(pack, spec[0]) if spec else []
+    bar = _bar(_text(leg), spec[2]) if spec else None
+    if bar is None or len(rows) < 3:
+        return f"{place}."
+    try:
+        events = _schedule(str(game.get("sport") or leg.get("sport") or ""), team)
+        home_rows, road_rows = _sites(rows, events) if events else ([], [])
+    except Exception:  # noqa: BLE001
+        home_rows, road_rows = [], []
+    piece = home_rows if at_home else road_rows
+    if len(piece) < 3:
+        return f"{place}."
+    under = bool(re.search(r"\bunder\b", _text(leg), re.I))
+    return f"{place}, {_nick(name)} {_verb(spec, bar, under)} in {_hits(piece, bar, under)} of {len(piece)}."
+def _usage(pack: dict[str, Any]) -> str:
+    names = list(pack.get("names") or [])
+    for key, word in (("minutes", "minutes"), ("receivingTargets", "targets")):
+        if key in names:
+            return _span(pack, names.index(key), word)
+    return ""
+def _span(pack: dict[str, Any], index: int, word: str) -> str:
+    values = [value for row in pack.get("rows") or [] if index < len(stats := row.get("stats") or []) and (value := _value(stats[index], "minutes")) is not None]
+    if len(values) < 3:
+        return ""
+    recent = round(sum(values[:3]) / 3)
+    if len(values) < 6:
+        return f"{recent} {word} in the last 3."
+    return f"{recent} {word} in the last 3. {round(sum(values[3:6]) / 3)} in the three before."
+def _prime_minutes(pack: dict[str, Any], game: dict[str, Any]) -> str:
+    kick, names = _parse(str((game or {}).get("kickoff") or "")), list(pack.get("names") or [])
+    if kick is None or kick.astimezone(_ET).hour < 19 or "minutes" not in names:
+        return ""
+    index, prime, early = names.index("minutes"), [], []
+    for row in pack.get("rows") or []:
+        stamp, stats = _parse(str(row.get("date") or "")), row.get("stats") or []
+        value = _value(stats[index], "minutes") if stamp is not None and index < len(stats) else None
+        if value is not None:
+            (prime if stamp.astimezone(_ET).hour >= 19 else early).append(value)
+    if len(prime) < 3 or len(early) < 3:
+        return ""
+    now, then = round(sum(prime) / len(prime)), round(sum(early) / len(early))
+    return "" if abs(now - then) < 3 else f"In prime time, {now} minutes. Earlier tips, {then}."
+def _book(game: dict[str, Any], team: str) -> str:
+    spread = game.get("spread") if isinstance(game.get("spread"), dict) else {}
+    away, home = str(game.get("awayName") or ""), str(game.get("homeName") or "")
+    raw = spread.get("awayLine") if _same(team, away) else spread.get("homeLine") if _same(team, home) else None
+    bits = []
+    if isinstance(raw, (int, float)) and raw != 0:
+        number = abs(raw)
+        shown = int(number) if float(number).is_integer() else number
+        wide = " That's a wide number." if abs(raw) >= 9.5 else " This one is close." if abs(raw) <= 3 else ""
+        bits.append(f"The {_nick(team)} are {'favored by' if raw < 0 else 'getting'} {shown}.{wide}")
+    total = game.get("total") if isinstance(game.get("total"), dict) else {}
+    if isinstance(total.get("line"), (int, float)):
+        line = total["line"]
+        bits.append(f"The total is {int(line) if float(line).is_integer() else line}.")
+    return " ".join(bits)
+def _since(pack: dict[str, Any], game: dict[str, Any], name: str) -> str:
+    rows = pack.get("rows") or []
+    last = _parse(str((rows[0] if rows else {}).get("date") or ""))
+    kick = _parse(str(game.get("kickoff") or ""))
+    if last is None or kick is None:
+        return ""
+    days = (kick.astimezone(_ET).date() - last.astimezone(_ET).date()).days
+    if days == 1:
+        return f"{_nick(name)} is on a back-to-back."
+    if days > 1:
+        return f"Last game was {days} days ago."
+    return ""
 
 
 def _combo(text: str) -> bool:
@@ -362,7 +486,7 @@ def _main() -> None:
     body = json.load(sys.stdin)
     legs = [row for row in (body.get("legs") or []) if isinstance(row, dict)]
     if body.get("mark"):
-        json.dump(mark_player(str(body.get("name") or ""), legs), sys.stdout)
+        json.dump(mark_player(str(body.get("name") or ""), legs, [row for row in (body.get("games") or []) if isinstance(row, dict)]), sys.stdout)
         return
     games = [row for row in (body.get("games") or []) if isinstance(row, dict)]
     skip = [str(item) for item in (body.get("skip") or [])]

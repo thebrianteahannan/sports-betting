@@ -75,13 +75,28 @@ function bookOf(pools) {
   };
 }
 
-let bookCache = null;
+const bookCache = new Map();
 
-async function nameBook(games, offerLegs) {
+function etDay(ms) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(ms);
+}
+
+function inSpan(game, span) {
+  const kick = Date.parse(game.kickoff || "");
+  if (!Number.isFinite(kick) || kick <= Date.now()) return false;
+  if (span !== "today" && span !== "week") return true;
+  const day = etDay(kick);
+  const today = etDay(Date.now());
+  if (span === "today") return day === today;
+  return day > today && day <= etDay(Date.now() + 14 * 24 * 60 * 60 * 1000);
+}
+
+async function nameBook(games, offerLegs, span) {
   const now = Date.now();
-  const open = (games || []).filter((game) => Date.parse(game.kickoff || "") > now);
-  const key = open.map((game) => String(game.id || "")).sort().join(",");
-  if (bookCache && bookCache.key === key && now - bookCache.at < 30 * 60 * 1000) return bookCache.book;
+  const open = (games || []).filter((game) => inSpan(game, span));
+  const key = `${span || "all"}:${open.map((game) => String(game.id || "")).sort().join(",")}`;
+  const saved = bookCache.get(key);
+  if (saved && now - saved.at < 30 * 60 * 1000) return saved.book;
   const pools = [];
   for (let i = 0; i < open.length; i += 8) {
     const chunk = await Promise.all(open.slice(i, i + 8).map(async (game) => {
@@ -91,7 +106,7 @@ async function nameBook(games, offerLegs) {
   }
   const book = bookOf(pools);
   book.checked = open.length;
-  bookCache = { key, at: now, book };
+  bookCache.set(key, { at: now, book });
   return book;
 }
 

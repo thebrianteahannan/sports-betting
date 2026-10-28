@@ -30,7 +30,6 @@ _STRATS = (
     ("foe", "Against this team", "He has cleared this number against this team."),
     ("home", "At home", "He clears this number at home, and the road games are different."),
     ("road", "On the road", "He clears this number on the road, and the home games are different."),
-    ("day", "This weekday", "On this day of the week he clears this number more often."),
     ("bye", "Off a bye", "He is coming off a bye."),
     ("short", "Short week", "This is a short week, and his short weeks play out differently."),
     ("rest", "More rest", "He has had more rest than the other team."),
@@ -65,7 +64,7 @@ def build_ones(games: list[dict[str, Any]]) -> dict[str, Any]:
     slate = [game for game in games if _soon(game)]
     key = ",".join(sorted(str(game.get("id") or "") for game in slate))
     cached = read_json(out_dir() / "ones.json", {})
-    if isinstance(cached, dict) and cached.get("key") == key and time.time() - float(cached.get("at") or 0) < _TTL and cached.get("v") == 4:
+    if isinstance(cached, dict) and cached.get("key") == key and time.time() - float(cached.get("at") or 0) < _TTL and cached.get("v") == 5:
         return {"strategies": cached.get("strategies") or _shells()}
     buckets: dict[str, list[dict[str, Any]]] = {row[0]: [] for row in _STRATS}
     for game in slate[:6]:
@@ -87,7 +86,7 @@ def build_ones(games: list[dict[str, Any]]) -> dict[str, Any]:
             bet.pop("hot", None)
             bet.pop("who", None)
         strategies.append({"id": code, "name": name, "gist": gist, "bets": bets})
-    write_json(out_dir() / "ones.json", {"v": 4, "at": time.time(), "key": key, "strategies": strategies})
+    write_json(out_dir() / "ones.json", {"v": 5, "at": time.time(), "key": key, "strategies": strategies})
     return {"strategies": strategies}
 
 
@@ -154,8 +153,6 @@ def _tags(leg: dict[str, Any], game: dict[str, Any], sit: dict[str, Any]) -> lis
         for _gap, _count, line in _counts(leg, game, pack, team, name, price):
             if line.startswith("Against"):
                 found["foe"] = line
-            elif line.startswith("On "):
-                found["day"] = line
             else:
                 found.setdefault("hot", line)
         try:

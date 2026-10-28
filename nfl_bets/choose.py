@@ -11,7 +11,7 @@ from nfl_bets.chalk import _catches_to_yards, _from_decimal, _legs, _who
 from nfl_bets.hedge import american_decimal, implied_prob
 
 _ET = ZoneInfo("America/New_York")
-_SPORTS = ("NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA")
+_SPORTS = ("NFL", "MLB", "NBA", "NHL", "WNBA", "PGA")
 def _family(leg: dict[str, Any]) -> str:
     market = str(leg.get("market") or "")
     source = market.split(" - ")[-1]

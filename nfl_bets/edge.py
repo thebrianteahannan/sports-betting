@@ -143,11 +143,12 @@ def _counted(rows: list[dict], bar: float, under: bool, price: float, nick: str,
     if stamp is None:
         return notes
     when = stamp.astimezone(_ET)
-    day_rows = [row for row in rows if _stamp(row["date"]) and _stamp(row["date"]).astimezone(_ET).weekday() == when.weekday()]
-    other_days = [row for row in rows if row not in day_rows]
-    day_gap = _slice(day_rows, other_days, bar, under)
-    if day_gap is not None:
-        notes.append((day_gap[0], f"On {when.strftime('%A')}s, {nick} {did} it in {'only ' if day_gap[0] < 0 else ''}{_hits(day_rows, bar, under)} of {len(day_rows)}. Other days are different."))
+    prime = [row for row in rows if (spot := _stamp(row["date"])) and spot.astimezone(_ET).hour >= 19]
+    other = [row for row in rows if row not in prime]
+    if when.hour >= 19:
+        spot_gap = _slice(prime, other, bar, under)
+        if spot_gap is not None:
+            notes.append((spot_gap[0], f"In prime time, {nick} {did} it in {'only ' if spot_gap[0] < 0 else ''}{_hits(prime, bar, under)} of {len(prime)}. Earlier tips are different."))
     if rows and _stamp(rows[0]["date"]):
         rest = (when.date() - _stamp(rows[0]["date"]).astimezone(_ET).date()).days
         sport = str((game or {}).get("sport") or "")

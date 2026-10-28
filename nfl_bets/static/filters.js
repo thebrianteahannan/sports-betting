@@ -1,4 +1,4 @@
-const OPEN_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "NCAAB", "PGA", "Golf", "Soccer", "Tennis", "UFC", "MMA", "CFL", "Football", "Basketball", "Baseball", "Hockey", "Boxing", "Cricket", "Rugby", "Darts", "Table tennis", "Handball", "eSports"];
+const OPEN_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "PGA", "Golf", "Soccer", "Tennis", "UFC", "MMA", "Football", "Baseball", "Boxing"];
 const OPEN_CARDS = [
   ["band", "−150 to +100 window"],
   ["todayBet", "Highest chance parlay today"],

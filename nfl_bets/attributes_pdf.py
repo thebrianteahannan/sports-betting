@@ -140,7 +140,6 @@ def _sections() -> list[tuple[str, list[str]]]:
             "Football: turf, wind, the shadow corner, coming off a bye.",
             "Soccer: days since the midweek game, travel from Europe.",
             "Tennis: surface, yesterday's match length, head-to-head.",
-            "Esports and table tennis: a roster change or a patch. There is no clean public log for those yet.",
         ]),
     ]
 

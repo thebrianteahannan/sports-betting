@@ -1,4 +1,4 @@
-const CHOICE_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "NCAAF", "PGA"];
+const CHOICE_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "PGA"];
 function kindLabel(name) { return name ? name.replace(/\b[a-z]/g, (letter) => letter.toUpperCase()) : "Any player prop"; }
 function kindBucket(name) { const text = String(name || ""); if (/touchdown|2pt conversion/.test(text)) return "Touchdowns"; if (/reception/.test(text)) return "Receptions"; if (/yard/.test(text)) return "Yards"; if (/three/.test(text)) return "Threes"; if (/rebound|assist/.test(text)) return "Rebounds and assists"; if (/shot/.test(text)) return "Shots"; if (/save/.test(text)) return "Saves"; if (/goal/.test(text)) return "Goals"; if (/point/.test(text)) return "Points"; return "Other"; }
 function riskWord(stake, profit) { const ratio = profit / stake; return !(profit > 0) ? "" : ratio <= 0.3 ? "Safest" : ratio <= 0.8 ? "Safe" : ratio <= 1.6 ? "Moderate" : ratio <= 3.2 ? "Risky" : "Riskiest"; }

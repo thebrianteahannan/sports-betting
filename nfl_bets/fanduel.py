@@ -17,8 +17,7 @@ _HOSTS = (
 )
 # Event-type ids FanDuel's sport pages use.
 _PAGES = (
-    6423, 7522, 7511, 7524, 1, 2, 6, 26420387, 3503, 4, 5, 1477, 3,
-    468328, 2593174, 27454571,
+    6423, 7522, 7511, 7524, 1, 2, 6, 26420387, 3,
 )
 _SPREADS = ("Spread", "Run Line", "Puck Line", "Spread Betting", "Spread (60 Min)")
 _MONEYS = (
@@ -51,14 +50,7 @@ _FAMILY = {
     1: "Soccer",
     2: "Tennis",
     3: "Golf",
-    4: "Cricket",
-    5: "Rugby",
     6: "Boxing",
-    1477: "Rugby",
-    3503: "Darts",
-    2593174: "Table tennis",
-    468328: "Handball",
-    27454571: "eSports",
 }
 
 
@@ -147,6 +139,8 @@ def _event_game(
         return None
     league = _league(event, comps)
     sport = _sport(event_type, league)
+    if sport in ("eSports", "Table tennis", "Basketball", "Cricket", "Handball", "NCAAF", "Hockey", "Rugby", "Darts", "CFL", "NCAAB"):
+        return None
     return _row(
         str(event.get("eventId") or ""),
         sport,
@@ -348,6 +342,8 @@ def _sport(event_type: int, league: str) -> str:
     name = league.lower()
     if any(token in name for token in ("efootball", "ebasketball", "esoccer", "esport")):
         return "eSports"
+    if "table tennis" in name or "tabletennis" in name:
+        return "Table tennis"
     if event_type == 6423:
         if name == "nfl" or name.startswith("nfl "):
             return "NFL"
