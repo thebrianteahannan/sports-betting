@@ -312,6 +312,7 @@ def _game(leg: dict, by_id: dict[str, dict], games: list[dict]) -> dict | None:
 
 def _rows(pack: dict[str, Any], keys: tuple[str, ...]) -> list[dict[str, Any]]:
     names = list(pack.get("names") or [])
+    minute = names.index("minutes") if "minutes" in names else None
     indexes = []
     for key in keys:
         found = next((names.index(option) for option in _ALIAS.get(key, (key,)) if option in names), None)
@@ -325,14 +326,88 @@ def _rows(pack: dict[str, Any], keys: tuple[str, ...]) -> list[dict[str, Any]]:
         values = [_value(stats[index] if index < len(stats) else "", names[index]) for index in indexes]
         if any(value is None for value in values):
             continue
-        rows.append({"date": str(row.get("date") or ""), "opponent": str(row.get("opponent") or ""), "value": sum(value or 0 for value in values)})
+        built = {"date": str(row.get("date") or ""), "opponent": str(row.get("opponent") or ""), "value": sum(value or 0 for value in values)}
+        if row.get("season"):
+            built["season"] = row["season"]
+        if minute is not None and minute < len(stats) and (played := _value(stats[minute], "minutes")) is not None:
+            built["minutes"] = played
+        rows.append(built)
     return rows
+
+
+def _share(rows: list[dict], bar: float, under: bool) -> str:
+    hits = _hits(rows, bar, under)
+    return f"{hits} of {len(rows)} · {round(hits / len(rows) * 100)}%"
+
+
+def _windows(pack: dict[str, Any], text: str) -> str:
+    spec = _spec(text)
+    rows = _rows(pack, spec[0]) if spec else []
+    bar = _bar(text, spec[2]) if spec else None
+    if bar is None or len(rows) < 3:
+        return ""
+    under = bool(re.search(r"\bunder\b", text, re.I))
+    bits = [f"Last {n}, {_share(rows[:n], bar, under)}" for n in (3, 6, 10, 25, 50, 82) if len(rows) >= n]
+    years = [row.get("season") for row in rows if row.get("season")]
+    last = [row for row in rows if years and row.get("season") == max(years) - 1]
+    if len(last) >= 3:
+        bits.append(f"Last season, {_share(last, bar, under)}")
+    bits.append(f"Career, {_share(rows, bar, under)}")
+    return ". ".join(bits) + "."
+
+
+def _lean(pack: dict[str, Any], text: str, price: float) -> str:
+    spec = _spec(text)
+    rows = _rows(pack, spec[0]) if spec else []
+    bar = _bar(text, spec[2]) if spec else None
+    if bar is None or price <= 0 or len(rows) < 20:
+        return ""
+    under = bool(re.search(r"\bunder\b", text, re.I))
+    recent, career = _hits(rows[:10], bar, under) / 10, _hits(rows, bar, under) / len(rows)
+    asked, near, far = round(price * 100), round(recent * 100), round(career * 100)
+    if near == far:
+        return f"The last 10 and the full history are both {near}%."
+    recent_off, career_off = abs(asked - near), abs(asked - far)
+    if recent_off + 3 < career_off:
+        line = f"The {asked}% price is closer to the recent history (last 10, {near}%) than the full history ({far}%)."
+        extra = _dip(rows, bar, under, asked, far) if far >= asked + 8 else ""
+        return f"{line} {extra}".strip()
+    if career_off + 3 < recent_off:
+        return f"The {asked}% price is closer to the full history ({far}%) than the recent history (last 10, {near}%)."
+    return f"The {asked}% price sits between the recent history (last 10, {near}%) and the full history ({far}%)."
 
 
 def _hits(rows: list[dict], bar: float, under: bool) -> int:
     if under:
         return sum(1 for row in rows if row["value"] <= bar)
     return sum(1 for row in rows if row["value"] + 1e-9 >= bar)
+
+
+def _dip(rows: list[dict], bar: float, under: bool, asked: int, far: int) -> str:
+    years = [row.get("season") for row in rows if row.get("season")]
+    last = [row for row in rows if years and row.get("season") == max(years) - 1]
+    played = [row["minutes"] for row in rows if isinstance(row.get("minutes"), (int, float))]
+    recent_min = round(sum(played[:10]) / 10) if len(played) >= 10 else None
+    career_min = round(sum(played) / len(played)) if len(played) >= 20 else None
+    short = recent_min is not None and career_min is not None and career_min - recent_min >= 3
+    if len(last) >= 10:
+        season = round(_hits(last, bar, under) / len(last) * 100)
+        season_played = [row["minutes"] for row in last if isinstance(row.get("minutes"), (int, float))]
+        season_min = round(sum(season_played) / len(season_played)) if len(season_played) >= 10 else None
+        if far - season >= 8:
+            at = f", at {season_min} minutes" if season_min is not None else ""
+            career = f" Career minutes are {career_min}." if short else ""
+            line = f"Last season was {season}%{at}.{career} The {far}% career rate is the seasons before that."
+            return f"{line} Last season still hits more often than the {asked}% price." if season >= asked + 8 else line
+        if season >= asked + 8 and recent_min is not None and career_min is not None:
+            if short:
+                return f"Last 10, {recent_min} minutes. Career, {career_min}. Last season was still {season}%. At {far}%, this hits more often than the {asked}% price."
+            return f"The minutes are the same, {recent_min} in the last 10 and {career_min} for the career. Last season was {season}%. At {far}%, this hits more often than the {asked}% price."
+    if short:
+        return f"Last 10, {recent_min} minutes. Career, {career_min}."
+    if recent_min is not None and career_min is not None:
+        return f"The minutes are the same, {recent_min} in the last 10 and {career_min} for the career. At {far}%, this hits more often than the {asked}% price."
+    return ""
 
 
 def _gap(hits: int, count: int, price: float) -> int:

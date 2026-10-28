@@ -389,6 +389,36 @@ def _player_log(sport: str, path: tuple[str, str], name: str) -> dict[str, Any] 
         return None
 
 
+def _career(sport: str, path: tuple[str, str] | None, name: str) -> dict[str, Any] | None:
+    if not path or not name: return None
+    key = f"{sport}|{name.lower()}|career"
+    cached = _cache().get(key)
+    if isinstance(cached, dict) and cached.get("rows") and time.time() - float(cached.get("at") or 0) < _TTL: return cached
+    sport_name, league = path
+    try:
+        found = _search(name, sport_name, league)
+        if not found: return None
+        athlete_id, team = found
+        names, rows, year = _season(sport_name, league, athlete_id, None)
+        tagged = [dict(row, season=year) for row in rows]
+        seen, empty = {(row.get("date"), row.get("opponent")) for row in tagged}, 0
+        for probe in range(year - 1, max(year - 16, 1990), -1):
+            older_names, older, _got = _season(sport_name, league, athlete_id, probe)
+            empty = empty + 1 if not older else 0
+            if empty >= 2:
+                break
+            names = names or older_names
+            for row in older:
+                mark = (row.get("date"), row.get("opponent"))
+                if mark not in seen:
+                    seen.add(mark)
+                    tagged.append(dict(row, season=probe))
+        tagged.sort(key=lambda row: str(row.get("date") or ""), reverse=True)
+        saved = _remember(key, team, names, tagged); _flush(); return saved
+    except (RuntimeError, TypeError):
+        return None
+
+
 def _remember(key: str, team: str, names: list[str], rows: list[dict[str, Any]]) -> dict[str, Any]:
     global _DIRTY
     pack = {"at": time.time(), "team": team, "names": names, "rows": rows}

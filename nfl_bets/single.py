@@ -10,9 +10,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from nfl_bets.edge import _bar, _foe, _hits, _place, _player_out, _report, _rows, _situation
+from nfl_bets.edge import _bar, _foe, _hits, _lean, _place, _player_out, _report, _rows, _situation, _windows
 from nfl_bets.hedge import american_decimal, implied_prob
-from nfl_bets.sway import _PATH, _nick, _player, _player_log, _same, _spec, _value
+from nfl_bets.sway import _PATH, _career, _nick, _player, _player_log, _same, _spec, _value
 from nfl_bets.tiebreak import _ET, _building, _parse, _person, _schedule, _sites
 
 _PART = re.compile(r"\b(quarter|half|period|inning)\b", re.I)
@@ -282,7 +282,7 @@ def mark_player(name: str, legs: list[dict[str, Any]], games: list[dict[str, Any
     pack = _player_log(sport, path, name) if path and name else None
     if not pack or not pack.get("rows"):
         return {"known": False, "marks": []}
-    team = str(pack.get("team") or "")
+    team, long = str(pack.get("team") or ""), _career(sport, path, name) or pack
     board = [game for game in (games or []) if isinstance(game, dict)]
     marks = []
     for index, leg in enumerate(rows):
@@ -298,7 +298,7 @@ def mark_player(name: str, legs: list[dict[str, Any]], games: list[dict[str, Any
         if not found:
             continue
         gap, _sample, why = max(found, key=lambda row: (row[0], row[1]))
-        marks.append({"index": index, "gap": gap, "why": why, "notes": _extra(name, pack, team, game, leg, why)})
+        marks.append({"index": index, "gap": gap, "why": why, "notes": _extra(name, pack, team, game, leg, why), "spans": _windows(long, text), "lean": _lean(long, text, price)})
     marks.sort(key=lambda row: row["gap"], reverse=True)
     return {"known": True, "marks": marks}
 

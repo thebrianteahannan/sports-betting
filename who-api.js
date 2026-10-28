@@ -148,9 +148,15 @@ async function teamRoster(raw, sport) {
   if (rosterCache.has(key)) return rosterCache.get(key);
   const found = { players: [] };
   try {
-    const res = await fetch(`https://site.web.api.espn.com/apis/common/v3/search?query=${encodeURIComponent(want)}&limit=5&type=team`, { headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" } });
-    const data = res.ok ? await res.json() : {};
-    const team = (data.items || []).find((item) => String(item.displayName || "").toLowerCase() === want && (!league || String(item.league || "") === league));
+    const nick = want.split(" ").pop();
+    let items = [];
+    for (const query of [want, nick]) {
+      const res = await fetch(`https://site.web.api.espn.com/apis/common/v3/search?query=${encodeURIComponent(query)}&limit=5&type=team`, { headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" } });
+      const data = res.ok ? await res.json() : {};
+      items = data.items || [];
+      if (items.length) break;
+    }
+    const team = items.find((item) => String(item.displayName || "").toLowerCase() === want && (!league || String(item.league || "") === league)) || items.find((item) => String(item.displayName || "").toLowerCase().endsWith(` ${nick}`) && (!league || String(item.league || "") === league));
     if (team) {
       const page = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${team.sport}/${team.league}/teams/${team.id}/roster`, { headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" } });
       const roster = page.ok ? await page.json() : {};
