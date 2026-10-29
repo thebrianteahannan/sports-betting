@@ -270,6 +270,61 @@ function dip(rows, bar, under, asked, far) {
   return "";
 }
 
+const BESIDE = { "receiving yards": ["receivingTargets", "targets"], "rushing yards": ["rushingAttempts", "carries"], "passing yards": ["passingAttempts", "passes"], receptions: ["receivingTargets", "targets"] };
+
+function oneStat(pack, key) {
+  const names = pack.names || [];
+  const hit = (ALIAS[key] || [key]).find((option) => names.includes(option));
+  const index = hit ? names.indexOf(hit) : -1;
+  if (index < 0) return [];
+  const rows = [];
+  (pack.rows || []).forEach((row) => {
+    const stats = row.stats || [];
+    const value = statValue(index < stats.length ? stats[index] : "", names[index]);
+    if (value == null) return;
+    rows.push({ value, season: Number(row.season) || 0 });
+  });
+  return rows;
+}
+
+function meanOf(rows) {
+  if (!rows.length) return null;
+  return Math.round(rows.reduce((sum, row) => sum + row.value, 0) / rows.length * 10) / 10;
+}
+
+function numOf(n) { return n == null ? "" : (whole(n) ? String(Math.round(n)) : String(n)); }
+
+function happened(pack, text) {
+  const spec = specOf(text);
+  const rows = spec ? logRows(pack, spec[0]) : [];
+  if (!spec || rows.length < 10) return "";
+  const noun = spec[1];
+  const years = [...new Set(rows.map((row) => Number(row.season) || 0).filter(Boolean))].sort((a, b) => a - b);
+  const newest = rows.filter((row) => row.season === years.at(-1));
+  const early = newest.length < 5 && years.length > 1;
+  const nowYear = early ? years.at(-2) : years.at(-1);
+  const nowRows = rows.filter((row) => row.season === nowYear);
+  const lastRows = rows.filter((row) => row.season === nowYear - 1);
+  const bits = [];
+  const nowAvg = meanOf(nowRows), lastAvg = meanOf(lastRows);
+  if (nowRows.length >= 5 && lastRows.length >= 8 && nowAvg != null && lastAvg != null && Math.abs(nowAvg - lastAvg) >= Math.max(1, Math.abs(lastAvg) * 0.1)) {
+    bits.push(`${early ? "Last season" : "This season"} ${noun} ${nowAvg < lastAvg ? "went to" : "went up to"} ${numOf(nowAvg)} a game from ${numOf(lastAvg)}.`);
+  }
+  const recent = meanOf(rows.slice(0, 10)), career = meanOf(rows);
+  if (recent != null && career != null) {
+    const beside = BESIDE[noun];
+    const side = beside && spec[0].length === 1 ? oneStat(pack, beside[0]) : [];
+    const recentSide = side.length >= 10 ? meanOf(side.slice(0, 10)) : null;
+    const careerSide = side.length >= 20 ? meanOf(side) : null;
+    const same = recentSide != null && careerSide != null && Math.abs(recentSide - careerSide) < 0.5;
+    const extra = recentSide == null ? "" : (same ? `, on about the same ${numOf(recentSide)} ${beside[1]}` : `, on ${numOf(recentSide)} ${beside[1]}`);
+    const moved = Math.abs(recent - career) >= Math.max(1, Math.abs(career) * 0.1);
+    const verb = !moved ? "are" : (recent < career ? "are down to" : "are up to");
+    bits.push(`The last 10 ${verb} ${numOf(recent)} ${noun} a game${extra}. The career is ${numOf(career)} a game${careerSide != null && !same ? `, on ${numOf(careerSide)} ${beside[1]}` : ""}.`);
+  }
+  return bits.join(" ");
+}
+
 function leanOf(pack, text, price) {
   const spec = specOf(text);
   const rows = spec ? logRows(pack, spec[0]) : [];
@@ -298,8 +353,8 @@ function savedRead(name, text, sport, odds, pack, bet) {
   const bar = spec ? barOf(body, spec[2]) : null;
   const price = priceOf(bet && bet.odds != null ? bet.odds : odds);
   if (!(bet && typeof bet === "object")) {
-    if (rows.length < 20) return { why: "The log is too short to split a recent stretch from the career." };
-    return { why: leanOf(pack, body, price) || "The recent windows and the career are the same number." };
+    if (rows.length < 10) return { why: "The log is too short to split a recent stretch from the career." };
+    return { why: happened(pack, body) || "The recent windows and the career are the same number." };
   }
   const under = /\bunder\b/i.test(body);
   const shown = bar == null ? "" : (whole(bar) ? String(Math.round(bar)) : String(bar));
@@ -311,6 +366,10 @@ function savedRead(name, text, sport, odds, pack, bet) {
 async function whyPlayer(name, text, sport, bet, odds, games) {
   const league = String((bet && bet.sport) || sport || "");
   const pack = await savedPack(league, name);
+  if (!(bet && typeof bet === "object")) {
+    const told = pack && happened(pack, String(text || ""));
+    if (told) return { why: told };
+  }
   const bin = pythonBin();
   if (!bin) return pack ? savedRead(name, text, sport, odds, pack, bet) : { why: "This player's game log is not on the desk yet." };
   const asked = bet && typeof bet === "object"

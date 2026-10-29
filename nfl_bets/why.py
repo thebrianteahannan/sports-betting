@@ -151,6 +151,12 @@ def _listed(names: list[str]) -> str:
 
 
 def _noun(key: str) -> str:
+    named = {
+        "receivingYards": "receiving yards", "rushingYards": "rushing yards", "passingYards": "passing yards",
+        "receptions": "receptions", "receivingTargets": "targets", "rushingAttempts": "carries",
+    }
+    if key in named:
+        return named[key]
     if "three" in key:
         return "threes"
     if "rebound" in key:
@@ -240,7 +246,7 @@ def _shift(newer: list[dict[str, float]], older: list[dict[str, float]], key: st
     stamp = _clock(newer, older)
     if not clock and stamp.startswith(", on the same"):
         stamp = ""
-    bits = [f"{when} the {_noun(key)} went to {_num(stat_now or 0)} from {_num(stat_then or 0)}{side}{stamp}."]
+    bits = [f"{when} the {_noun(key)} went to {_num(stat_now or 0)} a game from {_num(stat_then or 0)}{side}{stamp}."]
     if key == "assists" and "turnovers" not in side and (stat_now or 0) > (stat_then or 0):
         now, then = _mean(newer, "turnovers"), _mean(older, "turnovers")
         if _moved(now, then):
@@ -278,7 +284,7 @@ def _slice(rows: list[dict[str, float]], season: list[dict[str, float]], key: st
         verb = "fell to" if (stat_now or 0) < (stat_then or 0) else "went to"
         if count == 3 and lines and (stat_now or 0) > (stat_then or 0):
             continue
-        lines.append(f"The {label} {verb} {_num(stat_now or 0)} {_noun(key)}{shot}{clock}.")
+        lines.append(f"The {label} {verb} {_num(stat_now or 0)} {_noun(key)} a game{shot}{clock}.")
         if count == 10:
             break
     return " ".join(lines)
