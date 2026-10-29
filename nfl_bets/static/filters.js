@@ -54,7 +54,7 @@ function legSport(leg) {
   return match ? match[1].trim() : "";
 }
 function sportsIn(names) {
-  const found = [...names].filter(Boolean);
+  const found = [...new Set([...names].filter(Boolean))];
   const rest = found.filter((name) => !OPEN_SPORTS.includes(name)).sort();
   return OPEN_SPORTS.filter((name) => found.includes(name)).concat(rest);
 }
@@ -243,7 +243,6 @@ let recPast = false;
 let recSort = "4";
 let recSortHigh = false;
 const REC_PAY = [["top", "Safest"], ["safe", "Safe"], ["good", "Good"], ["payout", "Big payout"], ["huge", "Biggest payout"]];
-let recKinds = [], recKindsKey = "";
 
 function recDayKey(ms) { return (recDayKey.fmt || (recDayKey.fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }))).format(ms); }
 
@@ -276,18 +275,15 @@ function recLegKind(leg) {
   const scope = (market.toLowerCase().match(/\b(\d+(?:st|nd|rd|th)\s+drive)\b/) || [])[1] || "";
   let text = `${scope} ${source}`.toLowerCase().replace(/\([^)]*\)/g, " ").replace(/\b(alt|alternate)\b/g, " ").replace(/\d+(?:\.\d+)?\s*\+/g, " ").replace(/\b(player to record|player to score|player to hit|to record|to score|to hit|a|an|the)\b/g, " ").replace(/\byds\b/g, "yards").replace(/\btds\b/g, "touchdowns").replace(/\btd\b/g, "touchdown").replace(/\bpts\b/g, "points").replace(/\breb\b/g, "rebounds").replace(/\bast\b/g, "assists").replace(/[^a-z0-9+ ]/g, " ").replace(/\s+/g, " ").trim().replace(/^(record|score)\s+/, "");
   if (text === "hit") text = "hits"; else if (text.endsWith(" hit")) text = `${text.slice(0, -3)}hits`;
-  return /^(popular|passing|receiving|rushing)$/.test(text) ? "" : text;
+  const raw = /^(popular|passing|receiving|rushing)$/.test(text) ? "" : text;
+  if (typeof propKind !== "function") return raw;
+  const kind = propKind(`${leg.label || ""} ${market} ${raw}`);
+  return kind === "Other" && !raw ? "" : kind;
 }
-function recKindGames() { const game = recFilter.game && ((window.state && window.state.board && window.state.board.games) || []).find((row) => row.match === recFilter.game); return game && game.id ? [String(game.id)] : []; }
-function recEnsureKinds(board) {
-  const sports = recFilter.sports.slice().sort(), when = recFilter.when === "today" ? "today" : "week", gameIds = recKindGames(), key = `${when}|${sports.join(",")}|${gameIds.join(",")}`;
-  if (key === recKindsKey) return;
-  recKindsKey = key; recKinds = [];
-  fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "kinds", sports: recFilter.sports, gameIds, when, college: !["props", "both", "tourney", "off"].includes(window.memberLaw || "") }) }).then((res) => res.json()).then((data) => {
-    if (recKindsKey !== key || !board.isConnected) return;
-    recKinds = data.kinds || []; if (recFilter.kind && !recKinds.includes(recFilter.kind)) recFilter.kind = "";
-    const bar = board.querySelector(".rec-filters"), note = board.querySelector(".rec-none"); if (bar) bar.remove(); if (note) note.remove(); paintRecFilters(board);
-  }).catch(() => { if (recKindsKey === key) recKindsKey = ""; });
+function recPropCats(rows) {
+  recTally(rows, "kind", "");
+  const have = (recTally.bag && recTally.bag.kind) || {}, order = typeof PROP_KINDS === "undefined" ? [] : PROP_KINDS.map((row) => row[1]);
+  return Object.keys(have).filter((name) => name && have[name]).sort((a, b) => { const ia = order.indexOf(a), ib = order.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b); });
 }
 
 function recAims(ticket) { const price = Number(ticket.american), ratio = Number.isFinite(price) && price ? (price > 0 ? price / 100 : 100 / Math.abs(price)) : NaN, row = (window.recTickets || []).find((item) => item && item.ticket === ticket), risk = parseFloat(String((row && row.rates) || "").split(",")[4]), aims = []; if (risk < 40) aims.push("top"); else if (risk < 50) aims.push("safe"); else if (risk < 60) aims.push("good"); if (ratio >= 3 && ratio < 4) aims.push("payout"); else if (ratio >= 4) aims.push("huge"); return aims; }
@@ -440,13 +436,12 @@ function recTally(rows, key, value) {
   return (recTally.bag[key] || {})[value] || 0;
 }
 function paintRecFilters(board) {
-  if (recFiltersOpen) recEnsureKinds(board);
   const rows = listedRecs(board).map((row) => row.ticket);
   const leagues = sportsIn(rows.flatMap((ticket) => recLeagues(ticket)).concat(((window.state && window.state.board && window.state.board.games) || []).map((game) => game.sport)));
   const games = recGameOptions(rows); recTally.games = games;
   if (recFilter.game && !games.includes(recFilter.game)) recFilter.game = "";
   const on = recFilter.when || recFilter.sports.length || recFilter.game || recFilter.kind || recFilter.legs || recFilter.aim || recFilter.find.trim() || recFilter.profit > 0;
-  const line = (name, html, fold) => (html ? `<div class="row${name === "When" || name === "Pay" ? " keep" : ""}${fold ? ` fold${(paintRecFilters.shut || (paintRecFilters.shut = {}))[name] === false ? "" : " tuck"}` : ""}"><span class="name">${name}</span>${html}</div>` : "");
+  const line = (name, html, fold) => (html ? `<div class="row${name === "When" || name === "Pay" || name === "League" ? " keep" : ""}${fold ? ` fold${((paintRecFilters.shut || (paintRecFilters.shut = { League: false }))[name] === false) ? "" : " tuck"}` : ""}"><span class="name">${name}</span>${html}</div>` : "");
   const bar = document.createElement("div");
   bar.className = "rec-filters";
   if (recFiltersOpen) bar.classList.add("open");
@@ -457,7 +452,7 @@ function paintRecFilters(board) {
     line("When", recChip("when", "today", `Today ${recTally(rows, "when", "today")}`, recFilter.when === "today") + recChip("when", "week", `This week ${recTally(rows, "when", "week")}`, recFilter.when === "week")),
     line("League", leagues.map((name) => recChip("sports", name, `${name} ${recTally(rows, "sports", name)}`, recFilter.sports.includes(name))).join(""), true),
     line("Game", recChip("game", "", `Any game ${recTally(rows, "game", "")}`, !recFilter.game) + games.map((game) => recChip("game", game, `${game} ${recTally(rows, "game", game)}`, recFilter.game === game)).join(""), true),
-    line("Prop", recChip("kind", "", `Any player prop ${recTally(rows, "kind", "")}`, !recFilter.kind) + recKinds.map((name) => recChip("kind", name, `${name.replace(/\b[a-z]/g, (letter) => letter.toUpperCase())} ${recTally(rows, "kind", name)}`, recFilter.kind === name)).join(""), true),
+    line("Prop", recChip("kind", "", `Any player prop ${recTally(rows, "kind", "")}`, !recFilter.kind) + recPropCats(rows).map((name) => recChip("kind", name, `${name} ${recTally(rows, "kind", name)}`, recFilter.kind === name)).join(""), true),
     line("Legs", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => recChip("legs", count ? String(count) : "", `${count ? (count === 1 ? "1 pick" : `${count} picks`) : "Any number"} ${recTally(rows, "legs", count ? String(count) : "")}`, count ? recFilter.legs === String(count) : !recFilter.legs)).join(""), true),
     line("Pay", `<label class="rec-money">Bet $<input data-money="stake" type="number" min="1" step="1" value="${recFilter.stake || 5}" inputmode="decimal"> Profit $<input data-money="profit" type="number" min="0" step="1" value="${recFilter.profit || ""}" placeholder="any" inputmode="decimal"></label><span class="rec-pay-picks">${REC_PAY.map(([id, label]) => recChip("aim", id, `${label} ${recTally(rows, "aim", id)}`, recFilter.aim === id, recFilter.profit > 0 && recPayFit(recFilter.stake, recFilter.profit) === id ? "fit" : "")).join("")}</span>`),
     `<p class="rec-say">${esc(recSay())}</p>`,
@@ -472,7 +467,7 @@ function paintRecFilters(board) {
     const button = event.target.closest("[data-rec]");
     if (event.target.closest(".row.fold .name")) { const row = event.target.closest(".row"); row.classList.toggle("tuck"); (paintRecFilters.shut = paintRecFilters.shut || {})[row.querySelector(".name").textContent] = row.classList.contains("tuck"); if (!row.classList.contains("tuck")) { bar.remove(); note.remove(); paintRecFilters(board); } return; }
     if (!button) return;
-    if (button.dataset.rec === "fold") { recFiltersOpen = !recFiltersOpen; bar.classList.toggle("open", recFiltersOpen); if (recFiltersOpen) recEnsureKinds(board); return; }
+    if (button.dataset.rec === "fold") { recFiltersOpen = !recFiltersOpen; bar.classList.toggle("open", recFiltersOpen); return; }
     if (button.dataset.rec === "sort") { if (recSort === button.dataset.value) recSortHigh = !recSortHigh; else { recSort = button.dataset.value; recSortHigh = true; } bar.remove(); note.remove(); paintRecFilters(board); return; }
     if (button.dataset.rec === "seek") { paintRecFilters.seek = !paintRecFilters.seek; const find = bar.querySelector(".rec-find"); find.classList.toggle("on", !!paintRecFilters.seek); button.classList.toggle("on", !!paintRecFilters.seek || !!recFilter.find.trim()); if (paintRecFilters.seek) find.querySelector("input").focus(); return; }
     if (button.dataset.rec === "clear") { recFilter.when = ""; recFilter.sports = []; recFilter.game = ""; recFilter.kind = ""; recFilter.legs = ""; recFilter.aim = ""; recFilter.find = ""; recFilter.profit = 0; recFilter.stake = 5; } else if (button.dataset.rec === "sports") {

@@ -302,6 +302,7 @@ function askRead(row, name) {
 }
 
 function paintHistory(row, button, data, name) {
+  if (data && data.error && !data.why) data = { why: String(data.error) };
   const box = document.createElement("div");
   if (data.why) { const why = document.createElement("p"); why.className = "find-why"; why.textContent = data.why; box.append(why); }
   if (data.spans) {
@@ -321,7 +322,7 @@ function paintHistory(row, button, data, name) {
         go.textContent = "Reading the trend.";
         const gist = (row.querySelector(".rec-gist") || {}).textContent || "";
         const sport = ((gist.split("—")[1] || "").split(",")[0] || "").trim();
-        fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "why", name, text: gist, sport }) }).then((res) => res.json()).then((found) => { const line = document.createElement("p"); line.className = "find-dive"; line.textContent = found.why || "The log is too short to split the last 10 from the career."; go.replaceWith(line); }).catch(() => { go.disabled = false; go.textContent = was; });
+        fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "why", name, text: gist, sport, odds: Number(row.dataset.odds) || 0 }) }).then((res) => res.json()).then((found) => { const line = document.createElement("p"); line.className = "find-dive"; line.textContent = found.why || found.error || "The log is too short to split the last 10 from the career."; go.replaceWith(line); }).catch(() => { go.disabled = false; go.textContent = was; });
       });
       box.append(go);
     }
@@ -419,6 +420,20 @@ function openLeg(person, key) {
   }
 }
 
+function slimTray() {
+  const glass = document.getElementById("desk-glass-in");
+  if (!glass) return;
+  if (!glass.dataset.slim) { glass.dataset.slim = "1"; glass.addEventListener("scroll", slimTray, { passive: true }); }
+  const pad = parseFloat(getComputedStyle(glass).paddingTop) || 0;
+  document.querySelectorAll(".find-tray").forEach((tray) => {
+    if (tray.hidden || !tray.getClientRects().length) { tray.classList.remove("find-slim"); return; }
+    const top = tray.getBoundingClientRect().top - glass.getBoundingClientRect().top - pad;
+    const slim = tray.classList.contains("find-slim");
+    if (!slim && glass.scrollTop > 72 && top < 8) tray.classList.add("find-slim");
+    else if (slim && glass.scrollTop < 28) tray.classList.remove("find-slim");
+  });
+}
+
 function paintTrayBuild(tray) {
   const legs = [...parlayLeg.values()];
   const group = [...parlayPick.values()];
@@ -444,3 +459,36 @@ function paintTrayBuild(tray) {
   if (rows.length === 1 && name) name.before(line);
   else { const say = tray.querySelector(".find-say"); if (say) say.after(line); else if (name) name.before(line); else tray.append(line); }
 }
+
+function builtName(bet) { const runner = String(bet.runner || "").trim(); return runner && String(bet.label || "").startsWith(runner) ? runner : String(bet.label || "").split(/\s+—\s+/)[0].replace(/\s+(\d|over|under).*$/i, "").trim(); }
+
+function dressBuilt(box) {
+  if (!box) return;
+  let tray = box.querySelector(":scope > .find-tray");
+  if (!tray) { tray = document.createElement("div"); tray.className = "find-hits find-tray"; tray.hidden = true; const title = box.querySelector("h2"); if (title) title.after(tray); else box.prepend(tray); }
+  if (typeof paintParlay === "function") paintParlay();
+  const pile = window.builtPile || [], jobs = [];
+  [...box.querySelectorAll(":scope > .rec-bet")].forEach((card) => {
+    const legs = ((pile[Number(card.dataset.built)] || {}).legs) || [];
+    [...card.querySelectorAll(":scope > span[data-drop]")].forEach((node, index) => {
+      const bet = legs[index]; if (!bet) return;
+      const key = parlayKey(bet);
+      if (![...card.querySelectorAll("button.find-leg")].some((btn) => btn.dataset.key === key)) {
+        const go = document.createElement("button"); go.type = "button"; go.className = "find-leg"; go.dataset.key = key; go.textContent = parlayLeg.has(key) ? "In the parlay" : "Add this leg"; if (parlayLeg.has(key)) go.classList.add("on");
+        go.addEventListener("click", () => { if (parlayLeg.has(key) || parlayLeg.size >= 8) return; parlayLeg.set(key, bet); const name = builtName(bet); if (name && ![...parlayPick.values()].some((person) => person.name === name) && parlayPick.size < 8) parlayPick.set(name.toLowerCase(), { key: name.toLowerCase(), name, kind: "player", bets: pile.flatMap((row) => row.legs || []).filter((item) => builtName(item) === name) }); paintParlay(); });
+        node.after(go);
+      }
+      if ([...card.querySelectorAll(".find-log")].some((log) => log.dataset.key === key) || !builtName(bet)) return;
+      jobs.push(() => fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "why", name: builtName(bet), text: bet.label || "", sport: bet.sport || "", bet }) }).then((res) => res.json()).then((data) => {
+        if (!card.isConnected || !data || !data.spans) return;
+        const log = document.createElement("div"); log.className = "find-log"; log.dataset.key = key;
+        data.spans.split(". ").forEach((bit) => { const cut = bit.replace(/\.$/, "").split(", "); const item = document.createElement("span"); const title = document.createElement("b"); title.textContent = cut[0]; item.append(title, document.createTextNode(cut.slice(1).join(", ") || "")); log.append(item); });
+        const go = [...card.querySelectorAll("button.find-leg")].find((btn) => btn.dataset.key === key); (go || node).after(log);
+        if (data.lean && !card.querySelector(".find-dive")) { const lean = document.createElement("p"); lean.className = "find-dive"; lean.textContent = data.lean; log.after(lean); }
+      }).catch(() => {}));
+    });
+  });
+  const pump = () => { const job = jobs.shift(); if (job) job().finally(pump); };
+  pump(); pump(); pump();
+}
+window.dressBuilt = dressBuilt;

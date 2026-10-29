@@ -269,6 +269,7 @@ function bindAdmin() {
       if (button.dataset.adminTab === "built" || button.dataset.adminTab === "asks" || button.dataset.adminTab === "habits" || button.dataset.adminTab === "rates") loadAdmin();
       if (button.dataset.adminTab === "strategy") paintStrategies();
       if (button.dataset.adminTab === "notes") loadNotes().catch((error) => { const msg = document.getElementById("note-msg"); if (msg) msg.textContent = String(error.message || error); });
+      if (button.dataset.adminTab === "reads") loadLooks().catch((error) => { const msg = document.getElementById("look-msg"); if (msg) msg.textContent = String(error.message || error); });
       if (button.dataset.adminTab === "laws" && window.paintLaws) window.paintLaws();
     }
   });
@@ -315,6 +316,29 @@ async function pullCard(id, button) {
   if (window.render) window.render();
 }
 
+function paintLooks(payload) {
+  const list = document.getElementById("look-list");
+  if (!list) return;
+  const rows = (payload && payload.looks) || [];
+  list._looks = rows;
+  list.innerHTML = rows.length ? rows.map((row) => adminCard(esc(row.name), esc(row.gist), [], `<p class="pick-save"><button type="button" data-look-edit="${esc(row.id)}">Edit</button><button type="button" data-look-drop="${esc(row.id)}">Delete</button></p>`)).join("") : "<p>Nothing on the list.</p>";
+}
+
+async function loadLooks() {
+  const response = await fetch("/api/looks", { cache: "no-store" });
+  paintLooks(await response.json());
+}
+
+async function saveLook(body) {
+  const response = await fetch("/api/admin/looks", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const payload = await response.json();
+  const msg = document.getElementById("look-msg");
+  if (!response.ok) { if (msg) msg.textContent = payload.error || "That one did not save."; return; }
+  if (msg) msg.textContent = "";
+  if (body.op === "add") { const name = document.getElementById("look-name"); const gist = document.getElementById("look-gist"); if (name) name.value = ""; if (gist) gist.value = ""; }
+  paintLooks(payload);
+}
+
 function paintNotes(payload) {
   const list = document.getElementById("note-list");
   if (!list) return;
@@ -357,6 +381,31 @@ document.body.addEventListener("click", (event) => {
     const field = document.querySelector(`[data-note-field="${save.dataset.noteSave}"]`);
     saveNote({ op: "edit", id: save.dataset.noteSave, text: field ? field.value : "" }).catch((error) => { const msg = document.getElementById("note-msg"); if (msg) msg.textContent = String(error.message || error); });
   }
+});
+
+document.body.addEventListener("click", (event) => {
+  const edit = event.target.closest("[data-look-edit]");
+  const drop = event.target.closest("[data-look-drop]");
+  const save = event.target.closest("[data-look-save]");
+  if (edit) {
+    const list = document.getElementById("look-list");
+    const row = ((list && list._looks) || []).find((item) => item.id === edit.dataset.lookEdit);
+    const card = edit.closest(".rec-bet");
+    if (row && card) card.innerHTML = `<p class="pick-save"><input data-look-name="${esc(row.id)}" maxlength="48" value="${esc(row.name)}"><input data-look-gist="${esc(row.id)}" maxlength="180" value="${esc(row.gist)}"><button type="button" data-look-save="${esc(row.id)}">Save</button></p>`;
+  }
+  if (drop) saveLook({ op: "delete", id: drop.dataset.lookDrop }).catch((error) => { const msg = document.getElementById("look-msg"); if (msg) msg.textContent = String(error.message || error); });
+  if (save) {
+    const name = document.querySelector(`[data-look-name="${save.dataset.lookSave}"]`);
+    const gist = document.querySelector(`[data-look-gist="${save.dataset.lookSave}"]`);
+    saveLook({ op: "edit", id: save.dataset.lookSave, name: name ? name.value : "", gist: gist ? gist.value : "" }).catch((error) => { const msg = document.getElementById("look-msg"); if (msg) msg.textContent = String(error.message || error); });
+  }
+});
+
+const lookAdd = document.getElementById("look-add");
+if (lookAdd) lookAdd.addEventListener("click", () => {
+  const name = document.getElementById("look-name");
+  const gist = document.getElementById("look-gist");
+  saveLook({ op: "add", name: name ? name.value : "", gist: gist ? gist.value : "" }).catch((error) => { const msg = document.getElementById("look-msg"); if (msg) msg.textContent = String(error.message || error); });
 });
 
 const noteAdd = document.getElementById("note-add");

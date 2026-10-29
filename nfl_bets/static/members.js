@@ -178,7 +178,7 @@ function birdGreet() {
   if (!called) return birdAskName();
   if (!window.memberBorn) return birdAskBorn(); if (!window.memberState) return birdAskState(); if (birdAskBook() || birdLaw()) return;
   window.asking = false;
-  birdSay(`Hey, ${called}. How are we going to find our favorite bet for today?`, [["menu", "Parlay's Picks", "pick"], ["menu", "Search Player, Team or Game", "find"], ["quiz", "Build Your Own Bet"]]);
+  birdSay(`Hey, ${called}. How are we going to find our favorite bet for today?`, [["menu", "Parlay's Picks & Strategies", "pick"], ["menu", "Search Player, Team or Game", "find"], ["quiz", "Build Your Own Bet"]]);
 }
 
 function birdLaw() {
@@ -366,14 +366,14 @@ function recLine(leg) {
 }
 
 function birdMenu(kind) {
-  if (kind === "pick") { if (window.birdSay) birdSay("One pick bets, or parlays?", [["menu", "One pick bets", "ones"], ["menu", "Parlays", "bets"]]); return; } if (kind === "find" && window.paintFind) { paintFind(); return; } if (kind === "ones" && window.paintOnes) { paintOnes(); return; } if (kind !== "bets") return;
+  if (kind === "pick" || kind === "ones") { if (window.birdMenu) birdMenu("bets"); return; } if (kind === "find" && window.paintFind) { paintFind(); return; } if (kind !== "bets") return;
   window.asking = true; if (window.goFull) goFull(); if (window.birdQuiet) birdQuiet(); if (window.tvPush && (document.querySelector("#desk-glass-in .rec-board") || { dataset: { page: "" } }).dataset.page !== "bets") tvPush();
   const desk = document.getElementById("desk"); if (!desk || !desk.classList.contains("tv-full")) { window.asking = false; if (window.birdGreet) birdGreet(); return; }
   desk.classList.remove("bird-on", "solo", "dug"); window.recOpen = false; const guide = document.getElementById("bird-guide"); if (guide) guide.hidden = true;
   const row = document.getElementById("desk-glass-in");
   if (!row) return;
   document.querySelectorAll(".rec-board").forEach((node) => node.remove());
-  const board = document.createElement("div"); board.className = "rec-board"; board.dataset.page = "bets"; board.insertAdjacentHTML("afterbegin", `<h2>${window.recPast ? "Finished bets, by strategy." : "Recommended bets, by strategy."}</h2>`);
+  const board = document.createElement("div"); board.className = "rec-board"; board.dataset.page = "bets"; board.insertAdjacentHTML("afterbegin", `<h2>${window.recPast ? "Finished bets, by strategy." : "Parlay's picks, by strategy."}</h2>`);
   const archive = ((window.state && window.state.board && window.state.board.archive) || []);
   const now = Date.now();
   const day = 86400000;

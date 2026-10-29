@@ -132,7 +132,7 @@ document.getElementById("desk-full").addEventListener("click", () => {
   window.digOn = false;
   window.asking = false;
   if (window.birdGreet) birdGreet();
-  else birdSay("Hey. How are we going to find our favorite bet for today?", [["menu", "Parlay's Picks", "pick"], ["menu", "Search Player, Team or Game", "find"], ["quiz", "Build Your Own Bet"]]);
+  else birdSay("Hey. How are we going to find our favorite bet for today?", [["menu", "Parlay's Picks & Strategies", "pick"], ["menu", "Search Player, Team or Game", "find"], ["quiz", "Build Your Own Bet"]]);
 });
 document.getElementById("desk-glass").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
@@ -185,7 +185,7 @@ window.askBack = () => {
 
 window.tvPage = (prev) => {
   if (prev.board === "find" && window.paintFind) paintFind();
-  else if (prev.board === "ones" && window.paintOnes) paintOnes();
+  else if (prev.board === "ones" && window.birdMenu) birdMenu("bets");
   else if (prev.board === "terms" && window.paintTerms) paintTerms();
   else if (prev.board === "bets" && window.birdMenu) birdMenu("bets");
 };

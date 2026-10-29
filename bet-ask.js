@@ -342,13 +342,18 @@ async function seriesLine(name) {
   return "";
 }
 
-async function askTrend(name, text, facts, sport) {
+function trendGuide(looks) {
+  const catalog = (Array.isArray(looks) ? looks : []).map((row) => `${row.name}: ${row.gist}`).filter((line) => line.length > 4).join(" ");
+  return catalog ? `${TREND} These are the things to look for. Say one only when the facts or the search show it. ${catalog}` : TREND;
+}
+
+async function askTrend(name, text, facts, sport, looks) {
   const question = `Why the recent trend for ${clip(name, 80)}? ${clip(text, 180)}`;
   const background = clip(facts, 1200);
   const key = geminiKey();
   if (key) {
     try {
-      const result = await geminiCall(key, question, background, false, true, false, TREND);
+      const result = await geminiCall(key, question, background, false, true, false, trendGuide(looks));
       if (result.status >= 200 && result.status < 300 && result.text) return result.text;
     } catch (err) { /* the box score still answers */ }
   }

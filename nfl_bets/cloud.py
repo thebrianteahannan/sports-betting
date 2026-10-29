@@ -47,6 +47,33 @@ def publish_board(board: dict[str, Any]) -> None:
     if merged != remote_rows:
         _put(_KEYS["archive"], {"tickets": merged})
     _put("bets/ignored.json", read_json(out_dir() / "ignored.json", {"tickets": []}))
+    publish_logs()
+
+
+def publish_logs() -> None:
+    """Career logs live on the Mac. The website reads the same rows back."""
+    if not configured():
+        return
+    cache = read_json(out_dir() / "sway.json", {})
+    sent = read_json(out_dir() / "log-sent.json", {})
+    if not isinstance(cache, dict) or not isinstance(sent, dict):
+        return
+    changed = False
+    for key, pack in cache.items():
+        if not str(key).endswith("|career") or not isinstance(pack, dict) or not pack.get("rows"):
+            continue
+        stamp = str(pack.get("at") or "")
+        if sent.get(key) == stamp:
+            continue
+        sport, name, _tail = str(key).split("|", 2)
+        try:
+            _put(f"bets/log/{sport}/{name}", {"at": pack.get("at"), "team": pack.get("team") or "", "names": pack.get("names") or [], "rows": pack.get("rows") or []})
+        except RuntimeError:
+            continue
+        sent[key] = stamp
+        changed = True
+    if changed:
+        write_json(out_dir() / "log-sent.json", sent)
 
 
 def thin_archive(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:

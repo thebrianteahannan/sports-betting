@@ -47,43 +47,40 @@ function liveSports() {
 function sportOn(name) { const games = (window.state && window.state.board && window.state.board.games) || []; return games.some((game) => (!name || game.sport === name) && Number.isFinite(Date.parse(game.kickoff || "")) && choiceWindow(Date.parse(game.kickoff))); }
 function chosenSports() { const open = liveSports().filter(sportOn); return choice.sports.length ? choice.sports.filter((sport) => open.includes(sport)) : open; }
 
-function paintKinds() {
-  const kind = document.getElementById("choice-kind");
-  if (!kind) return;
-  const names = window.askKinds || [];
-  if (choice.kind !== "any" && !names.includes(choice.kind)) choice.kind = "any";
-  kind.innerHTML = `<option value="any">Any player prop</option>${names.map((name) => `<option value="${name}">${kindLabel(name)}</option>`).join("")}`;
-  kind.value = choice.kind;
-}
-
-function loadKinds() {
-  if (window.askKindsLoading) return;
-  window.askKindsLoading = true;
-  birdSay("Checking FanDuel.", []);
-  const line = document.getElementById("bird-line");
-  if (line) { line.classList.add("build"); const title = document.createElement("strong"); title.textContent = "Build Your Own Bet"; line.prepend(title); }
-  fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "kinds", sports: choice.sports, gameIds: choice.gameIds, when: choice.when, college: !["props", "both", "tourney", "off"].includes(window.memberLaw || "") }) }).then((res) => res.json()).then((data) => { window.askKinds = data.kinds || []; }).catch(() => { window.askKinds = []; }).finally(() => { window.askKindsLoading = false; askStep(); });
-}
-
-function paintGames() {
-  const select = document.getElementById("choice-game");
-  const board = window.state && window.state.board;
-  if (!select || !board) return;
+function gameRows() {
+  const board = window.state && window.state.board; if (!board) return [];
   const sports = new Set(choice.sports.length ? chosenSports() : liveSports());
-  const games = (board.games || []).filter((game) => {
-    if (!sports.has(game.sport)) return false;
-    const kick = Date.parse(game.kickoff || "");
-    return Number.isFinite(kick) && kick > Date.now();
-  });
-  games.sort((a, b) => Number(choiceWindow(Date.parse(b.kickoff))) - Number(choiceWindow(Date.parse(a.kickoff))) || Date.parse(a.kickoff) - Date.parse(b.kickoff));
-  select.innerHTML = games.map((game) => {
-    const clock = typeof when === "function" ? when(game.kickoff) : "";
-    const label = `${game.sport} · ${game.match}${clock ? ` · ${clock} ET` : ""}`;
-    return `<option value="${String(game.id)}"${choiceWindow(Date.parse(game.kickoff)) ? "" : " disabled"}>${esc(label)}</option>`;
-  }).join("");
-  const wanted = new Set(choice.gameIds);
-  [...select.options].forEach((option) => { option.selected = wanted.has(option.value); });
-  choice.gameIds = [...select.selectedOptions].map((option) => option.value);
+  return (board.games || []).filter((game) => sports.has(game.sport) && Number.isFinite(Date.parse(game.kickoff || "")) && Date.parse(game.kickoff) > Date.now() && choiceWindow(Date.parse(game.kickoff))).sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
+}
+function gameLabel(game) { const clock = typeof when === "function" ? when(game.kickoff) : ""; return `${choice.sports.length === 1 ? "" : `${game.sport} · `}${game.match}${clock ? `, ${clock}` : ""}`; }
+function paintGames() {
+  const box = document.getElementById("choice-games"); if (!box) return;
+  const rows = gameRows(), live = new Set(rows.map((game) => String(game.id)));
+  choice.gameIds = choice.gameIds.map(String).filter((id) => live.has(id));
+  const q = String(paintGames.q || "").trim().toLowerCase(), picked = new Set(choice.gameIds), one = choice.sports.length === 1;
+  const shown = rows.filter((game) => picked.has(String(game.id)) || (q.length >= 2 && `${game.sport} ${game.match}`.toLowerCase().includes(q)) || (!q && one && rows.length <= 40));
+  box.innerHTML = choiceButton("Any game", !picked.size, "data-game", "") + `<input type="search" placeholder="Find a team" value="${esc(q)}" autocomplete="off">` + shown.map((game) => choiceButton(esc(gameLabel(game)), picked.has(String(game.id)), "data-game", String(game.id))).join("");
+  const input = box.querySelector("input"); if (input) input.addEventListener("input", () => { const caret = input.selectionStart; paintGames.q = input.value; paintGames(); const next = box.querySelector("input"); if (next) { next.focus(); try { next.setSelectionRange(caret, caret); } catch (error) {} } });
+}
+function kindCat(name) { return typeof propKind === "function" ? propKind(name) : kindBucket(name); }
+function paintKinds() {
+  const box = document.getElementById("choice-kinds"); if (!box) return;
+  const names = window.askKinds || [];
+  if (!names.length) { if (!window.askKindsLoading) loadKinds(); box.innerHTML = choiceButton("Any player prop", true, "data-kind", "any"); return; }
+  if (choice.kind !== "any" && !names.includes(choice.kind)) choice.kind = "any";
+  const order = typeof PROP_KINDS === "undefined" ? [] : PROP_KINDS.map((row) => row[1]);
+  const groups = [...new Set(names.map(kindCat))].sort((a, b) => { const ia = order.indexOf(a), ib = order.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b); });
+  const open = groups.includes(paintKinds.open) ? paintKinds.open : "";
+  const kids = open ? names.filter((name) => kindCat(name) === open) : [];
+  box.innerHTML = choiceButton("Any player prop", choice.kind === "any", "data-kind", "any") + groups.map((name) => choiceButton(name, open === name || (choice.kind !== "any" && kindCat(choice.kind) === name), "data-kind", `group:${name}`)).join("") + (kids.length > 1 ? `<span class="choice-break"></span>${kids.map((name) => choiceButton(kindLabel(name), choice.kind === name, "data-kind", name)).join("")}` : "");
+}
+function loadKinds() {
+  const key = `${choice.when}|${choice.sports.slice().sort().join(",")}|${choice.gameIds.join(",")}`;
+  if (window.askKinds && window.askKindsKey === key) return;
+  if (window.askKindsLoading) return;
+  window.askKindsLoading = true; window.askKindsKey = key;
+  if (window.asking && ask && ask[0] === "kind") { birdSay("Checking FanDuel.", []); const line = document.getElementById("bird-line"); if (line) { line.classList.add("build"); const title = document.createElement("strong"); title.textContent = "Build Your Own Bet"; line.prepend(title); } }
+  fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "kinds", sports: choice.sports, gameIds: choice.gameIds, when: choice.when, college: !["props", "both", "tourney", "off"].includes(window.memberLaw || "") }) }).then((res) => res.json()).then((data) => { if (window.askKindsKey === key) window.askKinds = data.kinds || []; }).catch(() => { if (window.askKindsKey === key) window.askKinds = []; }).finally(() => { window.askKindsLoading = false; const now = `${choice.when}|${choice.sports.slice().sort().join(",")}|${choice.gameIds.join(",")}`; if (window.askKindsKey !== now) { window.askKinds = null; loadKinds(); return; } if (window.asking && ask && ask[0] === "kind") askStep(); else paintKinds(); });
 }
 
 function choiceKey() {
@@ -138,7 +135,7 @@ async function runChoice() { takeMoney();
       if (star) saveBuilt(card, Number(star.dataset.builtStar), star.parentElement);
     });
   }
-  if (window.paintWeather) paintWeather(); paintEdits();
+  if (window.paintWeather) paintWeather(); paintEdits(); if (typeof dressBuilt === "function") dressBuilt(box);
 }
 
 async function saveBuilt(card, stars, host) {
@@ -218,19 +215,19 @@ function askButtons(step) {
     return ["Which leagues? Tap a few, or all of them.", [["ask", "All of them", "sport:", open.length ? (!choice.sports.length || every ? "on" : "") : "off"], ["ask", "Use these", "sport:go", open.length ? "" : "off"]].concat(liveSports().map((name) => ["ask", name, `sport:${name}`, sportOn(name) ? (picked(name) ? "on" : "") : "off"]))];
   }
   if (step === "game") {
-    const opts = [...document.querySelectorAll("#choice-game option")].filter((opt) => !opt.disabled);
-    if (!opts.length || opts.length > 32) return null;
-    return ["Any game, or one of these?", [["ask", "Any game", "game:"]].concat(opts.map((opt) => ["ask", opt.textContent, `game:${opt.value}`]))];
+    const rows = gameRows();
+    if (!rows.length || rows.length > 32) return null;
+    return ["Any game, or one of these?", [["ask", "Any game", "game:"]].concat(rows.map((game) => ["ask", gameLabel(game), `game:${game.id}`]))];
   }
   if (step === "kind") {
-    const opts = [...document.querySelectorAll("#choice-kind option")].filter((opt) => opt.value !== "any" && !opt.disabled);
-    if (!opts.length) return null;
+    const names = window.askKinds || [];
+    if (!names.length) return null;
     const order = ["Touchdowns", "Goals", "Points", "Yards", "Receptions", "Rebounds and assists", "Threes", "Shots", "Saves", "Other"];
-    const buckets = order.filter((name) => opts.some((opt) => kindBucket(opt.value) === name));
+    const buckets = order.filter((name) => names.some((item) => kindBucket(item) === name));
     const group = buckets.includes(askButtons.group) ? askButtons.group : "";
     if (!group && buckets.length > 1) return ["What kind of stat?", [["ask", "Any player prop", "kind:any"]].concat(buckets.map((name) => ["ask", name, `kind:group:${name}`]))];
-    const rows = opts.filter((opt) => !group || kindBucket(opt.value) === group);
-    return [group ? `${group}. Which one?` : "Any stat, or one of these?", [["ask", group ? "All stats" : "Any player prop", group ? "kind:groups" : "kind:any"]].concat(rows.map((opt) => ["ask", opt.textContent, `kind:${opt.value}`]))];
+    const rows = names.filter((name) => !group || kindBucket(name) === group);
+    return [group ? `${group}. Which one?` : "Any stat, or one of these?", [["ask", group ? "All stats" : "Any player prop", group ? "kind:groups" : "kind:any"]].concat(rows.map((name) => ["ask", kindLabel(name), `kind:${name}`]))];
   }
   if (step === "shape") return ["One pick, or a parlay?", [["ask", "One pick", "shape:single"], ["ask", "Parlay", "shape:parlay"]]];
   if (step === "legs") { const need = (choice.hold || []).length; if (choice.shape === "single") return null; const nums = [2, 3, 4, 5, 6, 7, 8, 9, 10].filter((n) => n >= need); return ["How many picks?", (need <= 6 ? [["ask", "Any number", "legs:0"]] : []).concat(nums.map((n) => ["ask", `${n} picks`, `legs:${n}`]))]; }
@@ -241,7 +238,7 @@ function askButtons(step) {
 }
 
 function askSoFar() {
-  const past = window.askPast || [], game = choice.gameIds[0] && document.querySelector(`#choice-game option[value="${CSS.escape(choice.gameIds[0])}"]`), words = { shape: choice.shape === "single" ? "One pick" : "Parlay", when: choice.when === "week" ? "This week" : "Today", sport: choice.sports.length ? choice.sports.join(", ") : "All leagues", game: game ? game.textContent : "Any game", kind: choice.kind && choice.kind !== "any" ? kindLabel(choice.kind) : "Any player prop", legs: choice.legs ? `${choice.legs} picks` : "Any number", money: choice.profit > 0 ? `$${choice.stake} bet, $${choice.profit} profit` : `$${choice.stake || 5} bet, any profit`, risk: riskWord(choice.stake, choice.profit), mix: { any: "Any", even: "Same chance", safer: "One safer", long: "One longer" }[choice.mix] || "" };
+  const past = window.askPast || [], hit = choice.gameIds[0] && ((window.state && state.board && state.board.games) || []).find((game) => String(game.id) === String(choice.gameIds[0])), words = { shape: choice.shape === "single" ? "One pick" : "Parlay", when: choice.when === "week" ? "This week" : "Today", sport: choice.sports.length ? choice.sports.join(", ") : "All leagues", game: hit ? gameLabel(hit) : "Any game", kind: choice.kind && choice.kind !== "any" ? kindLabel(choice.kind) : "Any player prop", legs: choice.legs ? `${choice.legs} picks` : "Any number", money: choice.profit > 0 ? `$${choice.stake} bet, $${choice.profit} profit` : `$${choice.stake || 5} bet, any profit`, risk: riskWord(choice.stake, choice.profit), mix: { any: "Any", even: "Same chance", safer: "One safer", long: "One longer" }[choice.mix] || "" };
   return ["shape", "when", "sport", "game", "kind", "legs", "money", "risk", "mix"].filter((step) => past.includes(step)).map((step) => words[step]).filter(Boolean).join(", ");
 }
 function askStep() {
@@ -286,7 +283,7 @@ window.askAnswer = askAnswer;
 document.getElementById("chooser").addEventListener("click", (event) => {
   const when = event.target.closest("[data-when]");
   if (when) {
-    choice.when = when.dataset.when;
+    choice.when = when.dataset.when; window.askKinds = null; paintKinds.open = "";
     paintChoices();
     return;
   }
@@ -296,6 +293,23 @@ document.getElementById("chooser").addEventListener("click", (event) => {
     choice.sports = choice.sports.includes(name)
       ? choice.sports.filter((item) => item !== name)
       : choice.sports.concat(name);
+    window.askKinds = null; paintKinds.open = "";
+    paintChoices();
+    return;
+  }
+  const game = event.target.closest("[data-game]");
+  if (game) {
+    const id = game.dataset.game;
+    choice.gameIds = id ? (choice.gameIds.includes(id) ? choice.gameIds.filter((item) => item !== id) : choice.gameIds.concat(id)) : [];
+    paintChoices();
+    return;
+  }
+  const kind = event.target.closest("[data-kind]");
+  if (kind) {
+    const value = kind.dataset.kind;
+    if (value === "any") { choice.kind = "any"; paintKinds.open = ""; }
+    else if (value.startsWith("group:")) { const name = value.slice(6); const kids = (window.askKinds || []).filter((item) => kindCat(item) === name); if (kids.length <= 1) { choice.kind = kids[0] || "any"; paintKinds.open = ""; } else paintKinds.open = paintKinds.open === name ? "" : name; }
+    else choice.kind = value;
     paintChoices();
     return;
   }
@@ -310,14 +324,6 @@ document.getElementById("chooser").addEventListener("click", (event) => {
     choice.aim = aim.dataset.aim;
     paintChoices();
   }
-});
-
-document.getElementById("choice-kind").addEventListener("change", (event) => {
-  choice.kind = event.target.value;
-});
-
-document.getElementById("choice-game").addEventListener("change", (event) => {
-  choice.gameIds = [...event.target.selectedOptions].map((option) => option.value);
 });
 
 document.getElementById("choice-go").addEventListener("click", () => {

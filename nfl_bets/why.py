@@ -12,15 +12,17 @@ from nfl_bets.edge import _bar, _hits, _lean, _rows, _windows
 from nfl_bets.hedge import implied_prob
 from nfl_bets.http_util import get_json
 from nfl_bets.single import _OTHER, _PART, _combo
+from nfl_bets.ones import match_text
 from nfl_bets.sway import _PATH, _career, _nick, _search, _spec
 
 _REFERER = "https://www.espn.com/"
 
 
-def explain(name: str, text: str, sport: str) -> dict[str, str]:
+def explain(name: str, text: str, sport: str, pack: dict[str, Any] | None = None) -> dict[str, str]:
     spec = _spec(text)
     path = _PATH.get(sport)
-    pack = _career(sport, path, name) if path and name and spec else None
+    if not (isinstance(pack, dict) and pack.get("rows")):
+        pack = _career(sport, path, name) if path and name and spec else None
     rows = _games(pack, spec[0][0]) if pack and spec else []
     if spec is None or len(rows) < 20:
         return {"why": "The log is too short to split a recent stretch from the career."}
@@ -335,7 +337,7 @@ def _mates(sport: str, player: str, names: list[str]) -> str:
     return " ".join(bits)
 
 
-def read_one(name: str, leg: dict[str, Any]) -> dict[str, str]:
+def read_one(name: str, leg: dict[str, Any], pack: dict[str, Any] | None = None) -> dict[str, str]:
     text = f"{leg.get('market') or ''} {leg.get('label') or ''} {leg.get('runner') or ''}"
     if _PART.search(text) or _OTHER.search(text):
         return {"why": "A quarter, half, or first-scorer prop stays off the full-game log."}
@@ -343,7 +345,8 @@ def read_one(name: str, leg: dict[str, Any]) -> dict[str, str]:
         return {"why": "A combo prop stays off a single stat's log."}
     sport = str(leg.get("sport") or "")
     path = _PATH.get(sport)
-    pack = (_career(sport, path, name) or None) if path and name else None
+    if not (isinstance(pack, dict) and pack.get("rows")):
+        pack = (_career(sport, path, name) or None) if path and name else None
     spans = _windows(pack, text, sport) if pack else ""
     try:
         price = implied_prob(float(leg.get("odds")))
@@ -366,13 +369,18 @@ def read_one(name: str, leg: dict[str, Any]) -> dict[str, str]:
 
 def _main() -> None:
     body = json.load(sys.stdin)
+    given = body.get("pack") if isinstance(body.get("pack"), dict) else None
     if body.get("read"):
-        json.dump(read_one(str(body.get("name") or ""), body.get("bet") if isinstance(body.get("bet"), dict) else {}), sys.stdout)
+        json.dump(read_one(str(body.get("name") or ""), body.get("bet") if isinstance(body.get("bet"), dict) else {}, given), sys.stdout)
         return
     if body.get("mates"):
         json.dump({"why": _mates(str(body.get("sport") or ""), str(body.get("name") or ""), list(body.get("mates") or []))}, sys.stdout)
         return
-    json.dump(explain(str(body.get("name") or ""), str(body.get("text") or ""), str(body.get("sport") or "")), sys.stdout)
+    found = explain(str(body.get("name") or ""), str(body.get("text") or ""), str(body.get("sport") or ""), given)
+    games = [row for row in (body.get("games") or []) if isinstance(row, dict)]
+    if games:
+        found["hits"] = match_text(str(body.get("text") or ""), games, body.get("odds"))
+    json.dump(found, sys.stdout)
 
 
 if __name__ == "__main__":

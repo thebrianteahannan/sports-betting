@@ -21,7 +21,7 @@ const { createIgnore } = require("./desk-ignore");
 const { createAdmins } = require("./desk-admins");
 const { createDocs } = require("./desk-docs"); const { chooseBet } = require("./choose-api");
 const { createPull } = require("./desk-pull");
-const { createNotes } = require("./desk-notes"); const { createShelve } = require("./desk-shelve");
+const { createNotes } = require("./desk-notes"); const { createLooks } = require("./desk-looks"); const { createShelve } = require("./desk-shelve");
 const { createResearch } = require("./desk-research"); const { propLog } = require("./prop-log"); const { askTerm } = require("./bet-ask");
 const ROOT = __dirname;
 loadEnv(path.join(ROOT, ".env"));
@@ -100,7 +100,7 @@ async function archive() {
 const { ignoreView, sweepIgnored } = createIgnore(readKey, writeKey, archive);
 const pullLive = createPull(readKey, writeKey, ROOT);
 const { adminList, setMemberAdmin, saveAsk, noteTaste, saveRated } = createAdmins(readKey, writeKey);
-const { list: noteList, save: noteSave } = createNotes(readKey, writeKey); const { cards: shelvedCards, save: shelveSave } = createShelve(readKey, writeKey);
+const { list: noteList, save: noteSave } = createNotes(readKey, writeKey); const { list: lookList, save: lookSave } = createLooks(readKey, writeKey); const { cards: shelvedCards, save: shelveSave } = createShelve(readKey, writeKey);
 const researchBet = createResearch(readKey);
 
 async function picks() {
@@ -414,7 +414,7 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, await adminList());
       return;
     }
-    if (req.method === "GET" && url.pathname === "/api/notes") { sendJson(res, await noteList()); return; }
+    if (req.method === "GET" && (url.pathname === "/api/notes" || url.pathname === "/api/looks")) { sendJson(res, url.pathname.endsWith("/looks") ? await lookList() : await noteList()); return; }
     if (req.method === "GET" && url.pathname === "/api/admin/ignore") {
       const user = await memberFrom(req);
       if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
@@ -553,10 +553,10 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, await sweepIgnored());
         return;
       }
-      if (url.pathname === "/api/admin/notes" || url.pathname === "/api/admin/shelve") {
+      if (url.pathname === "/api/admin/notes" || url.pathname === "/api/admin/shelve" || url.pathname === "/api/admin/looks") {
         const user = await memberFrom(req);
         if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
-        sendJson(res, url.pathname.endsWith("/shelve") ? await shelveSave(body) : await noteSave(body));
+        sendJson(res, url.pathname.endsWith("/looks") ? await lookSave(body) : url.pathname.endsWith("/shelve") ? await shelveSave(body) : await noteSave(body));
         return;
       }
       if (url.pathname === "/api/admin/role") {

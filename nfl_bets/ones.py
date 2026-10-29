@@ -306,6 +306,23 @@ def _num(raw: Any) -> float | None:
         return None
 
 
+def match_text(text: str, games: list[dict[str, Any]], odds: Any) -> list[dict[str, str]]:
+    low = str(text or "").lower()
+    game = next((row for row in games if str(row.get("match") or "") and str(row.get("match") or "").lower() in low), None)
+    if not game:
+        return []
+    try:
+        price = int(float(odds))
+    except (TypeError, ValueError):
+        price = -110
+    leg = {"label": text, "market": text, "runner": "", "odds": price, "sport": game.get("sport") or ""}
+    try:
+        tagged = _tags(leg, game, _situation(game))
+    except Exception:  # noqa: BLE001
+        return []
+    return [{"id": code, "line": why} for code, why, _hot in tagged]
+
+
 def _main() -> None:
     import json
     import sys
