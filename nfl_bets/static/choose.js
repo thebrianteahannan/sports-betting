@@ -1,4 +1,4 @@
-const CHOICE_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "PGA"];
+const CHOICE_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA"];
 function kindLabel(name) { return name ? name.replace(/\b[a-z]/g, (letter) => letter.toUpperCase()) : "Any player prop"; }
 function kindBucket(name) { const text = String(name || ""); if (/touchdown|2pt conversion/.test(text)) return "Touchdowns"; if (/reception/.test(text)) return "Receptions"; if (/yard/.test(text)) return "Yards"; if (/three/.test(text)) return "Threes"; if (/rebound|assist/.test(text)) return "Rebounds and assists"; if (/shot/.test(text)) return "Shots"; if (/save/.test(text)) return "Saves"; if (/goal/.test(text)) return "Goals"; if (/point/.test(text)) return "Points"; return "Other"; }
 function riskWord(stake, profit) { const ratio = profit / stake; return !(profit > 0) ? "" : ratio <= 0.3 ? "Safest" : ratio <= 0.8 ? "Safe" : ratio <= 1.6 ? "Moderate" : ratio <= 3.2 ? "Risky" : "Riskiest"; }
@@ -40,7 +40,7 @@ const paintForm = paintChoices;
 function liveSports() {
   const block = ["props", "both", "tourney", "off"].includes(window.memberLaw || "");
   const found = [...new Set(((window.state && window.state.board && window.state.board.games) || []).map((game) => game.sport).filter(Boolean))];
-  const list = found.length ? CHOICE_SPORTS.filter((sport) => found.includes(sport)).concat(found.filter((sport) => !CHOICE_SPORTS.includes(sport)).sort()) : CHOICE_SPORTS;
+  const list = found.length ? CHOICE_SPORTS.filter((sport) => found.includes(sport)) : CHOICE_SPORTS;
   return list.filter((sport) => !block || (sport !== "NCAAF" && sport !== "NCAAB"));
 }
 

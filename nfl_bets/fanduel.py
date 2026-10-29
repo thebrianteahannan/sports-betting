@@ -17,8 +17,9 @@ _HOSTS = (
 )
 # Event-type ids FanDuel's sport pages use.
 _PAGES = (
-    6423, 7522, 7511, 7524, 1, 2, 6, 26420387, 3,
+    6423, 7522, 7511, 7524,
 )
+_KEEP = {"NFL", "NBA", "MLB", "NHL", "WNBA"}
 _SPREADS = ("Spread", "Run Line", "Puck Line", "Spread Betting", "Spread (60 Min)")
 _MONEYS = (
     "Moneyline",
@@ -139,7 +140,7 @@ def _event_game(
         return None
     league = _league(event, comps)
     sport = _sport(event_type, league)
-    if sport in ("eSports", "Table tennis", "Basketball", "Cricket", "Handball", "NCAAF", "Hockey", "Rugby", "Darts", "CFL", "NCAAB"):
+    if sport not in _KEEP:
         return None
     return _row(
         str(event.get("eventId") or ""),

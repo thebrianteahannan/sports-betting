@@ -1,4 +1,4 @@
-const OPEN_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "PGA", "Golf", "Soccer", "Tennis", "UFC", "MMA", "Football", "Baseball", "Boxing"];
+const OPEN_SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA"];
 const OPEN_CARDS = [
   ["band", "−150 to +100 window"],
   ["todayBet", "Highest chance parlay today"],
@@ -55,8 +55,7 @@ function legSport(leg) {
 }
 function sportsIn(names) {
   const found = [...new Set([...names].filter(Boolean))];
-  const rest = found.filter((name) => !OPEN_SPORTS.includes(name)).sort();
-  return OPEN_SPORTS.filter((name) => found.includes(name)).concat(rest);
+  return OPEN_SPORTS.filter((name) => found.includes(name));
 }
 function legKinds(leg) {
   const text = `${leg.label || ""} ${leg.market || ""}`.toLowerCase();
@@ -299,7 +298,7 @@ function recMatch(ticket) {
   if (recFilter.when === "today" && span !== "today") return false;
   if (recFilter.when === "week" && span !== "today" && span !== "week") return false;
   const leagues = recLeagues(ticket);
-  if (recFilter.sports.length && (!leagues.length || leagues.some((name) => !recFilter.sports.includes(name)))) return false;
+  if (leagues.some((name) => !OPEN_SPORTS.includes(name))) return false; if (recFilter.sports.length && (!leagues.length || leagues.some((name) => !recFilter.sports.includes(name)))) return false;
   if (recFilter.game && !recGameHit(ticket, recFilter.game)) return false;
   if (recFilter.kind) {
     const kinds = (ticket.legs || []).map(recLegKind);

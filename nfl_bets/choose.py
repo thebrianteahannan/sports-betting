@@ -11,7 +11,7 @@ from nfl_bets.chalk import _catches_to_yards, _from_decimal, _legs, _who
 from nfl_bets.hedge import american_decimal, implied_prob
 
 _ET = ZoneInfo("America/New_York")
-_SPORTS = ("NFL", "MLB", "NBA", "NHL", "WNBA", "PGA")
+_SPORTS = ("NFL", "MLB", "NBA", "NHL", "WNBA")
 def _family(leg: dict[str, Any]) -> str:
     market = str(leg.get("market") or "")
     source = market.split(" - ")[-1]
@@ -50,8 +50,8 @@ _AIMS = {"top", "safe", "good", "payout"}
 
 
 def choose(board: dict[str, Any], sports: list[str], kind: str, count: int, game_ids: list[str] | str | None = None, when: str = "today", aim: str = "safe", skip: list[str] | None = None) -> dict[str, Any]:
-    named = [str(sport) for sport in sports if str(sport or "")]
-    picked = named or sorted({str(game.get("sport") or "") for game in board.get("games") or [] if game.get("sport")}) or list(_SPORTS)
+    named = [str(sport) for sport in sports if str(sport or "") in _SPORTS]
+    picked = named or [sport for sport in sorted({str(game.get("sport") or "") for game in board.get("games") or [] if game.get("sport")}) if sport in _SPORTS] or list(_SPORTS)
     ids = _ids(game_ids)
     count = min(10, max(1, int(count or 3)))
     kind = "any" if not str(kind or "").strip() or str(kind) == "any" else str(kind)[:80]

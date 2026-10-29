@@ -90,11 +90,11 @@ function loadedGames(people, span) {
   const saved = people.games;
   if (saved && saved.n === people.length) return saved[span];
   const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
-  const today = fmt.format(Date.now()), end = fmt.format(Date.now() + 14 * 24 * 60 * 60 * 1000), now = Date.now(), skip = /^(Hockey|Rugby|Darts|CFL|NCAAB|Cricket|Handball|NCAAF)$/;
+  const today = fmt.format(Date.now()), end = fmt.format(Date.now() + 14 * 24 * 60 * 60 * 1000), now = Date.now(), keep = /^(NFL|NBA|MLB|NHL|WNBA)$/;
   const buckets = { today: new Map(), week: new Map() };
   people.forEach((person) => (person.bets || []).forEach((bet) => {
     const kick = Date.parse(bet.kickoff || "");
-    if (!bet.match || kick !== kick || kick <= now || skip.test(bet.sport || "")) return;
+    if (!bet.match || kick !== kick || kick <= now || !keep.test(bet.sport || "")) return;
     const day = fmt.format(kick), key = `${bet.match}|${bet.kickoff}`;
     const bucket = day === today ? buckets.today : day > today && day <= end ? buckets.week : null;
     if (bucket && !bucket.has(key)) bucket.set(key, bet);
@@ -136,8 +136,6 @@ function fillFind(board, data) {
     const head = document.createElement("summary");
     head.textContent = `${box.dataset.span === "today" ? "Today" : "This week"}, ${rows.length} ${rows.length === 1 ? "game" : "games"}`;
     box.replaceChildren(head); box.hidden = rows.length === 0;
-    const held = rows; const outs = document.createElement("details"); const outSum = document.createElement("summary"); outSum.textContent = "Who's out"; outs.append(outSum); box.append(outs);
-    outs.addEventListener("toggle", () => { if (!outs.open || outs.dataset.got) return; outs.dataset.got = "1"; const wait = document.createElement("p"); wait.className = "quiet"; wait.textContent = "Checking who's out."; outs.append(wait); fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "out" }) }).then((res) => res.json()).then((data) => { wait.remove(); const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }); const playing = (data.out || []).filter((row) => held.some((game) => { const sides = String(game.match || "").split(/\s@\s|\sv\s/).map((side) => plainName(side.replace(/\(.*?\)/g, ""))); const day = fmt.format(Date.parse(game.kickoff || "")); return sides.includes(plainName(row.team)) && (!row.back || day < row.back); })); const by = new Map(); playing.forEach((row) => { const team = row.team || "Other"; if (!by.has(team)) by.set(team, []); by.get(team).push(row); }); if (!by.size) { const empty = document.createElement("p"); empty.className = "quiet"; empty.textContent = "Nobody is listed out."; outs.append(empty); return; } [...by.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([team, list]) => { const group = document.createElement("details"); const title = document.createElement("summary"); title.textContent = `${team}, ${list.length} out`; group.append(title); list.sort((a, b) => a.player.localeCompare(b.player)).forEach((row) => { const line = document.createElement("p"); line.className = "quiet"; line.style.padding = "0.35rem 0.65rem 0.45rem 1.35rem"; line.textContent = [row.note ? `${row.player}. ${row.note}` : `${row.player} is out.`, row.spot].filter(Boolean).join(" "); group.append(line); }); outs.append(group); }); }).catch(() => { wait.textContent = "The injury report did not load."; }); });
     const usa = ["NFL", "NBA", "MLB", "NHL", "WNBA"];
     [...bySport.entries()].sort((a, b) => ((usa.indexOf(a[0]) + 1) || 99) - ((usa.indexOf(b[0]) + 1) || 99) || a[0].localeCompare(b[0])).forEach(([sport, games]) => {
       const group = document.createElement("details");
