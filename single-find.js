@@ -62,4 +62,17 @@ function markPlayer(name, bets, games) {
   return JSON.parse(raw);
 }
 
-module.exports = { singleFind, markPlayer };
+async function whyPlayer(name, text, sport) {
+  const raw = execFileSync("python3", ["-m", "nfl_bets.why"], {
+    input: JSON.stringify({ name: String(name || ""), text: String(text || ""), sport: String(sport || "") }),
+    encoding: "utf8", timeout: 20000, maxBuffer: 2 * 1024 * 1024, cwd: __dirname,
+  });
+  const found = JSON.parse(raw);
+  try {
+    const spoken = await require("./bet-ask").askTrend(name, text, found.why || "", sport);
+    if (spoken) return { why: spoken };
+  } catch (err) { /* keep the box score */ }
+  return found;
+}
+
+module.exports = { singleFind, markPlayer, whyPlayer };

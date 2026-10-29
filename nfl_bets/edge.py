@@ -337,7 +337,11 @@ def _rows(pack: dict[str, Any], keys: tuple[str, ...]) -> list[dict[str, Any]]:
 
 def _share(rows: list[dict], bar: float, under: bool) -> str:
     hits = _hits(rows, bar, under)
-    return f"{hits} of {len(rows)} · {round(hits / len(rows) * 100)}%"
+    per = sum(row["value"] for row in rows) / len(rows)
+    shown = int(per) if float(per).is_integer() else round(per, 1)
+    played = [row["minutes"] for row in rows if isinstance(row.get("minutes"), (int, float))]
+    clock = f" · {round(sum(played) / len(played))} min" if played and len(played) == len(rows) else ""
+    return f"{hits} of {len(rows)} · {round(hits / len(rows) * 100)}% · {shown} a game{clock}"
 
 
 def _windows(pack: dict[str, Any], text: str) -> str:

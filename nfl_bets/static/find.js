@@ -4,7 +4,7 @@ const parlayPick = new Map(), parlayLeg = new Map(), parlayKey = (bet) => [bet.l
 
 function paintParlay() {
   const count = parlayLeg.size >= 2 ? parlayLeg.size : parlayPick.size, label = count < 2 ? "Build a parlay" : `Build a ${count}-leg parlay`;
-  document.querySelectorAll(".find-roster > button.find-parlay").forEach((node) => { node.hidden = parlayPick.size < 2; node.textContent = parlayPick.size < 2 ? "Build a parlay" : `Build a ${parlayPick.size}-leg parlay`; }); document.querySelectorAll(".find-list > button.find-parlay").forEach((node) => { node.textContent = parlayPick.has(node.dataset.key) ? "In the parlay" : "Add to the parlay"; }); document.querySelectorAll("button.find-leg").forEach((node) => { const on = parlayLeg.has(node.dataset.key); node.classList.toggle("on", on); node.textContent = on ? "In the parlay" : "Add this leg"; });
+  document.querySelectorAll(".find-roster > button.find-parlay").forEach((node) => { node.hidden = parlayPick.size < 2; node.textContent = parlayPick.size < 2 ? "Build a parlay" : `Build a ${parlayPick.size}-leg parlay`; }); document.querySelectorAll(".find-list > button.find-parlay").forEach((node) => { const on = parlayPick.has(node.dataset.key); node.textContent = on ? "In the parlay" : "Add to the parlay"; node.disabled = on; }); document.querySelectorAll("button.find-leg").forEach((node) => { const on = parlayLeg.has(node.dataset.key); node.classList.toggle("on", on); node.textContent = on ? "In the parlay" : "Add this leg"; });
   const tray = document.querySelector(".find-tray");
   if (!tray) return;
   tray.replaceChildren();
@@ -139,6 +139,8 @@ function fillFind(board, data) {
     const head = document.createElement("summary");
     head.textContent = `${box.dataset.span === "today" ? "Today" : "This week"}, ${rows.length} ${rows.length === 1 ? "game" : "games"}`;
     box.replaceChildren(head); box.hidden = rows.length === 0;
+    const held = rows; const outs = document.createElement("details"); const outSum = document.createElement("summary"); outSum.textContent = "Who's out"; outs.append(outSum); box.append(outs);
+    outs.addEventListener("toggle", () => { if (!outs.open || outs.dataset.got) return; outs.dataset.got = "1"; const wait = document.createElement("p"); wait.className = "quiet"; wait.textContent = "Checking who's out."; outs.append(wait); fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "out" }) }).then((res) => res.json()).then((data) => { wait.remove(); const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }); const playing = (data.out || []).filter((row) => held.some((game) => { const sides = String(game.match || "").split(/\s@\s|\sv\s/).map((side) => plainName(side.replace(/\(.*?\)/g, ""))); const day = fmt.format(Date.parse(game.kickoff || "")); return sides.includes(plainName(row.team)) && (!row.back || day < row.back); })); const by = new Map(); playing.forEach((row) => { const team = row.team || "Other"; if (!by.has(team)) by.set(team, []); by.get(team).push(row); }); if (!by.size) { const empty = document.createElement("p"); empty.className = "quiet"; empty.textContent = "Nobody is listed out."; outs.append(empty); return; } [...by.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([team, list]) => { const group = document.createElement("details"); const title = document.createElement("summary"); title.textContent = `${team}, ${list.length} out`; group.append(title); list.sort((a, b) => a.player.localeCompare(b.player)).forEach((row) => { const line = document.createElement("p"); line.className = "quiet"; line.style.padding = "0.35rem 0.65rem 0.45rem 1.35rem"; line.textContent = [row.note ? `${row.player}. ${row.note}` : `${row.player} is out.`, row.spot].filter(Boolean).join(" "); group.append(line); }); outs.append(group); }); }).catch(() => { wait.textContent = "The injury report did not load."; }); });
     const usa = ["NFL", "NBA", "MLB", "NHL", "WNBA"];
     [...bySport.entries()].sort((a, b) => ((usa.indexOf(a[0]) + 1) || 99) - ((usa.indexOf(b[0]) + 1) || 99) || a[0].localeCompare(b[0])).forEach(([sport, games]) => {
       const group = document.createElement("details");
@@ -166,28 +168,28 @@ function fillFind(board, data) {
     if (q.length < 2) { if (!list.querySelector(".rec-bet")) list.replaceChildren(); return; } teams.replaceChildren();
     board.querySelectorAll(".find-games").forEach((node) => { node.open = false; });
     const words = q.split(" ").filter(Boolean);
-    people.filter((person) => person.name.toLowerCase().includes(q)).slice(0, 8).forEach((person) => { const button = document.createElement("button"); button.type = "button"; button.textContent = person.name; button.addEventListener("click", () => showFind(list, hits, person, roster, people)); hits.append(button); });
-    (today.games || (today.games = loadedGames(people, "today"))).concat(week.games || (week.games = loadedGames(people, "week"))).filter((game) => words.every((word) => String(game.match || "").toLowerCase().includes(word))).slice(0, 8).forEach((game) => { const button = document.createElement("button"); button.type = "button"; button.textContent = [game.match, game.kickoff && window.when ? `${window.when(game.kickoff)} ET` : ""].filter(Boolean).join(", "); button.addEventListener("click", () => { hits.replaceChildren(); teams.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on"); span.classList.add("find-picked"); games.hidden = false; today.open = false; week.open = false; paintMatch(teams, game, people, list, hits); }); hits.append(button); });
-    if (!(findParts.week && findParts.week.data)) { const note = document.createElement("p"); note.className = "quiet"; note.textContent = "Looking up the rest of the week."; hits.append(note); } if (hits.querySelector("button") || q.split(" ").length < 2) return;
-    const note = document.createElement("p");
-    note.textContent = "Nobody on the board matches that. Player props for that name are not posted yet.";
-    hits.append(note);
+    const todayGames = today.games || (today.games = loadedGames(people, "today")), weekGames = week.games || (week.games = loadedGames(people, "week")), todayOn = today.classList.contains("find-on");
+    const slate = todayOn ? todayGames : weekGames, keys = new Set(slate.map((game) => `${game.match}|${game.kickoff}`));
+    const plays = (person, set) => (person.bets || []).some((bet) => set.has(`${bet.match}|${bet.kickoff}`));
+    const want = plainName(q), named = (person) => plainName(person.name).includes(want);
+    people.filter((person) => named(person) && plays(person, keys)).slice(0, 8).forEach((person) => { const button = document.createElement("button"); button.type = "button"; button.textContent = person.name; button.addEventListener("click", () => showFind(list, hits, person, roster, people)); hits.append(button); });
+    slate.filter((game) => words.every((word) => String(game.match || "").toLowerCase().includes(word))).slice(0, 8).forEach((game) => { const button = document.createElement("button"); button.type = "button"; button.textContent = [game.match, game.kickoff && window.when ? `${window.when(game.kickoff)} ET` : ""].filter(Boolean).join(", "); button.addEventListener("click", () => { hits.replaceChildren(); teams.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on"); span.classList.add("find-picked"); games.hidden = false; today.open = false; week.open = false; paintMatch(teams, game, people, list, hits); }); hits.append(button); });
+    if (!(findParts.week && findParts.week.data)) { const note = document.createElement("p"); note.className = "quiet"; note.textContent = "Looking up the rest of the week."; hits.append(note); }
+    const otherGames = todayOn ? weekGames : todayGames, otherKeys = new Set(otherGames.map((game) => `${game.match}|${game.kickoff}`)), otherPeople = people.filter((person) => person.kind === "player" && named(person) && plays(person, otherKeys)), gameWords = (game) => words.every((word) => String(game.match || "").toLowerCase().includes(word));
+    const otherHit = !hits.querySelector("button") && (otherPeople.length > 0 || otherGames.some(gameWords));
+    if (otherHit && !todayOn && otherPeople.length === 1 && !otherGames.some(gameWords)) showFind(list, hits, otherPeople[0], roster, people);
+    else if (otherHit) { const ask = document.createElement("button"); ask.type = "button"; ask.dataset.week = "1"; ask.textContent = todayOn ? "Search this week?" : "Search today?"; ask.style.cssText = "flex:1 0 100%;background:transparent;color:#e7c15a"; ask.addEventListener("click", () => { pickSpan(todayOn ? "week" : "today"); input.dispatchEvent(new Event("input")); (todayOn ? week : today).open = true; }); hits.append(ask); }
+    const missed = !hits.querySelector("button:not([data-week])") && !list.querySelector("h3") && q.split(" ").length >= 2 && !otherHit;
+    if (missed) { const note = document.createElement("p"); note.className = "quiet"; note.textContent = "Nobody on the board matches that. Player props for that name are not posted yet."; hits.append(note); }
+    if (q.length < 3) return;
     fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "club", name: q }) }).then((res) => res.json()).then((data) => {
       if (stamp !== clubStamp || !hits.isConnected) return;
-      const clubs = (data.clubs || []).map((row) => ({ player: row.player, team: people.find((person) => person.kind === "team" && person.name.toLowerCase() === String(row.team || "").toLowerCase() && (person.bets || []).length) })).filter((row) => row.team);
-      if (!clubs.length) return;
-      hits.replaceChildren();
-      const line = document.createElement("p");
-      line.textContent = `${clubs[0].player} has no props posted. ${clubs.length === 1 ? `${clubs[0].team.name} has lines.` : "These teams have lines."}`;
-      hits.append(line);
-      clubs.forEach((row) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.textContent = row.team.name;
-        button.addEventListener("click", () => showFind(list, hits, row.team, roster, people));
-        hits.append(button);
-      });
-    }).catch(() => {});
+      (data.out || []).slice(0, 3).reverse().forEach((row) => { const line = document.createElement("p"); line.className = "find-why"; line.style.flex = "1 0 100%"; const note = String(row.note || "").trim(); line.textContent = row.status === "doubtful" ? `${row.player} is doubtful.${note ? ` ${note}` : ""}` : `${row.player} is not playing.${note ? ` ${note}` : ""}`; hits.prepend(line); });
+      if ((data.out || []).length) { hits.querySelectorAll(":scope > p.quiet").forEach((node) => { if (/not posted yet/.test(node.textContent || "")) node.remove(); }); const ask = hits.querySelector("[data-week]"); if (ask) ask.remove(); }
+      const clubs = (data.clubs || []).map((row) => ({ player: row.player, teamName: row.team || "", team: people.find((person) => person.kind === "team" && person.name.toLowerCase() === String(row.team || "").toLowerCase() && (person.bets || []).length) }));
+      if (clubs.length && !hits.querySelector("button") && !list.querySelector("h3") && !(data.out || []).length) { hits.replaceChildren(); clubs.forEach((row) => { const line = document.createElement("p"); line.className = "find-why"; line.style.flex = "1 0 100%"; line.textContent = row.team ? `${row.player} has no props posted. ${row.team.name} has lines.` : `${row.player}, ${row.teamName}. No bets on the desk.`; hits.append(line); if (!row.team) return; const button = document.createElement("button"); button.type = "button"; button.textContent = row.team.name; button.addEventListener("click", () => showFind(list, hits, row.team, roster, people)); hits.append(button); }); }
+      const only = [...hits.querySelectorAll("button:not([data-week])")]; if (only.length === 1 && !list.querySelector("h3") && !(data.out || []).length) only[0].click();
+    }).catch(() => { if (stamp !== clubStamp || !hits.isConnected) return; const only = [...hits.querySelectorAll("button:not([data-week])")]; if (only.length === 1 && !list.querySelector("h3")) only[0].click(); });
   });
   input.focus();
 }
@@ -202,7 +204,7 @@ function fillRoster(roster, team, list, hits, people) {
   roster.open = false;
   roster.replaceChildren();
   const sport = (team.bets && team.bets[0] && team.bets[0].sport) || "";
-  fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "roster", name: team.name, sport }) }).then((res) => res.json()).then((data) => {
+  Promise.all([fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "roster", name: team.name, sport }) }).then((res) => res.json()), fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "out" }) }).then((res) => res.json()).catch(() => ({}))]).then(([data, report]) => {
     if (stamp !== roster.stamp || !roster.isConnected) return;
     const rows = Array.isArray(data.players) ? data.players : [];
     if (!rows.length) return;
@@ -214,23 +216,25 @@ function fillRoster(roster, team, list, hits, people) {
     roster.hidden = false;
     const byName = new Map();
     (people || []).forEach((item) => { if (item.kind === "player" && (item.bets || []).length) byName.set(plainName(item.name), item); });
-    const lined = [];
-    const quiet = [];
-    rows.forEach((name) => { const hit = byName.get(plainName(name)); if (hit) lined.push(hit); else quiet.push(name); });
+    const lined = [], quiet = [], folded = [];
+    rows.forEach((row) => { const name = row && row.name || row; const hit = byName.get(plainName(name)); if (hit) lined.push(hit); else if (row && row.fold) folded.push(name); else quiet.push(name); });
     const withProps = lined.length === 1 ? "1 has props" : `${lined.length} have props`;
-    summary.textContent = `${rows.length} players, ${withProps}`;
+    const kick = team.bets && team.bets[0] && team.bets[0].kickoff, day = kick ? new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(Date.parse(kick)) : "", club = plainName(String(team.name || "").replace(/\(.*?\)/g, "")), nick = club.split(" ").pop(), absent = new Set((report.out || []).filter((row) => { const side = plainName(row.team); return (side === club || (nick.length > 3 && side.endsWith(` ${nick}`))) && (!row.back || !day || day < row.back); }).map((row) => plainName(row.player)));
+    summary.textContent = `${rows.length} players, ${withProps}${absent.size ? `, ${absent.size} out` : ""}`;
     lined.sort((a, b) => a.name.localeCompare(b.name));
-    quiet.sort((a, b) => a.localeCompare(b));
+    quiet.sort((a, b) => Number(absent.has(plainName(b))) - Number(absent.has(plainName(a))) || a.localeCompare(b));
+    folded.sort((a, b) => a.localeCompare(b));
     names.replaceChildren();
     lined.forEach((hit) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.textContent = hit.name;
+      button.textContent = absent.has(plainName(hit.name)) ? `${hit.name}, out` : hit.name;
       if (parlayPick.has(hit.key)) { button.classList.add("on"); button.setAttribute("aria-pressed", "true"); }
       button.addEventListener("click", () => { const field = document.querySelector(".find-board label.find input"); const boardRoster = list.parentElement && list.parentElement.querySelector(":scope > .find-roster"); if (field) { field.value = hit.name; field.dispatchEvent(new Event("input", { bubbles: true })); } showFind(list, hits, hit, boardRoster || roster, people); });
       names.append(button);
     });
-    quiet.forEach((name) => { const span = document.createElement("span"); span.textContent = name; names.append(span); });
+    quiet.forEach((name) => { const span = document.createElement("span"); const gone = absent.has(plainName(name)); span.textContent = gone ? `${name}, out` : name; if (gone) span.className = "find-absent"; names.append(span); });
+    if (folded.length) { const more = document.createElement("details"); more.style.flex = "1 0 100%"; const sum = document.createElement("summary"); sum.textContent = `Defense and the line, ${folded.length}`; more.append(sum); folded.forEach((name) => { const span = document.createElement("span"); const gone = absent.has(plainName(name)); span.textContent = gone ? `${name}, out` : name; if (gone) span.className = "find-absent"; more.append(span); }); names.append(more); }
     const build = document.createElement("button");
     build.type = "button";
     build.className = "find-parlay";
@@ -427,9 +431,9 @@ function showFind(list, hits, person, roster, people, keep) {
   const holder = list.parentElement && list.parentElement.querySelector(".find-teams"); if (holder) { holder.replaceChildren(); const span = list.parentElement.querySelector(".find-span"); if (span) { span.classList.add("find-picked"); const go = span.querySelector(".find-games-go"); if (go) go.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); } const seen = new Set(); bets.forEach((bet) => { const key = `${bet.match}|${bet.kickoff}`; if (!bet.match || seen.has(key)) return; seen.add(key); paintMatch(holder, bet, people, list, hits); }); }
   list.replaceChildren(); list.classList.remove("find-only-on");
   const heading = document.createElement("h3");
-  heading.innerHTML = `${esc(person.name)} <span class="rec-count">${bets.length}</span>`;
+  heading.innerHTML = `${esc(person.name)} <span class="rec-count">${bets.length} available bet${bets.length === 1 ? "" : "s"}</span>`;
+  if (person.kind === "player") { const add = document.createElement("button"); add.type = "button"; add.className = "find-parlay"; add.dataset.key = person.key; add.textContent = parlayPick.has(person.key) ? "In the parlay" : "Add to the parlay"; add.addEventListener("click", () => { if (parlayPick.has(person.key) || parlayPick.size >= 8) return; parlayPick.set(person.key, person); document.querySelectorAll(".find-names button").forEach((node) => { if (node.textContent === person.name) { const on = parlayPick.has(person.key); node.classList.toggle("on", on); node.setAttribute("aria-pressed", on ? "true" : "false"); } }); paintParlay(); }); list.append(add); }
   list.append(heading);
-  if (person.kind === "player") { const add = document.createElement("button"); add.type = "button"; add.className = "find-parlay"; add.dataset.key = person.key; add.textContent = parlayPick.has(person.key) ? "In the parlay" : "Add to the parlay"; add.addEventListener("click", () => { if (parlayPick.has(person.key)) parlayPick.delete(person.key); else if (parlayPick.size < 8) parlayPick.set(person.key, person); document.querySelectorAll(".find-names button").forEach((node) => { if (node.textContent === person.name) { const on = parlayPick.has(person.key); node.classList.toggle("on", on); node.setAttribute("aria-pressed", on ? "true" : "false"); } }); paintParlay(); }); list.append(add); }
   if (!bets.length) {
     const note = document.createElement("p");
     note.textContent = "Nothing posted for that name.";
@@ -475,20 +479,17 @@ function markFind(list, name, bets) {
       const why = document.createElement("p");
       why.className = "find-why";
       why.textContent = mark.why;
-      row.append(why); if (mark.spans) { const log = document.createElement("div"); log.className = "find-log"; mark.spans.split(". ").forEach((bit) => { const [label, value] = bit.replace(/\.$/, "").split(", "); const item = document.createElement("span"); const name = document.createElement("b"); name.textContent = label; item.append(name, document.createTextNode(value || "")); log.append(item); }); row.append(log); if (mark.lean) { const lean = document.createElement("p"); lean.className = "find-dive"; lean.textContent = mark.lean; row.append(lean); } } const own = (mark.notes || []).filter((line) => !shared.includes(line)); if (own.length) { const dive = document.createElement("p"); dive.className = "find-dive"; dive.textContent = own.join(" · "); row.append(dive); }
+      row.append(why); if (mark.spans) { const log = document.createElement("div"); log.className = "find-log"; mark.spans.split(". ").forEach((bit) => { const [label, value] = bit.replace(/\.$/, "").split(", "); const item = document.createElement("span"); const name = document.createElement("b"); name.textContent = label; item.append(name, document.createTextNode(value || "")); log.append(item); }); row.append(log); if (/Last 10,/.test(mark.spans) && /Career,/.test(mark.spans)) { const go = document.createElement("button"); go.type = "button"; go.className = "find-why-go"; go.textContent = "Why the recent trend?"; go.addEventListener("click", () => { if (go.disabled) return; go.disabled = true; const was = go.textContent; go.textContent = "Reading the trend."; const gist = (row.querySelector(".rec-gist") || {}).textContent || ""; const sport = ((gist.split("—")[1] || "").split(",")[0] || "").trim(); fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "why", name, text: gist, sport }) }).then((res) => res.json()).then((data) => { const line = document.createElement("p"); line.className = "find-dive"; line.textContent = data.why || "The log is too short to split the last 10 from the career."; go.replaceWith(line); }).catch(() => { go.disabled = false; go.textContent = was; }); }); log.after(go); } if (mark.lean) { const lean = document.createElement("p"); lean.className = "find-dive"; lean.textContent = mark.lean; row.append(lean); } } const own = (mark.notes || []).filter((line) => !shared.includes(line)); if (own.length) { const dive = document.createElement("p"); dive.className = "find-dive"; dive.textContent = own.join(" · "); row.append(dive); }
       row.dataset.gap = String(mark.gap);
       row.classList.add("find-mark");
       marked.push(row);
     });
     marked.sort((a, b) => Number(b.dataset.gap) - Number(a.dataset.gap));
-    const hits = document.createElement("div");
-    hits.className = "find-hits";
     const button = document.createElement("button");
-    button.type = "button";
+    button.type = "button"; button.className = "find-show";
     button.textContent = "Show all"; list.classList.add("find-only-on");
     button.addEventListener("click", () => { const on = list.classList.toggle("find-only-on"); button.textContent = on ? "Show all" : "Show those"; });
-    hits.append(button);
-    note.after(hits); if (shared.length) { const once = document.createElement("p"); once.className = "find-dive"; once.textContent = shared.join(" · "); const add = list.querySelector(":scope > button.find-parlay"); (add || hits).after(once); }
+    if (heading) heading.append(button); if (shared.length) { const once = document.createElement("p"); once.className = "find-dive"; once.textContent = shared.join(" · "); note.after(once); }
     marked.concat(rest).forEach((row) => list.append(row));
   }).catch(() => { if (wait.isConnected) wait.remove(); if (board && !board.querySelector(".bet-load")) board.classList.remove("find-wait"); });
 }

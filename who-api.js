@@ -111,30 +111,76 @@ async function nameBook(games, offerLegs, span) {
 }
 
 const clubCache = new Map();
+const OUT_PATHS = ["basketball/nba", "football/nfl", "baseball/mlb", "hockey/nhl"];
+let outCache = { at: 0, rows: null };
+
+function plainName(name) {
+  return String(name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z\s]/g, "").replace(/\s+/g, " ").trim();
+}
+
+function spotLine(text) {
+  return String(text || "").split(/(?<=[.!?])\s+/).filter((line) => /replace|starting lineup|playing time|gets the start|will start|in his place|in her place|more minutes|uptick|increased/i.test(line)).slice(0, 2).join(" ").trim();
+}
+
+function nameHit(player, q) {
+  const tokens = plainName(player).split(" ").filter(Boolean);
+  const words = plainName(q).split(" ").filter(Boolean);
+  return words.length > 0 && words.every((word) => tokens.some((token) => token === word || (word.length >= 4 && token.startsWith(word) && token.length - word.length <= 1)));
+}
+
+async function outPlayers() {
+  if (outCache.rows && Date.now() - outCache.at < 10 * 60 * 1000) return outCache.rows;
+  const rows = [];
+  await Promise.all(OUT_PATHS.map(async (path) => {
+    try {
+      const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${path}/injuries`, { headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" } });
+      if (!res.ok) return;
+      const data = await res.json();
+      for (const team of data.injuries || []) {
+        for (const item of team.injuries || []) {
+          const status = String(item.status || "").toLowerCase();
+          if (status !== "out" && status !== "doubtful") continue;
+          const player = String((item.athlete || {}).displayName || "").trim();
+          if (player) rows.push({ player, team: String(team.displayName || ""), status, note: String(item.shortComment || "").trim(), spot: status === "out" ? spotLine(item.longComment) : "", back: String((item.details || {}).returnDate || "").slice(0, 10) });
+        }
+      }
+    } catch (error) { /* a league feed can miss */ }
+  }));
+  outCache = { at: Date.now(), rows };
+  return rows;
+}
 
 async function playerClub(raw) {
   const q = String(raw || "").replace(/\s+/g, " ").trim();
   const want = q.toLowerCase();
-  if (want.split(" ").length < 2) return { clubs: [] };
-  if (clubCache.has(want)) return clubCache.get(want);
-  let data = {};
-  try {
-    const res = await fetch(`https://site.web.api.espn.com/apis/common/v3/search?query=${encodeURIComponent(q)}&limit=8&type=player`, { headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" } });
-    if (res.ok) data = await res.json();
-  } catch (error) { data = {}; }
-  const clubs = [];
-  const seen = new Set();
-  for (const item of data.items || []) {
-    const name = String(item && item.displayName || "");
-    if (!name || item.isActive === false || !name.toLowerCase().includes(want)) continue;
-    const team = String(((item.teamRelationships || [])[0] || {}).displayName || "");
-    if (!team || seen.has(team.toLowerCase())) continue;
-    seen.add(team.toLowerCase());
-    clubs.push({ player: name, team });
+  if (want.length < 3) return { clubs: [], out: [] };
+  const words = want.split(" ");
+  let clubs = [];
+  if (clubCache.has(want)) clubs = clubCache.get(want).clubs;
+  else {
+    let data = {};
+    try {
+      const res = await fetch(`https://site.web.api.espn.com/apis/common/v3/search?query=${encodeURIComponent(q)}&limit=8&type=player`, { headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" } });
+      if (res.ok) data = await res.json();
+    } catch (error) { data = {}; }
+    const pro = new Set(["nba", "nfl", "mlb", "nhl", "wnba"]);
+    const seen = new Set();
+    for (const item of data.items || []) {
+      const name = String(item && item.displayName || "");
+      const whole = words.length >= 2 && plainName(name).includes(plainName(want));
+      if (!name || item.isActive === false || !pro.has(String(item.league || "")) || (!whole && !nameHit(name, want))) continue;
+      const team = String(((item.teamRelationships || [])[0] || {}).displayName || "");
+      if (!team || seen.has(plainName(name))) continue;
+      seen.add(plainName(name));
+      clubs.push({ player: name, team });
+    }
+    clubs.sort((a, b) => (plainName(a.player).startsWith(words[0]) ? 0 : 1) - (plainName(b.player).startsWith(words[0]) ? 0 : 1) || a.player.length - b.player.length);
+    clubs = clubs.slice(0, 4);
+    clubCache.set(want, { clubs });
   }
-  const found = { clubs };
-  clubCache.set(want, found);
-  return found;
+  let out = [];
+  try { out = (await outPlayers()).filter((row) => nameHit(row.player, want)).sort((a, b) => a.player.length - b.player.length).slice(0, 3); } catch (error) { out = []; }
+  return { clubs, out };
 }
 
 const rosterCache = new Map();
@@ -160,10 +206,15 @@ async function teamRoster(raw, sport) {
     if (team) {
       const page = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${team.sport}/${team.league}/teams/${team.id}/roster`, { headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" } });
       const roster = page.ok ? await page.json() : {};
+      const linePos = new Set(["OT", "OG", "G", "C", "OL", "T", "LT", "RT", "LG", "RG"]);
+      const defPos = new Set(["CB", "S", "FS", "SS", "DB", "LB", "ILB", "OLB", "MLB", "DT", "DE", "DL", "NT", "EDGE"]);
+      const football = team.league === "nfl";
       for (const group of roster.athletes || []) {
+        const spot = String(group.position || "");
         for (const item of group.items || (group.displayName ? [group] : [])) {
           const name = String(item.displayName || item.fullName || "").trim();
-          if (name && String((item.status && item.status.type) || "active") !== "inactive") found.players.push(name);
+          const pos = String((item.position && item.position.abbreviation) || "");
+          if (name && String((item.status && item.status.type) || "active") !== "inactive") found.players.push({ name, fold: football && (spot === "defense" || linePos.has(pos) || defPos.has(pos)) });
         }
       }
     }
@@ -172,4 +223,10 @@ async function teamRoster(raw, sport) {
   return found;
 }
 
-module.exports = { playerNames, nameBook, playerClub, teamRoster };
+async function outList() {
+  const rows = (await outPlayers()).filter((row) => row.status === "out").map(({ player, team, note, spot, back }) => ({ player, team, note, spot, back }));
+  rows.sort((a, b) => a.team.localeCompare(b.team) || a.player.localeCompare(b.player));
+  return { out: rows };
+}
+
+module.exports = { playerNames, nameBook, playerClub, teamRoster, outList };
