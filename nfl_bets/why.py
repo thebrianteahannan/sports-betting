@@ -344,7 +344,7 @@ def read_one(name: str, leg: dict[str, Any]) -> dict[str, str]:
     sport = str(leg.get("sport") or "")
     path = _PATH.get(sport)
     pack = (_career(sport, path, name) or None) if path and name else None
-    spans = _windows(pack, text) if pack else ""
+    spans = _windows(pack, text, sport) if pack else ""
     try:
         price = implied_prob(float(leg.get("odds")))
     except (TypeError, ValueError):

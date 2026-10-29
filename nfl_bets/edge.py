@@ -344,16 +344,23 @@ def _share(rows: list[dict], bar: float, under: bool) -> str:
     return f"{hits} of {len(rows)} · {round(hits / len(rows) * 100)}% · {shown} a game{clock}"
 
 
-def _windows(pack: dict[str, Any], text: str) -> str:
+_SPAN = {"NFL": (3, 5, 10, 15, 17), "NCAAF": (3, 5, 8, 10, 12), "NBA": (3, 6, 10, 25, 50), "NHL": (3, 6, 10, 25, 50), "WNBA": (3, 6, 10, 20, 30), "NCAAB": (3, 5, 10, 15, 25), "MLB": (3, 10, 20, 40, 81)}
+
+
+def _windows(pack: dict[str, Any], text: str, sport: str = "") -> str:
     spec = _spec(text)
     rows = _rows(pack, spec[0]) if spec else []
     bar = _bar(text, spec[2]) if spec else None
     if bar is None or len(rows) < 3:
         return ""
     under = bool(re.search(r"\bunder\b", text, re.I))
-    bits = [f"Last {n}, {_share(rows[:n], bar, under)}" for n in (3, 6, 10, 25, 50, 82) if len(rows) >= n]
-    years = [row.get("season") for row in rows if row.get("season")]
-    last = [row for row in rows if years and row.get("season") == max(years) - 1]
+    counts = _SPAN.get(sport) or (3, 6, 10, 25, 50)
+    bits = [f"Last {n}, {_share(rows[:n], bar, under)}" for n in counts if len(rows) >= n]
+    year = max((int(row["season"]) for row in rows if row.get("season")), default=0)
+    now = [row for row in rows if year and int(row.get("season") or 0) == year]
+    last = [row for row in rows if year and int(row.get("season") or 0) == year - 1]
+    if len(now) >= 3:
+        bits.append(f"This season, {_share(now, bar, under)}")
     if len(last) >= 3:
         bits.append(f"Last season, {_share(last, bar, under)}")
     bits.append(f"Career, {_share(rows, bar, under)}")

@@ -298,7 +298,7 @@ function askRead(row, name) {
   const leg = row.querySelector(".find-leg");
   if (leg) leg.after(button); else row.append(button);
   const list = row.parentElement;
-  if (list && kindOn(list) && !row.classList.contains("find-off")) loadHistory(row, name);
+  if (row.classList.contains("find-open") || (list && kindOn(list) && !row.classList.contains("find-off"))) loadHistory(row, name);
 }
 
 function paintHistory(row, button, data, name) {
@@ -392,4 +392,55 @@ function parlayNext(legs, said) {
   const order = ["td2", "td3", "ou4", "alt3", "yards3", "four", "hits", "mix21", "low3", "safe2", "mid3", "plusLegs", "early3", "prime3", "weekend4", "win4", "games4"];
   ideas.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   return ideas.length ? ideas[0].text : "";
+}
+
+function openLeg(person, key) {
+  const board = document.querySelector(".find-board");
+  const list = board && board.querySelector(".find-list");
+  const hits = board && board.querySelector(":scope > .find-hits:not(.find-tray)");
+  const roster = board && board.querySelector(":scope > .find-roster");
+  if (!list || !hits || !person) return;
+  const heading = list.querySelector("h3");
+  const shown = heading && heading.childNodes[0] && heading.childNodes[0].textContent.trim() === person.name;
+  if (!shown) showFind(list, hits, person, roster, board.people || []);
+  const leg = [...list.querySelectorAll(".find-leg")].find((node) => node.dataset.key === key);
+  const row = leg && leg.closest(".rec-bet");
+  if (!row) return;
+  list.querySelectorAll(".rec-bet.find-open").forEach((node) => node.classList.remove("find-open"));
+  row.classList.remove("find-off");
+  row.classList.add("find-open");
+  if (row.querySelector(".find-read")) loadHistory(row, person.name);
+  const glass = document.getElementById("desk-glass-in");
+  const tray = document.querySelector(".find-tray");
+  if (glass) {
+    const top = row.getBoundingClientRect().top - glass.getBoundingClientRect().top + glass.scrollTop;
+    const stick = tray ? tray.offsetHeight : 0;
+    glass.scrollTop = Math.max(0, top - stick - 8);
+  }
+}
+
+function paintTrayBuild(tray) {
+  const legs = [...parlayLeg.values()];
+  const group = [...parlayPick.values()];
+  const covered = !group.length || group.every((person) => legs.some((bet) => String(bet.label || "").startsWith(person.name)));
+  if (legs.length < 2 || !covered) return;
+  const dec = legs.reduce((p, leg) => p * (1 + findRank(leg.odds)), 1);
+  const price = dec >= 2 ? Math.round((dec - 1) * 100) : Math.round(-100 / (dec - 1));
+  const line = document.createElement("div");
+  line.className = "find-ticket";
+  const head = document.createElement("b");
+  const tag = price > 0 ? `+${price}` : String(price);
+  head.textContent = [tag, findPct(price), `$5 profits ${findCash(price)}`].filter(Boolean).join(" · ");
+  const share = document.createElement("button");
+  share.type = "button";
+  share.className = "share-bet";
+  share.dataset.share = "rec";
+  const ticket = { title: `${legs.length}-leg parlay`, american: price, impliedPct: findPct(price), legs };
+  share.dataset.shareId = String((window.recTickets = window.recTickets || []).push({ ticket, name: ticket.title }) - 1);
+  share.setAttribute("aria-label", "Share this bet");
+  line.append(head, share);
+  const rows = [...tray.querySelectorAll(".find-row")];
+  const name = rows[0] && rows[0].querySelector(".find-in");
+  if (rows.length === 1 && name) name.before(line);
+  else { const say = tray.querySelector(".find-say"); if (say) say.after(line); else if (name) name.before(line); else tray.append(line); }
 }

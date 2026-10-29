@@ -298,7 +298,7 @@ def mark_player(name: str, legs: list[dict[str, Any]], games: list[dict[str, Any
         if not found:
             continue
         gap, _sample, why = max(found, key=lambda row: (row[0], row[1]))
-        marks.append({"index": index, "gap": gap, "why": why, "notes": _extra(name, pack, team, game, leg, why), "spans": _windows(long, text), "lean": _lean(long, text, price)})
+        marks.append({"index": index, "gap": gap, "why": why, "notes": _extra(name, pack, team, game, leg, why), "spans": _windows(long, text, sport), "lean": _lean(long, text, price)})
     marks.sort(key=lambda row: row["gap"], reverse=True)
     return {"known": True, "marks": marks}
 
