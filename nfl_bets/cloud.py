@@ -50,15 +50,94 @@ def publish_board(board: dict[str, Any]) -> None:
     publish_logs()
 
 
-def publish_logs() -> None:
-    """Career logs live on the Mac. The website reads the same rows back."""
+def _log_body(pack: dict[str, Any]) -> dict[str, Any]:
+    return {"at": pack.get("at"), "team": pack.get("team") or "", "names": pack.get("names") or [], "rows": pack.get("rows") or []}
+
+
+def _open_logs() -> tuple[dict[str, Any], dict[str, Any]] | None:
     if not configured():
-        return
+        return None
     cache = read_json(out_dir() / "sway.json", {})
     sent = read_json(out_dir() / "log-sent.json", {})
     if not isinstance(cache, dict) or not isinstance(sent, dict):
+        return None
+    return cache, sent
+
+
+def _players_missing_career(cache: dict[str, Any]) -> list[tuple[str, str]]:
+    from nfl_bets.sway import _PATH
+    missing = []
+    for key, pack in cache.items():
+        text = str(key)
+        if text.endswith("|career") or text.count("|") != 1 or not isinstance(pack, dict) or not pack.get("rows"):
+            continue
+        sport, _, name = text.partition("|")
+        if sport not in _PATH or not name:
+            continue
+        have = cache.get(f"{sport}|{name}|career")
+        if isinstance(have, dict) and have.get("rows"):
+            continue
+        missing.append((sport, name))
+    return missing
+
+
+def _fill_due(sent: dict[str, Any]) -> bool:
+    try:
+        last = float(sent.get("filled") or 0)
+    except (TypeError, ValueError):
+        last = 0
+    return datetime.now(timezone.utc).timestamp() - last >= 24 * 3600
+
+
+def fill_careers() -> int:
+    """Build a career log for a player who still does not have one."""
+    from nfl_bets.sway import _PATH, _cache, _career
+    cache = _cache()
+    todo = _players_missing_career(cache)
+    if not todo:
+        return 0
+    print(f"career logs to build: {len(todo)}", flush=True)
+    built = 0
+    for index, (sport, name) in enumerate(todo, 1):
+        try:
+            pack = _career(sport, _PATH[sport], name)
+        except Exception:
+            pack = None
+        if isinstance(pack, dict) and pack.get("rows"):
+            built += 1
+        if index % 25 == 0 or index == len(todo):
+            print(f"career logs {index}/{len(todo)}, built {built}", flush=True)
+    return built
+
+
+def publish_logs() -> None:
+    """Career logs live on the Mac. The website reads the same rows back."""
+    opened = _open_logs()
+    if not opened:
         return
+    cache, sent = opened
     changed = False
+    for sport, name in _players_missing_career(cache):
+        pack = cache.get(f"{sport}|{name}")
+        if not isinstance(pack, dict) or not pack.get("rows"):
+            continue
+        key = f"{sport}|{name}"
+        stamp = str(pack.get("at") or "")
+        if sent.get(key) == stamp:
+            continue
+        try:
+            _put(f"bets/log/{sport}/{name}", _log_body(pack))
+        except RuntimeError:
+            continue
+        sent[key] = stamp
+        changed = True
+    if _fill_due(sent):
+        fill_careers()
+        sent["filled"] = str(datetime.now(timezone.utc).timestamp())
+        changed = True
+    cache = read_json(out_dir() / "sway.json", {})
+    if not isinstance(cache, dict):
+        cache = {}
     for key, pack in cache.items():
         if not str(key).endswith("|career") or not isinstance(pack, dict) or not pack.get("rows"):
             continue
@@ -67,7 +146,7 @@ def publish_logs() -> None:
             continue
         sport, name, _tail = str(key).split("|", 2)
         try:
-            _put(f"bets/log/{sport}/{name}", {"at": pack.get("at"), "team": pack.get("team") or "", "names": pack.get("names") or [], "rows": pack.get("rows") or []})
+            _put(f"bets/log/{sport}/{name}", _log_body(pack))
         except RuntimeError:
             continue
         sent[key] = stamp

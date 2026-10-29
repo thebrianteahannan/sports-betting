@@ -393,7 +393,7 @@ def _career(sport: str, path: tuple[str, str] | None, name: str) -> dict[str, An
     if not path or not name: return None
     key = f"{sport}|{name.lower()}|career"
     cached = _cache().get(key)
-    if isinstance(cached, dict) and cached.get("rows") and time.time() - float(cached.get("at") or 0) < _TTL: return cached
+    if isinstance(cached, dict) and cached.get("rows"): return cached
     sport_name, league = path
     try:
         found = _search(name, sport_name, league)
@@ -403,7 +403,8 @@ def _career(sport: str, path: tuple[str, str] | None, name: str) -> dict[str, An
         tagged = [dict(row, season=year) for row in rows]
         seen, empty = {(row.get("date"), row.get("opponent")) for row in tagged}, 0
         for probe in range(year - 1, max(year - 16, 1990), -1):
-            older_names, older, _got = _season(sport_name, league, athlete_id, probe)
+            try: older_names, older, _got = _season(sport_name, league, athlete_id, probe)
+            except (RuntimeError, TypeError): break
             empty = empty + 1 if not older else 0
             if empty >= 2:
                 break
