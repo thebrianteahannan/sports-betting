@@ -1,6 +1,6 @@
 /** Build a bet on the website. Same rules as the local desk. */
 
-const { addSway } = require("./sway-api"); const { singleFind, markPlayer, whyPlayer } = require("./single-find"); const { onesList } = require("./ones-find"); const { playerNames, nameBook, playerClub, teamRoster, outList } = require("./who-api");
+const { addSway } = require("./sway-api"); const { singleFind, markPlayer, whyPlayer } = require("./single-find"); const { onesList } = require("./ones-find"); const { playerNames, nameBook, playerClub, teamRoster, outList } = require("./who-api"); const { gameRead } = require("./game-read");
 const AK = "FhMFpcPWXMeyZxOx";
 const SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "PGA"];
 function propFamily(leg) {
@@ -469,7 +469,7 @@ async function chooseBet(body, board) {
   const mix = ["any", "even", "safer", "long"].includes(body.mix) ? body.mix : "even";
   const span = body.when === "week" ? "week" : "today";
   const games = slate(Array.isArray(board.games) ? board.games : [], picked, ids, span);
-  if (body.list === "why") return whyPlayer(body.name, body.text, body.sport, body.bet, body.odds, Array.isArray(board.games) ? board.games : []); if (body.list === "out") return outList(); if (body.list === "kinds") return listKinds(games); if (body.list === "ones") return onesList(Array.isArray(board.games) ? board.games : []); if (body.list === "lookup") return nameBook(Array.isArray(board.games) ? board.games : [], offerLegs, body.when === "week" ? "week" : "today"); if (body.list === "club") return playerClub(body.name); if (body.list === "roster") return teamRoster(body.name, body.sport); if (body.list === "mark") return markPlayer(body.name, body.bets, Array.isArray(board.games) ? board.games : []);
+  if (body.list === "game") return gameRead(body, board); if (body.list === "why") return whyPlayer(body.name, body.text, body.sport, body.bet, body.odds, Array.isArray(board.games) ? board.games : []); if (body.list === "out") return outList(); if (body.list === "kinds") return listKinds(games); if (body.list === "ones") return onesList(Array.isArray(board.games) ? board.games : []); if (body.list === "lookup") return nameBook(Array.isArray(board.games) ? board.games : [], offerLegs, body.when === "week" ? "week" : "today"); if (body.list === "club") return playerClub(body.name); if (body.list === "roster") return teamRoster(body.name, body.sport); if (body.list === "mark") return markPlayer(body.name, body.bets, Array.isArray(board.games) ? board.games : []);
   const safeAim = aim;
   if (!games.length) { if (body.list === "players") return { players: [] };
     const rows = Array.isArray(board.games) ? board.games : [];

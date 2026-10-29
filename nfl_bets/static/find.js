@@ -124,7 +124,7 @@ function fillFind(board, data) {
   const list = document.createElement("div");
   list.className = "find-list";
   board.people = people;
-  const today = document.createElement("details"); const week = document.createElement("details"); const span = document.createElement("div"); span.className = "find-span"; const games = document.createElement("button"); games.type = "button"; games.className = "find-games-go"; games.hidden = true; games.setAttribute("aria-label", "Games"); games.addEventListener("click", () => { span.classList.remove("find-picked"); games.hidden = true; (today.classList.contains("find-on") ? today : week).open = true; }); span.append(today, week); heading.append(games);
+  const today = document.createElement("details"); const week = document.createElement("details"); const span = document.createElement("div"); span.className = "find-span"; const games = document.createElement("button"); games.type = "button"; games.className = "find-games-go"; games.hidden = true; games.textContent = "More games"; games.addEventListener("click", () => { span.classList.remove("find-picked"); games.hidden = true; (today.classList.contains("find-on") ? today : week).open = true; }); span.append(today, week); heading.append(games);
   const pickSpan = (name) => { const on = name === "today"; today.classList.toggle("find-on", on); week.classList.toggle("find-on", !on); if (today.open !== on) today.open = on; if (week.open === on) week.open = !on; };
   today.className = "find-games find-on"; today.dataset.span = "today"; today.open = true; week.className = "find-games find-week"; week.dataset.span = "week";
   today.addEventListener("toggle", () => { if (today.open) pickSpan("today"); }); week.addEventListener("toggle", () => { if (week.open) pickSpan("week"); });
@@ -149,7 +149,7 @@ function fillFind(board, data) {
         button.textContent = [game.match, game.kickoff && typeof window.when === "function" ? `${window.when(game.kickoff)} ET` : ""].filter(Boolean).join(", ");
         button.addEventListener("click", () => {
           hits.replaceChildren(); teams.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on"); box.open = false; span.classList.add("find-picked"); games.hidden = false; today.open = false; week.open = false;
-          paintMatch(teams, game, people, list, hits);
+          paintMatch(teams, game, people, list, hits, true);
         });
         group.append(button);
       });
@@ -170,7 +170,7 @@ function fillFind(board, data) {
     const plays = (person, set) => (person.bets || []).some((bet) => set.has(`${bet.match}|${bet.kickoff}`));
     const want = plainName(q), named = (person) => plainName(person.name).includes(want);
     people.filter((person) => named(person) && plays(person, keys)).slice(0, 8).forEach((person) => { const button = document.createElement("button"); button.type = "button"; button.textContent = person.name; button.addEventListener("click", () => showFind(list, hits, person, roster, people)); hits.append(button); });
-    slate.filter((game) => words.every((word) => String(game.match || "").toLowerCase().includes(word))).slice(0, 8).forEach((game) => { const button = document.createElement("button"); button.type = "button"; button.textContent = [game.match, game.kickoff && window.when ? `${window.when(game.kickoff)} ET` : ""].filter(Boolean).join(", "); button.addEventListener("click", () => { hits.replaceChildren(); teams.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on"); span.classList.add("find-picked"); games.hidden = false; today.open = false; week.open = false; paintMatch(teams, game, people, list, hits); }); hits.append(button); });
+    slate.filter((game) => words.every((word) => String(game.match || "").toLowerCase().includes(word))).slice(0, 8).forEach((game) => { const button = document.createElement("button"); button.type = "button"; button.textContent = [game.match, game.kickoff && window.when ? `${window.when(game.kickoff)} ET` : ""].filter(Boolean).join(", "); button.addEventListener("click", () => { hits.replaceChildren(); teams.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on"); span.classList.add("find-picked"); games.hidden = false; today.open = false; week.open = false; paintMatch(teams, game, people, list, hits, true); }); hits.append(button); });
     if (!(findParts.week && findParts.week.data)) { const note = document.createElement("p"); note.className = "quiet"; note.textContent = "Looking up the rest of the week."; hits.append(note); }
     const otherGames = todayOn ? weekGames : todayGames, otherKeys = new Set(otherGames.map((game) => `${game.match}|${game.kickoff}`)), otherPeople = people.filter((person) => person.kind === "player" && named(person) && plays(person, otherKeys)), gameWords = (game) => words.every((word) => String(game.match || "").toLowerCase().includes(word));
     const otherHit = !hits.querySelector("button") && (otherPeople.length > 0 || otherGames.some(gameWords));
@@ -405,7 +405,7 @@ function paintRosterParlay(list, cards, count) {
   const hold = list.parentElement && list.parentElement.querySelector(".find-teams"); if (hold) { hold.querySelectorAll(".find-body").forEach((node) => { node.hidden = true; }); hold.querySelectorAll(".find-side-go").forEach((node) => node.classList.remove("on")); } heading.scrollIntoView({ block: "start" });
 }
 
-function paintMatch(holder, game, people, list, hits) {
+function paintMatch(holder, game, people, list, hits, noted) {
   const match = document.createElement("div"); match.className = "find-match"; const body = document.createElement("div"); body.className = "find-body"; body.hidden = true;
   (game.match.includes(" @ ") ? game.match.split(" @ ") : game.match.split(" v ").reverse()).map((side) => side.replace(/\s*\([^)]*\)/g, "").trim().toLowerCase()).forEach((side) => {
     const person = people.find((item) => item.name.toLowerCase() === side) || people.find((item) => side.includes(item.name.toLowerCase()) && item.name.length > 3);
@@ -416,7 +416,12 @@ function paintMatch(holder, game, people, list, hits) {
     if (match.querySelector(".find-side-go")) { const at = document.createElement("b"); at.className = "find-at"; at.textContent = "@"; match.append(at); }
     match.append(pick); body.append(panel); pick.addEventListener("click", () => { const show = panel.hidden; match.querySelectorAll(".find-side").forEach((node) => { node.hidden = true; }); match.querySelectorAll(".find-side-go").forEach((node) => node.classList.remove("on")); panel.hidden = !show; body.hidden = !show; if (show) { pick.classList.add("on"); swap(playerPane, playerGo); players.open = true; } });
   });
-  const stamp = document.createElement("p"); stamp.className = "find-when"; stamp.textContent = game.kickoff && window.when ? `${window.when(game.kickoff)} ET` : ""; if (stamp.textContent) match.append(stamp); match.append(body); holder.append(match);
+  const stamp = document.createElement("p"); stamp.className = "find-when"; stamp.textContent = game.kickoff && window.when ? `${window.when(game.kickoff)} ET` : ""; if (stamp.textContent) match.append(stamp); match.append(body); holder.append(match); if (noted) loadGame(holder, game);
+}
+
+function loadGame(holder, game) {
+  const box = document.createElement("div"); box.className = "find-brief"; const wait = document.createElement("p"); wait.className = "quiet"; wait.textContent = "Looking up the game."; box.append(wait); holder.append(box);
+  fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "game", match: game.match, sport: game.sport, kickoff: game.kickoff, espnId: game.espnId || "" }) }).then((res) => res.json()).then((data) => { if (!box.isConnected) return; box.replaceChildren(); if (data.lead) { const lead = document.createElement("p"); lead.className = "find-dive"; lead.textContent = data.lead; box.append(lead); } (data.sections || []).forEach((section) => { const line = document.createElement("p"); const name = document.createElement("b"); name.textContent = section.name; line.append(name, document.createTextNode(` ${section.text}`)); box.append(line); }); if (!box.childNodes.length) box.remove(); }).catch(() => { if (wait.isConnected) wait.textContent = "The game notes did not load."; });
 }
 
 function showFind(list, hits, person, roster, people, keep) {

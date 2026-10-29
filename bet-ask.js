@@ -378,4 +378,53 @@ async function askTrend(name, text, facts, sport, looks) {
   return bits.length ? `${bits.join(" ")} ${background}`.trim() : "";
 }
 
-module.exports = { askBet, askTerm, askTrend };
+const GAME = "You write a short read of one game for a sports desk. Use only the notes. Cover the weather, the coaches, how these teams have met, who is out, and any change in playing time. Do not invent a name, a score, a temperature, or a snap count. Do not say who will win. Two or three sentences a person would say out loud.";
+
+function groundGame(spoken, facts) {
+  const source = String(facts || "");
+  const text = String(spoken || "").replace(/^here(?:'s| is)[^:.\n]{0,48}[:\n]\s*/i, "");
+  return text.split(/(?<=[.!?])\s+/).map((line) => line.replace(/^["'\s]+|["'\s]+$/g, "")).filter((line) => {
+    if (!line || /will win|going to win|locks in|easy money|can't lose/i.test(line)) return false;
+    const lean = line.match(/\b(may|might|could|should|advantage|looking to|bounce|poised|upset|favou?red|edge)\b/i);
+    if (lean && !source.toLowerCase().includes(lean[0].toLowerCase())) return false;
+    const nums = [...line.matchAll(/\d+(?:\.\d+)?/g)].map((item) => item[0]);
+    if (!nums.every((num) => source.includes(num))) return false;
+    const names = [...line.matchAll(/\b[A-Z][a-z]+(?: [A-Z][a-z]+)+\b/g)].map((item) => item[0]);
+    return names.every((name) => source.includes(name));
+  }).join(" ").trim();
+}
+
+async function askGame(match, facts) {
+  const notes = clip(facts, 3500);
+  if (notes.length < 20) return "";
+  const question = `What stands out about ${clip(match, 120)}?`;
+  const key = geminiKey();
+  if (key) {
+    try {
+      const result = await geminiCall(key, question, notes, false, true, false, GAME);
+      if (result.status >= 200 && result.status < 300 && result.text) return groundGame(result.text, notes);
+    } catch (err) { /* the notes still show */ }
+  }
+  if (!onMac()) return "";
+  try {
+    const response = await fetch(`${OLLAMA}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(20000),
+      body: JSON.stringify({
+        model: LOCAL_MODEL,
+        stream: false,
+        think: false,
+        messages: [
+          { role: "system", content: GAME },
+          { role: "user", content: `Notes:\n${notes}\n\n${question}` },
+        ],
+        options: { temperature: 0.2, num_predict: 220 },
+      }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    return groundGame(clean(payload.message && payload.message.content), notes);
+  } catch (err) { return ""; }
+}
+
+module.exports = { askBet, askTerm, askTrend, askGame };
