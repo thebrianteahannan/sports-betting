@@ -85,21 +85,26 @@ function paintFind() {
     if (!more || !board.isConnected || !board.people) return;
     const seen = new Map(board.people.map((person) => [person.key, person]));
     (more.people || []).forEach((person) => { const have = seen.get(person.key); if (!have) { board.people.push(person); return; } const ids = new Set((have.bets || []).map((bet) => `${bet.label}|${bet.odds}|${bet.match}`)); (person.bets || []).forEach((bet) => { if (!ids.has(`${bet.label}|${bet.odds}|${bet.match}`)) have.bets.push(bet); }); });
-    setTimeout(() => { if (!board.isConnected || !board.paintSlate) return; board.querySelectorAll(".find-games").forEach((node) => { node.games = null; }); board.paintSlate(board.querySelector(".find-week")); const field = board.querySelector("input"); if (field && field.value.trim().length >= 2) field.dispatchEvent(new Event("input")); }, 50);
+    setTimeout(() => { if (!board.isConnected || !board.paintSlate) return; board.querySelectorAll(".find-games").forEach((node) => { node.games = null; }); board.people.games = null; board.paintSlate(board.querySelector(".find-week")); const field = board.querySelector("input"); if (field && field.value.trim().length >= 2) field.dispatchEvent(new Event("input")); }, 50);
   }).catch(() => { if (board.isConnected && !board.querySelector("h2")) fillFind(board, {}); });
 }
 
 function loadedGames(people, span) {
-  const seen = new Map();
-  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-  const end = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const saved = people.games;
+  if (saved && saved.n === people.length) return saved[span];
+  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
+  const today = fmt.format(Date.now()), end = fmt.format(Date.now() + 14 * 24 * 60 * 60 * 1000), now = Date.now(), skip = /^(Hockey|Rugby|Darts|CFL|NCAAB|Cricket|Handball|NCAAF)$/;
+  const buckets = { today: new Map(), week: new Map() };
   people.forEach((person) => (person.bets || []).forEach((bet) => {
     const kick = Date.parse(bet.kickoff || "");
-    const day = new Date(kick).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-    if (!bet.match || !Number.isFinite(kick) || kick <= Date.now() || /^(Hockey|Rugby|Darts|CFL|NCAAB|Cricket|Handball|NCAAF)$/.test(bet.sport || "") || (span === "today" ? day !== today : day <= today || day > end)) return;
-    if (!seen.has(`${bet.match}|${bet.kickoff}`)) seen.set(`${bet.match}|${bet.kickoff}`, bet);
+    if (!bet.match || kick !== kick || kick <= now || skip.test(bet.sport || "")) return;
+    const day = fmt.format(kick), key = `${bet.match}|${bet.kickoff}`;
+    const bucket = day === today ? buckets.today : day > today && day <= end ? buckets.week : null;
+    if (bucket && !bucket.has(key)) bucket.set(key, bet);
   }));
-  return [...seen.values()].sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
+  const sort = (a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff);
+  people.games = { n: people.length, today: [...buckets.today.values()].sort(sort), week: [...buckets.week.values()].sort(sort) };
+  return people.games[span];
 }
 
 function fillFind(board, data) {
@@ -152,8 +157,7 @@ function fillFind(board, data) {
       box.append(group);
     });
   };
-  board.paintSlate(today); week.games = loadedGames(people, "week");
-  board.append(heading, label, hits, tray, span, teams, roster, list); paintParlay();
+  board.append(heading, label, hits, tray, span, teams, roster, list); paintParlay(); setTimeout(() => { if (!board.isConnected) return; board.paintSlate(today); week.games = people.games && people.games.week; }, 0);
   let clubStamp = 0;
   input.addEventListener("input", () => {
     const q = input.value.trim().toLowerCase();
@@ -443,7 +447,8 @@ function showFind(list, hits, person, roster, people, keep) {
     const line = document.createElement("p");
     line.className = "rec-gist";
     const when = bet.kickoff && typeof window.when === "function" ? `${window.when(bet.kickoff)} ET` : "";
-    line.textContent = [bet.label, [bet.sport, bet.match, when].filter(Boolean).join(", ")].filter(Boolean).join(" — ");
+    const raw = String(bet.label || "").trim(), rest = raw.replace(person.name, "").trim(), market = String(bet.market || "").replace(person.name, "").replace(/^\s*-\s*/, "").trim(), named = !rest || /^(over|under)$/i.test(rest), said = named ? [person.name || raw, [rest, market].filter(Boolean).join(" ")].filter(Boolean).join(" ") : raw;
+    line.textContent = [said, [bet.sport, bet.match, when].filter(Boolean).join(", ")].filter(Boolean).join(" — ");
     const leg = document.createElement("button"); leg.type = "button"; leg.className = "find-leg"; leg.dataset.key = parlayKey(bet); leg.textContent = parlayLeg.has(leg.dataset.key) ? "In the parlay" : "Add this leg"; if (parlayLeg.has(leg.dataset.key)) leg.classList.add("on"); leg.addEventListener("click", () => { if (parlayLeg.has(leg.dataset.key) || parlayLeg.size >= 8) return; parlayLeg.set(leg.dataset.key, bet); if (person.kind === "player" && !parlayPick.has(person.key) && parlayPick.size < 8) parlayPick.set(person.key, person); paintParlay(); }); row.append(head, line, leg);
     list.append(row);
   });
