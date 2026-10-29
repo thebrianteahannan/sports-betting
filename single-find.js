@@ -40,26 +40,78 @@ function singleFind(pools, games, opts) {
   return JSON.parse(raw);
 }
 
-function markPlayer(name, bets, games) {
+function markGap(hits, count, price) {
+  if (count < 3 || price <= 0) return null;
+  const gap = Math.round((hits / count - price) * 100);
+  return gap >= 8 ? gap : null;
+}
+
+function markLine(name, spec, bar, under, hits, count, price) {
+  const gap = markGap(hits, count, price);
+  if (gap == null) return null;
+  const verb = spec && spec[2] && bar === 1 ? "scored a touchdown" : `${under ? "stayed under" : "cleared"} ${whole(bar) ? Math.round(bar) : bar}+ ${spec ? spec[1] : ""}`.trim();
+  return { gap, n: count, why: `${nick(name)} ${verb} in ${hits} of the last ${count}. FanDuel has this at ${Math.round(price * 100)}%.` };
+}
+
+async function savedMarks(name, bets) {
+  const legs = (Array.isArray(bets) ? bets : []).slice(0, 200);
+  const sport = String((legs.find((leg) => leg && leg.sport) || {}).sport || "");
+  const pack = await savedPack(sport, name);
+  if (!pack || !(pack.rows || []).length) return { known: false, marks: [] };
+  const marks = [];
+  legs.forEach((leg, index) => {
+    const body = `${leg.market || ""} ${leg.label || ""} ${leg.runner || ""}`;
+    if (/\b(quarter|half|period|inning)\b/i.test(body) || /\b(first|last|1st|2nd|3rd)\b/i.test(body) || combo(body)) return;
+    const spec = specOf(body);
+    const rows = spec ? logRows(pack, spec[0]) : [];
+    const bar = spec ? barOf(body, spec[2]) : null;
+    const price = priceOf(leg.odds);
+    if (bar == null || rows.length < 3) return;
+    const under = /\bunder\b/i.test(body);
+    const lines = [];
+    const window = rows.slice(0, 8);
+    const wide = markLine(name, spec, bar, under, hitsOf(window, bar, under), window.length, price);
+    if (wide) lines.push(wide);
+    if (window.length !== 3) {
+      const last = rows.slice(0, 3);
+      const near = markLine(name, spec, bar, under, hitsOf(last, bar, under), last.length, price);
+      if (near) lines.push(near);
+    }
+    if (!lines.length) return;
+    lines.sort((a, b) => b.gap - a.gap || b.n - a.n);
+    const read = savedRead(name, "", sport, leg.odds, pack, leg);
+    marks.push({ index, gap: lines[0].gap, why: lines[0].why, notes: [], spans: read.spans || "", lean: read.lean || "" });
+  });
+  marks.sort((a, b) => b.gap - a.gap);
+  return { known: true, marks };
+}
+
+async function markPlayer(name, bets, games) {
   const legs = (Array.isArray(bets) ? bets : []).slice(0, 200).map((bet) => ({
     market: bet.market || "", runner: bet.runner || "", label: bet.label || "", odds: bet.odds,
     sport: bet.sport || "", match: bet.match || "", kickoff: bet.kickoff || "",
   }));
-  let saved = [];
-  try { saved = JSON.parse(fs.readFileSync(path.join(__dirname, "output", "board.json"), "utf8")).games || []; } catch (err) { saved = []; }
-  const slate = (Array.isArray(games) ? games : []).map((game) => {
-    const full = saved.find((row) => row && row.kickoff === game.kickoff && row.match === game.match) || game;
-    return {
-      id: full.id, sport: full.sport || game.sport || "", match: full.match || game.match || "",
-      awayName: full.awayName || "", homeName: full.homeName || "", kickoff: full.kickoff || game.kickoff || "",
-      espnId: full.espnId || "", spread: full.spread || null, total: full.total || null,
-    };
-  });
-  const raw = execFileSync("python3", ["-m", "nfl_bets.single"], {
-    input: JSON.stringify({ mark: true, name: String(name || ""), legs, games: slate }),
-    encoding: "utf8", timeout: 40000, maxBuffer: 8 * 1024 * 1024, cwd: __dirname,
-  });
-  return JSON.parse(raw);
+  const bin = pythonBin();
+  if (bin) {
+    let saved = [];
+    try { saved = JSON.parse(fs.readFileSync(path.join(__dirname, "output", "board.json"), "utf8")).games || []; } catch (err) { saved = []; }
+    const slate = (Array.isArray(games) ? games : []).map((game) => {
+      const full = saved.find((row) => row && row.kickoff === game.kickoff && row.match === game.match) || game;
+      return {
+        id: full.id, sport: full.sport || game.sport || "", match: full.match || game.match || "",
+        awayName: full.awayName || "", homeName: full.homeName || "", kickoff: full.kickoff || game.kickoff || "",
+        espnId: full.espnId || "", spread: full.spread || null, total: full.total || null,
+      };
+    });
+    try {
+      const raw = execFileSync(bin, ["-m", "nfl_bets.single"], {
+        input: JSON.stringify({ mark: true, name: String(name || ""), legs, games: slate }),
+        encoding: "utf8", timeout: 40000, maxBuffer: 8 * 1024 * 1024, cwd: __dirname,
+      });
+      return JSON.parse(raw);
+    } catch (err) { /* the saved log can still mark the lines */ }
+  }
+  return savedMarks(name, legs);
 }
 
 function slimGame(game) {

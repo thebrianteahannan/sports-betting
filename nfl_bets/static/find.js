@@ -428,7 +428,7 @@ function showFind(list, hits, person, roster, people, keep) {
   hits.replaceChildren();
   if (roster && !keep) fillRoster(roster, person, list, hits, people);
   const bets = (person.bets || []).slice().sort((a, b) => findRank(b.odds) - findRank(a.odds));
-  const holder = list.parentElement && list.parentElement.querySelector(".find-teams"); if (holder) { holder.replaceChildren(); const span = list.parentElement.querySelector(".find-span"); if (span) { span.classList.add("find-picked"); const go = span.querySelector(".find-games-go"); if (go) go.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); } const seen = new Set(); bets.forEach((bet) => { const key = `${bet.match}|${bet.kickoff}`; if (!bet.match || seen.has(key)) return; seen.add(key); paintMatch(holder, bet, people, list, hits); }); }
+  const holder = list.parentElement && list.parentElement.querySelector(".find-teams"); if (holder) { holder.replaceChildren(); const span = list.parentElement.querySelector(".find-span"); if (span) { span.classList.add("find-picked"); const go = span.querySelector(".find-games-go"); if (go) go.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); } const seen = new Set(); bets.forEach((bet) => { const key = `${bet.match}|${bet.kickoff}`; if (!bet.match || seen.has(key)) return; seen.add(key); paintMatch(holder, bet, people, list, hits, true); }); }
   list.replaceChildren(); list.classList.remove("find-only-on");
   const heading = document.createElement("h3");
   heading.innerHTML = `${esc(person.name)} <span class="rec-count">${bets.length} available bet${bets.length === 1 ? "" : "s"}</span>`;
