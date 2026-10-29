@@ -16,6 +16,7 @@ function paintParlay() {
     else mine.forEach(([key, bet]) => { const line = document.createElement("div"); line.className = "find-chose"; const said = document.createElement("span"); const price = Number(bet.odds); const rest = String(bet.label || "").replace(person.name, "").split(/\s+—\s+/)[0].trim(); const market = String(bet.market || "").replace(person.name, "").replace(/^\s*-\s*/, "").trim(); const what = !rest || /^(over|under)$/i.test(rest) ? [rest, market].filter(Boolean).join(" ") : rest; said.textContent = [price > 0 ? `+${price}` : price, findPct(price), findCash(price) ? `$5 profits ${findCash(price)}` : "", what].filter(Boolean).join(" · "); const change = document.createElement("button"); change.type = "button"; change.className = "find-out"; change.textContent = "Change"; change.addEventListener("click", () => { parlayLeg.delete(key); paintParlay(); }); line.append(said, change); row.append(line); });
     tray.append(row); });
   parlayLeg.forEach((bet, key) => { if ([...parlayPick.values()].some((person) => String(bet.label || "").startsWith(person.name))) return; const chip = document.createElement("span"); chip.className = "find-in"; const name = document.createElement("span"); name.className = "find-name"; name.textContent = String(bet.label || "").split(/\s+—\s+/)[0]; const out = document.createElement("button"); out.type = "button"; out.className = "find-out"; out.textContent = "Take out"; out.addEventListener("click", () => { parlayLeg.delete(key); paintParlay(); }); chip.append(name, out); tray.append(chip); });
+  if (typeof parlayHint === "function") { const hint = parlayHint([...parlayLeg.values()]); if (hint) { const note = document.createElement("p"); note.className = "find-why"; note.textContent = hint; tray.append(note); } }
   if (parlayPick.size < 2 && parlayLeg.size < 2) return;
   const build = document.createElement("button"); build.type = "button"; build.className = "find-parlay"; build.textContent = label;
   build.addEventListener("click", () => { const list = document.querySelector(".find-board .find-list"); if (!list) return; const group = [...parlayPick.values()]; const covered = group.length && group.every((person) => [...parlayLeg.values()].some((bet) => String(bet.label || "").startsWith(person.name))); if (parlayLeg.size >= 2 && (!group.length || covered)) { const legs = [...parlayLeg.values()]; const dec = legs.reduce((p, leg) => p * (1 + findRank(leg.odds)), 1); const price = dec >= 2 ? Math.round((dec - 1) * 100) : Math.round(-100 / (dec - 1)); paintRosterParlay(list, [{ american: price, legs }], legs.length); return; } if (group.length > 1) goldBuild(list, group); });
@@ -165,7 +166,7 @@ function fillFind(board, data) {
     const q = input.value.trim().toLowerCase();
     const stamp = ++clubStamp;
     hits.replaceChildren();
-    if (q.length < 2) { if (!list.querySelector(".rec-bet")) list.replaceChildren(); return; } teams.replaceChildren();
+    if (q.length < 2) { list.replaceChildren(); list.classList.remove("find-only-on"); teams.replaceChildren(); roster.stamp = (roster.stamp || 0) + 1; roster.hidden = true; roster.replaceChildren(); const picked = board.querySelector(".find-span"); if (picked) { picked.classList.remove("find-picked"); const go = picked.querySelector(".find-games-go"); if (go) go.hidden = true; } today.open = today.classList.contains("find-on"); week.open = !today.open; return; } teams.replaceChildren();
     board.querySelectorAll(".find-games").forEach((node) => { node.open = false; });
     const words = q.split(" ").filter(Boolean);
     const todayGames = today.games || (today.games = loadedGames(people, "today")), weekGames = week.games || (week.games = loadedGames(people, "week")), todayOn = today.classList.contains("find-on");
@@ -332,7 +333,7 @@ function rosterScan(legs, price) {
     const off = Number.isFinite(price) ? Math.abs(price - aim) : 99;
     put(id, name, "", n === count && days && off <= 40, n === count && days && off <= 80, "The price is a little off the one this strategy aims at.", off / 5);
   });
-  const fits = rows.filter((row) => row.fit).sort((a, b) => a.pay - b.pay || a.miss - b.miss);
+  const fits = rows.filter((row) => row.fit && !row.pay).sort((a, b) => a.miss - b.miss);
   if (fits.length) return fits.slice(0, 2);
   const near = rows.filter((row) => !row.pay && row.miss <= 12).sort((a, b) => a.miss - b.miss);
   const paid = rows.filter((row) => row.pay && row.miss <= 8).sort((a, b) => a.miss - b.miss)[0];
@@ -454,9 +455,9 @@ function showFind(list, hits, person, roster, people, keep) {
     const raw = String(bet.label || "").trim(), rest = raw.replace(person.name, "").trim(), market = String(bet.market || "").replace(person.name, "").replace(/^\s*-\s*/, "").trim(), named = !rest || /^(over|under)$/i.test(rest), said = named ? [person.name || raw, [rest, market].filter(Boolean).join(" ")].filter(Boolean).join(" ") : raw;
     line.textContent = [said, [bet.sport, bet.match, when].filter(Boolean).join(", ")].filter(Boolean).join(" — ");
     const leg = document.createElement("button"); leg.type = "button"; leg.className = "find-leg"; leg.dataset.key = parlayKey(bet); leg.textContent = parlayLeg.has(leg.dataset.key) ? "In the parlay" : "Add this leg"; if (parlayLeg.has(leg.dataset.key)) leg.classList.add("on"); leg.addEventListener("click", () => { if (parlayLeg.has(leg.dataset.key) || parlayLeg.size >= 8) return; parlayLeg.set(leg.dataset.key, bet); if (person.kind === "player" && !parlayPick.has(person.key) && parlayPick.size < 8) parlayPick.set(person.key, person); paintParlay(); }); row.append(head, line, leg);
-    list.append(row);
+    row.dataset.kind = typeof propKind === "function" ? propKind(`${said} ${market}`) : ""; row.dataset.odds = String(bet.odds || ""); row.dataset.market = market; list.append(row);
   });
-  if (person.kind === "player") markFind(list, person.name, bets);
+  if (typeof siftKinds === "function") siftKinds(list); if (person.kind === "player") markFind(list, person.name, bets);
 }
 
 function markFind(list, name, bets) {
@@ -469,13 +470,13 @@ function markFind(list, name, bets) {
     note.textContent = marks.length === 1 ? `On 1 of these, ${name} has done it more often than the price says.` : marks.length ? `On ${marks.length} of these, ${name} has done it more often than the price says.` : `None of these show ${name} doing it more often than the price says.`;
     const heading = list.querySelector("h3");
     if (heading) heading.after(note);
-    if (!marks.length) return; const shared = [...new Set(marks.flatMap((mark) => mark.notes || []))].filter((line) => marks.filter((mark) => (mark.notes || []).includes(line)).length * 2 >= marks.length);
+    if (!marks.length) { [...list.querySelectorAll(".rec-bet")].forEach((row) => { if (typeof askRead === "function") askRead(row, name); }); return; } const shared = [...new Set(marks.flatMap((mark) => mark.notes || []))].filter((line) => marks.filter((mark) => (mark.notes || []).includes(line)).length * 2 >= marks.length);
     const byIndex = new Map(marks.map((mark) => [Number(mark.index), mark]));
     const marked = [];
     const rest = [];
     [...list.querySelectorAll(".rec-bet")].forEach((row) => {
       const mark = byIndex.get(Number(row.dataset.i));
-      if (!mark) { rest.push(row); return; }
+      if (!mark) { if (typeof askRead === "function") askRead(row, name); rest.push(row); return; }
       const why = document.createElement("p");
       why.className = "find-why";
       why.textContent = mark.why;
@@ -487,7 +488,7 @@ function markFind(list, name, bets) {
     marked.sort((a, b) => Number(b.dataset.gap) - Number(a.dataset.gap));
     const button = document.createElement("button");
     button.type = "button"; button.className = "find-show";
-    button.textContent = "Show all"; list.classList.add("find-only-on");
+    const filtering = typeof kindOn === "function" && kindOn(list); if (!filtering) list.classList.add("find-only-on"); button.textContent = filtering ? "Show those" : "Show all";
     button.addEventListener("click", () => { const on = list.classList.toggle("find-only-on"); button.textContent = on ? "Show all" : "Show those"; });
     if (heading) heading.append(button); if (shared.length) { const once = document.createElement("p"); once.className = "find-dive"; once.textContent = shared.join(" · "); note.after(once); }
     marked.concat(rest).forEach((row) => list.append(row));

@@ -62,7 +62,14 @@ function markPlayer(name, bets, games) {
   return JSON.parse(raw);
 }
 
-async function whyPlayer(name, text, sport) {
+async function whyPlayer(name, text, sport, bet) {
+  if (bet && typeof bet === "object") {
+    const raw = execFileSync("python3", ["-m", "nfl_bets.why"], {
+      input: JSON.stringify({ read: true, name: String(name || ""), bet }),
+      encoding: "utf8", timeout: 20000, maxBuffer: 2 * 1024 * 1024, cwd: __dirname,
+    });
+    return JSON.parse(raw);
+  }
   const raw = execFileSync("python3", ["-m", "nfl_bets.why"], {
     input: JSON.stringify({ name: String(name || ""), text: String(text || ""), sport: String(sport || "") }),
     encoding: "utf8", timeout: 20000, maxBuffer: 2 * 1024 * 1024, cwd: __dirname,

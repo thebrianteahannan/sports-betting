@@ -469,7 +469,7 @@ async function chooseBet(body, board) {
   const mix = ["any", "even", "safer", "long"].includes(body.mix) ? body.mix : "even";
   const span = body.when === "week" ? "week" : "today";
   const games = slate(Array.isArray(board.games) ? board.games : [], picked, ids, span);
-  if (body.list === "why") return whyPlayer(body.name, body.text, body.sport); if (body.list === "out") return outList(); if (body.list === "kinds") return listKinds(games); if (body.list === "ones") return onesList(Array.isArray(board.games) ? board.games : []); if (body.list === "lookup") return nameBook(Array.isArray(board.games) ? board.games : [], offerLegs, body.when === "week" ? "week" : "today"); if (body.list === "club") return playerClub(body.name); if (body.list === "roster") return teamRoster(body.name, body.sport); if (body.list === "mark") return markPlayer(body.name, body.bets, Array.isArray(board.games) ? board.games : []);
+  if (body.list === "why") return whyPlayer(body.name, body.text, body.sport, body.bet); if (body.list === "out") return outList(); if (body.list === "kinds") return listKinds(games); if (body.list === "ones") return onesList(Array.isArray(board.games) ? board.games : []); if (body.list === "lookup") return nameBook(Array.isArray(board.games) ? board.games : [], offerLegs, body.when === "week" ? "week" : "today"); if (body.list === "club") return playerClub(body.name); if (body.list === "roster") return teamRoster(body.name, body.sport); if (body.list === "mark") return markPlayer(body.name, body.bets, Array.isArray(board.games) ? board.games : []);
   const safeAim = aim;
   if (!games.length) { if (body.list === "players") return { players: [] };
     const rows = Array.isArray(board.games) ? board.games : [];

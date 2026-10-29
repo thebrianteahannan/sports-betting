@@ -6,8 +6,13 @@ import json
 import sys
 from typing import Any
 
+import re
+
+from nfl_bets.edge import _bar, _hits, _lean, _rows, _windows
+from nfl_bets.hedge import implied_prob
 from nfl_bets.http_util import get_json
-from nfl_bets.sway import _PATH, _career, _search, _spec
+from nfl_bets.single import _OTHER, _PART, _combo
+from nfl_bets.sway import _PATH, _career, _nick, _search, _spec
 
 _REFERER = "https://www.espn.com/"
 
@@ -330,8 +335,40 @@ def _mates(sport: str, player: str, names: list[str]) -> str:
     return " ".join(bits)
 
 
+def read_one(name: str, leg: dict[str, Any]) -> dict[str, str]:
+    text = f"{leg.get('market') or ''} {leg.get('label') or ''} {leg.get('runner') or ''}"
+    if _PART.search(text) or _OTHER.search(text):
+        return {"why": "A quarter, half, or first-scorer prop stays off the full-game log."}
+    if _combo(text):
+        return {"why": "A combo prop stays off a single stat's log."}
+    sport = str(leg.get("sport") or "")
+    path = _PATH.get(sport)
+    pack = (_career(sport, path, name) or None) if path and name else None
+    spans = _windows(pack, text) if pack else ""
+    try:
+        price = implied_prob(float(leg.get("odds")))
+    except (TypeError, ValueError):
+        price = 0.0
+    lean = _lean(pack, text, price) if pack else ""
+    spec = _spec(text)
+    rows = _rows(pack, spec[0]) if pack and spec else []
+    bar = _bar(text, spec[2]) if spec else None
+    why = ""
+    if bar is not None and len(rows) >= 3:
+        under = bool(re.search(r"\bunder\b", text, re.I))
+        window = rows[:3]
+        hits = _hits(window, bar, under)
+        shown = int(bar) if float(bar).is_integer() else bar
+        verb = "scored a touchdown" if spec[2] and bar == 1 else f"{'stayed under' if under else 'cleared'} {shown}+ {spec[1]}"
+        why = f"{_nick(name)} {verb} in {hits} of the last {len(window)}. FanDuel has this at {round(price * 100)}%."
+    return {"why": why, "spans": spans, "lean": lean}
+
+
 def _main() -> None:
     body = json.load(sys.stdin)
+    if body.get("read"):
+        json.dump(read_one(str(body.get("name") or ""), body.get("bet") if isinstance(body.get("bet"), dict) else {}), sys.stdout)
+        return
     if body.get("mates"):
         json.dump({"why": _mates(str(body.get("sport") or ""), str(body.get("name") or ""), list(body.get("mates") or []))}, sys.stdout)
         return
