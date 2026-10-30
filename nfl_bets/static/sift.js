@@ -256,7 +256,7 @@ function loadHistory(row, name) {
   button._read = stop;
   button.textContent = "Reading the log.";
   const gist = (row.querySelector(".rec-gist") || {}).textContent || "";
-  const sport = ((gist.split("—")[1] || "").split(",")[0] || "").trim();
+  const sport = row.dataset.sport || ((row.querySelector(".leg-league") || {}).textContent || "") || ((gist.split("—")[1] || "").split(",")[0] || "").trim();
   const bet = { label: gist, market: row.dataset.market || "", odds: Number(row.dataset.odds), sport };
   fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "why", name, text: gist, sport, bet }), signal: stop.signal }).then((res) => res.json()).then((data) => { if (button._read !== stop) return; paintHistory(row, button, data || {}, name); }).catch((err) => { if (err && err.name === "AbortError") return; if (button.isConnected) button.textContent = "See the history"; });
 }
@@ -272,6 +272,12 @@ function askRead(row, name) {
   if (leg) leg.after(button); else row.append(button);
 }
 
+function tuckHist(box, open) { if (!box || !box.querySelector(".find-log")) return; if (open) box.classList.add("log-on"); const had = box.querySelector(".find-hist"); if (had) { had.textContent = box.classList.contains("log-on") ? "Hide the history" : "Show the history"; return; } const button = document.createElement("button"); button.type = "button"; button.className = "find-hist"; button.textContent = box.classList.contains("log-on") ? "Hide the history" : "Show the history"; button.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); const on = box.classList.toggle("log-on"); button.textContent = on ? "Hide the history" : "Show the history"; }); box.querySelector(".find-log").before(button); }
+window.tuckHist = tuckHist;
+const legJobs = []; let legBusy = 0; function pumpLegs() { while (legBusy < 3 && legJobs.length) { legBusy += 1; legJobs.shift()().finally(() => { legBusy -= 1; pumpLegs(); }); } }
+function fillLeg(block) { const who = block.dataset.who || "", raw = block.dataset.raw || ""; if (!who || block.querySelector(".find-why, .find-log")) return; const sport = block.dataset.sport || "", odds = Number(block.dataset.odds), bet = { label: raw, market: block.dataset.market || "", odds, sport }; legJobs.push(() => fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "why", name: who, text: raw, sport, bet }) }).then((res) => res.json()).then((data) => { if (!block.isConnected || !data) return; if (data.why) { const why = document.createElement("p"); why.className = "find-why"; why.textContent = data.why; block.append(why); } if (data.spans) { const log = document.createElement("div"); log.className = "find-log"; data.spans.split(". ").forEach((bit) => { const cut = bit.replace(/\.$/, "").split(", "); const item = document.createElement("span"); const title = document.createElement("b"); title.textContent = cut[0]; item.append(title, document.createTextNode(cut.slice(1).join(", ") || "")); log.append(item); }); block.append(log); if (/Last 10,/.test(data.spans) && /Career,/.test(data.spans)) { const go = document.createElement("button"); go.type = "button"; go.className = "find-why-go"; go.textContent = "Why the recent trend?"; go.addEventListener("click", () => { if (go.disabled) return; go.disabled = true; go.textContent = "Reading the trend."; fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "why", name: who, text: raw, sport, odds }) }).then((res) => res.json()).then((found) => { const line = document.createElement("p"); line.className = "find-dive find-lean"; line.textContent = found.why || found.error || "The log is too short to split the last 10 from the career."; go.replaceWith(line); }).catch(() => { go.disabled = false; go.textContent = "Why the recent trend?"; }); }); block.append(go); } } if (data.lean) { const lean = document.createElement("p"); lean.className = "find-dive find-lean"; lean.textContent = data.lean; block.append(lean); } tuckHist(block); }).catch(() => {})); pumpLegs(); }
+function fillOpen(card) { if (!card) return; const past = card.classList.contains("show-past"); card.querySelectorAll(".find-leg-read:not(.read)").forEach((piece) => { const bet = piece.closest(".rec-bet"); if (bet && bet.classList.contains("rec-was") && !past) return; piece.classList.add("read"); fillLeg(piece); }); }
+window.fillOpen = fillOpen;
 function paintHistory(row, button, data, name) {
   if (data && data.error && !data.why) data = { why: String(data.error) };
   const box = document.createElement("div");
@@ -292,15 +298,15 @@ function paintHistory(row, button, data, name) {
         const was = go.textContent;
         go.textContent = "Reading the trend.";
         const gist = (row.querySelector(".rec-gist") || {}).textContent || "";
-        const sport = ((gist.split("—")[1] || "").split(",")[0] || "").trim();
-        fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "why", name, text: gist, sport, odds: Number(row.dataset.odds) || 0 }) }).then((res) => res.json()).then((found) => { const line = document.createElement("p"); line.className = "find-dive"; line.textContent = found.why || found.error || "The log is too short to split the last 10 from the career."; go.replaceWith(line); }).catch(() => { go.disabled = false; go.textContent = was; });
+        const sport = row.dataset.sport || ((row.querySelector(".leg-league") || {}).textContent || "") || ((gist.split("—")[1] || "").split(",")[0] || "").trim();
+        fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "why", name, text: gist, sport, odds: Number(row.dataset.odds) || 0 }) }).then((res) => res.json()).then((found) => { const line = document.createElement("p"); line.className = "find-dive find-lean"; line.textContent = found.why || found.error || "The log is too short to split the last 10 from the career."; go.replaceWith(line); }).catch(() => { go.disabled = false; go.textContent = was; });
       });
       box.append(go);
     }
   }
-  if (data.lean) { const lean = document.createElement("p"); lean.className = "find-dive"; lean.textContent = data.lean; box.append(lean); }
+  if (data.lean) { const lean = document.createElement("p"); lean.className = "find-dive find-lean"; lean.textContent = data.lean; box.append(lean); }
   if (!box.childNodes.length) { button.textContent = "See the history"; return; }
-  button.replaceWith(box);
+  tuckHist(box, true); button.replaceWith(box);
 }
 
 function parlayHint(legs) {
@@ -429,7 +435,7 @@ function paintTrayBuild(tray) {
   line.className = "find-ticket";
   const head = document.createElement("b");
   const tag = price > 0 ? `+${price}` : String(price);
-  head.textContent = [tag, findPct(price), `$5 profits ${findCash(price)}`].filter(Boolean).join(" · ");
+  head.innerHTML = [tag && `<i class="px">${esc(tag)}</i>`, findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`, findCash(price) && `<i class="pay">${esc(`$5 profits ${findCash(price)}`)}</i>`, ((rows) => { const games = rows.map((leg) => String(leg.match || leg.gameId || "")); return games.length > 1 && games.every(Boolean) && new Set(games).size === 1; })(legs) && `<i class="sg">Same game</i>`].filter(Boolean).join("");
   const share = document.createElement("button");
   share.type = "button";
   share.className = "share-bet";
@@ -468,7 +474,7 @@ function dressBuilt(box) {
         const log = document.createElement("div"); log.className = "find-log"; log.dataset.key = key;
         data.spans.split(". ").forEach((bit) => { const cut = bit.replace(/\.$/, "").split(", "); const item = document.createElement("span"); const title = document.createElement("b"); title.textContent = cut[0]; item.append(title, document.createTextNode(cut.slice(1).join(", ") || "")); log.append(item); });
         const go = [...card.querySelectorAll("button.find-leg")].find((btn) => btn.dataset.key === key); (go || node).after(log);
-        if (data.lean && !card.querySelector(".find-dive")) { const lean = document.createElement("p"); lean.className = "find-dive"; lean.textContent = data.lean; log.after(lean); }
+        if (data.lean && !card.querySelector(".find-dive")) { const lean = document.createElement("p"); lean.className = "find-dive find-lean"; lean.textContent = data.lean; log.after(lean); } tuckHist(card);
       }).catch(() => {}));
     });
   });

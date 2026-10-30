@@ -213,22 +213,6 @@ async function meetings(data, path) {
   return ["Recent meetings", ...lines];
 }
 
-function outCols(data, teams) {
-  const rank = { out: 0, doubtful: 1, questionable: 2 };
-  return teams.map((team) => {
-    const block = (data.injuries || []).find((row) => String((row.team || {}).id || "") === team.id) || {};
-    const lines = (block.injuries || []).map((item) => {
-      const status = String(item.status || "").toLowerCase();
-      if (!Object.prototype.hasOwnProperty.call(rank, status)) return null;
-      const name = String((item.athlete || {}).displayName || "");
-      if (!name) return null;
-      const pos = String(((item.athlete || {}).position || {}).abbreviation || "");
-      return { status, line: [name, pos, status].filter(Boolean).join(", ") };
-    }).filter(Boolean).sort((a, b) => rank[a.status] - rank[b.status]).map((row) => row.line);
-    return { title: team.short || team.name, lines };
-  }).filter((col) => col.lines.length);
-}
-
 function slotsOf(doc) {
   const slots = [];
   for (const chart of doc.depthchart || []) {
@@ -241,42 +225,95 @@ function slotsOf(doc) {
   return slots;
 }
 
-function carryCols(data, teams, docs) {
+function nextName(person, doc, gone) {
+  const hits = [];
+  slotsOf(doc || {}).forEach((athletes) => { const at = athletes.findIndex((ath) => ath.id === person.id); if (at >= 0) hits.push({ athletes, at }); });
+  const fit = hits.filter((row) => { const spot = row.athletes[row.at].spot; return spot === person.role || spot.endsWith(` ${person.role}`) || person.role.endsWith(` ${spot}`); }).sort((a, b) => a.at - b.at);
+  const hit = fit[0] || hits.slice().sort((a, b) => a.at - b.at)[0];
+  if (!hit) return "";
+  const healthy = hit.athletes.filter((ath) => !gone.has(ath.id));
+  const next = hit.at === 0 ? healthy.find((ath) => ath.id !== person.id) : healthy[0];
+  return next ? next.name : "";
+}
+
+function minuteValue(raw) {
+  const text = String(raw == null ? "" : raw).trim();
+  if (!text || text === "-" || text === "—") return null;
+  const clock = text.match(/^(\d+):(\d+)$/);
+  if (clock) return Number(clock[1]) + Number(clock[2]) / 60;
+  const num = Number(text);
+  return Number.isFinite(num) && num > 0 ? num : null;
+}
+
+function minuteText(rows, year) {
+  const played = rows.filter((row) => row.min > 0);
+  const avg = (chunk) => { const n = chunk.reduce((sum, row) => sum + row.min, 0) / chunk.length; const shown = Math.round(n * 10) / 10; return `${Number.isInteger(shown) ? shown : shown.toFixed(1)} min`; };
+  const bits = [];
+  [[3, "Last 3"], [10, "Last 10"], [50, "Last 50"]].forEach(([n, label]) => { if (played.length >= n) bits.push(`${label}, ${avg(played.slice(0, n))}`); });
+  const now = year ? played.filter((row) => row.year === year) : [];
+  if (now.length) bits.push(`This season, ${avg(now)}`);
+  if (played.length) bits.push(`Career, ${avg(played)}`);
+  return bits.length ? `${bits.join(". ")}.` : "";
+}
+
+async function minuteRows(path, id) {
+  let first = {};
+  try { first = await readJson(`https://site.web.api.espn.com/apis/common/v3/sports/${path}/athletes/${id}/gamelog`); }
+  catch (err) { return { rows: [], year: 0 }; }
+  const names = first.names || [];
+  const at = names.indexOf("minutes") >= 0 ? names.indexOf("minutes") : names.findIndex((name) => /timeOnIce|timeofice/i.test(String(name)));
+  if (at < 0) return { rows: [], year: 0 };
+  const years = (((first.filters || []).find((row) => row.name === "season") || {}).options || []).map((opt) => String(opt.value || "")).filter(Boolean);
+  const pull = (doc, year) => {
+    const rows = [];
+    for (const season of doc.seasonTypes || []) {
+      if (/preseason/i.test(String(season.displayName || ""))) continue;
+      for (const cat of season.categories || []) {
+        for (const item of cat.events || []) {
+          const min = minuteValue((item.stats || [])[at]);
+          const event = (doc.events || {})[String(item.eventId || "")] || {};
+          if (min != null) rows.push({ min, date: String(event.gameDate || ""), id: String(item.eventId || ""), year });
+        }
+      }
+    }
+    return rows;
+  };
+  const current = Number(years[0] || 0);
+  const packs = years.length ? await Promise.all(years.map((year) => readJson(`https://site.web.api.espn.com/apis/common/v3/sports/${path}/athletes/${id}/gamelog?season=${year}`).then((doc) => pull(doc, Number(year))).catch(() => []))) : [pull(first, current)];
+  const seen = new Set();
+  const rows = packs.flat().filter((row) => { const key = row.id || row.date; return key && !seen.has(key) && seen.add(key); }).sort((a, b) => (a.date < b.date ? 1 : -1));
+  return { rows, year: current };
+}
+
+async function outCols(data, teams, docs, path) {
+  const rank = { out: 0, "injured reserve": 0, doubtful: 1, questionable: 2 };
   const gone = new Set();
   const people = [];
   (data.injuries || []).forEach((block) => {
     const teamId = String((block.team || {}).id || "");
     (block.injuries || []).forEach((item) => {
       const status = String(item.status || "").toLowerCase();
-      if (status !== "out" && status !== "injured reserve") return;
       const athlete = item.athlete || {};
       const id = String(athlete.id || "");
       const name = String(athlete.displayName || "");
-      if (!id || !name) return;
-      gone.add(id);
-      const role = String((athlete.position || {}).displayName || "player").toLowerCase();
-      const type = String((item.details || {}).type || "");
-      const hurt = type && !/not specified/i.test(type) ? type.toLowerCase() : "";
-      people.push({ teamId, id, name, role, hurt });
+      if (!Object.prototype.hasOwnProperty.call(rank, status) || !name) return;
+      if ((status === "out" || status === "injured reserve") && id) gone.add(id);
+      people.push({ teamId, id, name, status, role: String((athlete.position || {}).displayName || "player").toLowerCase(), pos: String((athlete.position || {}).abbreviation || "") });
     });
   });
+  const logs = new Map();
+  await Promise.all(people.filter((person) => person.id && (person.status === "out" || person.status === "injured reserve")).map(async (person) => {
+    const got = await minuteRows(path, person.id);
+    const text = minuteText(got.rows, got.year);
+    if (text) logs.set(person.id, text);
+  }));
   return teams.map((team, index) => ({
     title: team.short || team.name,
-    lines: people.filter((person) => person.teamId === team.id).map((person) => {
-      const hits = [];
-      slotsOf(docs[index] || {}).forEach((athletes) => { const at = athletes.findIndex((ath) => ath.id === person.id); if (at >= 0) hits.push({ athletes, at }); });
-      const fit = hits.filter((row) => { const spot = row.athletes[row.at].spot; return spot === person.role || spot.endsWith(` ${person.role}`) || person.role.endsWith(` ${spot}`); }).sort((a, b) => a.at - b.at);
-      const hit = fit[0] || hits.slice().sort((a, b) => a.at - b.at)[0];
-      let found = null;
-      if (hit) {
-        const healthy = hit.athletes.filter((ath) => !gone.has(ath.id));
-        found = { spot: hit.athletes[hit.at].spot, next: hit.at === 0 ? healthy.find((ath) => ath.id !== person.id) : healthy[0], starter: hit.at === 0 };
-      }
-      const tag = person.hurt ? `${person.role} (${person.hurt})` : person.role;
-      const lead = `${person.name}, ${tag}, is out.`;
-      const spot = found && found.spot.length > 3 ? found.spot : person.role;
-      if (!found || !found.next) return lead;
-      return found.starter ? `${lead} ${found.next.name} is the next ${spot}.` : `${lead} ${found.next.name} is the ${spot}.`;
+    lines: people.filter((person) => person.teamId === team.id).sort((a, b) => rank[a.status] - rank[b.status]).flatMap((person) => {
+      const next = person.status === "out" || person.status === "injured reserve" ? nextName(person, (docs || [])[index], gone) : "";
+      const line = `${[person.name, person.pos, person.status].filter(Boolean).join(", ")}${next ? ` (${next})` : ""}`;
+      const log = logs.get(person.id);
+      return log ? [line, log] : [line];
     }),
   })).filter((col) => col.lines.length);
 }
@@ -347,14 +384,16 @@ async function gameRead(body, board) {
     meetings(data, path).catch(() => []),
     Promise.all(sides.map((team) => readJson(`https://site.api.espn.com/apis/site/v2/sports/${path}/teams/${team.id}/depthcharts`).catch(() => ({})))),
   ]);
-  const five = await startingFive(path, sides, depth, gone).catch(() => []);
+  const [five, outs] = await Promise.all([
+    startingFive(path, sides, depth, gone).catch(() => []),
+    outCols(data, sides, depth, path).catch(() => []),
+  ]);
   const sky = weather(data, game.sport || body.sport);
   const sections = [
     sky ? { name: "Weather", text: sky } : null,
     pack("Coaches", coaches.filter(Boolean).map((coach) => ({ title: coach.name, lines: coach.lines })), versus(coaches[0], coaches[1], faced)),
     pack("Matchup", matchCols(data, sides, game.kickoff), played),
-    pack("Who's out", outCols(data, sides), []),
-    pack("Who's carrying it", carryCols(data, sides, depth), []),
+    pack("Who's out", outs, []),
     pack("Starting five", five, []),
   ].filter(Boolean);
   const facts = sections.map((section) => `${section.name}: ${section.text}`).join("\n");

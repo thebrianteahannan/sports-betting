@@ -452,7 +452,7 @@ def _combo(text: str) -> bool:
         kinds += 1
     elif re.search(r"\bhits?\b", low):
         kinds += 1
-    if re.search(r"\bgoals?\b", low):
+    if re.search(r"\bgoals?\b", low.replace("shots on goal", "")):
         kinds += 1
     if re.search(r"\bpoints?\b", low):
         kinds += 1

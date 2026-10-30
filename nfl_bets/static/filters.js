@@ -236,7 +236,7 @@ window.paintChoices = function paintWithFilters() {
 
 bindOpenFilters();
 
-const recFilter = { when: "", sports: keptLeagues(), game: "", kind: "", legs: "", aim: "", find: "", stake: 5, profit: 0 };
+const recFilter = { when: "", sports: [], game: "", kind: "", legs: "", aim: "", find: "", stake: 5, profit: 0 };
 let recFiltersOpen = false;
 let recPast = false;
 let recSort = "4";
@@ -251,9 +251,12 @@ function recSpan(ticket) {
   const past = !!window.recPast;
   const end = recDayKey(now + (past ? -14 : 14) * 86400000);
   const source = past && ticket.settledAt ? [ticket.settledAt] : [ticket.kickoff, ...(ticket.legs || []).map((leg) => leg.kickoff)];
-  const days = [...new Set(source.map((iso) => Date.parse(iso || "")).filter((ms) => Number.isFinite(ms) && (past ? ms <= now : ms > now)).map(recDayKey))];
-  if (!days.length) return ["weekThree", "weekFive", "weekSafe", "weekEven"].includes(ticket.card) ? "week" : "today";
+  const stamps = source.map((iso) => Date.parse(iso || "")).filter((ms) => Number.isFinite(ms));
+  const coming = stamps.filter((ms) => past ? ms <= now : ms > now);
+  const days = [...new Set((coming.length ? coming : stamps).map(recDayKey))];
+  if (!days.length) return "later";
   if (days.every((day) => day === today)) return "today";
+  if (!coming.length && !past) return "later";
   return days.every((day) => past ? day >= end : day <= end) ? "week" : "later";
 }
 
@@ -475,7 +478,6 @@ function paintRecFilters(board) {
       if (index >= 0) list.splice(index, 1);
       else list.push(button.dataset.value);
     } else recFilter[button.dataset.rec] = recFilter[button.dataset.rec] === button.dataset.value ? "" : button.dataset.value;
-    if (button.dataset.rec === "clear" || button.dataset.rec === "sports") keptLeagues(recFilter.sports);
     bar.remove();
     note.remove();
     paintRecFilters(board);

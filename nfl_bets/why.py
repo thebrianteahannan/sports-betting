@@ -8,7 +8,7 @@ from typing import Any
 
 import re
 
-from nfl_bets.edge import _bar, _hits, _lean, _rows, _windows
+from nfl_bets.edge import _SPAN, _bar, _hits, _lean, _rows, _share, _windows
 from nfl_bets.hedge import implied_prob
 from nfl_bets.http_util import get_json
 from nfl_bets.single import _OTHER, _PART, _combo
@@ -343,10 +343,73 @@ def _mates(sport: str, player: str, names: list[str]) -> str:
     return " ".join(bits)
 
 
+def _kinds(text: str) -> list[tuple[tuple[str, ...], str]]:
+    low = text.lower()
+    bare = low.replace("shots on goal", " ")
+    found: list[tuple[tuple[str, ...], str]] = []
+    if "shots on goal" in low or re.search(r"\bshots\b", low):
+        found.append((("shotsTotal",), "shots on goal"))
+    if re.search(r"\bpoints?\b|\bpts?\b", low):
+        found.append((("points",), "points"))
+    if re.search(r"rebounds?|\brebs?\b", low):
+        found.append((("totalRebounds",), "rebounds"))
+    if re.search(r"assists?|\basts?\b", low):
+        found.append((("assists",), "assists"))
+    if re.search(r"made threes?|\bthrees\b", low):
+        found.append((("threePointFieldGoalsMade-threePointFieldGoalsAttempted",), "made threes"))
+    if re.search(r"\bgoals?\b", bare):
+        found.append((("goals",), "goals"))
+    return found
+
+
+def _per(chunk: list[dict[str, Any]]) -> tuple[Any, str]:
+    per = sum(row["value"] for row in chunk) / len(chunk)
+    shown = int(per) if float(per).is_integer() else round(per, 1)
+    played = [row["minutes"] for row in chunk if isinstance(row.get("minutes"), (int, float))]
+    clock = f" · {round(sum(played) / len(played))} min" if played and len(played) == len(chunk) else ""
+    return shown, f"{shown} a game{clock}"
+
+
+def _grid(rows: list[dict[str, Any]], sport: str, piece) -> str:
+    counts = _SPAN.get(sport) or (3, 6, 10, 25, 50)
+    bits = [f"Last {n}, {piece(rows[:n])}" for n in counts if len(rows) >= n]
+    year = max((int(row["season"]) for row in rows if row.get("season")), default=0)
+    now = [row for row in rows if year and int(row.get("season") or 0) == year]
+    last = [row for row in rows if year and int(row.get("season") or 0) == year - 1]
+    if len(now) >= 3:
+        bits.append(f"This season, {piece(now)}")
+    if len(last) >= 3:
+        bits.append(f"Last season, {piece(last)}")
+    bits.append(f"Career, {piece(rows)}")
+    return ". ".join(bits) + "."
+
+
 def read_one(name: str, leg: dict[str, Any], pack: dict[str, Any] | None = None) -> dict[str, str]:
     text = f"{leg.get('market') or ''} {leg.get('label') or ''} {leg.get('runner') or ''}"
-    if _PART.search(text) or _OTHER.search(text):
-        return {"why": "A quarter, half, or first-scorer prop stays off the full-game log."}
+    part = bool(_PART.search(text) or _OTHER.search(text))
+    kinds = _kinds(text)
+    sport = str(leg.get("sport") or "")
+    path = _PATH.get(sport)
+    if not (isinstance(pack, dict) and pack.get("rows")):
+        pack = (_career(sport, path, name) or None) if path and name else None
+    if pack and part and len(kinds) == 1 and (rows := _rows(pack, kinds[0][0])) and len(rows) >= 3:
+        shown, _line = _per(rows[:3])
+        return {"why": f"{_nick(name)} is at {shown} {kinds[0][1]} a game over the last 3.", "spans": _grid(rows, sport, lambda chunk: _per(chunk)[1]), "lean": ""}
+    if pack and len(kinds) > 1 and not part:
+        keys = tuple(key for group, _noun in kinds for key in group)
+        rows = _rows(pack, keys)
+        bar = _bar(text, False)
+        if bar is not None and len(rows) >= 3:
+            under = bool(re.search(r"\bunder\b", text, re.I))
+            try:
+                price = implied_prob(float(leg.get("odds")))
+            except (TypeError, ValueError):
+                price = 0.0
+            hits = _hits(rows[:3], bar, under)
+            shown = int(bar) if float(bar).is_integer() else bar
+            noun = " and ".join(noun for _keys, noun in kinds)
+            verb = f"{'stayed under' if under else 'cleared'} {shown}+ {noun}"
+            return {"why": f"{_nick(name)} {verb} in {hits} of the last 3. FanDuel has this at {round(price * 100)}%.", "spans": _grid(rows, sport, lambda chunk: _share(chunk, bar, under)), "lean": ""}
     if _combo(text):
         return {"why": "A combo prop stays off a single stat's log."}
     sport = str(leg.get("sport") or "")
