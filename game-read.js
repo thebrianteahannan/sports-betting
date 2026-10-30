@@ -23,14 +23,6 @@ async function readJson(url) {
   return data;
 }
 
-function clip(text, max) {
-  const line = String(text || "").replace(/\s+/g, " ").trim();
-  if (line.length <= max) return line;
-  const cut = line.slice(0, max);
-  const stop = cut.lastIndexOf(" ");
-  return `${(stop > 40 ? cut.slice(0, stop) : cut).trim()}…`;
-}
-
 function boardGame(body, board) {
   const games = (board && board.games) || [];
   const id = String(body.espnId || "");
@@ -55,6 +47,7 @@ async function espnId(path, game) {
 }
 
 function weather(data, sport) {
+  if (/basketball|hockey|^(NBA|WNBA|NHL|NCAAB)$/i.test(String(sport || ""))) return "";
   const info = data.gameInfo || {};
   const venue = info.venue || {};
   const city = String((venue.address || {}).city || "");
@@ -73,57 +66,121 @@ function weather(data, sport) {
   return [setting && `${setting}.`, bits.length && `${bits.join(", ")}.`].filter(Boolean).join(" ");
 }
 
-async function coachLine(path, team) {
+const SPOT = { qb: "quarterback", rb: "running back", fb: "fullback", wr: "receiver", te: "tight end", lt: "left tackle", lg: "left guard", c: "center", rg: "right guard", rt: "right tackle", fs: "free safety", ss: "strong safety", lcb: "corner", rcb: "corner", nb: "nickel", cb: "corner", mlb: "linebacker", wlb: "linebacker", slb: "linebacker", lilb: "linebacker", lolb: "linebacker", rolb: "linebacker", lde: "end", rde: "end", dt: "tackle", nt: "nose tackle", pg: "point guard", sg: "shooting guard", sf: "forward", pf: "forward", lw: "wing", rw: "wing", ld: "defenseman", rd: "defenseman", g: "goalie", pr: "punt returner", kr: "kick returner", ls: "long snapper", p: "punter", k: "kicker" };
+
+function pack(name, cols, lines) {
+  const bits = [];
+  (cols || []).forEach((col) => bits.push([col.title, ...(col.lines || [])].filter(Boolean).join(", ")));
+  (lines || []).forEach((line) => bits.push(line));
+  const text = bits.filter(Boolean).join(" ");
+  if (!text) return null;
+  const section = { name, text };
+  if (cols && cols.length) section.cols = cols;
+  if (lines && lines.length) section.lines = lines;
+  return section;
+}
+
+async function coachCard(path, team) {
   const data = await readJson(`https://site.api.espn.com/apis/site/v2/sports/${path}/teams/${team.id}/roster`);
   const coach = ((data && data.coach) || [])[0];
-  if (!coach || !coach.lastName) return "";
+  if (!coach || !coach.lastName) return null;
   const name = [coach.firstName, coach.lastName].filter(Boolean).join(" ");
   const years = Number(coach.experience);
-  const season = Number.isFinite(years) && years > 0 ? `, year ${years}` : "";
-  return `${name} coaches the ${team.short || team.name}${season}.`;
-}
-
-function form(data) {
-  const when = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" });
-  return (data.lastFiveGames || []).map((row) => {
-    const team = String((row.team || {}).shortDisplayName || (row.team || {}).displayName || "");
-    const bits = (row.events || []).slice(0, 5).map((event) => {
-      const foe = (event.opponent || {}).abbreviation || (event.opponent || {}).displayName || "";
-      const day = Date.parse(event.gameDate || "");
-      const stamp = Number.isFinite(day) ? ` ${when.format(day)}` : "";
-      return `${event.gameResult || ""} ${event.score || ""} ${event.atVs || ""} ${foe}${stamp}`.replace(/\s+/g, " ").trim();
+  const lines = [`${team.short || team.name}${Number.isFinite(years) && years > 0 ? `, year ${years}` : ""}`];
+  let seasons = [];
+  const [sportName, league] = path.split("/");
+  try {
+    const doc = await readJson(`https://sports.core.api.espn.com/v2/sports/${sportName}/leagues/${league}/coaches/${coach.id}?lang=en&region=us`);
+    const ref = String((((doc.careerRecords || [])[0] || {}).$ref) || "").replace(/^http:/, "https:");
+    if (ref) {
+      const rec = await readJson(ref);
+      const career = rec.displayValue || rec.summary || "";
+      if (career) lines.push(`Career ${career}`);
+    }
+    const refs = (doc.coachSeasons || []).map((row) => String(row.$ref || "").replace(/^http:/, "https:")).filter(Boolean);
+    const docs = await Promise.all(refs.map((url) => readJson(url).catch(() => null)));
+    seasons = docs.filter(Boolean).map((row) => {
+      const teamRef = String((row.team || {}).$ref || "");
+      const season = (teamRef.match(/seasons\/(\d+)/) || [])[1];
+      const teamId = (teamRef.match(/teams\/(\d+)/) || [])[1];
+      return season && teamId ? { season, teamId } : null;
     }).filter(Boolean);
-    return team && bits.length ? `${team} recent games: ${bits.join(", ")}.` : "";
-  }).filter(Boolean).join(" ");
+  } catch (err) { seasons = []; }
+  return { name, teamId: String(team.id), lines, seasons };
 }
 
-function records(data) {
+async function coachVs(path, left, right) {
+  if (!left || !right) return [];
+  const foe = new Map(right.seasons.map((row) => [row.season, row.teamId]));
+  const years = left.seasons.filter((row) => foe.get(row.season) && foe.get(row.season) !== row.teamId);
+  const found = [];
+  await Promise.all(years.map(async (row) => {
+    let sched = {};
+    try { sched = await readJson(`https://site.api.espn.com/apis/site/v2/sports/${path}/teams/${row.teamId}/schedule?season=${row.season}`); }
+    catch (err) { return; }
+    const other = foe.get(row.season);
+    for (const ev of sched.events || []) {
+      const comp = (ev.competitions || [])[0] || {};
+      if (!((comp.status || {}).type || {}).completed) continue;
+      const sides = (comp.competitors || []).map((side) => ({
+        id: String((side.team || {}).id || ""),
+        name: (side.team || {}).shortDisplayName || (side.team || {}).abbreviation || "",
+        score: side.score && typeof side.score === "object" ? side.score.displayValue : side.score,
+        where: side.homeAway || "",
+      }));
+      if (!sides.some((side) => side.id === other)) continue;
+      const mine = sides.find((side) => side.id === row.teamId) || {};
+      const opp = sides.find((side) => side.id === other) || {};
+      found.push({ id: String(ev.id || ev.date || ""), when: Date.parse(ev.date || ""), win: Number(mine.score) > Number(opp.score) ? 1 : Number(mine.score) < Number(opp.score) ? -1 : 0, away: sides.find((side) => side.where === "away") || sides[0] || {}, home: sides.find((side) => side.where === "home") || sides[1] || {} });
+    }
+  }));
+  const seen = new Set();
+  return found.filter((game) => (seen.has(game.id) ? false : seen.add(game.id))).sort((a, b) => b.when - a.when);
+}
+
+function versus(left, right, games) {
+  if (!left || !right || !games.length) return [];
+  const wins = games.filter((game) => game.win === 1).length;
+  const losses = games.filter((game) => game.win === -1).length;
+  const ties = games.length - wins - losses;
+  const when = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" });
+  const list = games.slice(0, 8).map((game) => {
+    const date = Number.isFinite(game.when) ? when.format(game.when) : "";
+    return `${game.away.name} ${game.away.score} at ${game.home.name} ${game.home.score}${date ? `, ${date}` : ""}`;
+  });
+  return [`${left.name.split(" ").pop()} is ${ties ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`} against ${right.name.split(" ").pop()}.`, ...list];
+}
+
+function matchCols(data, teams, kickoff) {
+  const when = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" });
+  const start = Date.parse(kickoff || "");
   const comps = ((((data.header || {}).competitions || [])[0] || {}).competitors) || [];
-  return comps.map((row) => {
-    const name = String((row.team || {}).displayName || "");
+  return teams.map((team) => {
+    const row = comps.find((side) => String((side.team || {}).id || "") === team.id) || {};
     const total = (row.record || []).find((item) => item.type === "total");
     const place = (row.record || []).find((item) => item.type === (row.homeAway === "home" ? "home" : "road") || item.type === row.homeAway);
-    const spot = place ? `${place.summary} ${row.homeAway === "home" ? "at home" : "on the road"}` : "";
-    const bits = [total && total.summary, spot].filter(Boolean);
-    return name && bits.length ? `${name} are ${bits.join(", ")}.` : "";
-  }).filter(Boolean).join(" ");
+    const lines = [[total && total.summary, place && `${place.summary} ${row.homeAway === "home" ? "at home" : "on the road"}`].filter(Boolean).join(", ")].filter(Boolean);
+    const recent = (data.lastFiveGames || []).find((side) => String((side.team || {}).id || "") === team.id) || {};
+    const last = (recent.events || []).map((event) => Date.parse(event.gameDate || "")).filter((stamp) => Number.isFinite(stamp) && (!Number.isFinite(start) || stamp < start)).sort((a, b) => b - a)[0];
+    if (Number.isFinite(last) && Number.isFinite(start)) {
+      const days = Math.round((start - last) / 86400000);
+      const word = days === 1 ? "day" : "days";
+      lines.push(days >= 13 ? `Off a bye, ${days} ${word} since the last game` : `${days} ${word} since the last game`);
+    }
+    (recent.events || []).slice(0, 5).forEach((event) => {
+      const foe = (event.opponent || {}).abbreviation || (event.opponent || {}).displayName || "";
+      const day = Date.parse(event.gameDate || "");
+      const stamp = Number.isFinite(day) ? when.format(day) : "";
+      const text = `${event.gameResult || ""} ${event.score || ""} ${event.atVs || ""} ${foe}${stamp ? `, ${stamp}` : ""}`.replace(/\s+/g, " ").trim();
+      if (text) lines.push(text);
+    });
+    return { title: team.short || team.name, lines };
+  }).filter((col) => col.lines.length);
 }
 
-function rest(data, kickoff) {
-  const start = Date.parse(kickoff || "");
-  return (data.lastFiveGames || []).map((row) => {
-    const team = String((row.team || {}).shortDisplayName || (row.team || {}).displayName || "");
-    const last = (row.events || []).map((event) => Date.parse(event.gameDate || "")).filter((stamp) => Number.isFinite(stamp) && (!Number.isFinite(start) || stamp < start)).sort((a, b) => b - a)[0];
-    if (!team || !Number.isFinite(last) || !Number.isFinite(start)) return "";
-    const days = Math.round((start - last) / 86400000);
-    const word = days === 1 ? "day" : "days"; return days >= 13 ? `${team} are off a bye, ${days} ${word} since the last game.` : `${team} have ${days} ${word} since the last game.`;
-  }).filter(Boolean).join(" ");
-}
-
-async function series(data, path) {
-  const comps = ((((data.header || {}).competitions || [])[0] || {}).competitors) || [];
-  const sides = comps.map((row) => String((row.team || {}).id || "")).filter(Boolean);
-  if (sides.length < 2) return "";
+async function meetings(data, path) {
+  const sides = teamsOf(data).map((team) => team.id);
+  if (sides.length < 2) return [];
   const year = new Date().getFullYear();
   const found = [];
   for (const season of [year, year - 1, year - 2]) {
@@ -145,7 +202,7 @@ async function series(data, path) {
   }
   const seen = new Set();
   const games = found.filter((game) => (seen.has(game.id) ? false : seen.add(game.id))).sort((a, b) => b.when - a.when).slice(0, 4);
-  if (!games.length) return "";
+  if (!games.length) return [];
   const when = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" });
   const lines = games.map((game) => {
     const away = game.rows.find((row) => row.where === "away") || game.rows[0] || {};
@@ -153,76 +210,119 @@ async function series(data, path) {
     const date = Number.isFinite(game.when) ? when.format(game.when) : "";
     return `${away.name} ${away.score} at ${home.name} ${home.score}${date ? `, ${date}` : ""}`;
   });
-  return `Recent meetings: ${lines.join(". ")}.`;
+  return ["Recent meetings", ...lines];
 }
 
-function outs(data) {
+function outCols(data, teams) {
   const rank = { out: 0, doubtful: 1, questionable: 2 };
-  return (data.injuries || []).map((block) => {
-    const team = String((block.team || {}).displayName || "");
-    const rows = (block.injuries || []).map((item) => {
+  return teams.map((team) => {
+    const block = (data.injuries || []).find((row) => String((row.team || {}).id || "") === team.id) || {};
+    const lines = (block.injuries || []).map((item) => {
       const status = String(item.status || "").toLowerCase();
       if (!Object.prototype.hasOwnProperty.call(rank, status)) return null;
       const name = String((item.athlete || {}).displayName || "");
       if (!name) return null;
       const pos = String(((item.athlete || {}).position || {}).abbreviation || "");
-      return { status, line: `${name}${pos ? `, ${pos}` : ""}, ${status}` };
-    }).filter(Boolean).sort((a, b) => rank[a.status] - rank[b.status]);
-    return rows.length ? `${team}: ${rows.map((row) => row.line).join("; ")}.` : "";
-  }).filter(Boolean).join(" ");
+      return { status, line: [name, pos, status].filter(Boolean).join(", ") };
+    }).filter(Boolean).sort((a, b) => rank[a.status] - rank[b.status]).map((row) => row.line);
+    return { title: team.short || team.name, lines };
+  }).filter((col) => col.lines.length);
 }
 
-function spots(data) {
-  const notes = [];
+function slotsOf(doc) {
+  const slots = [];
+  for (const chart of doc.depthchart || []) {
+    const positions = chart.positions || {};
+    Object.keys(positions).forEach((key) => {
+      const athletes = ((positions[key] || {}).athletes || []).map((ath) => ({ id: String(ath.id || ""), name: ath.displayName || "", spot: SPOT[key] || key })).filter((ath) => ath.id && ath.name);
+      if (athletes.length) slots.push(athletes);
+    });
+  }
+  return slots;
+}
+
+function carryCols(data, teams, docs) {
+  const gone = new Set();
+  const people = [];
   (data.injuries || []).forEach((block) => {
+    const teamId = String((block.team || {}).id || "");
     (block.injuries || []).forEach((item) => {
-      const comment = String(item.longComment || item.shortComment || "");
-      if (!/playing time|snaps|gets the start|starting lineup|more minutes|will start|inactive/i.test(comment)) return;
-      const name = String((item.athlete || {}).displayName || "");
-      if (name) notes.push(`${name}: ${clip(comment, 180)}`);
+      const status = String(item.status || "").toLowerCase();
+      if (status !== "out" && status !== "injured reserve") return;
+      const athlete = item.athlete || {};
+      const id = String(athlete.id || "");
+      const name = String(athlete.displayName || "");
+      if (!id || !name) return;
+      gone.add(id);
+      const role = String((athlete.position || {}).displayName || "player").toLowerCase();
+      const type = String((item.details || {}).type || "");
+      const hurt = type && !/not specified/i.test(type) ? type.toLowerCase() : "";
+      people.push({ teamId, id, name, role, hurt });
     });
   });
-  return notes.join(" ");
+  return teams.map((team, index) => ({
+    title: team.short || team.name,
+    lines: people.filter((person) => person.teamId === team.id).map((person) => {
+      const hits = [];
+      slotsOf(docs[index] || {}).forEach((athletes) => { const at = athletes.findIndex((ath) => ath.id === person.id); if (at >= 0) hits.push({ athletes, at }); });
+      const fit = hits.filter((row) => { const spot = row.athletes[row.at].spot; return spot === person.role || spot.endsWith(` ${person.role}`) || person.role.endsWith(` ${spot}`); }).sort((a, b) => a.at - b.at);
+      const hit = fit[0] || hits.slice().sort((a, b) => a.at - b.at)[0];
+      let found = null;
+      if (hit) {
+        const healthy = hit.athletes.filter((ath) => !gone.has(ath.id));
+        found = { spot: hit.athletes[hit.at].spot, next: hit.at === 0 ? healthy.find((ath) => ath.id !== person.id) : healthy[0], starter: hit.at === 0 };
+      }
+      const tag = person.hurt ? `${person.role} (${person.hurt})` : person.role;
+      const lead = `${person.name}, ${tag}, is out.`;
+      const spot = found && found.spot.length > 3 ? found.spot : person.role;
+      if (!found || !found.next) return lead;
+      return found.starter ? `${lead} ${found.next.name} is the next ${spot}.` : `${lead} ${found.next.name} is the ${spot}.`;
+    }),
+  })).filter((col) => col.lines.length);
 }
 
-async function newsPlay(path, teams) {
-  const notes = [];
-  const seen = new Set();
-  for (const team of teams) {
-    let data = {};
-    try { data = await readJson(`https://site.api.espn.com/apis/site/v2/sports/${path}/news?limit=8&team=${team.id}`); }
-    catch (err) { continue; }
-    for (const article of (data.articles || []).slice(0, 8)) {
-      const head = String(article.headline || "").replace(/\s+/g, " ").trim();
-      if (!head || seen.has(head)) continue;
-      const text = [head, article.description].filter(Boolean).join(". ");
-      if (!/playing time|snaps|more snaps|will start|starting in place|inactive|ruled out/i.test(text)) continue;
-      seen.add(head);
-      notes.push(clip(text, 240));
-    }
-  }
-  return notes.slice(0, 3).join(" ");
+function avgLine(overview) {
+  const stats = (overview || {}).statistics || {};
+  const names = stats.names || [];
+  const split = (stats.splits || []).find((row) => row.displayName === "Regular Season") || (stats.splits || [])[0];
+  if (!split) return "";
+  return [["avgPoints", "PTS"], ["avgRebounds", "REB"], ["avgAssists", "AST"], ["avgSteals", "STL"], ["avgMinutes", "MIN"]].map(([key, label]) => {
+    const at = names.indexOf(key);
+    return at >= 0 && split.stats[at] ? `${split.stats[at]} ${label}` : "";
+  }).filter(Boolean).join(", ");
 }
 
-function mains(data) {
-  return (data.leaders || []).map((side) => {
-    const team = String((side.team || {}).shortDisplayName || (side.team || {}).displayName || "");
-    const bits = (side.leaders || []).slice(0, 3).map((cat) => {
-      const top = (cat.leaders || [])[0];
-      const who = String((top && top.athlete && top.athlete.displayName) || "");
-      const value = String((top && top.displayValue) || "");
-      return who && value ? `${who} leads ${String(cat.displayName || "").toLowerCase()} at ${value}` : "";
+async function startingFive(path, teams, docs, gone) {
+  if (!/basketball/.test(path)) return [];
+  const spots = { pg: "PG", sg: "SG", sf: "SF", pf: "PF", c: "C" };
+  const cols = await Promise.all(teams.map(async (team, index) => {
+    const positions = ((((docs[index] || {}).depthchart || [])[0] || {}).positions) || {};
+    const picks = Object.keys(spots).map((key) => {
+      const athletes = ((positions[key] || {}).athletes) || [];
+      const athlete = athletes.find((ath) => !gone.has(String(ath.id))) || athletes[0];
+      return athlete ? { key, athlete } : null;
     }).filter(Boolean);
-    return team && bits.length ? `${team}: ${bits.join(". ")}.` : "";
-  }).filter(Boolean).join(" ");
+    const lines = await Promise.all(picks.map(async (row) => {
+      let line = "";
+      try { line = avgLine(await readJson(`https://site.web.api.espn.com/apis/common/v3/sports/${path}/athletes/${row.athlete.id}/overview`)); }
+      catch (err) { line = ""; }
+      return `${row.athlete.displayName}, ${spots[row.key]}${line ? `: ${line}` : ""}`;
+    }));
+    return { title: team.short || team.name, lines };
+  }));
+  return cols.filter((col) => col.lines.length);
 }
 
 function teamsOf(data) {
-  return (((((data.header || {}).competitions || [])[0] || {}).competitors) || []).map((row) => ({
+  const teams = (((((data.header || {}).competitions || [])[0] || {}).competitors) || []).map((row) => ({
     id: String((row.team || {}).id || ""),
     name: String((row.team || {}).displayName || ""),
     short: String((row.team || {}).shortDisplayName || (row.team || {}).displayName || ""),
+    homeAway: row.homeAway || "",
   })).filter((team) => team.id);
+  const away = teams.find((team) => team.homeAway === "away");
+  const home = teams.find((team) => team.homeAway === "home");
+  return away && home ? [away, home] : teams;
 }
 
 async function gameRead(body, board) {
@@ -236,20 +336,27 @@ async function gameRead(body, board) {
   try { data = await readJson(`https://site.web.api.espn.com/apis/site/v2/sports/${path}/summary?event=${id}`); }
   catch (err) { return { lead: "", sections: [] }; }
   const sides = teamsOf(data);
-  const [coachBits, played, extra] = await Promise.all([
-    Promise.all(sides.map((team) => coachLine(path, team).catch(() => ""))),
-    series(data, path).catch(() => ""),
-    newsPlay(path, sides).catch(() => ""),
+  const gone = new Set();
+  (data.injuries || []).forEach((block) => (block.injuries || []).forEach((item) => {
+    const status = String(item.status || "").toLowerCase();
+    if (status === "out" || status === "injured reserve") gone.add(String((item.athlete || {}).id || ""));
+  }));
+  const coaches = await Promise.all(sides.map((team) => coachCard(path, team).catch(() => null)));
+  const [faced, played, depth] = await Promise.all([
+    coachVs(path, coaches[0], coaches[1]).catch(() => []),
+    meetings(data, path).catch(() => []),
+    Promise.all(sides.map((team) => readJson(`https://site.api.espn.com/apis/site/v2/sports/${path}/teams/${team.id}/depthcharts`).catch(() => ({})))),
   ]);
-  const time = [spots(data), extra].filter(Boolean).join(" ");
+  const five = await startingFive(path, sides, depth, gone).catch(() => []);
+  const sky = weather(data, game.sport || body.sport);
   const sections = [
-    ["Weather", weather(data, game.sport || body.sport)],
-    ["Coaches", coachBits.filter(Boolean).join(" ")],
-    ["Matchup", [records(data), rest(data, game.kickoff), form(data), played].filter(Boolean).join(" ")],
-    ["Who's out", outs(data)],
-    ["Playing time", time],
-    ["Who's carrying it", mains(data)],
-  ].filter((row) => row[1]).map(([name, text]) => ({ name, text }));
+    sky ? { name: "Weather", text: sky } : null,
+    pack("Coaches", coaches.filter(Boolean).map((coach) => ({ title: coach.name, lines: coach.lines })), versus(coaches[0], coaches[1], faced)),
+    pack("Matchup", matchCols(data, sides, game.kickoff), played),
+    pack("Who's out", outCols(data, sides), []),
+    pack("Who's carrying it", carryCols(data, sides, depth), []),
+    pack("Starting five", five, []),
+  ].filter(Boolean);
   const facts = sections.map((section) => `${section.name}: ${section.text}`).join("\n");
   let lead = "";
   try { lead = await askGame(game.match || body.match, facts); } catch (err) { lead = ""; }

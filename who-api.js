@@ -169,10 +169,13 @@ async function playerClub(raw) {
       const name = String(item && item.displayName || "");
       const whole = words.length >= 2 && plainName(name).includes(plainName(want));
       if (!name || item.isActive === false || !pro.has(String(item.league || "")) || (!whole && !nameHit(name, want))) continue;
-      const team = String(((item.teamRelationships || [])[0] || {}).displayName || "");
+      const rel = ((item.teamRelationships || [])[0]) || {};
+      const team = String(rel.displayName || "");
+      const nick = String((rel.core || {}).shortDisplayName || "");
+      const pos = String((item.position || {}).abbreviation || "");
       if (!team || seen.has(plainName(name))) continue;
       seen.add(plainName(name));
-      clubs.push({ player: name, team });
+      clubs.push({ player: name, team, nick, pos });
     }
     clubs.sort((a, b) => (plainName(a.player).startsWith(words[0]) ? 0 : 1) - (plainName(b.player).startsWith(words[0]) ? 0 : 1) || a.player.length - b.player.length);
     clubs = clubs.slice(0, 4);

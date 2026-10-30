@@ -164,10 +164,6 @@ function propKind(text) {
   return hit ? hit[1] : "Other";
 }
 
-function kindOn(list) {
-  return !!list.querySelector(".find-kinds button.on") || [...list.querySelectorAll(".find-kinds input")].some((node) => node.value.trim());
-}
-
 function siftKinds(list) {
   const rows = [...list.querySelectorAll(":scope > .rec-bet")];
   if (rows.length < 2) return;
@@ -246,46 +242,23 @@ function siftKinds(list) {
     const bits = [kind, oddsOn ? (odds > 0 ? `+${odds}` : String(odds)) : "", pctOn ? `${pct}%` : "", cashOn ? `$${cash}` : ""].filter(Boolean);
     summary.textContent = bits.length ? `Filter, ${bits.join(", ")}` : "Filter";
     none.hidden = !on || shown > 0;
-    if (on) loadShown(list);
   };
   details.append(summary, names, band, none);
   const heading = list.querySelector("h3");
   if (heading) heading.after(details);
 }
 
-function findPlayer(list) {
-  const heading = list.querySelector("h3");
-  const text = heading && heading.childNodes[0];
-  return text ? String(text.textContent || "").trim() : "";
-}
-
-const historyJobs = [];
-let historyBusy = 0;
-
-function loadShown(list) {
-  const name = findPlayer(list);
-  list.querySelectorAll(":scope > .rec-bet:not(.find-off)").forEach((row) => loadHistory(row, name));
-}
-
 function loadHistory(row, name) {
   const button = row.querySelector(":scope > .find-read");
-  if (!button || button.disabled || !name) return;
-  button.disabled = true;
+  if (!button || !name) return;
+  if (button._read) button._read.abort();
+  const stop = new AbortController();
+  button._read = stop;
   button.textContent = "Reading the log.";
-  historyJobs.push({ row, button, name });
-  pumpHistory();
-}
-
-function pumpHistory() {
-  while (historyBusy < 3 && historyJobs.length) {
-    const job = historyJobs.shift();
-    if (!job.button.isConnected || job.row.classList.contains("find-off")) { job.button.disabled = false; job.button.textContent = "See the history"; continue; }
-    historyBusy += 1;
-    const gist = (job.row.querySelector(".rec-gist") || {}).textContent || "";
-    const sport = ((gist.split("—")[1] || "").split(",")[0] || "").trim();
-    const bet = { label: gist, market: job.row.dataset.market || "", odds: Number(job.row.dataset.odds), sport };
-    fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "why", name: job.name, text: gist, sport, bet }) }).then((res) => res.json()).then((data) => paintHistory(job.row, job.button, data || {}, job.name)).catch(() => { if (job.button.isConnected) { job.button.disabled = false; job.button.textContent = "See the history"; } }).finally(() => { historyBusy -= 1; pumpHistory(); });
-  }
+  const gist = (row.querySelector(".rec-gist") || {}).textContent || "";
+  const sport = ((gist.split("—")[1] || "").split(",")[0] || "").trim();
+  const bet = { label: gist, market: row.dataset.market || "", odds: Number(row.dataset.odds), sport };
+  fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "why", name, text: gist, sport, bet }), signal: stop.signal }).then((res) => res.json()).then((data) => { if (button._read !== stop) return; paintHistory(row, button, data || {}, name); }).catch((err) => { if (err && err.name === "AbortError") return; if (button.isConnected) button.textContent = "See the history"; });
 }
 
 function askRead(row, name) {
@@ -297,8 +270,6 @@ function askRead(row, name) {
   button.addEventListener("click", () => loadHistory(row, name));
   const leg = row.querySelector(".find-leg");
   if (leg) leg.after(button); else row.append(button);
-  const list = row.parentElement;
-  if (row.classList.contains("find-open") || (list && kindOn(list) && !row.classList.contains("find-off"))) loadHistory(row, name);
 }
 
 function paintHistory(row, button, data, name) {
@@ -328,23 +299,37 @@ function paintHistory(row, button, data, name) {
     }
   }
   if (data.lean) { const lean = document.createElement("p"); lean.className = "find-dive"; lean.textContent = data.lean; box.append(lean); }
-  if (!box.childNodes.length) { button.disabled = false; button.textContent = "See the history"; return; }
+  if (!box.childNodes.length) { button.textContent = "See the history"; return; }
   button.replaceWith(box);
 }
 
 function parlayHint(legs) {
   const rows = (legs || []).filter((leg) => Number(leg.odds));
   if (!rows.length) return "";
-  const lines = [];
+  const note = document.createElement("p");
+  note.className = "find-why";
+  const say = (text) => { if (text) note.append(document.createTextNode(text)); };
+  let said = "";
   if (rows.length >= 2 && typeof rosterScan === "function") {
     const dec = rows.reduce((p, leg) => p * (1 + findRank(leg.odds)), 1);
     const price = dec >= 2 ? Math.round((dec - 1) * 100) : Math.round(-100 / (dec - 1));
     const main = (rosterScan(rows, price) || [])[0];
-    if (main && typeof rosterWho === "function") lines.push(main.fit ? `This matches ${rosterWho(main.id, main.part, main.name)}.` : `This is close to ${rosterWho(main.id, main.part, main.name)}.${main.why ? ` ${main.why}` : ""}`);
+    if (main && typeof rosterWho === "function") {
+      const label = rosterWho(main.id, main.part, main.name);
+      say(main.fit ? "This matches " : "This is close to ");
+      const go = document.createElement("button");
+      go.type = "button";
+      go.className = "find-near";
+      go.textContent = label;
+      go.addEventListener("click", () => { if (window.openStrategy) openStrategy(main.id, main.part || ""); });
+      note.append(go);
+      say(main.fit ? "." : `.${main.why ? ` ${main.why}` : ""}`);
+      said = label;
+    }
   }
-  const next = parlayNext(rows, lines.join(" "));
-  if (next) lines.push(next);
-  return lines.join(" ");
+  const next = parlayNext(rows, said);
+  if (next) { if (note.childNodes.length) say(" "); say(next); }
+  return note.childNodes.length ? note : "";
 }
 
 function parlayNext(legs, said) {
@@ -410,7 +395,6 @@ function openLeg(person, key) {
   list.querySelectorAll(".rec-bet.find-open").forEach((node) => node.classList.remove("find-open"));
   row.classList.remove("find-off");
   row.classList.add("find-open");
-  if (row.querySelector(".find-read")) loadHistory(row, person.name);
   const glass = document.getElementById("desk-glass-in");
   const tray = document.querySelector(".find-tray");
   if (glass) {
