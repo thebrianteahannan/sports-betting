@@ -415,8 +415,8 @@ function startGuide() {
     birdOn = true;
     birdHeld = false;
     window.squawkUntil = Date.now() + 900; birdSay("Aight, bet!", []);
-    setTimeout(() => {
-      if (!birdOn || birdHeld || window.asking || document.body.classList.contains("needs-member")) return;
+    setTimeout(function land(tryN) {
+      if (!birdOn || birdHeld || window.asking || document.body.classList.contains("needs-member")) return; if (new URLSearchParams(location.search).get("p") && window.birdMenu) { if (!((window.state && window.state.board && window.state.board.archive) || []).length && (tryN || 0) < 20) { setTimeout(() => land((tryN || 0) + 1), 300); return; } birdMenu("bets"); return; }
       if (window.birdGreet) birdGreet(); else birdSay("Hey. How are we going to find our favorite bet for today?", [["menu", "Parlay's Picks & Strategies", "pick"], ["menu", "Search Player, Team or Game", "find"], ["quiz", "Build Your Own Bet"]]);
     }, 900);
     birdBump();

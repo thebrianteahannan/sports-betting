@@ -14,6 +14,7 @@ const NAMED_BETS = [
 
 let shareTemplate = null;
 let shareBits = null;
+let shareBet = null;
 
 function sharePct(value) {
   const raw = String(value ?? "").replace("%", "").trim();
@@ -124,10 +125,10 @@ function shareBox() {
   box = document.createElement("section");
   box.id = "share-view";
   box.hidden = true;
-  box.innerHTML = `<div id="share-stage"><img id="share-card-photo" alt="" width="959" height="1024" hidden></div><button type="button" id="share-back" aria-label="Back"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button><p class="pick-save"><button type="button" id="share-card-download" hidden>Copy</button></p><p class="quiet" id="share-card-note"></p>`;
+  box.innerHTML = `<div id="share-stage"><img id="share-card-photo" alt="" width="959" height="1024" hidden></div><button type="button" id="share-back" aria-label="Back"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button><p class="pick-save"><button type="button" id="share-card-download" hidden>Copy</button><button type="button" id="share-card-link" hidden>Copy link</button></p><p class="quiet" id="share-card-note"></p>`;
   (document.getElementById("desk") || document.body).append(box);
-  const copy = box.querySelector("#share-card-download");
-  if (copy) copy.addEventListener("click", () => { copyShare(); });
+  const copy = box.querySelector("#share-card-download"); if (copy) copy.addEventListener("click", () => { copyShare(); });
+  const link = box.querySelector("#share-card-link"); if (link) link.addEventListener("click", () => { copyLink(); });
   const back = box.querySelector("#share-back");
   if (back) back.addEventListener("click", () => { shareBack(); });
   return box;
@@ -365,11 +366,14 @@ async function drawShare(bet) {
   drawBoard(ctx, bet);
   drawFound(ctx, bet);
   shareBits = board;
+  shareBet = bet;
   photo.src = board.toDataURL("image/jpeg", 0.9);
   photo.hidden = false;
   const copy = document.getElementById("share-card-download");
   if (copy) { copy.hidden = false; copy.textContent = "Copy"; }
-  if (note) note.textContent = "Copy the image, then paste it into a post.";
+  const link = document.getElementById("share-card-link");
+  if (link) { link.hidden = !bet.serial; link.textContent = "Copy link"; }
+  if (note) note.textContent = bet.serial ? "Copy the image, or copy a link that opens this bet." : "Copy the image, then paste it into a post.";
   shareFit();
   photo.onload = shareFit;
 }
@@ -383,6 +387,13 @@ function shareFit() {
   const scale = Math.min(w / 959, h / 1024);
   if (box) { box.style.left = "0px"; box.style.top = "0px"; box.style.width = `${w}px`; box.style.height = `${h}px`; }
   if (stage) stage.style.transform = `translate(${(w - 959 * scale) / 2}px, ${(h - 1024 * scale) / 2}px) scale(${scale})`;
+}
+
+async function copyLink() {
+  const note = document.getElementById("share-card-note"), button = document.getElementById("share-card-link"), serial = shareBet && shareBet.serial;
+  if (!serial) { if (note) note.textContent = "This bet is not on the desk, so there is no link for it."; return; }
+  const url = `${location.origin}/?p=${encodeURIComponent(serial)}`;
+  try { await navigator.clipboard.writeText(url); if (button) button.textContent = "Link copied"; if (note) note.textContent = "Link copied. It opens this bet on the site."; } catch (error) { if (note) note.textContent = url; }
 }
 
 async function copyShare() {

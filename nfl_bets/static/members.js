@@ -438,7 +438,7 @@ function birdMenu(kind) {
   if (shelf.length) {
     const aside = document.createElement("div"); aside.className = "rec-shelf"; aside.innerHTML = "<h2>Archived strategies.</h2>"; shelf.forEach((block) => aside.append(block)); board.append(aside);
   }
-  const hold = document.getElementById("desk-hold"); if (hold) [...row.children].forEach((node) => hold.append(node)); row.append(board); if (window.recKeep) { const keep = window.recKeep; window.recKeep = null; board.querySelectorAll(".rec-strategy").forEach((node) => node.classList.toggle("open", keep.strategies.includes(`${node.dataset.card}|${node.dataset.part || ""}`))); board.querySelectorAll(".rec-bet").forEach((node) => node.classList.toggle("open", keep.bets.includes(node.dataset.key))); row.scrollTop = keep.scroll; } else row.scrollTop = 0;
+  const hold = document.getElementById("desk-hold"); if (hold) [...row.children].forEach((node) => hold.append(node)); row.append(board); if (window.recKeep) { const keep = window.recKeep; window.recKeep = null; board.querySelectorAll(".rec-strategy").forEach((node) => node.classList.toggle("open", keep.strategies.includes(`${node.dataset.card}|${node.dataset.part || ""}`))); board.querySelectorAll(".rec-bet").forEach((node) => node.classList.toggle("open", keep.bets.includes(node.dataset.key))); row.scrollTop = keep.scroll; } else row.scrollTop = 0; if (window.openShared) openShared(board);
 }
 
 function goFull() {

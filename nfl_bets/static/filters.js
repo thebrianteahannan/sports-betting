@@ -419,6 +419,12 @@ function seekSerial(board) {
   if (!hit) return; const finished = hit.result === "won" || hit.result === "lost"; if (finished === !!recPast) return;
   recPast = finished; window.recPast = recPast; if (window.birdMenu) birdMenu("bets");
 }
+function openShared(board) {
+  const code = String(new URLSearchParams(location.search).get("p") || "").replace(/\D/g, ""); if (!code || !board) return;
+  const hit = ((window.state && window.state.board && window.state.board.archive) || []).find((ticket) => betSerial(ticket).replace(/\D/g, "") === code); if (!hit) return;
+  const finished = hit.result === "won" || hit.result === "lost"; if (finished !== !!window.recPast) { recPast = finished; window.recPast = recPast; if (window.birdMenu) birdMenu("bets"); return; }
+  const bet = [...board.querySelectorAll(".rec-bet")].find((node) => betSerial(((window.recTickets || [])[Number(node.dataset.rec)] || {}).ticket || {}).replace(/\D/g, "") === code); const card = bet && bet.closest(".rec-strategy"); if (!bet) return; if (card) { card.classList.add("open"); if (window.fillOpen) fillOpen(card); } bet.scrollIntoView({ block: "center" }); history.replaceState(null, "", location.pathname);
+} window.openShared = openShared;
 function recWho(ticket) {
   const bag = new Set(), add = (name, team) => { let text = String(name || "").replace(/\s*\([^)]*\)/g, "").split(/\n|—/)[0].trim(); if (!team) text = text.split(",")[0].replace(/\s+\d.*$/, "").replace(/\s+(over|under|to|by)\b.*$/i, "").trim(); if (text && !/^(over|under|yes|no)$/i.test(text)) bag.add(text); };
   (ticket.legs || []).forEach((leg) => { add(leg.player || String(leg.label || "").split(",")[0]); String(leg.match || ticket.game || "").split(/\s+at\s+|\s+@\s+|\s+v\s+|\s+vs\.?\s+/i).forEach((side) => add(side, true)); });
