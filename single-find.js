@@ -33,11 +33,42 @@ function singleFind(pools, games, opts) {
     }));
     if (!slim.some((row) => String(row.id) === String(game.id))) slim.push({ id: game.id, sport: game.sport, match: game.match, awayName: side.away, homeName: side.home, kickoff: game.kickoff, espnId: game.espnId || "", flags: game.flags || [] });
   });
-  const raw = execFileSync("python3", ["-m", "nfl_bets.single"], {
-    input: JSON.stringify({ legs, games: slim, skip: [...(opts.skip || [])], stake: opts.stake, profit: opts.profit }),
-    encoding: "utf8", timeout: 50000, maxBuffer: 8 * 1024 * 1024, cwd: __dirname,
+  const payload = JSON.stringify({ legs: thinLegs(legs), games: slim, skip: [...(opts.skip || [])], stake: opts.stake, profit: opts.profit });
+  const file = path.join(require("os").tmpdir(), `one-pick-${process.pid}-${Date.now()}.json`);
+  fs.writeFileSync(file, payload);
+  try {
+    const raw = execFileSync(pythonBin() || "python3", ["-m", "nfl_bets.single", file], {
+      encoding: "utf8", timeout: 50000, maxBuffer: 8 * 1024 * 1024, cwd: __dirname,
+    });
+    return JSON.parse(raw);
+  } catch (error) {
+    const raw = String(error.stdout || "").trim();
+    if (raw.startsWith("{")) { try { return JSON.parse(raw); } catch (err) { /* the line below */ } }
+    console.error("single", error.signal || error.code || "", String(error.stderr || "").split("\n").slice(-3).join(" "));
+    return { title: "One pick", game: "", copy: "The single bet did not finish.", note: "The single bet did not finish.", why: "", legs: [], players: [], only: false, again: false };
+  } finally {
+    fs.rmSync(file, { force: true });
+  }
+}
+
+function thinLegs(legs) {
+  const skip = /\b(quarter|half|period|inning|first|last|1st|2nd|3rd)\b/i;
+  const groups = new Map();
+  legs.forEach((leg) => {
+    if (skip.test(`${leg.market || ""} ${leg.label || ""} ${leg.runner || ""}`)) return;
+    const name = String(leg.runner || leg.label || "").split(/\d/)[0].trim().toLowerCase();
+    const rows = groups.get(`${leg.gameId}|${name}`);
+    if (rows) rows.push(leg);
+    else groups.set(`${leg.gameId}|${name}`, [leg]);
   });
-  return JSON.parse(raw);
+  const take = groups.size > 400 ? 8 : 16;
+  const kept = [];
+  groups.forEach((rows) => {
+    if (rows.length <= take) { kept.push(...rows); return; }
+    rows.sort((a, b) => Number(a.odds) - Number(b.odds));
+    for (let i = 0; i < take; i += 1) kept.push(rows[Math.round((i * (rows.length - 1)) / (take - 1))]);
+  });
+  return kept;
 }
 
 function markGap(hits, count, price) {

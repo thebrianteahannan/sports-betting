@@ -483,7 +483,7 @@ def _main() -> None:
     import json
     import sys
 
-    body = json.load(sys.stdin)
+    body = json.load(open(sys.argv[1], encoding="utf-8") if len(sys.argv) > 1 else sys.stdin)
     legs = [row for row in (body.get("legs") or []) if isinstance(row, dict)]
     if body.get("mark"):
         json.dump(mark_player(str(body.get("name") or ""), legs, [row for row in (body.get("games") or []) if isinstance(row, dict)]), sys.stdout)
