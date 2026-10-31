@@ -377,15 +377,11 @@ def _lean(pack: dict[str, Any], text: str, price: float) -> str:
     recent, career = _hits(rows[:10], bar, under) / 10, _hits(rows, bar, under) / len(rows)
     asked, near, far = round(price * 100), round(recent * 100), round(career * 100)
     if near == far:
-        return f"The last 10 and the full history are both {near}%."
+        return ""
     recent_off, career_off = abs(asked - near), abs(asked - far)
-    if recent_off + 3 < career_off:
-        line = f"The {asked}% price is closer to the recent history (last 10, {near}%) than the full history ({far}%)."
-        extra = _dip(rows, bar, under, asked, far) if far >= asked + 8 else ""
-        return f"{line} {extra}".strip()
-    if career_off + 3 < recent_off:
-        return f"The {asked}% price is closer to the full history ({far}%) than the recent history (last 10, {near}%)."
-    return f"The {asked}% price sits between the recent history (last 10, {near}%) and the full history ({far}%)."
+    if recent_off + 3 < career_off and far >= asked + 8:
+        return _dip(rows, bar, under, asked, far)
+    return ""
 
 
 def _hits(rows: list[dict], bar: float, under: bool) -> int:

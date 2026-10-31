@@ -13,7 +13,7 @@ from nfl_bets.hedge import implied_prob
 from nfl_bets.http_util import get_json
 from nfl_bets.single import _OTHER, _PART, _combo
 from nfl_bets.ones import match_text
-from nfl_bets.sway import _PATH, _career, _nick, _search, _spec
+from nfl_bets.sway import _PATH, _career, _nick, _spec
 
 _REFERER = "https://www.espn.com/"
 
@@ -21,15 +21,14 @@ _REFERER = "https://www.espn.com/"
 def explain(name: str, text: str, sport: str, pack: dict[str, Any] | None = None) -> dict[str, str]:
     spec = _spec(text)
     path = _PATH.get(sport)
-    if not (isinstance(pack, dict) and pack.get("rows")):
-        pack = _career(sport, path, name) if path and name and spec else None
-    rows = _games(pack, spec[0][0]) if pack and spec else []
-    if spec is None or len(rows) < 20:
-        return {"why": "The log is too short to split a recent stretch from the career."}
-    brief = _brief(name, sport, path, pack, rows, spec[0][0])
-    if not brief:
-        return {"why": "The recent windows and the career are the same number."}
-    return {"why": brief}
+    rows = _games(pack, spec[0][0]) if isinstance(pack, dict) and spec else []
+    if spec and path and name and len(rows) < 20:
+        career = _career(sport, path, name)
+        if career:
+            pack, rows = career, _games(career, spec[0][0])
+    if not spec or len(rows) < 3:
+        return {"why": ""}
+    return {"why": _brief(name, text, sport, path, pack, rows, spec[0][0])}
 
 
 def _games(pack: dict[str, Any] | None, key: str) -> list[dict[str, float]]:
@@ -46,16 +45,19 @@ def _games(pack: dict[str, Any] | None, key: str) -> list[dict[str, float]]:
         made, attempts = _pair(raw, key)
         if made is None:
             continue
+        fgm, fga = _pair(str(_cell(stats, names, "fieldGoalsMade-fieldGoalsAttempted")), "fieldGoalsMade-fieldGoalsAttempted")
         found.append({
             "made": made,
             "attempts": attempts if attempts is not None else -1,
             "minutes": _plain(stats, names, "minutes"),
-            "fga": _attempt(stats, names, "fieldGoalsMade-fieldGoalsAttempted"),
+            "fgm": fgm if fgm is not None else -1,
+            "fga": fga if fga is not None else _attempt(stats, names, "fieldGoalsMade-fieldGoalsAttempted"),
             "fta": _attempt(stats, names, "freeThrowsMade-freeThrowsAttempted"),
             "points": _plain(stats, names, "points"),
             "assists": _plain(stats, names, "assists"),
             "turnovers": _plain(stats, names, "turnovers"),
             "season": float(row.get("season") or 0),
+            "opp": str(row.get("opponent") or ""),
         })
     return found
 
@@ -73,6 +75,13 @@ def _pair(raw: str, key: str) -> tuple[float | None, float | None]:
         return float(raw), None
     except ValueError:
         return None, None
+
+
+def _cell(stats: list[Any], names: list[str], key: str) -> Any:
+    if key not in names:
+        return ""
+    at = names.index(key)
+    return stats[at] if at < len(stats) else ""
 
 
 def _plain(stats: list[Any], names: list[str], key: str) -> float:
@@ -107,41 +116,49 @@ def _mean(rows: list[dict[str, float]], key: str) -> float | None:
     return sum(vals) / len(vals) if vals else None
 
 
-def _age(name: str, sport: str, path: tuple[str, str] | None) -> int | None:
-    if not path:
-        return None
+def _club(path: tuple[str, str], abbr: str) -> set[str]:
+    if not abbr:
+        return set()
     try:
-        found = _search(name, path[0], path[1])
-        if not found:
-            return None
-        page = get_json(f"https://site.web.api.espn.com/apis/common/v3/sports/{path[0]}/{path[1]}/athletes/{found[0]}", referer=_REFERER, timeout=12)
-        age = (page.get("athlete") or {}).get("age")
-        return int(age) if age else None
-    except (RuntimeError, TypeError, ValueError):
-        return None
+        roster = get_json(f"https://site.api.espn.com/apis/site/v2/sports/{path[0]}/{path[1]}/teams/{abbr}/roster", referer=_REFERER, timeout=12)
+    except RuntimeError:
+        return set()
+    found = []
+    for row in roster.get("athletes") or []:
+        if isinstance(row, dict) and row.get("items"):
+            found.extend(str(one.get("displayName") or "") for one in row["items"])
+        elif isinstance(row, dict):
+            found.append(str(row.get("displayName") or ""))
+    return {name.casefold() for name in found if name}
 
 
-def _outs(team: str, sport: str, path: tuple[str, str] | None) -> list[str]:
+def _outs(team: str, sport: str, path: tuple[str, str] | None, skip: str = "") -> list[str]:
     if not path or not team:
         return []
     try:
         data = get_json(f"https://site.api.espn.com/apis/site/v2/sports/{path[0]}/{path[1]}/injuries", referer=_REFERER, timeout=12)
     except RuntimeError:
         return []
-    names = []
+    names, abbr = [], ""
     for group in data.get("injuries") or []:
         if str(group.get("displayName") or "").casefold() != team.casefold():
             continue
         for item in group.get("injuries") or []:
+            athlete = item.get("athlete") or {}
+            abbr = str((athlete.get("team") or {}).get("abbreviation") or abbr)
             if str(item.get("status") or "").lower() != "out":
                 continue
             note = f"{item.get('shortComment') or ''} {item.get('longComment') or ''}".lower()
-            if "waiv" in note:
+            if "waiv" in note or "questionable" in note:
                 continue
-            who = str((item.get("athlete") or {}).get("displayName") or "").strip()
-            if who:
+            who = str(athlete.get("displayName") or "").strip()
+            if who and who.casefold() != skip.casefold():
                 names.append(who)
-    return names[:4]
+        break
+    club = _club(path, abbr)
+    if club:
+        names = [who for who in names if who.casefold() in club]
+    return names[:3]
 
 
 def _listed(names: list[str]) -> str:
@@ -157,11 +174,12 @@ def _noun(key: str) -> str:
     }
     if key in named:
         return named[key]
-    if "three" in key:
+    low = key.casefold()
+    if "three" in low:
         return "threes"
-    if "rebound" in key:
+    if "rebound" in low:
         return "rebounds"
-    if "freeThrow" in key:
+    if "freethrow" in low:
         return "free throws"
     if key in {"assists", "points", "turnovers", "steals", "blocks"}:
         return key
@@ -199,122 +217,76 @@ def _seasons(rows: list[dict[str, float]]) -> tuple[list[dict[str, float]] | Non
     return before, last, now
 
 
-def _clock(newer: list[dict[str, float]], older: list[dict[str, float]]) -> str:
-    now, then = _mean(newer, "minutes"), _mean(older, "minutes")
-    if now is None or then is None or abs(now - then) < 2:
-        return f", on the same {round(now)} minutes" if now is not None else ""
-    if now > then:
-        return f", with the minutes up to {round(now)} from {round(then)}"
-    return f", on fewer minutes, {round(now)} from {round(then)}"
-
-
-def _trade(newer: list[dict[str, float]], older: list[dict[str, float]], key: str) -> str:
-    stat_now, stat_then = _mean(newer, "made"), _mean(older, "made")
-    if not _moved(stat_now, stat_then):
-        return ""
-    up = (stat_now or 0) > (stat_then or 0)
-    fields = [("attempts", "three-point attempts"), ("fga", "shots"), ("points", "points"), ("assists", "assists")] if "three" in key else [("fga", "shots"), ("fta", "free throws"), ("points", "points"), ("assists", "assists"), ("turnovers", "turnovers")]
-    noun = _noun(key)
-    best: tuple[float, str, float, float] | None = None
-    for field, label in fields:
-        if label == noun:
-            continue
-        now, then = _mean(newer, field), _mean(older, field)
-        if not _moved(now, then):
-            continue
-        opposite = (now > then) != up
-        score = abs(now - then) / max(abs(then), 0.5)
-        score += 2 if (key == "assists") == opposite else 0
-        if best is None or score > best[0]:
-            best = (score, label, now, then)
-    verb = "dropped to" if best and best[2] < best[3] else "went to"
-    return f" while the {best[1]} {verb} {_num(best[2])} from {_num(best[3])}" if best else ""
-
-
-def _mix(rows: list[dict[str, float]]) -> float | None:
-    attempts, goals = _mean(rows, "attempts"), _mean(rows, "fga")
-    if attempts is None or goals is None or goals <= 0 or abs(attempts - goals) < 1:
+def _pct(rows: list[dict[str, float]]) -> float | None:
+    counted = [row for row in rows if row.get("fgm", -1) >= 0 and row.get("fga", -1) > 0]
+    atts = sum(row["fga"] for row in counted)
+    if len(counted) < 5 or atts <= 0:
         return None
-    return attempts / goals * 100
+    return sum(row["fgm"] for row in counted) / atts * 100
 
 
-def _shift(newer: list[dict[str, float]], older: list[dict[str, float]], key: str, when: str, clock: bool) -> str:
-    stat_now, stat_then = _mean(newer, "made"), _mean(older, "made")
-    if not _moved(stat_now, stat_then):
+def _spot(rows: list[dict[str, float]], text: str) -> str:
+    bar = _bar(text, False)
+    if bar is None:
         return ""
-    side = _trade(newer, older, key)
-    stamp = _clock(newer, older)
-    if not clock and stamp.startswith(", on the same"):
-        stamp = ""
-    bits = [f"{when} the {_noun(key)} went to {_num(stat_now or 0)} a game from {_num(stat_then or 0)}{side}{stamp}."]
-    if key == "assists" and "turnovers" not in side and (stat_now or 0) > (stat_then or 0):
-        now, then = _mean(newer, "turnovers"), _mean(older, "turnovers")
-        if _moved(now, then):
-            bits.append(f"Turnovers rose with them, to {_num(now or 0)} from {_num(then or 0)}.")
-    if key == "assists" and "points" not in side:
-        now, then = _mean(newer, "points"), _mean(older, "points")
-        if now is not None and then is not None and not _moved(now, then):
-            bits.append(f"The points stayed around {round((now + then) / 2)}.")
-        elif _moved(now, then):
-            bits.append(f"The points went to {_num(now or 0)} from {_num(then or 0)}.")
-    if "three" in key:
-        mix_now, mix_then = _mix(newer), _mix(older)
-        if mix_now is not None and mix_then is not None and abs(mix_now - mix_then) >= 5:
-            bits.append(f"Threes went to {round(mix_now)}% of the shots from {round(mix_then)}%.")
-    return " ".join(bits)
-
-
-def _slice(rows: list[dict[str, float]], season: list[dict[str, float]], key: str) -> str:
-    lines = []
-    field = "attempts" if "three" in key else "fga"
-    word = "three-point attempts" if "three" in key else "shots"
-    for count, label in ((10, "last 10"), (3, "last 3")):
-        if len(rows) < count or len(season) <= count:
+    under = bool(re.search(r"\bunder\b", text, re.I))
+    other: list[str] = []
+    for row in rows:
+        opp = str(row.get("opp") or "")
+        made = row.get("made", -1)
+        if not opp or made < 0:
             continue
-        recent = rows[:count]
-        stat_now, stat_then = _mean(recent, "made"), _mean(season, "made")
-        mins, base = _mean(recent, "minutes"), _mean(season, "minutes")
-        if not _moved(stat_now, stat_then):
-            if count == 10 and mins is not None and base is not None and abs(mins - base) >= 3:
-                lines.append(f"The last 10 are still {_num(stat_now or 0)} {_noun(key)}, with the minutes at {round(mins)}.")
-            continue
-        shot_now, shot_then = _mean(recent, field), _mean(season, field)
-        shot = f" on {_num(shot_now or 0)} {word}" if _moved(shot_now, shot_then) else ""
-        clock = f", at {round(mins)} minutes" if mins is not None else ""
-        verb = "fell to" if (stat_now or 0) < (stat_then or 0) else "went to"
-        if count == 3 and lines and (stat_now or 0) > (stat_then or 0):
-            continue
-        lines.append(f"The {label} {verb} {_num(stat_now or 0)} {_noun(key)} a game{shot}{clock}.")
-        if count == 10:
-            break
-    return " ".join(lines)
-
-
-def _brief(name: str, sport: str, path: tuple[str, str] | None, pack: dict[str, Any] | None, rows: list[dict[str, float]], key: str) -> str:
-    before, last, now = _seasons(rows)
-    if not last or not now:
+        if under == (made + 1e-9 >= bar):
+            nick = opp.split()[-1]
+            if nick not in other:
+                other.append(nick)
+    if not other or len(other) > 3:
         return ""
-    earlier = _shift(last, before, key, "Last season", True) if before else ""
-    current = _shift(now, last, key, "This season", not earlier)
-    again = ""
-    if before and current and not _moved(_mean(now, "made"), _mean(before, "made")) and _moved(_mean(last, "made"), _mean(before, "made")):
-        field = "attempts" if "three" in key else "fga"
-        word = "three-point attempts" if "three" in key else "shots"
-        prior = _mean(before, field)
-        again = f"The season before that already had {_num(_mean(before, 'made') or 0)}{f' on {_num(prior)} {word}' if prior is not None else ''}."
-    bits = [line for line in (earlier, current, again, _slice(rows, now, key)) if line]
-    if not bits:
+    shown = str(int(bar)) if float(bar).is_integer() else _num(bar)
+    word = "over" if under else "under"
+    if len(other) == 1:
+        return f"The game {word} {shown} was against the {other[0]}."
+    return f"The games {word} {shown} were against the {_listed(other)}."
+
+
+def _brief(name: str, text: str, sport: str, path: tuple[str, str] | None, pack: dict[str, Any] | None, rows: list[dict[str, float]], key: str) -> str:
+    _before, last, now = _seasons(rows)
+    if now and last:
+        window, base, label = now, last, "This season"
+    else:
+        window, base, label = rows[:10], rows[10:50], "The last 10"
+    made = _mean(window, "made")
+    if made is None or len(window) < 3:
         return ""
-    if len(now) < 15 and current:
-        outs = _outs(str((pack or {}).get("team") or ""), sport, path)
-        if outs:
-            count = {5: "Five", 6: "Six", 7: "Seven", 8: "Eight", 9: "Nine", 10: "Ten"}.get(len(now), str(len(now)))
-            bits.append(f"{_listed(outs)} are out. {count} games is too early to pin this on them.")
-    made_now, made_all = _mean(now, "made"), _mean(rows, "made")
-    if made_now is not None and made_all is not None and made_now < made_all and len(now) >= 25:
-        age = _age(name, sport, path)
-        if age is not None and age >= 33:
-            bits.append(f"Age {age}, and the number has been down for a while.")
+    noun = _noun(key)
+    then = _mean(base, "made") if len(base) >= 8 else None
+    bits = [f"{label} the {noun} went to {_num(made)} a game from {_num(then)}." if _moved(made, then) else f"{label} the {noun} are {_num(made)} a game."]
+    mins, prior = _mean(window, "minutes"), _mean(base, "minutes") if len(base) >= 8 else None
+    if mins is not None and prior is not None:
+        if abs(mins - prior) < 2:
+            bits.append(f"The minutes stayed at {round(mins)}.")
+        elif mins > prior:
+            bits.append(f"The minutes went up to {round(mins)} from {round(prior)}.")
+        else:
+            bits.append(f"The minutes went to {round(mins)} from {round(prior)}.")
+    elif mins is not None:
+        bits.append(f"The minutes are {round(mins)}.")
+    field, word = ("attempts", "three-point attempts") if "three" in key else ("fga", "shots")
+    if key in {"points", "assists"} or "three" in key:
+        shot, shot_then = _mean(window, field), _mean(base, field) if len(base) >= 8 else None
+        if _moved(shot, shot_then):
+            bits.append(f"The {word} {'went up to' if (shot or 0) > (shot_then or 0) else 'went to'} {_num(shot or 0)} from {_num(shot_then or 0)}.")
+    fg, fg_then = _pct(window), _pct(base) if len(base) >= 8 else None
+    if fg is not None and fg_then is not None and abs(fg - fg_then) >= 4:
+        bits.append(f"He's shooting {round(fg)}% from the field, {'up' if fg > fg_then else 'down'} from {round(fg_then)}%.")
+    elif key == "points" and fg is not None and fg_then is not None and _moved(made, then):
+        bits.append(f"The field goal percentage stayed around {round(fg)}%.")
+    spot = _spot(window, text)
+    if spot:
+        bits.append(spot)
+    gone = _outs(str((pack or {}).get("team") or ""), sport, path, name)
+    if gone:
+        bits.append(f"{_listed(gone)} {'is' if len(gone) == 1 else 'are'} out.")
     return " ".join(bits)
 
 

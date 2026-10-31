@@ -365,13 +365,9 @@ function leanOf(pack, text, price) {
   const near = Math.round(hitsOf(rows.slice(0, 10), bar, under) / 10 * 100);
   const far = Math.round(hitsOf(rows, bar, under) / rows.length * 100);
   const asked = Math.round(price * 100);
-  if (near === far) return `The last 10 and the full history are both ${near}%.`;
-  if (Math.abs(asked - near) + 3 < Math.abs(asked - far)) {
-    const extra = far >= asked + 8 ? dip(rows, bar, under, asked, far) : "";
-    return `The ${asked}% price is closer to the recent history (last 10, ${near}%) than the full history (${far}%). ${extra}`.trim();
-  }
-  if (Math.abs(asked - far) + 3 < Math.abs(asked - near)) return `The ${asked}% price is closer to the full history (${far}%) than the recent history (last 10, ${near}%).`;
-  return `The ${asked}% price sits between the recent history (last 10, ${near}%) and the full history (${far}%).`;
+  if (near === far) return "";
+  if (Math.abs(asked - near) + 3 < Math.abs(asked - far) && far >= asked + 8) return dip(rows, bar, under, asked, far);
+  return "";
 }
 
 function savedRead(name, text, sport, odds, pack, bet) {
@@ -383,8 +379,8 @@ function savedRead(name, text, sport, odds, pack, bet) {
   const bar = spec ? barOf(body, spec[2]) : null;
   const price = priceOf(bet && bet.odds != null ? bet.odds : odds);
   if (!(bet && typeof bet === "object")) {
-    if (rows.length < 10) return { why: "The log is too short to split a recent stretch from the career." };
-    return { why: happened(pack, body) || "The recent windows and the career are the same number." };
+    if (rows.length < 10) return { why: rows.length ? `The last ${rows.length} average ${numOf(meanOf(rows))} ${spec[1]}.` : "" };
+    return { why: happened(pack, body) };
   }
   const part = /\b(quarter|half|period|inning|first|last|1st|2nd|3rd)\b/i.test(body);
   if (part && spec && rows.length >= 3) {
@@ -408,10 +404,6 @@ function savedRead(name, text, sport, odds, pack, bet) {
 async function whyPlayer(name, text, sport, bet, odds, games) {
   const league = String((bet && bet.sport) || sport || "");
   const pack = await savedPack(league, name);
-  if (!(bet && typeof bet === "object")) {
-    const told = pack && happened(pack, String(text || ""));
-    if (told) return { why: told };
-  }
   const bin = pythonBin();
   if (!bin) return pack ? savedRead(name, text, sport, odds, pack, bet) : { why: "This player's game log is not on the desk yet." };
   const asked = bet && typeof bet === "object"
@@ -433,7 +425,7 @@ async function whyPlayer(name, text, sport, bet, odds, games) {
   const facts = [found.why, measured].filter(Boolean).join(" ");
   try {
     const spoken = await require("./bet-ask").askTrend(name, text, facts, sport, looks);
-    if (spoken) return { why: spoken };
+    if (spoken && !found.why) return { why: spoken };
   } catch (err) { /* keep the box score */ }
   return { why: facts || found.why || "" };
 }
