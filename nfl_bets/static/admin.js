@@ -112,6 +112,8 @@ function paintStrategies() {
     pay20: "A $5 bet aimed at winning $20.",
     pay25: "A $5 bet aimed at winning $25.",
     pay50: "A $5 bet aimed at winning $50.",
+    pra: "A player who scores, boards, and passes, on a points + rebounds + assists over he has cleared more often than not.",
+    sixth: "The first reserve, in a game the spread says can get away, on a prop he has cleared in blowouts more often than not.",
   };
   const rows = Object.entries(names).flatMap(([id, name]) => id === "hits" ? [["Five near 90% each", say.hits], ["Four near 80% each", say.hits]] : [[name, say[id] || ""]]);
   list.innerHTML = rows.map(([name, line]) => adminCard(esc(name), esc(line))).join("");

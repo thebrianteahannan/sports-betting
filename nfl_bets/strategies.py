@@ -14,6 +14,8 @@ from zoneinfo import ZoneInfo
 from nfl_bets.chalk import _from_decimal, _who, _yardage
 from nfl_bets.choose import _clock, _fits, _parse, _place, offer_legs
 from nfl_bets.hedge import american_decimal, implied_prob
+from nfl_bets.pra import pra_card
+from nfl_bets.sixth import sixth_card
 
 _ET = ZoneInfo("America/New_York")
 Row = tuple[dict[str, Any], dict[str, Any]]
@@ -53,6 +55,8 @@ def build_from(pools: list[tuple[dict[str, Any], list[dict[str, Any]]]]) -> dict
         "pay20": _payout(props, 20),
         "pay25": _payout(props, 25),
         "pay50": _payout(props, 50),
+        "pra": pra_card(props),
+        "sixth": sixth_card(props),
     }
     found = cards["early3"]
     if len(found.get("legs") or []) == 3:

@@ -438,4 +438,63 @@ async function whyPlayer(name, text, sport, bet, odds, games) {
   return { why: facts || found.why || "" };
 }
 
-module.exports = { singleFind, markPlayer, whyPlayer };
+function asked(opts) {
+  const when = opts.span === "week" ? "this week" : "today", league = (opts.sports || []).filter(Boolean), kind = opts.kind && opts.kind !== "any" ? String(opts.kind) : "";
+  const where = league.length === 1 ? ` in the ${league[0]}` : league.length === 2 ? ` in the ${league[0]} and ${league[1]}` : league.length ? ` in the ${league.slice(0, -1).join(", ")} and ${league[league.length - 1]}` : "";
+  return `You asked for ${kind || "one pick"}${where}${opts.game ? ` for ${opts.game}` : ""} ${when}.${Number(opts.profit) > 0 ? ` You wanted about $${Number(opts.profit)} profit on a $${opts.stake || 5} bet.` : ""}`;
+}
+
+function sayClose(opts, later) {
+  const why = "I looked at the recent games, and none of them sit far enough off the FanDuel price.";
+  return later ? `${asked(opts)} Nothing today. ${why} These are the closest later this week.` : `${asked(opts)} ${why} These are the closest.`;
+}
+
+function near(odds) { const n = Number(odds); return !n ? 0 : n < 0 ? Math.abs(n) / (Math.abs(n) + 100) : 100 / (n + 100); }
+
+function postedCards(pools, stake, limit) {
+  const rows = [];
+  (pools || []).forEach((row) => { const game = row[0] || {}; (row[1] || []).forEach((leg) => { if (Number(leg.odds)) rows.push({ leg, game }); }); });
+  rows.sort((a, b) => Math.abs(Number(a.leg.odds) + 110) - Math.abs(Number(b.leg.odds) + 110));
+  const seen = new Set();
+  const cards = [];
+  rows.forEach(({ leg, game }) => {
+    const key = `${leg.label}|${game.id || game.match}`;
+    if (seen.has(key) || cards.length >= limit) return;
+    seen.add(key);
+    const odds = Number(leg.odds), chance = Math.round(near(odds) * 1000) / 10, match = game.match || leg.match || "", label = String(leg.label || ""), dec = odds > 0 ? 1 + odds / 100 : 1 + 100 / Math.abs(odds);
+    cards.push({ title: "One pick", game: match, american: odds, impliedPct: chance, profit: Math.round((Number(stake) || 5) * (dec - 1) * 100) / 100, why: `FanDuel has this at ${chance}%.`, edge: false, close: true, players: [], only: false, again: false, legs: [{ market: leg.market || "", runner: leg.runner || "", label: match && !label.includes(match) ? `${label} — ${match}` : label, odds, kickoff: game.kickoff || leg.kickoff || "", gameId: String(game.id || ""), sport: game.sport || leg.sport || "", pct: `${(near(odds) * 100).toFixed(1)}%` }] });
+  });
+  return cards;
+}
+
+function postedNote(opts, laterCount) {
+  const week = opts.span === "week" ? "" : laterCount ? " I checked the rest of the week. Some of these are later this week." : " I checked the rest of the week. Nothing later is posted for this.";
+  const similar = /rebound/i.test(String(opts.kind || "")) && /assist/i.test(String(opts.kind || "")) ? " Points, rebounds, and assists are each their own bet if you want one stat." : "";
+  return `${asked(opts)}${week} None of them sit far enough off the FanDuel price. These are those lines anyway.${similar}`;
+}
+
+async function onePick(pools, games, opts, weekOf) {
+  const card = singleFind(pools, games, opts);
+  if (card.note === "The single bet did not finish.") return card;
+  if ((card.legs || []).length && !card.close) return card;
+  if (card.close && (card.legs || []).length) { card.note = card.copy = sayClose(opts, false); return card; }
+  let weekPools = [];
+  if (opts.span !== "week" && typeof weekOf === "function") {
+    const week = await weekOf();
+    weekPools = week.pools || [];
+    const later = singleFind(weekPools, week.games || [], opts);
+    if ((later.legs || []).length) { later.note = later.copy = later.close ? sayClose(opts, true) : `${asked(opts)} Nothing today. This one is later this week.`; later.close = true; return later; }
+  }
+  const today = postedCards(pools, opts.stake, 3);
+  const ahead = postedCards(weekPools, opts.stake, 3).filter((row) => !today.some((have) => have.legs[0].label === row.legs[0].label));
+  const cards = today.slice(0, ahead.length ? 2 : 3).concat(ahead.slice(0, Math.max(0, 3 - Math.min(today.length, ahead.length ? 2 : 3))));
+  if (!cards.length) {
+    const note = `${asked(opts)} I checked the rest of the week too. ${Number(opts.profit) > 0 ? "That profit leaves the posted lines out." : "FanDuel has not posted that today or later this week."}`;
+    return { title: "One pick", game: "", copy: note, note, why: "", legs: [], players: [], only: false, again: false, close: true };
+  }
+  const host = cards[0];
+  host.offers = cards.slice(1); host.edge = true; host.note = host.copy = postedNote(opts, ahead.length); host.title = cards.length > 1 ? "One pick bets" : "One pick";
+  return host;
+}
+
+module.exports = { singleFind, onePick, markPlayer, whyPlayer };

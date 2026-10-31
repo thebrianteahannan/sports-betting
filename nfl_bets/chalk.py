@@ -200,14 +200,7 @@ def _hits_card(event_id: str, title: str, legs: list[dict[str, Any]]) -> dict[st
 
 
 def _empty(event_id: str, title: str, heading: str, goal: str, copy: str) -> dict[str, Any]:
-    return {
-        "gameId": event_id,
-        "game": title,
-        "title": heading,
-        "goal": goal,
-        "copy": copy,
-        "legs": [],
-    }
+    return {"gameId": event_id, "game": title, "title": heading, "goal": goal, "copy": copy, "legs": []}
 
 
 def _event(event_id: str, tab: str) -> dict[str, Any]:
@@ -271,7 +264,7 @@ def _legs(event_id: str) -> tuple[list[dict[str, Any]], bool]:
                 odds = _american(runner)
                 if odds is None or odds < -2000 or odds > 5000:
                     continue
-                runner_name = str(runner.get("runnerName") or "").strip()
+                runner_name = _name(runner)
                 token = f"{market_id}|{runner_name}|{odds}"
                 if token in seen:
                     continue
@@ -484,12 +477,18 @@ def _prop(market: str) -> bool:
     return " - " in market and "Alternate" not in head
 
 
+def _name(runner: dict[str, Any]) -> str:
+    name = str(runner.get("runnerName") or "").strip()
+    mark = runner.get("handicap")
+    if mark and re.search(r"(?:^|\s)(?:over|under)$", name, re.I) and not re.search(r"\d", name):
+        name = f"{name} {float(mark):g}"
+    return name
+
+
 def _american(runner: dict[str, Any]) -> int | None:
     raw = ((runner.get("winRunnerOdds") or {}).get("americanDisplayOdds") or {}).get("americanOdds")
-    try:
-        return int(raw)
-    except (TypeError, ValueError):
-        return None
+    try: return int(raw)
+    except (TypeError, ValueError): return None
 
 
 def _from_decimal(decimal: float) -> int | None:

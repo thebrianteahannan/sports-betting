@@ -26,7 +26,7 @@ def mark_listed(rows: list[dict[str, Any]]) -> None:
         groups.setdefault(str(row.get("card") or ""), {}).setdefault((row.get("american"), labels), []).append(row)
     for group in groups.values():
         sample = next(iter(group.values()), [])
-        if sample and str(sample[0].get("card") or "") in {"td2", "td3"}:
+        if sample and str(sample[0].get("card") or "") in {"td2", "td3", "pra", "sixth"}:
             continue
         for bunch in group.values():
             for row in bunch:

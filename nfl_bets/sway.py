@@ -457,6 +457,7 @@ def _season(sport: str, league: str, athlete_id: str, year: int | None) -> tuple
     events = data.get("events") or {}
     rows = []
     for season in data.get("seasonTypes") or []:
+        if re.search(r"preseason", str(season.get("displayName") or ""), re.I): continue
         for cat in season.get("categories") or []:
             for item in cat.get("events") or []:
                 event = events.get(str(item.get("eventId") or "")) or {}

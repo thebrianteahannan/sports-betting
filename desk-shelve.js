@@ -1,5 +1,5 @@
 function createShelve(readKey, writeKey) {
-  const cards = new Set(["chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive", "weekSafe", "weekEven", "safe2", "mid3", "win4", "plusLegs", "mix21", "low3", "yards3", "ou4", "alt3", "games4", "early3", "prime3", "weekend4", "td2", "td3", "pay5", "pay10", "pay15", "pay20", "pay25", "pay50"]);
+  const cards = new Set(["chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive", "weekSafe", "weekEven", "safe2", "mid3", "win4", "plusLegs", "mix21", "low3", "yards3", "ou4", "alt3", "games4", "early3", "prime3", "weekend4", "td2", "td3", "pay5", "pay10", "pay15", "pay20", "pay25", "pay50", "pra", "sixth"]);
 
   async function list() {
     const data = (await readKey("bets/shelved.json")) || {};

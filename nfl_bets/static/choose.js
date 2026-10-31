@@ -126,8 +126,11 @@ async function runChoice() { takeMoney();
   window.builtLegs = card.legs || [];
   const bets = pile.map((row, index) => { const price = Number(row.american); const shown = Number.isFinite(price) ? (price > 0 ? `+${price}` : String(price)) : ""; const pct = row.impliedPct != null && row.impliedPct !== "" ? `${row.impliedPct}%` : ""; const same = (row.same = recName(row)); const head = [shown, pct, row.edge && choice.shape !== "single" ? "Better" : "", same ? "Recommended" : ""].filter(Boolean).join(" · "); const lines = (row.legs || []).map((leg) => { const odds = Number(leg.odds); const tag = Number.isFinite(odds) ? (odds > 0 ? `+${odds}` : String(odds)) : ""; const who = esc(String(leg.runner || leg.label || "").split(/\d/)[0].trim().toLowerCase()); const line = esc((String(leg.label || "").match(/(\d+(?:\.\d+)?)/) || [])[1] || ""); const word = esc((String(leg.label || "").toLowerCase().match(/shots|threes|assists|rebounds|points|yards|receptions|strikeouts|hits|goals|saves/) || [])[0] || ""); const parts = String(leg.label || "").split(/\s+—\s+/); const head = parts[0] || ""; const where = parts.slice(1).join(" — "); const market = String(leg.market || "").split(/\s+-\s+/).pop().replace(/^Either Player\s*/i, "").trim(); const title = typeof recThing === "function" ? recThing(head, market) : head, say = title.match(/^(.*?)\s+(to\s+.+)$/i), cut = !say && title.match(/^(.*?)(?:\s*:\s*|\s+)((?:\d+(?:\.\d+)?\+|[+-]\d|over\b|under\b).+)$/i), year = !say && !cut && title.match(/^(.*?)(,\s*.+)$/), named = say && say[1] ? `<i>${esc(say[1])}</i> ${esc(say[2])}` : cut && cut[1] ? `<i>${esc(cut[1])}</i> ${esc(cut[2])}` : year && year[1] ? `<i>${esc(year[1])}</i>${esc(year[2])}` : `<i>${esc(title)}</i>`; return `<span data-drop="${who}" data-line="${line}" data-word="${word}"><b>${named}</b><i>${esc([tag, leg.pct, where].filter(Boolean).join(" · "))}</i></span>`; }).join(""); return `<div class="rec-bet${index ? "" : " open"}${row.edge ? " rec-edge" : ""}" data-built="${index}"><button type="button" class="share-bet" data-share="built" data-share-id="${index}" aria-label="Share this bet"></button><b>${esc(head)}</b><p class="rec-gist">${row.why ? `<em>${esc(row.why)}</em>` : ""}${same ? `<em class="rec-known">${esc(`This is already a recommended bet, ${same}.`)}</em>` : ""}</p>${lines}${moneySay(price) ? `<p class="rec-copy">${esc(moneySay(price))}</p>` : ""}</div>`; }).join("");
   const stars = (card.legs || []).length ? `<span class="stars" id="choice-stars">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="star" data-built-star="${n}" aria-label="${n} star${n > 1 ? "s" : ""}">★</button>`).join("")}</span>` : "";
-  const note = String(card.note || "").replace(/(?:Each leg is (?:a different game|on a different day, in a different game)|These (?:legs|four) are in different games), so (?:FanDuel prices this as |this is )a regular parlay\.?\s*/g, "").trim();
-  box.innerHTML = `<h2>${esc(card.title || "Safest parlay")}</h2>${bets}${note ? `<p class="quiet">${esc(note)}</p>` : ""}`;
+  const rawNote = String(card.note || "").replace(/(?:Each leg is (?:a different game|on a different day, in a different game)|These (?:legs|four) are in different games), so (?:FanDuel prices this as |this is )a regular parlay\.?\s*/g, "").trim();
+  const open = card.close || !pile.length;
+  const note = open ? [`You chose ${choseLine()}.`, rawNote.replace(/^You asked for .+?\.(?:\s+You wanted about .+?\.)?\s*/, ""), "Try one of these."].filter(Boolean).join(" ") : rawNote;
+  const moves = nextMoves(open).map(([label, token]) => `<button type="button" data-next="${esc(token)}" style="width:auto;min-height:0;margin:0;padding:0.45rem 0.75rem;border:0;border-radius:8px;background:#3dff6e;color:#04140c;font-weight:700">${esc(label)}</button>`).join("");
+  box.innerHTML = `<h2>${esc(card.title || "Safest parlay")}</h2>${open && note ? `<p class="quiet">${esc(note)}</p>` : ""}${moves ? `<div style="display:flex;flex-wrap:wrap;gap:0.45rem;margin:0.7rem 0">${moves}</div>` : ""}${bets}${open ? "" : (note ? `<p class="quiet">${esc(note)}</p>` : "")}`;
   if (stars) {
     const again = document.getElementById("choice-again"); again.hidden = (again.insertAdjacentHTML("afterbegin", stars), false);
     document.getElementById("choice-stars").addEventListener("click", (event) => {
@@ -333,15 +336,11 @@ document.getElementById("choice-go").addEventListener("click", () => {
 });
 ["choice-stake", "choice-profit"].forEach((id) => document.getElementById(id)?.addEventListener("input", paintChoices));
 
-function legName(li) {
-  return li.dataset.drop || "";
-}
-
-function legWho(li) {
-  const name = legName(li);
-  if (!name) return "";
-  return [name, li.dataset.line || "", li.dataset.word || ""].filter((part, index) => index < 2 || part).join("|");
-}
+function legName(li) { return li.dataset.drop || ""; }
+function legWho(li) { const name = legName(li); return !name ? "" : [name, li.dataset.line || "", li.dataset.word || ""].filter((part, index) => index < 2 || part).join("|"); }
+function choseLine() { const hit = (choice.gameIds || [])[0] && ((window.state && state.board && state.board.games) || []).find((game) => String(game.id) === String(choice.gameIds[0])); return [choice.shape === "single" ? "one pick" : "a parlay", choice.when === "week" ? "this week" : "today", (choice.sports || []).length ? choice.sports.join(", ") : "all leagues", hit ? (typeof gameLabel === "function" ? gameLabel(hit) : hit.match) : "any game", choice.kind && choice.kind !== "any" ? choice.kind : "any player prop", choice.shape === "single" ? "" : (choice.legs ? `${choice.legs} picks` : "any number"), `$${choice.stake || 5} bet`, choice.profit > 0 ? `$${choice.profit} profit` : "any profit", choice.shape === "single" ? "" : ({ any: "any mix", even: "same chance", safer: "one safer", long: "one longer" }[choice.mix] || "")].filter(Boolean).join(", "); }
+function nextMoves(open) { if (!open) return []; const kind = String(choice.kind || ""), bits = [["Points", "points", /point/i], ["Rebounds", "rebounds", /rebound/i], ["Assists", "assists", /assist/i]].filter((row) => row[2].test(kind)); return [[choice.when === "week" ? "Today" : "Rest of the week", choice.when === "week" ? "when:today" : "when:week"], choice.kind && choice.kind !== "any" ? ["Any prop", "kind:any"] : null, (choice.gameIds || []).length ? ["Any game", "game:"] : null, choice.profit > 0 ? ["Any profit", "profit:"] : null, (choice.sports || []).length ? ["All leagues", "sport:"] : null].concat(bits.length > 1 ? bits.map((row) => [row[0], `kind:${row[1]}`]) : []).filter(Boolean); }
+function nextPick(token) { const cut = token.indexOf(":"), key = token.slice(0, cut), value = token.slice(cut + 1); if (key === "when") choice.when = value; else if (key === "kind") choice.kind = value || "any"; else if (key === "game") choice.gameIds = []; else if (key === "profit") { choice.profit = 0; if (choice.aim === "pay") choice.aim = "top"; const box = document.getElementById("choice-profit"); if (box) box.value = ""; } else if (key === "sport") choice.sports = []; runChoice().catch((error) => { const box = document.getElementById("choice-result"); if (box) box.textContent = String(error); }); }
 
 function cardLegs(card) {
   const shown = card.id === "choice-result" ? [...card.querySelectorAll(":scope > .rec-edge span[data-drop]")] : [];
@@ -417,6 +416,7 @@ function swapCard(card) {
 }
 
 document.addEventListener("click", (event) => {
+  const next = event.target.closest("[data-next]"); if (next) { nextPick(next.dataset.next); return; }
   const built = event.target.closest("#choice-result .rec-bet");
   if (built && !event.target.closest("button")) { if (window.openBuilt) openBuilt(built.dataset.built); return; }
   const edit = event.target.closest(".leg-edit");

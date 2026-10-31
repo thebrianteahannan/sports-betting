@@ -1,6 +1,6 @@
 /** Build a bet on the website. Same rules as the local desk. */
 
-const { addSway } = require("./sway-api"); const { singleFind, markPlayer, whyPlayer } = require("./single-find"); const { onesList } = require("./ones-find"); const { playerNames, nameBook, playerClub, teamRoster, outList } = require("./who-api"); const { gameRead } = require("./game-read");
+const { addSway } = require("./sway-api"); const { onePick, markPlayer, whyPlayer } = require("./single-find"); const { onesList } = require("./ones-find"); const { playerNames, nameBook, playerClub, teamRoster, outList } = require("./who-api"); const { gameRead } = require("./game-read");
 const AK = "FhMFpcPWXMeyZxOx";
 const SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA"];
 function propFamily(leg) {
@@ -485,7 +485,7 @@ async function chooseBet(body, board) {
   const hold = Array.isArray(body.hold) ? body.hold : [];
   const drop = Array.isArray(body.drop) ? body.drop : [];
   const skip = new Set((Array.isArray(body.skip) ? body.skip : []).map(String).filter(Boolean));
-  if (body.shape === "single" && !hold.length) return singleFind(pools, games, { skip, stake: betStake, profit: Number(body.profit) || 0 });
+  if (body.shape === "single" && !hold.length) return onePick(pools, games, { skip, stake: betStake, profit: Number(body.profit) || 0, span, kind, sports, game: ids.length === 1 ? String((games.find((g) => String(g.id) === ids[0]) || {}).match || "") : "" }, async () => { const weekGames = slate(Array.isArray(board.games) ? board.games : [], picked, ids, "week"); const got = await gather(weekGames, kind); return { pools: got.pools, games: weekGames }; });
   const pickedCombo = any ? [2, 3, 4, 5, 6].filter((n) => n >= hold.length).map((n) => pick(pools, n, aim, skip, hold, drop, mix)).filter((row) => row.combo.length).sort((a, b) => scoreOf(decimalOf(a.combo), aim, a.combo, mix) - scoreOf(decimalOf(b.combo), aim, b.combo, mix))[0] || { combo: [] } : pick(pools, count, aim, skip, hold, drop, mix);
   const used = pickedCombo.combo.length;
   if (!used || (!any && used < count)) return empty(miss(pools, picked, any ? 2 : count, span), aim);

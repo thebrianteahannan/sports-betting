@@ -17,7 +17,7 @@ from nfl_bets.tiebreak import _ET, _building, _parse, _person, _schedule, _sites
 
 _PART = re.compile(r"\b(quarter|half|period|inning)\b", re.I)
 _OTHER = re.compile(r"\b(first|last|1st|2nd|3rd)\b", re.I)
-_EMPTY = "Nothing on this slate is far enough off the count."
+_EMPTY = "I don't have a pick for this."
 
 
 def find_single(legs: list[dict[str, Any]], games: list[dict[str, Any]], skip: list[str], stake: float, profit: float) -> dict[str, Any]:
@@ -51,12 +51,14 @@ def find_single(legs: list[dict[str, Any]], games: list[dict[str, Any]], skip: l
         mine.sort(key=lambda row: (row["score"], row["sample"]), reverse=True)
         found.extend(mine[:3])
     found.sort(key=lambda row: (row["score"], row["sample"]), reverse=True)
-    found = found[:24]
-    if not found:
+    ready = [row for row in found if row["score"] >= 8][:24]
+    picked = ready or found[:3]
+    if not picked:
         return _miss()
-    card = _card(found[0]["leg"], found[0]["game"], found[0]["why"], stake)
-    card["title"] = "One pick" if len(found) == 1 else "One pick bets"
-    card["offers"] = [_card(row["leg"], row["game"], row["why"], stake) for row in found[1:]]
+    card = _card(picked[0]["leg"], picked[0]["game"], picked[0]["why"], stake)
+    card["title"] = "One pick" if len(picked) == 1 else "One pick bets"
+    card["close"], card["edge"] = not ready, bool(ready)
+    card["offers"] = [_card(row["leg"], row["game"], row["why"], stake) for row in picked[1:]]
     for offer in card["offers"]:
         offer["edge"] = False
         offer["title"] = card["title"]
@@ -186,7 +188,7 @@ def _gap(hits: int, count: int, price: float) -> int | None:
     if count < 3 or price <= 0:
         return None
     gap = round((hits / count - price) * 100)
-    return gap if gap >= 8 else None
+    return gap
 
 
 def _sides(leg: dict[str, Any], game: dict[str, Any], name: str, team: str, text: str, sit: dict) -> list[tuple[int, str]]:
@@ -461,9 +463,7 @@ def _combo(text: str) -> bool:
 
 def _game_of(leg: dict[str, Any]) -> dict[str, str]:
     match = str(leg.get("match") or "")
-    away, home = "", ""
-    if " @ " in match:
-        away, home = [part.strip() for part in match.split(" @ ", 1)]
+    away, home = [part.strip() for part in match.split(" @ ", 1)] if " @ " in match else ("", "")
     return {"match": match, "sport": str(leg.get("sport") or ""), "kickoff": str(leg.get("kickoff") or ""), "awayName": away, "homeName": home}
 
 
