@@ -9,6 +9,7 @@ const PATHS = {
   MLB: "baseball/mlb", Baseball: "baseball/mlb",
 };
 const saved = new Map();
+let snapCache = { at: 0, book: new Map() };
 
 async function readJson(url) {
   const hit = saved.get(url);
@@ -218,16 +219,26 @@ function slotsOf(doc) {
   for (const chart of doc.depthchart || []) {
     const positions = chart.positions || {};
     Object.keys(positions).forEach((key) => {
-      const athletes = ((positions[key] || {}).athletes || []).map((ath) => ({ id: String(ath.id || ""), name: ath.displayName || "", spot: SPOT[key] || key })).filter((ath) => ath.id && ath.name);
+      const athletes = ((positions[key] || {}).athletes || []).map((ath) => ({ id: String(ath.id || ""), name: ath.displayName || "", spot: SPOT[key] || key, key })).filter((ath) => ath.id && ath.name);
       if (athletes.length) slots.push(athletes);
     });
   }
   return slots;
 }
 
-function nextName(person, doc, gone) {
+function nextName(person, doc, gone, football) {
   const hits = [];
   slotsOf(doc || {}).forEach((athletes) => { const at = athletes.findIndex((ath) => ath.id === person.id); if (at >= 0) hits.push({ athletes, at }); });
+  if (football) {
+    const pos = String(person.pos || "").toLowerCase();
+    const rule = { wr: /^wr/, qb: /^qb/, rb: /^(rb|fb)/, fb: /^fb/, te: /^te/, dt: /^(dt|nt)/, nt: /^(dt|nt)/, de: /de$/, lb: /lb/, cb: /(cb|nb)/, s: /^(fs|ss|s)$/, fs: /^(fs|ss)$/, ss: /^(fs|ss)$/, t: /^(lt|rt)$/, ot: /^(lt|rt)$/, g: /^(lg|rg)$/, c: /^c$/, k: /^k$/, p: /^p$/ }[pos];
+    const keyed = (row) => String((row.athletes[0] || {}).key || "");
+    const fit = rule ? hits.filter((row) => rule.test(keyed(row))) : hits.filter((row) => !/^(pr|kr)$/.test(keyed(row)));
+    const hit = (fit.length ? fit : hits).slice().sort((a, b) => a.at - b.at)[0];
+    if (!hit) return "";
+    const next = hit.athletes.slice(hit.at + 1).find((ath) => !gone.has(ath.id));
+    return next ? next.name : "";
+  }
   const fit = hits.filter((row) => { const spot = row.athletes[row.at].spot; return spot === person.role || spot.endsWith(` ${person.role}`) || person.role.endsWith(` ${spot}`); }).sort((a, b) => a.at - b.at);
   const hit = fit[0] || hits.slice().sort((a, b) => a.at - b.at)[0];
   if (!hit) return "";
@@ -243,6 +254,44 @@ function minuteValue(raw) {
   if (clock) return Number(clock[1]) + Number(clock[2]) / 60;
   const num = Number(text);
   return Number.isFinite(num) && num > 0 ? num : null;
+}
+
+function foldPlay(name) {
+  return String(name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\b(jr|sr|ii|iii|iv)\b/g, "").replace(/[^a-z\s]/g, "").replace(/\s+/g, " ").trim();
+}
+
+async function snapBook() {
+  if (snapCache.book.size && Date.now() - snapCache.at < 6 * 60 * 60 * 1000) return snapCache.book;
+  const res = await fetch("https://github.com/nflverse/nflverse-data/releases/download/snap_counts/snap_counts_2026.csv", { headers: { "User-Agent": "Mozilla/5.0" }, signal: AbortSignal.timeout(20000) });
+  if (!res.ok) return snapCache.book;
+  const lines = (await res.text()).split(/\n/);
+  const head = (lines.shift() || "").split(",");
+  const at = (name) => head.indexOf(name);
+  const book = new Map();
+  lines.forEach((line) => {
+    if (!line) return;
+    const col = line.split(",");
+    if (col[at("game_type")] !== "REG") return;
+    const off = Number(col[at("offense_pct")]);
+    const def = Number(col[at("defense_pct")]);
+    const pct = Math.max(Number.isFinite(off) ? off : 0, Number.isFinite(def) ? def : 0);
+    const rows = book.get(foldPlay(col[at("player")])) || [];
+    rows.push({ week: Number(col[at("week")]) || 0, pct });
+    book.set(foldPlay(col[at("player")]), rows);
+  });
+  book.forEach((rows) => rows.sort((a, b) => b.week - a.week));
+  snapCache = { at: Date.now(), book };
+  return book;
+}
+
+function playText(book, name) {
+  const rows = (book && book.get(foldPlay(name))) || [];
+  if (!rows.length) return "";
+  const pct = (chunk) => `${Math.round((chunk.reduce((sum, row) => sum + row.pct, 0) / chunk.length) * 100)}% of the plays`;
+  const bits = [];
+  if (rows.length >= 3) bits.push(`Last 3, ${pct(rows.slice(0, 3))}`);
+  bits.push(`This season, ${pct(rows)}`);
+  return `${bits.join(". ")}.`;
 }
 
 function minuteText(rows, year) {
@@ -301,8 +350,10 @@ async function outCols(data, teams, docs, path) {
       people.push({ teamId, id, name, status, role: String((athlete.position || {}).displayName || "player").toLowerCase(), pos: String((athlete.position || {}).abbreviation || "") });
     });
   });
+  const football = /football/.test(path);
+  const snaps = football ? await snapBook().catch(() => new Map()) : new Map();
   const logs = new Map();
-  await Promise.all(people.filter((person) => person.id && (person.status === "out" || person.status === "injured reserve")).map(async (person) => {
+  if (!football) await Promise.all(people.filter((person) => person.id && (person.status === "out" || person.status === "injured reserve")).map(async (person) => {
     const got = await minuteRows(path, person.id);
     const text = minuteText(got.rows, got.year);
     if (text) logs.set(person.id, text);
@@ -310,9 +361,10 @@ async function outCols(data, teams, docs, path) {
   return teams.map((team, index) => ({
     title: team.short || team.name,
     lines: people.filter((person) => person.teamId === team.id).sort((a, b) => rank[a.status] - rank[b.status]).flatMap((person) => {
-      const next = person.status === "out" || person.status === "injured reserve" ? nextName(person, (docs || [])[index], gone) : "";
+      const out = person.status === "out" || person.status === "injured reserve";
+      const next = out ? nextName(person, (docs || [])[index], gone, football) : "";
       const line = `${[person.name, person.pos, person.status].filter(Boolean).join(", ")}${next ? ` (${next})` : ""}`;
-      const log = logs.get(person.id);
+      const log = logs.get(person.id) || (out ? playText(snaps, person.name) : "");
       return log ? [line, log] : [line];
     }),
   })).filter((col) => col.lines.length);
