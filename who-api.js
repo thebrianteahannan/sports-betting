@@ -57,6 +57,13 @@ function bookOf(pools) {
         if (total.overOdds != null) put(team.key, team.name, "team", { ...where, label: `Over ${tot}`, odds: total.overOdds, market: "Total" });
         if (total.underOdds != null) put(team.key, team.name, "team", { ...where, label: `Under ${tot}`, odds: total.underOdds, market: "Total" });
       });
+    } else {
+      const main = /^(total points|total runs|total goals|total points inc overtime|total goals \(60 min\))$/i;
+      const priced = (legs || []).filter((leg) => main.test(String(leg.market || "").trim()));
+      const over = priced.find((leg) => /^over\b/i.test(`${leg.runner || ""} ${leg.label || ""}`));
+      const under = priced.find((leg) => /^under\b/i.test(`${leg.runner || ""} ${leg.label || ""}`));
+      const line = over && Number((String(over.runner || over.label || "").match(/(\d+(?:\.\d+)?)/) || [])[1]);
+      if (over && under && Number.isFinite(line)) teams.forEach((team) => { put(team.key, team.name, "team", { ...where, label: `Over ${line}`, odds: over.odds, market: "Total" }); put(team.key, team.name, "team", { ...where, label: `Under ${line}`, odds: under.odds, market: "Total" }); });
     }
     (legs || []).forEach((leg) => {
       const blob = `${leg.runner || ""} ${leg.label || ""} ${leg.market || ""}`;

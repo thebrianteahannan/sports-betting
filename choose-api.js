@@ -135,7 +135,7 @@ function parseLegs(id, data) {
       const raw = (((runner.winRunnerOdds || {}).americanDisplayOdds || {}).americanOdds);
       const odds = Number.parseInt(raw, 10);
       if (!Number.isFinite(odds) || odds < -2000 || odds > 5000) return;
-      const runnerName = String(runner.runnerName || "").trim(), mark = Number(runner.handicap), shown = mark && /(?:^|\s)(over|under)$/i.test(runnerName) && !/\d/.test(runnerName) ? `${runnerName} ${mark}` : runnerName;
+      const runnerName = String(runner.runnerName || "").trim(), mark = Number(runner.handicap), bare = Number.isFinite(mark) && mark !== 0 && !/\d/.test(runnerName), num = bare ? (mark > 0 ? `+${mark}` : String(mark)) : "", shown = bare && /(?:^|\s)(over|under)$/i.test(runnerName) ? `${runnerName} ${Math.abs(mark)}` : bare && /spread|handicap|puck line|run line/i.test(name) ? `${runnerName} ${num}` : runnerName;
       rows.push({ market: name, runner: shown, label: legLabel(name, shown), odds });
     });
   });
