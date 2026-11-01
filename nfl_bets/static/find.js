@@ -56,7 +56,7 @@ function paintFind() {
   if (window.birdQuiet) birdQuiet();
   const desk = document.getElementById("desk");
   if (!desk || !desk.classList.contains("tv-full")) { window.asking = false; if (window.birdGreet) birdGreet(); return; }
-  if (window.tvPush) tvPush();
+  desk.classList.remove("bird-on"); if (window.tvForce) tvForce(); if (window.tvPush) tvPush();
   desk.classList.remove("bird-on", "solo", "dug");
   window.recOpen = false;
   const guide = document.getElementById("bird-guide");

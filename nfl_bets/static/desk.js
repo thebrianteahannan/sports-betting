@@ -445,13 +445,13 @@ function tvShot() {
   const full = !!(desk && desk.classList.contains("tv-full"));
   if (desk && desk.classList.contains("bird-on")) {
     const picks = [...document.querySelectorAll("#bird-picks button")].filter((b) => !b.dataset.stay && !b.dataset.rec && (["quiz", "ask", "parrot", "menu"].some((key) => key in b.dataset) || b.dataset.tab)).map((b) => { const kind = ["quiz", "ask", "parrot", "menu"].find((key) => key in b.dataset) || "tab"; return [kind === "tab" ? b.dataset.tab : kind, b.textContent, b.dataset[kind] || b.dataset.aim || ""]; });
-    return { bird: 1, text: document.getElementById("bird-line").textContent, picks, full };
+    return { bird: 1, text: document.getElementById("bird-line").textContent, picks, full, scroll: (document.getElementById("desk-glass-in") || {}).scrollTop || 0 };
   }
   const board = document.querySelector("#desk-glass-in .rec-board");
-  if (board && board.dataset.page) return { board: board.dataset.page, past: !!window.recPast, full };
+  if (board && board.dataset.page) return { board: board.dataset.page, past: !!window.recPast, full, scroll: (document.getElementById("desk-glass-in") || {}).scrollTop || 0 };
   const tab = (window.state && state.tab) || "today";
   const chooser = document.getElementById("chooser");
-  return { tab, built: tab === "build" && !!(chooser && chooser.classList.contains("built")), full };
+  return { tab, built: tab === "build" && !!(chooser && chooser.classList.contains("built")), full, scroll: (document.getElementById("desk-glass-in") || {}).scrollTop || 0 };
 }
 function tvSame(a, b) {
   return !!a && !!b && !!a.bird === !!b.bird && (a.bird ? a.text === b.text : a.board ? a.board === b.board && !!a.past === !!b.past : a.tab === b.tab && !!a.built === !!b.built);
@@ -480,7 +480,7 @@ function tvBack() {
   if (prev.bird) birdSay(prev.text, prev.picks);
   else if (prev.gate) showGateScene();
   else if (prev.board && window.tvPage) tvPage(prev);
-  else { window.asking = false; birdHide(); if (!prev.built) tvUnbuild(); showTab(prev.tab || "today"); }
+  else { window.asking = false; birdHide(); if (!prev.built) tvUnbuild(); showTab(prev.tab || "today"); } const backRow = document.getElementById("desk-glass-in"); if (backRow && Number.isFinite(prev.scroll)) backRow.scrollTop = prev.scroll;
   tvSkip = false;
 }
 const goTab = showTab;
@@ -496,5 +496,5 @@ showTab = (name) => {
 
 window.deskFrame = deskFrame;
 window.deskGate = showGateScene;
-window.birdSay = birdSay; window.tvBack = tvBack; window.tvPush = tvPush;
+window.birdSay = birdSay; window.tvBack = tvBack; window.tvPush = tvPush; window.tvForce = () => { tvSeen = true; };
 bootDesk();
