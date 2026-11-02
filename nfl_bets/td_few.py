@@ -17,7 +17,7 @@ from urllib.parse import quote
 
 from nfl_bets.http_util import get_json
 from nfl_bets.store import out_dir, read_json, write_json
-from nfl_bets.td_read import _defense, _last, _num, _season
+from nfl_bets.td_read import _last, _num, _season
 
 _REFERER = "https://www.espn.com/"
 _TTL = 6 * 3600
@@ -53,12 +53,13 @@ def few(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
     if not wanted:
         return []
     cache = _load()
+    if wanted:
+        _active(str((_player(wanted[0]["name"], cache) or {}).get("team") or "SEA"), cache)
     with ThreadPoolExecutor(max_workers=6) as pool:
         facts = list(pool.map(lambda row: _fact(row, cache), wanted))
-    kept = [fact for fact in facts if fact and not (fact.get("kind") == "rush" and _returning(fact["name"], cache))]
     _save(cache)
-    kept.sort(key=lambda fact: (-fact["soft"], -fact["gap"]))
-    return [{"name": fact["name"], "line": fact["line"]} for fact in kept[:5]]
+    by_name = {fact["name"]: fact for fact in facts if fact}
+    return [{"name": row["name"], "line": by_name[row["name"]]["line"]} for row in wanted if row["name"] in by_name]
 
 
 def _fact(row: dict[str, Any], cache: dict[str, Any]) -> dict[str, Any] | None:
@@ -66,55 +67,45 @@ def _fact(row: dict[str, Any], cache: dict[str, Any]) -> dict[str, Any] | None:
     pack = _player(name, cache)
     if not pack:
         return None
-    recent, prior = pack["recent"], pack["prior"]
-    if len(recent) < 4 or len(prior) < 3:
-        return None
-    hits = sum(1 for game in recent if game["td"])
-    prior_hits = sum(1 for game in prior if game["td"])
-    if hits < 3:
-        return None
-    recent_pct = round(100 * hits / 4)
-    prior_pct = round(100 * prior_hits / len(prior))
+    recent, prior = list(pack.get("recent") or []), list(pack.get("prior") or [])
+    played = int(pack.get("played") or 0)
+    listed = _backs(str(pack.get("team") or ""), cache)
+    if any(who.casefold() == name.casefold() for who in listed):
+        kind = "rush"
+    else:
+        rush = sum(game["rush"] for game in recent)
+        rec = sum(game["rec"] for game in recent)
+        kind = "rush" if rush > rec else "pass"
+    back = _returning(name, cache) if kind == "rush" else ""
     asked = round(100 * _implied(odds))
-    if recent_pct <= prior_pct or recent_pct < asked + 8:
-        return None
-    rush = sum(game["rush"] for game in recent)
-    rec = sum(game["rec"] for game in recent)
-    kind = "rush" if rush >= rec else "pass"
-    opp = _opponent(pack["team"], row["match"])
-    if not opp:
-        return None
-    side = _defense(opp)
-    allowed = side.get("rushTd") if kind == "rush" else side.get("passTd")
-    if allowed is None:
-        return None
-    card = _card(opp, cache)
-    return {
-        "name": name,
-        "kind": kind,
-        "soft": float(allowed),
-        "gap": recent_pct - asked,
-        "line": _line(name, hits, prior_hits, len(prior), asked, prior_pct, recent_pct, opp, kind, int(allowed), card),
-    }
+    return {"name": name, "line": _line(name, recent, prior, played, asked, back)}
 
 
-def _line(name: str, hits: int, prior_hits: int, prior_n: int, asked: int, prior_pct: int, recent_pct: int, opp: str, kind: str, allowed: int, card: dict[str, Any]) -> str:
+def _line(name: str, recent: list[dict[str, Any]], prior: list[dict[str, Any]], played: int, asked: int, back: str) -> str:
     who = _last(name)
-    nick = next((club.split()[-1] for club, abbr in _CLUBS.items() if abbr == opp), opp)
-    word = "rushing touchdowns" if kind == "rush" else "passing touchdowns"
-    bits = [f"{who} scored in {hits} of the last 4.", f"The longer run is {prior_hits} of {prior_n}.", f"FanDuel has this at {asked}%."]
-    if prior_pct < asked < recent_pct:
-        bits.append("The price sits between them.")
-    elif asked < prior_pct:
-        bits.append("The price is under both.")
-    scheme = str(card.get("scheme") or "")
-    front = f"The {nick} play {scheme} and have allowed {allowed} {word}." if scheme else f"The {nick} have allowed {allowed} {word}."
-    bits.append(front)
-    group = "linebackers" if kind == "rush" else "corners"
-    names = card.get(group) or []
-    if names:
-        bits.append(f"The {group} are {_join(names)}.")
-    return " ".join(bits)
+    if played <= 0:
+        return f"{who} has no game this season. There is no recent scoring to put under this price."
+    if back:
+        return back
+    window = recent[:4]
+    hits = sum(1 for game in window if game["td"])
+    n = len(window)
+    if n < 3:
+        return f"The price is {asked}%."
+    recent_pct = round(100 * hits / n)
+    scored = f"{who} scored a touchdown in {hits} of the last {n} games."
+    prior_hits = sum(1 for game in prior if game["td"]) if len(prior) >= 3 else None
+    prior_pct = round(100 * prior_hits / len(prior)) if prior_hits is not None else None
+    if prior_pct is not None and prior_pct < asked < recent_pct:
+        when = "Earlier this season" if played > n else "Last season"
+        got = f"{prior_hits} of {len(prior)}" if prior_hits else f"none of {len(prior)}"
+        return f"{scored} {when}, {got}. The {asked}% price is under those last {n} and over those earlier games."
+    colder = prior_pct is not None and prior_pct >= recent_pct + 8
+    if abs(asked - recent_pct) <= 6:
+        return f"{scored} That run is colder than the earlier games, and the price is on it." if colder else f"{scored} The {asked}% price is on that run, not under it."
+    if asked + 6 <= recent_pct:
+        return f"{scored} The {asked}% price is under that run."
+    return f"{scored} The {asked}% price is over that run."
 
 
 def _join(names: list[str]) -> str:
@@ -156,9 +147,11 @@ def _returning(name: str, cache: dict[str, Any] | None = None) -> str:
     bag = cache.setdefault("back", {})
     saved = bag.get(name)
     if isinstance(saved, dict) and time() - float(saved.get("at") or 0) < _TTL:
-        if own:
-            _save(cache)
-        return str(saved.get("line") or "")
+        line = str(saved.get("line") or "")
+        if "carries" in line or not line:
+            if own:
+                _save(cache)
+            return line
     line = ""
     pack = _player(name, cache)
     team = str((pack or {}).get("team") or "")
@@ -170,7 +163,7 @@ def _returning(name: str, cache: dict[str, Any] | None = None) -> str:
             continue
         lead_pack = _player(lead, cache)
         if lead_pack and int(lead_pack.get("played") or 0) == 0:
-            line = f"{_last(lead)} is back for his first game. {_last(name)}'s scores came while he was out."
+            line = f"{_last(name)}'s scores came while he had {_last(lead)}'s carries. {_last(lead)} has those carries tonight."
             break
     bag[name] = {"at": time(), "line": line}
     if own:
