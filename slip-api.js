@@ -15,8 +15,9 @@ const ASK = `Read every leg on this bet slip. A 3-bet parlay has 3 legs. Do not 
 A team to win is its own leg: player is the team, market is "to win", side is "win", line is null.
 A player prop: player is the person in normal case, market is only the stat ("rushing yards"), side is over or under, line is the number.
 match is the game line as printed, Away @ Home. when is "" when the slip says Today, otherwise YYYY-MM-DD.
-odds is the parlay price. sport is NFL, NBA, NHL, MLB, WNBA, or NCAAF.
-{"book":"","odds":"-101","legs":[{"player":"Commanders","market":"to win","side":"win","line":null,"match":"Eagles @ Commanders","when":"","sport":"NFL"},{"player":"Saquon Barkley","market":"rushing yards","side":"over","line":24.5,"match":"Eagles @ Commanders","when":"","sport":"NFL"}]}`;
+odds is the parlay price. stake is the dollars risked, payout is the dollars paid if it wins. Use "" when that number is not printed. sport is NFL, NBA, NHL, MLB, WNBA, or NCAAF.
+{"book":"","odds":"-101","stake":"$10.03","payout":"$20.00","legs":[{"player":"Commanders","market":"to win","side":"win","line":null,"match":"Eagles @ Commanders","when":"","sport":"NFL"},{"player":"Saquon Barkley","market":"rushing yards","side":"over","line":24.5,"match":"Eagles @ Commanders","when":"","sport":"NFL"}]}`;
+const MONEY = `Read the wager and the payout on this bet slip. Return JSON only. {"stake":"$10.03","payout":"$20.00"} stake is the dollars risked. payout is what it pays if the bet wins. Use "" if that number is not printed.`;
 
 function geminiKey() {
   return String(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "").trim().replace(/^["']|["']$/g, "");
@@ -35,21 +36,31 @@ function grade(legs) {
   return gradeLegs(legs);
 }
 
-function keep(saved, fresh) {
-  return fresh.map((leg, index) => {
-    const prior = saved[index] || {};
-    return {
-      player: leg.player || prior.player || "",
-      market: leg.market || prior.market || "",
-      side: leg.side || prior.side || "",
-      line: leg.line == null ? prior.line : leg.line,
-      match: leg.match || prior.match || "",
-      when: leg.when || prior.when || "",
-      sport: leg.sport || prior.sport || "",
-      espnId: leg.espnId || prior.espnId || "",
-      kickoff: leg.kickoff || prior.kickoff || "",
-    };
-  });
+function done(leg) {
+  return !!(leg && (leg.result === "won" || leg.result === "lost" || leg.result === "push"));
+}
+
+function pack(leg, prior) {
+  const row = {
+    player: leg.player || (prior && prior.player) || "",
+    market: leg.market || (prior && prior.market) || "",
+    side: leg.side || (prior && prior.side) || "",
+    line: leg.line == null ? (prior && prior.line) : leg.line,
+    match: leg.match || (prior && prior.match) || "",
+    when: leg.when || (prior && prior.when) || "",
+    sport: leg.sport || (prior && prior.sport) || "",
+    espnId: leg.espnId || (prior && prior.espnId) || "",
+    kickoff: leg.kickoff || (prior && prior.kickoff) || "",
+  };
+  if (!done(leg)) return row;
+  row.result = leg.result;
+  row.say = leg.say || "";
+  row.text = leg.text || "";
+  row.pace = leg.pace || "";
+  row.chance = Number.isFinite(Number(leg.chance)) ? Number(leg.chance) : null;
+  row.clock = leg.clock || "";
+  if (typeof leg.have === "number") row.have = leg.have;
+  return row;
 }
 
 function show(slip, legs) {
@@ -59,7 +70,7 @@ function show(slip, legs) {
   const chance = missed ? 0 : nums.length === legs.length && legs.length ? Math.max(0, Math.min(100, Math.round(nums.reduce((acc, n) => acc * (n / 100), 1) * 100))) : null;
   const base = missed ? "This bet missed." : legs.length && reached === legs.length ? "This bet is reached." : `${reached} of ${legs.length} ${legs.length === 1 ? "leg" : "legs"} reached.`;
   const line = missed || (legs.length && reached === legs.length) || chance == null ? base : `${base} ${chance}% to win this bet.`;
-  return { id: slip.id, book: slip.book || "", odds: slip.odds || "", at: slip.at, shot: slip.shot || "", line, chance, legs };
+  return { id: slip.id, book: slip.book || "", odds: slip.odds || "", stake: slip.stake || "", payout: slip.payout || "", at: slip.at, shot: slip.shot || "", line, chance, legs };
 }
 
 async function slipList(user, readKey, writeKey) {
@@ -67,10 +78,22 @@ async function slipList(user, readKey, writeKey) {
   const mine = data.slips.filter((row) => row.userId === user.id);
   let dirty = false;
   const slips = await Promise.all(mine.map(async (slip) => {
-    let legs = [];
-    try { legs = await grade(slip.legs || []); } catch (err) { console.error("slip grade:", err && err.message); legs = (slip.legs || []).map((leg) => ({ ...leg, say: "Waiting on the game.", result: "open", text: [leg.player, leg.market].filter(Boolean).join(" ") })); }
-    const next = keep(slip.legs || [], legs);
-    if (JSON.stringify(next) !== JSON.stringify(slip.legs || [])) { slip.legs = next; dirty = true; }
+    const saved = slip.legs || [];
+    const open = saved.filter((leg) => !done(leg));
+    let fresh = [];
+    if (open.length) {
+      try { fresh = await grade(open); } catch (err) { console.error("slip grade:", err && err.message); fresh = open.map((leg) => ({ ...leg, say: "Waiting on the game.", result: "open", text: [leg.player, leg.market].filter(Boolean).join(" ") })); }
+    }
+    let at = 0;
+    const legs = saved.map((leg) => (done(leg) ? leg : (fresh[at++] || leg)));
+    const next = legs.map((leg, index) => pack(leg, saved[index]));
+    if (JSON.stringify(next) !== JSON.stringify(saved)) { slip.legs = next; dirty = true; }
+    if (!slip.money && slip.shot) {
+      try {
+        const money = await readMoney(String(slip.shot).split(",").pop());
+        slip.stake = money.stake; slip.payout = money.payout; slip.money = true; dirty = true;
+      } catch (err) { console.error("slip money:", err && err.message); }
+    }
     return show(slip, legs);
   }));
   if (dirty) await writeKey(KEY, data);
@@ -89,7 +112,54 @@ function parseSlip(text) {
     console.error("slip read:", String(text || "").replace(/\s+/g, " ").slice(0, 300));
     throw new Error("I could not read a bet on that screenshot.");
   }
-  return { book: String(body.book || "").slice(0, 40), odds: String(body.odds || "").slice(0, 20), legs };
+  return { book: String(body.book || "").slice(0, 40), odds: String(body.odds || "").slice(0, 20), stake: dollars(body.stake), payout: dollars(body.payout), legs };
+}
+
+function dollars(value) {
+  const text = String(value || "").replace(/[^0-9.]/g, "");
+  const num = Number(text);
+  if (!text || !Number.isFinite(num) || num <= 0) return "";
+  return `$${num.toFixed(2)}`;
+}
+
+function parseMoney(text) {
+  const start = String(text || "").indexOf("{");
+  const end = String(text || "").lastIndexOf("}");
+  let body = {};
+  if (start >= 0 && end > start) { try { body = JSON.parse(String(text).slice(start, end + 1)); } catch (err) { body = {}; } }
+  return { stake: dollars(body.stake), payout: dollars(body.payout) };
+}
+
+async function readMoney(image) {
+  if (!onMac()) {
+    const key = geminiKey();
+    if (!key) return { stake: "", payout: "" };
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel()}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+      signal: AbortSignal.timeout(45000),
+      body: JSON.stringify({ contents: [{ role: "user", parts: [{ inlineData: { mimeType: "image/jpeg", data: image } }, { text: MONEY }] }], generationConfig: { maxOutputTokens: 200, temperature: 0 } }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    const text = ((((payload.candidates || [])[0] || {}).content || {}).parts || []).filter((part) => part && part.text && !part.thought).map((part) => part.text).join(" ");
+    if (!response.ok || !text) throw new Error("I could not read the wager.");
+    return parseMoney(text);
+  }
+  const response = await fetch(`${OLLAMA}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(90000),
+    body: JSON.stringify({
+      model: VISION, stream: false, format: "json", think: false,
+      messages: [{ role: "system", content: "You read a sportsbook bet slip. Return JSON only." }, { role: "user", content: MONEY, images: [image] }],
+      options: { temperature: 0, num_predict: 200 },
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  const raw = String((payload.message && (payload.message.content || payload.message.thinking)) || "");
+  const text = raw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+  if (!response.ok || !text) throw new Error("Ollama did not read the wager.");
+  return parseMoney(text);
 }
 
 function ocrShot(image, mime) {
@@ -225,6 +295,9 @@ async function slipPost(user, body, readKey, writeKey) {
     userId: user.id,
     book: read.book,
     odds: read.odds,
+    stake: read.stake || "",
+    payout: read.payout || "",
+    money: !!(read.stake || read.payout),
     at: new Date().toISOString(),
     shot: String((body && body.image) || "").startsWith("data:image/") && String(body.image).length < 1800000 ? String(body.image) : "",
     legs: read.legs.map((leg) => ({

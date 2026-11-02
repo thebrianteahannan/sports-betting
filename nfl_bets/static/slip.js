@@ -6,6 +6,27 @@ function slipEsc(text) {
 
 const slipOpen = new Set();
 
+function slipMoney(slip) {
+  if (slip.stake && slip.payout) return `${slip.stake} to win ${slip.payout}`;
+  return slip.stake || slip.payout || "";
+}
+
+function slipBit(leg) {
+  const who = String(leg.player || "").trim().split(/\s+/).pop() || "";
+  const market = String(leg.market || "").toLowerCase();
+  if (leg.side === "win" || /to win|moneyline/.test(market)) return who || "to win";
+  if (/anytime|any time|\btd\b/.test(market)) return `${who} anytime`.trim();
+  const line = Number.isFinite(Number(leg.line)) ? String(Number(leg.line)) : "";
+  const kind = /rush/.test(market) ? "rush" : /recep/.test(market) ? "rec" : /receiv/.test(market) ? "rec" : /pass/.test(market) ? "pass" : /point/.test(market) ? "pts" : market.replace(/\byards?\b/g, "").trim();
+  return [who, line, kind].filter(Boolean).join(" ");
+}
+
+function slipFold(slip, finished) {
+  const bits = (slip.legs || []).map(slipBit).filter(Boolean).join(", ");
+  const result = !finished ? "" : slip.line === "This bet missed." ? "Missed" : slip.line === "This bet is reached." ? "Reached" : "";
+  return [slipMoney(slip), bits, result].filter(Boolean).join(" · ");
+}
+
 function paintSlips(payload) {
   const list = document.getElementById("slip-list");
   if (!list) return;
@@ -26,27 +47,37 @@ function paintSlips(payload) {
     const done = (slip.legs || []).length && (slip.legs || []).every((leg) => leg.result === "won" || leg.result === "lost" || leg.result === "push");
     const open = !done || slipOpen.has(slip.id);
     const tone = slip.line === "This bet missed." ? "lost" : slip.line === "This bet is reached." ? "won" : "";
-    const summary = [((slip.legs || [])[0] || {}).match, slip.line, slip.odds].filter(Boolean).join(" · ");
+    const summary = slipFold(slip, done);
     const fold = done ? `<button type="button" class="slip-fold ${tone}" data-slip-fold="${slipEsc(slip.id)}">${slipEsc(summary)}</button>` : "";
-    const top = done ? "" : `<p class="slip-line">${slipEsc(slip.line || "")}</p>${head ? `<p class="quiet">${slipEsc(head)}</p>` : ""}`;
+    const money = slipMoney(slip);
+    const top = done ? "" : `<p class="slip-line">${slipEsc(slip.line || "")}</p>${money ? `<p class="quiet">${slipEsc(money)}</p>` : ""}${head ? `<p class="quiet">${slipEsc(head)}</p>` : ""}`;
     const body = `<div class="slip-body"${open ? "" : " hidden"}>${shot}${top}${clock ? `<p class="quiet">${slipEsc(clock)}</p>` : ""}${legs}<p class="pick-save"><button type="button" class="ghost" data-slip-drop="${slipEsc(slip.id)}">Take this bet off</button></p></div>`;
     return `<article class="slip-card${open ? " open" : ""}" data-slip-id="${slipEsc(slip.id)}">${fold}${body}</article>`;
   }).join("");
 }
 
-async function loadSlips() {
-  const response = await fetch("/api/slip", { cache: "no-store" });
-  if (!response.ok) throw new Error("The check did not go through.");
-  paintSlips(await response.json());
+function slipBird() {
+  const list = document.getElementById("slip-list");
+  if (list) list.innerHTML = `<div class="slip-load"><span><img src="/scene/parrot-head.png?v=4" alt=""></span><p>Checking the bets.</p></div>`;
+}
+
+async function loadSlips(wait) {
+  if (wait) slipBird();
+  try {
+    const response = await fetch("/api/slip", { cache: "no-store" });
+    if (!response.ok) throw new Error("The check did not go through.");
+    paintSlips(await response.json());
+  } catch (err) {
+    const list = document.getElementById("slip-list");
+    if (wait && list && list.querySelector(".slip-load")) list.innerHTML = `<p class="quiet">The check did not go through.</p>`;
+    throw err;
+  }
 }
 
 function checkNow() {
   const note = document.getElementById("slip-note");
-  if (note) note.textContent = "Checking the bets.";
-  return loadSlips().then(() => {
-    if (note && note.textContent === "Checking the bets.") note.textContent = "Checked.";
-    setTimeout(() => { if (note && note.textContent === "Checked.") note.textContent = ""; }, 2000);
-  }).catch(() => { if (note) note.textContent = "The check did not go through."; });
+  if (note) note.textContent = "";
+  return loadSlips(true).catch(() => { if (note) note.textContent = "The check did not go through."; });
 }
 
 function fitShot(file) {
@@ -99,7 +130,7 @@ function showProfileTab(name) {
   document.querySelectorAll("#profile-tabs .tab").forEach((button) => {
     button.classList.toggle("on", button.dataset.profileTab === name);
   });
-  if (bets) loadSlips().catch(() => {});
+  if (bets) loadSlips(true).catch(() => {});
 }
 
 function clipFiles(cd) {
