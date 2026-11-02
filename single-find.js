@@ -247,14 +247,7 @@ function priceOf(odds) { const n = Number(odds); if (!Number.isFinite(n) || !n) 
 function nick(name) { const word = String(name || "").replace(/\s*\([^)]*\)/g, "").trim().split(/\s+/).pop() || ""; if (word.toLowerCase() === "49ers") return "49ers"; return word ? word[0].toUpperCase() + word.slice(1) : String(name || ""); }
 function combo(text) { const low = String(text || "").toLowerCase(); let kinds = 0; if (low.includes("touchdown")) kinds += 1; if (low.includes("receiving") && (low.includes("yard") || low.includes("yds"))) kinds += 1; if (low.includes("rushing") && (low.includes("yard") || low.includes("yds"))) kinds += 1; if (low.includes("passing") && (low.includes("yard") || low.includes("yds"))) kinds += 1; if (low.includes("reception")) kinds += 1; if (low.includes("shots on goal") || /\bshots\b/.test(low)) kinds += 1; if (low.includes("made three") || low.includes("threes")) kinds += 1; if (low.includes("rebound")) kinds += 1; if (low.includes("assist")) kinds += 1; if (low.includes("strikeout")) kinds += 1; if (low.includes("home run")) kinds += 1; else if (/\bhits?\b/.test(low)) kinds += 1; if (/\bgoals?\b/.test(low.replace(/shots on goal/g, ""))) kinds += 1; if (/\bpoints?\b/.test(low)) kinds += 1; return kinds > 1; }
 
-function share(rows, bar, under) {
-  const hits = hitsOf(rows, bar, under);
-  const per = rows.reduce((sum, row) => sum + row.value, 0) / rows.length;
-  const shown = whole(per) ? String(Math.round(per)) : String(Math.round(per * 10) / 10);
-  const played = rows.map((row) => row.minutes).filter((n) => typeof n === "number");
-  const clock = played.length === rows.length && played.length ? ` · ${Math.round(played.reduce((sum, n) => sum + n, 0) / played.length)} min` : "";
-  return `${hits} of ${rows.length} · ${Math.round(hits / rows.length * 100)}% · ${shown} a game${clock}`;
-}
+function share(rows, bar, under) { const hits = hitsOf(rows, bar, under), per = rows.reduce((sum, row) => sum + row.value, 0) / rows.length, shown = whole(per) ? String(Math.round(per)) : String(Math.round(per * 10) / 10), played = rows.map((row) => row.minutes).filter((n) => typeof n === "number"), clock = played.length === rows.length && played.length ? ` · ${Math.round(played.reduce((sum, n) => sum + n, 0) / played.length)} min` : ""; return `${hits} of ${rows.length} · ${Math.round(hits / rows.length * 100)}% · ${shown} a game${clock}`; }
 
 function barOf(text, fixed) {
   const plus = String(text).match(/(\d+(?:\.\d+)?)\s*\+/);
@@ -310,17 +303,9 @@ function dip(rows, bar, under, asked, far) {
 const BESIDE = { "receiving yards": ["receivingTargets", "targets"], "rushing yards": ["rushingAttempts", "carries"], "passing yards": ["passingAttempts", "passes"], receptions: ["receivingTargets", "targets"] };
 
 function oneStat(pack, key) {
-  const names = pack.names || [];
-  const hit = (ALIAS[key] || [key]).find((option) => names.includes(option));
-  const index = hit ? names.indexOf(hit) : -1;
-  if (index < 0) return [];
-  const rows = [];
-  (pack.rows || []).forEach((row) => {
-    const stats = row.stats || [];
-    const value = statValue(index < stats.length ? stats[index] : "", names[index]);
-    if (value == null) return;
-    rows.push({ value, season: Number(row.season) || 0 });
-  });
+  const names = pack.names || [], hit = (ALIAS[key] || [key]).find((option) => names.includes(option)), index = hit ? names.indexOf(hit) : -1, rows = [];
+  if (index < 0) return rows;
+  (pack.rows || []).forEach((row) => { const stats = row.stats || [], value = statValue(index < stats.length ? stats[index] : "", names[index]); if (value != null) rows.push({ value, season: Number(row.season) || 0 }); });
   return rows;
 }
 
@@ -363,17 +348,34 @@ function happened(pack, text) {
 }
 
 function leanOf(pack, text, price) {
-  const spec = specOf(text);
-  const rows = spec ? logRows(pack, spec[0]) : [];
-  const bar = spec ? barOf(text, spec[2]) : null;
-  if (bar == null || price <= 0 || rows.length < 20) return "";
-  const under = /\bunder\b/i.test(text);
-  const near = Math.round(hitsOf(rows.slice(0, 10), bar, under) / 10 * 100);
-  const far = Math.round(hitsOf(rows, bar, under) / rows.length * 100);
-  const asked = Math.round(price * 100);
-  if (near === far) return "";
-  if (Math.abs(asked - near) + 3 < Math.abs(asked - far) && far >= asked + 8) return dip(rows, bar, under, asked, far);
-  return "";
+  const spec = specOf(text), rows = spec ? logRows(pack, spec[0]) : [], bar = spec ? barOf(text, spec[2]) : null, under = /\bunder\b/i.test(text);
+  if (bar != null && price > 0 && rows.length >= 20) {
+    const near = Math.round(hitsOf(rows.slice(0, 10), bar, under) / 10 * 100), far = Math.round(hitsOf(rows, bar, under) / rows.length * 100), asked = Math.round(price * 100);
+    if (near !== far && Math.abs(asked - near) + 3 < Math.abs(asked - far) && far >= asked + 8) return dip(rows, bar, under, asked, far);
+  }
+  return holdOf(pack, text, price);
+}
+
+function holdOf(pack, text, price) {
+  const spec = specOf(text), load = spec && BESIDE[spec[1]], names = (pack && pack.names) || [], index = load ? names.indexOf(load[0]) : -1;
+  const logged = index >= 0 ? logRows(pack, spec[0]) : [], bar = spec ? barOf(text, spec[2]) : null;
+  if (!load || index < 0 || bar == null || price <= 0 || logged.length < 7) return "";
+  const byDate = new Map();
+  (pack.rows || []).forEach((row) => { const value = statValue(index < (row.stats || []).length ? row.stats[index] : "", load[0]); if (value != null && !byDate.has(String(row.date || ""))) byDate.set(String(row.date || ""), value); });
+  const played = logged.map((row) => ({ ...row, load: byDate.get(row.date) })).filter((row) => row.load != null);
+  if (played.length < 7) return "";
+  const under = /\bunder\b/i.test(text), recent = played.slice(0, 4), rest = played.slice(4), year = Number(recent[0].season) || 0;
+  const same = rest.filter((row) => Number(row.season) === year && year), years = [...new Set(rest.map((row) => Number(row.season) || 0).filter((n) => n && n !== year))].sort((a, b) => a - b);
+  const last = years.length ? rest.filter((row) => Number(row.season) === years[years.length - 1]) : [], prior = same.length >= 3 ? same : last.length >= 5 ? last : rest.length >= 8 ? rest : [];
+  if (prior.length < 3) return "";
+  const avg = (list) => list.reduce((sum, row) => sum + row.load, 0) / list.length, now = avg(recent), then = avg(prior);
+  const job = (left, right) => (under ? right >= left + Math.max(1.5, left * 0.25) : left >= right + Math.max(1.5, right * 0.25));
+  const spike = recent.slice().sort((a, b) => (under ? a.load - b.load : b.load - a.load))[0], best = recent.slice().sort((a, b) => (under ? a.value - b.value : b.value - a.value))[0];
+  if (!job(now, then) || recent.filter((row) => (under ? row.load <= then - 1 : row.load >= then + 1)).length < 3 || !job(avg(recent.filter((row) => row !== spike)), then) || hitsOf(recent.filter((row) => row !== best), bar, under) < 2) return "";
+  const fair = Math.round((2 * (hitsOf(prior, bar, under) / prior.length) + hitsOf(recent, bar, under)) / 6 * 100), asked = Math.round(price * 100);
+  if (fair < asked + 6) return "";
+  const num = (n) => { const shown = Math.round(n * 10) / 10; return Math.abs(shown - Math.round(shown)) < 1e-9 ? String(Math.round(shown)) : String(shown); };
+  return `${load[1][0].toUpperCase()}${load[1].slice(1)} went to ${num(now)} from ${num(then)}. At ${fair}%, the recent run still clears the ${asked}% price.`;
 }
 
 function savedRead(name, text, sport, odds, pack, bet) {

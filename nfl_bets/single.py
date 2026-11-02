@@ -144,12 +144,12 @@ def _counts(leg: dict[str, Any], game: dict[str, Any], pack: dict[str, Any], tea
     found: list[tuple[int, int, str]] = []
     window = rows[:8]
     if len(window) >= 3:
-        line = _line(nick, spec, bar, under, _hits(window, bar, under), len(window), price, "the last")
+        line = _line(nick, spec, bar, under, _hits(window, bar, under), len(window), price, "the last", name)
         if line:
             found.append(line)
     last = rows[:3]
     if len(last) == 3 and len(window) != 3:
-        line = _line(nick, spec, bar, under, _hits(last, bar, under), 3, price, "the last")
+        line = _line(nick, spec, bar, under, _hits(last, bar, under), 3, price, "the last", name)
         if line:
             found.append(line)
     foe = _foe(rows, game, team)[:8]
@@ -170,11 +170,12 @@ def _counts(leg: dict[str, Any], game: dict[str, Any], pack: dict[str, Any], tea
     return found
 
 
-def _line(nick: str, spec: tuple, bar: float, under: bool, hits: int, count: int, price: float, scope: str) -> tuple[int, int, str] | None:
+def _line(nick: str, spec: tuple, bar: float, under: bool, hits: int, count: int, price: float, scope: str, name: str = "") -> tuple[int, int, str] | None:
     gap = _gap(hits, count, price)
     if gap is None:
         return None
-    return gap, count, f"{nick} {_verb(spec, bar, under)} in {hits} of {scope} {count}. FanDuel has this at {round(price * 100)}%."
+    back = __import__("nfl_bets.td_few", fromlist=["_returning"])._returning(name) if name and spec[2] and bar == 1 else ""
+    return gap, count, back or f"{nick} {_verb(spec, bar, under)} in {hits} of {scope} {count}. FanDuel has this at {round(price * 100)}%."
 
 
 def _verb(spec: tuple, bar: float, under: bool) -> str:
@@ -300,7 +301,7 @@ def mark_player(name: str, legs: list[dict[str, Any]], games: list[dict[str, Any
         if not found:
             continue
         gap, _sample, why = max(found, key=lambda row: (row[0], row[1]))
-        marks.append({"index": index, "gap": gap, "why": why, "notes": _extra(name, pack, team, game, leg, why), "spans": _windows(long, text, sport), "lean": _lean(long, text, price)})
+        marks.append({"index": index, "gap": gap, "why": why, "notes": _extra(name, pack, team, game, leg, why), "spans": _windows(long, text, sport), "lean": _lean(long, text, price) or __import__("nfl_bets.why", fromlist=["_hold"])._hold(long, text, price)})
     marks.sort(key=lambda row: row["gap"], reverse=True)
     return {"known": True, "marks": marks}
 

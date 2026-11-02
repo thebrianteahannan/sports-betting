@@ -13,7 +13,7 @@ from nfl_bets.hedge import implied_prob
 from nfl_bets.http_util import get_json
 from nfl_bets.single import _OTHER, _PART, _combo
 from nfl_bets.ones import match_text
-from nfl_bets.sway import _PATH, _career, _nick, _spec
+from nfl_bets.sway import _PATH, _career, _nick, _spec, _value
 
 _REFERER = "https://www.espn.com/"
 
@@ -356,6 +356,78 @@ def _grid(rows: list[dict[str, Any]], sport: str, piece) -> str:
     return ". ".join(bits) + "."
 
 
+_LOAD = {"receiving yards": ("receivingTargets", "targets"), "rushing yards": ("rushingAttempts", "carries"), "passing yards": ("passingAttempts", "passes"), "receptions": ("receivingTargets", "targets")}
+
+
+def _hold(pack: dict[str, Any], text: str, price: float) -> str:
+    spec = _spec(text)
+    if not spec or price <= 0 or spec[1] not in _LOAD:
+        return ""
+    key, noun = _LOAD[spec[1]]
+    rows = _with_load(pack, spec[0], key)
+    bar = _bar(text, spec[2])
+    if bar is None or len(rows) < 7:
+        return ""
+    under = bool(re.search(r"\bunder\b", text, re.I))
+    recent, rest = rows[:4], rows[4:]
+    prior = _prior(recent, rest)
+    if len(prior) < 3 or not _job(_avg(recent), _avg(prior), under):
+        return ""
+    now, then = _avg(recent), _avg(prior)
+    lifted = (lambda row: row["load"] <= then - 1) if under else (lambda row: row["load"] >= then + 1)
+    if sum(1 for row in recent if lifted(row)) < 3:
+        return ""
+    spike = min(recent, key=lambda row: row["load"]) if under else max(recent, key=lambda row: row["load"])
+    if not _job(_avg([row for row in recent if row is not spike]), then, under):
+        return ""
+    best = min(recent, key=lambda row: row["value"]) if under else max(recent, key=lambda row: row["value"])
+    if _hits([row for row in recent if row is not best], bar, under) < 2:
+        return ""
+    fair = round((2 * _hits(prior, bar, under) / len(prior) + _hits(recent, bar, under)) / 6 * 100)
+    asked = round(price * 100)
+    if fair < asked + 6:
+        return ""
+    return f"{noun.capitalize()} went to {_num(now)} from {_num(then)}. At {fair}%, the recent run still clears the {asked}% price."
+
+
+def _job(now: float, then: float, under: bool) -> bool:
+    return then >= now + max(1.5, now * 0.25) if under else now >= then + max(1.5, then * 0.25)
+
+
+def _avg(rows: list[dict]) -> float:
+    return sum(row["load"] for row in rows) / len(rows)
+
+
+def _prior(recent: list[dict], rest: list[dict]) -> list[dict]:
+    year = int(recent[0].get("season") or 0)
+    same = [row for row in rest if year and int(row.get("season") or 0) == year]
+    if len(same) >= 3:
+        return same
+    years = sorted({int(row.get("season") or 0) for row in rest if int(row.get("season") or 0) not in {0, year}})
+    last = [row for row in rest if years and int(row.get("season") or 0) == years[-1]]
+    return last if len(last) >= 5 else rest if len(rest) >= 8 else []
+
+
+def _with_load(pack: dict[str, Any], keys: tuple[str, ...], load_key: str) -> list[dict]:
+    names = list(pack.get("names") or [])
+    if load_key not in names:
+        return []
+    index = names.index(load_key)
+    found: dict[str, float] = {}
+    for row in pack.get("rows") or []:
+        stats = row.get("stats") or []
+        value = _value(stats[index] if index < len(stats) else "", load_key)
+        if value is not None:
+            found.setdefault(str(row.get("date") or ""), float(value))
+    attached = []
+    for row in _rows(pack, keys):
+        load = found.get(str(row.get("date") or ""))
+        if load is None:
+            continue
+        attached.append({**row, "load": load})
+    return attached
+
+
 def read_one(name: str, leg: dict[str, Any], pack: dict[str, Any] | None = None) -> dict[str, str]:
     text = f"{leg.get('market') or ''} {leg.get('label') or ''} {leg.get('runner') or ''}"
     part = bool(_PART.search(text) or _OTHER.search(text))
@@ -393,7 +465,7 @@ def read_one(name: str, leg: dict[str, Any], pack: dict[str, Any] | None = None)
         price = implied_prob(float(leg.get("odds")))
     except (TypeError, ValueError):
         price = 0.0
-    lean = _lean(pack, text, price) if pack else ""
+    lean = (_lean(pack, text, price) or _hold(pack, text, price)) if pack else ""
     spec = _spec(text)
     rows = _rows(pack, spec[0]) if pack and spec else []
     bar = _bar(text, spec[2]) if spec else None
@@ -404,7 +476,7 @@ def read_one(name: str, leg: dict[str, Any], pack: dict[str, Any] | None = None)
         hits = _hits(window, bar, under)
         shown = int(bar) if float(bar).is_integer() else bar
         verb = "scored a touchdown" if spec[2] and bar == 1 else f"{'stayed under' if under else 'cleared'} {shown}+ {spec[1]}"
-        why = f"{_nick(name)} {verb} in {hits} of the last {len(window)}. FanDuel has this at {round(price * 100)}%."
+        why = (__import__("nfl_bets.td_few", fromlist=["_returning"])._returning(name) if spec[2] and bar == 1 else "") or f"{_nick(name)} {verb} in {hits} of the last {len(window)}. FanDuel has this at {round(price * 100)}%."
     return {"why": why, "spans": spans, "lean": lean}
 
 
