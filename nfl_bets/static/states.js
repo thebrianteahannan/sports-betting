@@ -84,7 +84,7 @@ function lawNote() {
   if (row.level === "none") return "";
   const book = BOOKS.find((item) => item.id === window.memberBook);
   const extra = book && book.id !== "fanduel" && !row.note.includes("usually close") ? ` ${book.name} is your sportsbook. We use FanDuel for the odds and prices. Your sportsbook is different, and the numbers are usually close.` : "";
-  return `${row.name}: ${row.note}${extra}`;
+  return `${row.name}: ${row.note.replaceAll("because of the state you live in", `because you live in ${row.name}`)}${extra}`;
 }
 
 function blockCollege(card) {

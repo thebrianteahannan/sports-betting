@@ -4,6 +4,8 @@ function slipEsc(text) {
   return String(text || "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 }
 
+const slipOpen = new Set();
+
 function paintSlips(payload) {
   const list = document.getElementById("slip-list");
   if (!list) return;
@@ -21,7 +23,14 @@ function paintSlips(payload) {
       return `<p class="slip-leg ${slipEsc(leg.result || "open")}"><b>${slipEsc(leg.text || leg.player || "")}</b> ${slipEsc(leg.say || "")}${math ? `<i>${slipEsc(math)}</i>` : ""}${spot ? `<i>${slipEsc(spot)}</i>` : ""}</p>`;
     }).join("");
     const shot = slip.shot ? `<img class="slip-shot" alt="The bet you pasted" src="${slipEsc(slip.shot)}">` : "";
-    return `<article class="slip-card">${shot}<p class="slip-line">${slipEsc(slip.line || "")}</p>${head ? `<p class="quiet">${slipEsc(head)}</p>` : ""}${clock ? `<p class="quiet">${slipEsc(clock)}</p>` : ""}${legs}<p class="pick-save"><button type="button" class="ghost" data-slip-drop="${slipEsc(slip.id)}">Take this bet off</button></p></article>`;
+    const done = (slip.legs || []).length && (slip.legs || []).every((leg) => leg.result === "won" || leg.result === "lost" || leg.result === "push");
+    const open = !done || slipOpen.has(slip.id);
+    const tone = slip.line === "This bet missed." ? "lost" : slip.line === "This bet is reached." ? "won" : "";
+    const summary = [((slip.legs || [])[0] || {}).match, slip.line, slip.odds].filter(Boolean).join(" · ");
+    const fold = done ? `<button type="button" class="slip-fold ${tone}" data-slip-fold="${slipEsc(slip.id)}">${slipEsc(summary)}</button>` : "";
+    const top = done ? "" : `<p class="slip-line">${slipEsc(slip.line || "")}</p>${head ? `<p class="quiet">${slipEsc(head)}</p>` : ""}`;
+    const body = `<div class="slip-body"${open ? "" : " hidden"}>${shot}${top}${clock ? `<p class="quiet">${slipEsc(clock)}</p>` : ""}${legs}<p class="pick-save"><button type="button" class="ghost" data-slip-drop="${slipEsc(slip.id)}">Take this bet off</button></p></div>`;
+    return `<article class="slip-card${open ? " open" : ""}" data-slip-id="${slipEsc(slip.id)}">${fold}${body}</article>`;
   }).join("");
 }
 
@@ -172,6 +181,17 @@ function bindSlips() {
     takeShot(blob);
   });
   if (list) list.addEventListener("click", (event) => {
+    const fold = event.target.closest("[data-slip-fold]");
+    if (fold) {
+      const card = fold.closest("article");
+      const body = card && card.querySelector(".slip-body");
+      if (!card || !body) return;
+      const opening = body.hidden;
+      body.hidden = !opening;
+      card.classList.toggle("open", opening);
+      if (opening) slipOpen.add(fold.dataset.slipFold); else slipOpen.delete(fold.dataset.slipFold);
+      return;
+    }
     const button = event.target.closest("[data-slip-drop]");
     if (!button) return;
     fetch("/api/slip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ drop: true, id: button.dataset.slipDrop }) })

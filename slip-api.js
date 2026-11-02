@@ -5,6 +5,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
+const { gradeLegs } = require("./slip-grade");
 const OLLAMA = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
 const LOCAL_MODEL = process.env.BET_MODEL || "llama3.2";
 const VISION = process.env.SLIP_MODEL || "qwen3-vl:8b-instruct";
@@ -31,15 +32,7 @@ async function load(readKey) {
 }
 
 function grade(legs) {
-  const raw = execFileSync("python3", ["-m", "nfl_bets.slip"], {
-    input: JSON.stringify({ legs }),
-    encoding: "utf8",
-    timeout: 45000,
-    maxBuffer: 2 * 1024 * 1024,
-    cwd: __dirname,
-  });
-  const parsed = JSON.parse(raw);
-  return Array.isArray(parsed.legs) ? parsed.legs : [];
+  return gradeLegs(legs);
 }
 
 function keep(saved, fresh) {
@@ -73,13 +66,13 @@ async function slipList(user, readKey, writeKey) {
   const data = await load(readKey);
   const mine = data.slips.filter((row) => row.userId === user.id);
   let dirty = false;
-  const slips = mine.map((slip) => {
+  const slips = await Promise.all(mine.map(async (slip) => {
     let legs = [];
-    try { legs = grade(slip.legs || []); } catch (err) { legs = (slip.legs || []).map((leg) => ({ ...leg, say: "Waiting on the game.", result: "open", text: leg.market || "" })); }
+    try { legs = await grade(slip.legs || []); } catch (err) { console.error("slip grade:", err && err.message); legs = (slip.legs || []).map((leg) => ({ ...leg, say: "Waiting on the game.", result: "open", text: [leg.player, leg.market].filter(Boolean).join(" ") })); }
     const next = keep(slip.legs || [], legs);
     if (JSON.stringify(next) !== JSON.stringify(slip.legs || [])) { slip.legs = next; dirty = true; }
     return show(slip, legs);
-  });
+  }));
   if (dirty) await writeKey(KEY, data);
   return { slips };
 }
