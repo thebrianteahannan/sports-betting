@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="/app.css?v=46"/>
 <link rel="stylesheet" href="/desk.css?v=64"/>
 <link rel="stylesheet" href="/states.css?v=3"/>
-<link rel="stylesheet" href="/ask-bet.css?v=294"/>
+<link rel="stylesheet" href="/ask-bet.css?v=297"/>
 <style>
 #page-title { display: none; } #who { position: fixed; right: 0.7rem; bottom: 0.7rem; z-index: 20; margin: 0; }
 #member-profile { width: 2.7rem; height: 2.7rem; padding: 0; display: grid; place-items: center; border: 1px solid rgba(61, 255, 110, 0.85); border-radius: 8px; background: rgba(4, 16, 12, 0.88); color: #3dff6e; box-shadow: 0 0 14px rgba(61, 255, 110, 0.35); }
@@ -361,6 +361,7 @@ body.day-board #parrot-load[hidden] { display: none; }
 </div>
 </div>
 <div class="pane" id="pane-profile" hidden>
+<nav class="tabs" id="profile-tabs"><button type="button" class="tab on" data-profile-tab="member">Membership</button><button type="button" class="tab" data-profile-tab="bets">Current Bets</button></nav>
 <section class="tracked" id="activity">
   <h2>Your membership</h2>
   <p class="quiet" id="activity-plan"></p>
@@ -371,6 +372,7 @@ body.day-board #parrot-load[hidden] { display: none; }
   <p class="quiet">Which sportsbook are you using? These prices are FanDuel's. Another book's number is usually close, and sometimes the same.</p>
   <p class="pick-save"><select id="call-book"></select><button type="button" class="ghost" id="book-save">Save book</button></p>
 </section>
+<section class="tracked" id="profile-bets" hidden><h2>Current bets</h2><p class="quiet">Paste a screenshot of a bet. The desk reads each leg and watches it.</p><div id="slip-paste" contenteditable="true" role="textbox" tabindex="0" inputmode="none" spellcheck="false" aria-label="Paste a screenshot of the bet"></div><p class="pick-save"><button type="button" class="ghost" id="slip-clip">Paste from clipboard</button><input id="slip-file" type="file" accept="image/*"></p><p class="quiet" id="slip-note"></p><p class="pick-save"><button type="button" class="ghost" id="slip-check">Check now</button></p><div id="slip-list"></div></section>
 <section class="tracked" id="profile-admin" hidden>
   <h2>Admin</h2>
   <nav class="tabs" id="admin-tabs">
@@ -452,7 +454,7 @@ body.day-board #parrot-load[hidden] { display: none; }
 </footer>
 <script src="/app.js?v=117"></script>
 <script src="/desk.js?v=112"></script>
-<script src="/members.js?v=162"></script>
+<script src="/members.js?v=162"></script><script src="/slip.js?v=6"></script>
 <script src="/stars.js?v=8"></script>
 <script src="/choose.js?v=120"></script>
 <script src="/lessons.js?v=8"></script>
