@@ -188,6 +188,12 @@ async function savedPack(sport, name) {
 }
 
 const SPAN = { NFL: [3, 5, 10, 15, 17], NCAAF: [3, 5, 8, 10, 12], NBA: [3, 6, 10, 25, 50], NHL: [3, 6, 10, 25, 50], WNBA: [3, 6, 10, 20, 30], NCAAB: [3, 5, 10, 15, 25], MLB: [3, 10, 20, 40, 81] };
+function seasonYear(sport) {
+  const clock = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const month = clock.getMonth() + 1, year = clock.getFullYear();
+  if (/^(NBA|NHL|NCAAB)$/.test(String(sport || ""))) return month >= 9 ? year + 1 : year;
+  return month >= 3 ? year : year - 1;
+}
 const ALIAS = { shotsTotal: ["shotsTotal", "shotsOnGoal", "shots"], totalRebounds: ["totalRebounds", "rebounds"], "threePointFieldGoalsMade-threePointFieldGoalsAttempted": ["threePointFieldGoalsMade-threePointFieldGoalsAttempted", "threePointFieldGoalsMade"] };
 
 function specOf(text) {
@@ -265,9 +271,9 @@ function windowsOf(pack, text, sport) {
   if (bar == null || rows.length < 3) return "";
   const under = /\bunder\b/i.test(text);
   const bits = (SPAN[sport] || [3, 6, 10, 25, 50]).filter((n) => rows.length >= n).map((n) => `Last ${n}, ${share(rows.slice(0, n), bar, under)}`);
-  const year = rows.reduce((max, row) => Math.max(max, Number(row.season) || 0), 0);
-  const now = rows.filter((row) => year && Number(row.season) === year);
-  const last = rows.filter((row) => year && Number(row.season) === year - 1);
+  const year = seasonYear(sport);
+  const now = rows.filter((row) => Number(row.season) === year);
+  const last = rows.filter((row) => Number(row.season) === year - 1);
   if (now.length >= 3) bits.push(`This season, ${share(now, bar, under)}`);
   if (last.length >= 3) bits.push(`Last season, ${share(last, bar, under)}`);
   bits.push(`Career, ${share(rows, bar, under)}`);
@@ -387,8 +393,8 @@ function savedRead(name, text, sport, odds, pack, bet) {
     const per = (chunk) => { const avg = chunk.reduce((sum, row) => sum + row.value, 0) / chunk.length; const shown = whole(avg) ? String(Math.round(avg)) : String(Math.round(avg * 10) / 10); const played = chunk.map((row) => row.minutes).filter((n) => typeof n === "number"); const clock = played.length === chunk.length && played.length ? ` · ${Math.round(played.reduce((sum, n) => sum + n, 0) / played.length)} min` : ""; return `${shown} a game${clock}`; };
     const counts = (SPAN[league] || [3, 6, 10, 25, 50]).filter((n) => rows.length >= n);
     const bits = counts.map((n) => `Last ${n}, ${per(rows.slice(0, n))}`);
-    const year = rows.reduce((max, row) => Math.max(max, Number(row.season) || 0), 0);
-    const now = rows.filter((row) => year && Number(row.season) === year), last = rows.filter((row) => year && Number(row.season) === year - 1);
+    const year = seasonYear(league);
+    const now = rows.filter((row) => Number(row.season) === year), last = rows.filter((row) => Number(row.season) === year - 1);
     if (now.length >= 3) bits.push(`This season, ${per(now)}`);
     if (last.length >= 3) bits.push(`Last season, ${per(last)}`);
     bits.push(`Career, ${per(rows)}`);

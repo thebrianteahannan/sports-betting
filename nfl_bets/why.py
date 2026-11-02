@@ -8,7 +8,7 @@ from typing import Any
 
 import re
 
-from nfl_bets.edge import _SPAN, _bar, _hits, _lean, _rows, _share, _windows
+from nfl_bets.edge import _SPAN, _bar, _hits, _lean, _now_season, _rows, _share, _windows
 from nfl_bets.hedge import implied_prob
 from nfl_bets.http_util import get_json
 from nfl_bets.single import _OTHER, _PART, _combo
@@ -193,9 +193,9 @@ def _moved(now: float | None, then: float | None) -> bool:
     return abs(now - then) > (0.34 if base < 8 else max(0.9, base * 0.1))
 
 
-def _seasons(rows: list[dict[str, float]]) -> tuple[list[dict[str, float]] | None, list[dict[str, float]] | None, list[dict[str, float]] | None]:
+def _seasons(rows: list[dict[str, float]], sport: str = "") -> tuple[list[dict[str, float]] | None, list[dict[str, float]] | None, list[dict[str, float]] | None]:
     years = sorted({int(row["season"]) for row in rows if row["season"]})
-    if len(years) < 2:
+    if len(years) < 2 or (sport and years[-1] != _now_season(sport)):
         return None, None, None
 
     def take(year: int) -> list[dict[str, float]]:
@@ -250,7 +250,7 @@ def _spot(rows: list[dict[str, float]], text: str) -> str:
 
 
 def _brief(name: str, text: str, sport: str, path: tuple[str, str] | None, pack: dict[str, Any] | None, rows: list[dict[str, float]], key: str) -> str:
-    _before, last, now = _seasons(rows)
+    _before, last, now = _seasons(rows, sport)
     if now and last:
         window, base, label = now, last, "This season"
     else:
@@ -301,7 +301,7 @@ def _mates(sport: str, player: str, names: list[str]) -> str:
         if not pack or (home and team and team.casefold() != home.casefold()):
             continue
         rows = _games(pack, "points")
-        seasons = _seasons(rows) if len(rows) >= 20 else (None, None, None)
+        seasons = _seasons(rows, sport) if len(rows) >= 20 else (None, None, None)
         last, now = (seasons[1], seasons[2]) if seasons else (None, None)
         now_pts, then_pts = _mean(now or [], "made"), _mean(last or [], "made")
         if now_pts is None or then_pts is None:
@@ -345,9 +345,9 @@ def _per(chunk: list[dict[str, Any]]) -> tuple[Any, str]:
 def _grid(rows: list[dict[str, Any]], sport: str, piece) -> str:
     counts = _SPAN.get(sport) or (3, 6, 10, 25, 50)
     bits = [f"Last {n}, {piece(rows[:n])}" for n in counts if len(rows) >= n]
-    year = max((int(row["season"]) for row in rows if row.get("season")), default=0)
-    now = [row for row in rows if year and int(row.get("season") or 0) == year]
-    last = [row for row in rows if year and int(row.get("season") or 0) == year - 1]
+    year = _now_season(sport)
+    now = [row for row in rows if int(row.get("season") or 0) == year]
+    last = [row for row in rows if int(row.get("season") or 0) == year - 1]
     if len(now) >= 3:
         bits.append(f"This season, {piece(now)}")
     if len(last) >= 3:

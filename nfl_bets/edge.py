@@ -345,6 +345,9 @@ def _share(rows: list[dict], bar: float, under: bool) -> str:
 
 
 _SPAN = {"NFL": (3, 5, 10, 15, 17), "NCAAF": (3, 5, 8, 10, 12), "NBA": (3, 6, 10, 25, 50), "NHL": (3, 6, 10, 25, 50), "WNBA": (3, 6, 10, 20, 30), "NCAAB": (3, 5, 10, 15, 25), "MLB": (3, 10, 20, 40, 81)}
+def _now_season(sport: str) -> int:
+    now = datetime.now(_ET); year, month = now.year, now.month; winter = str(sport or "").upper() in {"NBA", "NHL", "NCAAB"}
+    return (year + 1 if month >= 9 else year) if winter else (year if month >= 3 else year - 1)
 
 
 def _windows(pack: dict[str, Any], text: str, sport: str = "") -> str:
@@ -356,9 +359,9 @@ def _windows(pack: dict[str, Any], text: str, sport: str = "") -> str:
     under = bool(re.search(r"\bunder\b", text, re.I))
     counts = _SPAN.get(sport) or (3, 6, 10, 25, 50)
     bits = [f"Last {n}, {_share(rows[:n], bar, under)}" for n in counts if len(rows) >= n]
-    year = max((int(row["season"]) for row in rows if row.get("season")), default=0)
-    now = [row for row in rows if year and int(row.get("season") or 0) == year]
-    last = [row for row in rows if year and int(row.get("season") or 0) == year - 1]
+    year = _now_season(sport)
+    now = [row for row in rows if int(row.get("season") or 0) == year]
+    last = [row for row in rows if int(row.get("season") or 0) == year - 1]
     if len(now) >= 3:
         bits.append(f"This season, {_share(now, bar, under)}")
     if len(last) >= 3:
