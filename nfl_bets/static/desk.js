@@ -392,7 +392,7 @@ function birdBump() {
     const nudge = BIRD_NUDGES[birdNudge % BIRD_NUDGES.length];
     birdNudge += 1;
     const text = nudge[2] === "brag" && window.birdBrag ? birdBrag() : nudge[0];
-    if (text) { birdPending = [text, nudge[1]]; const menu = document.getElementById("desk-menu"); if (menu) { menu.classList.add("bird-has"); menu.classList.remove("say-open"); menu.classList.toggle("bird-brag", nudge[2] === "brag"); menu.dataset.say = text; menu.setAttribute("aria-label", "Parlay has something to say"); } }
+    if (text && /ruin people's lives/i.test(text) && document.getElementById("desk").classList.contains("bird-on")) { birdSay(text, []); setTimeout(() => { const line = document.getElementById("bird-line"); if (line && /ruin people's lives/i.test(line.textContent || "") && !window.asking && window.birdGreet) birdGreet(); }, 8000); } else if (text) { birdPending = [text, nudge[1]]; const menu = document.getElementById("desk-menu"); if (menu) { menu.classList.add("bird-has"); menu.classList.remove("say-open"); menu.classList.toggle("bird-brag", nudge[2] === "brag"); menu.dataset.say = text; menu.setAttribute("aria-label", "Parlay has something to say"); } }
     birdBump();
   }, BIRD_WAIT);
 }
@@ -427,7 +427,7 @@ function startGuide() {
   document.addEventListener("keydown", birdBump);
   document.addEventListener("pointerdown", (event) => { const quiz = event.target.closest("[data-quiz]"); if (!(quiz && window.askStart)) return; event.preventDefault(); window.asking = true; if (window.goFull) goFull(); askStart(quiz.dataset.quiz); });
   document.addEventListener("click", (event) => {
-    const help = event.target.closest("#greet-legal span, #bird-line.warn, .gate-legal, footer p"); if (help && /21\+|GAMBLER|ruin people's lives/i.test(help.textContent || "")) { openHelp(); return; }
+    const help = event.target.closest("#desk-glass > .age, #greet-legal span, #bird-line.warn, .gate-legal, footer p"); if (help && /21\+|GAMBLER|ruin people's lives/i.test(help.textContent || "")) { openHelp(); return; }
     const stay = event.target.closest("[data-stay]");
     if (stay) { while (tvStack.length && tvStack.at(-1).bird) tvStack.pop(); tvBack(); return; }
     const asked = event.target.closest("#bird-guide [data-ask]");

@@ -154,30 +154,38 @@ function howsShow(board, data, image) {
     shot.src = image;
     box.append(shot);
   }
-  const title = document.createElement("h3");
-  title.textContent = data.kind || "The bet";
-  const history = document.createElement("p");
-  history.className = "rec-history";
-  history.innerHTML = `<i class="rec-pay">${esc(data.verdict || "")}</i>`;
-  box.append(title, history);
-  (data.strategies || []).forEach((row) => {
-    const bet = document.createElement("div");
-    bet.className = "rec-bet";
-    const extra = row.line && row.line !== data.verdict ? `<p class="rec-gist"><i class="prop">${esc(row.line)}</i></p>` : "";
-    bet.innerHTML = `<b><i class="px">${esc(row.no)}</i> <i class="pct">${esc(row.name)}</i></b>${extra}`;
-    box.append(bet);
-  });
-  (data.legs || []).forEach((leg) => {
-    const bet = document.createElement("div");
-    bet.className = "rec-bet";
-    const head = [leg.player, leg.market === "anytime touchdown" ? "" : leg.side, leg.line, leg.market].filter((bit) => bit != null && bit !== "").join(" ");
-    const stacked = (data.legs || []).some((row) => row.ticket !== data.legs[0].ticket);
-    const where = [leg.match, stacked || data.legs.length === 1 ? leg.stake : ""].filter(Boolean).join(". ");
-    bet.innerHTML = `<b><i class="px">${esc(leg.odds || "Single")}</i> <i class="pct">${esc(head)}</i></b>${where ? `<p class="rec-gist"><i class="prop">${esc(where)}</i></p>` : ""}`;
-    box.append(bet);
+  const groups = Array.isArray(data.bets) && data.bets.length ? data.bets : [data];
+  if (groups.length > 1) {
+    const head = document.createElement("h3");
+    head.textContent = data.kind || `${groups.length} bets`;
+    box.append(head);
+  }
+  groups.forEach((group) => {
+    const title = document.createElement("h3");
+    title.textContent = group.kind || "The bet";
+    const history = document.createElement("p");
+    history.className = "rec-history";
+    history.innerHTML = `<i class="rec-pay">${esc(group.verdict || "")}</i>`;
+    box.append(title, history);
+    (group.strategies || []).forEach((row) => {
+      const bet = document.createElement("div");
+      bet.className = "rec-bet";
+      const extra = row.line && row.line !== group.verdict ? `<p class="rec-gist"><i class="prop">${esc(row.line)}</i></p>` : "";
+      bet.innerHTML = `<b><i class="px">${esc(row.no)}</i> <i class="pct">${esc(row.name)}</i></b>${extra}`;
+      box.append(bet);
+    });
+    const legs = group.legs || [];
+    legs.forEach((leg) => {
+      const bet = document.createElement("div");
+      bet.className = "rec-bet";
+      const head = [leg.player, leg.market === "anytime touchdown" ? "" : leg.side, leg.line, leg.market].filter((bit) => bit != null && bit !== "").join(" ");
+      const where = [leg.match, legs.length === 1 || leg.stake ? leg.stake : ""].filter(Boolean).join(". ");
+      bet.innerHTML = `<b><i class="px">${esc(leg.odds || "Single")}</i> <i class="pct">${esc(head)}</i></b>${where ? `<p class="rec-gist"><i class="prop">${esc(where)}</i></p>` : ""}`;
+      box.append(bet);
+    });
+    if (legs.length === 1 && legs[0].player && /over|under/.test(String(legs[0].side || ""))) howsWhy(history, legs[0]);
   });
   board.append(box);
-  if ((data.legs || []).length === 1 && data.legs[0].player && /over|under/.test(String(data.legs[0].side || ""))) howsWhy(history, data.legs[0]);
 }
 
 function howsWhy(history, leg) {

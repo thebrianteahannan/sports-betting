@@ -209,6 +209,10 @@ function paintStack() {
   });
   const hold = document.getElementById("desk-hold");
   if (hold) [...row.children].forEach((node) => hold.append(node));
+  const wait = document.createElement("div");
+  wait.className = "bet-load";
+  wait.innerHTML = `<span class="bet-bird"><img src="/scene/parrot-head.png?v=4" alt=""></span><p>Finding the stacks.</p>`;
+  board.append(wait);
   row.append(board);
   row.scrollTop = 0;
   applyStackFit(board);
@@ -262,6 +266,8 @@ function fillStacks(board) {
   fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "stack" }) })
     .then((res) => res.json())
     .then((data) => {
+      const wait = board.querySelector(".bet-load");
+      if (wait) wait.remove();
       if (!board.isConnected || !data) return;
       board.querySelectorAll(".rec-strategy").forEach((block) => {
         const name = block.dataset.name;
@@ -296,7 +302,7 @@ function fillStacks(board) {
       });
       applyStackFit(board);
     })
-    .catch(() => {});
+    .catch(() => { const wait = board.querySelector(".bet-load"); if (wait) wait.remove(); });
 }
 
 window.STACK_BUILD = ["Prop ladder", "Overlapping under", "Classic middle", "Key-number middle", "Buying the hook", "Dutching", "Round robin", "Correlated stack", "Side and the total", "Player and the total", "First touchdown and anytime"];

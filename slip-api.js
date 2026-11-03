@@ -316,4 +316,26 @@ async function slipPost(user, body, readKey, writeKey) {
   return slipList(user, readKey, writeKey);
 }
 
-module.exports = { slipList, slipPost, readShot };
+async function countCards(image) {
+  if (!onMac() || !image) return 0;
+  try {
+    const response = await fetch(`${OLLAMA}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(90000),
+      body: JSON.stringify({
+        model: VISION, stream: false, format: "json", think: false,
+        messages: [{ role: "user", content: "Count the separate bet cards. Each card has its own wager. A parlay is one card. Return JSON {\"cards\":1}.", images: [image] }],
+        options: { temperature: 0, num_predict: 40 },
+      }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    const text = String((payload.message && (payload.message.content || payload.message.thinking)) || "");
+    const n = Number((text.match(/"cards"\s*:\s*(\d+)/) || [])[1]);
+    return Number.isFinite(n) ? n : 0;
+  } catch (err) {
+    return 0;
+  }
+}
+
+module.exports = { slipList, slipPost, readShot, countCards };

@@ -1,14 +1,15 @@
 /** Read a pasted bet and say which strategy it is. */
 
-const { readShot } = require("./slip-api");
+const { readShot, countCards } = require("./slip-api");
 
-const HOW = `Read this bet slip. A parlay is one ticket with several legs. Separate bets on the same screenshot are a stack: give each bet its own ticket number, starting at 1.
+const HOW = `Read every bet card in the screenshot, from top to bottom. Count the cards first. A card has its own wager. Two cards are two bets, even when they name the same player. A parlay is one card with several legs under one wager.
+Each card gets its own ticket number, starting at 1. Do not stop after the first card. Do not merge two wagers into one leg.
 A team to win: player is the team, market is "to win", side is "win", line is null.
 A spread: market is "spread", line is the points with the sign, side is "spread".
 A total: market is "total", side is over or under, line is the number.
-A player prop: player is the person, market is only the stat, side is over or under, line is the number. odds is that leg's price. stake is that ticket's dollars, repeated on each leg of the ticket. Use "" when a number is not printed.
-kind is single, parlay, same game parlay, teaser, round robin, or stack.
-{"book":"","kind":"parlay","odds":"+264","stake":"$15.00","payout":"$40.00","legs":[{"ticket":1,"player":"Saquon Barkley","market":"rushing yards","side":"over","line":24.5,"odds":"-114","stake":"$15.00","match":"Eagles @ Commanders","sport":"NFL"}]}`;
+A player prop: player is the person, market is only the stat, side is over or under, line is the number. odds is that card's price. stake is that card's wager. Use "" when a number is not printed.
+kind is single when there is one card. kind is stack when there is more than one card.
+{"book":"","kind":"stack","odds":"","stake":"","payout":"","legs":[{"ticket":1,"player":"Stephen Curry","market":"threes made","side":"over","line":4.5,"odds":"+150","stake":"$5.00","match":"Suns @ Warriors","sport":"NBA"},{"ticket":2,"player":"Stephen Curry","market":"threes made","side":"over","line":3.5,"odds":"-145","stake":"$2.96","match":"Suns @ Warriors","sport":"NBA"}]}`;
 
 const NOS = { safe2: "S-02", mid3: "S-04", chalk: "S-05", win4: "S-06", four: "S-07", plusLegs: "S-08", plus: "S-09", mix21: "S-10", five: "S-11", hits: "S-12", low3: "S-13", weekThree: "S-14", yards3: "S-15", weekFive: "S-16", ou4: "S-17", weekSafe: "S-18", alt3: "S-19", weekEven: "S-20", games4: "S-21", td2: "S-25", td3: "S-26", pay5: "S-27", pay10: "S-28", pay15: "S-29", pay20: "S-30", pay25: "S-31", pay50: "S-32" };
 
@@ -77,6 +78,14 @@ function yard(leg) {
 
 function td(leg) {
   return /anytime|any time/.test(stat(leg)) && /td|touchdown/.test(stat(leg));
+}
+
+function splitCards(legs) {
+  const grouped = buckets(legs);
+  if (grouped.length !== 1 || grouped[0].length < 2) return legs;
+  const stakes = grouped[0].map((leg) => dollars(leg.stake));
+  if (new Set(stakes.filter(Boolean)).size < grouped[0].length) return legs;
+  return grouped[0].map((leg, index) => ({ ...leg, ticket: index + 1 }));
 }
 
 function buckets(legs) {
@@ -335,7 +344,7 @@ function plain(read, tickets, price) {
 }
 
 function judge(read) {
-  const legs = (Array.isArray(read && read.legs) ? read.legs : []).filter((leg) => leg && (leg.player || leg.market));
+  const legs = splitCards((Array.isArray(read && read.legs) ? read.legs : []).filter((leg) => leg && (leg.player || leg.market)));
   const tickets = buckets(legs);
   const quoted = american(read && read.odds);
   const one = tickets.length === 1 ? tickets[0] : [];
@@ -355,7 +364,11 @@ function judge(read) {
     if (!split && !same.length) found.push(card("", "", "Leave it. The legs are in one game. The parlay price multiplies them as separate games.", true));
   }
   const lead = found.find((row) => row.lead) || found[0];
-  return {
+  const shown = legs.map((leg) => ({
+    player: String(leg.player || ""), market: String(leg.market || ""), side: sideOf(leg), line: lineOf(leg),
+    odds: tag(american(leg.odds)) || String(leg.odds || ""), stake: bucks(dollars(leg.stake)), match: String(leg.match || ""), ticket: Number(leg.ticket) || 1,
+  }));
+  const result = {
     book: (read && read.book) || "",
     odds: (read && read.odds) || "",
     stake: (read && read.stake) || "",
@@ -363,11 +376,16 @@ function judge(read) {
     kind: shape(read || {}, tickets),
     verdict: (lead && lead.line) || plain(read || {}, tickets, parlayPrice),
     strategies: found.filter((row) => row.no).map(({ no, name, line }) => ({ no, name, line })),
-    legs: legs.map((leg) => ({
-      player: String(leg.player || ""), market: String(leg.market || ""), side: sideOf(leg), line: lineOf(leg),
-      odds: tag(american(leg.odds)) || String(leg.odds || ""), stake: bucks(dollars(leg.stake)), match: String(leg.match || ""), ticket: Number(leg.ticket) || 1,
-    })),
+    legs: shown,
   };
+  if (tickets.length > 1 && !(lead && lead.lead)) {
+    const bets = tickets.map((rows) => {
+      const one = judge({ book: read && read.book, kind: "single", odds: (rows[0] && rows[0].odds) || "", stake: (rows[0] && rows[0].stake) || "", legs: rows.map((leg) => ({ ...leg, ticket: 1 })) });
+      return { kind: one.kind, verdict: one.verdict, strategies: one.strategies, legs: one.legs };
+    });
+    return { ...result, kind: `${bets.length} bets`, verdict: `${bets.length} separate bets.`, strategies: [], bets, legs: bets.flatMap((bet) => bet.legs) };
+  }
+  return { ...result, bets: [{ kind: result.kind, verdict: result.verdict, strategies: result.strategies, legs: result.legs }] };
 }
 
 async function howsPost(body) {
@@ -375,7 +393,12 @@ async function howsPost(body) {
   const blob = Buffer.from(image, "base64");
   const mime = blob[0] === 0x89 ? "image/png" : blob[0] === 0xff ? "image/jpeg" : blob[0] === 0x52 ? "image/webp" : "";
   if (!mime || blob.length < 32 || blob.length > 6 * 1024 * 1024) throw new Error("Paste a screenshot of the bet.");
-  return judge(await readShot(image, mime, HOW));
+  const cards = await countCards(image);
+  const prompt = cards > 1 ? `${HOW}\nThis screenshot has ${cards} separate bet cards. Return all ${cards}.` : HOW;
+  let read = await readShot(image, mime, prompt);
+  const got = new Set((read.legs || []).map((leg) => Number(leg.ticket) || 1)).size;
+  if (cards > 1 && got < cards) read = await readShot(image, mime, `${HOW}\nYou missed a card. There are ${cards} bet cards. Ticket 1 is the top card. Number every card after it. Return all ${cards}.`);
+  return judge(read);
 }
 
 module.exports = { howsPost, judge };
