@@ -59,7 +59,12 @@ def few(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
         facts = list(pool.map(lambda row: _fact(row, cache), wanted))
     _save(cache)
     by_name = {fact["name"]: fact for fact in facts if fact}
-    return [{"name": row["name"], "line": by_name[row["name"]]["line"]} for row in wanted if row["name"] in by_name]
+    ordered = [by_name[row["name"]] for row in wanted if row["name"] in by_name]
+    try:
+        from nfl_bets.td_dive import dive
+        return dive(ordered)
+    except Exception:  # noqa: BLE001
+        return [{"name": row["name"], "line": row["line"], "summary": row["line"], "parts": []} for row in ordered]
 
 
 def _fact(row: dict[str, Any], cache: dict[str, Any]) -> dict[str, Any] | None:
@@ -70,7 +75,8 @@ def _fact(row: dict[str, Any], cache: dict[str, Any]) -> dict[str, Any] | None:
     recent, prior = list(pack.get("recent") or []), list(pack.get("prior") or [])
     played = int(pack.get("played") or 0)
     listed = _backs(str(pack.get("team") or ""), cache)
-    if any(who.casefold() == name.casefold() for who in listed):
+    index = next((i for i, who in enumerate(listed) if who.casefold() == name.casefold()), -1)
+    if index >= 0:
         kind = "rush"
     else:
         rush = sum(game["rush"] for game in recent)
@@ -78,7 +84,7 @@ def _fact(row: dict[str, Any], cache: dict[str, Any]) -> dict[str, Any] | None:
         kind = "rush" if rush > rec else "pass"
     back = _returning(name, cache) if kind == "rush" else ""
     asked = round(100 * _implied(odds))
-    return {"name": name, "line": _line(name, recent, prior, played, asked, back)}
+    return {"name": name, "line": _line(name, recent, prior, played, asked, back), "back": back, "kind": kind, "team": str(pack.get("team") or ""), "played": played, "asked": asked, "match": row["match"], "recent": recent, "prior": prior, "index": index}
 
 
 def _line(name: str, recent: list[dict[str, Any]], prior: list[dict[str, Any]], played: int, asked: int, back: str) -> str:
@@ -194,20 +200,53 @@ def _backs(abbr: str, cache: dict[str, Any]) -> list[str]:
 
 def _active(abbr: str, cache: dict[str, Any]) -> set[str]:
     saved = cache.get("report")
-    if not (isinstance(saved, dict) and time() - float(saved.get("at") or 0) < _TTL and isinstance(saved.get("teams"), dict)):
+    if not (isinstance(saved, dict) and time() - float(saved.get("at") or 0) < _TTL and isinstance(saved.get("teams"), dict) and isinstance(saved.get("outs"), dict)):
         teams: dict[str, list[str]] = {}
+        outs: dict[str, list[str]] = {}
         try:
             data = get_json("https://site.api.espn.com/apis/site/v2/sports/football/nfl/injuries", referer=_REFERER, timeout=20)
             for team in data.get("injuries") or []:
                 nick = _CLUBS.get(str(team.get("displayName") or ""), "")
-                if not nick:
-                    continue
-                teams[nick] = [str((row.get("athlete") or {}).get("displayName") or "").casefold() for row in team.get("injuries") or [] if str(row.get("status") or "").lower() == "active" and (row.get("athlete") or {}).get("displayName")]
+                active: list[str] = []
+                for row in team.get("injuries") or []:
+                    who = str((row.get("athlete") or {}).get("displayName") or "").strip()
+                    status = str(row.get("status") or "").lower()
+                    if not who:
+                        continue
+                    if status == "active":
+                        active.append(who.casefold())
+                    if status in {"out", "doubtful", "questionable", "injured reserve", "suspension"}:
+                        kind = row.get("details") if isinstance(row.get("details"), dict) else {}
+                        outs[who.casefold()] = [status, str(kind.get("type") or "")]
+                if nick:
+                    teams[nick] = active
         except Exception:  # noqa: BLE001
-            teams = {}
-        cache["report"] = {"at": time(), "teams": teams}
+            teams, outs = {}, {}
+        cache["report"] = {"at": time(), "teams": teams, "outs": outs}
         saved = cache["report"]
     return set((saved.get("teams") or {}).get(abbr) or [])
+
+
+def _outs() -> dict[str, tuple[str, str]]:
+    cache = _load()
+    _active("CHI", cache)
+    _save(cache)
+    found = {}
+    for key, row in ((cache.get("report") or {}).get("outs") or {}).items():
+        if isinstance(row, list) and row:
+            found[str(key)] = (str(row[0]), str(row[1]) if len(row) > 1 else "")
+    return found
+
+
+def _mark(count: int, who: str, status: str, hurt: str) -> str:
+    if status == "injured reserve":
+        return f"{who} had {count}, and he is on injured reserve"
+    body = hurt.strip()
+    extra = ""
+    if body and body.casefold() not in {"coach's decision", "undisclosed", "rest"}:
+        extra = f" with {'an' if body[:1].lower() in 'aeiou' else 'a'} {body.lower()}"
+    verb = "had" if status in {"out", "doubtful", "injured reserve"} else "has"
+    return f"{who} {verb} {count}, and he is {status}{extra}"
 
 
 def _games(athlete_id: str, year: int) -> list[dict[str, Any]]:
