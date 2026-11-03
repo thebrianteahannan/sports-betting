@@ -132,7 +132,7 @@ document.getElementById("desk-full").addEventListener("click", () => {
   window.digOn = false;
   window.asking = false;
   if (window.birdGreet) birdGreet();
-  else birdSay("Hey. How are we going to find our favorite bet for today?", [["menu", "Parlay's Picks & Strategies", "pick"], ["menu", "Search Player, Team or Game", "find"], ["quiz", "Build Your Own Bet"]]);
+  else birdSay("Hey. How are we going to find our favorite bet for today?", [["menu", "Parlay's Picks & Strategies", "pick"], ["menu", "Stack strategies", "stack"], ["menu", "How's My Bet", "how"], ["menu", "Search Player, Team or Game", "find"], ["quiz", "Build Your Own Bet"]]);
 });
 document.getElementById("desk-glass").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
@@ -174,9 +174,9 @@ window.askBack = () => {
   }
   if (onQuiz && steps[0] === "kind" && askButtons.group) { askButtons.group = ""; window.askRewind = true; if (window.askStep) askStep(); window.askRewind = false; return true; }
   const step = past.pop();
-  const order = ["shape", "when", "sport", "game", "kind", "legs", "money", "risk", "mix"];
+  const order = ["shape", "stack", "when", "sport", "game", "kind", "legs", "money", "risk", "mix"];
   steps.splice(0, steps.length, ...order.slice(Math.max(0, order.indexOf(step))));
-  if (step === "kind") { pick.kind = "any"; askButtons.group = ""; } else if (step === "legs") pick.legs = 3; else if (step === "game") pick.gameIds = []; else if (step === "aim") pick.aim = ""; else if (step === "money") { if (pick.aim === "pay") pick.aim = ""; } else if (step === "mix") pick.mix = "even"; else if (step === "when") pick.when = "today"; else if (step === "shape") { pick.shape = "parlay"; pick.legs = 3; }
+  if (step === "kind") { pick.kind = "any"; askButtons.group = ""; } else if (step === "legs") pick.legs = 3; else if (step === "game") pick.gameIds = []; else if (step === "aim") pick.aim = ""; else if (step === "money") { if (pick.aim === "pay") pick.aim = ""; } else if (step === "mix") pick.mix = "even"; else if (step === "when") pick.when = "today"; else if (step === "shape") { pick.shape = "parlay"; pick.stack = ""; pick.legs = 3; } else if (step === "stack") pick.stack = "";
   window.askRewind = true;
   if (window.askStep) askStep();
   window.askRewind = false;
@@ -187,6 +187,7 @@ window.tvPage = (prev) => {
   if (prev.board === "find" && window.paintFind) paintFind();
   else if (prev.board === "ones" && window.birdMenu) birdMenu("bets");
   else if (prev.board === "terms" && window.paintTerms) paintTerms();
+  else if (prev.board === "stack" && window.paintStack) paintStack(); else if (prev.board === "how" && window.paintHow) paintHow();
   else if (prev.board === "bets" && window.birdMenu) birdMenu("bets");
 };
 

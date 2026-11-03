@@ -112,7 +112,7 @@ function parseSlip(text) {
     console.error("slip read:", String(text || "").replace(/\s+/g, " ").slice(0, 300));
     throw new Error("I could not read a bet on that screenshot.");
   }
-  return { book: String(body.book || "").slice(0, 40), odds: String(body.odds || "").slice(0, 20), stake: dollars(body.stake), payout: dollars(body.payout), legs };
+  return { book: String(body.book || "").slice(0, 40), odds: String(body.odds || "").slice(0, 20), stake: dollars(body.stake), payout: dollars(body.payout), kind: String(body.kind || "").slice(0, 40), legs };
 }
 
 function dollars(value) {
@@ -183,7 +183,7 @@ function ocrShot(image, mime) {
   }
 }
 
-async function readWords(text) {
+async function readWords(text, ask) {
   const response = await fetch(`${OLLAMA}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -192,7 +192,7 @@ async function readWords(text) {
       model: LOCAL_MODEL,
       stream: false,
       think: false,
-      messages: [{ role: "user", content: `${ASK}\n\nSlip text:\n${String(text).slice(0, 6000)}` }],
+      messages: [{ role: "user", content: `${ask || ASK}\n\nSlip text:\n${String(text).slice(0, 6000)}` }],
       options: { temperature: 0, num_predict: 1200 },
     }),
   });
@@ -207,7 +207,7 @@ function onMac() {
   return process.platform === "darwin";
 }
 
-async function readLocal(image) {
+async function readLocal(image, ask) {
   let response;
   try {
     response = await fetch(`${OLLAMA}/api/chat`, {
@@ -221,7 +221,7 @@ async function readLocal(image) {
         think: false,
         messages: [
           { role: "system", content: "You read a sportsbook bet slip. Return JSON only." },
-          { role: "user", content: ASK, images: [image] },
+          { role: "user", content: ask || ASK, images: [image] },
         ],
         options: { temperature: 0, num_predict: 1200 },
       }),
@@ -240,11 +240,12 @@ function today() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 }
 
-async function readShot(image, mime) {
+async function readShot(image, mime, ask) {
+  const prompt = ask || ASK;
   if (onMac()) {
-    try { return await readLocal(image); } catch (err) {
+    try { return await readLocal(image, prompt); } catch (err) {
       const text = ocrShot(image, mime);
-      if (text.length >= 20) return readWords(text);
+      if (text.length >= 20) return readWords(text, prompt);
       throw err;
     }
   }
@@ -255,7 +256,7 @@ async function readShot(image, mime) {
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
     signal: AbortSignal.timeout(45000),
     body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ inlineData: { mimeType: mime, data: image } }, { text: ASK }] }],
+      contents: [{ role: "user", parts: [{ inlineData: { mimeType: mime, data: image } }, { text: prompt }] }],
       generationConfig: { maxOutputTokens: 1200, temperature: 0 },
     }),
   });
@@ -267,7 +268,7 @@ async function readShot(image, mime) {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       signal: AbortSignal.timeout(45000),
-      body: JSON.stringify({ contents: [{ role: "user", parts: [{ inlineData: { mimeType: mime, data: image } }, { text: ASK }] }] }),
+      body: JSON.stringify({ contents: [{ role: "user", parts: [{ inlineData: { mimeType: mime, data: image } }, { text: prompt }] }] }),
     });
     const second = await again.json().catch(() => ({}));
     const more = ((((second.candidates || [])[0] || {}).content || {}).parts || []).filter((part) => part && part.text && !part.thought).map((part) => part.text).join(" ");
@@ -315,4 +316,4 @@ async function slipPost(user, body, readKey, writeKey) {
   return slipList(user, readKey, writeKey);
 }
 
-module.exports = { slipList, slipPost };
+module.exports = { slipList, slipPost, readShot };
