@@ -83,11 +83,7 @@ function foundLine(card) {
   return `${when(stamp)} ET`;
 }
 function shareFrom(card, kicker, label) {
-  const legs = (card.legs || []).filter((leg) => leg && leg.label).map((leg) => ({
-    label: shareLabel(leg),
-    pct: sharePct(leg.pct),
-    form: String(leg.form || "").replace(/^In form:\s*/i, ""),
-  }));
+  const legs = (card.legs || []).filter((leg) => leg && leg.label).map((leg) => { const n = Number(leg.odds); const implied = n < 0 ? Math.abs(n) / (Math.abs(n) + 100) * 100 : n > 0 ? 10000 / (n + 100) : ""; return { label: shareLabel(leg), odds: shareSigned(n), pct: sharePct(leg.pct) || sharePct(implied), form: String(leg.form || "").replace(/^In form:\s*/i, "") }; });
   const price = shareSigned(card.american);
   const strategy = price ? `Near ${price}` : (card.strategy || label || "");
   const profit = card.profit != null ? card.profit : (typeof winOn === "function" ? winOn(card.american) : null);
@@ -258,12 +254,12 @@ function drawBoard(ctx, bet) {
     ctx.stroke();
     const parts = splitLeg(leg.label);
     ctx.fillStyle = "#ffffff";
-    const nameSize = fitText(ctx, parts.name.toUpperCase(), right - left - 86, 20, SHARE_FONT);
+    const nameSize = fitText(ctx, parts.name.toUpperCase(), right - left - 108, 20, SHARE_FONT);
     ctx.fillText(parts.name.toUpperCase(), left, cursor + 6);
     let under = cursor + 8 + nameSize;
     if (parts.prop) {
       ctx.fillStyle = "#d5deea";
-      const propSize = fitText(ctx, parts.prop.toUpperCase(), right - left - 86, 15, SHARE_TEXT);
+      const propSize = fitText(ctx, parts.prop.toUpperCase(), right - left - 108, 15, SHARE_TEXT);
       ctx.font = `600 ${propSize}px ${SHARE_TEXT}`;
       ctx.fillText(parts.prop.toUpperCase(), left, under);
       under += propSize + 3;
@@ -275,13 +271,10 @@ function drawBoard(ctx, bet) {
       ctx.font = `600 ${noteSize}px ${SHARE_TEXT}`;
       ctx.fillText(note, left, under);
     }
-    if (leg.pct) {
-      ctx.fillStyle = "#3dff6e";
-      ctx.font = `600 24px ${SHARE_FONT}`;
-      ctx.textAlign = "right";
-      ctx.fillText(`${leg.pct}%`, right, cursor + 10);
-      ctx.textAlign = "left";
-    }
+    ctx.textAlign = "right";
+    if (leg.odds) { ctx.fillStyle = "#3dff6e"; ctx.font = `600 22px ${SHARE_FONT}`; ctx.fillText(String(leg.odds), right, cursor + 6); }
+    if (leg.pct) { ctx.fillStyle = "#e7c15a"; ctx.font = `600 16px ${SHARE_FONT}`; ctx.fillText(`${leg.pct}%`, right, cursor + (leg.odds ? 30 : 10)); }
+    ctx.textAlign = "left";
     cursor += rowH;
   });
   if (extra) {

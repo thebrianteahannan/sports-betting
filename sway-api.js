@@ -2,7 +2,7 @@
 
 const PATHS = {
   NFL: ["football", "nfl"], NBA: ["basketball", "nba"], WNBA: ["basketball", "wnba"],
-  MLB: ["baseball", "mlb"], NHL: ["hockey", "nhl"],
+  MLB: ["baseball", "mlb"], NHL: ["hockey", "nhl"], NCAAF: ["football", "college-football"], NCAAB: ["basketball", "mens-college-basketball"],
 };
 const CACHE = new Map();
 const TTL = 12 * 60 * 60 * 1000;
@@ -250,4 +250,31 @@ async function getJson(url) {
   return response.json();
 }
 
-module.exports = { addSway };
+async function careerPack(sport, name) {
+  const path = PATHS[String(sport || "")];
+  const who = String(name || "").trim();
+  if (!path || !who) return null;
+  const key = `${sport}|${who.toLowerCase()}|career`;
+  const cached = CACHE.get(key);
+  if (cached && cached.rows && cached.rows.length && Date.now() - cached.at < TTL) return cached;
+  let found = null;
+  try { found = await search(who, path[0], path[1]); } catch (err) { return null; }
+  if (!found) return null;
+  let names = [], rows = [], year = 0;
+  try { [names, rows, year] = await season(path[0], path[1], found.id, null); } catch (err) { return null; }
+  const tagged = rows.map((row) => ({ ...row, season: year }));
+  const seen = new Set(tagged.map((row) => `${row.date}|${row.opponent}`));
+  let empty = 0;
+  for (let probe = (year || 0) - 1; year && probe > year - 16 && probe > 1990; probe -= 1) {
+    let older = [[], []];
+    try { older = await season(path[0], path[1], found.id, probe); } catch (err) { break; }
+    empty = older[1].length ? 0 : empty + 1;
+    if (empty >= 2) break;
+    if (!names.length) names = older[0];
+    older[1].forEach((row) => { const mark = `${row.date}|${row.opponent}`; if (!seen.has(mark)) { seen.add(mark); tagged.push({ ...row, season: probe }); } });
+  }
+  tagged.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  return tagged.length ? remember(key, found.team, names, tagged) : null;
+}
+
+module.exports = { addSway, careerPack };

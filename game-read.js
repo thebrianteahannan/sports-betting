@@ -298,6 +298,9 @@ function minuteText(rows, year) {
   const played = rows.filter((row) => row.min > 0);
   const avg = (chunk) => { const n = chunk.reduce((sum, row) => sum + row.min, 0) / chunk.length; const shown = Math.round(n * 10) / 10; return `${Number.isInteger(shown) ? shown : shown.toFixed(1)} min`; };
   const bits = [];
+  const last = played.find((row) => row.date);
+  const when = last ? Date.parse(last.date) : NaN;
+  if (Number.isFinite(when)) bits.push(`Last played, ${new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" }).format(when)}`);
   [[3, "Last 3"], [10, "Last 10"], [50, "Last 50"]].forEach(([n, label]) => { if (played.length >= n) bits.push(`${label}, ${avg(played.slice(0, n))}`); });
   const now = year ? played.filter((row) => row.year === year) : [];
   if (now.length) bits.push(`This season, ${avg(now)}`);
@@ -420,10 +423,11 @@ async function gameRead(body, board) {
   if (!path) return { lead: "", sections: [] };
   let id = "";
   try { id = await espnId(path, game); } catch (err) { id = ""; }
-  if (!id) return { lead: "", sections: [] };
-  let data = {};
-  try { data = await readJson(`https://site.web.api.espn.com/apis/site/v2/sports/${path}/summary?event=${id}`); }
-  catch (err) { return { lead: "", sections: [] }; }
+  const pull = (eventId) => readJson(`https://site.web.api.espn.com/apis/site/v2/sports/${path}/summary?event=${eventId}`);
+  let data = null;
+  try { if (id) data = await pull(id); } catch (err) { data = null; }
+  if (!data && game.espnId) { try { id = await espnId(path, { ...game, espnId: "" }); if (id) data = await pull(id); } catch (err) { data = null; } }
+  if (!data) return { lead: "", sections: [] };
   const sides = teamsOf(data);
   const gone = new Set();
   (data.injuries || []).forEach((block) => (block.injuries || []).forEach((item) => {
@@ -441,7 +445,10 @@ async function gameRead(body, board) {
     outCols(data, sides, depth, path).catch(() => []),
   ]);
   const sky = weather(data, game.sport || body.sport);
+  const posted = ((board && board.games) || []).find((row) => row.match === (game.match || body.match)) || game;
+  const script = await require("./game-script").gameScript(path, game.sport || body.sport, sides, { ...game, spread: game.spread || posted.spread, total: game.total || posted.total }).catch(() => null);
   const sections = [
+    script,
     sky ? { name: "Weather", text: sky } : null,
     pack("Coaches", coaches.filter(Boolean).map((coach) => ({ title: coach.name, lines: coach.lines })), versus(coaches[0], coaches[1], faced)),
     pack("Matchup", matchCols(data, sides, game.kickoff), played),

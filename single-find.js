@@ -410,22 +410,19 @@ function savedRead(name, text, sport, odds, pack, bet) {
 }
 
 async function whyPlayer(name, text, sport, bet, odds, games) {
-  const league = String((bet && bet.sport) || sport || "");
-  const pack = await savedPack(league, name);
+  const league = String((bet && bet.sport) || sport || "").trim() || ((`${text || ""} ${(bet && bet.label) || ""}`.match(/\b(NFL|NBA|NHL|MLB|WNBA|NCAAF|NCAAB)\b/i) || [])[1] || "").toUpperCase();
+  let pack = await savedPack(league, name);
   const bin = pythonBin();
-  if (!bin) return pack ? savedRead(name, text, sport, odds, pack, bet) : { why: "This player's game log is not on the desk yet." };
   const asked = bet && typeof bet === "object"
     ? { read: true, name: String(name || ""), bet, pack }
-    : { name: String(name || ""), text: String(text || ""), sport: String(sport || ""), odds, games: (Array.isArray(games) ? games : []).slice(0, 40).map(slimGame), pack };
-  let found;
+    : { name: String(name || ""), text: String(text || ""), sport: String(sport || league || ""), odds, games: (Array.isArray(games) ? games : []).slice(0, 40).map(slimGame), pack };
+  if (asked.read && !(pack && pack.rows && pack.rows.length)) { try { pack = await require("./sway-api").careerPack(league, name); asked.pack = pack || null; } catch (err) { pack = null; } }
+  let found = null;
   try {
-    found = JSON.parse(execFileSync(bin, ["-m", "nfl_bets.why"], {
-      input: JSON.stringify(asked), encoding: "utf8", timeout: 20000, maxBuffer: 2 * 1024 * 1024, cwd: __dirname,
-    }));
-  } catch (err) {
-    return { why: "The game log did not load." };
-  }
-  if (asked.read) return found;
+    if (bin) found = JSON.parse(execFileSync(bin, ["-m", "nfl_bets.why"], { input: JSON.stringify(asked), encoding: "utf8", timeout: 20000, maxBuffer: 2 * 1024 * 1024, cwd: __dirname }));
+  } catch (err) { found = null; }
+  if (asked.read) { const read = pack ? savedRead(name, text, sport || league, odds, pack, bet) : null; const why = (found && found.why) || (read && read.why) || ""; const spans = (found && found.spans) || (read && read.spans) || ""; const lean = (found && found.lean) || (read && read.lean) || ""; return (why || spans || lean) ? { ...(found || {}), why, spans, lean } : { why: "This player's game log is not on the desk yet." }; }
+  if (!found) return { why: "The game log did not load." };
   let looks = [];
   try { looks = (await require("./desk-looks").currentLooks()).looks || []; } catch (err) { looks = []; }
   const allowed = new Set(looks.map((row) => row.id));
@@ -497,4 +494,4 @@ async function onePick(pools, games, opts, weekOf) {
   return host;
 }
 
-module.exports = { singleFind, onePick, markPlayer, whyPlayer };
+module.exports = { singleFind, onePick, markPlayer, whyPlayer, savedPack };

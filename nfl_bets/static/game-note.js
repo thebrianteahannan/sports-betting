@@ -230,6 +230,9 @@
     const played = rows.filter((row) => row.min > 0);
     const avg = (chunk) => { const n = chunk.reduce((sum, row) => sum + row.min, 0) / chunk.length; const shown = Math.round(n * 10) / 10; return `${Number.isInteger(shown) ? shown : shown.toFixed(1)} min`; };
     const bits = [];
+    const last = played.find((row) => row.date);
+    const when = last ? Date.parse(last.date) : NaN;
+    if (Number.isFinite(when)) bits.push(`Last played, ${new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" }).format(when)}`);
     [[3, "Last 3"], [10, "Last 10"], [50, "Last 50"]].forEach(([n, label]) => { if (played.length >= n) bits.push(`${label}, ${avg(played.slice(0, n))}`); });
     const now = year ? played.filter((row) => row.year === year) : [];
     if (now.length) bits.push(`This season, ${avg(now)}`);

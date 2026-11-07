@@ -178,7 +178,7 @@ function birdGreet() {
   if (!called) return birdAskName();
   if (!window.memberBorn) return birdAskBorn(); if (!window.memberState) return birdAskState(); if (birdAskBook() || birdLaw()) return;
   window.asking = false;
-  birdSay(`Hey, ${called}. How are we going to find our favorite bet for today?`, [["menu", "Parlay's Picks & Strategies", "pick"], ["menu", "Stack strategies", "stack"], ["menu", "How's My Bet", "how"], ["menu", "Search Player, Team or Game", "find"], ["quiz", "Build Your Own Bet"]]);
+  birdSay(`Hey, ${called}. How are we going to find our favorite bet for today?`, [["menu", "Experimental Strategy", "pick"], ["menu", "Stack strategies", "stack"], ["menu", "How's My Bet", "how"], ["menu", "Search Player, Team or Game", "find"], ["quiz", "Build Your Own Bet"]]);
 }
 
 function birdLaw() {
@@ -373,7 +373,7 @@ function birdMenu(kind) {
   const row = document.getElementById("desk-glass-in");
   if (!row) return;
   document.querySelectorAll(".rec-board").forEach((node) => node.remove());
-  const board = document.createElement("div"); board.className = "rec-board"; board.dataset.page = "bets"; board.insertAdjacentHTML("afterbegin", `<h2>${window.recPast ? "Finished bets, by strategy." : "Parlay's picks, by strategy."}</h2>`);
+  const board = document.createElement("div"); board.className = "rec-board"; board.dataset.page = "bets"; board.insertAdjacentHTML("afterbegin", `<h2>${window.recPast ? "Finished bets, by strategy." : "Experimental Strategy."}</h2>`);
   const archive = ((window.state && window.state.board && window.state.board.archive) || []);
   const now = Date.now();
   const day = 86400000;

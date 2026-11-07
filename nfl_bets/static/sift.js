@@ -217,7 +217,7 @@ function siftKinds(list, preset) {
   });
   const band = document.createElement("div");
   band.className = "find-band";
-  const field = (word, placeholder, step) => {
+  const field = (word, placeholder, step, key) => {
     const label = document.createElement("label");
     label.className = "find";
     const span = document.createElement("span");
@@ -226,15 +226,15 @@ function siftKinds(list, preset) {
     input.type = "number";
     input.placeholder = placeholder;
     input.step = step;
-    input.inputMode = "decimal";
-    input.addEventListener("input", () => { clearTimeout(siftKinds.timer); if (!input.value.trim()) applyKinds(); else siftKinds.timer = setTimeout(applyKinds, 400); });
+    input.inputMode = "decimal"; try { input.value = localStorage.getItem("parlay-band-" + key) || ""; } catch (error) {}
+    input.addEventListener("input", () => { try { const saved = input.value.trim(); if (saved) localStorage.setItem("parlay-band-" + key, saved); else localStorage.removeItem("parlay-band-" + key); } catch (error) {} clearTimeout(siftKinds.timer); if (!input.value.trim()) applyKinds(); else siftKinds.timer = setTimeout(applyKinds, 400); });
     label.append(span, input);
     band.append(label);
     return input;
   };
-  const oddsInput = field("Odds", "-150", "1");
-  const pctInput = field("%", "75", "0.1");
-  const cashInput = field("$5 profits", "2", "0.01");
+  const oddsInput = field("Odds", "-150", "1", "odds");
+  const pctInput = field("%", "75", "0.1", "pct");
+  const cashInput = field("$5 profits", "2", "0.01", "cash"); const wipe = document.createElement("button"); wipe.type = "button"; wipe.className = "find-clear"; wipe.textContent = "Clear"; wipe.addEventListener("click", () => { [oddsInput, pctInput, cashInput].forEach((input) => { input.value = ""; }); ["odds", "pct", "cash"].forEach((key) => { try { localStorage.removeItem("parlay-band-" + key); } catch (error) {} }); applyKinds(); }); band.append(wipe);
   const none = document.createElement("p");
   none.className = "quiet";
   none.hidden = true;
@@ -268,7 +268,7 @@ function siftKinds(list, preset) {
     summary.textContent = bits.length ? `Filter, ${bits.join(", ")}` : "Filter";
     none.hidden = !on || shown > 0;
   };
-  if (preset) { const button = [...names.querySelectorAll("button")].find((node) => node.dataset.kind === preset); if (button) { button.classList.add("on"); button.setAttribute("aria-pressed", "true"); applyKinds(); } }
+  if (preset) { const button = [...names.querySelectorAll("button")].find((node) => node.dataset.kind === preset); if (button) { button.classList.add("on"); button.setAttribute("aria-pressed", "true"); } } if ((preset && names.querySelector("button.on")) || oddsInput.value || pctInput.value || cashInput.value) applyKinds();
   details.append(summary, names, band, none);
   const heading = list.querySelector("h3");
   if (heading) heading.after(details); else list.prepend(details);
@@ -283,7 +283,7 @@ function loadHistory(row, name) {
   const gist = (row.querySelector(".rec-gist") || {}).textContent || "";
   const sport = row.dataset.sport || ((row.querySelector(".leg-league") || {}).textContent || "") || ((gist.split("—")[1] || "").split(",")[0] || "").trim();
   const bet = { label: gist, market: row.dataset.market || "", odds: Number(row.dataset.odds), sport };
-  fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "why", name, text: gist, sport, bet }), signal: stop.signal }).then((res) => res.json()).then((data) => { if (button._read !== stop) return; paintHistory(row, button, data || {}, name); }).catch((err) => { if (err && err.name === "AbortError") return; if (button.isConnected) button.textContent = "See the history"; });
+  fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "why", name, text: gist, sport, bet }), signal: stop.signal }).then((res) => res.json()).then((data) => { if (button._read !== stop) return; paintHistory(row, button, data || {}, name); }).catch((err) => { if (err && err.name === "AbortError") return; if (button.isConnected) paintHistory(row, button, { why: "The game log did not load." }, name); });
 }
 function askRead(row, name) {
   if (row.querySelector(".find-read") || row.querySelector(".find-why")) return;
@@ -435,10 +435,9 @@ function slimTray() {
   if (!glass.dataset.slim) { glass.dataset.slim = "1"; glass.addEventListener("scroll", slimTray, { passive: true }); }
   const pad = parseFloat(getComputedStyle(glass).paddingTop) || 0;
   document.querySelectorAll(".find-tray").forEach((tray) => {
-    if (tray.hidden || !tray.getClientRects().length) { tray.classList.remove("find-slim"); return; }
-    const top = tray.getBoundingClientRect().top - glass.getBoundingClientRect().top - pad;
+    if (tray.hidden || !tray.getClientRects().length) { tray.classList.remove("find-slim", "find-full"); tray.style.maxHeight = ""; tray.style.overflowY = ""; tray.style.overscrollBehavior = ""; return; } const many = tray.querySelectorAll(".find-row").length >= 4 || (typeof parlayLeg !== "undefined" && parlayLeg.size >= 4); if (many) { tray.classList.remove("find-slim"); tray.classList.add("find-full"); const room = Math.max(180, glass.clientHeight - Math.max(0, tray.getBoundingClientRect().top - glass.getBoundingClientRect().top) - 8); tray.style.maxHeight = room + "px"; tray.style.overflowY = "auto"; tray.style.overscrollBehavior = "contain"; return; } tray.classList.remove("find-full"); tray.style.maxHeight = ""; tray.style.overflowY = ""; tray.style.overscrollBehavior = ""; const top = tray.getBoundingClientRect().top - glass.getBoundingClientRect().top - pad;
     const slim = tray.classList.contains("find-slim");
-    if (!slim && glass.scrollTop > 72 && top < 8) tray.classList.add("find-slim");
+    if (!slim && !tray.classList.contains("find-edit") && glass.scrollTop > 72 && top < 8) tray.classList.add("find-slim");
     else if (slim && glass.scrollTop < 28) tray.classList.remove("find-slim");
   });
 }
