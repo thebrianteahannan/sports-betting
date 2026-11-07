@@ -2,9 +2,9 @@
 
 const STACKS = [
   ["Prop ladder", "Six or more clears every rung. The bottom payout has to cover the stake on the rungs above it.", [
-    ["Single or parlay", "Bottom rung", "The lowest over. Size this one so its profit pays for the tickets above it."],
-    ["Single or parlay", "Middle rung", "The next line up, on the same stat. A smaller stake than the bottom."],
     ["Single or parlay", "Top rung", "The highest line. The smallest stake. This is the one a huge night clears."],
+    ["Single or parlay", "Middle rung", "The next line up, on the same stat. A smaller stake than the bottom."],
+    ["Single or parlay", "Bottom rung", "The lowest over. Size this one so its profit pays for the tickets above it."],
   ]],
   ["Overlapping under", "Two or fewer cashes both unders. A finish in the gap cashes only the higher one.", [
     ["Single or parlay", "Higher under", "The cushion. Its payout has to cover the tighter under when the player lands in the gap."],
@@ -169,10 +169,24 @@ function paintStack() {
   board.append(title);
   const filters = document.createElement("div");
   filters.className = "rec-filters";
-  filters.innerHTML = `<div class="row keep"><button type="button" class="stack-fit-go">With a bet <span class="n"></span></button></div><p class="stack-none quiet" hidden>None of the current FanDuel prices fit a stack.</p>`;
-  filters.querySelector("button").addEventListener("click", (event) => {
+  window.stackWhen = window.stackWhen || "today";
+  window.stackLeagues = window.stackLeagues || [];
+  window.stackGames = window.stackGames || [];
+  window.stackTeams = window.stackTeams || [];
+  window.stackPlayers = window.stackPlayers || [];
+  filters.innerHTML = `<div class="row keep stack-when"><span class="name">When</span><button type="button" data-stack-when="today">Today <span class="n"></span></button><button type="button" data-stack-when="week">This week <span class="n"></span></button></div><div class="row keep stack-league" hidden><span class="name">League</span></div><div class="row keep stack-game" hidden><span class="name">Game</span></div><div class="row keep stack-team" hidden><span class="name">Team</span></div><div class="row keep stack-player" hidden><span class="name">Player</span></div><div class="row keep"><button type="button" class="stack-fit-go">With a bet <span class="n"></span></button><button type="button" class="stack-beat-go">Beats the price <span class="n"></span></button></div><p class="stack-none quiet" hidden>None of the current FanDuel prices fit a stack.</p>`;
+  filters.addEventListener("click", (event) => {
+    const button = event.target.closest("button");
+    if (!button) return;
     event.stopPropagation();
-    window.stackFit = !window.stackFit;
+    if (button.classList.contains("stack-fit-go")) window.stackFit = !window.stackFit;
+    else if (button.classList.contains("stack-beat-go")) { window.stackBeats = !window.stackBeats; if (window.stackBeats) window.stackFit = true; }
+    else if (button.dataset.stackWhen) window.stackWhen = button.dataset.stackWhen;
+    else if (button.dataset.stackLeague != null) { const name = button.dataset.stackLeague; window.stackLeagues = !name ? [] : window.stackLeagues.includes(name) ? window.stackLeagues.filter((item) => item !== name) : window.stackLeagues.concat(name); }
+    else if (button.dataset.stackGame != null) { const name = button.dataset.stackGame; window.stackGames = !name ? [] : window.stackGames.includes(name) ? window.stackGames.filter((item) => item !== name) : window.stackGames.concat(name); }
+    else if (button.dataset.stackTeam != null) window.stackTeams = stackFlip(window.stackTeams, button.dataset.stackTeam);
+    else if (button.dataset.stackPlayer != null) window.stackPlayers = stackFlip(window.stackPlayers, button.dataset.stackPlayer);
+    if (button.dataset.stackLeague || button.dataset.stackGame || button.dataset.stackTeam || button.dataset.stackPlayer) window.stackFit = true;
     applyStackFit(board);
   });
   board.append(filters);
@@ -219,19 +233,141 @@ function paintStack() {
   fillStacks(board);
 }
 
+function stackKeep(set, when, leagues, games = [], teams = [], players = []) {
+  if (window.stackBeats && set.dataset.beats !== "1") return false;
+  if (when === "today" && set.dataset.span !== "today") return false;
+  if (when === "week" && set.dataset.span === "later") return false;
+  const sports = String(set.dataset.sport || "").split("|").filter(Boolean);
+  const matches = String(set.dataset.games || "").split("|").filter(Boolean);
+  if (games.length && !(matches.length && matches.every((match) => games.includes(match)))) return false;
+  if (teams.length || players.length) {
+    const who = stackWho(set);
+    if (players.length && !(who.length && who.every((name) => players.includes(name)))) return false;
+    if (teams.length && !(who.length ? who.every((name) => teams.includes(stackTeamOf.get(name))) : matches.length && matches.every((match) => match.split(" @ ").some((side) => teams.includes(side))))) return false;
+  }
+  return !leagues.length || (sports.length && sports.every((sport) => leagues.includes(sport)));
+}
+
+function stackChips(board) {
+  const sets = [...board.querySelectorAll(".stack-set")];
+  const when = window.stackWhen || "today";
+  const leagues = window.stackLeagues || [];
+  const bets = (rows) => rows.reduce((sum, set) => sum + Number(set.dataset.n || 0), 0);
+  const paintWhen = () => board.querySelectorAll("[data-stack-when]").forEach((button) => {
+    button.classList.toggle("on", button.dataset.stackWhen === when);
+    const n = bets(sets.filter((set) => stackKeep(set, button.dataset.stackWhen, window.stackLeagues || [], window.stackGames || [], window.stackTeams || [], window.stackPlayers || [])));
+    button.querySelector(".n").textContent = sets.length ? String(n) : "";
+  });
+  paintWhen();
+  const row = board.querySelector(".stack-league");
+  if (!row || !sets.length) return;
+  const names = [...new Set(sets.flatMap((set) => String(set.dataset.sport || "").split("|")).filter(Boolean))].sort();
+  window.stackLeagues = leagues.filter((name) => names.includes(name));
+  row.hidden = names.length < 2;
+  row.querySelectorAll("button").forEach((node) => node.remove());
+  [["", "All leagues"]].concat(names.map((name) => [name, name])).forEach(([value, label]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.stackLeague = value;
+    const n = bets(sets.filter((set) => stackKeep(set, when, value ? [value] : [])));
+    button.innerHTML = `${esc(label)} <span class="n">${n}</span>`;
+    button.classList.toggle("on", value ? window.stackLeagues.includes(value) : !window.stackLeagues.length);
+    row.append(button);
+  });
+  const gameRow = board.querySelector(".stack-game");
+  if (!gameRow) return;
+  const order = (((window.state && state.board && state.board.games) || [])).slice().sort((a, b) => Date.parse(a.kickoff || "") - Date.parse(b.kickoff || "")).map((game) => game.match);
+  const open = sets.filter((set) => stackKeep(set, when, window.stackLeagues));
+  const matches = [...new Set(open.flatMap((set) => String(set.dataset.games || "").split("|")).filter(Boolean))].sort((a, b) => ((order.indexOf(a) + 1) || 1e9) - ((order.indexOf(b) + 1) || 1e9) || a.localeCompare(b));
+  window.stackGames = (window.stackGames || []).filter((name) => matches.includes(name));
+  gameRow.hidden = matches.length < 2;
+  gameRow.querySelectorAll("button").forEach((node) => node.remove());
+  [["", "All games"]].concat(matches.map((name) => [name, name])).forEach(([value, label]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.stackGame = value;
+    button.innerHTML = `${esc(label)} <span class="n">${bets(open.filter((set) => stackKeep(set, when, [], value ? [value] : [])))}</span>`;
+    button.classList.toggle("on", value ? window.stackGames.includes(value) : !window.stackGames.length);
+    gameRow.append(button);
+  });
+  const teamRow = board.querySelector(".stack-team"), playerRow = board.querySelector(".stack-player");
+  if (teamRow && playerRow) {
+    const inGames = open.filter((set) => stackKeep(set, when, [], window.stackGames));
+    const sides = [...new Set((window.stackGames.length ? window.stackGames : matches).flatMap((match) => match.split(" @ ")))];
+    window.stackTeams = (window.stackTeams || []).filter((name) => sides.includes(name));
+    stackRosters(board, sides);
+    teamRow.hidden = sides.length < 2;
+    stackRow(teamRow, "stackTeam", "All teams", sides, window.stackTeams, (value) => !value ? bets(inGames) : stackAsked.get(value) === "done" ? bets(inGames.filter((set) => stackKeep(set, when, [], [], [value]))) : "");
+    const picked = window.stackTeams.length ? window.stackTeams : window.stackGames.length ? sides : [];
+    const inTeams = inGames.filter((set) => stackKeep(set, when, [], [], window.stackTeams));
+    const names = picked.length ? [...new Set(inTeams.flatMap(stackWho))].filter((name) => picked.includes(stackTeamOf.get(name))).sort() : [];
+    if (names.length || !picked.length) window.stackPlayers = (window.stackPlayers || []).filter((name) => names.includes(name));
+    playerRow.hidden = !names.length;
+    stackRow(playerRow, "stackPlayer", "All players", names, window.stackPlayers, (value) => bets(inTeams.filter((set) => !value || stackKeep(set, when, [], [], [], [value]))));
+  }
+  paintWhen();
+}
+
+function stackFlip(list, name) { return !name ? [] : list.includes(name) ? list.filter((item) => item !== name) : list.concat(name); }
+
+function stackRow(row, key, all, names, on, count) {
+  row.querySelectorAll("button").forEach((node) => node.remove());
+  [["", all]].concat(names.map((name) => [name, name])).forEach(([value, label]) => { const button = document.createElement("button"); button.type = "button"; button.dataset[key] = value; button.innerHTML = `${esc(label)} <span class="n">${count(value)}</span>`; button.classList.toggle("on", value ? on.includes(value) : !on.length); row.append(button); });
+}
+
+const stackRoster = new Map(), stackTeamOf = new Map(), stackAsked = new Map();
+function stackNorm(text) { return String(text || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]+/g, "").replace(/\s+/g, " ").trim(); }
+
+function stackWho(set) {
+  if (set.whoAt === stackRoster.size) return set.who;
+  set.whoAt = stackRoster.size;
+  set.who = [...new Set(String(set.dataset.labels || "").split("|").map((label) => { const words = stackNorm(label).split(" "); for (let n = 4; n >= 2; n -= 1) { const name = stackRoster.get(words.slice(0, n).join(" ")); if (name) return name; } return ""; }).filter(Boolean))];
+  return set.who;
+}
+
+function stackRosters(board, sides) {
+  const games = (window.state && state.board && state.board.games) || [];
+  sides.filter((side) => !stackAsked.has(side)).forEach((side) => {
+    stackAsked.set(side, "wait");
+    const game = games.find((row) => String(row.match || "").split(" @ ").includes(side));
+    fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "roster", name: side, sport: (game && game.sport) || "" }) }).then((res) => res.json()).then((data) => {
+      (data.players || []).forEach((row) => { const name = String((row && row.name) || row || "").trim(); const key = stackNorm(name); if (!key || stackTeamOf.has(name)) return; stackTeamOf.set(name, side); stackRoster.set(key, name); stackRoster.set(key.replace(/ (jr|sr|ii|iii|iv)$/, ""), name); });
+    }).catch(() => {}).finally(() => { stackAsked.set(side, "done"); clearTimeout(stackRosters.wait); stackRosters.wait = setTimeout(() => { if (board.isConnected) applyStackFit(board); }, 250); });
+  });
+}
+
 function applyStackFit(board) {
   const on = !!window.stackFit;
   const button = board.querySelector(".stack-fit-go");
   if (button) button.classList.toggle("on", on);
-  let live = 0;
+  stackChips(board);
+  const when = window.stackWhen || "today";
+  const leagues = window.stackLeagues || [];
+  const games = window.stackGames || [], teams = window.stackTeams || [], players = window.stackPlayers || [];
+  const gameSports = (((window.state && state.board && state.board.games) || [])).filter((game) => games.includes(game.match) || String(game.match || "").split(" @ ").some((side) => teams.includes(side))).map((game) => game.sport);
+  let live = 0, beat = 0;
   let waiting = false;
   board.querySelectorAll(".rec-strategy").forEach((block) => {
     if (!block.dataset.fit) waiting = true;
+    if (block.dataset.fit && block.dataset.fit !== "note") {
+      const sets = [...block.querySelectorAll(".stack-set")];
+      let shown = 0;
+      sets.forEach((set) => { set.hidden = !stackKeep(set, when, leagues, games, teams, players); set.style.display = set.hidden ? "none" : ""; if (!set.hidden) shown += Number(set.dataset.n || 0); if (!set.hidden && set.dataset.beats === "1") beat += 1; });
+      block.dataset.fit = shown ? "1" : "0";
+      const fit = block.querySelector(".stack-fit-count");
+      if (fit) fit.textContent = shown === 1 ? "1 bet fulfills it" : `${shown} bets fulfill it`;
+      const empty = block.querySelector(".stack-empty");
+      if (empty) empty.style.display = shown ? "none" : "";
+    }
     if (block.dataset.fit === "1") live += 1;
-    block.hidden = on && block.dataset.fit !== "1";
+    const nflOnly = ["Key-number middle", "Teaser", "Wong teaser", "Pleaser", "Buying the hook", "First touchdown and anytime"].includes(block.dataset.name);
+    block.hidden = (on && block.dataset.fit !== "1") || (nflOnly && ((leagues.length > 0 && !leagues.includes("NFL")) || ((games.length > 0 || teams.length > 0) && !gameSports.includes("NFL"))));
+    block.style.display = block.hidden ? "none" : "";
   });
   const count = button && button.querySelector(".n");
   if (count) count.textContent = live ? String(live) : "";
+  const beats = board.querySelector(".stack-beat-go");
+  if (beats) { beats.classList.toggle("on", !!window.stackBeats); beats.querySelector(".n").textContent = waiting ? "" : String(beat); }
   const empty = board.querySelector(".stack-none");
   if (empty) empty.hidden = !(on && !waiting && !live);
   board.classList.toggle("stack-fit", on);
@@ -252,6 +388,21 @@ function stackMoney(odds) {
   return n > 0 ? `+${n}` : String(n);
 }
 
+function stackLeg(bet) {
+  const node = document.createElement("div");
+  node.className = "rec-bet stack-leg";
+  const chance = typeof findPct === "function" ? findPct(bet.odds) : "";
+  const seen = bet.games ? `<i class="seen${bet.hits / bet.games > parseFloat(chance) / 100 ? " up" : ""}">${bet.hits} of last ${bet.games}</i>` : "";
+  node.innerHTML = `<b><i class="prop">${esc(bet.label || "")}</i><i class="odds">${esc(stackMoney(bet.odds))}</i>${chance ? `<i class="chance">${esc(chance)}</i>` : ""}${seen}</b><p class="rec-gist"><i class="pct">${esc([bet.kind || "Single", bet.rung].filter(Boolean).join(", "))}</i> ${esc(bet.job || "")}</p>`;
+  return node;
+}
+
+function stackLegs(stack) { const bets = (stack.bets || []).slice(); return bets.some((bet) => /^bottom rung$/i.test(bet.rung || "")) ? bets.reverse() : bets; }
+
+function stackRead(set, stack) { if (stack.read) set.insertAdjacentHTML("beforeend", `<p class="stack-read${stack.beats ? " up" : ""}">${esc(stack.read)}</p>`); }
+
+function recDay(ms) { return (recDay.fmt || (recDay.fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }))).format(ms); }
+
 function stackNote(block, text) {
   const bet = document.createElement("div");
   bet.className = "rec-bet";
@@ -269,34 +420,34 @@ function fillStacks(board) {
       const wait = board.querySelector(".bet-load");
       if (wait) wait.remove();
       if (!board.isConnected || !data) return;
+      const games = new Map((((window.state && state.board && state.board.games) || [])).map((game) => [game.match, game]));
+      const today = recDay(Date.now());
+      const end = recDay(Date.now() + 7 * 86400000);
       board.querySelectorAll(".rec-strategy").forEach((block) => {
         const name = block.dataset.name;
         const note = data.notes && data.notes[name];
         const stacks = (data.found && data.found[name]) || [];
-        const foundBets = stacks.reduce((sum, stack) => sum + ((stack.bets || []).length), 0);
-        const fit = block.querySelector(".stack-fit-count");
-        if (fit) fit.textContent = foundBets === 1 ? "1 bet fulfills it" : `${foundBets} bets fulfill it`;
-        if (note) { block.dataset.fit = "0"; stackNote(block, note); return; }
-        if (!stacks.length) { block.dataset.fit = "0"; stackNote(block, "None of the current FanDuel prices fit this shape."); return; }
-        block.dataset.fit = "1";
+        if (note) { block.dataset.fit = "note"; const fit = block.querySelector(".stack-fit-count"); if (fit) fit.textContent = "0 bets fulfill it"; stackNote(block, note); return; }
+        block.dataset.fit = "0";
+        stackNote(block, "None of the current FanDuel prices fit this shape.");
+        block.lastElementChild.classList.add("stack-empty");
         stacks.forEach((stack) => {
           const set = document.createElement("div");
           set.className = "stack-set";
+          const hit = [...new Set([stack.game].concat((stack.bets || []).map((bet) => bet.game)))].map((match) => games.get(match)).filter(Boolean);
+          const days = [...new Set(hit.map((game) => Date.parse(game.kickoff || "")).filter((ms) => Number.isFinite(ms)).map(recDay))];
+          set.dataset.sport = [...new Set(hit.map((game) => String(game.sport || "")).filter(Boolean))].join("|");
+          set.dataset.games = hit.map((game) => game.match).join("|");
+          set.dataset.labels = (stack.bets || []).map((bet) => String(bet.label || "").replace(/\|/g, " ")).join("|");
+          set.dataset.span = !days.length ? "week" : days.every((day) => day === today) ? "today" : days.every((day) => day <= end) ? "week" : "later";
+          set.dataset.n = String((stack.bets || []).length);
+          set.dataset.beats = stack.beats ? "1" : "0";
           const name = document.createElement("p");
           name.className = "stack-set-name";
           name.textContent = stackName(stack);
           set.append(name);
-          (stack.bets || []).forEach((bet) => {
-            const node = document.createElement("div");
-            node.className = "rec-bet";
-            const head = document.createElement("b");
-            head.innerHTML = `<i class="px">${esc(bet.kind || "Single")}</i> <i class="pct">${esc(bet.rung || "")}</i> <i class="rec-pay">${esc(stackMoney(bet.odds))}</i>`;
-            const gist = document.createElement("p");
-            gist.className = "rec-gist";
-            gist.innerHTML = `<i class="prop">${esc(bet.label || "")}. ${esc(bet.job || "")}</i>`;
-            node.append(head, gist);
-            set.append(node);
-          });
+          stackRead(set, stack);
+          stackLegs(stack).forEach((bet) => set.append(stackLeg(bet)));
           block.append(set);
         });
       });
@@ -333,17 +484,8 @@ async function showStackBuild() {
       title.className = "stack-set-name";
       title.textContent = stackName(stack);
       set.append(title);
-      (stack.bets || []).forEach((bet) => {
-        const node = document.createElement("div");
-        node.className = "rec-bet";
-        const head = document.createElement("b");
-        head.innerHTML = `<i class="px">${esc(bet.kind || "Single")}</i> <i class="pct">${esc(bet.rung || "")}</i> <i class="rec-pay">${esc(stackMoney(bet.odds))}</i>`;
-        const gist = document.createElement("p");
-        gist.className = "rec-gist";
-        gist.innerHTML = `<i class="prop">${esc(bet.label || "")}. ${esc(bet.job || "")}</i>`;
-        node.append(head, gist);
-        set.append(node);
-      });
+      stackRead(set, stack);
+      stackLegs(stack).forEach((bet) => set.append(stackLeg(bet)));
       box.append(set);
     });
   } catch (error) {

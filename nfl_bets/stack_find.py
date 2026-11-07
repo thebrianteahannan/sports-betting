@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 
 from nfl_bets.chalk import _legs
 from nfl_bets.hedge import american_decimal
+from nfl_bets.stack_read import tally
 from nfl_bets.store import load_board
 
 _ET = ZoneInfo("America/New_York")
@@ -57,6 +58,7 @@ def find() -> dict[str, Any]:
         "Player and the total": _player_total(games, loaded),
         "First touchdown and anytime": _score(loaded),
     }
+    tally(found, games)
     return {"found": {key: value for key, value in found.items() if value}, "notes": _NOTES}
 
 
@@ -84,6 +86,7 @@ def _load(game: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
 
 
 def _bet(kind: str, rung: str, label: str, odds: int, stake: int, job: str, game: str) -> dict[str, Any]:
+    job = re.sub(rf"\${stake}\.(?=\s|$)", f"${stake} to win ${_cover_profit(odds, stake)}.", job, count=1)
     return {"kind": kind, "rung": rung, "label": label, "odds": odds, "stake": stake, "job": job, "game": game}
 
 
@@ -153,12 +156,23 @@ def _ladders(loaded: list[tuple[dict[str, Any], list[dict[str, Any]]]]) -> list[
 def _cover_profit(odds: int, stake: int) -> str:
     profit = stake * (100 / abs(odds) if odds < 0 else odds / 100)
     shown = round(profit) if abs(profit - round(profit)) < 0.05 else round(profit, 2)
-    return str(int(shown)) if isinstance(shown, float) and shown == int(shown) else str(shown)
+    return str(int(shown)) if shown == int(shown) else f"{shown:.2f}"
+
+
+def _total(game: dict[str, Any]) -> str:
+    return {"NHL": "total goals", "MLB": "total runs"}.get(str(game.get("sport") or ""), "total points")
+
+
+_STAT = {"pts": "points", "reb": "rebounds", "ast": "assists", "blk": "blocks", "stl": "steals"}
 
 
 def _say(leg: dict[str, Any]) -> str:
     text = str(leg.get("label") or leg.get("runner") or "").strip()
-    return text or str(leg.get("market") or "")
+    market = str(leg.get("market") or "")
+    if text and " - " in market and re.search(r"\b(?:Over|Under)\s+\d+(?:\.\d+)?$", text, re.I):
+        stat = re.sub(r"^alt\s+", "", market.split(" - ", 1)[1].strip(), flags=re.I)
+        text = f"{text} {' '.join(_STAT.get(word.lower(), word.lower()) for word in stat.split())}"
+    return text or market
 
 
 def _unders(loaded: list[tuple[dict[str, Any], list[dict[str, Any]]]]) -> list[dict[str, Any]]:
@@ -183,7 +197,7 @@ def _unders(loaded: list[tuple[dict[str, Any], list[dict[str, Any]]]]) -> list[d
                     score = abs(gap - 4) + abs(int(high[1]["odds"]) + 120) / 50
                     stake = _cover(int(high[1]["odds"]), 5)
                     bets = [
-                        _bet("Single", "Higher under", _say(high[1]), int(high[1]["odds"]), stake, f"${stake} on the higher under. Its profit covers the $5 tighter under.", _match(game)),
+                        _bet("Single", "Higher under", _say(high[1]), int(high[1]["odds"]), stake, f"${stake} to win ${_cover_profit(int(high[1]['odds']), stake)} on the higher under. Its profit covers the $5 tighter under.", _match(game)),
                         _bet("Single", "Lower under", _say(low[1]), int(low[1]["odds"]), 5, "The tight line. Both cash only under this number. $5.", _match(game)),
                     ]
                     picked.append((score, _stack(_match(game), bets)))
@@ -394,13 +408,13 @@ def _side_total(games: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if margin >= 6.5:
             bets = [
                 _bet("Single", "The favorite", f"{team} {number:g}", odds, 5, "A lead runs the clock. $5.", _match(game)),
-                _bet("Single", "The under", f"Under {line:g}", under, 5, "The clock helps this number. $5.", _match(game)),
+                _bet("Single", "The under", f"Under {line:g} {_total(game)}", under, 5, "The clock helps this number. $5.", _match(game)),
             ]
             picked.append((-margin, _stack(_match(game), bets)))
         elif margin <= 3:
             bets = [
                 _bet("Single", "The dog", f"{dog} {dog_number:g}", dog_odds, 5, "A close game stays live. $5.", _match(game)),
-                _bet("Single", "The over", f"Over {line:g}", over, 5, "Both teams keep throwing. $5.", _match(game)),
+                _bet("Single", "The over", f"Over {line:g} {_total(game)}", over, 5, "Both teams keep throwing. $5.", _match(game)),
             ]
             picked.append((margin, _stack(_match(game), bets)))
     picked.sort(key=lambda item: item[0])
@@ -418,7 +432,7 @@ def _player_total(games: list[dict[str, Any]], loaded: list[tuple[dict[str, Any]
         for catch in [leg for leg in legs if _full(leg, "Receiving Yds")]:
             bets = [
                 _bet("Single", "The receiver", _say(catch), int(catch["odds"]), 5, "The catches need points. $5.", _match(game)),
-                _bet("Single", "The over", f"Over {line:g}", over, 5, "The game script that gives him those plays. $5.", _match(game)),
+                _bet("Single", "The over", f"Over {line:g} {_total(game)}", over, 5, "The game script that gives him those plays. $5.", _match(game)),
             ]
             picked.append((abs(int(catch["odds"]) + 110), _stack(_match(game), bets)))
     picked.sort(key=lambda item: item[0])
