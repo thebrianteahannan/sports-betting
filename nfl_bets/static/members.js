@@ -28,7 +28,7 @@ function birdBrag() {
     const rates = [7, 30].map((span) => ({ span: span === 7 ? "week" : "month", pct: parseFloat(recPct(done, Date.now() - 86400000 * span)), n: recPct.n })).filter((row) => row.n >= 5 && row.pct >= 75).sort((a, b) => b.pct - a.pct);
     return rates[0] && !parked.has(part ? `${id}|${part}` : id) ? [{ id, name, part, span: rates[0].span, pct: rates[0].pct }] : [];
   }).sort((a, b) => b.pct - a.pct);
-  if (!picks.length) { window.birdHot = null; return ""; }
+  if (!picks.length || !(window.state && window.state.admin)) { window.birdHot = null; return ""; }
   const hot = picks[window.birdTurn || 0]; window.birdTurn = ((window.birdTurn || 0) + 1) % picks.length;
   return (window.birdHot = Object.assign(hot, { text: `Not to brag, but ${hot.name} hit ${hot.pct.toFixed(1)}% this ${hot.span}.` })).text;
 }
@@ -178,7 +178,7 @@ function birdGreet() {
   if (!called) return birdAskName();
   if (!window.memberBorn) return birdAskBorn(); if (!window.memberState) return birdAskState(); if (birdAskBook() || birdLaw()) return;
   window.asking = false;
-  birdSay(`Hey, ${called}. How are we going to find our favorite bet for today?`, [["menu", "Experimental Strategy", "pick"], ["menu", "Stack strategies", "stack"], ["menu", "How's My Bet", "how"], ["menu", "Search Player, Team or Game", "find"], ["quiz", "Build Your Own Bet"]]);
+  birdSay(`Hey, ${called}. How are we going to find our favorite bet for today?`, [["menu", "Parlay strategies", "stack"], ["menu", "Search Player, Team or Game", "find"], ["quiz", "Build Your Own Bet"]]);
 }
 
 function birdLaw() {

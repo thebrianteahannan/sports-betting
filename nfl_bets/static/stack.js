@@ -165,20 +165,20 @@ function paintStack() {
   board.className = "rec-board";
   board.dataset.page = "stack";
   const title = document.createElement("h2");
-  title.textContent = "Stack strategies.";
+  title.textContent = "Parlay strategies.";
   board.append(title);
   const filters = document.createElement("div");
-  filters.className = "rec-filters";
+  filters.className = "rec-filters"; if (window.stackOpen) filters.classList.add("open");
   window.stackWhen = window.stackWhen || "today";
   window.stackLeagues = window.stackLeagues || [];
   window.stackGames = window.stackGames || [];
   window.stackTeams = window.stackTeams || [];
   window.stackPlayers = window.stackPlayers || [];
-  filters.innerHTML = `<div class="row keep stack-when"><span class="name">When</span><button type="button" data-stack-when="today">Today <span class="n"></span></button><button type="button" data-stack-when="week">This week <span class="n"></span></button></div><div class="row keep stack-league" hidden><span class="name">League</span></div><div class="row keep stack-game" hidden><span class="name">Game</span></div><div class="row keep stack-team" hidden><span class="name">Team</span></div><div class="row keep stack-player" hidden><span class="name">Player</span></div><div class="row keep"><button type="button" class="stack-fit-go">With a bet <span class="n"></span></button><button type="button" class="stack-beat-go">Beats the price <span class="n"></span></button></div><p class="stack-none quiet" hidden>None of the current FanDuel prices fit a stack.</p>`;
+  filters.innerHTML = `<div class="rec-head"><span class="rec-tools"><button type="button" class="rec-fold" data-stack-fold>Filters</button></span></div><div class="row stack-when"><span class="name">When</span><button type="button" data-stack-when="today">Today <span class="n"></span></button><button type="button" data-stack-when="week">This week <span class="n"></span></button></div><div class="row stack-league" hidden><span class="name">League</span></div><div class="row stack-game" hidden><span class="name">Game</span></div><div class="row stack-team" hidden><span class="name">Team</span></div><div class="row stack-player" hidden><span class="name">Player</span></div><div class="row"><button type="button" class="stack-fit-go">With a bet <span class="n"></span></button><button type="button" class="stack-beat-go">Beats the price <span class="n"></span></button></div><p class="stack-none quiet" hidden>None of the current FanDuel prices fit a stack.</p>`;
   filters.addEventListener("click", (event) => {
     const button = event.target.closest("button");
     if (!button) return;
-    event.stopPropagation();
+    event.stopPropagation(); if (button.dataset.stackFold != null) { window.stackOpen = !window.stackOpen; filters.classList.toggle("open", window.stackOpen); return; }
     if (button.classList.contains("stack-fit-go")) window.stackFit = !window.stackFit;
     else if (button.classList.contains("stack-beat-go")) { window.stackBeats = !window.stackBeats; if (window.stackBeats) window.stackFit = true; }
     else if (button.dataset.stackWhen) window.stackWhen = button.dataset.stackWhen;
@@ -263,7 +263,7 @@ function stackChips(board) {
   if (!row || !sets.length) return;
   const names = [...new Set(sets.flatMap((set) => String(set.dataset.sport || "").split("|")).filter(Boolean))].sort();
   window.stackLeagues = leagues.filter((name) => names.includes(name));
-  row.hidden = names.length < 2;
+  row.hidden = names.length < 2; row.style.display = row.hidden ? "none" : "";
   row.querySelectorAll("button").forEach((node) => node.remove());
   [["", "All leagues"]].concat(names.map((name) => [name, name])).forEach(([value, label]) => {
     const button = document.createElement("button");
@@ -280,7 +280,7 @@ function stackChips(board) {
   const open = sets.filter((set) => stackKeep(set, when, window.stackLeagues));
   const matches = [...new Set(open.flatMap((set) => String(set.dataset.games || "").split("|")).filter(Boolean))].sort((a, b) => ((order.indexOf(a) + 1) || 1e9) - ((order.indexOf(b) + 1) || 1e9) || a.localeCompare(b));
   window.stackGames = (window.stackGames || []).filter((name) => matches.includes(name));
-  gameRow.hidden = matches.length < 2;
+  gameRow.hidden = matches.length < 2; gameRow.style.display = gameRow.hidden ? "none" : "";
   gameRow.querySelectorAll("button").forEach((node) => node.remove());
   [["", "All games"]].concat(matches.map((name) => [name, name])).forEach(([value, label]) => {
     const button = document.createElement("button");
@@ -296,13 +296,13 @@ function stackChips(board) {
     const sides = [...new Set((window.stackGames.length ? window.stackGames : matches).flatMap((match) => match.split(" @ ")))];
     window.stackTeams = (window.stackTeams || []).filter((name) => sides.includes(name));
     stackRosters(board, sides);
-    teamRow.hidden = sides.length < 2;
+    teamRow.hidden = sides.length < 2; teamRow.style.display = teamRow.hidden ? "none" : "";
     stackRow(teamRow, "stackTeam", "All teams", sides, window.stackTeams, (value) => !value ? bets(inGames) : stackAsked.get(value) === "done" ? bets(inGames.filter((set) => stackKeep(set, when, [], [], [value]))) : "");
     const picked = window.stackTeams.length ? window.stackTeams : window.stackGames.length ? sides : [];
     const inTeams = inGames.filter((set) => stackKeep(set, when, [], [], window.stackTeams));
     const names = picked.length ? [...new Set(inTeams.flatMap(stackWho))].filter((name) => picked.includes(stackTeamOf.get(name))).sort() : [];
     if (names.length || !picked.length) window.stackPlayers = (window.stackPlayers || []).filter((name) => names.includes(name));
-    playerRow.hidden = !names.length;
+    playerRow.hidden = !names.length; playerRow.style.display = playerRow.hidden ? "none" : "";
     stackRow(playerRow, "stackPlayer", "All players", names, window.stackPlayers, (value) => bets(inTeams.filter((set) => !value || stackKeep(set, when, [], [], [], [value]))));
   }
   paintWhen();

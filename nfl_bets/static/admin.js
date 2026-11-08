@@ -267,6 +267,8 @@ function bindAdmin() {
   tabs.addEventListener("click", (event) => {
     const button = event.target.closest("[data-admin-tab]");
     if (button) {
+      if (button.dataset.adminTab === "experimental") { if (window.birdMenu) birdMenu("bets"); return; }
+      if (button.dataset.adminTab === "hows") { if (window.birdMenu) birdMenu("how"); return; }
       showAdminTab(button.dataset.adminTab);
       if (button.dataset.adminTab === "built" || button.dataset.adminTab === "asks" || button.dataset.adminTab === "habits" || button.dataset.adminTab === "rates") loadAdmin();
       if (button.dataset.adminTab === "strategy") paintStrategies();

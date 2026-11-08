@@ -211,9 +211,9 @@ function fillRoster(roster, team, list, hits, people) {
     roster.replaceChildren(summary, names);
     roster.hidden = false;
     const byName = new Map();
-    (people || []).forEach((item) => { if (item.kind === "player" && (item.bets || []).length) byName.set(plainName(item.name), item); });
+    const bare = (name) => plainName(name).replace(/ (jr|sr|ii|iii|iv|v)$/, ""); (people || []).forEach((item) => { if (item.kind === "player" && (item.bets || []).length) byName.set(bare(item.name), item); });
     const lined = [], quiet = [], folded = [];
-    rows.forEach((row) => { const name = row && row.name || row; const hit = byName.get(plainName(name)); if (hit) lined.push(hit); else if (row && row.fold) folded.push(name); else quiet.push(name); });
+    rows.forEach((row) => { const name = row && row.name || row; const hit = byName.get(bare(name)); if (hit) lined.push(hit); else if (row && row.fold) folded.push(name); else quiet.push(name); });
     const withProps = lined.length === 1 ? "1 has props" : `${lined.length} have props`;
     const kick = team.bets && team.bets[0] && team.bets[0].kickoff, day = kick ? new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(Date.parse(kick)) : "", club = plainName(String(team.name || "").replace(/\(.*?\)/g, "")), nick = club.split(" ").pop(), absent = new Set((report.out || []).filter((row) => { const side = plainName(row.team); return (side === club || (nick.length > 3 && side.endsWith(` ${nick}`))) && (!row.back || !day || day < row.back); }).map((row) => plainName(row.player)));
     summary.textContent = `${rows.length} players, ${withProps}${absent.size ? `, ${absent.size} out` : ""}`;
