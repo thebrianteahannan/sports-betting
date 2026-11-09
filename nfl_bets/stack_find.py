@@ -12,6 +12,7 @@ from nfl_bets.chalk import _legs
 from nfl_bets.hedge import american_decimal
 from nfl_bets.stack_read import tally
 from nfl_bets.stack_sgp import build as yardage, scorers
+from nfl_bets.stack_logs import seed
 from nfl_bets.store import load_board
 
 _ET = ZoneInfo("America/New_York")
@@ -39,13 +40,14 @@ _NOTES = {
 }
 
 
-def find() -> dict[str, Any]:
-    games = _games()
+def find(board: dict[str, Any] | None = None) -> dict[str, Any]:
+    games = _games(board)
     loaded = []
     with ThreadPoolExecutor(max_workers=6) as pool:
         for game, legs in pool.map(_load, games):
             if legs:
                 loaded.append((game, legs))
+    seed(loaded)
     found = {
         "Prop ladder": _ladders(loaded),
         "Overlapping under": _unders(loaded),
@@ -63,6 +65,9 @@ def find() -> dict[str, Any]:
         "Yardage parlay, 85% legs": yardage(games, loaded, floor=0.85),
         "Yardage parlay, 90% legs": yardage(games, loaded, floor=0.9),
         "Yardage parlay, 75% legs": yardage(games, loaded, floor=0.75),
+        "Receptions parlay, 90% legs": yardage(games, loaded, floor=0.9, catches="Receptions"),
+        "Yardage parlay, 3 legs at 90%": yardage(games, loaded, floor=0.9, need=3),
+        "Yardage parlay, all 4 at 90%": yardage(games, loaded, floor=0.9, need=4),
         "Two touchdowns, one game": scorers(loaded),
         "Three touchdowns, one game": scorers(loaded, 3),
         "Four touchdowns, one game": scorers(loaded, 4),
@@ -72,10 +77,10 @@ def find() -> dict[str, Any]:
     return {"found": {key: value for key, value in found.items() if value}, "notes": _NOTES}
 
 
-def _games() -> list[dict[str, Any]]:
+def _games(board: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     now = datetime.now(_ET)
     rows = []
-    for game in load_board().get("games") or []:
+    for game in (board or load_board()).get("games") or []:
         if not isinstance(game, dict):
             continue
         try:
@@ -473,7 +478,9 @@ def _score(loaded: list[tuple[dict[str, Any], list[dict[str, Any]]]]) -> list[di
 
 def main() -> None:
     import json
-    print(json.dumps(find()))
+    import sys
+    raw = "" if sys.stdin.isatty() else sys.stdin.read()
+    print(json.dumps(find(json.loads(raw) if raw.strip() else None)))
 
 
 if __name__ == "__main__":

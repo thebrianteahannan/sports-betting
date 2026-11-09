@@ -360,7 +360,7 @@ function applyStackFit(board) {
       if (empty) empty.style.display = shown ? "none" : "";
     }
     if (block.dataset.fit === "1") live += 1;
-    const nflOnly = ["Key-number middle", "Teaser", "Wong teaser", "Pleaser", "Buying the hook", "First touchdown and anytime", "Same-game yardage parlay", "Yardage and the spread", "Two touchdowns, one game", "Three touchdowns, one game", "Four touchdowns, one game", "Five touchdowns, one game"].includes(block.dataset.name) || /^Yardage parlay, /.test(block.dataset.name);
+    const nflOnly = ["Key-number middle", "Teaser", "Wong teaser", "Pleaser", "Buying the hook", "First touchdown and anytime", "Same-game yardage parlay", "Yardage and the spread", "Two touchdowns, one game", "Three touchdowns, one game", "Four touchdowns, one game", "Five touchdowns, one game"].includes(block.dataset.name) || /^(Yardage|Receptions) parlay, /.test(block.dataset.name);
     block.hidden = (on && block.dataset.fit !== "1") || (nflOnly && ((leagues.length > 0 && !leagues.includes("NFL")) || ((games.length > 0 || teams.length > 0) && !gameSports.includes("NFL"))));
     block.style.display = block.hidden ? "none" : "";
   });

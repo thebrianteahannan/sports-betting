@@ -230,6 +230,7 @@ def _games(board: dict[str, Any]) -> list[dict[str, str]]:
             "sport": str(game.get("sport") or ""),
             "match": str(game.get("match") or ""),
             "kickoff": str(game.get("kickoff") or ""),
+            **{key: game[key] for key in ("awayName", "homeName", "spread", "total") if game.get(key)},
         })
     return rows
 

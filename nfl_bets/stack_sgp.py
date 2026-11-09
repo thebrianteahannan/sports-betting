@@ -11,20 +11,21 @@ from nfl_bets.stack_read import _count, _pack
 from nfl_bets.stack_team import count as team_count, load as team_load
 from nfl_bets.sway import _cache
 
-_STATS = {"Alt Passing Yds": "Passing yards", "Alt Receiving Yds": "Receiving yards", "Alt Rushing Yds": "Rushing yards"}
+_STATS = {"Alt Passing Yds": "Passing yards", "Alt Receiving Yds": "Receiving yards", "Alt Receptions": "Receptions", "Alt Rushing Yds": "Rushing yards"}
 _JOBS = {
     "Passing yards": "The throws his receiver needs.",
     "Receiving yards": "Catches on those throws.",
+    "Receptions": "The catches those throws find.",
     "Rushing yards": "The yards on the ground.",
     "The over": "The points those yards turn into.",
     "Anytime touchdown": "The carries that end in the end zone.",
     "The spread": "The result those yards build.",
 }
-_FLOOR = {"Passing yards": 150, "Receiving yards": 20, "Rushing yards": 20}
+_FLOOR = {"Passing yards": 150, "Receiving yards": 20, "Receptions": 3, "Rushing yards": 20}
 _SHARE = 0.8
 
 
-def build(games: list[dict[str, Any]], loaded: list[tuple[dict[str, Any], list[dict[str, Any]]]], end: str = "over", floor: float = 0.0) -> list[dict[str, Any]]:
+def build(games: list[dict[str, Any]], loaded: list[tuple[dict[str, Any], list[dict[str, Any]]]], end: str = "over", floor: float = 0.0, catches: str = "Receiving yards", need: int = 2) -> list[dict[str, Any]]:
     nfl = [(game, legs) for game, legs in loaded if str(game.get("sport") or "") == "NFL"]
     if not nfl:
         return []
@@ -62,7 +63,7 @@ def build(games: list[dict[str, Any]], loaded: list[tuple[dict[str, Any], list[d
             return str(pack.get("team") or "")
 
         def side(stat: str, team: str) -> list[tuple[str, dict[str, Any], dict[str, Any]]]:
-            rows = [(stat, leg, read) for (kind, who), (leg, read) in best.items() if kind == stat and team_of(who) == team]
+            rows = [(stat, leg, read) for (kind, who), (leg, read) in best.items() if kind == stat and team_of(who) == team and (need < 3 or implied_prob(float(leg["odds"])) >= floor)]
             return sorted(rows, key=lambda row: row[2]["hits"] / row[2]["games"] - implied_prob(float(row[1]["odds"])), reverse=True)
 
         over = None
@@ -70,11 +71,12 @@ def build(games: list[dict[str, Any]], loaded: list[tuple[dict[str, Any], list[d
             runner = str(leg.get("runner") or "")
             line = re.search(r"Over \((\d+(?:\.\d+)?)\)", runner)
             odds = int(leg["odds"])
-            if str(leg.get("market") or "") != "Alternate Total Points" or not line or not -450 <= odds <= -150:
+            low = need >= 4 and odds >= -2500 and implied_prob(float(odds)) >= floor
+            if str(leg.get("market") or "") != "Alternate Total Points" or not line or not (-450 <= odds <= -150 or low):
                 continue
             label = f"Over {float(line.group(1)):g} total points"
             read = team_count(label, game, logs)
-            if read and read["hits"] >= _SHARE * read["games"] and (over is None or odds > int(over[1]["odds"])):
+            if read and read["hits"] >= _SHARE * read["games"] and (need < 4 or low) and (over is None or odds > int(over[1]["odds"])):
                 over = ("The over", {**leg, "label": label}, read)
 
         def who_of(row: tuple[str, dict[str, Any], dict[str, Any]]) -> str:
@@ -111,13 +113,13 @@ def build(games: list[dict[str, Any]], loaded: list[tuple[dict[str, Any], list[d
             if not arms or (end == "spread" and not spread):
                 continue
             runs = (side("Rushing yards", team)[:1] + side("Rushing yards", other)[:1])[:2]
-            for catch in side("Receiving yards", team)[:2]:
+            for catch in side(catches, team)[:2]:
                 for run in runs:
                     if who_of(catch) == who_of(run):
                         continue
                     last = spread or over or score(who_of(run))
                     rows = arms + [catch, run] + ([last] if last else [])
-                    if floor and sum(1 for _stat, leg, _read in rows if implied_prob(float(leg["odds"])) >= floor) < 2:
+                    if floor and (sum(1 for _stat, leg, _read in rows if implied_prob(float(leg["odds"])) >= floor) < need or (need > 2 and len(rows) < 4)):
                         continue
                     edge = sum(read["hits"] / read["games"] - implied_prob(float(leg["odds"])) for _stat, leg, read in rows)
                     bets = [

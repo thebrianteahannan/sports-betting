@@ -252,10 +252,39 @@ function stackTicket(set, stack) {
   share.dataset.shareId = String((window.recTickets = window.recTickets || []).push({ ticket, name: stackName(stack) }) - 1);
   share.setAttribute("aria-label", "Share this bet");
   share.style.cssText = "position: absolute; top: 0.42rem; right: 0.42rem; z-index: 2;";
+  const build = document.createElement("button");
+  build.type = "button";
+  build.className = "stack-build";
+  build.textContent = "Build it";
+  build.setAttribute("aria-label", "Load these legs into the parlay you are building");
+  build.style.cssText = "position: absolute; top: 0.42rem; right: 2.9rem; z-index: 2; width: auto; min-height: 0; margin: 0; padding: 0.3rem 0.65rem; border: 1px solid #3dff6e; border-radius: 8px; background: transparent; color: #3dff6e; font-size: 0.82rem; font-weight: 800; cursor: pointer;";
+  build.addEventListener("click", (event) => { event.stopPropagation(); stackBuild(stack); });
   set.style.position = "relative";
   const title = set.querySelector(".stack-set-name");
-  if (title) { title.style.paddingRight = "2.2rem"; title.after(line); } else set.prepend(line);
-  set.append(share);
+  if (title) { title.style.paddingRight = "7.6rem"; title.after(line); } else set.prepend(line);
+  set.append(build, share);
+}
+
+function stackBuild(stack, tries = 0) {
+  if (typeof parlayLeg === "undefined") return;
+  const board = [...document.querySelectorAll(".find-board")].find((node) => node.querySelector(".find-tray"));
+  if (!board && window.paintFind && !tries) paintFind();
+  if ((!board || !(board.people || []).length) && tries < 40) { setTimeout(() => stackBuild(stack, tries + 1), 200); return; }
+  const people = (board && board.people) || [];
+  const games = (window.state && state.board && state.board.games) || [];
+  parlayLeg.clear();
+  parlayPick.clear();
+  (stack.bets || []).slice(0, 8).forEach((leg) => {
+    const label = String(leg.label || ""), low = label.toLowerCase(), match = leg.game || stack.game || "";
+    const person = people.filter((row) => row.name && low.startsWith(String(row.name).toLowerCase())).sort((a, b) => b.name.length - a.name.length)[0];
+    const game = games.find((row) => row.match === match) || {};
+    const bet = (person && (person.bets || []).find((row) => String(row.label || "").toLowerCase() === low)) || { label, odds: Number(leg.odds), market: leg.rung || leg.kind || "", match, sport: game.sport || "", kickoff: game.kickoff || "" };
+    parlayLeg.set(parlayKey(bet), bet);
+    if (person && label.startsWith(person.name) && parlayPick.size < 8) parlayPick.set(person.key, person);
+  });
+  paintParlay();
+  const tray = document.querySelector(".find-tray:not([hidden])");
+  if (tray) tray.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 STACKS.push(["Same-game yardage parlay", "One ticket. A quarterback, his receiver, and a back, each on a line he clears most weeks, plus the over or a touchdown.", [
@@ -319,6 +348,48 @@ window.STACK_BUILD.push("Same-game yardage parlay", "Yardage and the spread", "T
   window.STACK_BUILD.push(name);
 });
 
+STACKS.push(["Receptions parlay, 90% legs", "One ticket. A quarterback's passing yards, his receiver's catches, and a back's rushing yards, with at least two of them priced 90% or higher, plus the over or a touchdown.", [
+  ["Same-game parlay", "Passing yards", "The quarterback's alt line he cleared in 8 of his last 10, priced 90% or higher when it can be."],
+  ["Same-game parlay", "Receptions", "One of his receivers, on 3 or more catches he reached in 8 of his last 10."],
+  ["Same-game parlay", "Rushing yards", "A back from either team, same test."],
+  ["Same-game parlay", "The over or a touchdown", "In only when the history beats FanDuel's price."],
+]]);
+STACK_RANK["Receptions parlay, 90% legs"] = [40, "A catch counts the same at 2 yards or 40. The receiver needs the targets, not the big play."];
+STACK_MORE["Receptions parlay, 90% legs"] = [
+  "ST-38 with the receiver on catches instead of yards. At least two of the legs are priced 90% or higher on FanDuel. Every line is one the player reached in at least 8 of his last 10, and the catch count starts at 3.",
+  "Example: three legs at -900 multiply to +37. $10 pays back $13.72. One short leg and the $10 is gone.",
+  "+37 needs to cash 72.9% of the time.",
+  "The back's touchdown goes in when his recent scoring beats FanDuel's price. That leg is where most of the payout comes from.",
+  "FanDuel's same-game price is shorter than the multiplied price on this card. Build it on FanDuel and take that number.",
+];
+STACKS.push(["Yardage parlay, 3 legs at 90%", "One ticket. A quarterback, his receiver, and a back, all three priced 90% or higher, plus the over or a touchdown.", [
+  ["Same-game parlay", "Passing yards", "The quarterback's alt line priced 90% or higher, one he cleared in 8 of his last 10."],
+  ["Same-game parlay", "Receiving yards", "One of his receivers, same test."],
+  ["Same-game parlay", "Rushing yards", "A back from either team, same test."],
+  ["Same-game parlay", "The over or a touchdown", "In only when the history beats FanDuel's price."],
+]]);
+STACK_RANK["Yardage parlay, 3 legs at 90%"] = [41, "Three legs at 90% land together about 73% of the time. The fourth leg is the payout."];
+STACK_MORE["Yardage parlay, 3 legs at 90%"] = [
+  "Every yardage leg is priced 90% or higher on FanDuel and is a line the player cleared in at least 8 of his last 10. The fourth leg is the over or the back's touchdown.",
+  "Example: three legs at -900 and a touchdown at +105 multiply to +181. $10 pays back $28.12. One short leg and the $10 is gone.",
+  "+181 needs to cash 35.6% of the time. The three short legs land together about 73%, so the touchdown has to land about 49% of the time with them.",
+  "FanDuel's same-game price is shorter than the multiplied price on this card. Build it on FanDuel and take that number.",
+];
+STACKS.push(["Yardage parlay, all 4 at 90%", "One ticket. A quarterback, his receiver, a back, and a low over, every leg priced 90% or higher.", [
+  ["Same-game parlay", "Passing yards", "The quarterback's alt line priced 90% or higher, one he cleared in 8 of his last 10."],
+  ["Same-game parlay", "Receiving yards", "One of his receivers, same test."],
+  ["Same-game parlay", "Rushing yards", "A back from either team, same test."],
+  ["Same-game parlay", "The over", "A low alt total priced 90% or higher that both teams' recent games cleared 8 times in 10."],
+]]);
+STACK_RANK["Yardage parlay, all 4 at 90%"] = [42, "Four legs at 90% land together about 66% of the time. +52 needs 65.6%, so every leg has to clear more often than its price."];
+STACK_MORE["Yardage parlay, all 4 at 90%"] = [
+  "Every leg is priced 90% or higher on FanDuel. The three yardage lines are ones the players cleared in at least 8 of their last 10. The fourth is a low alternate total that both teams' recent games cleared 8 times in 10.",
+  "Example: four legs at -900 multiply to +52. $10 pays back $15.24. One short leg and the $10 is gone.",
+  "+52 needs to cash 65.6% of the time. Four legs at exactly 90% land together 65.6%, so the profit comes from legs that clear more often than their price.",
+  "FanDuel's same-game price is shorter than the multiplied price on this card. Build it on FanDuel and take that number.",
+];
+window.STACK_BUILD.push("Receptions parlay, 90% legs", "Yardage parlay, 3 legs at 90%", "Yardage parlay, all 4 at 90%");
+
 function stackOrder(board) {
   const sort = window.stackSort || "rank";
   board.querySelectorAll("[data-stack-sort]").forEach((button) => button.classList.toggle("on", button.dataset.stackSort === sort));
@@ -332,4 +403,5 @@ function stackOrder(board) {
 
 window.stackMore = stackMore;
 window.stackTicket = stackTicket;
+window.stackBuild = stackBuild;
 window.stackOrder = stackOrder;
