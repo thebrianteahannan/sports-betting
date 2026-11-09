@@ -316,9 +316,9 @@ function bootDesk() {
   if (menu) menu.addEventListener("click", (event) => {
     event.stopPropagation(); if (menu.classList.contains("bird-has") && event.clientX < menu.getBoundingClientRect().left && /GAMBLER|ruin people's lives/i.test(menu.dataset.say || "")) { openHelp(); return; }
     if (window.goFull) goFull();
-    if (menu.classList.contains("bird-has") && event.clientX < menu.getBoundingClientRect().left) { if (window.matchMedia("(hover: none), (pointer: coarse)").matches) menu.classList.toggle("say-open"); return; }
+    if (menu.classList.contains("bird-has") && event.clientX < menu.getBoundingClientRect().left) { const touch = window.matchMedia("(hover: none), (pointer: coarse)").matches; if (birdPending && birdPending[0] === birdStack.text && (!touch || menu.classList.contains("say-open")) && typeof trayStackOpen === "function") { birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Recommended bets"); trayStackOpen(birdStack.pick); return; } if (touch) menu.classList.toggle("say-open"); return; }
     if (document.querySelector("#desk-glass-in .rec-board") && !document.getElementById("desk").classList.contains("bird-on") && !document.getElementById("desk").classList.contains("solo") && window.askStart) { birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); askStart(""); return; }
-    if (birdPending) { const pending = birdPending; birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Recommended bets"); if (!(window.birdBragGo && birdBragGo(pending[0]))) birdSay(pending[0], pending[1]); return; } if (window.birdGreet) birdGreet();
+    if (birdPending) { const pending = birdPending; birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Recommended bets"); if (pending[0] === birdStack.text && typeof trayStackOpen === "function") trayStackOpen(birdStack.pick); else if (!(window.birdBragGo && birdBragGo(pending[0]))) birdSay(pending[0], pending[1]); return; } if (window.birdGreet) birdGreet();
   });
   document.addEventListener("click", (event) => {
     if (menu && !event.target.closest("#desk-menu")) menu.classList.remove("say-open");
@@ -341,14 +341,14 @@ function bootDesk() {
 }
 const BIRD_WAIT = 18000;
 const BIRD_NUDGES = [
-  ["Hey, want to find a bet you want to make?", [["menu", "Build A Bet", "find"]]],
-  ["Hey, try a safer bet. Five dollars wins about $2.50. It still loses sometimes. It just loses less often than the ones that pay a lot.", [["quiz", "Try Safe Bet", "safe"]]],
-  ["Hey, a safer bet is a smaller win. A bigger payout is more fun to talk about with friends, and it loses more often.", [["quiz", "Build a higher payout", "payout"]]],
-  ["Best Bets of the Week puts each pick on a different day. Want a look?", [["week", "Best Bets of the Week"]]],
-  ["Tonight's bet is ready. Want a look?", [["today", "Show tonight's bet"]]],
-  ["", [["menu", "Experimental Strategy", "pick"]], "brag"],
+  ...Array(6).fill(["", [], "stack"]),
   ["Gambling can really ruin people's lives. Only bet money you can afford to lose. If you need help, call 1‑800‑GAMBLER.", []],
 ];
+function birdStack() {
+  const names = typeof STACK_RANK === "undefined" ? [] : (window.STACK_BUILD || []).filter((name) => STACK_RANK[name]).sort((a, b) => STACK_RANK[a][0] - STACK_RANK[b][0]);
+  if (!names.length) return ""; birdStack.pick = names[(birdStack.turn = (birdStack.turn ?? -1) + 1) % names.length];
+  return (birdStack.text = `Hey, try this stack: ${birdStack.pick}. ${STACK_RANK[birdStack.pick][1]}`);
+}
 let birdTimer = 0; let birdNudge = 0; let birdPending = null;
 let birdOn = false;
 let birdHeld = false;
@@ -391,7 +391,7 @@ function birdBump() {
     if (document.body.classList.contains("needs-member") || window.asking) return;
     const nudge = BIRD_NUDGES[birdNudge % BIRD_NUDGES.length];
     birdNudge += 1;
-    const text = nudge[2] === "brag" && window.birdBrag ? birdBrag() : nudge[0];
+    const text = nudge[2] === "stack" ? birdStack() : nudge[2] === "brag" && window.birdBrag ? birdBrag() : nudge[0];
     if (text && /ruin people's lives/i.test(text) && document.getElementById("desk").classList.contains("bird-on")) { birdSay(text, []); setTimeout(() => { const line = document.getElementById("bird-line"); if (line && /ruin people's lives/i.test(line.textContent || "") && !window.asking && window.birdGreet) birdGreet(); }, 8000); } else if (text) { birdPending = [text, nudge[1]]; const menu = document.getElementById("desk-menu"); if (menu) { menu.classList.add("bird-has"); menu.classList.remove("say-open"); menu.classList.toggle("bird-brag", nudge[2] === "brag"); menu.dataset.say = text; menu.setAttribute("aria-label", "Parlay has something to say"); } }
     birdBump();
   }, BIRD_WAIT);
