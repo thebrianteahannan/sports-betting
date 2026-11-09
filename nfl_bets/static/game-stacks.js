@@ -31,7 +31,7 @@ function paintGameStacks(holder, game, who = "") {
       .filter((row) => row.stacks.length)
       .sort((a, b) => a.rank[0] - b.rank[0]);
     const wait = box.querySelector(".quiet");
-    if (!rows.length) { wait.textContent = who ? `None of the current FanDuel prices fit a stack with ${who}.` : "None of the current FanDuel prices fit a stack in this game."; return; }
+    if (!rows.length) { wait.textContent = data && data.error && window.state && state.admin ? data.error : who ? `None of the current FanDuel prices fit a stack with ${who}.` : "None of the current FanDuel prices fit a stack in this game."; return; }
     wait.remove();
     const board = document.createElement("div");
     board.className = "find-stack-list";

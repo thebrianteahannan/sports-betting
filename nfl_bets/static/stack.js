@@ -419,7 +419,7 @@ function fillStacks(board) {
     .then((data) => {
       const wait = board.querySelector(".bet-load");
       if (wait) wait.remove();
-      if (!board.isConnected || !data) return;
+      if (!board.isConnected || !data) return; if (data.error && window.state && state.admin) board.insertAdjacentHTML("afterbegin", `<p class="quiet" style="color: #ff8a8a">${esc(data.error)}</p>`);
       const games = new Map((((window.state && state.board && state.board.games) || [])).map((game) => [game.match, game]));
       const today = recDay(Date.now());
       const end = recDay(Date.now() + 7 * 86400000);
