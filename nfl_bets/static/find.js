@@ -493,7 +493,7 @@ function markFind(list, name, bets) {
     const filtering = typeof kindOn === "function" && kindOn(list); if (!filtering) list.classList.add("find-only-on"); button.textContent = filtering ? "Show those" : "Show all";
     button.addEventListener("click", () => { const on = list.classList.toggle("find-only-on"); button.textContent = on ? "Show all" : "Show those"; });
     if (heading) heading.append(button); if (shared.length) { const once = document.createElement("p"); once.className = "find-dive"; once.textContent = shared.join(" · "); note.after(once); }
-    marked.concat(rest).forEach((row) => list.append(row));
+    marked.concat(rest).forEach((row) => list.append(row)); if (window.sortFind) sortFind(list);
   }).catch(() => { if (wait.isConnected) wait.remove(); if (board && !board.querySelector(".bet-load")) board.classList.remove("find-wait"); });
 }
 

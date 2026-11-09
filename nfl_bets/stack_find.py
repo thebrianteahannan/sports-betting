@@ -334,9 +334,8 @@ def _dutch(loaded: list[tuple[dict[str, Any], list[dict[str, Any]]]]) -> list[di
         raw = [1 / decimal for decimal in decimals]
         scale = 15 / sum(raw)
         stakes = [max(1, round(part * scale)) for part in raw]
-        pct = round(implied * 100)
         bets = [
-            _bet("Single", f"First touchdown {index + 1}", _say(leg), int(leg["odds"]), stakes[index], f"${stakes[index]}. Any of these pays about the same. The set is {pct}%.", _match(game))
+            _bet("Single", f"First touchdown {index + 1}", _say(leg), int(leg["odds"]), stakes[index], f"${stakes[index]}.", _match(game))
             for index, leg in enumerate(chosen)
         ]
         picked.append((implied, _stack(_match(game), bets)))

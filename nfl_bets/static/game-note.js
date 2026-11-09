@@ -381,4 +381,5 @@
   }
 
   window.noteGame = noteGame;
+  window.noteEspnId = espnId;
 })();

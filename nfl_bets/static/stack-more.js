@@ -235,6 +235,15 @@ function stackMore(history, name) {
 function stackTicket(set, stack) {
   const legs = stack.bets || [];
   if (legs.length < 2 || typeof findRank !== "function" || set.querySelector(".stack-ticket")) return;
+  if (legs.some((leg) => leg.kind === "Parlay" || /^(First touchdown|Anytime$|Higher under|Lower under|Low side|High side|Covers a win|Also covers|The posted number|The hook)/.test(leg.rung || ""))) {
+    const apart = document.createElement("p");
+    apart.className = "stack-ticket";
+    apart.style.cssText = "display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.7rem; margin: 0 0 0.45rem; font-size: 1.02rem; font-weight: 800;";
+    apart.innerHTML = `<i style="font-style: normal; color: #f4f7fb">${legs.length} separate ${legs[0].kind === "Parlay" ? "parlays" : "bets"}</i><i style="font-style: normal; color: #3dff6e">$${legs.reduce((sum, leg) => sum + (Number(leg.stake) || 0), 0)} in play</i>`;
+    const head = set.querySelector(".stack-set-name");
+    if (head) head.after(apart); else set.prepend(apart);
+    return;
+  }
   const dec = legs.reduce((p, leg) => p * (1 + findRank(leg.odds)), 1);
   const price = dec >= 2 ? Math.round((dec - 1) * 100) : Math.round(-100 / (dec - 1));
   const tag = price > 0 ? `+${price}` : String(price);

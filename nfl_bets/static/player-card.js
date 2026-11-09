@@ -9,6 +9,7 @@ function paintCard(list, heading, person) {
   wait.textContent = "Reading the player.";
   box.append(wait);
   heading.after(box);
+  if (window.paintLive) paintLive(list, heading, person);
   fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "card", name: person.name, sport }) }).then((res) => res.json()).then((data) => {
     if (!box.isConnected || !data || (!data.line && !(data.stats || []).length)) { box.remove(); return; }
     box.replaceChildren();

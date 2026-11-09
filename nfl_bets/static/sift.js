@@ -269,7 +269,7 @@ function siftKinds(list, preset) {
     none.hidden = !on || shown > 0;
   };
   if (preset) { const button = [...names.querySelectorAll("button")].find((node) => node.dataset.kind === preset); if (button) { button.classList.add("on"); button.setAttribute("aria-pressed", "true"); } } if ((preset && names.querySelector("button.on")) || oddsInput.value || pctInput.value || cashInput.value) applyKinds();
-  details.append(summary, names, band, none);
+  details.append(summary, names, band, none); if (window.addFindSort) addFindSort(names, list);
   const heading = list.querySelector("h3");
   if (heading) heading.after(details); else list.prepend(details);
 }
