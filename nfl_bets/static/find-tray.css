@@ -98,3 +98,4 @@
 .rec-board > .find-shot-wait[hidden] { display: none; }
 .rec-board > .find-shot-wait button.find-shot-stop, #desk.tv-full #desk-glass .rec-board > .find-shot-wait button.find-shot-stop { flex: none; width: auto; min-height: 0; margin: 0; padding: 0.4rem 0.9rem; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 999px; background: transparent; box-shadow: none; color: #f4f7fb; font-size: 13px; font-weight: 700; text-transform: none; letter-spacing: normal; cursor: pointer; }
 .rec-board > .find-shot-wait button.find-shot-stop:hover { border-color: #ff6b6b; color: #ff6b6b; }
+:is(.rec-board, #choice-result) .find-tray .find-row.find-loose { background-image: linear-gradient(90deg, #9fb3c8 0 5px, #9fb3c833 5px, #9fb3c80f 75%); }

@@ -132,7 +132,7 @@ document.getElementById("desk-full").addEventListener("click", () => {
   window.digOn = false;
   window.asking = false;
   if (window.birdGreet) birdGreet();
-  else birdSay("Hey. How are we going to find our favorite bet for today?", [["menu", "Parlay strategies", "stack"], ["menu", "Search Player, Team or Game", "find"], ["quiz", "Build Your Own Bet"]]);
+  else birdSay("Hey. How are we going to find our favorite bet for today?", [["menu", "Build A Bet", "find"]]);
 });
 const onPhone = () => window.matchMedia("(hover: none), (pointer: coarse)").matches;
 let tvOpen = false;
