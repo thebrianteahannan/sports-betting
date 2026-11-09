@@ -145,15 +145,17 @@ if (typeof paintParlay === "function") {
   paintParlay = function () { paintParlayBase.apply(this, arguments); savePaint(); };
 }
 
-const saveScrollTop = new WeakMap();
+const saveScrollTop = new WeakMap(), saveAutoShut = new Set();
 document.addEventListener("scroll", (event) => {
   const box = event.target === document ? document.scrollingElement : event.target;
   if (!box || !box.querySelector || box.closest(".find-tray")) return;
   const top = box.scrollTop;
+  if (top <= 2) { const shut = [...saveAutoShut].find((node) => node.isConnected && box.contains(node) && node.classList.contains("find-shut")); const fold = shut && shut.querySelector(".find-fold"); if (fold) { saveAutoShut.delete(shut); fold.click(); } }
   if (!saveScrollTop.has(box) || top < saveScrollTop.get(box)) { saveScrollTop.set(box, top); return; }
   if (top - saveScrollTop.get(box) < 60) return;
   saveScrollTop.set(box, top);
   const tray = box.querySelector(".find-tray:not([hidden]):not(.find-shut):not(.find-edit)");
   const fold = tray && tray.querySelector(".find-fold");
-  if (fold) fold.click();
+  if (fold) { fold.click(); saveAutoShut.add(tray); }
 }, true);
+document.addEventListener("click", (event) => { const fold = event.isTrusted && event.target.closest(".find-fold"); if (fold) saveAutoShut.delete(fold.closest(".find-tray")); }, true);
