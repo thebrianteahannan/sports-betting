@@ -22,7 +22,7 @@ const { createAdmins } = require("./desk-admins");
 const { createDocs } = require("./desk-docs"); const { chooseBet } = require("./choose-api");
 const { createPull } = require("./desk-pull");
 const { createNotes } = require("./desk-notes"); const { createLooks } = require("./desk-looks"); const { createShelve } = require("./desk-shelve");
-const { createResearch } = require("./desk-research"); const { propLog } = require("./prop-log"); const { askTerm } = require("./bet-ask"); const { slipList, slipPost } = require("./slip-api"); const { howsPost } = require("./hows-api");
+const { createResearch } = require("./desk-research"); const { propLog } = require("./prop-log"); const { askTerm } = require("./bet-ask"); const { slipList, slipPost } = require("./slip-api"); const { howsPost } = require("./hows-api"); const { parlayList, parlayPut } = require("./parlay-api");
 const ROOT = __dirname;
 loadEnv(path.join(ROOT, ".env"));
 const sendDoc = createDocs(ROOT);
@@ -414,7 +414,7 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, await adminList());
       return;
     }
-    if (req.method === "GET" && (url.pathname === "/api/notes" || url.pathname === "/api/looks" || url.pathname === "/api/slip")) { if (url.pathname === "/api/slip") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await slipList(user, readKey, writeKey)); return; } sendJson(res, url.pathname.endsWith("/looks") ? await lookList() : await noteList()); return; }
+    if (req.method === "GET" && url.pathname === "/api/parlays") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await parlayList(user, readKey)); return; } if (req.method === "GET" && (url.pathname === "/api/notes" || url.pathname === "/api/looks" || url.pathname === "/api/slip")) { if (url.pathname === "/api/slip") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await slipList(user, readKey, writeKey)); return; } sendJson(res, url.pathname.endsWith("/looks") ? await lookList() : await noteList()); return; }
     if (req.method === "GET" && url.pathname === "/api/admin/ignore") {
       const user = await memberFrom(req);
       if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
@@ -461,7 +461,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === "POST") {
       const body = await readBody(req);
-      if (url.pathname === "/api/how") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await howsPost(body)); return; } if (url.pathname === "/api/slip") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await slipPost(user, body, readKey, writeKey)); return; } if (url.pathname === "/api/choose") { const chooser = await memberFrom(req); if (!chooser) { sendJson(res, { error: "Sign in." }, 401); return; } const chosen = await chooseBet(body, await board()); if (chosen && chosen.found && chosen.error && !isAdmin(chooser)) delete chosen.error; sendJson(res, chosen); return; }
+      if (url.pathname === "/api/parlays") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await parlayPut(user, body, readKey, writeKey)); return; } if (url.pathname === "/api/how") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await howsPost(body)); return; } if (url.pathname === "/api/slip") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await slipPost(user, body, readKey, writeKey)); return; } if (url.pathname === "/api/choose") { const chooser = await memberFrom(req); if (!chooser) { sendJson(res, { error: "Sign in." }, 401); return; } const chosen = await chooseBet(body, await board()); if (chosen && chosen.found && chosen.error && !isAdmin(chooser)) delete chosen.error; sendJson(res, chosen); return; }
       if (url.pathname === "/api/bet-ask") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await researchBet(body)); return; } if (url.pathname === "/api/term") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await askTerm(String(body.question || ""))); return; } if (url.pathname === "/api/prop-log") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await propLog(body)); return; }
       if (url.pathname === "/api/admin/pull") {
         const user = await memberFrom(req);

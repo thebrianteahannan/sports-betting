@@ -1,7 +1,8 @@
-/** Saved parlays on the search page. Kept in this browser so several can be built side by side. */
+/** Saved parlays on the search page. Kept on the membership, with this browser as a copy, so several can be built side by side on any device. */
 
-const SAVE_KEY = "pod-saved-parlays";
+const SAVE_KEY = "pod-saved-parlays", SAVE_WHO = "pod-saved-parlays-who";
 window.parlayOpenId = window.parlayOpenId || "";
+let saveSendTimer = 0;
 
 function saveList() {
   try { return JSON.parse(localStorage.getItem(SAVE_KEY) || "[]"); } catch (error) { return []; }
@@ -9,7 +10,33 @@ function saveList() {
 
 function saveStore(list) {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(list.slice(0, 20))); } catch (error) { console.log("[parlay-save] could not store", error); }
+  saveSend(list.slice(0, 20));
 }
+
+function saveSend(list) {
+  if (!window.saveWho) return;
+  clearTimeout(saveSendTimer);
+  saveSendTimer = setTimeout(() => fetch("/api/parlays", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ parlays: list }) }).catch((error) => console.log("[parlay-save] could not send", error)), 300);
+}
+
+async function saveSync() {
+  try {
+    const response = await fetch("/api/parlays");
+    if (!response.ok) return;
+    const { who, parlays } = await response.json();
+    const local = saveList(), owner = localStorage.getItem(SAVE_WHO) || "";
+    window.saveWho = who;
+    localStorage.setItem(SAVE_WHO, who);
+    if (!parlays.length && local.length && (!owner || owner === who)) { saveSend(local); return; }
+    if (JSON.stringify(parlays) === JSON.stringify(local)) return;
+    localStorage.setItem(SAVE_KEY, JSON.stringify(parlays));
+    if (window.parlayOpenId && !parlays.some((row) => row.id === window.parlayOpenId)) window.parlayOpenId = "";
+    if (document.querySelector(".find-board") && typeof paintParlay === "function") paintParlay();
+  } catch (error) { console.log("[parlay-save] could not load", error); }
+}
+
+const saveWait = setInterval(() => { if (window.memberReady) { clearInterval(saveWait); saveSync(); } }, 1000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && window.memberReady) saveSync(); });
 
 function saveSig(legs) {
   return legs.map((bet) => parlayKey(bet)).sort().join("~");
