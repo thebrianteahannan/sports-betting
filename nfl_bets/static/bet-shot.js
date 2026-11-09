@@ -134,8 +134,10 @@ function shotWait(board, file, go) {
   card.className = "find-shot-wait";
   card.setAttribute("role", "status");
   const url = URL.createObjectURL(file);
-  card.innerHTML = `<img alt=""><div class="find-shot-wait-text"><b><i class="find-shot-spin"></i><span></span></b><small></small><div class="find-shot-bar"><i></i></div></div>`;
+  card.innerHTML = `<img alt=""><div class="find-shot-wait-text"><b><i class="find-shot-spin"></i><span></span></b><small></small><div class="find-shot-bar"><i></i></div></div><button type="button" class="find-shot-stop">Stop</button>`;
   card.querySelector("img").src = url;
+  const stop = new AbortController();
+  card.querySelector(".find-shot-stop").addEventListener("click", () => { stop.abort(); card.hidden = true; });
   const text = card.querySelector("b span"), time = card.querySelector("small"), bar = card.querySelector(".find-shot-bar i");
   const head = board.querySelector(":scope > .find-shot-row:not([hidden])") || board.querySelector(":scope > h2");
   if (head) head.after(card); else board.prepend(card);
@@ -154,6 +156,7 @@ function shotWait(board, file, go) {
   const rect = card.getBoundingClientRect();
   if (rect.top < 80 || rect.bottom > window.innerHeight) card.scrollIntoView({ behavior: "smooth", block: "center" });
   return {
+    signal: stop.signal,
     step(say) { clearInterval(timer); text.textContent = say; bar.style.width = "100%"; },
     done() { clearInterval(timer); URL.revokeObjectURL(url); card.remove(); if (label) label.textContent = "Paste a bet"; },
   };
@@ -168,7 +171,8 @@ async function shotRead(board, file) {
   const wait = shotWait(board, file, go);
   try {
     const image = typeof howsFit === "function" ? await howsFit(file) : await new Promise((done) => { const reader = new FileReader(); reader.onload = () => done(String(reader.result || "")); reader.readAsDataURL(file); });
-    const response = await fetch("/api/how", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image }) });
+    if (wait.signal.aborted) return;
+    const response = await fetch("/api/how", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image }), signal: wait.signal });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || "I could not read a bet on that screenshot.");
     const split = Array.isArray(data.bets) && data.bets.length > 1 && new Set(data.bets.map((bet) => ((bet.legs || [])[0] || {}).stake).filter(Boolean)).size > 1;
@@ -177,6 +181,7 @@ async function shotRead(board, file) {
     if (!legs.length) throw new Error("I could not read a bet on that screenshot.");
     wait.step(`Found ${legs.length} ${legs.length === 1 ? "leg" : "legs"}. Building your parlay`);
     await new Promise((done) => setTimeout(done, 350));
+    if (wait.signal.aborted) return;
     const people = board.people || [];
     const rows = legs.map((leg) => ({ leg, hit: shotPlayer(people, leg) }));
     rows.forEach((row) => { if (!row.hit) row.hit = shotTeam(people, row.leg, shotGame(people, row.leg, rows.filter((one) => one.hit).map((one) => one.hit))); });
@@ -194,7 +199,7 @@ async function shotRead(board, file) {
     const tray = board.querySelector(":scope > .find-tray");
     if (tray && !tray.hidden) tray.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (error) {
-    shotNote(board, error.message || "I could not read a bet on that screenshot.");
+    if (!wait.signal.aborted) shotNote(board, error.message || "I could not read a bet on that screenshot.");
   } finally {
     wait.done();
     if (go) { go.disabled = false; go.classList.remove("busy"); }
