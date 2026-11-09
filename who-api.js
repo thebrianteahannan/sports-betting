@@ -90,12 +90,12 @@ function etDay(ms) {
 
 function inSpan(game, span) {
   const kick = Date.parse(game.kickoff || "");
-  if (!Number.isFinite(kick) || kick <= Date.now()) return false;
+  if (!Number.isFinite(kick) || kick <= Date.now() - 6 * 60 * 60 * 1000) return false;
   if (span !== "today" && span !== "week") return true;
   const day = etDay(kick);
   const today = etDay(Date.now());
-  if (span === "today") return day === today;
-  return day > today && day <= etDay(Date.now() + 14 * 24 * 60 * 60 * 1000);
+  if (span === "today") return day === today || kick <= Date.now();
+  return kick > Date.now() && day > today && day <= etDay(Date.now() + 14 * 24 * 60 * 60 * 1000);
 }
 
 async function nameBook(games, offerLegs, span) {
@@ -103,7 +103,7 @@ async function nameBook(games, offerLegs, span) {
   const open = (games || []).filter((game) => inSpan(game, span));
   const key = `${span || "all"}:${open.map((game) => String(game.id || "")).sort().join(",")}`;
   const saved = bookCache.get(key);
-  if (saved && now - saved.at < 30 * 60 * 1000) return saved.book;
+  if (saved && now - saved.at < (open.some((game) => Date.parse(game.kickoff || "") <= now) ? 3 : 30) * 60 * 1000) return saved.book;
   const pools = [];
   for (let i = 0; i < open.length; i += 8) {
     const chunk = await Promise.all(open.slice(i, i + 8).map(async (game) => {

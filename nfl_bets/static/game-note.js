@@ -307,7 +307,9 @@
     const names = stats.names || [];
     const split = (stats.splits || []).find((row) => row.displayName === "Regular Season") || (stats.splits || [])[0];
     if (!split) return "";
-    return [["avgPoints", "PTS"], ["avgRebounds", "REB"], ["avgAssists", "AST"], ["avgSteals", "STL"], ["avgMinutes", "MIN"]].map(([key, label]) => {
+    const pra = ["avgPoints", "avgRebounds", "avgAssists"].map((key) => Number(split.stats[names.indexOf(key)]));
+    return [["avgPoints", "PTS"], ["avgRebounds", "REB"], ["avgAssists", "AST"], ["pra", "PRA"], ["avgSteals", "STL"], ["avgMinutes", "MIN"]].map(([key, label]) => {
+      if (key === "pra") return pra.every(Number.isFinite) ? `${(pra[0] + pra[1] + pra[2]).toFixed(1)} PRA` : "";
       const at = names.indexOf(key);
       return at >= 0 && split.stats[at] ? `${split.stats[at]} ${label}` : "";
     }).filter(Boolean).join(", ");

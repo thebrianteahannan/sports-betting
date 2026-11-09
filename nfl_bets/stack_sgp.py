@@ -131,6 +131,58 @@ def build(games: list[dict[str, Any]], loaded: list[tuple[dict[str, Any], list[d
     return [item[1] for item in picked]
 
 
+def mixed(loaded: list[tuple[dict[str, Any], list[dict[str, Any]]]]) -> list[dict[str, Any]]:
+    """A back's catches, a receiver's yards, and a third player's touchdown, each beating FanDuel's price lately."""
+    nfl = [(game, legs) for game, legs in loaded if str(game.get("sport") or "") == "NFL"]
+    if not nfl:
+        return []
+    cache = _cache()
+    by_last: dict[str, list[str]] = {}
+    for key, pack in cache.items():
+        sport, _, who = key.partition("|")
+        if sport == "NFL" and who and "|" not in who and isinstance(pack, dict) and pack.get("rows"):
+            by_last.setdefault(who.split()[-1], []).append(who)
+    picked = []
+    for game, legs in nfl:
+        match = str(game.get("match") or "")
+        tails: dict[str, set[str]] = {}
+        for leg in legs:
+            who, _, tail = str(leg.get("market") or "").partition(" - ")
+            tails.setdefault(who, set()).add(tail)
+        throwers = {who for who, kinds in tails.items() if kinds & {"Alt Passing Yds", "Passing Yds"}}
+        backs = {who for who, kinds in tails.items() if kinds & {"Alt Rushing Yds", "Rushing Yds"} and who not in throwers}
+        catchers = {who for who, kinds in tails.items() if kinds & {"Alt Receiving Yds", "Receiving Yds"} and who not in throwers}
+
+        def pick(tail: str, group: set[str], low: int, high: int) -> list[tuple[float, str, str, int]]:
+            rows = []
+            for leg in legs:
+                who, _, kind = str(leg.get("market") or "").partition(" - ")
+                if tail == "Any Time Touchdown Scorer":
+                    who, kind = str(leg.get("runner") or "").strip(), str(leg.get("market") or "")
+                label = f"{who} anytime touchdown" if tail == "Any Time Touchdown Scorer" else str(leg.get("label") or "")
+                odds = int(leg["odds"])
+                if kind != tail or who not in group or not low <= odds <= high or (tail != "Any Time Touchdown Scorer" and " Over " not in f" {label} "):
+                    continue
+                read = _count(label, "NFL", cache, by_last)
+                if read and read["hits"] / read["games"] > implied_prob(float(odds)):
+                    rows.append((read["hits"] / read["games"] - implied_prob(float(odds)), who, label, odds))
+            return sorted(rows, reverse=True)
+
+        found = []
+        for back in pick("Total Receptions", backs, -200, 150)[:2]:
+            for wide in pick("Receiving Yds", catchers - backs, -200, 150)[:3]:
+                for score in pick("Any Time Touchdown Scorer", catchers, 150, 500)[:4]:
+                    if len({back[1], wide[1], score[1]}) < 3:
+                        continue
+                    rows = [("Back receptions", back, "The back's catches out of the backfield."), ("Receiver yards", wide, "The receiver's yards on his main line."), ("Anytime touchdown", score, "The long shot that pays the ticket.")]
+                    bets = [{"kind": "Same-game parlay", "rung": rung, "label": row[2], "odds": row[3], "stake": 5, "job": job, "game": match} for rung, row, job in rows]
+                    found.append((-sum(row[0] for _rung, row, _job in rows), {"game": match, "bets": bets}))
+        found.sort(key=lambda item: item[0])
+        picked.extend(found[:3])
+    picked.sort(key=lambda item: item[0])
+    return [item[1] for item in picked]
+
+
 def scorers(loaded: list[tuple[dict[str, Any], list[dict[str, Any]]]], count: int = 2) -> list[dict[str, Any]]:
     nfl = [(game, legs) for game, legs in loaded if str(game.get("sport") or "") == "NFL"]
     if not nfl:

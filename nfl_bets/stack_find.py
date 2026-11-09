@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 from nfl_bets.chalk import _legs
 from nfl_bets.hedge import american_decimal
 from nfl_bets.stack_read import tally
-from nfl_bets.stack_sgp import build as yardage, scorers
+from nfl_bets.stack_sgp import build as yardage, mixed, scorers
 from nfl_bets.stack_logs import seed
 from nfl_bets.store import load_board
 
@@ -68,6 +68,7 @@ def find(board: dict[str, Any] | None = None) -> dict[str, Any]:
         "Receptions parlay, 90% legs": yardage(games, loaded, floor=0.9, catches="Receptions"),
         "Yardage parlay, 3 legs at 90%": yardage(games, loaded, floor=0.9, need=3),
         "Yardage parlay, all 4 at 90%": yardage(games, loaded, floor=0.9, need=4),
+        "Catches, yards, and a touchdown": mixed(loaded),
         "Two touchdowns, one game": scorers(loaded),
         "Three touchdowns, one game": scorers(loaded, 3),
         "Four touchdowns, one game": scorers(loaded, 4),

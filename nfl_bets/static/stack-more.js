@@ -390,6 +390,20 @@ STACK_MORE["Yardage parlay, all 4 at 90%"] = [
 ];
 window.STACK_BUILD.push("Receptions parlay, 90% legs", "Yardage parlay, 3 legs at 90%", "Yardage parlay, all 4 at 90%");
 
+STACKS.push(["Catches, yards, and a touchdown", "One ticket, three players. A back's catches, a receiver's yards on his main line, and a third player to score.", [
+  ["Same-game parlay", "Back receptions", "A back over his catch line, in when his recent games beat FanDuel's price."],
+  ["Same-game parlay", "Receiver yards", "A different pass catcher over his main yardage line, same test."],
+  ["Same-game parlay", "Anytime touchdown", "A third pass catcher at +150 to +500, scoring more often lately than his price says."],
+]]);
+STACK_RANK["Catches, yards, and a touchdown"] = [43, "Three different players, so FanDuel's same-game cut is small. The touchdown is the payout."];
+STACK_MORE["Catches, yards, and a touchdown"] = [
+  "Three legs on three players in one game: a back's receptions, a receiver's yards on his main line, and a third player to score. Each leg is in only when the player's recent games beat FanDuel's price.",
+  "Example: a back over 1.5 catches at -138, a receiver over 47.5 yards at -113, and a tight end to score at +300 multiply to +1200. $10 pays back $130.03.",
+  "+1200 needs to cash 7.7% of the time.",
+  "FanDuel's same-game price on that ticket was +1154, $125.40 back on $10. Three different players move together less than a quarterback and his receiver, so FanDuel took $4.63 off the multiplied payout.",
+];
+window.STACK_BUILD.push("Catches, yards, and a touchdown");
+
 function stackOrder(board) {
   const sort = window.stackSort || "rank";
   board.querySelectorAll("[data-stack-sort]").forEach((button) => button.classList.toggle("on", button.dataset.stackSort === sort));
