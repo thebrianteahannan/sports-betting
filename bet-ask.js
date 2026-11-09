@@ -378,13 +378,14 @@ async function askTrend(name, text, facts, sport, looks) {
   return bits.length ? `${bits.join(" ")} ${background}`.trim() : "";
 }
 
-const GAME = "You write a short read of one game for a sports desk. Use only the notes. Cover the weather, the coaches, how these teams have met, who is out, and any change in playing time. Do not invent a name, a score, a temperature, or a snap count. Do not say who will win. Two or three sentences a person would say out loud.";
+const GAME = "You write a short read of one game for a sports desk. Use only the notes. Cover the weather, the coaches, how these teams have met, who is out, and any change in playing time. Do not invent a name, a score, a temperature, or a snap count. \"Out\" means out for this game. The name in parentheses after a player is who takes his snaps. \"This season\" is his share of the plays, not how long he is out. Do not say who will win. Two or three sentences a person would say out loud.";
 
 function groundGame(spoken, facts) {
   const source = String(facts || "");
   const text = String(spoken || "").replace(/^here(?:'s| is)[^:.\n]{0,48}[:\n]\s*/i, "");
   return text.split(/(?<=[.!?])\s+/).map((line) => line.replace(/^["'\s]+|["'\s]+$/g, "")).filter((line) => {
     if (!line || /will win|going to win|locks in|easy money|can't lose/i.test(line)) return false;
+    if (/for the (?:season|year)|rest of the (?:season|year)|season-ending/i.test(line) && !/injured reserve|season-ending/i.test(source)) return false;
     const lean = line.match(/\b(may|might|could|should|advantage|looking to|bounce|poised|upset|favou?red|edge)\b/i);
     if (lean && !source.toLowerCase().includes(lean[0].toLowerCase())) return false;
     const nums = [...line.matchAll(/\d+(?:\.\d+)?/g)].map((item) => item[0]);
