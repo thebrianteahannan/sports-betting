@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 from nfl_bets.chalk import _legs
 from nfl_bets.hedge import american_decimal
 from nfl_bets.stack_read import tally
+from nfl_bets.stack_sgp import build as yardage, scorers
 from nfl_bets.store import load_board
 
 _ET = ZoneInfo("America/New_York")
@@ -57,6 +58,15 @@ def find() -> dict[str, Any]:
         "Side and the total": _side_total(games),
         "Player and the total": _player_total(games, loaded),
         "First touchdown and anytime": _score(loaded),
+        "Same-game yardage parlay": yardage(games, loaded),
+        "Yardage and the spread": yardage(games, loaded, "spread"),
+        "Yardage parlay, 85% legs": yardage(games, loaded, floor=0.85),
+        "Yardage parlay, 90% legs": yardage(games, loaded, floor=0.9),
+        "Yardage parlay, 75% legs": yardage(games, loaded, floor=0.75),
+        "Two touchdowns, one game": scorers(loaded),
+        "Three touchdowns, one game": scorers(loaded, 3),
+        "Four touchdowns, one game": scorers(loaded, 4),
+        "Five touchdowns, one game": scorers(loaded, 5),
     }
     tally(found, games)
     return {"found": {key: value for key, value in found.items() if value}, "notes": _NOTES}

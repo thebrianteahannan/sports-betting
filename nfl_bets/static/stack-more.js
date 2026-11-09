@@ -160,6 +160,48 @@ const STACK_MORE = {
     "He scores first: up $30.38. He scores later: up $0.38. No touchdown: down $12.",
     "The first-touchdown price is where the payout is. The anytime ticket keeps a later score from being a loss.",
   ],
+  "Same-game yardage parlay": [
+    "One ticket from one game. A quarterback's passing yards, one of his receivers, a running back, and the over or the back's touchdown. Every yardage line is low, a number that player cleared in at least 8 of his last 10 games.",
+    "Example: $10 at +126 pays back $22.60. Every leg has to clear. One short leg and the $10 is gone.",
+    "+126 needs to cash 44.2% of the time. Three legs cleared 8 times in 10 land together about 51% of the time if they were unrelated. They rise together, which pushes that higher.",
+    "A big passing day lifts the receiver too, so FanDuel's same-game price is shorter than the multiplied price on this card. Build it on FanDuel and take that number.",
+    "The desk builds it from tonight's FanDuel alt lines, priced -150 to -500. The over goes in when both teams' recent games cleared it 8 times in 10. The back's touchdown goes in when his recent scoring beats FanDuel's price.",
+  ],
+  "Yardage and the spread": [
+    "One ticket from one game. A quarterback's passing yards, one of his receivers, a running back, and the quarterback's team on the spread. Each yardage line is one that player cleared in at least 8 of his last 10. The spread is the alt line his team covered in 8 of its last 10.",
+    "Example: $10 at +200 pays back $30. Every leg has to clear. One short leg and the $10 is gone.",
+    "+200 needs to cash 33.3% of the time.",
+    "Passing yards also pile up when a team is behind. The spread needs his team ahead. Both legs need the same game, the one where the throws build the lead.",
+    "The desk builds it from tonight's FanDuel alt lines, priced -150 to -500. A game where his team has no alt spread it covered 8 times in 10 is left off. FanDuel's same-game price is the one to take.",
+  ],
+  "Two touchdowns, one game": [
+    "One ticket from one game: two players to score a touchdown. Each one is a player who has scored more often lately than FanDuel's price on him says.",
+    "Example: two players at +110 each multiply to +341. $10 pays back $44.10. One of them kept out of the end zone and the $10 is gone.",
+    "+341 needs to cash 22.7% of the time.",
+    "Two scorers on the same team split that team's touchdowns. One from each side needs both offenses to score. FanDuel's same-game price is the one to take.",
+    "The desk builds it from tonight's FanDuel anytime prices, -250 to +300, and lists the three pairs per game where both players run furthest ahead of their prices.",
+  ],
+  "Three touchdowns, one game": [
+    "One ticket from one game: three players to score a touchdown. Each one is a player who has scored more often lately than FanDuel's price on him says.",
+    "Example: three players at +110 each multiply to +826. $10 pays back $92.61. One of the three kept out of the end zone and the $10 is gone.",
+    "+826 needs to cash 10.8% of the time.",
+    "Three scorers need a game with at least three touchdowns. Two or three from the same team split that team's touchdowns. FanDuel's same-game price is the one to take.",
+    "The desk builds it from tonight's FanDuel anytime prices, -250 to +300, and lists the three trios per game where the players run furthest ahead of their prices.",
+  ],
+  "Four touchdowns, one game": [
+    "One ticket from one game: four players to score a touchdown. Each one is a player who has scored more often lately than FanDuel's price on him says.",
+    "Example: four players at +110 each multiply to +1845. $10 pays back $194.48. One of the four kept out of the end zone and the $10 is gone.",
+    "+1845 needs to cash 5.1% of the time.",
+    "Four scorers need a game with at least four touchdowns, and some of them share a team's touchdowns. FanDuel's same-game price is the one to take.",
+    "The desk builds it from tonight's FanDuel anytime prices, -250 to +300, and lists the three groups of four per game where the players run furthest ahead of their prices.",
+  ],
+  "Five touchdowns, one game": [
+    "One ticket from one game: five players to score a touchdown. Each one is a player who has scored more often lately than FanDuel's price on him says.",
+    "Example: five players at +110 each multiply to +3984. $10 pays back $408.41. One of the five kept out of the end zone and the $10 is gone.",
+    "+3984 needs to cash 2.4% of the time.",
+    "Five scorers need a game with at least five touchdowns, and some of them share a team's touchdowns. FanDuel's same-game price is the one to take.",
+    "The desk builds it from tonight's FanDuel anytime prices, -250 to +300, and lists the three groups of five per game where the players run furthest ahead of their prices.",
+  ],
 };
 
 function stackMore(history, name) {
@@ -190,4 +232,104 @@ function stackMore(history, name) {
   });
 }
 
+function stackTicket(set, stack) {
+  const legs = stack.bets || [];
+  if (legs.length < 2 || typeof findRank !== "function" || set.querySelector(".stack-ticket")) return;
+  const dec = legs.reduce((p, leg) => p * (1 + findRank(leg.odds)), 1);
+  const price = dec >= 2 ? Math.round((dec - 1) * 100) : Math.round(-100 / (dec - 1));
+  const tag = price > 0 ? `+${price}` : String(price);
+  const games = legs.map((leg) => String(leg.game || stack.game || ""));
+  const same = games.length > 1 && games.every(Boolean) && new Set(games).size === 1;
+  const line = document.createElement("p");
+  line.className = "stack-ticket";
+  line.style.cssText = "display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.7rem; margin: 0 2.2rem 0.45rem 0; font-size: 1.02rem; font-weight: 800;";
+  line.innerHTML = [`<i style="font-style: normal; color: #f4f7fb">${legs.length}-leg parlay</i>`, `<i style="font-style: normal; color: #3dff6e">${esc(tag)}</i>`, findPct(price) && `<i style="font-style: normal; color: #e7c15a">${esc(findPct(price))}</i>`, findCash(price) && `<i style="font-style: normal; color: #3dff6e">${esc(`$5 profits ${findCash(price)}`)}</i>`, same && `<i style="font-style: normal; color: #04140c; background: #e7c15a; border-radius: 999px; padding: 0.05rem 0.45rem; font-size: 11px; letter-spacing: 0.03em; text-transform: uppercase">Same game</i>`].filter(Boolean).join("");
+  const share = document.createElement("button");
+  share.type = "button";
+  share.className = "share-bet";
+  share.dataset.share = "rec";
+  const ticket = { title: `${legs.length}-leg parlay`, american: price, impliedPct: findPct(price), game: stack.game || "", legs: legs.map((leg) => ({ label: leg.label || "", odds: leg.odds, market: leg.kind || "", match: leg.game || stack.game || "" })) };
+  share.dataset.shareId = String((window.recTickets = window.recTickets || []).push({ ticket, name: stackName(stack) }) - 1);
+  share.setAttribute("aria-label", "Share this bet");
+  share.style.cssText = "position: absolute; top: 0.42rem; right: 0.42rem; z-index: 2;";
+  set.style.position = "relative";
+  const title = set.querySelector(".stack-set-name");
+  if (title) { title.style.paddingRight = "2.2rem"; title.after(line); } else set.prepend(line);
+  set.append(share);
+}
+
+STACKS.push(["Same-game yardage parlay", "One ticket. A quarterback, his receiver, and a back, each on a line he clears most weeks, plus the over or a touchdown.", [
+  ["Same-game parlay", "Passing yards", "The quarterback's alt line he cleared in 8 of his last 10."],
+  ["Same-game parlay", "Receiving yards", "One of his receivers, on a line he clears most weeks."],
+  ["Same-game parlay", "Rushing yards", "A back from either team, same test."],
+  ["Same-game parlay", "The over or a touchdown", "In only when the history beats FanDuel's price."],
+]]);
+STACK_RANK["Same-game yardage parlay"] = [31, "Every leg is a line he cleared in 8 of his last 10. FanDuel's same-game price is shorter than the card's, because the legs rise together."];
+STACKS.push(["Yardage and the spread", "One ticket. A quarterback, his receiver, and a back, each on a line he clears most weeks, plus his team on a spread it covers most weeks.", [
+  ["Same-game parlay", "Passing yards", "The quarterback's alt line he cleared in 8 of his last 10."],
+  ["Same-game parlay", "Receiving yards", "One of his receivers, on a line he clears most weeks."],
+  ["Same-game parlay", "Rushing yards", "A back from either team, same test."],
+  ["Same-game parlay", "The spread", "The quarterback's team, on an alt line it covered in 8 of its last 10."],
+]]);
+STACK_RANK["Yardage and the spread"] = [32, "Passing yards also come from playing from behind. The spread needs the lead. Take it when the throws and the cover point to the same game."];
+STACKS.push(["Two touchdowns, one game", "One ticket. Two players in the same game to score a touchdown, each one scoring more often lately than his price says.", [
+  ["Same-game parlay", "Anytime touchdown", "The first scorer."],
+  ["Same-game parlay", "Anytime touchdown", "The second scorer. Both have to score."],
+]]);
+STACK_RANK["Two touchdowns, one game"] = [33, "Each player has scored more often lately than FanDuel's price says. Two from the same team split one team's touchdowns."];
+STACKS.push(["Three touchdowns, one game", "One ticket. Three players in the same game to score a touchdown, each one scoring more often lately than his price says.", [
+  ["Same-game parlay", "Anytime touchdown", "The first scorer."],
+  ["Same-game parlay", "Anytime touchdown", "The second scorer."],
+  ["Same-game parlay", "Anytime touchdown", "The third scorer. All three have to score."],
+]]);
+STACK_RANK["Three touchdowns, one game"] = [34, "Each player has scored more often lately than FanDuel's price says. Three scorers need at least three touchdowns in the game."];
+STACKS.push(["Four touchdowns, one game", "One ticket. Four players in the same game to score a touchdown, each one scoring more often lately than his price says.", [
+  ["Same-game parlay", "Anytime touchdown", "The first scorer."],
+  ["Same-game parlay", "Anytime touchdown", "The second scorer."],
+  ["Same-game parlay", "Anytime touchdown", "The third scorer."],
+  ["Same-game parlay", "Anytime touchdown", "The fourth scorer. All four have to score."],
+]]);
+STACK_RANK["Four touchdowns, one game"] = [35, "Each player has scored more often lately than FanDuel's price says. Four scorers need at least four touchdowns in the game."];
+STACKS.push(["Five touchdowns, one game", "One ticket. Five players in the same game to score a touchdown, each one scoring more often lately than his price says.", [
+  ["Same-game parlay", "Anytime touchdown", "The first scorer."],
+  ["Same-game parlay", "Anytime touchdown", "The second scorer."],
+  ["Same-game parlay", "Anytime touchdown", "The third scorer."],
+  ["Same-game parlay", "Anytime touchdown", "The fourth scorer."],
+  ["Same-game parlay", "Anytime touchdown", "The fifth scorer. All five have to score."],
+]]);
+STACK_RANK["Five touchdowns, one game"] = [36, "Each player has scored more often lately than FanDuel's price says. Five scorers need at least five touchdowns in the game."];
+window.STACK_BUILD.push("Same-game yardage parlay", "Yardage and the spread", "Two touchdowns, one game", "Three touchdowns, one game", "Four touchdowns, one game", "Five touchdowns, one game");
+
+[[85, 37, "+59", "$15.88", "63.0%", "-600", "72%"], [90, 38, "+37", "$13.72", "72.9%", "-900", "81%"], [75, 39, "+137", "$23.70", "42.2%", "-300", "56%"]].forEach(([pct, rank, price, back, need, odds, both]) => {
+  const name = `Yardage parlay, ${pct}% legs`;
+  STACKS.push([name, `One ticket. A quarterback, his receiver, and a back, with at least two of them priced ${pct}% or higher, plus the over or a touchdown.`, [
+    ["Same-game parlay", "Passing yards", `The quarterback's alt line he cleared in 8 of his last 10, priced ${pct}% or higher when it can be.`],
+    ["Same-game parlay", "Receiving yards", "One of his receivers, same test."],
+    ["Same-game parlay", "Rushing yards", "A back from either team, same test."],
+    ["Same-game parlay", "The over or a touchdown", "In only when the history beats FanDuel's price."],
+  ]]);
+  STACK_RANK[name] = [rank, `Two legs at ${pct}% land together about ${both} of the time. The payout comes from the other legs.`];
+  STACK_MORE[name] = [
+    `The same-game yardage parlay with at least two of the yardage legs priced ${pct}% or higher on FanDuel. Every yardage line is still one the player cleared in at least 8 of his last 10.`,
+    `Example: three legs at ${odds} multiply to ${price}. $10 pays back ${back}. One short leg and the $10 is gone.`,
+    `${price} needs to cash ${need} of the time.`,
+    "The over goes in when both teams' recent games cleared it 8 times in 10. The back's touchdown goes in when his recent scoring beats FanDuel's price. That leg is where most of the payout comes from.",
+    "FanDuel's same-game price is shorter than the multiplied price on this card. Build it on FanDuel and take that number.",
+  ];
+  window.STACK_BUILD.push(name);
+});
+
+function stackOrder(board) {
+  const sort = window.stackSort || "rank";
+  board.querySelectorAll("[data-stack-sort]").forEach((button) => button.classList.toggle("on", button.dataset.stackSort === sort));
+  const filters = board.querySelector(".rec-filters");
+  if (!filters) return;
+  const rank = (block) => (STACK_RANK[block.dataset.name] || [99])[0];
+  const no = (block) => Number(String(block.dataset.card || "").replace("stack", "")) || 99;
+  const key = { rank: (a, b) => rank(a) - rank(b), st: (a, b) => no(a) - no(b), bets: (a, b) => Number(b.dataset.shown || 0) - Number(a.dataset.shown || 0) || rank(a) - rank(b) }[sort];
+  filters.after(...[...board.querySelectorAll(":scope > .rec-strategy")].sort(key));
+}
+
 window.stackMore = stackMore;
+window.stackTicket = stackTicket;
+window.stackOrder = stackOrder;

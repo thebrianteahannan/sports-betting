@@ -174,14 +174,14 @@ function paintStack() {
   window.stackGames = window.stackGames || [];
   window.stackTeams = window.stackTeams || [];
   window.stackPlayers = window.stackPlayers || [];
-  filters.innerHTML = `<div class="rec-head"><span class="rec-tools"><button type="button" class="rec-fold" data-stack-fold>Filters</button></span></div><div class="row stack-when"><span class="name">When</span><button type="button" data-stack-when="today">Today <span class="n"></span></button><button type="button" data-stack-when="week">This week <span class="n"></span></button></div><div class="row stack-league" hidden><span class="name">League</span></div><div class="row stack-game" hidden><span class="name">Game</span></div><div class="row stack-team" hidden><span class="name">Team</span></div><div class="row stack-player" hidden><span class="name">Player</span></div><div class="row"><button type="button" class="stack-fit-go">With a bet <span class="n"></span></button><button type="button" class="stack-beat-go">Beats the price <span class="n"></span></button></div><p class="stack-none quiet" hidden>None of the current FanDuel prices fit a stack.</p>`;
+  filters.innerHTML = `<div class="rec-head"><span class="rec-tools"><button type="button" class="rec-fold" data-stack-fold>Filters</button><button type="button" class="stack-fit-go">With a bet <span class="n"></span></button></span><span class="rec-sort"><span class="name">Sort</span><button type="button" data-stack-sort="rank">Rank</button><button type="button" data-stack-sort="st">ST number</button><button type="button" data-stack-sort="bets">Bets</button></span></div><div class="row stack-when"><span class="name">When</span><button type="button" data-stack-when="today">Today <span class="n"></span></button><button type="button" data-stack-when="week">This week <span class="n"></span></button></div><div class="row stack-league" hidden><span class="name">League</span></div><div class="row stack-game" hidden><span class="name">Game</span></div><div class="row stack-team" hidden><span class="name">Team</span></div><div class="row stack-player" hidden><span class="name">Player</span></div><div class="row"><button type="button" class="stack-beat-go">Beats the price <span class="n"></span></button></div><p class="stack-none quiet" hidden>None of the current FanDuel prices fit a stack.</p>`;
   filters.addEventListener("click", (event) => {
     const button = event.target.closest("button");
     if (!button) return;
     event.stopPropagation(); if (button.dataset.stackFold != null) { window.stackOpen = !window.stackOpen; filters.classList.toggle("open", window.stackOpen); return; }
     if (button.classList.contains("stack-fit-go")) window.stackFit = !window.stackFit;
     else if (button.classList.contains("stack-beat-go")) { window.stackBeats = !window.stackBeats; if (window.stackBeats) window.stackFit = true; }
-    else if (button.dataset.stackWhen) window.stackWhen = button.dataset.stackWhen;
+    else if (button.dataset.stackSort) window.stackSort = button.dataset.stackSort; else if (button.dataset.stackWhen) window.stackWhen = button.dataset.stackWhen;
     else if (button.dataset.stackLeague != null) { const name = button.dataset.stackLeague; window.stackLeagues = !name ? [] : window.stackLeagues.includes(name) ? window.stackLeagues.filter((item) => item !== name) : window.stackLeagues.concat(name); }
     else if (button.dataset.stackGame != null) { const name = button.dataset.stackGame; window.stackGames = !name ? [] : window.stackGames.includes(name) ? window.stackGames.filter((item) => item !== name) : window.stackGames.concat(name); }
     else if (button.dataset.stackTeam != null) window.stackTeams = stackFlip(window.stackTeams, button.dataset.stackTeam);
@@ -353,14 +353,14 @@ function applyStackFit(board) {
       const sets = [...block.querySelectorAll(".stack-set")];
       let shown = 0;
       sets.forEach((set) => { set.hidden = !stackKeep(set, when, leagues, games, teams, players); set.style.display = set.hidden ? "none" : ""; if (!set.hidden) shown += Number(set.dataset.n || 0); if (!set.hidden && set.dataset.beats === "1") beat += 1; });
-      block.dataset.fit = shown ? "1" : "0";
+      block.dataset.fit = shown ? "1" : "0"; block.dataset.shown = String(shown);
       const fit = block.querySelector(".stack-fit-count");
       if (fit) fit.textContent = shown === 1 ? "1 bet fulfills it" : `${shown} bets fulfill it`;
       const empty = block.querySelector(".stack-empty");
       if (empty) empty.style.display = shown ? "none" : "";
     }
     if (block.dataset.fit === "1") live += 1;
-    const nflOnly = ["Key-number middle", "Teaser", "Wong teaser", "Pleaser", "Buying the hook", "First touchdown and anytime"].includes(block.dataset.name);
+    const nflOnly = ["Key-number middle", "Teaser", "Wong teaser", "Pleaser", "Buying the hook", "First touchdown and anytime", "Same-game yardage parlay", "Yardage and the spread", "Two touchdowns, one game", "Three touchdowns, one game", "Four touchdowns, one game", "Five touchdowns, one game"].includes(block.dataset.name) || /^Yardage parlay, /.test(block.dataset.name);
     block.hidden = (on && block.dataset.fit !== "1") || (nflOnly && ((leagues.length > 0 && !leagues.includes("NFL")) || ((games.length > 0 || teams.length > 0) && !gameSports.includes("NFL"))));
     block.style.display = block.hidden ? "none" : "";
   });
@@ -370,7 +370,7 @@ function applyStackFit(board) {
   if (beats) { beats.classList.toggle("on", !!window.stackBeats); beats.querySelector(".n").textContent = waiting ? "" : String(beat); }
   const empty = board.querySelector(".stack-none");
   if (empty) empty.hidden = !(on && !waiting && !live);
-  board.classList.toggle("stack-fit", on);
+  board.classList.toggle("stack-fit", on); if (window.stackOrder) stackOrder(board);
 }
 
 function stackName(stack) {
@@ -399,7 +399,7 @@ function stackLeg(bet) {
 
 function stackLegs(stack) { const bets = (stack.bets || []).slice(); return bets.some((bet) => /^bottom rung$/i.test(bet.rung || "")) ? bets.reverse() : bets; }
 
-function stackRead(set, stack) { if (stack.read) set.insertAdjacentHTML("beforeend", `<p class="stack-read${stack.beats ? " up" : ""}">${esc(stack.read)}</p>`); }
+function stackRead(set, stack) { if (window.stackTicket) stackTicket(set, stack); if (stack.read) set.insertAdjacentHTML("beforeend", `<p class="stack-read${stack.beats ? " up" : ""}">${esc(stack.read)}</p>`); }
 
 function recDay(ms) { return (recDay.fmt || (recDay.fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }))).format(ms); }
 
