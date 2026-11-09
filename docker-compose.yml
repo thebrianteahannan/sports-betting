@@ -22,6 +22,7 @@ services:
       NFL_BETS_BIND: "0.0.0.0"
       NFL_BETS_INTERVAL_SECONDS: "600"
       NFL_BETS_BANK_START: "20"
+      NFL_BETS_EXPERIMENTAL: "0"
       NFL_BETS_OUT_DIR: /data/nfl_bets
       TZ: America/New_York
     volumes:

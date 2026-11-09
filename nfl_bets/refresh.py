@@ -87,9 +87,10 @@ def _run() -> dict[str, Any]:
         for game in games
         if str(game.get("sport") or "NFL") == "NFL" and game.get("week")
     })
-    parlays = _parlays(games, errors)
+    lab = games if os.environ.get("NFL_BETS_EXPERIMENTAL") == "1" else []
+    parlays = _parlays(lab, errors)
     try:
-        cross = build_cross_four(games)
+        cross = build_cross_four(lab)
         if cross:
             parlays["four"] = cross
     except Exception as exc:  # noqa: BLE001
@@ -113,17 +114,17 @@ def _run() -> dict[str, Any]:
         "four": parlays["four"],
         "plus": parlays["plus"],
         "hits": parlays["hits"],
-        "todayBet": _today_bet(games, now, errors),
+        "todayBet": _today_bet(lab, now, errors),
     }
     try:
-        payload["weekThree"], payload["weekFive"], payload["weekSafe"], payload["weekEven"] = build_week(games)
+        payload["weekThree"], payload["weekFive"], payload["weekSafe"], payload["weekEven"] = build_week(lab)
     except Exception as exc:  # noqa: BLE001
         errors.append(f"Week: {exc}")
         payload["errors"] = errors
     try:
         prior_band = load_board().get("band")
         shown = list(prior_band.get("freshMarks") or []) if isinstance(prior_band, dict) else []
-        payload["band"] = build_band(games, now, shown)
+        payload["band"] = build_band(lab, now, shown)
     except Exception as exc:  # noqa: BLE001
         errors.append(f"Band: {exc}")
         payload["errors"] = errors
@@ -141,7 +142,7 @@ def _run() -> dict[str, Any]:
     try:
         from nfl_bets.strategies import build_new
 
-        payload.update(build_new(games))
+        payload.update(build_new(lab))
     except Exception as exc:  # noqa: BLE001
         errors.append(f"Strategies: {exc}")
         payload["errors"] = errors
