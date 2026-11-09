@@ -13,10 +13,10 @@ function gameStackData() {
 function paintGameStacks(holder, game, who = "") {
   const match = [...holder.querySelectorAll(".find-match")].pop();
   if (!match || typeof STACKS === "undefined") return;
-  const box = document.createElement("div");
+  const box = document.createElement("details");
   box.className = "find-score find-stacks";
   box.style.gridColumn = "1 / -1";
-  box.innerHTML = `<b>Parlay strategies ${who ? `with ${esc(who)}` : "for this game"}</b><p class="quiet">Looking for stacks.</p>`;
+  box.innerHTML = `<summary><b>Parlay strategies ${who ? `with ${esc(who)}` : "for this game"}</b></summary><p class="quiet">Looking for stacks.</p>`;
   match.append(box);
   box.addEventListener("click", (event) => {
     if (event.target.closest("button, a, input, select, textarea")) return;
@@ -33,6 +33,7 @@ function paintGameStacks(holder, game, who = "") {
     const wait = box.querySelector(".quiet");
     if (!rows.length) { wait.textContent = data && data.error && window.state && state.admin ? data.error : who ? `None of the current FanDuel prices fit a stack with ${who}.` : "None of the current FanDuel prices fit a stack in this game."; return; }
     wait.remove();
+    box.querySelector("summary b").append(`, ${rows.length}`);
     const board = document.createElement("div");
     board.className = "find-stack-list";
     rows.forEach((row) => {

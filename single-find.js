@@ -122,26 +122,6 @@ async function markPlayer(name, bets, games) {
     market: bet.market || "", runner: bet.runner || "", label: bet.label || "", odds: bet.odds,
     sport: bet.sport || "", match: bet.match || "", kickoff: bet.kickoff || "",
   }));
-  const bin = pythonBin();
-  if (bin) {
-    let saved = [];
-    try { saved = JSON.parse(fs.readFileSync(path.join(__dirname, "output", "board.json"), "utf8")).games || []; } catch (err) { saved = []; }
-    const slate = (Array.isArray(games) ? games : []).map((game) => {
-      const full = saved.find((row) => row && row.kickoff === game.kickoff && row.match === game.match) || game;
-      return {
-        id: full.id, sport: full.sport || game.sport || "", match: full.match || game.match || "",
-        awayName: full.awayName || "", homeName: full.homeName || "", kickoff: full.kickoff || game.kickoff || "",
-        espnId: full.espnId || "", spread: full.spread || null, total: full.total || null,
-      };
-    });
-    try {
-      const raw = execFileSync(bin, ["-m", "nfl_bets.single"], {
-        input: JSON.stringify({ mark: true, name: String(name || ""), legs, games: slate }),
-        encoding: "utf8", timeout: 40000, maxBuffer: 8 * 1024 * 1024, cwd: __dirname,
-      });
-      return JSON.parse(raw);
-    } catch (err) { /* the saved log can still mark the lines */ }
-  }
   return savedMarks(name, legs);
 }
 

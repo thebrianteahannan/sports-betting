@@ -1,0 +1,97 @@
+/* The parlay tray: one line per leg. */
+:is(.rec-board, #choice-result) .find-tray:not(.find-edit) { gap: 0.3rem; }
+:is(.rec-board, #choice-result) .find-tray:not(.find-edit) .find-row:has(.find-chose) > .find-in { display: none; }
+:is(.rec-board, #choice-result) .find-tray .find-row { gap: 0.15rem; padding: 0.15rem 0.6rem; border: 0; border-bottom: 1px solid #16301f; border-radius: 0; background: transparent; }
+:is(.rec-board, #choice-result) .find-tray .find-row:last-of-type { border-bottom: 0; }
+:is(.rec-board, #choice-result) .find-tray .find-chose { gap: 0.5rem; padding: 0.2rem 0; }
+:is(.rec-board, #choice-result) .find-tray .find-chose > span { display: flex; flex: 1; align-items: baseline; flex-wrap: wrap; gap: 0.1rem 0.5rem; min-width: 0; font-weight: 600; }
+:is(.rec-board, #choice-result) .find-tray .find-chose i { font-style: normal; }
+:is(.rec-board, #choice-result) .find-tray .find-chose i.who { color: #f4f7fb; font-weight: 700; white-space: nowrap; }
+:is(.rec-board, #choice-result) .find-tray .find-chose i.prop { flex: 1; color: #e7c15a; }
+:is(.rec-board, #choice-result) .find-tray .find-chose i.px { order: -2; min-width: 3.4em; color: #3dff6e; font-weight: 700; }
+:is(.rec-board, #choice-result) .find-tray .find-chose i.pct { order: -1; min-width: 3.4em; color: #c9d4dd; font-size: 0.88em; }
+:is(.rec-board, #choice-result) .find-tray .find-chose button.find-out { width: 1.6rem !important; height: 1.6rem !important; min-height: 0 !important; padding: 0 !important; border-radius: 999px !important; font-size: 1rem !important; line-height: 1 !important; color: #8b97a3 !important; box-shadow: inset 0 0 0 1px #3a4652 !important; }
+:is(.rec-board, #choice-result) .find-tray.find-edit .find-chose i.who { display: none; }
+:is(.rec-board, #choice-result) .find-tray .find-in button.find-out.find-x { width: 1.6rem !important; height: 1.6rem !important; min-height: 0 !important; padding: 0 !important; border-radius: 999px !important; font-size: 1rem !important; line-height: 1 !important; color: #8b97a3 !important; box-shadow: inset 0 0 0 1px #3a4652 !important; }
+.find-tray:not(.find-slim):not(.find-shut) .find-row:not(:has(.find-chose)) select.find-prop { display: block !important; }
+.find-roster .find-names .find-group { display: flex; flex: 1 0 100%; flex-wrap: wrap; gap: 0.4rem; }
+.find-roster .find-names .find-group + .find-group { margin-top: 0.15rem; padding-top: 0.55rem; border-top: 1px solid #16301f; }
+.find-roster button[data-pos]::after { content: attr(data-pos); margin-left: 0.45em; font-size: 0.7em; font-weight: 600; opacity: 0.5; }
+.find-roster .find-names label.find-hide { display: flex; flex: 1 0 100%; align-items: center; gap: 0.4rem; margin: 0; color: #c9d4dd; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.find-roster .find-names label.find-hide input { width: auto !important; min-height: 0 !important; height: auto !important; margin: 0 !important; accent-color: #3dff6e; }
+.find-roster.hide-def [data-def="1"], .find-roster.hide-bench [data-bench="1"], .find-roster.hide-def .find-group:not(:has(> :not([data-def="1"]))), .find-roster.hide-bench .find-group:not(:has(> :not([data-bench="1"]))) { display: none !important; }
+.find-why .find-exp, #desk.tv-full #desk-glass .find-why .find-exp { color: #7d8894; font-size: 0.8rem; font-weight: 400; }
+.find-why .find-exp button.find-near, #desk.tv-full #desk-glass .find-why .find-exp button.find-near, #desk.tv-full #desk-glass .rec-board .find-why .find-exp button.find-near { color: inherit !important; font-size: inherit !important; font-weight: 500 !important; }
+.find-tray .find-st + .find-why:has(> .find-exp:first-child) { margin-top: -0.2rem; }
+.rec-board .find-stacks > summary, .rec-board .find-odds > summary, .rec-board .find-td > summary { margin: 0 0 0.35rem; cursor: pointer; color: #3dff6e; font-weight: 700; }
+.find-board.club-on :is(.find-stacks, .find-odds, .find-td) > summary { color: #ffffff; }
+.rec-board .find-kinds .find-band label.find.find-seek, #desk.tv-full #desk-glass .rec-board .find-kinds .find-band label.find.find-seek { flex: 1 0 100%; }
+.find-board .find-looking { display: flex; align-items: center; gap: 0.55rem; margin: 0.3rem 0 0.6rem; }
+.find-board .find-looking img { width: 2.2rem; height: 2.2rem; object-fit: contain; animation: bet-look 0.9s ease-in-out infinite; transform-origin: 68% 26%; }
+.find-board .find-looking p { margin: 0; color: #c9d4dd; font-weight: 600; }
+:is(.rec-board, #choice-result) .find-tray .find-say { display: flex; align-items: center; gap: 0.6rem; }
+:is(.rec-board, #choice-result) .find-tray .find-say button.find-fold { margin: 0 0 0 auto !important; padding: 0.15rem 0.6rem !important; min-height: 0 !important; border-radius: 999px !important; background: transparent !important; color: #c9d4dd !important; box-shadow: inset 0 0 0 1px #3a4652 !important; font-size: 0.8rem !important; font-weight: 700 !important; }
+:is(.rec-board, #choice-result) .find-tray.find-shut > :not(.find-say, .find-ticket, .find-row:has(.find-ticket)), :is(.rec-board, #choice-result) .find-tray.find-shut .find-row:has(.find-ticket) > :not(.find-ticket) { display: none !important; }
+.rec-board .find-match > .find-guide, #desk.tv-full #desk-glass .rec-board .find-match > .find-guide { grid-column: 1 / -1; margin: 0.15rem 0 0.1rem; color: #c9d4df; font-size: 14px; line-height: 1.35; text-align: center; }
+.rec-board .find-match .find-side-go, #desk.tv-full #desk-glass .rec-board .find-match .find-side-go { padding: 0.45rem 0.65rem; border: 1px solid rgba(61, 255, 110, 0.55); border-radius: 10px; background: rgba(61, 255, 110, 0.07); cursor: pointer; }
+.rec-board .find-match .find-side-go::after { content: " \203A"; font-weight: 700; }
+.rec-board .find-match .find-side-go.on, #desk.tv-full #desk-glass .rec-board .find-match .find-side-go.on { border-color: #e7c15a; background: rgba(231, 193, 90, 0.14); box-shadow: none; }
+.rec-board .find-match .find-at { align-self: center; margin-top: 0; }
+.find-board.club-on .find-match .find-side-go:not(.on) { border-color: rgba(255, 255, 255, 0.45) !important; background: rgba(255, 255, 255, 0.08) !important; }
+.rec-board .find-match .find-side-go.on, #desk.tv-full #desk-glass .rec-board .find-match .find-side-go.on { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.rec-board .find-match .find-side-go.on::after { content: "\00D7"; flex: none; font-size: 24px; font-weight: 700; line-height: 0.8; }
+.rec-board .find-guide button.find-guide-back, #desk.tv-full #desk-glass .rec-board .find-guide button.find-guide-back { display: inline; width: auto; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: #e7c15a; font: inherit; font-weight: 700; letter-spacing: 0; text-decoration: underline; text-underline-offset: 2px; text-transform: none; cursor: pointer; }
+.find-roster .find-names .find-hides { display: flex; flex: 1 0 100%; flex-wrap: wrap; gap: 0.3rem 1.2rem; }
+.find-roster .find-names .find-hides label.find-hide { flex: none; }
+.find-roster.hide-empty .find-names > span, .find-roster.hide-empty .find-names > details > span { display: none !important; }
+.rec-board .find-match > .find-everyone { grid-column: 1 / -1; margin: 0.35rem 0 0.2rem; }
+.rec-board .find-match > .find-everyone[hidden] { display: none; }
+.rec-board .find-everyone > summary { margin: 0 0 0.35rem; cursor: pointer; color: #3dff6e; font-weight: 700; }
+.find-board.club-on .find-everyone > summary { color: #ffffff; }
+.rec-board .find-everyone > .find-roster.find-all { margin: 0.15rem 0 0.55rem 0.9rem; }
+.find-roster.find-all .find-names > span, .find-roster.find-all .find-names > details, .find-roster.find-all > button.find-parlay, .find-roster.find-all label.find-hide:has(input[data-kind="empty"]) { display: none !important; }
+.rec-board .find-roster .find-names span.find-chip { display: inline-flex; align-items: stretch; padding: 0; border-radius: 8px; overflow: hidden; background: none; }
+.find-roster .find-names .find-chip > button, #desk.tv-full #desk-glass .find-board .find-roster .find-names .find-chip > button { margin: 0 !important; border-radius: 0 !important; }
+.find-roster .find-names button.find-plus, #desk.tv-full #desk-glass .find-board .find-roster .find-names button.find-plus { width: 1.9rem; min-width: 1.9rem; min-height: 0; padding: 0; border: 0 !important; border-left: 1px solid rgba(255, 255, 255, 0.16) !important; background: #3dff6e !important; color: #04140c !important; box-shadow: inset 0 0 0 3rem rgba(0, 0, 0, 0.14) !important; font-size: 17px; font-weight: 500; line-height: 1; opacity: 0.9; cursor: pointer; transition: box-shadow 0.15s, opacity 0.15s; }
+.find-roster .find-names button.find-plus:hover, #desk.tv-full #desk-glass .find-board .find-roster .find-names button.find-plus:hover { box-shadow: inset 0 0 0 3rem rgba(255, 255, 255, 0.1) !important; opacity: 1; }
+.find-plus::before { content: "+"; }
+.find-chip:has(> button.on) > .find-plus::before { content: "\2713"; }
+#desk.tv-full #desk-glass .find-board.club-on .find-roster .find-names button.find-plus, .find-board.club-on .find-roster .find-names button.find-plus { background: var(--club-chip) right / 2000% 100% !important; color: #ffffff !important; }
+#desk.tv-full #desk-glass .find-board.club-on .find-roster .find-names .find-chip:has(> button.on) > button.find-plus, .find-board.club-on .find-roster .find-names .find-chip:has(> button.on) > button.find-plus { background: var(--club-pick) right / 2000% 100% !important; color: var(--club-pick-ink) !important; }
+.find-board.club-on .find-everyone > .find-roster.find-all[style] { padding: 0.45rem 0.7rem 0.55rem; border-radius: 10px; background: var(--club-card); box-shadow: inset 3px 0 0 var(--club-pick); }
+.find-game-line { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.5rem; }
+.find-board .find-game-line > button, #desk.tv-full #desk-glass .find-board .find-game-line > button { width: auto; min-height: 0; margin: 0; padding: 0.35rem 0.85rem; border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 999px; background: rgba(0, 0, 0, 0.28); color: #ffffff; box-shadow: none; text-transform: none; letter-spacing: normal; font-size: 14px; font-weight: 700; cursor: pointer; }
+.find-game-line > button::after { content: " \203A"; }
+.find-board > label.find.find-wiped { position: relative; align-items: center; }
+.find-board > label.find.find-wiped input, #desk.tv-full #desk-glass .find-board > label.find.find-wiped input { padding-left: 2.4rem; }
+.find-board > label.find.find-wiped input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+.find-board > label.find button.find-wipe, #desk.tv-full #desk-glass .find-board > label.find button.find-wipe { position: absolute; left: 0.35rem; top: 50%; z-index: 1; width: 1.8rem; height: 1.8rem; min-height: 0; margin: 0; padding: 0; transform: translateY(-50%); border: 0; border-radius: 50%; background: transparent; color: #9fb3c8; box-shadow: none; font-size: 22px; font-weight: 400; line-height: 1; cursor: pointer; }
+.find-board > label.find button.find-wipe:hover, #desk.tv-full #desk-glass .find-board > label.find button.find-wipe:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+.find-board > label.find:has(input:placeholder-shown) button.find-wipe { visibility: hidden; }
+.rec-board > h2 button.find-shot, #desk.tv-full #desk-glass .rec-board > h2 button.find-shot { display: inline-flex; align-items: center; gap: 0.4rem; flex: none; width: auto; height: auto; min-height: 0; margin: 0 0 0 auto; padding: 0.3rem 0.8rem; border: 1px solid #3dff6e; border-radius: 999px; background: #07140f; box-shadow: none; color: #3dff6e; font-family: Outfit, system-ui, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: normal; text-transform: none; cursor: pointer; }
+.rec-board > h2:has(button.find-shot) { display: flex; align-items: center; gap: 0.7rem; }
+.rec-board > h2 button.find-shot.busy { opacity: 0.6; cursor: progress; }
+.find-board.club-on > h2 button.find-shot { color: #ffffff !important; background-color: rgba(0, 0, 0, 0.3) !important; border-color: var(--club-edge) !important; }
+.rec-board > p.find-shot-note { margin: 0.2rem 0 0.6rem; }
+.rec-board > .find-shot-row { display: flex; align-items: stretch; gap: 0.5rem; margin: 0.4rem 0 0.2rem; }
+.rec-board > .find-shot-row[hidden] { display: none; }
+.find-shot-row .find-shot-box { flex: 1; min-height: 3.2rem; padding: 0.6rem 0.8rem; border: 2px dashed #3dff6e; border-radius: 10px; background: #041018; color: #f4f7fb; caret-color: transparent; outline: none; overflow: hidden; }
+.find-shot-row .find-shot-box:empty::before { content: attr(data-say); color: #9fb3c8; font-weight: 600; }
+.find-shot-row .find-shot-box:focus { box-shadow: 0 0 0 3px rgba(61, 255, 110, 0.25); }
+.rec-board > .find-shot-row button.find-shot-pick, #desk.tv-full #desk-glass .rec-board > .find-shot-row button.find-shot-pick { width: auto; min-height: 0; margin: 0; padding: 0 0.9rem; border: 1px solid #3dff6e; border-radius: 10px; background: #07140f; box-shadow: none; color: #3dff6e; font-size: 14px; font-weight: 700; text-transform: none; letter-spacing: normal; cursor: pointer; }
+.rec-board > .find-shot-wait { display: flex; align-items: center; gap: 0.8rem; margin: 0.4rem 0 0.6rem; padding: 0.7rem 0.9rem; border: 1px solid rgba(61, 255, 110, 0.55); border-radius: 12px; background: #041018; }
+.find-shot-wait img { width: 3.2rem; height: 3.2rem; object-fit: cover; object-position: top; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.15); }
+.find-shot-wait-text { flex: 1; display: grid; gap: 0.3rem; min-width: 0; }
+.find-shot-wait-text b { display: flex; align-items: center; gap: 0.5rem; color: #f4f7fb; font-size: 15px; }
+.find-shot-wait-text small { color: #9fb3c8; font-size: 12px; font-variant-numeric: tabular-nums; }
+.find-shot-spin { width: 14px; height: 14px; flex: none; border: 2px solid rgba(61, 255, 110, 0.25); border-top-color: #3dff6e; border-radius: 50%; animation: find-shot-spin 0.8s linear infinite; }
+@keyframes find-shot-spin { to { transform: rotate(360deg); } }
+.find-shot-bar { height: 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.find-shot-bar i { display: block; width: 0; height: 100%; border-radius: inherit; background: #3dff6e; transition: width 0.5s ease-out; }
+.rec-board > .find-shot-near { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0 0 0.6rem; }
+.find-shot-near p { flex-basis: 100%; margin: 0; color: #9fb3c8; font-size: 13px; font-weight: 600; }
+.rec-board > .find-shot-near button, #desk.tv-full #desk-glass .rec-board > .find-shot-near button { display: inline-flex; align-items: center; gap: 0.5rem; width: auto; min-height: 0; margin: 0; padding: 0.4rem 0.75rem; border: 1px solid rgba(61, 255, 110, 0.55); border-radius: 999px; background: #07140f; box-shadow: none; color: #f4f7fb; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal; cursor: pointer; }
+.find-shot-near button b { color: #3dff6e; }
+.find-shot-near button::before { content: "+"; color: #3dff6e; font-weight: 800; }
+.rec-board > .find-shot-near button:hover { background: #0c2418; }
+.rec-board .find-tray i.gm { font-style: normal; color: #f4f7fb; border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 999px; padding: 0.05rem 0.5rem; font-size: 11px; font-weight: 700; letter-spacing: 0.03em; }

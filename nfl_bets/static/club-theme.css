@@ -1,0 +1,24 @@
+/* Team colors on the find board. club-theme.js sets the --club-* colors for one team or a mix of two. */
+#desk-glass:has(.find-board.club-on), #desk-glass-in:has(.find-board.club-on) { background: var(--club-page) !important; }
+.find-board.club-on { background: var(--club-top) !important; }
+
+.find-board.club-on :is(.find-hits:not(.find-tray) > button, .find-names button, .find-sort > button, button.find-leg),
+#desk.tv-full #desk-glass .find-board.club-on :is(.find-hits:not(.find-tray) > button, .find-names button, .find-sort > button, button.find-leg) { background: var(--club-chip) !important; color: var(--club-chip-ink) !important; border-color: transparent !important; box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.25) !important; }
+.find-board.club-on :is(.find-names button.on, .find-sort > button[aria-pressed="true"], button.find-leg.on, .find-roster button.find-parlay, button.find-show),
+#desk.tv-full #desk-glass .find-board.club-on :is(.find-names button.on, .find-sort > button[aria-pressed="true"], button.find-leg.on, .find-roster button.find-parlay, button.find-show) { background: var(--club-pick) !important; color: var(--club-pick-ink) !important; text-shadow: var(--club-pick-shadow); box-shadow: none !important; }
+.find-board.club-on .find-tray button.find-out { background-color: transparent !important; color: #c4cde0 !important; box-shadow: inset 0 0 0 1px var(--club-edge) !important; }
+
+.find-board.club-on :is(i.pay, i.px, .px, .pay, .rec-count, .find-score > b, .find-note > b, .find-brief > summary, button.stack-more-go, .find-say) { color: #ffffff !important; }
+.find-board.club-on :is(i.pct, .pct, b.find-at) { color: var(--club-hot) !important; }
+.find-board.club-on i.prop { color: var(--club-cool) !important; }
+.find-board.club-on :is(b.leg-league, button.share-bet, button.find-games-go, button.find-clear, button.find-edit, button.find-fold) { color: #ffffff !important; background-color: rgba(0, 0, 0, 0.3) !important; border-color: var(--club-edge) !important; }
+.find-board.club-on .find-tray { background: var(--club-page) !important; }
+.find-board.club-on .find-tray .find-why { color: #e3e8f2 !important; }
+.find-board.club-on i.sg { color: var(--club-pick-ink) !important; background: var(--club-pick) !important; text-shadow: var(--club-pick-shadow); }
+.find-board.club-on span.find-absent { color: var(--club-hot) !important; background: rgba(0, 0, 0, 0.35) !important; box-shadow: inset 0 0 0 1px var(--club-hot) !important; }
+
+.find-board.club-on :is(.rec-bet, .rec-bet.open) { background: var(--club-card) !important; border-color: var(--club-edge) !important; }
+.find-board.club-on :is(.find-match, .find-when, section.rec-strategy, .find-ticket) { background: var(--club-panel) !important; border-color: var(--club-line) !important; }
+.find-board.club-on label.find input { background: var(--club-input) !important; border-color: var(--club-edge) !important; }
+.find-board.club-on :is(.find-group + .find-group, .find-tray .find-row) { border-color: var(--club-line) !important; }
+.find-board.club-on .find-match .find-side-go.on, #desk.tv-full #desk-glass .find-board.club-on .find-match .find-side-go.on { background: var(--club-pick) !important; color: var(--club-pick-ink) !important; border-color: var(--club-pick) !important; text-shadow: var(--club-pick-shadow); }

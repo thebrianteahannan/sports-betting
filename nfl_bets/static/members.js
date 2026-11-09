@@ -66,7 +66,7 @@ function showMember(payload) {
   window.memberName = member.name || "";
   window.memberBorn = member.born || "";
   window.memberState = member.state || "";
-  window.memberBook = member.book || "";
+  window.memberBook = member.book || ""; window.memberHide = member.hide || {};
   window.fullAt = member.fullAt || "";
   if (window.applyMember) applyMember(window.memberState);
   window.memberReady = true;

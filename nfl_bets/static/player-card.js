@@ -13,6 +13,8 @@ function paintCard(list, heading, person) {
   fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "card", name: person.name, sport }) }).then((res) => res.json()).then((data) => {
     if (!box.isConnected || !data || (!data.line && !(data.stats || []).length)) { box.remove(); return; }
     box.replaceChildren();
+    const kinds = box.parentElement && box.parentElement.querySelector(":scope > .find-kinds");
+    if (kinds && box.compareDocumentPosition(kinds) & Node.DOCUMENT_POSITION_PRECEDING) kinds.before(box);
     if (data.line) { const line = document.createElement("p"); line.className = "find-why"; line.textContent = data.line; box.append(line); }
     if (data.span) { const span = document.createElement("p"); span.className = "quiet"; span.textContent = data.span; box.append(span); }
     const grid = document.createElement("div");

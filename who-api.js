@@ -219,12 +219,20 @@ async function teamRoster(raw, sport) {
       const linePos = new Set(["OT", "OG", "G", "C", "OL", "T", "LT", "RT", "LG", "RG"]);
       const defPos = new Set(["CB", "S", "FS", "SS", "DB", "LB", "ILB", "OLB", "MLB", "DT", "DE", "DL", "NT", "EDGE"]);
       const football = team.league === "nfl";
+      const starters = new Set();
+      if (team.sport === "basketball") {
+        try {
+          const chart = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${team.sport}/${team.league}/teams/${team.id}/depthcharts`, { headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" } });
+          const spots = chart.ok ? (((await chart.json()).depthchart || [{}])[0] || {}).positions || {} : {};
+          for (const spot of ["pg", "sg", "sf", "pf", "c"]) { const first = ((spots[spot] || {}).athletes || []).map((ath) => String(ath.displayName || "")).find((who) => who && !starters.has(who)); if (first) starters.add(first); }
+        } catch (error) { starters.clear(); }
+      }
       for (const group of roster.athletes || []) {
         const spot = String(group.position || "");
         for (const item of group.items || (group.displayName ? [group] : [])) {
           const name = String(item.displayName || item.fullName || "").trim();
           const pos = String((item.position && item.position.abbreviation) || "");
-          if (name && String((item.status && item.status.type) || "active") !== "inactive") found.players.push({ name, fold: football && (spot === "defense" || linePos.has(pos) || defPos.has(pos)) });
+          if (name && String((item.status && item.status.type) || "active") !== "inactive") found.players.push({ name, pos, fold: football && (spot === "defense" || linePos.has(pos) || defPos.has(pos)), def: football && (spot === "defense" || defPos.has(pos)), bench: starters.size >= 5 && !starters.has(name) });
         }
       }
     }

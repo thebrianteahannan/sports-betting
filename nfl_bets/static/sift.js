@@ -165,10 +165,10 @@ function paintScores(holder, game, people, list, hits) {
   (people || []).forEach((person) => { if (!person || person.kind !== "player") return; (person.bets || []).forEach((bet) => { if (bet.match !== game.match || bet.kickoff !== game.kickoff || !isTd(bet)) return; const price = Number(bet.odds); if (!price) return; const chance = shot(price); const had = best.get(person.name); if (!had || chance > had.chance) best.set(person.name, { person, chance, odds: price }); }); });
   const picked = [...best.values()].sort((a, b) => b.chance - a.chance);
   if (!picked.length) return;
-  const box = document.createElement("div"); box.className = "find-score"; const title = document.createElement("b"); title.textContent = "Most likely to score a touchdown"; const note = document.createElement("p"); note.className = "find-td-note"; const paintNote = (team) => { const lines = new Map(); picked.forEach((row) => { const extra = teamTd(people, row.person.name, game.match, game.kickoff).replace(/^\n/, ""); if (!extra) return; const key = extra.replace(/, \d+% of those passes go to an RB$/, ""); if (!lines.has(key) || /go to an RB/.test(extra)) lines.set(key, extra); }); note.textContent = [...lines.values()].filter((line) => { const nick = line.split(" ")[0]; return !team || String(team).endsWith(nick); }).join("\n"); }; const names = document.createElement("div"); names.className = "find-hits"; paintNote(); loadZone(people, names); if (people && people.zoneJob) people.zoneJob.then(() => { if (note.isConnected) paintNote((((match && match.querySelector(".find-side-go.on")) || {}).textContent || "").split(",")[0].trim()); }); const link = document.createElement("button"); link.type = "button"; link.className = "find-all-td"; link.textContent = "See every NFL player most likely to score a touchdown"; const openPlayer = (person) => { const board = holder.closest(".find-board"); const roster = board && board.querySelector(":scope > .find-roster"); showFind(list, hits, person, roster, people || (board && board.people) || [], false, "Touchdowns"); };
+  const box = document.createElement("details"); box.className = "find-score find-td"; const title = document.createElement("summary"); title.textContent = "Most likely to score a touchdown"; const note = document.createElement("p"); note.className = "find-td-note"; const paintNote = (team) => { const lines = new Map(); picked.forEach((row) => { const extra = teamTd(people, row.person.name, game.match, game.kickoff).replace(/^\n/, ""); if (!extra) return; const key = extra.replace(/, \d+% of those passes go to an RB$/, ""); if (!lines.has(key) || /go to an RB/.test(extra)) lines.set(key, extra); }); const text = [...lines.values()].filter((line) => { const nick = line.split(" ")[0]; return !team || String(team).endsWith(nick); }).join("\n"); if (note.textContent !== text) note.textContent = text; }; const names = document.createElement("div"); names.className = "find-hits"; paintNote(); loadZone(people, names); if (people && people.zoneJob) people.zoneJob.then(() => { if (note.isConnected) paintNote((((match && match.querySelector(".find-side-go.on")) || {}).textContent || "").split(",")[0].trim()); }); const link = document.createElement("button"); link.type = "button"; link.className = "find-all-td"; link.textContent = "See every NFL player most likely to score a touchdown"; const openPlayer = (person) => { const board = holder.closest(".find-board"); const roster = board && board.querySelector(":scope > .find-roster"); showFind(list, hits, person, roster, people || (board && board.people) || [], false, "Touchdowns"); };
   picked.forEach((row, index) => { const button = document.createElement("button"); button.type = "button"; button.dataset.who = row.person.name; button.textContent = `${row.person.name}, ${Number(row.odds) > 0 ? `+${row.odds}` : row.odds}, ${Math.round(row.chance * 100)}%${findCash(row.odds) ? `, $5 profits ${findCash(row.odds)}` : ""}`; if (index >= 5) button.hidden = true; button.addEventListener("click", () => openPlayer(row.person)); names.append(button); });
   link.addEventListener("click", () => { const team = (((match && match.querySelector(".find-side-go.on")) || {}).textContent || "").split(",")[0].trim(); openTdPage(list, people, hits, game, team); });
-  if (String(game.sport || "").toUpperCase() === "NFL") names.append(link); box.append(title, note, names); holder.append(box); const match = [...holder.querySelectorAll(".find-match")].pop(); const showChips = () => { const team = (((match && match.querySelector(".find-side-go.on")) || {}).textContent || "").split(",")[0].trim(); paintNote(team); const rows = [...names.querySelectorAll("button:not(.find-all-td)")]; const panel = match && [...match.querySelectorAll(".find-side")].find((node) => !node.hidden); const have = panel && [...panel.querySelectorAll(".find-roster .find-names button, .find-roster .find-names span")].map((node) => (typeof plainName === "function" ? plainName(node.textContent.replace(/, out$/, "")) : "")); const mine = rows.filter((button) => { const who = typeof plainName === "function" ? plainName(button.dataset.who) : button.dataset.who; return !team || !have || !have.length || have.some((name) => name === who || name.startsWith(`${who} `) || who.startsWith(`${name} `)); }); rows.forEach((button) => { button.hidden = true; }); mine.slice(0, 5).forEach((button) => { button.hidden = false; }); }; if (match) { match.addEventListener("click", (event) => { if (event.target.closest(".find-side-go")) showChips(); }); new MutationObserver(() => { if (match.querySelector(".find-side-go.on")) showChips(); }).observe(match, { childList: true, subtree: true }); }
+  if (String(game.sport || "").toUpperCase() === "NFL") names.append(link); box.append(title, note, names); const match = [...holder.querySelectorAll(".find-match")].pop(); if (match) box.style.gridColumn = "1 / -1"; (match || holder).append(box); const showChips = () => { const team = (((match && match.querySelector(".find-side-go.on")) || {}).textContent || "").split(",")[0].trim(); paintNote(team); const rows = [...names.querySelectorAll("button:not(.find-all-td)")]; const panel = match && [...match.querySelectorAll(".find-side")].find((node) => !node.hidden); const have = panel && [...panel.querySelectorAll(".find-roster .find-names button, .find-roster .find-names span")].map((node) => (typeof plainName === "function" ? plainName(node.textContent.replace(/, out$/, "")) : "")); const mine = rows.filter((button) => { const who = typeof plainName === "function" ? plainName(button.dataset.who) : button.dataset.who; return !team || !have || !have.length || have.some((name) => name === who || name.startsWith(`${who} `) || who.startsWith(`${name} `)); }); rows.forEach((button) => { button.hidden = true; }); mine.slice(0, 5).forEach((button) => { button.hidden = false; }); }; if (match) { match.addEventListener("click", (event) => { if (event.target.closest(".find-side-go")) showChips(); }); new MutationObserver(() => { if (match.querySelector(".find-side-go.on")) showChips(); }).observe(match, { childList: true, subtree: true }); }
 }
 function openTdPage(list, people, hits, game, team) {
   const board = list && list.closest(".find-board"); if (!board) return; const span = board.querySelector(".find-span"); if (span) { span.classList.add("find-picked"); const go = span.querySelector(".find-games-go"); if (go) go.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); } const holder = board.querySelector(".find-teams"); if (holder) holder.replaceChildren(); if (hits) hits.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on"); const slateOn = !game && board.querySelector(".find-games.find-on"), slateKeys = slateOn && typeof loadedGames === "function" ? new Set(loadedGames(people, slateOn.dataset.span || "today").map((row) => `${row.match}|${row.kickoff}`)) : null;
@@ -185,8 +185,8 @@ function paintTotal(holder, game, people) {
   const sides = (String(game.match || "").includes(" @ ") ? String(game.match).split(" @ ") : String(game.match || "").split(" v ").reverse()).map((side) => side.trim().toLowerCase()), bySide = (rows) => rows.slice().sort((a, b) => sides.findIndex((side) => String(a.label || "").toLowerCase().includes(side)) - sides.findIndex((side) => String(b.label || "").toLowerCase().includes(side)));
   const totals = take("total").filter((bet) => /^(over|under)\b/i.test(bet.label)); const over = totals.find((bet) => /^over\b/i.test(bet.label)); const num = over && (String(over.label).match(/\d+(?:\.\d+)?/) || [])[0]; const under = num && totals.find((bet) => /^under\b/i.test(bet.label) && String(bet.label).includes(num));
   const moneys = bySide(take("moneyline")); const rows = [...bySide(take("spread")), ...moneys, ...[over, under].filter(Boolean)]; if (!rows.length) return;
-  const favorite = moneys.reduce((best, bet) => Number(bet.odds) < Number(best.odds) ? bet : best, moneys[0]); const called = favorite && moneys.filter((bet) => Number(bet.odds) === Number(favorite.odds)).length === 1; const box = document.createElement("div"); box.className = "find-score find-lines"; if (called) { const call = document.createElement("p"); call.className = "find-pick"; call.innerHTML = `${esc(String(favorite.label || "").replace(/\s+moneyline$/i, ""))} are projected to win <i class="pct">${esc(findPct(Number(favorite.odds)))}</i>`; box.append(call); } const title = document.createElement("b"); title.textContent = "Game odds"; box.append(title); rows.forEach((bet) => { const price = Number(bet.odds); const tag = price > 0 ? `+${price}` : String(price); const line = document.createElement("p"); line.className = "rec-gist"; line.innerHTML = `<i class="prop">${esc(bet.label)}</i> <i class="px">${esc(tag)}</i> <i class="pct">${esc(findPct(price))}</i> <i class="pay">${esc(findCash(price) ? `$5 profits ${findCash(price)}` : "")}</i>`; box.append(line); });
-  const match = [...holder.querySelectorAll(".find-match")].pop(); const body = match && match.querySelector(".find-body"); if (match && body) match.insertBefore(box, body); else holder.append(box);
+  const favorite = moneys.reduce((best, bet) => Number(bet.odds) < Number(best.odds) ? bet : best, moneys[0]); const called = favorite && moneys.filter((bet) => Number(bet.odds) === Number(favorite.odds)).length === 1; const box = document.createElement("div"); box.className = "find-score find-lines"; if (called) { const call = document.createElement("p"); call.className = "find-pick"; call.innerHTML = `${esc(String(favorite.label || "").replace(/\s+moneyline$/i, ""))} are projected to win <i class="pct">${esc(findPct(Number(favorite.odds)))}</i>`; box.append(call); } const fold = document.createElement("details"); fold.className = "find-odds"; const title = document.createElement("summary"); title.textContent = `Game odds, ${rows.length}`; fold.append(title); box.append(fold); rows.forEach((bet) => { const price = Number(bet.odds); const tag = price > 0 ? `+${price}` : String(price); const line = document.createElement("p"); line.className = "rec-gist"; line.innerHTML = `<i class="prop">${esc(bet.label)}</i> <i class="px">${esc(tag)}</i> <i class="pct">${esc(findPct(price))}</i> <i class="pay">${esc(findCash(price) ? `$5 profits ${findCash(price)}` : "")}</i>`; fold.append(line); });
+  const match = [...holder.querySelectorAll(".find-match")].pop(); const body = match && match.querySelector(".find-body"); if (match && body) match.insertBefore(box, body); else holder.append(box); const crowd = match && match.querySelector(":scope > .find-everyone"); const call = box.querySelector(".find-pick"); if (crowd && call) { const top = document.createElement("div"); top.className = box.className; top.style.gridColumn = "1 / -1"; top.append(call); crowd.before(top); }
 }
 function siftKinds(list, preset) {
   const rows = [...list.querySelectorAll(":scope > .rec-bet")];
@@ -234,7 +234,7 @@ function siftKinds(list, preset) {
   };
   const oddsInput = field("Odds", "-150", "1", "odds");
   const pctInput = field("%", "75", "0.1", "pct");
-  const cashInput = field("$5 profits", "2", "0.01", "cash"); const wipe = document.createElement("button"); wipe.type = "button"; wipe.className = "find-clear"; wipe.textContent = "Clear"; wipe.addEventListener("click", () => { [oddsInput, pctInput, cashInput].forEach((input) => { input.value = ""; }); ["odds", "pct", "cash"].forEach((key) => { try { localStorage.removeItem("parlay-band-" + key); } catch (error) {} }); applyKinds(); }); band.append(wipe);
+  const cashInput = field("$5 profits", "2", "0.01", "cash"); const propInput = typeof propSeekField === "function" ? propSeekField(band, () => applyKinds()) : null; const wipe = document.createElement("button"); wipe.type = "button"; wipe.className = "find-clear"; wipe.textContent = "Clear"; wipe.addEventListener("click", () => { [oddsInput, pctInput, cashInput, propInput].filter(Boolean).forEach((input) => { input.value = ""; }); ["odds", "pct", "cash"].forEach((key) => { try { localStorage.removeItem("parlay-band-" + key); } catch (error) {} }); applyKinds(); }); band.append(wipe);
   const none = document.createElement("p");
   none.className = "quiet";
   none.hidden = true;
@@ -247,11 +247,11 @@ function siftKinds(list, preset) {
     const cash = Number(cashInput.value);
     const oddsOn = oddsInput.value.trim() !== "" && Number.isFinite(odds) && odds !== 0;
     const pctOn = pctInput.value.trim() !== "" && Number.isFinite(pct);
-    const cashOn = cashInput.value.trim() !== "" && Number.isFinite(cash);
-    const on = !!kind || oddsOn || pctOn || cashOn;
-    if (on) { list.classList.remove("find-only-on"); const show = list.querySelector(".find-show"); if (show) show.textContent = "Show those"; }
+    const cashOn = cashInput.value.trim() !== "" && Number.isFinite(cash); const seek = propInput ? propInput.value.trim() : "";
+    const on = !!kind || oddsOn || pctOn || cashOn || !!seek;
+    if (on) { list.classList.remove("find-only-on"); const show = list.querySelector(".find-show"); if (show) show.textContent = "Show all"; }
     let shown = 0;
-    rows.forEach((row) => {
+    list.querySelectorAll(":scope > .rec-bet").forEach((row) => {
       const price = Number(row.dataset.odds);
       const chance = !price ? 0 : price < 0 ? Math.abs(price) / (Math.abs(price) + 100) * 100 : 100 / (price + 100) * 100;
       const won = !price ? 0 : price < 0 ? 500 / -price : price / 20;
@@ -259,12 +259,12 @@ function siftKinds(list, preset) {
       if (kind && (row.dataset.kind || "Other") !== kind) hide = true;
       if (oddsOn) hide = hide || (odds < 0 ? !(price <= odds) : !(price >= odds));
       if (pctOn) hide = hide || chance + 1e-9 < pct;
-      if (cashOn) hide = hide || won + 1e-9 < cash;
+      if (cashOn) hide = hide || won + 1e-9 < cash; if (seek) hide = hide || !propSeekHit(row, seek);
       row.classList.toggle("find-off", hide);
       if (!hide) shown += 1;
     });
     list.querySelectorAll(":scope > .find-market").forEach((head) => { let node = head.nextElementSibling, any = false; while (node && !node.classList.contains("find-market")) { if (node.classList.contains("rec-bet") && !node.classList.contains("find-off")) any = true; node = node.nextElementSibling; } head.classList.toggle("find-off", on && !any); });
-    const bits = [kind, oddsOn ? (odds > 0 ? `+${odds}` : String(odds)) : "", pctOn ? `${pct}%` : "", cashOn ? `$${cash}` : ""].filter(Boolean);
+    const bits = [kind, oddsOn ? (odds > 0 ? `+${odds}` : String(odds)) : "", pctOn ? `${pct}%` : "", cashOn ? `$${cash}` : "", seek ? `"${seek}"` : ""].filter(Boolean);
     summary.textContent = bits.length ? `Filter, ${bits.join(", ")}` : "Filter";
     none.hidden = !on || shown > 0;
   };
@@ -344,19 +344,19 @@ function parlayHint(legs) {
     const main = (rosterScan(rows, price) || [])[0];
     if (main && typeof rosterWho === "function") {
       const label = rosterWho(main.id, main.part, main.name);
-      say(main.fit ? "This matches " : "This is close to ");
+      const exp = document.createElement("span"); exp.className = "find-exp"; note.append(exp); exp.append(main.fit ? "Experimental: matches " : "Experimental: close to ");
       const go = document.createElement("button");
       go.type = "button";
       go.className = "find-near";
       go.textContent = label;
       go.addEventListener("click", () => { if (window.openStrategy) openStrategy(main.id, main.part || ""); });
-      note.append(go);
-      say(main.fit ? "." : `.${main.why ? ` ${main.why}` : ""}`);
+      exp.append(go);
+      exp.append(main.fit ? "." : `.${main.why ? ` ${main.why}` : ""}`);
       said = label;
     }
   }
   const next = parlayNext(rows, said);
-  if (next) { if (note.childNodes.length) say(" "); say(next); }
+  if (next) { const more = document.createElement("span"); more.className = "find-exp"; more.textContent = note.childNodes.length ? ` ${next}` : `Experimental: ${next}`; note.append(more); }
   return note.childNodes.length ? note : "";
 }
 function parlayNext(legs, said) {
@@ -452,7 +452,7 @@ function paintTrayBuild(tray) {
   line.className = "find-ticket";
   const head = document.createElement("b");
   const tag = price > 0 ? `+${price}` : String(price);
-  head.innerHTML = [tag && `<i class="px">${esc(tag)}</i>`, findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`, findCash(price) && `<i class="pay">${esc(`$5 profits ${findCash(price)}`)}</i>`, ((rows) => { const games = rows.map((leg) => String(leg.match || leg.gameId || "")); return games.length > 1 && games.every(Boolean) && new Set(games).size === 1; })(legs) && `<i class="sg">Same game</i>`].filter(Boolean).join("");
+  head.innerHTML = [tag && `<i class="px">${esc(tag)}</i>`, findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`, findCash(price) && `<i class="pay">${esc(`$5 profits ${findCash(price)}`)}</i>`, ((rows) => { const games = rows.map((leg) => String(leg.match || leg.gameId || "")); return games.length > 1 && games.every(Boolean) && new Set(games).size === 1; })(legs) && `<i class="sg">Same game</i>`, typeof gameShortList === "function" && gameShortList(legs) && `<i class="gm">${esc(gameShortList(legs))}</i>`].filter(Boolean).join("");
   const share = document.createElement("button");
   share.type = "button";
   share.className = "share-bet";
