@@ -144,3 +144,16 @@ if (typeof paintParlay === "function") {
   const paintParlayBase = paintParlay;
   paintParlay = function () { paintParlayBase.apply(this, arguments); savePaint(); };
 }
+
+const saveScrollTop = new WeakMap();
+document.addEventListener("scroll", (event) => {
+  const box = event.target === document ? document.scrollingElement : event.target;
+  if (!box || !box.querySelector || box.closest(".find-tray")) return;
+  const top = box.scrollTop;
+  if (!saveScrollTop.has(box) || top < saveScrollTop.get(box)) { saveScrollTop.set(box, top); return; }
+  if (top - saveScrollTop.get(box) < 60) return;
+  saveScrollTop.set(box, top);
+  const tray = box.querySelector(".find-tray:not([hidden]):not(.find-shut):not(.find-edit)");
+  const fold = tray && tray.querySelector(".find-fold");
+  if (fold) fold.click();
+}, true);
