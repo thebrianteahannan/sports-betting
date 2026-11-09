@@ -399,7 +399,7 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/ones.js", "/stack.js", "/stack-more.js", "/game-stacks.js", "/hows.js", "/player-card.js", "/find.js", "/game-note.js", "/sift.js", "/find-sort.js", "/find-roster.js", "/club-theme.css", "/club-theme.js", "/tray-stack.js", "/club-colors.js", "/prop-seek.js", "/top-bar.css", "/top-bar.js", "/game-guide.js", "/bet-shot.js", "/game-short.js", "/live-stats.js", "/td-dive.js", "/terms.js", "/prop-lines.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/bet-ask.js", "/ask-bet.css", "/find-tray.css", "/slip.js", "/us-map.svg", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/ones.js", "/stack.js", "/stack-more.js", "/game-stacks.js", "/hows.js", "/player-card.js", "/find.js", "/game-note.js", "/sift.js", "/find-sort.js", "/find-roster.js", "/club-theme.css", "/club-theme.js", "/tray-stack.js", "/club-colors.js", "/prop-seek.js", "/top-bar.css", "/top-bar.js", "/game-guide.js", "/bet-shot.js", "/game-short.js", "/parlay-save.js", "/live-stats.js", "/td-dive.js", "/terms.js", "/prop-lines.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/bet-ask.js", "/ask-bet.css", "/find-tray.css", "/slip.js", "/us-map.svg", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
       serveStatic(res, url.pathname.slice(1));
       return;
     }
@@ -513,7 +513,7 @@ const server = http.createServer(async (req, res) => {
         const data = await loadMembers();
         const row = data.users.find((item) => item.id === user.id);
         if (!row) throw new Error("That membership is not here.");
-        if (body.hide) row.hide = { defense: !!body.hide.defense, bench: !!body.hide.bench, empty: !!body.hide.empty }; else row.book = book;
+        if (body.hide) row.hide = { defense: !!body.hide.defense, bench: !!body.hide.bench, empty: !!body.hide.empty, out: !!body.hide.out }; else row.book = book;
         await writeKey("bets/members.json", data);
         sendJson(res, { member: publicMember(row) });
         return;

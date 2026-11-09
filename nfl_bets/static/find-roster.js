@@ -28,10 +28,18 @@ function rosterGroup(roster, names, lined, rows, team) {
   });
   names.prepend(...boxes);
   groups.forEach((group) => group.list.forEach((item) => rosterPlus(item.button, item.hit)));
+  const outs = [...names.querySelectorAll(":scope > span.find-absent")];
+  if (outs.length) {
+    const box = document.createElement("div");
+    box.className = "find-group find-outs";
+    box.append(...outs);
+    if (boxes.length) boxes[boxes.length - 1].after(box); else names.prepend(box);
+  }
   const hasDef = rows.some((row) => row && row.def), hasBench = rows.some((row) => row && row.bench);
   const kinds = [];
   if (hasDef || hasBench) kinds.push(hasDef ? ["defense", " Hide defense"] : ["bench", " Hide bench"]);
-  if (names.querySelector(":scope > span, :scope > details > span")) kinds.push(["empty", " Hide no-bet players"]);
+  if (names.querySelector(":scope > span, :scope > details > span:not(.find-absent)")) kinds.push(["empty", " Hide no-bet players"]);
+  if (outs.length) kinds.push(["out", " Hide out players"]);
   if (!kinds.length) return;
   const bar = document.createElement("div");
   bar.className = "find-hides";
@@ -85,6 +93,7 @@ function rosterHide() {
     roster.classList.toggle("hide-def", !!hide.defense);
     roster.classList.toggle("hide-bench", !!hide.bench);
     roster.classList.toggle("hide-empty", !!hide.empty);
+    roster.classList.toggle("hide-out", !!hide.out);
     roster.querySelectorAll(".find-hide input").forEach((box) => { box.checked = !!hide[box.dataset.kind]; });
   });
 }

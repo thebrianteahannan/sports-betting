@@ -187,6 +187,7 @@ async function shotRead(board, file) {
     rows.forEach((row) => { if (!row.hit) row.hit = shotTeam(people, row.leg, shotGame(people, row.leg, rows.filter((one) => one.hit).map((one) => one.hit))); });
     const found = rows.filter((row) => row.hit).map((row) => row.hit), missed = rows.filter((row) => !row.hit).map((row) => row.leg);
     if (found.length) {
+      if (typeof saveDetach === "function") saveDetach();
       trayStackDo(`Read ${found.length} ${found.length === 1 ? "leg" : "legs"} from the screenshot.`, () => {
         parlayPick.clear(); parlayLeg.clear();
         found.forEach(({ person, bet }) => { if (person) parlayPick.set(person.key, person); parlayLeg.set(parlayKey(bet), bet); });
