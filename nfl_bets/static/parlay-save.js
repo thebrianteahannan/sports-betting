@@ -170,7 +170,7 @@ function savePaint() {
       const who = (row.picks || []).map((lite) => String(lite.name || "").split(" ").pop()).filter(Boolean);
       const said = who.length ? `${who.slice(0, 2).join(", ")}${row.legs.length > 2 ? ` +${row.legs.length - 2}` : ""}` : row.group && row.legs.length < 3 ? row.legs.map((bet) => String(bet.label || "").replace(/\s+spread$/i, "")).join(", ") : `${row.legs.length} ${row.legs.length === 1 ? "leg" : "legs"}`;
       go.innerHTML = [games && `<i>${esc(games)}</i>`, `<span>${esc(said)}</span>`, savePrice(row.legs) && `<b>${esc(savePrice(row.legs))}</b>`].filter(Boolean).join("");
-      go.addEventListener("click", () => saveOpen(row.id));
+      go.addEventListener("click", () => { saveOpen(row.id); document.querySelectorAll(".find-tray.find-shut").forEach((tray) => { const fold = tray.querySelector(".find-fold"); if (!fold) return; saveAutoShut.delete(tray); fold.click(); }); });
       const drop = document.createElement("button");
       drop.type = "button";
       drop.className = "find-saved-x";
