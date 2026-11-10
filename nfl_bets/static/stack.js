@@ -202,7 +202,7 @@ function paintStack() {
     const history = document.createElement("p");
     history.className = "rec-history";
     history.innerHTML = `<span>${esc(windowText)}</span><i class="rec-pay">${esc(rank[1])}</i>`;
-    block.append(history); if (window.stackMore) stackMore(history, name);
+    block.append(history); if (window.stackMore) stackMore(history, name); if (window.stackGrade) stackGrade(block, name);
     bets.forEach(([kind, rung, job]) => {
       const bet = document.createElement("div");
       bet.className = "rec-bet";

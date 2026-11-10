@@ -210,3 +210,14 @@
 .rec-board .stack-set > button.stack-set-st:hover, .rec-board .stack-set > button.stack-set-st.on, #desk.tv-full #desk-glass .rec-board .stack-set > button.stack-set-st:is(:hover, .on) { color: #e7c15a; border-bottom-color: #e7c15a; }
 .rec-board .stack-set.stack-mine > button.stack-set-st, #desk.tv-full #desk-glass .rec-board .stack-set.stack-mine > button.stack-set-st { margin-left: 0.45rem; }
 .rec-board .stack-set > p.stack-set-about { margin: 0 0 0.45rem; padding: 0.4rem 0.55rem; border-left: 3px solid #e7c15a; border-radius: 4px; background: rgba(231, 193, 90, 0.08); color: #d5dde6; font-size: 13px !important; line-height: 1.4 !important; }
+.rec-board .rec-strategy h3 .stack-grade-tag { display: inline-block; margin: 0 0.45rem 0 0.25rem; padding: 0.05rem 0.45rem; border: 1px solid; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; vertical-align: 0.1em; }
+.rec-board .rec-strategy h3 .stack-score { display: inline-flex; align-items: center; gap: 0.3rem; margin-left: 0.3rem; color: #8b98a5; font-size: 12px; font-weight: 700; letter-spacing: 0; vertical-align: 0.1em; }
+.rec-board .rec-strategy h3 .stack-score > i { display: inline-block; width: 3.2rem; height: 6px; border-radius: 3px; background: #26323c; overflow: hidden; }
+.rec-board .rec-strategy h3 .stack-score > i > i { display: block; height: 100%; border-radius: 3px; }
+.rec-board .rec-strategy h3 .stack-score b { font-size: 14px; font-weight: 800; }
+.rec-board .rec-strategy > .stack-grade { display: none; flex: 1 1 100%; min-width: 0; margin: 0.45rem 0 0.35rem; padding: 0.45rem 0.65rem; border-left: 3px solid; border-radius: 4px; background: rgba(255, 255, 255, 0.04); color: #d5dde6; cursor: auto; }
+.rec-board .rec-strategy.open > .stack-grade { display: block; }
+.rec-board .rec-strategy > .stack-grade p { display: block; margin: 0 0 0.4rem; color: #f4f7fb; font-size: 15px !important; font-weight: 700; line-height: 1.4 !important; }
+.rec-board .rec-strategy > .stack-grade b { display: block; margin-top: 0.3rem; color: #9fb3c8; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.rec-board .rec-strategy > .stack-grade ul { margin: 0.15rem 0 0; padding-left: 1.1rem; }
+.rec-board .rec-strategy > .stack-grade li { font-size: 14px !important; line-height: 1.4 !important; }
