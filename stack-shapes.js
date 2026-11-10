@@ -375,7 +375,9 @@ async function findStacks(board) {
     "Five touchdowns, one game": scorers(loaded, 5),
   };
   await tally(found, games);
-  return { found: Object.fromEntries(Object.entries(found).filter(([, value]) => value.length)), notes: NOTES };
+  let near = {};
+  try { near = await require("./stack-close").closeCalls(games, loaded, logs, found); } catch (error) { console.error("close calls failed:", error); }
+  return { found: Object.fromEntries(Object.entries(found).filter(([, value]) => value.length)), notes: NOTES, near };
 }
 
-module.exports = { findStacks };
+module.exports = { findStacks, kit: { bet, say, lineOf, grouped, cover, coverProfit, signedPair, num, int, totalWord, runner } };

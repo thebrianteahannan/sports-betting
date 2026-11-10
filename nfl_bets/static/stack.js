@@ -249,7 +249,7 @@ function stackKeep(set, when, leagues, games = [], teams = [], players = []) {
 }
 
 function stackChips(board) {
-  const sets = [...board.querySelectorAll(".stack-set")];
+  const sets = [...board.querySelectorAll(".rec-strategy > .stack-set")];
   const when = window.stackWhen || "today";
   const leagues = window.stackLeagues || [];
   const bets = (rows) => rows.reduce((sum, set) => sum + Number(set.dataset.n || 0), 0);
@@ -350,7 +350,7 @@ function applyStackFit(board) {
   board.querySelectorAll(".rec-strategy").forEach((block) => {
     if (!block.dataset.fit) waiting = true;
     if (block.dataset.fit && block.dataset.fit !== "note") {
-      const sets = [...block.querySelectorAll(".stack-set")];
+      const sets = [...block.querySelectorAll(":scope > .stack-set")];
       let shown = 0;
       sets.forEach((set) => { set.hidden = !stackKeep(set, when, leagues, games, teams, players); set.style.display = set.hidden ? "none" : ""; if (!set.hidden) shown += Number(set.dataset.n || 0); if (!set.hidden && set.dataset.beats === "1") beat += 1; });
       block.dataset.fit = shown ? "1" : "0"; block.dataset.shown = String(shown);
@@ -451,7 +451,7 @@ function fillStacks(board) {
           block.append(set); if (window.stackLabel) stackLabel(set);
         });
       });
-      applyStackFit(board);
+      applyStackFit(board); if (window.closeCalls) closeCalls(board, data.near || {});
     })
     .catch(() => { const wait = board.querySelector(".bet-load"); if (wait) wait.remove(); });
 }

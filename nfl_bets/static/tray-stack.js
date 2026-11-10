@@ -141,7 +141,7 @@ function trayStackOpen(name, labels = []) {
     if (!block.isConnected) return;
     if (!block.dataset.fit && tries++ < 60) { setTimeout(mark, 300); return; }
     const shared = (set) => String(set.dataset.labels || "").split("|").filter((label) => mine.has(key(label))).length;
-    const set = [...block.querySelectorAll(".stack-set")].sort((a, b) => shared(b) - shared(a))[0];
+    const set = [...block.querySelectorAll(":scope > .stack-set")].sort((a, b) => shared(b) - shared(a))[0];
     if (!set || !shared(set)) return;
     set.classList.add("stack-mine");
     if (set.hidden && set.dataset.span !== "later" && window.stackWhen !== "week") window.stackWhen = "week";
@@ -159,7 +159,7 @@ function trayStackOnly(board) {
     block.hidden = !mine;
     block.style.display = mine ? "" : "none";
     const pick = mine && block.querySelector(".stack-set.stack-mine");
-    if (pick) block.querySelectorAll(".stack-set").forEach((set) => { set.hidden = set !== pick; set.style.display = set.hidden ? "none" : ""; });
+    if (pick) block.querySelectorAll(":scope > .stack-set").forEach((set) => { set.hidden = set !== pick; set.style.display = set.hidden ? "none" : ""; });
   });
   const none = board.querySelector(".stack-none");
   if (none) none.hidden = true;

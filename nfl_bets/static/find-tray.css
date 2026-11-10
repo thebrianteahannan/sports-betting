@@ -211,6 +211,12 @@
 .rec-board .stack-set.stack-mine > button.stack-set-st, #desk.tv-full #desk-glass .rec-board .stack-set.stack-mine > button.stack-set-st { margin-left: 0.45rem; }
 .rec-board .stack-set > p.stack-set-about { margin: 0 0 0.45rem; padding: 0.4rem 0.55rem; border-left: 3px solid #e7c15a; border-radius: 4px; background: rgba(231, 193, 90, 0.08); color: #d5dde6; font-size: 13px !important; line-height: 1.4 !important; }
 .rec-board .rec-strategy h3 .stack-grade-tag { display: inline-block; margin: 0 0.45rem 0 0.25rem; padding: 0.05rem 0.45rem; border: 1px solid; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; vertical-align: 0.1em; }
+.rec-board .rec-strategy > .stack-close { display: none; flex: 1 1 100%; min-width: 0; margin: 0.6rem 0 0.2rem; cursor: auto; }
+.rec-board .rec-strategy.open > .stack-close { display: block; }
+.rec-board .stack-close > button.stack-close-go, #desk.tv-full #desk-glass .rec-board .stack-close > button.stack-close-go { display: inline-block; width: auto; min-height: 0; margin: 0; padding: 0.3rem 0.7rem; border: 1px dashed #ff8a2a; border-radius: 8px; background: transparent; box-shadow: none; color: #ff8a2a; font-size: 13px !important; font-weight: 800; letter-spacing: 0; text-transform: none; cursor: pointer; }
+.rec-board .stack-close > .stack-set { display: block; position: relative; margin: 0.6rem 0 0.2rem; padding: 0.55rem 0.55rem 0.15rem; border: 1px dashed #ff8a2a; border-radius: 12px; }
+.rec-board .stack-close > .stack-set .rec-bet { display: block; }
+.rec-board .stack-close > .stack-set > p.stack-near-miss { margin: 0 5rem 0.45rem 0; padding: 0.35rem 0.55rem; border-left: 3px solid #ff8a2a; border-radius: 4px; background: rgba(255, 138, 42, 0.08); color: #ffd2ad; font-size: 13px !important; line-height: 1.4 !important; }
 .rec-board .rec-strategy h3 .stack-score { display: inline-flex; align-items: center; gap: 0.3rem; margin-left: 0.3rem; color: #8b98a5; font-size: 12px; font-weight: 700; letter-spacing: 0; vertical-align: 0.1em; }
 .rec-board .rec-strategy h3 .stack-score > i { display: inline-block; width: 3.2rem; height: 6px; border-radius: 3px; background: #26323c; overflow: hidden; }
 .rec-board .rec-strategy h3 .stack-score > i > i { display: block; height: 100%; border-radius: 3px; }

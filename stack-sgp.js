@@ -35,7 +35,7 @@ function byDesc(a, b) {
   return 0;
 }
 
-function build(games, loaded, logs, { end = "over", floor = 0, catches = "Receiving yards", need = 2 } = {}) {
+function build(games, loaded, logs, { end = "over", floor = 0, catches = "Receiving yards", need = 2, share = SHARE } = {}) {
   const nfl = loaded.filter(([game]) => String(game.sport || "") === "NFL");
   if (!nfl.length) return [];
   const cache = logCache();
@@ -53,7 +53,7 @@ function build(games, loaded, logs, { end = "over", floor = 0, catches = "Receiv
       const safe = Boolean(floor) && odds >= -2500 && implied(odds) >= floor;
       if (!stat || !line || Number(line[1]) < FLOOR[stat] || !((odds >= -500 && odds <= -150) || safe)) return;
       const read = count(String(leg.label || ""), "NFL", cache, last);
-      if (!read || read.hits < SHARE * read.games) return;
+      if (!read || read.hits < share * read.games) return;
       const pool = safe ? sure : best;
       const key = `${stat}\u0000${who}`;
       const prev = pool.get(key);
@@ -73,7 +73,7 @@ function build(games, loaded, logs, { end = "over", floor = 0, catches = "Receiv
       if (String(leg.market || "") !== "Alternate Total Points" || !line || !((odds >= -450 && odds <= -150) || low)) return;
       const text = `Over ${g(line[1])} total points`;
       const read = teamCount(text, game, logs);
-      if (read && read.hits >= SHARE * read.games && (need < 4 || low) && (!over || odds > over[1].odds)) over = ["The over", { ...leg, label: text }, read];
+      if (read && read.hits >= share * read.games && (need < 4 || low) && (!over || odds > over[1].odds)) over = ["The over", { ...leg, label: text }, read];
     });
     const whoOf = (row) => split(row[1].market)[0];
     const scoreOf = (who) => {
@@ -92,7 +92,7 @@ function build(games, loaded, logs, { end = "over", floor = 0, catches = "Receiv
         if (String(leg.market || "") !== "Alternate Spread" || !parsed || parsed[1] !== team || odds < -500 || odds > -150) return;
         const text = `${team} ${signed(parsed[2])} spread`;
         const read = teamCount(text, game, logs);
-        if (read && read.hits >= SHARE * read.games && (!found || odds > found[1].odds)) found = ["The spread", { ...leg, label: text }, read];
+        if (read && read.hits >= share * read.games && (!found || odds > found[1].odds)) found = ["The spread", { ...leg, label: text }, read];
       });
       return found;
     };
@@ -108,6 +108,7 @@ function build(games, loaded, logs, { end = "over", floor = 0, catches = "Receiv
         const tail = spread || over || scoreOf(whoOf(run));
         const rows = arms.concat([catchRow, run], tail ? [tail] : []);
         if (floor && (rows.filter((row) => implied(row[1].odds) >= floor).length < need || (need > 2 && rows.length < 4))) return;
+        if (share < SHARE && !rows.some((row) => row[2].hits < SHARE * row[2].games)) return;
         const edge = rows.reduce((sum, row) => sum + rate(row[2]) - implied(row[1].odds), 0);
         const bets = rows.map(([stat, leg]) => ({ kind: "Same-game parlay", rung: stat, label: String(leg.label || ""), odds: leg.odds, stake: 5, job: JOBS[stat], game: match }));
         picked.push([-edge, { game: match, bets }]);
@@ -117,7 +118,7 @@ function build(games, loaded, logs, { end = "over", floor = 0, catches = "Receiv
   return picked.sort((a, b) => a[0] - b[0]).map((item) => item[1]);
 }
 
-function mixed(loaded) {
+function mixed(loaded, slack = 0) {
   const nfl = loaded.filter(([game]) => String(game.sport || "") === "NFL");
   if (!nfl.length) return [];
   const cache = logCache();
@@ -145,13 +146,13 @@ function mixed(loaded) {
         const odds = leg.odds;
         if (kind !== tail || !group.has(who) || odds < low || odds > high || (tail !== ATD && !` ${text} `.includes(" Over "))) return;
         const read = count(text, "NFL", cache, last);
-        if (read && rate(read) > implied(odds)) rows.push([rate(read) - implied(odds), who, text, odds]);
+        if (read && rate(read) > implied(odds) - slack) rows.push([rate(read) - implied(odds), who, text, odds]);
       });
       return rows.sort(byDesc);
     };
     const found = [];
     pick("Total Receptions", backs, -200, 150).slice(0, 2).forEach((back) => pick("Receiving Yds", wides, -200, 150).slice(0, 3).forEach((wide) => pick(ATD, catchers, 150, 500).slice(0, 4).forEach((score) => {
-      if (new Set([back[1], wide[1], score[1]]).size < 3) return;
+      if (new Set([back[1], wide[1], score[1]]).size < 3 || (slack && ![back, wide, score].some((row) => row[0] <= 0))) return;
       const rows = [["Back receptions", back, "The back's catches out of the backfield."], ["Receiver yards", wide, "The receiver's yards on his main line."], ["Anytime touchdown", score, "The long shot that pays the ticket."]];
       const bets = rows.map(([rung, row, job]) => ({ kind: "Same-game parlay", rung, label: row[2], odds: row[3], stake: 5, job, game: match }));
       found.push([-rows.reduce((sum, row) => sum + row[1][0], 0), { game: match, bets }]);
@@ -175,7 +176,7 @@ const SCORE_JOBS = {
   5: ["One of the five touchdowns.", "The second one.", "The third one.", "The fourth one.", "The fifth one. All five have to score."],
 };
 
-function scorers(loaded, size = 2) {
+function scorers(loaded, size = 2, slack = 0) {
   const nfl = loaded.filter(([game]) => String(game.sport || "") === "NFL");
   if (!nfl.length) return [];
   const cache = logCache();
@@ -189,11 +190,11 @@ function scorers(loaded, size = 2) {
       if (leg.market !== ATD || leg.odds < -250 || leg.odds > 300) return;
       const text = `${who} anytime touchdown`;
       const read = count(text, "NFL", cache, last);
-      if (read && rate(read) > implied(leg.odds)) live.push([rate(read) - implied(leg.odds), text, leg.odds]);
+      if (read && rate(read) > implied(leg.odds) - slack) live.push([rate(read) - implied(leg.odds), text, leg.odds]);
     });
     live.sort(byDesc);
     const sum = (group) => group.reduce((total, row) => total + row[0], 0);
-    combos(live, size).sort((a, b) => sum(b) - sum(a)).slice(0, 3).forEach((group) => {
+    combos(live, size).filter((group) => !slack || group.some((row) => row[0] <= 0)).sort((a, b) => sum(b) - sum(a)).slice(0, 3).forEach((group) => {
       const bets = group.map((row, index) => ({ kind: "Same-game parlay", rung: "Anytime touchdown", label: row[1], odds: row[2], stake: 5, job: SCORE_JOBS[size][index], game: match }));
       picked.push([-sum(group), { game: match, bets }]);
     });
