@@ -120,11 +120,11 @@ function fillFind(board, data) {
   const hits = document.createElement("div");
   hits.className = "find-hits";
   const roster = document.createElement("details"); roster.className = "find-roster"; roster.hidden = true;
-  const teams = document.createElement("div"); teams.className = "find-teams"; const tray = document.createElement("div"); tray.className = "find-hits find-tray"; tray.hidden = true;
+  const teams = document.createElement("div"); teams.className = "find-teams"; const tray = document.createElement("div"); tray.className = parlayPick.size || parlayLeg.size ? "find-hits find-tray find-shut" : "find-hits find-tray"; tray.hidden = true;
   const list = document.createElement("div");
   list.className = "find-list";
   board.people = people;
-  const today = document.createElement("details"); const week = document.createElement("details"); const span = document.createElement("div"); span.className = "find-span"; const games = document.createElement("button"); games.type = "button"; games.className = "find-games-go"; games.hidden = true; games.textContent = "More games"; games.addEventListener("click", () => { span.classList.remove("find-picked"); games.hidden = true; (today.classList.contains("find-on") ? today : week).open = true; if (list.querySelector(".find-td-page")) list.replaceChildren(); if (input.value) { input.value = ""; input.dispatchEvent(new Event("input")); } }); span.append(today, week); heading.append(games);
+  const today = document.createElement("details"); const week = document.createElement("details"); const span = document.createElement("div"); span.className = "find-span"; const games = document.createElement("button"); games.type = "button"; games.className = "find-games-go"; games.textContent = "More games"; games.addEventListener("click", () => { span.classList.remove("find-picked"); (today.classList.contains("find-on") ? today : week).open = true; if (list.querySelector(".find-td-page")) list.replaceChildren(); if (input.value) { input.value = ""; input.dispatchEvent(new Event("input")); } }); span.append(today, week); heading.append(games);
   const pickSpan = (name) => { const on = name === "today"; today.classList.toggle("find-on", on); week.classList.toggle("find-on", !on); if (today.open !== on) today.open = on; if (week.open === on) week.open = !on; };
   today.className = "find-games find-on"; today.dataset.span = "today"; today.open = true; week.className = "find-games find-week"; week.dataset.span = "week";
   today.addEventListener("toggle", () => { if (today.open) pickSpan("today"); }); week.addEventListener("toggle", () => { if (week.open) pickSpan("week"); });
@@ -160,7 +160,7 @@ function fillFind(board, data) {
     const q = input.value.trim().toLowerCase();
     const stamp = ++clubStamp;
     hits.replaceChildren();
-    if (q.length < 2) { list.replaceChildren(); list.classList.remove("find-only-on"); teams.replaceChildren(); roster.stamp = (roster.stamp || 0) + 1; roster.hidden = true; roster.replaceChildren(); const picked = board.querySelector(".find-span"); if (picked) { picked.classList.remove("find-picked"); const go = picked.querySelector(".find-games-go"); if (go) go.hidden = true; } today.open = today.classList.contains("find-on"); week.open = !today.open; return; } teams.replaceChildren();
+    if (q.length < 2) { list.replaceChildren(); list.classList.remove("find-only-on"); teams.replaceChildren(); roster.stamp = (roster.stamp || 0) + 1; roster.hidden = true; roster.replaceChildren(); const picked = board.querySelector(".find-span"); if (picked) picked.classList.remove("find-picked"); today.open = today.classList.contains("find-on"); week.open = !today.open; return; } teams.replaceChildren();
     board.querySelectorAll(".find-games").forEach((node) => { node.open = false; });
     const words = q.split(" ").filter(Boolean);
     const todayGames = today.games || (today.games = loadedGames(people, "today")), weekGames = week.games || (week.games = loadedGames(people, "week")), todayOn = today.classList.contains("find-on");
