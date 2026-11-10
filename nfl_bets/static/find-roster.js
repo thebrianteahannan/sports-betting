@@ -2,7 +2,7 @@
 function rosterGroup(roster, names, lined, rows, team) {
   const bare = (name) => plainName(String(name || "").replace(/, out$/, "")).replace(/ (jr|sr|ii|iii|iv|v)$/, "");
   const info = new Map(rows.filter((row) => row && row.name).map((row) => [bare(row.name), row]));
-  if (team && team.name) rows.forEach((row) => { if (row && row.name) clubOf.set(bare(row.name), team.name); });
+  if (team && team.name) rows.forEach((row) => { if (row && row.name) clubOf.set(bare(row.name), team.name); if (row && row.name && row.pos && typeof clubSpot !== "undefined") clubSpot.set(bare(row.name), String(row.pos)); });
   const tag = (node, row) => { if (row.def) node.dataset.def = "1"; if (row.bench) node.dataset.bench = "1"; };
   const buttons = [...names.querySelectorAll(":scope > button")];
   const groups = new Map();

@@ -8,7 +8,7 @@ function nbaScriptProps(people, match) {
     if (person.kind !== "player") return;
     (person.bets || []).forEach((bet) => {
       const text = `${bet.market || ""} ${bet.label || ""}`;
-      if (bet.match !== match || !/\d/.test(text) || /under|quarter|half|1st|first|minutes|double|triple/i.test(text)) return;
+      if (bet.match !== match || !/\d/.test(text) || /under|quarter|qtr|half|each|most|touchdown|1st|first|minutes|double|triple/i.test(text)) return;
       rows.push({ label: bet.label, market: bet.market, odds: bet.odds });
     });
   });
@@ -17,12 +17,12 @@ function nbaScriptProps(people, match) {
 
 function nbaScript(holder, game, people) {
   const full = game && ((window.state && state.board && state.board.games) || []).find((row) => row.match === game.match && row.kickoff === game.kickoff);
-  const match = full && full.sport === "NBA" && [...holder.querySelectorAll(".find-match")].pop();
+  const match = full && /^(NBA|NFL)$/.test(full.sport) && [...holder.querySelectorAll(".find-match")].pop();
   if (!match || match.querySelector(":scope > .find-script")) return;
   const box = document.createElement("div");
   box.className = "find-score find-script";
   box.style.gridColumn = "1 / -1";
-  box.innerHTML = '<b class="find-script-head">Game script</b><p class="quiet">Reading both rotations.</p>';
+  box.innerHTML = `<b class="find-script-head">Game script</b><p class="quiet">${full.sport === "NFL" ? "Reading both offenses." : "Reading both rotations."}</p>`;
   const call = match.querySelector(".find-pick"), top = call && call.parentElement;
   if (top && top.parentElement === match) top.after(box);
   else { const crowd = match.querySelector(":scope > .find-everyone, :scope > .find-body"); if (crowd) crowd.before(box); else match.append(box); }

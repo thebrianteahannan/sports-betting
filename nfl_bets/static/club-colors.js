@@ -42,9 +42,30 @@ function clubTray(tray) {
     if (!color) return;
     row.style.backgroundImage = `linear-gradient(90deg, ${color} 0 5px, ${color}66 5px, ${color}1f 75%)`;
   });
+  tray.querySelectorAll(".find-chose").forEach((line) => {
+    const who = line.querySelector("span i.who");
+    const person = who && people.find((one) => one.name === who.textContent);
+    if (!person || person.kind === "team") return;
+    const bare = typeof plainName === "function" ? plainName(person.name).replace(/ (jr|sr|ii|iii|iv|v)$/, "") : "";
+    const sport = person.sport || ((person.bets || []).find((bet) => bet.sport) || {}).sport || "";
+    const team = person.team || (typeof clubOf !== "undefined" && clubOf.get(bare)) || "", pos = person.pos || clubSpot.get(bare) || "";
+    if (!team || !pos) clubAsk(person, sport);
+    const text = [clubNick(sport, team), pos].filter(Boolean).join(" · ");
+    let spot = who.nextElementSibling && who.nextElementSibling.matches("i.spot") ? who.nextElementSibling : null;
+    if (!text) { if (spot) spot.remove(); return; }
+    if (!spot) { spot = document.createElement("i"); spot.className = "spot"; who.after(spot); }
+    spot.textContent = text;
+  });
 }
 
-const clubAsked = new Set();
+function clubNick(sport, team) {
+  const name = String(team || "").trim();
+  if (!name) return "";
+  const table = CLUB_COLORS[String(sport || "").toUpperCase()] || {};
+  return Object.keys(table).filter((nick) => name === nick || name.endsWith(` ${nick}`)).sort((a, b) => b.length - a.length)[0] || name.split(/\s+/).pop();
+}
+
+const clubAsked = new Set(), clubSpot = new Map();
 
 function clubAsk(person, sport) {
   if (typeof clubOf === "undefined") return;
@@ -55,7 +76,7 @@ function clubAsk(person, sport) {
     fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "roster", name: side, sport }) })
       .then((res) => res.json())
       .then((data) => {
-        (data.players || []).forEach((row) => { const name = String((row && row.name) || row || "").replace(/, out$/, ""); if (name) clubOf.set(plainName(name).replace(/ (jr|sr|ii|iii|iv|v)$/, ""), side); });
+        (data.players || []).forEach((row) => { const name = String((row && row.name) || row || "").replace(/, out$/, ""); if (!name) return; const bare = plainName(name).replace(/ (jr|sr|ii|iii|iv|v)$/, ""); clubOf.set(bare, side); if (row && row.pos) clubSpot.set(bare, String(row.pos)); });
         document.querySelectorAll(".find-tray").forEach((tray) => clubTray(tray));
       })
       .catch(() => {});
