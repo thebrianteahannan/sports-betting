@@ -36,13 +36,19 @@ function legSwapFind(key) {
   return [...best.values()].sort((a, b) => a.gap - b.gap).slice(0, 6);
 }
 
+function legSwapStat(person, bet) {
+  const market = String(bet.market || "").replace(person.name, "").replace(/^\s*-\s*/, "").replace(/^(alt|total)\s+/i, "").trim().toLowerCase();
+  if (/^(any time touchdown scorer|to score \d+\+ touchdowns)$/.test(market)) return "touchdowns";
+  return market.replace(/\d+\+/g, "n+").replace(/^n\+\s+/, "").replace(/^made threes$/, "threes");
+}
+
 function legLineFind(key) {
   const old = parlayLeg.get(key);
   const board = document.querySelector(".find-board");
   if (!old || !board) return [];
   const person = (board.people || []).find((one) => one.kind === "player" && String(old.label || "").startsWith(one.name));
   if (!person) return [];
-  const stat = (bet) => { const market = String(bet.market || "").replace(person.name, "").replace(/^\s*-\s*/, "").replace(/^alt\s+/i, "").trim().toLowerCase(); return /^(any time touchdown scorer|to score \d+\+ touchdowns)$/.test(market) ? "touchdowns" : market; };
+  const stat = (bet) => legSwapStat(person, bet);
   const under = (bet) => /\bunder\b/i.test(bet.label || "");
   const num = (bet) => Number((String(bet.label || "").replace(person.name, "").match(/\d+(?:\.\d+)?/) || String(bet.market || "").match(/\d+(?:\.\d+)?/) || [])[0]) || (stat(bet) === "touchdowns" ? 1 : 0);
   const seen = new Set(), same = (bet) => bet.label === old.label && bet.market === old.market;
@@ -61,7 +67,7 @@ function legKindFind(key) {
   if (!old || !board) return [];
   const person = (board.people || []).find((one) => one.kind === "player" && String(old.label || "").startsWith(one.name));
   if (!person) return [];
-  const stat = (bet) => { const market = String(bet.market || "").replace(person.name, "").replace(/^\s*-\s*/, "").replace(/^(alt|total)\s+/i, "").trim().toLowerCase(); return /^(any time touchdown scorer|to score \d+\+ touchdowns)$/.test(market) ? "touchdowns" : market; };
+  const stat = (bet) => legSwapStat(person, bet);
   const want = legSwapChance(old.odds), best = new Map();
   (person.bets || []).forEach((bet) => {
     if (bet.match !== old.match || bet.kickoff !== old.kickoff || stat(bet) === stat(old) || parlayLeg.has(parlayKey(bet))) return;

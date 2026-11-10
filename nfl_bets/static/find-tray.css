@@ -150,6 +150,7 @@
 .find-tray .find-tray-read .find-log span { display: block; color: #d5dde6; font-size: 0.78rem; line-height: 1.2; }
 .find-tray .find-tray-read .find-log b { display: block; color: #f4f7fb; font-size: 0.82rem; font-weight: 700; line-height: 1.15; }
 @media (max-width: 699px) { .find-tray .find-tray-read .find-log { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 699px) { :is(.rec-board, #choice-result) .find-tray > * { min-width: 0; max-width: 100%; } :is(.rec-board, #choice-result) .find-tray .find-ticket b { flex-wrap: wrap !important; white-space: normal !important; row-gap: 0.25rem; } }
 .rec-board .find-tray .find-tray-read button.find-why-go, #desk.tv-full #desk-glass .rec-board .find-tray .find-tray-read button.find-why-go { display: block; width: auto; min-height: 0; margin: 0.45rem 0 0; padding: 0; border: 0; background: transparent; box-shadow: none; color: #e7c15a; font-size: 14px; font-weight: 700; text-transform: none; letter-spacing: 0; text-decoration: underline; cursor: pointer; }
 .find-tray .find-tray-read .find-lean { margin: 0.35rem 0 0; color: #d5dde6; font-size: 0.88rem; }
 .find-roster.hide-fringe [data-fringe="1"], .find-roster.hide-fringe .find-group:not(.find-outs):not(:has(> :not([data-fringe="1"]))), .find-roster.hide-fringe .find-names > span, .find-roster.hide-fringe .find-names > details > span { display: none !important; }
