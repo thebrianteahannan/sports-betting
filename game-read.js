@@ -419,7 +419,18 @@ function teamsOf(data) {
   return away && home ? [away, home] : teams;
 }
 
-async function gameRead(body, board) {
+const reads = new Map();
+
+function gameRead(body, board) {
+  const key = `${body.match}|${body.kickoff}|${body.sport}|${body.noLead ? "bare" : ""}`;
+  const hit = reads.get(key);
+  if (hit && Date.now() - hit.at < 10 * 60 * 1000) return hit.promise;
+  const promise = readGame(body, board).then((data) => { if (!data.sections.length) reads.delete(key); return data; }, (err) => { reads.delete(key); throw err; });
+  reads.set(key, { at: Date.now(), promise });
+  return promise;
+}
+
+async function readGame(body, board) {
   const game = boardGame(body, board);
   const path = PATHS[game.sport || body.sport];
   if (!path) return { lead: "", sections: [] };
@@ -459,7 +470,7 @@ async function gameRead(body, board) {
   ].filter(Boolean);
   const facts = sections.map((section) => `${section.name}: ${section.text}`).join("\n");
   let lead = "";
-  try { lead = await askGame(game.match || body.match, facts); } catch (err) { lead = ""; }
+  if (!body.noLead) try { lead = await askGame(game.match || body.match, facts); } catch (err) { lead = ""; }
   return { lead, sections };
 }
 

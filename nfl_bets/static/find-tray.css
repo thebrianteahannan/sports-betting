@@ -202,6 +202,15 @@
 .rec-board .find-script .find-script-part { margin-top: 0.6rem; padding-left: 0.65rem; border-left: 3px solid #e7c15a; }
 .rec-board .find-script .find-script-part > b { display: block; color: #e7c15a; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .rec-board .find-script p.find-script-proof { margin-top: 0.3rem; color: #9fb3c8; font-size: 14px; }
+.rec-board .find-script > summary { display: block; cursor: pointer; list-style: none; }
+.rec-board .find-script > summary::-webkit-details-marker { display: none; }
+.rec-board .find-script > summary .find-script-head::after { content: " ▸"; }
+.rec-board .find-script[open] > summary .find-script-head::after { content: " ▾"; }
+.rec-board .find-script p.find-script-short { margin-top: 0.25rem; color: #9fb3c8; font-size: 14px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.rec-board .find-script[open] p.find-script-short { display: none; }
+.rec-board .find-script > .find-brief { margin-top: 0.8rem; }
+.rec-board .find-script.has-story p.find-script-short { color: #e6edf3; font-size: 15px; line-height: 1.5; }
+.rec-board .find-script.has-story > .find-brief > p.find-dive { display: none; }
 .find-tray .find-tray-read { padding: 0.1rem 0 0.55rem; }
 .find-tray .find-tray-read:has(.find-why, .find-log) .find-leg-wait, .find-tray .find-tray-read button.find-hist { display: none !important; }
 .find-tray .find-tray-read .find-leg-wait { margin: 0; color: #8b97a3; font-size: 0.85rem; }
