@@ -211,9 +211,9 @@ document.getElementById("desk-back").addEventListener("click", (event) => {
   if (window.shareBack && shareBack()) return;
   if (window.recBack && recBack()) return;
   if (window.askBack && askBack()) return;
-  const page = document.querySelector("#desk-glass-in .rec-board");
-  if (page && page.dataset.page === "stack" && window.paintFind && typeof tvStack !== "undefined" && !(tvStack.at(-1) && tvStack.at(-1).board === "find")) { tvSkip = true; paintFind(); tvSkip = false; tvPaint(); return; }
-  if (window.tvBack) tvBack();
+  const page = document.querySelector("#desk-glass-in .rec-board"), fromTray = !!(page && page.dataset.page === "stack" && page.dataset.fromTray);
+  if (page && page.dataset.page === "stack" && window.paintFind && typeof tvStack !== "undefined" && !(tvStack.at(-1) && tvStack.at(-1).board === "find")) { tvSkip = true; paintFind(); tvSkip = false; tvPaint(); } else if (window.tvBack) tvBack();
+  if (fromTray) requestAnimationFrame(() => document.querySelectorAll(".find-tray.find-shut:not([hidden])").forEach((tray) => { const fold = tray.querySelector(".find-fold"); if (fold) fold.click(); }));
 }, true);
 
 function openBuilt(index) {

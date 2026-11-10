@@ -370,7 +370,7 @@ function applyStackFit(board) {
   if (beats) { beats.classList.toggle("on", !!window.stackBeats); beats.querySelector(".n").textContent = waiting ? "" : String(beat); }
   const empty = board.querySelector(".stack-none");
   if (empty) empty.hidden = !(on && !waiting && !live);
-  board.classList.toggle("stack-fit", on); if (window.stackOrder) stackOrder(board);
+  board.classList.toggle("stack-fit", on); if (window.stackOrder) stackOrder(board); if (window.trayStackOnly) trayStackOnly(board);
 }
 
 function stackName(stack) {

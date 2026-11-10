@@ -114,8 +114,25 @@ function trayStackOpen(name, labels = []) {
   if (!block) return;
   block.classList.add("open", "rec-focus");
   const board = block.closest(".rec-board");
+  board.dataset.fromTray = "1";
+  board.stackOnly = name;
   const filters = board.querySelector(".rec-filters");
-  if (filters) filters.after(block);
+  if (filters) {
+    filters.after(block);
+    const all = document.createElement("button");
+    all.type = "button";
+    all.className = "stack-all";
+    all.textContent = "All strategies";
+    const tools = filters.querySelector(".rec-tools");
+    if (tools) tools.append(all);
+    filters.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button || button.dataset.stackFold != null || !board.stackOnly) return;
+      board.stackOnly = null;
+      all.remove();
+    }, true);
+  }
+  applyStackFit(board);
   block.scrollIntoView({ block: "nearest" });
   const key = (label) => String(label || "").toLowerCase().replace(/\s+/g, " ").trim();
   const mine = new Set(labels.map(key));
@@ -127,8 +144,23 @@ function trayStackOpen(name, labels = []) {
     const set = [...block.querySelectorAll(".stack-set")].sort((a, b) => shared(b) - shared(a))[0];
     if (!set || !shared(set)) return;
     set.classList.add("stack-mine");
-    if (set.hidden && set.dataset.span !== "later" && window.stackWhen !== "week") { window.stackWhen = "week"; applyStackFit(board); }
+    if (set.hidden && set.dataset.span !== "later" && window.stackWhen !== "week") window.stackWhen = "week";
+    applyStackFit(board);
     set.scrollIntoView({ block: "center", behavior: "smooth" });
   };
   mark();
+}
+
+function trayStackOnly(board) {
+  const only = board.stackOnly;
+  if (!only) return;
+  board.querySelectorAll(".rec-strategy").forEach((block) => {
+    const mine = block.dataset.name === only;
+    block.hidden = !mine;
+    block.style.display = mine ? "" : "none";
+    const pick = mine && block.querySelector(".stack-set.stack-mine");
+    if (pick) block.querySelectorAll(".stack-set").forEach((set) => { set.hidden = set !== pick; set.style.display = set.hidden ? "none" : ""; });
+  });
+  const none = board.querySelector(".stack-none");
+  if (none) none.hidden = true;
 }
