@@ -220,12 +220,18 @@ function saveStacks(box) {
   go.addEventListener("click", () => { window.saveStacksOpen = !window.saveStacksOpen; paintParlay(); });
   box.append(go);
   if (!window.saveStacksOpen || typeof paintGameStacks !== "function") return;
-  const games = [...new Set([...parlayLeg.values()].map((bet) => bet.match).filter(Boolean))];
-  const key = games.join("|"), kept = window.saveStacksPanel;
+  const picked = saveStacksPicked(), teams = document.querySelector("#desk-glass-in .find-teams");
+  if (teams && !teams.stackWatch) {
+    teams.stackWatch = true;
+    new MutationObserver(() => { const panel = window.saveStacksPanel; if (window.saveStacksOpen && panel && panel.isConnected && panel.dataset.picked !== saveStacksPicked()) saveStacksSync(); }).observe(teams, { childList: true, subtree: true });
+  }
+  const games = picked ? [picked] : [...new Set([...parlayLeg.values()].map((bet) => bet.match).filter(Boolean))];
+  const key = `${picked ? "pick:" : ""}${games.join("|")}`, kept = window.saveStacksPanel;
   if (kept && kept.dataset.key === key) { box.append(kept); return; }
   const panel = document.createElement("div");
   panel.className = "find-saved-stacks";
   panel.dataset.key = key;
+  panel.dataset.picked = picked;
   if (!games.length) {
     const host = document.createElement("div");
     host.className = "find-stack-host";
@@ -246,6 +252,23 @@ function saveStacks(box) {
   });
   window.saveStacksPanel = panel;
   box.append(panel);
+}
+
+function saveStacksPicked() {
+  const box = [...document.querySelectorAll("#desk-glass-in .find-teams .find-stacks[data-match]")].pop();
+  return box ? box.dataset.match : "";
+}
+
+function saveStacksSync() {
+  const box = document.querySelector("#desk-glass-in .find-saved");
+  const go = box && box.querySelector(":scope > .find-saved-st");
+  if (!go) return;
+  const old = box.querySelector(":scope > .find-saved-stacks"), spot = document.createComment(""), temp = document.createElement("div");
+  if (old) old.replaceWith(spot); else box.append(spot);
+  saveStacks(temp);
+  const [fresh, panel] = [...temp.children];
+  go.replaceWith(fresh);
+  if (panel) spot.replaceWith(panel); else spot.remove();
 }
 
 if (typeof paintParlay === "function") {

@@ -41,6 +41,17 @@
 .rec-board .find-stacks .stack-set :is(.stack-ticket, .stack-read) { margin-top: 0 !important; margin-bottom: 0.2rem !important; }
 .rec-board .find-stacks .stack-set .rec-bet { padding: 0.3rem 0.1rem; }
 .rec-board .find-stacks .stack-set .rec-bet b i.seen { font-size: 12px !important; }
+.rec-board .find-stacks .rec-strategy h3 .stack-score { margin-left: 0; gap: 0.25rem; font-size: 11px; }
+.rec-board .find-stacks .rec-strategy h3 .stack-score > i { width: 2.4rem; height: 5px; }
+.rec-board .find-stacks .rec-strategy h3 .stack-score b { font-size: 12px; }
+.rec-board .find-stacks .rec-strategy h3 .stack-grade-tag { margin: 0; padding: 0 0.4rem; font-size: 10px; }
+.rec-board .find-stacks .rec-strategy > :is(.stack-grade, .rec-bet, .stack-close) { flex: 1 1 calc(100% - 1.55rem); max-width: calc(100% - 1.55rem); margin-left: 1.55rem; box-sizing: border-box; }
+.rec-board .find-stacks .rec-strategy > .stack-grade { padding: 0.4rem 0.6rem; }
+.rec-board .find-stacks .rec-strategy > .stack-grade :is(p, li) { font-size: 13px !important; line-height: 1.35 !important; }
+.rec-board .find-stacks .rec-strategy > .rec-bet { padding: 0.3rem 0.5rem; }
+.rec-board .find-stacks .rec-strategy > .rec-bet :is(b, b i, .rec-gist, .rec-gist i) { font-size: 13px !important; line-height: 1.35 !important; }
+.rec-board .find-stacks button.find-stack-all, .rec-board .find-saved-stacks > button.stack-all, #desk.tv-full #desk-glass .rec-board :is(.find-stacks button.find-stack-all, .find-saved-stacks > button.stack-all) { width: auto; min-height: 0; margin: 0.45rem 0 0; padding: 0.35rem 0.8rem; border: 1px dashed #3dff6e; border-radius: 999px; background: transparent; box-shadow: none; color: #3dff6e; font-size: 13px; font-weight: 700; text-transform: none; letter-spacing: normal; cursor: pointer; }
+.rec-board .find-saved-stacks > button.stack-all, #desk.tv-full #desk-glass .rec-board .find-saved-stacks > button.stack-all { margin: 0.35rem 0 0.1rem; }
 .rec-board .find-kinds .find-band label.find.find-seek, #desk.tv-full #desk-glass .rec-board .find-kinds .find-band label.find.find-seek { flex: 2 1 12rem; }
 .rec-board .find-kinds .find-band label.find { position: relative; }
 .rec-board .find-kinds .find-band label.find input[data-key], #desk.tv-full #desk-glass .rec-board .find-kinds .find-band label.find input[data-key] { padding-right: 2.2rem !important; }

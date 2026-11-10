@@ -106,61 +106,43 @@ function trayRoster() {
 }
 
 function trayStackOpen(name, labels = []) {
-  if (typeof paintStack !== "function") return;
-  window.stackFit = false;
-  window.stackBeats = false;
-  paintStack();
-  const block = [...document.querySelectorAll(".rec-board[data-page=\"stack\"] .rec-strategy")].find((node) => node.dataset.name === name);
-  if (!block) return;
-  block.classList.add("open", "rec-focus");
-  const board = block.closest(".rec-board");
-  board.dataset.fromTray = "1";
-  board.stackOnly = name;
-  const filters = board.querySelector(".rec-filters");
-  if (filters) {
-    filters.after(block);
-    const all = document.createElement("button");
-    all.type = "button";
-    all.className = "stack-all";
-    all.textContent = "All strategies";
-    const tools = filters.querySelector(".rec-tools");
-    if (tools) tools.append(all);
-    filters.addEventListener("click", (event) => {
-      const button = event.target.closest("button");
-      if (!button || button.dataset.stackFold != null || !board.stackOnly) return;
-      board.stackOnly = null;
-      all.remove();
-    }, true);
-  }
-  applyStackFit(board);
-  block.scrollIntoView({ block: "nearest" });
-  const key = (label) => String(label || "").toLowerCase().replace(/\s+/g, " ").trim();
-  const mine = new Set(labels.map(key));
-  let tries = 0;
-  const mark = () => {
-    if (!block.isConnected) return;
-    if (!block.dataset.fit && tries++ < 60) { setTimeout(mark, 300); return; }
-    const shared = (set) => String(set.dataset.labels || "").split("|").filter((label) => mine.has(key(label))).length;
-    const set = [...block.querySelectorAll(":scope > .stack-set")].sort((a, b) => shared(b) - shared(a))[0];
-    if (!set || !shared(set)) return;
-    set.classList.add("stack-mine");
-    if (set.hidden && set.dataset.span !== "later" && window.stackWhen !== "week") window.stackWhen = "week";
-    applyStackFit(board);
-    set.scrollIntoView({ block: "center", behavior: "smooth" });
-  };
-  mark();
+  if (typeof paintFind !== "function" || typeof gameStackData !== "function") return;
+  const desk = document.getElementById("desk");
+  const onFind = desk && desk.classList.contains("tv-full") && !desk.classList.contains("bird-on") && document.querySelector("#desk-glass-in .find-board");
+  window.saveStacksOpen = true;
+  if (onFind) paintParlay(); else paintFind();
+  gameStackData().then(() => setTimeout(() => {
+    const panel = document.querySelector("#desk-glass-in .find-saved-stacks");
+    if (!panel) return;
+    if (!name) { panel.scrollIntoView({ block: "start", behavior: "smooth" }); return; }
+    const find = () => [...panel.querySelectorAll(".rec-strategy")].find((node) => node.dataset.name === name);
+    if (!find()) panel.querySelectorAll(".find-stack-all").forEach((button) => { if (!panel.querySelector(".find-stack-extra")) button.click(); });
+    const block = find();
+    if (block) trayStackFocus(panel, block, labels);
+  }, 0));
 }
 
-function trayStackOnly(board) {
-  const only = board.stackOnly;
-  if (!only) return;
-  board.querySelectorAll(".rec-strategy").forEach((block) => {
-    const mine = block.dataset.name === only;
-    block.hidden = !mine;
-    block.style.display = mine ? "" : "none";
-    const pick = mine && block.querySelector(".stack-set.stack-mine");
-    if (pick) block.querySelectorAll(":scope > .stack-set").forEach((set) => { set.hidden = set !== pick; set.style.display = set.hidden ? "none" : ""; });
-  });
-  const none = board.querySelector(".stack-none");
-  if (none) none.hidden = true;
+function trayStackFocus(panel, block, labels) {
+  const show = (node, on) => { node.hidden = !on; node.style.display = on ? "" : "none"; if (on) delete node.dataset.hid; else node.dataset.hid = "1"; };
+  panel.querySelectorAll("[data-hid]").forEach((node) => show(node, true));
+  panel.querySelectorAll(":scope > .stack-all").forEach((node) => node.remove());
+  panel.querySelectorAll(".rec-focus, .stack-mine").forEach((node) => node.classList.remove("rec-focus", "stack-mine"));
+  const key = (label) => String(label || "").toLowerCase().replace(/\s+/g, " ").trim();
+  const mine = new Set(labels.map(key));
+  const shared = (set) => String(set.dataset.labels || "").split("|").filter((label) => mine.has(key(label))).length;
+  const sets = [...block.querySelectorAll(":scope > .stack-set")];
+  const pick = sets.slice().sort((a, b) => shared(b) - shared(a))[0];
+  const host = block.closest(".find-stack-host");
+  panel.querySelectorAll(".find-stack-host").forEach((node) => { if (node !== host) show(node, false); });
+  block.parentElement.querySelectorAll(":scope > .rec-strategy").forEach((node) => { if (node !== block) show(node, false); });
+  if (pick && shared(pick)) { pick.classList.add("stack-mine"); sets.forEach((set) => { if (set !== pick) show(set, false); }); }
+  if (host) host.querySelectorAll(".find-stack-all").forEach((node) => show(node, false));
+  block.classList.add("open", "rec-focus");
+  const all = document.createElement("button");
+  all.type = "button";
+  all.className = "stack-all";
+  all.textContent = "All strategies";
+  all.addEventListener("click", () => { panel.querySelectorAll("[data-hid]").forEach((node) => show(node, true)); all.remove(); });
+  panel.prepend(all);
+  (pick && shared(pick) ? pick : block).scrollIntoView({ block: "center", behavior: "smooth" });
 }
