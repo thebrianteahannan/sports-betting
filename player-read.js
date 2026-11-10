@@ -81,7 +81,9 @@ function windowOf(pack, sport, names) {
   const now = rows.filter((row) => Number(row.season) === year);
   const picked = keepMinutes(now.length >= 5 ? now : rows.slice(0, 10), names);
   const span = now.length >= 5 ? `This season, ${picked.length} games.` : `Last ${picked.length}.`;
-  return { rows: picked, span };
+  const last = Math.max(...rows.map((row) => Number(row.season)).filter((season) => season < year));
+  const before = now.length >= 5 && now.length < 10 ? rows.filter((row) => Number(row.season) === last) : [];
+  return { rows: picked, span, before };
 }
 
 function jobs(list) {
@@ -92,20 +94,23 @@ function jobs(list) {
   return `He ${picked[0]}, ${picked[1]}, and ${picked[2]}.`;
 }
 
-function hoop(rows, names) {
+function hoop(rows, names, before) {
   const pts = mean(rows, names, "points"), ast = mean(rows, names, "assists"), reb = mean(rows, names, "reb");
   const threes = mean(rows, names, "threes"), min = mean(rows, names, "minutes"), stl = mean(rows, names, "steals"), blk = mean(rows, names, "blocks");
   const fga = mean(rows, names, "fga", "att"), tpa = mean(rows, names, "threes", "att"), fta = mean(rows, names, "fta", "att");
   const share = pts ? ((threes || 0) * 3) / pts : 0;
   const clock = min >= 32 ? "plays the whole night" : min >= 24 ? "plays starter minutes" : min > 0 ? "comes off the bench" : "";
+  const was = before && before.length >= 10 ? mean(before, names, "threes", "att") / mean(before, names, "fga", "att") : null;
+  const jump = fga && tpa / fga >= 0.45 && was != null && was < 0.45;
   const habits = [];
-  if (threes >= 2.5 && share >= 0.34) habits.push("lives on threes");
+  if (threes >= 2.5 && share >= 0.34 && !jump) habits.push("lives on threes");
   if (ast >= 6) habits.push("sets up the shots");
   if (reb >= 8) habits.push("boards");
   if (pts >= 20 && !habits.includes("lives on threes")) habits.push("scores");
   if ((stl || 0) + (blk || 0) >= 2.2) habits.push("gets his hands on the ball");
   const line = [jobs([clock, ...habits])];
-  if (fga && tpa / fga >= 0.45) line.push("Most of the shots are threes.");
+  if (jump) line.push(`More of his shots are threes this season, ${Math.round(tpa * rows.length)} of ${Math.round(fga * rows.length)}. Before this season it was ${Math.round(was * 100)}%.`);
+  else if (fga && tpa / fga >= 0.45) line.push("Most of the shots are threes.");
   else if (fta >= 6) line.push("He gets to the line.");
   else if (pts >= 18 && reb >= 8 && ast >= 6) line.push("The points, the boards, and the assists come in the same game.");
   const stats = [cell(rows, names, "points", "Pts/Game"), cell(rows, names, "assists", "Assists/Game"), cell(rows, names, "reb", "Rebounds/Game"), cell(rows, names, "threes", "3pters/Game"), cell(rows, names, "minutes", "Minutes/Game")].filter(Boolean);
@@ -175,7 +180,7 @@ async function playerCard(name, sport) {
   if (!kind) return { line: "", stats: [] };
   const window = windowOf(pack, league, names);
   if (window.rows.length < 3) return { line: "", stats: [] };
-  const built = kind === "hoop" ? hoop(window.rows, names) : kind === "ball" ? ball(window.rows, names) : kind === "ice" ? ice(window.rows, names) : bat(window.rows, names);
+  const built = kind === "hoop" ? hoop(window.rows, names, window.before) : kind === "ball" ? ball(window.rows, names) : kind === "ice" ? ice(window.rows, names) : bat(window.rows, names);
   return { line: built.line, span: window.span, stats: built.stats };
 }
 
