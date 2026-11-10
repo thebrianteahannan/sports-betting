@@ -38,7 +38,6 @@ function trayStack(tray, legs) {
     const join = (nodes) => nodes.flatMap((node, at) => (at === 0 ? [node] : [at === nodes.length - 1 ? " and " : ", ", node]));
     const act = (text, run) => { const button = document.createElement("button"); button.type = "button"; button.className = "find-near find-do"; button.textContent = text; button.addEventListener("click", run); return button; };
     note.append(fit ? "This is " : "This is close to ", go, ".");
-    if (!fit && best.missing.length && best.missing.length <= 3) note.append(" Add ", ...join(best.missing.map((bet) => act(`${bet.label} at ${bet.odds > 0 ? `+${bet.odds}` : bet.odds}`, () => trayStackAdd(tray, bet)))), ".");
     if (!fit && best.extra.length && best.extra.length <= 2) note.append(" Take out ", ...join(best.extra.map((leg) => act(String(leg.label).split(/\s+—\s+/)[0], () => trayStackDrop(leg)))), ".");
     const hint = tray.querySelector(":scope > .find-undo") || tray.querySelector(":scope > .find-why");
     if (hint) hint.before(note); else tray.append(note);

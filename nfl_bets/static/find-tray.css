@@ -135,6 +135,7 @@
 :is(.rec-board, #choice-result) .find-tray .find-tray-swap button.find-swap-go.now { box-shadow: inset 0 0 0 1px #3dff6e !important; background: rgba(61, 255, 110, 0.08) !important; }
 :is(.rec-board, #choice-result) .find-tray .find-chose i.prop[data-key] { flex: 0 1 auto; margin-right: auto; cursor: pointer; text-decoration: underline dotted rgba(231, 193, 90, 0.5); text-underline-offset: 3px; }
 :is(.rec-board, #choice-result) .find-tray .find-chose i.prop[data-key]:hover, :is(.rec-board, #choice-result) .find-tray .find-chose i.prop.on { text-decoration: underline solid #e7c15a; }
+.find-games .find-until { float: right; margin-left: 0.75rem; color: #3dff6e; font-weight: 700; white-space: nowrap; }
 .find-tray .find-tray-read { padding: 0.1rem 0 0.55rem; }
 .find-tray .find-tray-read:has(.find-why, .find-log) .find-leg-wait, .find-tray .find-tray-read button.find-hist { display: none !important; }
 .find-tray .find-tray-read .find-leg-wait { margin: 0; color: #8b97a3; font-size: 0.85rem; }

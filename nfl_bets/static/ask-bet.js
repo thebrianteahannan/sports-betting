@@ -142,7 +142,8 @@ document.getElementById("desk-glass").addEventListener("pointerdown", (event) =>
   tvOpen = true;
   event.preventDefault();
   event.stopPropagation();
-  document.getElementById("desk-full").click();
+  if (window.paintFind && !document.body.classList.contains("needs-member")) paintFind();
+  else document.getElementById("desk-full").click();
 }, true);
 document.getElementById("desk-glass").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");

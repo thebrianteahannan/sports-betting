@@ -144,7 +144,7 @@ function fillFind(board, data) {
       games.forEach((game) => {
         const button = document.createElement("button");
         button.type = "button";
-        button.textContent = [game.match, game.kickoff && typeof window.when === "function" ? `${window.when(game.kickoff)} ET` : ""].filter(Boolean).join(", "); if (typeof clubSlate === "function") clubSlate(button, game);
+        button.textContent = [game.match, game.kickoff && typeof window.when === "function" ? `${window.when(game.kickoff)} ET` : ""].filter(Boolean).join(", "); if (typeof gameUntil === "function") gameUntil(button, game.kickoff); if (typeof clubSlate === "function") clubSlate(button, game);
         button.addEventListener("click", () => {
           hits.replaceChildren(); teams.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on"); box.open = false; span.classList.add("find-picked"); games.hidden = false; today.open = false; week.open = false;
           paintMatch(teams, game, people, list, hits, true);
