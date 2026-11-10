@@ -47,6 +47,7 @@ function saveNow() {
   const list = saveList();
   const entry = { id: window.parlayOpenId || `p${Date.now()}`, at: Date.now(), legs: [...parlayLeg.values()], picks: [...parlayPick.values()].map(({ bets, ...rest }) => rest) };
   const at = list.findIndex((row) => row.id === entry.id);
+  if (at >= 0 && list[at].group) entry.group = list[at].group;
   if (at >= 0) list[at] = entry; else list.unshift(entry);
   saveStore(list);
   window.parlayOpenId = entry.id;
@@ -151,7 +152,8 @@ function savePaint() {
     if (!box) { box = document.createElement("div"); box.className = "find-saved"; } if (box.nextElementSibling !== tray) tray.before(box);
     box.replaceChildren();
     box.hidden = false;
-    if (list.length) { const head = document.createElement("p"); head.textContent = "Saved parlays"; box.append(head); }
+    if (list.some((row) => !row.group)) { const head = document.createElement("p"); head.textContent = "Saved parlays"; box.append(head); }
+    const stacks = document.createDocumentFragment(), groups = new Map();
     list.forEach((row) => {
       const chip = document.createElement("span");
       chip.className = "find-saved-chip";
@@ -160,7 +162,7 @@ function savePaint() {
       go.type = "button";
       const games = typeof gameShortList === "function" ? gameShortList(row.legs) : "";
       const who = (row.picks || []).map((lite) => String(lite.name || "").split(" ").pop()).filter(Boolean);
-      const said = who.length ? `${who.slice(0, 2).join(", ")}${row.legs.length > 2 ? ` +${row.legs.length - 2}` : ""}` : `${row.legs.length} ${row.legs.length === 1 ? "leg" : "legs"}`;
+      const said = who.length ? `${who.slice(0, 2).join(", ")}${row.legs.length > 2 ? ` +${row.legs.length - 2}` : ""}` : row.group && row.legs.length < 3 ? row.legs.map((bet) => String(bet.label || "").replace(/\s+spread$/i, "")).join(", ") : `${row.legs.length} ${row.legs.length === 1 ? "leg" : "legs"}`;
       go.innerHTML = [games && `<i>${esc(games)}</i>`, `<span>${esc(said)}</span>`, savePrice(row.legs) && `<b>${esc(savePrice(row.legs))}</b>`].filter(Boolean).join("");
       go.addEventListener("click", () => saveOpen(row.id));
       const drop = document.createElement("button");
@@ -170,7 +172,23 @@ function savePaint() {
       drop.setAttribute("aria-label", "Delete this saved parlay");
       drop.addEventListener("click", () => saveDrop(row.id));
       chip.append(go, drop);
-      box.append(chip);
+      if (!row.group || !row.group.id) { box.append(chip); return; }
+      if (!groups.has(row.group.id)) {
+        const wrap = document.createElement("span");
+        wrap.className = "find-saved-group";
+        const name = document.createElement("b");
+        name.textContent = row.group.name || "Stack";
+        const wipe = document.createElement("button");
+        wipe.type = "button";
+        wipe.className = "find-saved-x";
+        wipe.textContent = "×";
+        wipe.setAttribute("aria-label", "Delete this whole stack");
+        wipe.addEventListener("click", () => { const ids = saveList().filter((one) => one.group && one.group.id === row.group.id).map((one) => one.id); if (ids.includes(window.parlayOpenId)) { window.parlayOpenId = ""; parlayPick.clear(); parlayLeg.clear(); if (typeof trayRoster === "function") trayRoster(); } saveStore(saveList().filter((one) => !ids.includes(one.id))); paintParlay(); });
+        wrap.append(name, wipe);
+        groups.set(row.group.id, wrap);
+        stacks.append(wrap);
+      }
+      groups.get(row.group.id).append(chip);
     });
     const fresh = document.createElement("button");
     fresh.type = "button";
@@ -179,6 +197,11 @@ function savePaint() {
     fresh.addEventListener("click", () => { saveNew(); const input = document.querySelector("label.find input"); if (input) input.focus(); });
     box.append(fresh);
     saveStacks(box);
+    if (!groups.size) return;
+    const head = document.createElement("p");
+    head.textContent = "Saved stacks";
+    stacks.prepend(head);
+    box.insertBefore(stacks, box.querySelector(":scope > .find-saved-stacks"));
   });
 }
 

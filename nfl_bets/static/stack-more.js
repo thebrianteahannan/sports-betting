@@ -235,7 +235,7 @@ function stackMore(history, name) {
 function stackTicket(set, stack) {
   const legs = stack.bets || [];
   if (legs.length < 2 || typeof findRank !== "function" || set.querySelector(".stack-ticket")) return;
-  if (legs.some((leg) => leg.kind === "Parlay" || /^(First touchdown|Anytime$|Higher under|Lower under|Low side|High side|Covers a win|Also covers|The posted number|The hook)/.test(leg.rung || ""))) {
+  if (stackApart(stack)) {
     const apart = document.createElement("p");
     apart.className = "stack-ticket";
     apart.style.cssText = "display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.7rem; margin: 0 0 0.45rem; font-size: 1.02rem; font-weight: 800;";
@@ -248,7 +248,7 @@ function stackTicket(set, stack) {
     make.textContent = "Build it";
     make.setAttribute("aria-label", "Load these legs into the parlay you are building");
     make.style.cssText = "position: absolute; top: 0.42rem; right: 0.42rem; z-index: 2; width: auto; min-height: 0; margin: 0; padding: 0.3rem 0.65rem; border: 1px solid #3dff6e; border-radius: 8px; background: transparent; color: #3dff6e; font-size: 0.82rem; font-weight: 800; cursor: pointer;";
-    make.addEventListener("click", (event) => { event.stopPropagation(); stackBuild(stack); });
+    make.addEventListener("click", (event) => { event.stopPropagation(); stackBuild(stack, 0, stackTitle(set)); });
     set.style.position = "relative";
     if (head) head.style.paddingRight = "5rem";
     set.append(make);
@@ -277,33 +277,63 @@ function stackTicket(set, stack) {
   build.textContent = "Build it";
   build.setAttribute("aria-label", "Load these legs into the parlay you are building");
   build.style.cssText = "position: absolute; top: 0.42rem; right: 2.9rem; z-index: 2; width: auto; min-height: 0; margin: 0; padding: 0.3rem 0.65rem; border: 1px solid #3dff6e; border-radius: 8px; background: transparent; color: #3dff6e; font-size: 0.82rem; font-weight: 800; cursor: pointer;";
-  build.addEventListener("click", (event) => { event.stopPropagation(); stackBuild(stack); });
+  build.addEventListener("click", (event) => { event.stopPropagation(); stackBuild(stack, 0, stackTitle(set)); });
   set.style.position = "relative";
   const title = set.querySelector(".stack-set-name");
   if (title) { title.style.paddingRight = "7.6rem"; title.after(line); } else set.prepend(line);
   set.append(build, share);
 }
 
-function stackBuild(stack, tries = 0) {
+function stackApart(stack) {
+  const legs = stack.bets || [];
+  return legs.length > 1 && legs.some((leg) => leg.kind === "Parlay" || /^(First touchdown|Anytime$|Higher under|Lower under|Low side|High side|Covers a win|Also covers|The posted number|The hook)/.test(leg.rung || ""));
+}
+
+function stackTitle(set) {
+  const name = ((set && set.closest(".rec-strategy")) || { dataset: {} }).dataset.name || "";
+  const no = name && typeof STACKS !== "undefined" ? STACKS.findIndex((row) => row[0] === name) + 1 : 0;
+  return name ? `${no ? `ST-${String(no).padStart(2, "0")} ` : ""}${name}` : "";
+}
+
+function stackFind(people, games, label, match, leg) {
+  const low = label.toLowerCase(), plain = (text) => String(text || "").toLowerCase().replace(/[()+]/g, "").replace(/\bspread\b/g, "").replace(/\s+/g, " ").trim();
+  const person = people.filter((row) => row.name && low.startsWith(String(row.name).toLowerCase())).sort((a, b) => b.name.length - a.name.length)[0];
+  const game = games.find((row) => row.match === match) || {};
+  const live = (person && (person.bets || []).find((row) => String(row.label || "").toLowerCase() === low)) || people.flatMap((row) => row.bets || []).find((row) => row.match === match && plain(row.label) === plain(label));
+  const bet = live || { label, odds: Number(leg.odds), market: leg.rung || leg.kind || "", match, sport: game.sport || "", kickoff: game.kickoff || "" };
+  return { bet, found: Boolean(live), person: person && label.startsWith(person.name) ? person : null };
+}
+
+function stackBuild(stack, tries = 0, title = "") {
   if (typeof parlayLeg === "undefined") return;
   const board = [...document.querySelectorAll(".find-board")].find((node) => node.querySelector(".find-tray"));
   if (!board && window.paintFind && !tries) paintFind();
-  if ((!board || !(board.people || []).length) && tries < 40) { setTimeout(() => stackBuild(stack, tries + 1), 200); return; }
+  if ((!board || !(board.people || []).length) && tries < 40) { setTimeout(() => stackBuild(stack, tries + 1, title), 200); return; }
   const people = (board && board.people) || [];
   const games = (window.state && state.board && state.board.games) || [];
   if (typeof saveLeave === "function") saveLeave();
   window.saveStacksOpen = false;
-  parlayLeg.clear();
-  parlayPick.clear();
-  (stack.bets || []).slice(0, 8).forEach((leg) => {
-    const label = String(leg.label || ""), low = label.toLowerCase(), match = leg.game || stack.game || "";
-    const person = people.filter((row) => row.name && low.startsWith(String(row.name).toLowerCase())).sort((a, b) => b.name.length - a.name.length)[0];
-    const game = games.find((row) => row.match === match) || {};
-    const bet = (person && (person.bets || []).find((row) => String(row.label || "").toLowerCase() === low)) || { label, odds: Number(leg.odds), market: leg.rung || leg.kind || "", match, sport: game.sport || "", kickoff: game.kickoff || "" };
-    parlayLeg.set(parlayKey(bet), bet);
-    if (person && label.startsWith(person.name) && parlayPick.size < 8) parlayPick.set(person.key, person);
-  });
-  paintParlay();
+  const legsOf = (leg) => {
+    const label = String(leg.label || ""), match = leg.game || stack.game || "";
+    if (leg.kind !== "Parlay") return [stackFind(people, games, label, match, leg)];
+    const places = String(match).split(" · "), parts = label.split(" and ").map((part, at) => stackFind(people, games, part, places[at] || match, leg));
+    return parts.length > 1 && parts.every((part) => part.found) ? parts : [stackFind(people, games, label, match, leg)];
+  };
+  const fill = (found) => {
+    parlayLeg.clear();
+    parlayPick.clear();
+    found.forEach(({ bet, person }) => { parlayLeg.set(parlayKey(bet), bet); if (person && parlayPick.size < 8) parlayPick.set(person.key, person); });
+  };
+  if (stackApart(stack) && typeof saveStore === "function") {
+    const group = { id: `g${Date.now()}`, name: title || stackName(stack) };
+    const made = (stack.bets || []).slice(0, 6).map((leg, at) => { fill(legsOf(leg)); return { id: `p${Date.now()}${at}`, at: Date.now(), legs: [...parlayLeg.values()], picks: [...parlayPick.values()].map(({ bets, ...rest }) => rest), group }; });
+    fill([]);
+    saveStore([...made, ...saveList()]);
+    saveOpen(made[0].id);
+  } else {
+    fill((stack.bets || []).slice(0, 8).flatMap(legsOf));
+    paintParlay();
+  }
   const tray = board && board.querySelector(".find-tray:not([hidden])");
   if (!tray) return;
   const fold = tray.querySelector(".find-fold");

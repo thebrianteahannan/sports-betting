@@ -63,6 +63,7 @@
 :is(.rec-board, #choice-result) .find-tray.find-shut > :not(.find-say, .find-ticket, .find-row:has(.find-ticket)), :is(.rec-board, #choice-result) .find-tray.find-shut .find-row:has(.find-ticket) > :not(.find-ticket) { display: none !important; }
 :is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket > button, :is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket > b > i:is(.sg, .gm) { display: none !important; }
 :is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket { padding-right: 0 !important; padding-bottom: 0 !important; }
+:is(.rec-board, #choice-result) .find-tray .find-ticket { flex-shrink: 0; }
 .rec-board .find-match > .find-guide, #desk.tv-full #desk-glass .rec-board .find-match > .find-guide { grid-column: 1 / -1; margin: 0.15rem 0 0.1rem; color: #c9d4df; font-size: 14px; line-height: 1.35; text-align: center; }
 .rec-board .find-match .find-side-go, #desk.tv-full #desk-glass .rec-board .find-match .find-side-go { padding: 0.45rem 0.65rem; border: 1px solid rgba(61, 255, 110, 0.55); border-radius: 10px; background: rgba(61, 255, 110, 0.07); cursor: pointer; }
 .rec-board .find-match .find-side-go::after { content: " \203A"; font-weight: 700; }
@@ -175,6 +176,10 @@
 .find-games .find-until { float: right; margin-left: 0.75rem; color: #3dff6e; font-weight: 700; white-space: nowrap; }
 .rec-board .find-saved button.find-saved-st, #desk.tv-full #desk-glass .rec-board .find-saved button.find-saved-st { width: auto; min-height: 0; margin: 0 0 0 0.3rem; padding: 0.2rem 0.1rem; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: #3dff6e; font-size: 13px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; text-transform: none; letter-spacing: normal; cursor: pointer; }
 .find-saved .find-saved-stacks { flex: 1 0 100%; min-width: 0; }
+.find-saved .find-saved-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; padding: 0.3rem 0.35rem 0.3rem 0.65rem; border: 1px dashed rgba(231, 193, 90, 0.55); border-radius: 14px; }
+.find-saved .find-saved-group > b { color: #e7c15a; font-size: 12px; font-weight: 800; }
+.rec-board .find-saved .find-saved-group > button.find-saved-x, #desk.tv-full #desk-glass .rec-board .find-saved .find-saved-group > button.find-saved-x { order: 9; width: auto; min-height: 0; margin: 0; padding: 0.2rem 0.45rem; border: 0; border-radius: 999px; background: transparent; box-shadow: none; color: #9fb3c8; font-size: 13px; cursor: pointer; }
+.rec-board .find-saved .find-saved-group > button.find-saved-x:hover { color: #ff6b6b; }
 .find-saved .find-saved-stacks .find-score { margin: 0.3rem 0 0; }
 .find-games .find-total { float: right; margin-left: 0.75rem; color: #e7c15a; font-weight: 700; white-space: nowrap; }
 .find-tray .find-tray-read { padding: 0.1rem 0 0.55rem; }

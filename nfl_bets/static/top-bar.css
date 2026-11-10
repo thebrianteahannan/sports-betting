@@ -14,3 +14,11 @@ body.needs-member #desk-where { display: none !important; }
 #desk.tv-full #desk-find-go:not([hidden]):hover { background: #07140f; }
 #desk.tv-full.find-up #desk-where:not(:empty) { right: calc(1.6rem + 86px); }
 body.needs-member #desk-find-go { display: none !important; }
+#desk.tv-full.find-up #desk-menu.bird-has::after { right: calc(100% + 43px + 0.95rem); }
+#desk.tv-full:has(#desk-menu.bird-has) #desk-where:not(:empty) { right: calc(21rem + 43px); }
+#desk.tv-full.find-up:has(#desk-menu.bird-has) #desk-where:not(:empty) { right: calc(21.5rem + 86px); }
+@media (max-width: 900px) { #desk.tv-full:has(#desk-menu.bird-has) #desk-where { visibility: hidden; } }
+@media (max-width: 560px) {
+  #desk.tv-full #desk-menu.bird-has:not(.say-open)::after { max-width: calc(100vw - 16rem); }
+  #desk.tv-full.find-up #desk-menu.bird-has:not(.say-open)::after { max-width: calc(100vw - 16.5rem - 43px); }
+}
