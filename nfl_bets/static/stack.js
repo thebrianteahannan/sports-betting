@@ -393,7 +393,8 @@ function stackLeg(bet) {
   node.className = "rec-bet stack-leg";
   const chance = typeof findPct === "function" ? findPct(bet.odds) : "";
   const seen = bet.games ? `<i class="seen${bet.hits / bet.games > parseFloat(chance) / 100 ? " up" : ""}">${bet.hits} of last ${bet.games}</i>` : "";
-  node.innerHTML = `<b><i class="prop">${esc(bet.label || "")}</i><i class="odds">${esc(stackMoney(bet.odds))}</i>${chance ? `<i class="chance">${esc(chance)}</i>` : ""}${seen}</b><p class="rec-gist"><i class="pct">${esc([bet.kind || "Single", bet.rung].filter(Boolean).join(", "))}</i> ${esc(bet.job || "")}</p>`;
+  const label = String(bet.label || ""), cut = / and /.test(label) ? null : label.match(/^(.+?)\s+(?=over\b|under\b|anytime\b|first\b|alt(?:ernate)?\b|\(?[-+]?\d[\d.]*(?:[+)\s]|$))/i), who = cut && !/:$|^(?:over|under)$|^\d(?:st|nd|rd|th) (?:quarter|half|period|inning)$/i.test(cut[1]) ? cut[1] : /^[A-Z][\w.'-]*(?: [A-Z][\w.'-]*)+$/.test(label) ? label : "";
+  node.innerHTML = `<b><i class="prop">${who ? `<i class="who">${esc(who)}</i> ${esc(label.slice(who.length).trim())}` : esc(label)}</i><i class="odds">${esc(stackMoney(bet.odds))}</i>${chance ? `<i class="chance">${esc(chance)}</i>` : ""}${seen}</b><p class="rec-gist"><i class="pct">${esc([bet.kind || "Single", bet.rung].filter(Boolean).join(", "))}</i> ${esc(bet.job || "")}</p>`;
   return node;
 }
 

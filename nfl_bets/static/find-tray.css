@@ -238,3 +238,5 @@
 .rec-board .rec-strategy > .stack-grade b { display: block; margin-top: 0.3rem; color: #9fb3c8; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .rec-board .rec-strategy > .stack-grade ul { margin: 0.15rem 0 0; padding-left: 1.1rem; }
 .rec-board .rec-strategy > .stack-grade li { font-size: 14px !important; line-height: 1.4 !important; }
+:is(.rec-board, #choice-result) .stack-set .stack-leg > b .prop { color: #e7c15a; font-weight: 600; }
+:is(.rec-board, #choice-result) .stack-set .stack-leg > b .prop i.who { display: inline; margin: 0; color: #f4f7fb !important; font-weight: 800; }
