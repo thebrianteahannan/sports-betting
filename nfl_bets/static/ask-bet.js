@@ -211,6 +211,8 @@ document.getElementById("desk-back").addEventListener("click", (event) => {
   if (window.shareBack && shareBack()) return;
   if (window.recBack && recBack()) return;
   if (window.askBack && askBack()) return;
+  const page = document.querySelector("#desk-glass-in .rec-board");
+  if (page && page.dataset.page === "stack" && window.paintFind && typeof tvStack !== "undefined" && !(tvStack.at(-1) && tvStack.at(-1).board === "find")) { tvSkip = true; paintFind(); tvSkip = false; tvPaint(); return; }
   if (window.tvBack) tvBack();
 }, true);
 

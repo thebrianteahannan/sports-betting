@@ -295,6 +295,21 @@ function stackTitle(set) {
   return name ? `${no ? `ST-${String(no).padStart(2, "0")} ` : ""}${name}` : "";
 }
 
+function stackLabel(set) {
+  const text = stackTitle(set);
+  if (!text || set.querySelector(":scope > .stack-set-st")) return;
+  const name = set.closest(".rec-strategy").dataset.name, row = STACKS.find((item) => item[0] === name) || [], rank = STACK_RANK[name] || [];
+  const tag = document.createElement("button");
+  tag.type = "button"; tag.className = "stack-set-st"; tag.textContent = text; tag.setAttribute("aria-expanded", "false");
+  tag.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const open = set.querySelector(":scope > .stack-set-about"), about = open || document.createElement("p");
+    if (open) open.remove(); else { about.className = "stack-set-about"; about.textContent = [row[1], rank[1]].filter(Boolean).join(" "); tag.after(about); }
+    tag.classList.toggle("on", !open); tag.setAttribute("aria-expanded", String(!open));
+  });
+  set.prepend(tag);
+}
+
 function stackFind(people, games, label, match, leg) {
   const low = label.toLowerCase(), plain = (text) => String(text || "").toLowerCase().replace(/[()+]/g, "").replace(/\bspread\b/g, "").replace(/\s+/g, " ").trim();
   const person = people.filter((row) => row.name && low.startsWith(String(row.name).toLowerCase())).sort((a, b) => b.name.length - a.name.length)[0];
@@ -477,3 +492,4 @@ window.stackMore = stackMore;
 window.stackTicket = stackTicket;
 window.stackBuild = stackBuild;
 window.stackOrder = stackOrder;
+window.stackLabel = stackLabel;

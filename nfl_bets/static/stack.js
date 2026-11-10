@@ -448,7 +448,7 @@ function fillStacks(board) {
           set.append(name);
           stackRead(set, stack);
           stackLegs(stack).forEach((bet) => set.append(stackLeg(bet)));
-          block.append(set);
+          block.append(set); if (window.stackLabel) stackLabel(set);
         });
       });
       applyStackFit(board);

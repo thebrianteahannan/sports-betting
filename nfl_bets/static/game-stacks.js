@@ -52,6 +52,7 @@ function paintGameStacks(holder, game, who = "") {
         stackRead(set, stack);
         stackLegs(stack).forEach((bet) => set.append(stackLeg(bet)));
         block.append(set);
+        if (window.stackLabel) stackLabel(set);
       });
       board.append(block);
     });

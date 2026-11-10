@@ -204,3 +204,9 @@
 .rec-board .rec-strategy .stack-set.stack-mine { outline: 2px solid #e7c15a; outline-offset: 2px; border-radius: 8px; }
 .rec-board .rec-strategy .stack-set.stack-mine::before { content: "Your parlay"; display: inline-block; margin-bottom: 0.3rem; padding: 0.1rem 0.45rem; border-radius: 6px; background: #e7c15a; color: #1a1405; font-size: 12px; font-weight: 800; }
 .rec-board .find-span .find-span-head { order: -2; margin: 0 0 -1.6rem; padding-right: 9rem; color: #e7c15a; font-size: 16px; font-weight: 700; line-height: 1.6rem; }
+.rec-board .stack-set > button.stack-set-st, #desk.tv-full #desk-glass .rec-board .stack-set > button.stack-set-st { display: inline-block; width: auto; min-height: 0; margin: 0 0 0.3rem; padding: 0; border: 0; border-bottom: 1px dotted #6e7d8a; border-radius: 0; background: transparent; box-shadow: none; color: #9fb3c8; font-size: 12px !important; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
+.rec-board .stack-set > button.stack-set-st::after { content: " ▸"; }
+.rec-board .stack-set > button.stack-set-st.on::after { content: " ▾"; }
+.rec-board .stack-set > button.stack-set-st:hover, .rec-board .stack-set > button.stack-set-st.on, #desk.tv-full #desk-glass .rec-board .stack-set > button.stack-set-st:is(:hover, .on) { color: #e7c15a; border-bottom-color: #e7c15a; }
+.rec-board .stack-set.stack-mine > button.stack-set-st, #desk.tv-full #desk-glass .rec-board .stack-set.stack-mine > button.stack-set-st { margin-left: 0.45rem; }
+.rec-board .stack-set > p.stack-set-about { margin: 0 0 0.45rem; padding: 0.4rem 0.55rem; border-left: 3px solid #e7c15a; border-radius: 4px; background: rgba(231, 193, 90, 0.08); color: #d5dde6; font-size: 13px !important; line-height: 1.4 !important; }
