@@ -119,9 +119,9 @@ function savePaint() {
       wipe.type = "button";
       wipe.className = "find-save find-save-wipe";
       wipe.textContent = "Delete";
-      wipe.setAttribute("aria-label", "Delete this whole parlay"); wipe.title = "Delete this parlay. Tap twice.";
+      wipe.setAttribute("aria-label", "Delete this whole parlay"); wipe.title = "Delete this parlay";
       wipe.addEventListener("click", () => {
-        if (!wipe.classList.contains("sure")) { wipe.classList.add("sure"); wipe.textContent = "Delete?"; setTimeout(() => { if (wipe.isConnected) { wipe.classList.remove("sure"); wipe.textContent = "Delete"; } }, 3000); return; }
+        if (window.parlayOpenId && saveList().some((row) => row.id === window.parlayOpenId) && !window.confirm("Delete this saved parlay?")) return;
         if (window.parlayOpenId) saveStore(saveList().filter((row) => row.id !== window.parlayOpenId));
         window.parlayOpenId = "";
         parlayPick.clear(); parlayLeg.clear();

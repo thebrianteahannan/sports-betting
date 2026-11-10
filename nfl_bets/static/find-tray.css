@@ -43,6 +43,8 @@
 :is(.rec-board, #choice-result) .find-tray .find-say { display: flex; align-items: center; gap: 0.6rem; }
 :is(.rec-board, #choice-result) .find-tray .find-say button.find-fold { margin: 0 0 0 auto !important; padding: 0.15rem 0.6rem !important; min-height: 0 !important; border-radius: 999px !important; background: transparent !important; color: #c9d4dd !important; box-shadow: inset 0 0 0 1px #3a4652 !important; font-size: 0.8rem !important; font-weight: 700 !important; }
 :is(.rec-board, #choice-result) .find-tray.find-shut > :not(.find-say, .find-ticket, .find-row:has(.find-ticket)), :is(.rec-board, #choice-result) .find-tray.find-shut .find-row:has(.find-ticket) > :not(.find-ticket) { display: none !important; }
+:is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket > button, :is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket > b > i:is(.sg, .gm) { display: none !important; }
+:is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket { padding-right: 0 !important; padding-bottom: 0 !important; }
 .rec-board .find-match > .find-guide, #desk.tv-full #desk-glass .rec-board .find-match > .find-guide { grid-column: 1 / -1; margin: 0.15rem 0 0.1rem; color: #c9d4df; font-size: 14px; line-height: 1.35; text-align: center; }
 .rec-board .find-match .find-side-go, #desk.tv-full #desk-glass .rec-board .find-match .find-side-go { padding: 0.45rem 0.65rem; border: 1px solid rgba(61, 255, 110, 0.55); border-radius: 10px; background: rgba(61, 255, 110, 0.07); cursor: pointer; }
 .rec-board .find-match .find-side-go::after { content: " \203A"; font-weight: 700; }
