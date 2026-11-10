@@ -445,7 +445,7 @@ function paintTrayBuild(tray) {
   const legs = [...parlayLeg.values()];
   const group = [...parlayPick.values()];
   const covered = !group.length || group.every((person) => legs.some((bet) => String(bet.label || "").startsWith(person.name)));
-  if (legs.length < 2 || !covered) return;
+  if (legs.length < 1 || !covered) return;
   const dec = legs.reduce((p, leg) => p * (1 + findRank(leg.odds)), 1);
   const price = dec >= 2 ? Math.round((dec - 1) * 100) : Math.round(-100 / (dec - 1));
   const line = document.createElement("div");
