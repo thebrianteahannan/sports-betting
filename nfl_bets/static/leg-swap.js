@@ -103,7 +103,7 @@ function legSwapTrade(key, person, bet) {
   parlayLeg.delete(key);
   parlayLeg.set(parlayKey(bet), bet);
   if (!parlayPick.has(person.key)) parlayPick.set(person.key, person);
-  [...parlayPick.entries()].forEach(([pick, who]) => { if (![...parlayLeg.values()].some((row) => String(row.label || "").startsWith(who.name))) parlayPick.delete(pick); });
+  [...parlayPick.entries()].forEach(([pick, who]) => { if (String(old.label || "").startsWith(who.name) && ![...parlayLeg.values()].some((row) => String(row.label || "").startsWith(who.name))) parlayPick.delete(pick); });
   paintParlay();
 }
 
