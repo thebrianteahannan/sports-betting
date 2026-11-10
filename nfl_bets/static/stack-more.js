@@ -469,6 +469,8 @@ function stackOrder(board) {
   const no = (block) => Number(String(block.dataset.card || "").replace("stack", "")) || 99;
   const key = { rank: (a, b) => rank(a) - rank(b), st: (a, b) => no(a) - no(b), bets: (a, b) => Number(b.dataset.shown || 0) - Number(a.dataset.shown || 0) || rank(a) - rank(b) }[sort];
   filters.after(...[...board.querySelectorAll(":scope > .rec-strategy")].sort(key));
+  const focus = board.querySelector(":scope > .rec-strategy.rec-focus");
+  if (focus) filters.after(focus);
 }
 
 window.stackMore = stackMore;

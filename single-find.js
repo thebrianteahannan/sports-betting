@@ -178,6 +178,8 @@ const ALIAS = { shotsTotal: ["shotsTotal", "shotsOnGoal", "shots"], totalRebound
 
 function specOf(text) {
   const low = String(text || "").toLowerCase();
+  const mix = [["points", /\b(pts|points?)\b/, "points"], ["totalRebounds", /\b(reb|rebounds?)\b/, "rebounds"], ["assists", /\b(ast|assists?)\b/, "assists"], ["steals", /\b(stl|steals?)\b/, "steals"], ["blocks", /\b(blk|blocks?)\b/, "blocks"]].filter((row) => row[1].test(low));
+  if (mix.length > 1 && /\b(pts|points?|reb|rebounds?|ast|assists?|stl|steals?|blk|blocks?)\s*\+\s*(pts|points?|reb|rebounds?|ast|assists?|stl|steals?|blk|blocks?)\b/.test(low)) return [mix.map((row) => row[0]), mix.map((row) => row[2]).join(" and "), false];
   if (low.includes("touchdown")) return [["receivingTouchdowns", "rushingTouchdowns"], "touchdown", true];
   if (low.includes("receiving") && (low.includes("yard") || low.includes("yds"))) return [["receivingYards"], "receiving yards", false];
   if (low.includes("rushing") && (low.includes("yard") || low.includes("yds"))) return [["rushingYards"], "rushing yards", false];
@@ -361,8 +363,8 @@ function holdOf(pack, text, price) {
 function savedRead(name, text, sport, odds, pack, bet) {
   const body = bet && typeof bet === "object" ? `${bet.market || ""} ${bet.label || ""} ${bet.runner || ""}` : String(text || "");
   const league = String((bet && bet.sport) || sport || "");
-  if (combo(body)) return { why: "A combo prop stays off a single stat's log." };
   const spec = specOf(body);
+  if (combo(body) && !(spec && spec[1].includes(" and "))) return { why: "A combo prop stays off a single stat's log." };
   const rows = spec ? logRows(pack, spec[0]) : [];
   const bar = spec ? barOf(body, spec[2]) : null;
   const price = priceOf(bet && bet.odds != null ? bet.odds : odds);

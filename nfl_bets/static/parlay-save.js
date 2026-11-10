@@ -115,7 +115,6 @@ function savePaint() {
       const edit = ticket.querySelector("button.find-edit");
       if (edit) edit.title = "Edit props";
       if (edit) edit.before(save); else ticket.append(save);
-      if (edit && getComputedStyle(edit).position === "absolute") { save.classList.add("find-save-pin"); save.style.right = `${ticket.clientWidth - edit.offsetLeft + 6}px`; }
       const wipe = document.createElement("button");
       wipe.type = "button";
       wipe.className = "find-save find-save-wipe";
@@ -130,13 +129,20 @@ function savePaint() {
         paintParlay();
       });
       save.before(wipe);
-      if (save.classList.contains("find-save-pin")) { wipe.classList.add("find-save-pin"); wipe.style.right = `${ticket.clientWidth - save.offsetLeft + 6}px`; }
-      const text = ticket.querySelector(":scope > b");
-      if (wipe.classList.contains("find-save-pin") && text && (text.lastElementChild || text).getBoundingClientRect().right - text.getBoundingClientRect().left > wipe.offsetLeft - text.offsetLeft - 6) {
-        save.style.top = wipe.style.top = `${edit.offsetHeight + 6}px`; save.style.right = "0px";
-        wipe.style.right = `${ticket.clientWidth - save.offsetLeft + 6}px`;
-        ticket.style.paddingBottom = `${edit.offsetHeight + 8}px`;
-      } else if (wipe.classList.contains("find-save-pin")) ticket.style.paddingRight = `${ticket.clientWidth - wipe.offsetLeft + 6}px`;
+      const pin = () => {
+        if (!edit || getComputedStyle(edit).position !== "absolute") return;
+        save.classList.add("find-save-pin"); save.style.right = `${ticket.clientWidth - edit.offsetLeft + 6}px`;
+        wipe.classList.add("find-save-pin"); wipe.style.right = `${ticket.clientWidth - save.offsetLeft + 6}px`;
+        const text = ticket.querySelector(":scope > b");
+        if (text && (text.lastElementChild || text).getBoundingClientRect().right - text.getBoundingClientRect().left > wipe.offsetLeft - text.offsetLeft - 6) {
+          save.style.top = wipe.style.top = `${edit.offsetHeight + 6}px`; save.style.right = "0px";
+          wipe.style.right = `${ticket.clientWidth - save.offsetLeft + 6}px`;
+          ticket.style.paddingBottom = `${edit.offsetHeight + 8}px`;
+        } else ticket.style.paddingRight = `${ticket.clientWidth - wipe.offsetLeft + 6}px`;
+      };
+      const fold = tray.querySelector(".find-fold");
+      if (edit && fold && !edit.getClientRects().length) fold.addEventListener("click", function later() { if (!edit.isConnected || edit.getClientRects().length) { fold.removeEventListener("click", later); if (edit.isConnected) pin(); } });
+      else pin();
     }
     const say = !tray.hidden && tray.querySelector(".find-say");
     if (say && !say.querySelector("button.find-close")) {

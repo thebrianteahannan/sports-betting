@@ -32,7 +32,7 @@ function trayStack(tray, legs) {
     go.type = "button";
     go.className = "find-near";
     go.textContent = `ST-${String(best.no).padStart(2, "0")}, ${best.name}`;
-    go.addEventListener("click", () => trayStackOpen(best.name));
+    go.addEventListener("click", () => trayStackOpen(best.name, rows.map((leg) => leg.label)));
     const list = (items) => items.length === 1 ? items[0] : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
     const fit = !best.missing.length && !best.extra.length;
     const join = (nodes) => nodes.flatMap((node, at) => (at === 0 ? [node] : [at === nodes.length - 1 ? " and " : ", ", node]));
@@ -105,11 +105,30 @@ function trayRoster() {
   document.querySelectorAll(".find-names button").forEach((node) => { const on = names.has(node.textContent); node.classList.toggle("on", on); node.setAttribute("aria-pressed", on ? "true" : "false"); });
 }
 
-function trayStackOpen(name) {
+function trayStackOpen(name, labels = []) {
   if (typeof paintStack !== "function") return;
+  window.stackFit = false;
+  window.stackBeats = false;
   paintStack();
   const block = [...document.querySelectorAll(".rec-board[data-page=\"stack\"] .rec-strategy")].find((node) => node.dataset.name === name);
   if (!block) return;
-  block.classList.add("open");
-  block.scrollIntoView({ block: "start" });
+  block.classList.add("open", "rec-focus");
+  const board = block.closest(".rec-board");
+  const filters = board.querySelector(".rec-filters");
+  if (filters) filters.after(block);
+  block.scrollIntoView({ block: "nearest" });
+  const key = (label) => String(label || "").toLowerCase().replace(/\s+/g, " ").trim();
+  const mine = new Set(labels.map(key));
+  let tries = 0;
+  const mark = () => {
+    if (!block.isConnected) return;
+    if (!block.dataset.fit && tries++ < 60) { setTimeout(mark, 300); return; }
+    const shared = (set) => String(set.dataset.labels || "").split("|").filter((label) => mine.has(key(label))).length;
+    const set = [...block.querySelectorAll(".stack-set")].sort((a, b) => shared(b) - shared(a))[0];
+    if (!set || !shared(set)) return;
+    set.classList.add("stack-mine");
+    if (set.hidden && set.dataset.span !== "later" && window.stackWhen !== "week") { window.stackWhen = "week"; applyStackFit(board); }
+    set.scrollIntoView({ block: "center", behavior: "smooth" });
+  };
+  mark();
 }
