@@ -442,6 +442,7 @@ function showFind(list, hits, person, roster, people, keep, kind) {
     list.append(note);
     return;
   }
+  if (person.kind === "player") return;
   bets.forEach((bet, index) => {
     const price = Number(bet.odds);
     const shown = price > 0 ? `+${price}` : String(price);

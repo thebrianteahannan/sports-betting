@@ -38,7 +38,7 @@ async function blowLog(name) {
   if (picked) {
     const now = await season(picked.id, null);
     let rows = now.rows;
-    if (now.current && rows.filter((row) => row.margin >= BLOW).length < 4) {
+    if (now.current && (rows.length < 20 || rows.filter((row) => row.margin >= BLOW).length < 4)) {
       const seen = new Set(rows.map((row) => row.date));
       rows = rows.concat((await season(picked.id, now.current - 1)).rows.filter((row) => !seen.has(row.date)));
     }
@@ -77,7 +77,8 @@ async function blowTags(name, stats, pullOf) {
     stat.blowTip = `${one(a)} in ${blow.length} blowouts, ${one(b)} in ${rest.length} other games.`;
   });
   const tag = way === "down" ? "Sits in blowouts" : way === "up" ? "Plays more in blowouts" : "Blowouts don't move him";
-  return { tag, kind: way, tip: `${one(mins.a)} minutes in ${blow.length} blowouts, ${one(mins.b)} in ${rest.length} other games.` };
+  const games = (pull, n) => { const cols = { pts: pull("points"), reb: pull("reb"), ast: pull("assists"), threes: pull("threes") }; return Array.from({ length: n }, (_, at) => Object.fromEntries(Object.entries(cols).map(([key, list]) => [key, list[at] || 0]))); };
+  return { tag, kind: way, blow: games(inBlow, blow.length), rest: games(inRest, rest.length), tip: `${one(mins.a)} minutes in ${blow.length} blowouts, ${one(mins.b)} in ${rest.length} other games.` };
 }
 
 module.exports = { blowTags };

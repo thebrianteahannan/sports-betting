@@ -125,6 +125,8 @@ function legSwapBox(key, mode) {
     go.className = now ? "find-swap-go now" : "find-swap-go";
     go.title = now ? "In the parlay" : mode === "who" ? "Add to the parlay" : mode === "line" ? "Change to this number" : mode === "kind" ? "Change to this prop" : `Trade this leg for ${person.name}`;
     go.innerHTML = [`<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, typeof findPct === "function" && findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`, mode === "swap" && `<i class="who">${esc(person.name)}</i>`, `<i class="prop">${esc(legSwapWhat(person, bet))}</i>`].filter(Boolean).join("");
+    const proof = bet.sport === "NBA" && typeof proofOf === "function" && proofOf(person.name, bet.market, bet.label, bet.odds);
+    if (proof) go.append(proofPill(proof));
     go.addEventListener("click", () => { if (mode === "who") { legSwapOpen.delete(key); legSwapAdd(person, bet); } else if (now) { legSwapOpen.delete(key); legSwapPaint(); } else legSwapTrade(key, person, bet); });
     const row = document.createElement("div");
     row.className = "find-swap-row";
