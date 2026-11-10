@@ -2,7 +2,7 @@
 
 const SAVE_KEY = "pod-saved-parlays", SAVE_WHO = "pod-saved-parlays-who";
 window.parlayOpenId = window.parlayOpenId || "";
-let saveSendTimer = 0;
+let saveSendTimer = 0, saveHeld = "";
 
 function saveList() {
   try { return JSON.parse(localStorage.getItem(SAVE_KEY) || "[]"); } catch (error) { return []; }
@@ -30,7 +30,7 @@ async function saveSync() {
     if (!parlays.length && local.length && (!owner || owner === who)) { saveSend(local); return; }
     if (JSON.stringify(parlays) === JSON.stringify(local)) return;
     localStorage.setItem(SAVE_KEY, JSON.stringify(parlays));
-    if (window.parlayOpenId && !parlays.some((row) => row.id === window.parlayOpenId)) window.parlayOpenId = "";
+    if (window.parlayOpenId && !parlays.some((row) => row.id === window.parlayOpenId)) { window.parlayOpenId = ""; saveHeld = saveSig([...parlayLeg.values()]); }
     if (document.querySelector(".find-board") && typeof paintParlay === "function") paintParlay();
   } catch (error) { console.log("[parlay-save] could not load", error); }
 }
@@ -80,7 +80,7 @@ function saveOpen(id) {
 
 function saveDrop(id) {
   saveStore(saveList().filter((row) => row.id !== id));
-  if (window.parlayOpenId === id) window.parlayOpenId = "";
+  if (window.parlayOpenId === id) { window.parlayOpenId = ""; parlayPick.clear(); parlayLeg.clear(); if (typeof trayRoster === "function") trayRoster(); }
   paintParlay();
 }
 
@@ -176,7 +176,12 @@ function savePaint() {
 
 if (typeof paintParlay === "function") {
   const paintParlayBase = paintParlay;
-  paintParlay = function () { paintParlayBase.apply(this, arguments); savePaint(); };
+  paintParlay = function () {
+    paintParlayBase.apply(this, arguments);
+    const sig = saveSig([...parlayLeg.values()]), open = saveList().find((row) => row.id === window.parlayOpenId);
+    if (parlayLeg.size && sig !== saveHeld && (!open || saveSig(open.legs) !== sig)) { saveHeld = ""; saveNow(); }
+    savePaint();
+  };
 }
 
 const saveScrollTop = new WeakMap(), saveAutoShut = new Set(); let saveFoldAt = 0;
