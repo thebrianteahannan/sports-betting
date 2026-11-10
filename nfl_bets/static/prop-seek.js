@@ -8,6 +8,7 @@ function propSeekField(band, run) {
   input.type = "search";
   input.placeholder = "250 passing";
   input.autocomplete = "off";
+  input.dataset.key = "prop";
   input.addEventListener("input", () => {
     const kinds = band.closest(".find-kinds");
     if (input.value.trim() && kinds) kinds.querySelectorAll(".find-names button.on").forEach((button) => { button.classList.remove("on"); button.setAttribute("aria-pressed", "false"); });

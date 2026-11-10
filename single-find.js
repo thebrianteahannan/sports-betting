@@ -401,7 +401,7 @@ async function whyPlayer(name, text, sport, bet, odds, games) {
   try {
     if (bin) found = JSON.parse(execFileSync(bin, ["-m", "nfl_bets.why"], { input: JSON.stringify(asked), encoding: "utf8", timeout: 20000, maxBuffer: 2 * 1024 * 1024, cwd: __dirname }));
   } catch (err) { found = null; }
-  if (asked.read) { const read = pack ? savedRead(name, text, sport || league, odds, pack, bet) : null; const why = (found && found.why) || (read && read.why) || ""; const spans = (found && found.spans) || (read && read.spans) || ""; const lean = (found && found.lean) || (read && read.lean) || ""; return (why || spans || lean) ? { ...(found || {}), why, spans, lean } : { why: "This player's game log is not on the desk yet." }; }
+  if (asked.read) { const dub = pack ? require("./double-read").doubleRead(nick(name), pack, bet, priceOf(bet.odds != null ? bet.odds : odds)) : null; if (dub) return dub; const read = pack ? savedRead(name, text, sport || league, odds, pack, bet) : null; const why = (found && found.why) || (read && read.why) || ""; const spans = (found && found.spans) || (read && read.spans) || ""; const lean = (found && found.lean) || (read && read.lean) || ""; return (why || spans || lean) ? { ...(found || {}), why, spans, lean } : { why: "" }; }
   if (!found) return { why: "The game log did not load." };
   let looks = [];
   try { looks = (await require("./desk-looks").currentLooks()).looks || []; } catch (err) { looks = []; }

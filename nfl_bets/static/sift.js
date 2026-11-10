@@ -226,15 +226,15 @@ function siftKinds(list, preset) {
     input.type = "number";
     input.placeholder = placeholder;
     input.step = step;
-    input.inputMode = "decimal"; try { input.value = localStorage.getItem("parlay-band-" + key) || ""; } catch (error) {}
-    input.addEventListener("input", () => { try { const saved = input.value.trim(); if (saved) localStorage.setItem("parlay-band-" + key, saved); else localStorage.removeItem("parlay-band-" + key); } catch (error) {} clearTimeout(siftKinds.timer); if (!input.value.trim()) applyKinds(); else siftKinds.timer = setTimeout(applyKinds, 400); });
+    input.inputMode = "decimal"; input.dataset.key = key; try { localStorage.removeItem("parlay-band-" + key); } catch (error) {}
+    input.addEventListener("input", () => { clearTimeout(siftKinds.timer); if (!input.value.trim()) applyKinds(); else siftKinds.timer = setTimeout(applyKinds, 400); });
     label.append(span, input);
     band.append(label);
     return input;
   };
   const oddsInput = field("Odds", "-150", "1", "odds");
   const pctInput = field("%", "75", "0.1", "pct");
-  const cashInput = field("$5 profits", "2", "0.01", "cash"); const propInput = typeof propSeekField === "function" ? propSeekField(band, () => applyKinds()) : null; const wipe = document.createElement("button"); wipe.type = "button"; wipe.className = "find-clear"; wipe.textContent = "Clear"; wipe.addEventListener("click", () => { [oddsInput, pctInput, cashInput, propInput].filter(Boolean).forEach((input) => { input.value = ""; }); ["odds", "pct", "cash"].forEach((key) => { try { localStorage.removeItem("parlay-band-" + key); } catch (error) {} }); applyKinds(); }); band.append(wipe);
+  const cashInput = field("$5 profits", "2", "0.01", "cash"); const propInput = typeof propSeekField === "function" ? propSeekField(band, () => applyKinds()) : null; const wipe = document.createElement("button"); wipe.type = "button"; wipe.className = "find-clear"; wipe.textContent = "Clear"; wipe.addEventListener("click", () => { [oddsInput, pctInput, cashInput, propInput].filter(Boolean).forEach((input) => { input.value = ""; }); ["odds", "pct", "cash"].forEach((key) => { try { localStorage.removeItem("parlay-band-" + key); } catch (error) {} }); applyKinds(); }); band.append(wipe); if (typeof bandPick === "function") bandPick(band);
   const none = document.createElement("p");
   none.className = "quiet";
   none.hidden = true;
