@@ -69,6 +69,7 @@ function bookOf(pools) {
       const blob = `${leg.runner || ""} ${leg.label || ""} ${leg.market || ""}`;
       const team = teams.find((item) => { const name = item.name.toLowerCase(); const nick = name.split(/\s+/).pop().replace(/[^a-z]/g, ""); return blob.toLowerCase().includes(name) || (nick.length > 3 && blob.toLowerCase().includes(nick)); });
       const bet = { ...where, label: String(leg.label || leg.runner || ""), odds: leg.odds, market: leg.market || "" };
+      if (!team && /^alternate total (points|runs|goals)$/i.test(String(leg.market || "").trim())) { teams.forEach((item) => put(item.key, item.name, "team", bet)); return; }
       if (team) { put(team.key, team.name, "team", bet); return; }
       const key = who(leg).replace(/\s+to\b.*$/, "").trim();
       const words = key.split(" ").filter(Boolean);
@@ -78,7 +79,7 @@ function bookOf(pools) {
     });
   });
   return {
-    people: [...people.values()].map((row) => { row.bets.sort((a, b) => rank(b.odds) - rank(a.odds)); row.bets = row.bets.slice(0, 200); return row; }).filter((row) => row.bets.length).sort((a, b) => a.name.localeCompare(b.name)),
+    people: [...people.values()].map((row) => { row.bets.sort((a, b) => rank(b.odds) - rank(a.odds)); row.bets = row.bets.slice(0, row.kind === "team" ? 400 : 200); return row; }).filter((row) => row.bets.length).sort((a, b) => a.name.localeCompare(b.name)),
   };
 }
 

@@ -48,7 +48,7 @@ function legLineFind(key) {
   const board = document.querySelector(".find-board");
   if (!old || !board) return [];
   const person = (board.people || []).find((one) => one.kind === "player" && String(old.label || "").startsWith(one.name));
-  if (!person) return [];
+  if (!person) return legGameFind(key);
   const stat = (bet) => legSwapStat(person, bet);
   const under = (bet) => /\bunder\b/i.test(bet.label || "");
   const num = (bet) => Number((String(bet.label || "").replace(person.name, "").match(/\d+(?:\.\d+)?/) || String(bet.market || "").match(/\d+(?:\.\d+)?/) || [])[0]) || (stat(bet) === "touchdowns" ? 1 : 0);
@@ -60,6 +60,31 @@ function legLineFind(key) {
     seen.add(id);
     return true;
   }).map((bet) => ({ person, bet, now: same(bet) })).sort((a, b) => num(a.bet) - num(b.bet));
+}
+
+function legGameWhat(bet) {
+  const rest = String(bet.label || "").split(/\s+—\s+/)[0].replace(/^[^:]*:\s*/, "");
+  return /^(over|under)(\s+[\d.]+)?$/i.test(rest) ? `${rest} ${String(bet.market || "").replace(/^alternate\s+/i, "").toLowerCase()}`.trim() : rest;
+}
+
+function legGameFind(key) {
+  const old = parlayLeg.get(key);
+  const board = document.querySelector(".find-board");
+  if (!old || !board) return [];
+  const fam = (bet) => { const market = String(bet.market || ""); return /^(total|alternate total points?)$/i.test(market) ? "total" : /^(spread|alternate spread)$/i.test(market) ? "spread" : /^moneyline$/i.test(market) ? "money" : ""; };
+  const kind = fam(old);
+  if (!kind) return [];
+  const side = (bet) => (kind === "total" ? "" : String(bet.label || "").replace(/\s[+-]?\d.*$/, "").trim());
+  const num = (bet) => Number((String(bet.label || "").match(/[+-]?\d+(?:\.\d+)?/g) || []).pop()) || 0;
+  const seen = new Set(), same = (bet) => bet.label === old.label && bet.market === old.market, rows = [];
+  (board.people || []).filter((one) => one.kind === "team").forEach((team) => (team.bets || []).forEach((bet) => {
+    const id = `${bet.label}|${bet.market}`;
+    if (bet.match !== old.match || bet.kickoff !== old.kickoff || fam(bet) !== kind || side(bet) !== side(old) || !Number(bet.odds) || seen.has(id)) return;
+    if (!same(bet) && parlayLeg.has(parlayKey(bet))) return;
+    seen.add(id);
+    rows.push({ person: null, bet, now: same(bet) });
+  }));
+  return rows.sort((a, b) => /\bunder\b/i.test(a.bet.label || "") - /\bunder\b/i.test(b.bet.label || "") || num(a.bet) - num(b.bet));
 }
 
 function legKindFind(key) {
@@ -102,14 +127,14 @@ function legSwapTrade(key, person, bet) {
   legSwapOpen.delete(key);
   parlayLeg.delete(key);
   parlayLeg.set(parlayKey(bet), bet);
-  if (!parlayPick.has(person.key)) parlayPick.set(person.key, person);
+  if (person && !parlayPick.has(person.key)) parlayPick.set(person.key, person);
   [...parlayPick.entries()].forEach(([pick, who]) => { if (String(old.label || "").startsWith(who.name) && ![...parlayLeg.values()].some((row) => String(row.label || "").startsWith(who.name))) parlayPick.delete(pick); });
   paintParlay();
 }
 
 function legSwapAdd(person, bet) {
   parlayLeg.set(parlayKey(bet), bet);
-  if (!parlayPick.has(person.key)) parlayPick.set(person.key, person);
+  if (person && !parlayPick.has(person.key)) parlayPick.set(person.key, person);
   paintParlay();
 }
 
@@ -124,8 +149,8 @@ function legSwapBox(key, mode) {
     go.type = "button";
     go.className = now ? "find-swap-go now" : "find-swap-go";
     go.title = now ? "In the parlay" : mode === "who" ? "Add to the parlay" : mode === "line" ? "Change to this number" : mode === "kind" ? "Change to this prop" : `Trade this leg for ${person.name}`;
-    go.innerHTML = [`<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, typeof findPct === "function" && findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`, mode === "swap" && `<i class="who">${esc(person.name)}</i>`, `<i class="prop">${esc(legSwapWhat(person, bet))}</i>`].filter(Boolean).join("");
-    const proof = bet.sport === "NBA" && typeof proofOf === "function" && proofOf(person.name, bet.market, bet.label, bet.odds);
+    go.innerHTML = [`<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, typeof findPct === "function" && findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`, mode === "swap" && `<i class="who">${esc(person.name)}</i>`, `<i class="prop">${esc(person ? legSwapWhat(person, bet) : legGameWhat(bet))}</i>`].filter(Boolean).join("");
+    const proof = person && bet.sport === "NBA" && typeof proofOf === "function" && proofOf(person.name, bet.market, bet.label, bet.odds);
     if (proof) go.append(proofPill(proof));
     go.addEventListener("click", () => { if (mode === "who") { legSwapOpen.delete(key); legSwapAdd(person, bet); } else if (now) { legSwapOpen.delete(key); legSwapPaint(); } else legSwapTrade(key, person, bet); });
     const row = document.createElement("div");
@@ -168,6 +193,13 @@ function legSwapPaint() {
     if (who && String((parlayLeg.get(key) || {}).label || "").startsWith(who.textContent)) { who.dataset.key = key; who.title = mode === "kind" ? "Hide the other props" : "Other props for this player"; who.classList.toggle("on", mode === "kind"); }
     document.querySelectorAll(".find-tray .find-tray-swap").forEach((box) => { if (box.dataset.key === key) box.remove(); });
     if (mode && line) { const box = legSwapBox(key, mode); box.dataset.key = key; line.after(box); }
+  });
+  document.querySelectorAll(".find-tray .find-loose .find-chose[data-key]").forEach((line) => {
+    const key = line.dataset.key, mode = parlayLeg.has(key) ? legSwapOpen.get(key) : "";
+    const prop = line.querySelector("span i.prop");
+    if (prop) { prop.dataset.key = key; prop.title = mode === "line" ? "Hide the other numbers" : "Change the number"; prop.classList.toggle("on", mode === "line"); }
+    document.querySelectorAll(".find-tray .find-tray-swap").forEach((box) => { if (box.dataset.key === key) box.remove(); });
+    if (mode === "line") { const box = legSwapBox(key, mode); box.dataset.key = key; line.after(box); }
   });
   document.querySelectorAll(".find-tray .find-in button.find-name[data-key]").forEach((name) => {
     const key = `who:${name.dataset.key}`, on = legSwapOpen.get(key) === "who";
