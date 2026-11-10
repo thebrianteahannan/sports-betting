@@ -193,6 +193,8 @@
 .rec-board .find-saved .find-saved-group > button.find-saved-x:hover { color: #ff6b6b; }
 .find-saved .find-saved-stacks .find-score { margin: 0.3rem 0 0; }
 .find-games .find-total { float: right; margin-left: 0.75rem; color: #e7c15a; font-weight: 700; white-space: nowrap; }
+.find-games .find-edge { float: right; margin-left: 0.75rem; padding: 0 0.45rem; border: 1px solid #3dff6e; border-radius: 999px; color: #3dff6e; font-size: 0.85em; font-weight: 800; white-space: nowrap; }
+.find-games .find-edge.lose { border-color: #ff8a2a; color: #ff8a2a; }
 .find-tray .find-tray-read { padding: 0.1rem 0 0.55rem; }
 .find-tray .find-tray-read:has(.find-why, .find-log) .find-leg-wait, .find-tray .find-tray-read button.find-hist { display: none !important; }
 .find-tray .find-tray-read .find-leg-wait { margin: 0; color: #8b97a3; font-size: 0.85rem; }

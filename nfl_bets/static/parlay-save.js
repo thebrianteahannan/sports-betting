@@ -307,4 +307,11 @@ document.addEventListener("scroll", (event) => {
   const end = tray.scrollTop + tray.clientHeight >= tray.scrollHeight - 2, long = tray.scrollHeight > tray.clientHeight + 2;
   if (past || (stuck && long && end)) { saveFoldAt = Date.now(); fold.click(); saveAutoShut.add(tray); }
 }, true);
+document.addEventListener("click", (event) => {
+  const go = event.target.closest && event.target.closest(".find-games-go");
+  if (!go || !window.saveStacksOpen) return;
+  window.saveStacksOpen = false;
+  paintParlay();
+  setTimeout(() => { const span = document.querySelector("#desk-glass-in .find-span"); if (span) span.scrollIntoView({ block: "start", behavior: "smooth" }); }, 50);
+});
 document.addEventListener("click", (event) => { const fold = event.target.closest && event.target.closest(".find-fold"); if (!fold) return; if (event.isTrusted) saveAutoShut.delete(fold.closest(".find-tray")); for (let node = fold; node; node = node.parentElement) saveScrollTop.delete(node); }, true);
