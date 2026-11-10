@@ -242,6 +242,16 @@ function stackTicket(set, stack) {
     apart.innerHTML = `<i style="font-style: normal; color: #f4f7fb">${legs.length} separate ${legs[0].kind === "Parlay" ? "parlays" : "bets"}</i><i style="font-style: normal; color: #3dff6e">$${legs.reduce((sum, leg) => sum + (Number(leg.stake) || 0), 0)} in play</i>`;
     const head = set.querySelector(".stack-set-name");
     if (head) head.after(apart); else set.prepend(apart);
+    const make = document.createElement("button");
+    make.type = "button";
+    make.className = "stack-build";
+    make.textContent = "Build it";
+    make.setAttribute("aria-label", "Load these legs into the parlay you are building");
+    make.style.cssText = "position: absolute; top: 0.42rem; right: 0.42rem; z-index: 2; width: auto; min-height: 0; margin: 0; padding: 0.3rem 0.65rem; border: 1px solid #3dff6e; border-radius: 8px; background: transparent; color: #3dff6e; font-size: 0.82rem; font-weight: 800; cursor: pointer;";
+    make.addEventListener("click", (event) => { event.stopPropagation(); stackBuild(stack); });
+    set.style.position = "relative";
+    if (head) head.style.paddingRight = "5rem";
+    set.append(make);
     return;
   }
   const dec = legs.reduce((p, leg) => p * (1 + findRank(leg.odds)), 1);
