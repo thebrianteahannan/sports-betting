@@ -170,8 +170,38 @@ function savePaint() {
       fresh.textContent = "+ New parlay";
       fresh.addEventListener("click", saveNew);
       box.append(fresh);
+      saveStacks(box);
     }
   });
+}
+
+function saveStacks(box) {
+  const go = document.createElement("button");
+  go.type = "button";
+  go.className = "find-saved-st";
+  go.textContent = window.saveStacksOpen ? "Hide strategies" : "Strategies";
+  go.setAttribute("aria-expanded", String(Boolean(window.saveStacksOpen)));
+  go.addEventListener("click", () => { window.saveStacksOpen = !window.saveStacksOpen; paintParlay(); });
+  box.append(go);
+  if (!window.saveStacksOpen || typeof paintGameStacks !== "function") return;
+  const games = [...new Set([...parlayLeg.values()].map((bet) => bet.match).filter(Boolean))];
+  const key = games.join("|"), kept = window.saveStacksPanel;
+  if (kept && kept.dataset.key === key) { box.append(kept); return; }
+  const panel = document.createElement("div");
+  panel.className = "find-saved-stacks";
+  panel.dataset.key = key;
+  games.forEach((match) => {
+    const host = document.createElement("div");
+    host.className = "find-stack-host";
+    panel.append(host);
+    paintGameStacks(host, { match });
+    const open = host.querySelector("details");
+    if (!open) return;
+    open.open = true;
+    if (games.length > 1) open.querySelector("summary b").textContent = `Parlay strategies for ${typeof gameShort === "function" ? gameShort(match) : match}`;
+  });
+  window.saveStacksPanel = panel;
+  box.append(panel);
 }
 
 if (typeof paintParlay === "function") {

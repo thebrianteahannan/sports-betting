@@ -281,6 +281,8 @@ function stackBuild(stack, tries = 0) {
   if ((!board || !(board.people || []).length) && tries < 40) { setTimeout(() => stackBuild(stack, tries + 1), 200); return; }
   const people = (board && board.people) || [];
   const games = (window.state && state.board && state.board.games) || [];
+  if (typeof saveLeave === "function") saveLeave();
+  window.saveStacksOpen = false;
   parlayLeg.clear();
   parlayPick.clear();
   (stack.bets || []).slice(0, 8).forEach((leg) => {
@@ -292,8 +294,13 @@ function stackBuild(stack, tries = 0) {
     if (person && label.startsWith(person.name) && parlayPick.size < 8) parlayPick.set(person.key, person);
   });
   paintParlay();
-  const tray = document.querySelector(".find-tray:not([hidden])");
-  if (tray) tray.scrollIntoView({ behavior: "smooth", block: "start" });
+  const tray = board && board.querySelector(".find-tray:not([hidden])");
+  if (!tray) return;
+  const fold = tray.querySelector(".find-fold");
+  if (tray.classList.contains("find-shut") && fold) fold.click();
+  let box = tray.parentElement;
+  while (box && box !== document.body && !(box.scrollHeight > box.clientHeight && /auto|scroll/.test(getComputedStyle(box).overflowY))) box = box.parentElement;
+  (box && box !== document.body ? box : window).scrollTo({ top: 0, behavior: "smooth" });
 }
 
 STACKS.push(["Same-game yardage parlay", "One ticket. A quarterback, his receiver, and a back, each on a line he clears most weeks, plus the over or a touchdown.", [

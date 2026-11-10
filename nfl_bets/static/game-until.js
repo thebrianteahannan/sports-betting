@@ -14,13 +14,20 @@ function gameUntilPaint(tag) {
   tag.hidden = !text;
 }
 
-function gameUntil(button, kickoff) {
+function gameUntil(button, kickoff, game, people) {
   if (!button || !kickoff) return;
   const tag = document.createElement("span");
   tag.className = "find-until";
   tag.dataset.kick = kickoff;
   gameUntilPaint(tag);
   button.append(tag);
+  const over = game && (people || []).filter((one) => one.kind === "team").flatMap((one) => one.bets || []).find((bet) => bet.market === "Total" && bet.match === game.match && bet.kickoff === game.kickoff && /^over\s/i.test(bet.label || ""));
+  const line = over && (String(over.label).match(/\d+(?:\.\d+)?/) || [])[0];
+  if (!line) return;
+  const total = document.createElement("span");
+  total.className = "find-total";
+  total.textContent = `O/U ${line}`;
+  button.append(total);
 }
 
 setInterval(() => document.querySelectorAll(".find-until").forEach(gameUntilPaint), 30000);

@@ -11,7 +11,7 @@ function gameStackData() {
 }
 
 function paintGameStacks(holder, game, who = "") {
-  const match = [...holder.querySelectorAll(".find-match")].pop();
+  const match = holder.classList.contains("find-stack-host") ? holder : [...holder.querySelectorAll(".find-match")].pop();
   if (!match || typeof STACKS === "undefined") return;
   const box = document.createElement("details");
   box.className = "find-score find-stacks";

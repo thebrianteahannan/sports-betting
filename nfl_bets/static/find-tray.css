@@ -155,6 +155,10 @@
 :is(.rec-board, #choice-result) .find-tray .find-chose i.who[data-key] { cursor: pointer; text-decoration: underline dotted rgba(244, 247, 251, 0.45); text-underline-offset: 3px; }
 :is(.rec-board, #choice-result) .find-tray .find-chose i.who[data-key]:hover, :is(.rec-board, #choice-result) .find-tray .find-chose i.who.on { text-decoration: underline solid #f4f7fb; }
 .find-games .find-until { float: right; margin-left: 0.75rem; color: #3dff6e; font-weight: 700; white-space: nowrap; }
+.rec-board .find-saved button.find-saved-st, #desk.tv-full #desk-glass .rec-board .find-saved button.find-saved-st { width: auto; min-height: 0; margin: 0 0 0 0.3rem; padding: 0.2rem 0.1rem; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: #3dff6e; font-size: 13px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; text-transform: none; letter-spacing: normal; cursor: pointer; }
+.find-saved .find-saved-stacks { flex: 1 0 100%; min-width: 0; }
+.find-saved .find-saved-stacks .find-score { margin: 0.3rem 0 0; }
+.find-games .find-total { float: right; margin-left: 0.75rem; color: #e7c15a; font-weight: 700; white-space: nowrap; }
 .find-tray .find-tray-read { padding: 0.1rem 0 0.55rem; }
 .find-tray .find-tray-read:has(.find-why, .find-log) .find-leg-wait, .find-tray .find-tray-read button.find-hist { display: none !important; }
 .find-tray .find-tray-read .find-leg-wait { margin: 0; color: #8b97a3; font-size: 0.85rem; }
