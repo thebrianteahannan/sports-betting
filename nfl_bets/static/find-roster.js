@@ -6,6 +6,7 @@ function rosterGroup(roster, names, lined, rows, team) {
   const tag = (node, row) => { if (row.def) node.dataset.def = "1"; if (row.bench) node.dataset.bench = "1"; };
   const buttons = [...names.querySelectorAll(":scope > button")];
   const groups = new Map();
+  const top = Math.max(0, ...lined.map((hit) => (hit.bets || []).length));
   lined.forEach((hit, at) => {
     const button = buttons[at];
     if (!button) return;
@@ -14,6 +15,7 @@ function rosterGroup(roster, names, lined, rows, team) {
     tag(button, row);
     if (pos) button.dataset.pos = pos;
     const count = (hit.bets || []).length;
+    if (count * 3 < top) button.dataset.fringe = "1";
     const group = groups.get(pos) || { pos, total: 0, list: [] };
     group.total += count;
     group.list.push({ button, count, name: hit.name, hit });
@@ -40,6 +42,7 @@ function rosterGroup(roster, names, lined, rows, team) {
   if (hasDef || hasBench) kinds.push(hasDef ? ["defense", " Hide defense"] : ["bench", " Hide bench"]);
   if (names.querySelector(":scope > span, :scope > details > span:not(.find-absent)")) kinds.push(["empty", " Hide no-bet players"]);
   if (outs.length) kinds.push(["out", " Hide out players"]);
+  if (names.querySelector('[data-fringe="1"]')) kinds.push(["stars", " Show only stars"]);
   if (!kinds.length) return;
   const bar = document.createElement("div");
   bar.className = "find-hides";
@@ -70,6 +73,7 @@ function rosterPlus(button, person) {
   chip.className = "find-chip";
   if (button.dataset.def) chip.dataset.def = button.dataset.def;
   if (button.dataset.bench) chip.dataset.bench = button.dataset.bench;
+  if (button.dataset.fringe) chip.dataset.fringe = button.dataset.fringe;
   const plus = document.createElement("button");
   plus.type = "button";
   plus.className = "find-plus";
@@ -94,6 +98,7 @@ function rosterHide() {
     roster.classList.toggle("hide-bench", !!hide.bench);
     roster.classList.toggle("hide-empty", !!hide.empty);
     roster.classList.toggle("hide-out", !!hide.out);
+    roster.classList.toggle("hide-fringe", !!hide.stars);
     roster.querySelectorAll(".find-hide input").forEach((box) => { box.checked = !!hide[box.dataset.kind]; });
   });
 }

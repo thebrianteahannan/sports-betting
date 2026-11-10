@@ -68,6 +68,7 @@ function gameScrollTo(node) {
   const quit = new AbortController();
   let moved = false;
   ["wheel", "touchstart", "pointerdown", "keydown"].forEach((kind) => window.addEventListener(kind, () => { moved = true; quit.abort(); }, { passive: true, signal: quit.signal }));
+  window.gameScrollQuit = () => { moved = true; quit.abort(); };
   const go = (smooth) => { if (!moved && node.isConnected) node.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" }); };
   setTimeout(() => go(true), 60);
   [800, 1600, 3000].forEach((ms) => setTimeout(() => go(false), ms));

@@ -424,9 +424,9 @@ function openLeg(person, key) {
   const glass = document.getElementById("desk-glass-in");
   const tray = document.querySelector(".find-tray");
   if (glass) {
-    const top = row.getBoundingClientRect().top - glass.getBoundingClientRect().top + glass.scrollTop;
-    const stick = tray ? tray.offsetHeight : 0;
-    glass.scrollTop = Math.max(0, top - stick - 8);
+    if (window.gameScrollQuit) gameScrollQuit(); const quit = new AbortController(), watch = new ResizeObserver(() => align()), stop = () => { quit.abort(); watch.disconnect(); }; ["wheel", "touchstart", "pointerdown", "keydown"].forEach((kind) => window.addEventListener(kind, stop, { passive: true, signal: quit.signal }));
+    const align = () => { if (!row.isConnected || quit.signal.aborted) return; const shown = tray && !tray.hidden && tray.getClientRects().length; glass.scrollTop += row.getBoundingClientRect().top - (shown ? tray.getBoundingClientRect().bottom : glass.getBoundingClientRect().top) - 8; const fold = shown && !tray.classList.contains("find-shut") && row.getBoundingClientRect().top < tray.getBoundingClientRect().bottom && tray.querySelector(".find-fold"); if (fold) { fold.click(); if (typeof saveAutoShut !== "undefined") { saveAutoShut.add(tray); saveFoldAt = Date.now(); } requestAnimationFrame(align); } };
+    align(); requestAnimationFrame(align); watch.observe(list); setTimeout(stop, 4000);
   }
 }
 function slimTray() {

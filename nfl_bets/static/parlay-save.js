@@ -108,17 +108,18 @@ function savePaint() {
       const save = document.createElement("button");
       save.type = "button";
       save.className = "find-save";
-      save.textContent = same ? "Saved ✓" : open ? "Save changes" : "Save";
+      save.textContent = save.title = same ? "Saved ✓" : open ? "Save changes" : "Save";
       save.classList.toggle("on", Boolean(same));
       save.addEventListener("click", () => { saveNow(); paintParlay(); });
       const edit = ticket.querySelector("button.find-edit");
+      if (edit) edit.title = "Edit props";
       if (edit) edit.before(save); else ticket.append(save);
       if (edit && getComputedStyle(edit).position === "absolute") { save.classList.add("find-save-pin"); save.style.right = `${ticket.clientWidth - edit.offsetLeft + 6}px`; }
       const wipe = document.createElement("button");
       wipe.type = "button";
       wipe.className = "find-save find-save-wipe";
       wipe.textContent = "Delete";
-      wipe.setAttribute("aria-label", "Delete this whole parlay");
+      wipe.setAttribute("aria-label", "Delete this whole parlay"); wipe.title = "Delete this parlay. Tap twice.";
       wipe.addEventListener("click", () => {
         if (!wipe.classList.contains("sure")) { wipe.classList.add("sure"); wipe.textContent = "Delete?"; setTimeout(() => { if (wipe.isConnected) { wipe.classList.remove("sure"); wipe.textContent = "Delete"; } }, 3000); return; }
         if (window.parlayOpenId) saveStore(saveList().filter((row) => row.id !== window.parlayOpenId));
@@ -136,8 +137,8 @@ function savePaint() {
         ticket.style.paddingBottom = `${edit.offsetHeight + 8}px`;
       } else if (wipe.classList.contains("find-save-pin")) ticket.style.paddingRight = `${ticket.clientWidth - wipe.offsetLeft + 6}px`;
     }
-    let box = tray.previousElementSibling;
-    if (!box || !box.classList.contains("find-saved")) { box = document.createElement("div"); box.className = "find-saved"; tray.before(box); }
+    const old = [...tray.parentElement.querySelectorAll(":scope > .find-saved")]; let box = old.shift(); old.forEach((node) => node.remove());
+    if (!box) { box = document.createElement("div"); box.className = "find-saved"; } if (box.nextElementSibling !== tray) tray.before(box);
     box.replaceChildren();
     box.hidden = !list.length && !parlayLeg.size;
     if (box.hidden) return;
@@ -204,4 +205,4 @@ document.addEventListener("scroll", (event) => {
   const end = tray.scrollTop + tray.clientHeight >= tray.scrollHeight - 2, long = tray.scrollHeight > tray.clientHeight + 2;
   if (past || (stuck && long && end)) { saveFoldAt = Date.now(); fold.click(); saveAutoShut.add(tray); }
 }, true);
-document.addEventListener("click", (event) => { const fold = event.isTrusted && event.target.closest(".find-fold"); if (fold) saveAutoShut.delete(fold.closest(".find-tray")); }, true);
+document.addEventListener("click", (event) => { const fold = event.target.closest && event.target.closest(".find-fold"); if (!fold) return; if (event.isTrusted) saveAutoShut.delete(fold.closest(".find-tray")); for (let node = fold; node; node = node.parentElement) saveScrollTop.delete(node); }, true);

@@ -19,7 +19,7 @@ function shotFits(bet, leg, rest) {
   if (plus) { const n = Number(plus[1]); return line != null && leg.side !== "under" && (n === line || n === line + 0.5); }
   const ou = rest.match(/\b(over|under)\b\s*\(?(-?\d+(?:\.\d+)?)/i);
   if (ou) { const n = Number(ou[2]); return line != null && ou[1].toLowerCase() === leg.side && (n === line || (leg.side === "over" && n === line - 0.5)); }
-  return line == null && !/\d/.test(rest);
+  return (line == null || (line === 0.5 && leg.side !== "under")) && !/\d/.test(rest);
 }
 
 function shotBest(rows, leg) {

@@ -398,6 +398,8 @@ async function howsPost(body) {
   let read = await readShot(image, mime, prompt);
   const got = new Set((read.legs || []).map((leg) => Number(leg.ticket) || 1)).size;
   if (cards > 1 && got < cards) read = await readShot(image, mime, `${HOW}\nYou missed a card. There are ${cards} bet cards. Ticket 1 is the top card. Number every card after it. Return all ${cards}.`);
+  const legs = read.legs || [];
+  if (legs.length > 1 && (cards === 1 || (new Set(legs.map((leg) => dollars(leg.stake))).size === 1 && legs.every((leg) => american(leg.odds) == null)))) read.legs = legs.map((leg) => ({ ...leg, ticket: 1 }));
   return judge(read);
 }
 
