@@ -137,11 +137,20 @@ function savePaint() {
         ticket.style.paddingBottom = `${edit.offsetHeight + 8}px`;
       } else if (wipe.classList.contains("find-save-pin")) ticket.style.paddingRight = `${ticket.clientWidth - wipe.offsetLeft + 6}px`;
     }
+    const say = !tray.hidden && tray.querySelector(".find-say");
+    if (say && !say.querySelector("button.find-close")) {
+      const close = document.createElement("button");
+      close.type = "button";
+      close.className = "find-close";
+      close.textContent = "×";
+      close.setAttribute("aria-label", "Close this parlay"); close.title = "Close this parlay";
+      close.addEventListener("click", saveNew);
+      say.append(close);
+    }
     const old = [...tray.parentElement.querySelectorAll(":scope > .find-saved")]; let box = old.shift(); old.forEach((node) => node.remove());
     if (!box) { box = document.createElement("div"); box.className = "find-saved"; } if (box.nextElementSibling !== tray) tray.before(box);
     box.replaceChildren();
-    box.hidden = !list.length && !parlayLeg.size;
-    if (box.hidden) return;
+    box.hidden = false;
     if (list.length) { const head = document.createElement("p"); head.textContent = "Saved parlays"; box.append(head); }
     list.forEach((row) => {
       const chip = document.createElement("span");
@@ -163,15 +172,13 @@ function savePaint() {
       chip.append(go, drop);
       box.append(chip);
     });
-    if (parlayLeg.size) {
-      const fresh = document.createElement("button");
-      fresh.type = "button";
-      fresh.className = "find-saved-new";
-      fresh.textContent = "+ New parlay";
-      fresh.addEventListener("click", saveNew);
-      box.append(fresh);
-      saveStacks(box);
-    }
+    const fresh = document.createElement("button");
+    fresh.type = "button";
+    fresh.className = "find-saved-new";
+    fresh.textContent = "+ New parlay";
+    fresh.addEventListener("click", () => { saveNew(); const input = document.querySelector("label.find input"); if (input) input.focus(); });
+    box.append(fresh);
+    saveStacks(box);
   });
 }
 
@@ -190,6 +197,14 @@ function saveStacks(box) {
   const panel = document.createElement("div");
   panel.className = "find-saved-stacks";
   panel.dataset.key = key;
+  if (!games.length) {
+    const host = document.createElement("div");
+    host.className = "find-stack-host";
+    panel.append(host);
+    paintGameStacks(host, { match: "" });
+    const open = host.querySelector("details");
+    if (open) { open.open = true; open.querySelector("summary b").textContent = "Parlay strategies for every game"; }
+  }
   games.forEach((match) => {
     const host = document.createElement("div");
     host.className = "find-stack-host";

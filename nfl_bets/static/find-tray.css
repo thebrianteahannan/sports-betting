@@ -25,6 +25,22 @@
 .find-tray .find-st + .find-why:has(> .find-exp:first-child) { margin-top: -0.2rem; }
 .rec-board .find-stacks > summary, .rec-board .find-odds > summary, .rec-board .find-td > summary { margin: 0 0 0.35rem; cursor: pointer; color: #3dff6e; font-weight: 700; }
 .find-board.club-on :is(.find-stacks, .find-odds, .find-td) > summary { color: #ffffff; }
+.rec-board .find-stacks .find-stack-list { display: grid; gap: 0.3rem; }
+.rec-board .find-stacks .rec-strategy { padding: 0.4rem 0.65rem; border-color: #2c3843; }
+.rec-board .find-stacks .rec-strategy h3 { display: flex; align-items: baseline; gap: 0.45rem; font-size: 14px; letter-spacing: 0; text-transform: none; }
+.rec-board .find-stacks .rec-strategy h3 .rec-no { min-width: 1.1rem; color: #6e7d8a; font-size: 12px; }
+.rec-board .find-stacks .rec-strategy h3 .rec-count { margin-left: auto; color: #3dff6e; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.rec-board .find-stacks .rec-strategy h3 .rec-count::before { content: none; }
+.rec-board .find-stacks .rec-history { margin: 0.1rem 0 0 1.55rem; }
+.rec-board .find-stacks .rec-history > span { color: #b7c3ce; font-size: 13px; font-weight: 500; line-height: 1.35; }
+.rec-board .find-stacks .rec-strategy:not(.open) .rec-history i.rec-pay { display: none; }
+.rec-board .find-stacks .rec-strategy.open .rec-history i.rec-pay { font-size: 13px; }
+.rec-board .find-stacks .stack-set { margin: 0.45rem 0 0.15rem; padding: 0.45rem 0.55rem 0.1rem; }
+.rec-board .find-stacks .stack-set :is(.stack-set-name, .stack-ticket, .stack-ticket i, .stack-read, .rec-bet b, .rec-bet b i, .rec-gist, .rec-gist i) { font-size: 13px !important; line-height: 1.35 !important; }
+.rec-board .find-stacks .stack-set .stack-set-name { margin-bottom: 0.2rem !important; font-size: 14px !important; }
+.rec-board .find-stacks .stack-set :is(.stack-ticket, .stack-read) { margin-top: 0 !important; margin-bottom: 0.2rem !important; }
+.rec-board .find-stacks .stack-set .rec-bet { padding: 0.3rem 0.1rem; }
+.rec-board .find-stacks .stack-set .rec-bet b i.seen { font-size: 12px !important; }
 .rec-board .find-kinds .find-band label.find.find-seek, #desk.tv-full #desk-glass .rec-board .find-kinds .find-band label.find.find-seek { flex: 2 1 12rem; }
 .rec-board .find-kinds .find-band label.find { position: relative; }
 .rec-board .find-kinds .find-band label.find input[data-key], #desk.tv-full #desk-glass .rec-board .find-kinds .find-band label.find input[data-key] { padding-right: 2.2rem !important; }
@@ -42,6 +58,8 @@
 .find-board .find-looking p { margin: 0; color: #c9d4dd; font-weight: 600; }
 :is(.rec-board, #choice-result) .find-tray .find-say { display: flex; align-items: center; gap: 0.6rem; }
 :is(.rec-board, #choice-result) .find-tray .find-say button.find-fold { margin: 0 0 0 auto !important; padding: 0.15rem 0.6rem !important; min-height: 0 !important; border-radius: 999px !important; background: transparent !important; color: #c9d4dd !important; box-shadow: inset 0 0 0 1px #3a4652 !important; font-size: 0.8rem !important; font-weight: 700 !important; }
+:is(.rec-board, #choice-result) .find-tray .find-say button.find-close { width: auto !important; margin: 0 !important; padding: 0.15rem 0.55rem !important; min-height: 0 !important; border: 0 !important; border-radius: 999px !important; background: transparent !important; color: #c9d4dd !important; box-shadow: inset 0 0 0 1px #3a4652 !important; font-size: 0.8rem !important; font-weight: 700 !important; line-height: inherit !important; text-transform: none !important; }
+:is(.rec-board, #choice-result) .find-tray .find-say button.find-close:hover { color: #ff6b6b !important; }
 :is(.rec-board, #choice-result) .find-tray.find-shut > :not(.find-say, .find-ticket, .find-row:has(.find-ticket)), :is(.rec-board, #choice-result) .find-tray.find-shut .find-row:has(.find-ticket) > :not(.find-ticket) { display: none !important; }
 :is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket > button, :is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket > b > i:is(.sg, .gm) { display: none !important; }
 :is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket { padding-right: 0 !important; padding-bottom: 0 !important; }
