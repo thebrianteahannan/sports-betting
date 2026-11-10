@@ -249,3 +249,8 @@
 .rec-board .rec-strategy > .stack-grade li { font-size: 14px !important; line-height: 1.4 !important; }
 :is(.rec-board, #choice-result) .stack-set .stack-leg > b .prop { color: #e7c15a; font-weight: 600; }
 :is(.rec-board, #choice-result) .stack-set .stack-leg > b .prop i.who { display: inline; margin: 0; color: #f4f7fb !important; font-weight: 800; }
+.find-card i.find-swing { display: inline-block; margin: 0 0 0 0.2rem; padding: 0 0.35rem; border: 1px solid #3dff6e; border-radius: 999px; color: #3dff6e; font-size: 0.68rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.35; text-transform: uppercase; vertical-align: 0.08em; cursor: help; }
+.find-card i.find-swing.vol { border-color: #ff8a2a; color: #ff8a2a; }
+.find-card i.find-swing.find-blow { border-style: dashed; text-transform: none; letter-spacing: 0; }
+.find-card i.find-swing.find-blow.down { border-color: #ff8a2a; color: #ff8a2a; }
+.find-card i.find-swing.find-blow.flat { border-color: #8b98a5; color: #b8c4cf; }

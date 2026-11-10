@@ -2,6 +2,8 @@
 
 const { savedPack } = require("./single-find");
 const { careerPack } = require("./sway-api");
+const { swingTags } = require("./player-swing");
+const { blowTags } = require("./player-blowout");
 
 function seasonYear(sport) {
   const clock = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
@@ -56,6 +58,11 @@ function mean(rows, names, key, side) {
   });
   if (values.length < 3) return null;
   return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function pull(rows, names, key) {
+  const index = indexOf(names, key);
+  return rows.map((row) => (index < 0 ? null : num((row.stats || [])[index], key)));
 }
 
 function shown(value) {
@@ -181,7 +188,9 @@ async function playerCard(name, sport) {
   const window = windowOf(pack, league, names);
   if (window.rows.length < 3) return { line: "", stats: [] };
   const built = kind === "hoop" ? hoop(window.rows, names, window.before) : kind === "ball" ? ball(window.rows, names) : kind === "ice" ? ice(window.rows, names) : bat(window.rows, names);
-  return { line: built.line, span: window.span, stats: built.stats };
+  const swing = swingTags(kind, built.stats, (key) => pull(window.rows, names, key));
+  const blowout = league === "NBA" ? await blowTags(name, built.stats, (rows, cols) => (key) => pull(rows, cols, key)) : null;
+  return { line: built.line, span: window.span, stats: built.stats, swing, blowout };
 }
 
 module.exports = { playerCard };
