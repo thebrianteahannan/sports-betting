@@ -19,10 +19,24 @@ function scriptRecTag() {
   });
 }
 
+const scriptRecAll = new Set();
+
+function scriptRecPill(bet) {
+  if (!bet || !scriptRecAll.has(`${bet.label}|${bet.market}`)) return null;
+  const pill = document.createElement("i");
+  pill.className = "find-rec-pill"; pill.textContent = "Recommended"; pill.title = "Parlay recommends this bet";
+  return pill;
+}
+
 function scriptRecMark(match, bets) {
   if (!match) return;
   const fold = (text) => (typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase());
-  if (bets) { const picks = [bets, bets.stars].filter(Boolean).flatMap((set) => set.picks || []); match.scriptRec = { names: new Set(picks.map((pick) => fold(pick.who))), bets: new Set(picks.map((pick) => `${pick.label}|${pick.market}`)) }; }
+  if (bets) {
+    const picks = [bets, bets.stars].filter(Boolean).flatMap((set) => set.picks || []), size = scriptRecAll.size;
+    match.scriptRec = { names: new Set(picks.map((pick) => fold(pick.who))), bets: new Set(picks.map((pick) => `${pick.label}|${pick.market}`)) };
+    match.scriptRec.bets.forEach((key) => scriptRecAll.add(key));
+    if (scriptRecAll.size !== size && document.querySelector(".find-tray .find-tray-swap") && typeof legSwapPaint === "function") legSwapPaint();
+  }
   const rec = match.scriptRec;
   if (!rec) return;
   const mark = (chip, on, test) => {
