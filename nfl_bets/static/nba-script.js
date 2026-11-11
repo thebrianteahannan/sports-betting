@@ -133,6 +133,7 @@ function scriptBetsBlock(bets, group, game, people) {
       if (typeof paintParlay === "function") paintParlay();
       const tray = go.closest(".find-board") && go.closest(".find-board").querySelector(".find-tray:not([hidden])"), fold = tray && tray.querySelector(".find-fold");
       if (tray && tray.classList.contains("find-shut") && fold) fold.click();
+      if (tray) tray.scrollIntoView({ block: "start", behavior: "smooth" });
     });
     card.append(go);
   };

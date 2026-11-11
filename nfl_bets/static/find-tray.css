@@ -267,6 +267,9 @@
 .find-friends-hits .find-friends-row { margin: 0; padding: 0.3rem 0.5rem; border-radius: 8px; background: #0f2219; }
 .find-friends-row > span.find-friends-tag { flex: 0 0 auto; color: #3dff6e; font-size: 12px; font-weight: 700; }
 .find-shared-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.3rem 0; }
+.find-saved .find-shared-chip > button em { padding: 0.1rem 0.45rem; border-radius: 999px; background: rgba(255, 255, 255, 0.1); color: #9fb3c8; font-size: 11px; font-style: normal; font-weight: 800; }
+.find-saved .find-shared-chip > button em.st-new { background: rgba(231, 193, 90, 0.18); color: #e7c15a; }
+.find-saved .find-shared-chip > button em.st-saved { background: rgba(61, 255, 110, 0.16); color: #3dff6e; }
 .find-shared-card { margin: 0.4rem 0; padding: 0.5rem 0.7rem; border-left: 4px solid #6b7c8f; border-radius: 8px; background: #0f2219; }
 .find-shared-card.fresh { border-left-color: #3dff6e; }
 .find-shared-head { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: baseline; margin: 0 0 0.25rem; font-size: 14px; color: #f4f7fb; }

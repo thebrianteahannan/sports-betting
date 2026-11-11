@@ -86,9 +86,20 @@ async function shareSend(user, body, readKey, writeKey) {
   return { sent: to.length };
 }
 
+async function sentList(user, readKey) {
+  const ids = friendIds(await linksOf(readKey), user.id), byId = new Map();
+  const boxes = await Promise.all(ids.map((id) => readKey(inboxKey(id))));
+  boxes.forEach((box, at) => (Array.isArray((box || {}).items) ? box.items : []).filter((row) => row.from === user.id).forEach((row) => {
+    const one = byId.get(row.id) || { id: row.id, at: row.at, title: row.title, note: row.note, legs: row.legs, to: [] };
+    one.to.push({ id: ids[at], viewed: Boolean(row.viewed), saved: Boolean(row.saved) });
+    byId.set(row.id, one);
+  }));
+  return [...byId.values()].sort((a, b) => b.at - a.at);
+}
+
 async function sharedList(user, readKey) {
-  const box = (await readKey(inboxKey(user.id))) || {};
-  return { items: Array.isArray(box.items) ? box.items : [] };
+  const [box, sent] = await Promise.all([readKey(inboxKey(user.id)), sentList(user, readKey)]);
+  return { items: Array.isArray((box || {}).items) ? box.items : [], sent };
 }
 
 async function sharedPost(user, body, readKey, writeKey) {
@@ -96,6 +107,7 @@ async function sharedPost(user, body, readKey, writeKey) {
   let items = Array.isArray(box.items) ? box.items : [];
   if (body.action === "seen") items = items.map((row) => ({ ...row, seen: true }));
   else if (body.action === "drop") items = items.filter((row) => row.id !== String(body.id || ""));
+  else if (body.action === "viewed" || body.action === "saved") items = items.map((row) => (row.id !== String(body.id || "") ? row : { ...row, seen: true, viewed: true, saved: Boolean(row.saved) || body.action === "saved" }));
   await writeKey(inboxKey(user.id), { items, at: Date.now() });
   return { items };
 }

@@ -61,7 +61,7 @@ function saveDetach() {
 }
 
 function saveLeave() {
-  if (parlayLeg.size) saveNow();
+  if (parlayLeg.size && saveSig([...parlayLeg.values()]) !== saveHeld) saveNow();
   window.parlayOpenId = "";
 }
 
