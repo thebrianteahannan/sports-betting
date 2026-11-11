@@ -138,7 +138,7 @@ const onPhone = () => window.matchMedia("(hover: none), (pointer: coarse)").matc
 let tvOpen = false;
 document.getElementById("desk-glass").addEventListener("pointerdown", (event) => {
   const desk = document.getElementById("desk");
-  if (!onPhone() || !desk || desk.classList.contains("tv-full")) return;
+  if (!onPhone() || !desk || desk.classList.contains("tv-full") || event.target.closest("#site-qr")) return;
   tvOpen = true;
   event.preventDefault();
   event.stopPropagation();
@@ -149,7 +149,7 @@ document.getElementById("desk-glass").addEventListener("pointerdown", (event) =>
 document.getElementById("desk-glass").addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
   if (tvOpen) { tvOpen = false; event.preventDefault(); event.stopPropagation(); return; }
-  if (onPhone() || !desk || desk.classList.contains("tv-full")) return;
+  if (onPhone() || !desk || desk.classList.contains("tv-full") || event.target.closest("#site-qr")) return;
   if (!event.target.closest("button, a, input, select") && event.target.closest("#greet-rate, #best, #today, #chalk, #four, #plus, #hits, #week, #week5, #safe, #even")) return;
   if (event.target.closest("#greet-legal span, #bird-line.warn, .gate-legal")) return;
   const button = event.target.closest("button"), field = event.target.closest("#bird-picks input, #bird-picks select");
