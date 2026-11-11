@@ -51,6 +51,66 @@ function homeSharedRow(item) {
   return row;
 }
 
+let homeGamesTab = "games", homeRecs = null;
+
+function homeRecsLoad() {
+  if (typeof gameStackData !== "function" || (homeRecs && (homeRecs.loading || Date.now() - homeRecs.at < 10 * 60 * 1000))) return;
+  homeRecs = { loading: true, at: Date.now(), found: (homeRecs && homeRecs.found) || {} };
+  gameStackData().then((data) => { homeRecs = { at: Date.now(), found: (data && data.found) || {} }; homeGamesPaint(); });
+}
+
+function homeRecsFor(game) {
+  const grade = typeof STACK_GRADE !== "undefined" ? STACK_GRADE : {};
+  const fits = (stack) => stack.game === game.match || (stack.bets || []).some((bet) => bet.game === game.match);
+  return Object.entries(homeRecs.found)
+    .filter(([name]) => !grade[name] || grade[name][0] !== "lose")
+    .map(([name, stacks]) => ({ name, score: (grade[name] && grade[name].score) || 0, stack: stacks.filter(fits).sort((a, b) => Number(Boolean(b.beats)) - Number(Boolean(a.beats)))[0] }))
+    .filter((row) => row.stack)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+}
+
+function homeRecRow(row) {
+  const card = document.createElement("button");
+  card.type = "button";
+  card.className = "desk-game desk-rec";
+  const grade = typeof STACK_GRADE !== "undefined" && STACK_GRADE[row.name], tier = grade && typeof STACK_TIER !== "undefined" ? STACK_TIER[grade[0]] : null;
+  const no = typeof STACKS !== "undefined" ? STACKS.findIndex((item) => item[0] === row.name) + 1 : 0, legs = (row.stack.bets || []).length;
+  const name = (typeof stackName === "function" && stackName({ ...row.stack, game: "" })) || row.name;
+  card.innerHTML = `<span class="desk-rec-name">${esc(name)}</span><span class="desk-rec-how"${tier ? ` style="color: ${tier[1]}"` : ""}>${esc(row.name)}</span><span class="desk-rec-legs">${legs} ${legs === 1 ? "bet" : "bets"}</span>${row.stack.read ? `<span class="desk-rec-read">${esc(row.stack.read)}</span>` : ""}`;
+  card.addEventListener("click", () => { window.asking = true; if (window.goFull) goFull(); if (typeof stackBuild === "function") stackBuild(row.stack, 0, `${no ? `ST-${String(no).padStart(2, "0")} ` : ""}${row.name}`); });
+  return card;
+}
+
+function homeRecRows(games) {
+  const note = (text) => { const line = document.createElement("p"); line.className = "desk-games-note"; line.textContent = text; return [line]; };
+  if (!homeRecs || homeRecs.loading) return note("Looking up the picks.");
+  const rows = games.flatMap((game) => {
+    const picks = homeRecsFor(game);
+    if (!picks.length) return [];
+    const head = document.createElement("p");
+    head.className = "desk-rec-game";
+    head.textContent = [game.match, game.kickoff ? `${new Date(game.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET` : ""].filter(Boolean).join(", ");
+    return [head, ...picks.map(homeRecRow)];
+  });
+  return rows.length ? rows : note("Nothing fits today's prices yet.");
+}
+
+function homeGamesTabs(box, games) {
+  const tabs = document.createElement("span");
+  tabs.className = "desk-games-tabs";
+  [["games", `Games ${games.length}`], ["rec", "Recommended"]].forEach(([id, label]) => {
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = `desk-games-tab${homeGamesTab === id ? " on" : ""}`;
+    tab.textContent = label;
+    tab.setAttribute("aria-pressed", String(homeGamesTab === id));
+    tab.addEventListener("click", () => { homeGamesTab = id; if (id === "rec") homeRecsLoad(); box.dataset.sig = ""; box.scrollTop = 0; homeGamesPaint(); });
+    tabs.append(tab);
+  });
+  return tabs;
+}
+
 function homeGamesPaint() {
   const desk = document.getElementById("desk"), bg = document.getElementById("desk-bg"), guide = document.getElementById("bird-guide");
   if (!desk || !bg) return;
@@ -64,14 +124,20 @@ function homeGamesPaint() {
   if (!show) return;
   box.style.top = `${top}px`;
   document.body.style.setProperty("--home-games-top", `${top + 12}px`);
-  const sig = fresh.length ? `shared:${fresh.map((item) => item.id).join(";")}` : games.map((game) => `${game.match}|${game.kickoff}`).join(";");
+  if (!fresh.length && homeGamesTab === "rec") homeRecsLoad();
+  const sig = `${window.memberName || ""}|${homeGamesTab}|${homeRecs ? `${homeRecs.at}${homeRecs.loading ? "…" : ""}` : ""}|${fresh.length ? `shared:${fresh.map((item) => item.id).join(";")}` : games.map((game) => `${game.match}|${game.kickoff}`).join(";")}`;
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
   const head = document.createElement("p");
   head.className = "desk-games-head";
   const names = [...new Set(fresh.map((item) => item.fromName))];
-  head.textContent = !fresh.length ? `Today's games, ${games.length}` : `${names.length === 1 ? names[0] : "Your friends"} sent you ${fresh.length === 1 ? "a bet" : `${fresh.length} bets`}`;
-  box.replaceChildren(head, ...(fresh.length ? fresh.map(homeSharedRow) : games.map(homeGamesRow)));
+  const said = document.createElement("span"), who = document.createElement("span");
+  said.className = "desk-games-said";
+  said.textContent = `${names.length === 1 ? names[0] : "Your friends"} sent you ${fresh.length === 1 ? "a bet" : `${fresh.length} bets`}`;
+  who.className = "desk-games-who";
+  who.textContent = window.memberName || "";
+  head.append(fresh.length ? said : homeGamesTabs(box, games), who);
+  box.replaceChildren(head, ...(fresh.length ? fresh.map(homeSharedRow) : homeGamesTab === "rec" ? homeRecRows(games) : games.map(homeGamesRow)));
 }
 
 setInterval(() => { homeGamesLoad(); homeGamesPaint(); }, 500);

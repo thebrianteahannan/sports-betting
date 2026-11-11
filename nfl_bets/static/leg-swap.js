@@ -182,6 +182,19 @@ function legSwapPaint() {
       swap.setAttribute("aria-label", "Show other bets at this price");
       hist.after(swap);
     }
+    if (!hist.parentElement.querySelector("button.find-leg-more")) {
+      const more = document.createElement("button");
+      more.type = "button";
+      more.className = "find-leg-more";
+      more.dataset.key = key;
+      more.textContent = "⋯";
+      more.setAttribute("aria-label", "More for this leg");
+      hist.parentElement.append(more);
+    }
+    const open = legMoreOpen.has(key), more = hist.parentElement.querySelector("button.find-leg-more");
+    hist.parentElement.classList.toggle("acts-open", open);
+    more.classList.toggle("on", open);
+    more.setAttribute("aria-expanded", String(open));
     const mode = parlayLeg.has(key) ? legSwapOpen.get(key) : "", on = mode === "swap";
     swap.classList.toggle("on", on);
     swap.setAttribute("aria-expanded", String(on));
@@ -210,6 +223,15 @@ function legSwapPaint() {
     if (on) { const box = legSwapBox(key, "who"); box.dataset.key = key; name.closest(".find-in").after(box); }
   });
 }
+
+const legMoreOpen = new Set();
+
+document.addEventListener("click", (event) => {
+  const more = event.target.closest && event.target.closest(".find-tray button.find-leg-more");
+  if (!more) return;
+  if (legMoreOpen.has(more.dataset.key)) legMoreOpen.delete(more.dataset.key); else legMoreOpen.add(more.dataset.key);
+  legSwapPaint();
+});
 
 document.addEventListener("click", (event) => {
   const hit = event.target.closest && event.target.closest(".find-tray button.find-leg-swap, .find-tray .find-chose i.prop[data-key], .find-tray .find-chose i.who[data-key], .find-tray .find-in button.find-name[data-key]");

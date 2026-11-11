@@ -18,6 +18,8 @@ body.needs-member #desk-find-go { display: none !important; }
 #desk.tv-full:has(#desk-menu.bird-has) #desk-where:not(:empty) { right: calc(21rem + 43px); }
 #desk.tv-full.find-up:has(#desk-menu.bird-has) #desk-where:not(:empty) { right: calc(21.5rem + 86px); }
 @media (max-width: 900px) { #desk.tv-full:has(#desk-menu.bird-has) #desk-where { visibility: hidden; } }
+#member-profile { position: relative; }
+body:not(.home-games-on) #member-profile[data-name]:not([data-name=""]):is(:hover, :focus-visible)::before, body:not(.home-games-on) #desk:not(.tv-full) ~ #who #member-profile[data-name]:not([data-name=""])::before { content: attr(data-name); position: absolute; right: calc(100% + 0.5rem); top: 50%; transform: translateY(-50%); padding: 0.35rem 0.7rem; border: 1px solid rgba(61, 255, 110, 0.85); border-radius: 8px; background: rgba(4, 16, 12, 0.95); box-shadow: 0 0 14px rgba(61, 255, 110, 0.35); color: #f4f7fb; font-size: 14px; font-weight: 700; white-space: nowrap; pointer-events: none; }
 @media (max-width: 560px) {
   #desk.tv-full #desk-menu.bird-has:not(.say-open)::after { max-width: calc(100vw - 16rem); }
   #desk.tv-full.find-up #desk-menu.bird-has:not(.say-open)::after { max-width: calc(100vw - 16.5rem - 43px); }

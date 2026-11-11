@@ -334,7 +334,7 @@
 .find-tray .find-tray-read .find-log span { display: block; color: #d5dde6; font-size: 0.78rem; line-height: 1.2; }
 .find-tray .find-tray-read .find-log b { display: block; color: #f4f7fb; font-size: 0.82rem; font-weight: 700; line-height: 1.15; }
 @media (max-width: 699px) { .find-tray .find-tray-read .find-log { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 699px) { .rec-board.find-board > h2 { font-size: 0 !important; line-height: 0 !important; justify-content: flex-end; gap: 0.5rem; } .rec-board.find-board > h2 > button { line-height: 1.2 !important; } }
+@media (max-width: 699px) { .rec-board.find-board > h2 { font-size: 0 !important; line-height: 0 !important; justify-content: flex-end; gap: 0.5rem; } .rec-board.find-board > h2 > button { line-height: 1.2 !important; } .rec-board.find-board > h2::before { content: "Build a bet"; margin-right: auto; font-size: 22px; line-height: 1.2; white-space: nowrap; } }
 @media (max-width: 699px) { :is(.rec-board, #choice-result) .find-tray > * { min-width: 0; max-width: 100%; } :is(.rec-board, #choice-result) .find-tray .find-ticket b { flex-wrap: wrap !important; white-space: normal !important; row-gap: 0.25rem; } }
 .rec-board .find-tray .find-tray-read button.find-why-go, #desk.tv-full #desk-glass .rec-board .find-tray .find-tray-read button.find-why-go { display: block; width: auto; min-height: 0; margin: 0.45rem 0 0; padding: 0; border: 0; background: transparent; box-shadow: none; color: #e7c15a; font-size: 14px; font-weight: 700; text-transform: none; letter-spacing: 0; text-decoration: underline; cursor: pointer; }
 .find-tray .find-tray-read .find-lean { margin: 0.35rem 0 0; color: #d5dde6; font-size: 0.88rem; }
@@ -390,3 +390,12 @@
 #desk-glass #gate .gate-age .age { display: block; font-family: "Oswald", sans-serif; font-size: 2.8rem; font-weight: 600; line-height: 1; letter-spacing: 0.04em; color: #ff4d4d; text-shadow: 0 0 16px rgba(255, 60, 60, 0.7); }
 #desk.tv-full #desk-glass #gate .gate-age { font-size: 15px; } #desk.tv-full #desk-glass #gate .gate-age .age { font-size: 4.2rem; }
 .find-ticket > b i.rc { font-style: normal; color: #04140c; background: #3dff6e; border-radius: 999px; padding: 0.05rem 0.45rem; font-size: 11px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
+:is(.rec-board, #choice-result) .find-tray .find-chose button.find-leg-more { display: none; flex: none; width: 1.6rem !important; height: 1.6rem !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 999px !important; background: transparent !important; color: #8b97a3 !important; box-shadow: inset 0 0 0 1px #3a4652 !important; font-size: 1rem !important; font-weight: 800 !important; line-height: 1 !important; cursor: pointer; }
+:is(.rec-board, #choice-result) .find-tray .find-chose button.find-leg-more.on { color: #3dff6e !important; box-shadow: inset 0 0 0 1px #3dff6e !important; }
+@media (max-width: 700px) {
+  :is(.rec-board, #choice-result) .find-tray .find-chose button.find-leg-more { display: inline-block; order: 1; }
+  :is(.rec-board, #choice-result) .find-tray .find-chose:has(> button.find-leg-more):not(.acts-open) > button:not(.find-leg-more) { display: none !important; }
+  :is(.rec-board, #choice-result) .find-tray .find-chose.acts-open { flex-wrap: wrap; justify-content: flex-end; }
+  :is(.rec-board, #choice-result) .find-tray .find-chose.acts-open > span { flex: 1 1 calc(100% - 2.2rem); }
+  :is(.rec-board, #choice-result) .find-tray .find-chose.acts-open > button:not(.find-leg-more) { order: 2; }
+}

@@ -60,7 +60,7 @@ function showMember(payload) {
   who.hidden = false;
   if (who.parentElement !== document.body) document.body.append(who);
   const admin = !!member.admin;
-  who.innerHTML = `<button type="button" id="member-profile" aria-label="Profile" title="${esc(member.name)}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.5-3.1 4-4.6 7-4.6s5.5 1.5 7 4.6"/></svg></button>`;
+  who.innerHTML = `<button type="button" id="member-profile" aria-label="Profile" data-name="${esc(member.name)}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.5-3.1 4-4.6 7-4.6s5.5 1.5 7 4.6"/></svg></button>`;
   const heading = document.querySelector("#activity h2");
   window.memberAdmin = admin;
   if (heading) heading.innerHTML = `${esc(member.name || "Your membership")}${admin ? `<span class="admin-tag">Admin</span>` : ""}`;
@@ -300,7 +300,7 @@ async function saveCalledName(raw) {
   const call = document.getElementById("call-name");
   if (call) call.value = window.memberName;
   const who = document.querySelector("#member-profile");
-  if (who) who.title = window.memberName;
+  if (who) who.dataset.name = window.memberName;
   if (window.memberName) birdGreet();
   else birdAskName();
 }
