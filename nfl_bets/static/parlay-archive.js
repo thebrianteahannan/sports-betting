@@ -56,16 +56,15 @@ function archiveCard(row) {
 }
 
 function archiveGame(key, rows) {
-  const wrap = document.createElement("div");
+  const wrap = document.createElement("details");
   wrap.className = "find-done-game";
   const review = (window.archiveReviews || {})[key] || {};
   const match = key === "many" ? "Parlays across games" : key.split("|")[0];
-  wrap.innerHTML = `<p class="find-done-title"><b>${esc(review.final || match)}</b>${review.final ? `<span>${esc(match)}</span>` : ""}<i>${esc(archiveTally(rows))}</i></p>`;
+  wrap.innerHTML = `<summary class="find-done-title"><b>${esc(review.final || match)}</b>${review.final ? `<span>${esc(match)}</span>` : ""}<i>${esc(archiveTally(rows))}</i></summary>`;
   if (review.script || review.checks) {
     const mark = { held: "✓", miss: "✗", odd: "!" };
     const box = document.createElement("details");
     box.className = "find-done-review";
-    box.open = true;
     box.innerHTML = `<summary>${esc(review.verdict || "Game script vs what happened")}</summary>`
       + (review.script && review.script.length ? `<p class="find-done-sub">The script going in</p><p>${esc(review.script.join(" "))}</p>` : "")
       + (review.checks && review.checks.length ? `<p class="find-done-sub">What happened</p><ul>${review.checks.map((row) => `<li class="${esc(row.kind)}"><b>${esc(mark[row.kind] || "")}</b><span>${esc(row.text)}</span></li>`).join("")}</ul>` : "")
@@ -86,9 +85,8 @@ function archivePanel() {
   panel.append(top);
   const days = new Map();
   window.archiveRows.filter((row) => row.done).forEach((row) => { if (!days.has(row.done.day)) days.set(row.done.day, []); days.get(row.done.day).push(row); });
-  [...days.keys()].sort().reverse().forEach((day, index) => {
+  [...days.keys()].sort().reverse().forEach((day) => {
     const rows = days.get(day), box = document.createElement("details");
-    box.open = index === 0;
     box.innerHTML = `<summary><b>${esc(archiveDay(day))}</b><span>${esc(archiveTally(rows))}</span></summary>`;
     const leagues = new Map();
     rows.forEach((row) => { const league = row.done.league || "Other"; if (!leagues.has(league)) leagues.set(league, []); leagues.get(league).push(row); });

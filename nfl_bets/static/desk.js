@@ -337,7 +337,7 @@ function bootDesk() {
   const go = document.getElementById("choice-go");
   if (go) go.addEventListener("click", tvPush);
   const home = document.getElementById("desk-home");
-  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. How are we going to find our favorite bet for today?", [["menu", "Build A Bet", "find"]]); tvSkip = false; birdBump(); }); const mug = document.getElementById("desk-mug"); if (mug) mug.addEventListener("click", () => { if (window.goFull) goFull(); if (window.paintTerms) paintTerms(); });
+  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. How are we going to find your favorite bet for today?", [["menu", "Build A Bet", "find"]]); tvSkip = false; birdBump(); }); const mug = document.getElementById("desk-mug"); if (mug) mug.addEventListener("click", () => { if (window.goFull) goFull(); if (window.paintTerms) paintTerms(); });
 }
 const BIRD_WAIT = 18000;
 const BIRD_NUDGES = [
@@ -417,7 +417,7 @@ function startGuide() {
     window.squawkUntil = Date.now() + 900; birdSay("Aight, bet!", []);
     setTimeout(function land(tryN) {
       if (!birdOn || ((birdHeld || window.asking) && (document.getElementById("bird-line") || {}).textContent !== "Aight, bet!") || document.body.classList.contains("needs-member")) return; if (new URLSearchParams(location.search).get("p") && window.birdMenu) { if (!((window.state && window.state.board && window.state.board.archive) || []).length && (tryN || 0) < 20) { setTimeout(() => land((tryN || 0) + 1), 300); return; } birdMenu("bets"); return; }
-      if (window.birdGreet) birdGreet(); else birdSay("Hey. How are we going to find our favorite bet for today?", [["menu", "Build A Bet", "find"]]);
+      if (window.birdGreet) birdGreet(); else birdSay("Hey. How are we going to find your favorite bet for today?", [["menu", "Build A Bet", "find"]]);
     }, 900);
     birdBump();
   };

@@ -46,7 +46,7 @@ function showGate() {
   paintGateRecord();
   if (window.state) window.state.showLive = false;
   const who = document.getElementById("who");
-  if (who) who.hidden = true;
+  if (who) { who.hidden = false; if (who.parentElement !== document.body) document.body.append(who); who.innerHTML = `<button type="button" id="gate-profile" aria-label="Sign in" title="Sign in"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.5-3.1 4-4.6 7-4.6s5.5 1.5 7 4.6"/></svg></button>`; }
   showGateMode("pick");
   if (window.deskGate) window.deskGate();
 }
@@ -81,7 +81,7 @@ function showMember(payload) {
   if (adminBox) adminBox.hidden = !admin;
   const plan = document.getElementById("activity-plan");
   plan.hidden = admin;
-  plan.textContent = admin ? "" : "Free membership. Payments are not turned on. Ratings are kept on this membership.";
+  plan.textContent = admin ? "" : "Free membership. Payments are not turned on.";
   const rows = payload.activity || [];
   window.ratedBuilt = rows.filter((row) => row.kind === "rate" && row.detail && row.detail.built && Number(row.detail.stars) > 0).map((row) => ({
     id: row.id, built: true, title: row.detail.title || "Built bet", american: row.detail.american,
@@ -166,7 +166,7 @@ window.fetch = async function memberAwareFetch(url, options) {
 };
 
 document.getElementById("who").addEventListener("click", (event) => {
-  if (event.target.closest("#member-profile")) { goFull(); showTab("profile"); }
+  if (event.target.closest("#member-profile")) { goFull(); showTab("profile"); } else if (event.target.closest("#gate-profile")) showGateMode("login");
 });
 function calledName() {
   return String(window.memberName || "").trim().split(/\s+/)[0];
@@ -178,7 +178,7 @@ function birdGreet() {
   if (!called) return birdAskName();
   if (!window.memberBorn) return birdAskBorn(); if (!window.memberState) return birdAskState(); if (birdAskBook() || birdLaw()) return;
   window.asking = false;
-  birdSay(`Hey, ${called}. How are we going to find our favorite bet for today?`, [["menu", "Build A Bet", "find"]]);
+  birdSay(`Hey, ${called}. How are we going to find your favorite bet for today?`, [["menu", "Build A Bet", "find"]]);
 }
 
 function birdLaw() {

@@ -445,7 +445,6 @@
   #desk.bird-on #bird-guide:has(button[data-menu]) #greet-legal span:last-child,
   #desk.bird-on #bird-guide:has(#bird-born) #greet-legal span:last-child { max-width: 11rem; }
 }
-body.needs-member #who { display: none; }
 .bet-ask { margin: 0.7rem 0 0.2rem; }
 .bet-ask > p, .find-why { margin: 0 0 0.4rem; color: #e7c15a; }
 .bet-ask-picks { display: flex; flex-wrap: wrap; gap: 0.35rem; }

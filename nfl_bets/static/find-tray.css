@@ -235,7 +235,10 @@
 .find-done li { flex-wrap: wrap; }
 .find-done li > p.find-done-why { flex: 1 0 100%; margin: 0.1rem 0 0.35rem 1.7rem; color: #9fb3c8; font-size: 12.5px; line-height: 1.45; }
 .find-done .find-done-game { margin: 0.5rem 0 0.8rem; padding-top: 0.5rem; border-top: 1px solid rgba(255, 255, 255, 0.08); }
-.find-done .find-done-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.6rem; margin: 0 0 0.35rem; color: #f4f7fb; font-size: 15px; }
+.find-done .find-done-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.6rem; margin: 0 0 0.35rem; color: #f4f7fb; font-size: 15px; cursor: pointer; }
+.find-done > details > summary::before, .find-done .find-done-title::before { content: "▸"; color: #3dff6e; font-size: 12px; }
+.find-done > details[open] > summary::before, .find-done .find-done-game[open] > .find-done-title::before { content: "▾"; }
+.find-done .find-done-game:not([open]) { margin-bottom: 0.2rem; }
 .find-done .find-done-title span { color: #9fb3c8; font-size: 12px; }
 .find-done .find-done-title i { margin-left: auto; font-style: normal; color: #9fb3c8; font-size: 12px; }
 .find-done .find-done-review { margin: 0 0 0.4rem; padding: 0.45rem 0.7rem; border-radius: 8px; background: #102a1f; border: 1px solid rgba(231, 193, 90, 0.25); }
