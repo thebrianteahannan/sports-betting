@@ -86,20 +86,9 @@ async function shareSend(user, body, readKey, writeKey) {
   return { sent: to.length };
 }
 
-async function sentList(user, readKey) {
-  const ids = friendIds(await linksOf(readKey), user.id), byId = new Map();
-  const boxes = await Promise.all(ids.map((id) => readKey(inboxKey(id))));
-  boxes.forEach((box, at) => (Array.isArray((box || {}).items) ? box.items : []).filter((row) => row.from === user.id).forEach((row) => {
-    const one = byId.get(row.id) || { id: row.id, at: row.at, title: row.title, note: row.note, legs: row.legs, to: [] };
-    one.to.push({ id: ids[at], seen: Boolean(row.seen) });
-    byId.set(row.id, one);
-  }));
-  return [...byId.values()].sort((a, b) => b.at - a.at);
-}
-
 async function sharedList(user, readKey) {
-  const [box, sent] = await Promise.all([readKey(inboxKey(user.id)), sentList(user, readKey)]);
-  return { items: Array.isArray((box || {}).items) ? box.items : [], sent };
+  const box = (await readKey(inboxKey(user.id))) || {};
+  return { items: Array.isArray(box.items) ? box.items : [] };
 }
 
 async function sharedPost(user, body, readKey, writeKey) {

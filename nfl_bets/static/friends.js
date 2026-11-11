@@ -19,7 +19,6 @@ async function friendsLoad() {
     const [friends, shared] = await Promise.all([friendsCall("/api/friends"), friendsCall("/api/shared")]);
     window.friendsData = friends;
     window.sharedItems = shared.items || [];
-    window.sharedSent = shared.sent || [];
     if (document.querySelector(".find-board") && typeof paintParlay === "function") paintParlay();
     else profileShared();
   } catch (error) { console.log("[friends] could not load", error); } finally { friendsBusy = false; }
@@ -109,32 +108,46 @@ function sharedLegs(legs) {
   return `<ul>${legs.map((leg) => `<li><span>${esc(String(leg.label || "").replace(/^Alternate Total \w+:\s*/i, ""))}</span>${Number.isFinite(Number(leg.odds)) ? `<em>${esc(Number(leg.odds) > 0 ? `+${leg.odds}` : String(leg.odds))}</em>` : ""}</li>`).join("")}</ul>`;
 }
 
-function sentCard(item) {
-  const card = document.createElement("div");
-  card.className = "find-shared-card";
-  const names = new Map(window.friendsData.friends.map((one) => [one.id, one.name]));
-  const price = typeof savePrice === "function" ? savePrice(item.legs) : "";
-  const games = typeof gameShortList === "function" ? gameShortList(item.legs) : "";
-  const to = item.to.map((one) => `${names.get(one.id) || "A friend"}${one.seen ? " (seen)" : ""}`).join(", ");
-  card.innerHTML = `<p class="find-shared-head"><b>To ${esc(to)}</b><span>${esc(friendsAgo(item.at))}</span>${price ? `<i>${esc(price)}</i>` : ""}${games ? `<span>${esc(games)}</span>` : ""}</p>${item.note ? `<p class="find-shared-note">“${esc(item.note)}”</p>` : ""}${sharedLegs(item.legs)}`;
-  return card;
-}
-
 function profileShared() {
   const spot = document.getElementById("profile-shared");
   if (!spot || spot.contains(document.activeElement)) return;
   spot.hidden = !window.saveWho;
   if (spot.hidden) return;
-  const panel = friendsPanel(), sent = window.sharedSent || [];
-  panel.querySelector(".find-done-x").remove();
-  const friendsHead = [...panel.querySelectorAll(":scope > .find-friends-sub")].find((p) => p.textContent.startsWith("Friends"));
-  const head = document.createElement("p");
-  head.className = "find-friends-sub";
-  head.textContent = "You sent";
-  friendsHead.before(head);
-  if (sent.length) sent.forEach((item) => friendsHead.before(sentCard(item)));
-  else { const none = document.createElement("p"); none.className = "find-friends-empty"; none.textContent = "Bets you send to friends show up here."; friendsHead.before(none); }
+  const panel = friendsPanel(), kids = [...panel.children];
+  const from = kids.findIndex((node) => node.textContent === "Sent to you"), to = kids.findIndex((node) => node.classList.contains("find-friends-sub") && node.textContent.startsWith("Friends"));
+  panel.querySelector(".find-done-top").remove();
+  kids.slice(from, to).forEach((node) => node.remove());
   spot.replaceChildren(panel);
+}
+
+function sharedChips(box, after) {
+  const items = window.sharedItems.filter((item) => item.legs.some((leg) => !(Date.parse(leg.kickoff || "") < Date.now())));
+  if (!items.length) return;
+  const head = document.createElement("p");
+  head.className = "find-shared-head-row";
+  head.textContent = "Shared bets";
+  const chips = items.map((item) => {
+    const chip = document.createElement("span");
+    chip.className = "find-saved-chip find-shared-chip";
+    const go = document.createElement("button");
+    go.type = "button";
+    const games = typeof gameShortList === "function" ? gameShortList(item.legs) : "";
+    const who = item.legs.map((leg) => String(leg.label || "").split(/\s+(?:\d|Over\b|Under\b)/)[0].split(" ").pop()).filter(Boolean);
+    const said = `${item.fromName}: ${who.slice(0, 2).join(", ")}${who.length > 2 ? ` +${who.length - 2}` : ""}`;
+    const price = typeof savePrice === "function" ? savePrice(item.legs) : "";
+    go.innerHTML = [games && `<i>${esc(games)}</i>`, `<span>${esc(said)}</span>`, price && `<b>${esc(price)}</b>`].filter(Boolean).join("");
+    go.title = item.note ? `“${item.note}”` : `From ${item.fromName}`;
+    go.addEventListener("click", () => sharedToTray(item));
+    const drop = document.createElement("button");
+    drop.type = "button";
+    drop.className = "find-saved-x";
+    drop.textContent = "×";
+    drop.setAttribute("aria-label", "Remove this shared bet");
+    drop.addEventListener("click", async () => { try { window.sharedItems = (await friendsCall("/api/shared", { action: "drop", id: item.id })).items || []; paintParlay(); } catch (error) { console.log("[friends] remove", error); } });
+    chip.append(go, drop);
+    return chip;
+  });
+  after.after(head, ...chips);
 }
 
 function sharedCard(item) {
@@ -180,7 +193,7 @@ function friendsPanel() {
 
 function friendsPaint() {
   document.querySelectorAll(".find-saved").forEach((box) => {
-    box.querySelectorAll(":scope > .find-saved-friends, :scope > .find-friends").forEach((node) => node.remove());
+    box.querySelectorAll(":scope > .find-saved-friends, :scope > .find-friends, :scope > .find-shared-head-row, :scope > .find-shared-chip").forEach((node) => node.remove());
     if (!window.saveWho) return;
     const fresh = window.sharedItems.filter((item) => !item.seen).length + window.friendsData.incoming.length;
     const go = document.createElement("button");
@@ -195,6 +208,7 @@ function friendsPaint() {
     });
     const after = box.querySelector(":scope > .find-saved-done") || box.querySelector(":scope > .find-saved-st");
     if (after) after.after(go); else box.append(go);
+    sharedChips(box, go);
     if (window.sharedOpen) box.append(friendsPanel());
   });
   profileShared();

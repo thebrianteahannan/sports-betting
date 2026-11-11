@@ -115,7 +115,7 @@ function scriptBetsBlock(bets, group, game, people) {
     const legs = parlay.legs.map((at) => bets.picks[at]);
     const top = `<div class="find-script-top"><i class="px">${money(parlay.odds)}</i><i class="pct">${esc(parlay.need)}</i><i class="pay">$5 profits $${parlay.wins.toFixed(2)}</i>${parlay.size > 1 ? `<i class="sg">Same game</i>` : ""}</div>`;
     const rows = legs.map((pick) => `<div class="find-script-leg"><i class="px">${money(pick.odds)}</i><i class="pct">${esc(typeof findPct === "function" ? findPct(pick.odds) : "")}</i><i class="who">${esc(pick.who)}</i><i class="tm">${esc([pick.team, pick.pos].filter(Boolean).join(" · "))}</i><i class="prop">${esc(pick.text)}</i></div>`).join("");
-    card.innerHTML = `${top}${rows}${parlay.how ? `<p class="find-script-why"><em>Why:</em> ${esc(parlay.how)}</p>` : ""}<p class="find-script-why"><em>Strategy:</em> ${esc(scriptFitLine(legs, game))}</p>${parlay.size > 1 ? `<p class="find-script-proof">FanDuel prices same-game parlays itself, so the slip can pay less than this.</p>` : ""}`;
+    card.innerHTML = `${top}${rows}${parlay.how ? `<p class="find-script-why"><em>Why:</em> ${esc(parlay.how)}</p>` : ""}${parlay.size > 1 ? `<p class="find-script-proof">FanDuel prices same-game parlays itself, so the slip can pay less than this.</p>` : ""}`;
     const go = document.createElement("button"); go.type = "button"; go.className = "find-script-add"; go.textContent = "Build it";
     go.addEventListener("click", () => {
       if (typeof parlayLeg === "undefined") return;

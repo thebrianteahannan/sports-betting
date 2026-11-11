@@ -1,0 +1,26 @@
+---
+description: Skip browser checks on small changes to save usage
+alwaysApply: true
+---
+
+# Skip browser checks on small changes
+
+Browser snapshots of this site are huge, because the page holds every hidden pane. Each one is billed as input.
+
+Do not open the browser, take snapshots, or take screenshots to verify small changes:
+
+- copy and text edits ("our" to "your", removing a line)
+- renaming a button or label
+- CSS tweaks: colors, spacing, sizes
+- removing a UI element
+
+For these, make the edit, bump `?v=`, run `node --check` on changed JS, and report. Do not restart the server unless server JS changed.
+
+Use the browser only when a flow can actually break, or when the user asks for a test:
+
+- sign-in and sign-up
+- sending a bet to a friend
+- saving, opening, or deleting parlays
+- new features with clicks that change state
+
+When the browser is needed, prefer one `Runtime.evaluate` that returns a short JSON answer over a full `browser_snapshot`. Take at most one screenshot.
