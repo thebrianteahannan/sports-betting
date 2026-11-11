@@ -187,7 +187,6 @@ function fillFind(board, data) {
       const only = [...hits.querySelectorAll("button:not([data-week])")]; const found = people.filter((item) => item.kind === "player" && item.team && only.some((node) => plainName(node.textContent.split(",")[0]) === plainName(item.name))); if (found.length && found.every((item) => item.team === found[0].team) && typeof clubTheme === "function") clubTheme(list, found[0]); if (only.length === 1 && !list.querySelector("h3") && !(data.out || []).length) only[0].click();
     }).catch(() => { if (stamp !== clubStamp || !hits.isConnected) return; const only = [...hits.querySelectorAll("button:not([data-week])")]; if (only.length === 1 && !list.querySelector("h3")) only[0].click(); });
   });
-  input.focus();
 }
 
 function plainName(name) {
