@@ -266,6 +266,7 @@
 .find-friends-add .find-friends-hits:empty { display: none; }
 .find-friends-hits .find-friends-row { margin: 0; padding: 0.3rem 0.5rem; border-radius: 8px; background: #0f2219; }
 .find-friends-row > span.find-friends-tag { flex: 0 0 auto; color: #3dff6e; font-size: 12px; font-weight: 700; }
+.find-shared-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.3rem 0; }
 .find-shared-card { margin: 0.4rem 0; padding: 0.5rem 0.7rem; border-left: 4px solid #6b7c8f; border-radius: 8px; background: #0f2219; }
 .find-shared-card.fresh { border-left-color: #3dff6e; }
 .find-shared-head { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: baseline; margin: 0 0 0.25rem; font-size: 14px; color: #f4f7fb; }

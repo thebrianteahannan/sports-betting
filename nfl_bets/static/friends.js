@@ -17,14 +17,59 @@ async function friendsLoad() {
   friendsBusy = true;
   try {
     const [friends, shared] = await Promise.all([friendsCall("/api/friends"), friendsCall("/api/shared")]);
+    const same = JSON.stringify([friends, shared.items || []]) === JSON.stringify([window.friendsData, window.sharedItems]);
     window.friendsData = friends;
     window.sharedItems = shared.items || [];
+    sharedNotify();
+    if (same) return;
     if (document.querySelector(".find-board") && typeof paintParlay === "function") paintParlay();
     else profileShared();
   } catch (error) { console.log("[friends] could not load", error); } finally { friendsBusy = false; }
 }
 
-const friendsWait = setInterval(() => { if (window.saveWho) { clearInterval(friendsWait); friendsLoad(); setInterval(friendsLoad, 2 * 60000); } }, 1000);
+function birdTell(text) {
+  const menu = document.getElementById("desk-menu");
+  if (!menu || typeof birdPending === "undefined") return;
+  if (!text) {
+    if (birdPending && birdPending[0] === window.birdTold) { birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Recommended bets"); }
+    window.birdTold = "";
+    return;
+  }
+  window.birdTold = text; birdPending = [text, []];
+  menu.classList.add("bird-has"); menu.classList.remove("say-open", "bird-brag"); menu.dataset.say = text; menu.setAttribute("aria-label", "Parlay has something to say");
+}
+
+function sharedNotify() {
+  const fresh = window.sharedItems.filter((item) => !item.seen), names = [...new Set(fresh.map((item) => item.fromName))];
+  const panel = document.querySelector(".find-saved .find-friends"), looking = Boolean(panel && panel.offsetParent);
+  const text = !fresh.length || looking ? "" : fresh.length === 1 ? `${names[0]} sent you a bet. Want to see it?` : `${names.length === 1 ? names[0] : "Your friends"} sent you ${fresh.length} bets. Want to see them?`;
+  if (text !== (window.birdTold || "")) birdTell(text);
+}
+
+function sharedSeen() {
+  if (!window.sharedItems.some((item) => !item.seen)) return;
+  window.sharedItems = window.sharedItems.map((item) => ({ ...item, seen: true }));
+  sharedNotify();
+  friendsCall("/api/shared", { action: "seen" }).then((data) => { window.sharedItems = data.items || []; }).catch(() => {});
+}
+
+function sharedGo() {
+  window.sharedOpen = true;
+  sharedSeen();
+  if (!document.querySelector(".find-board") && window.birdMenu) birdMenu("find");
+  let tries = 0;
+  const wait = setInterval(() => {
+    const board = document.querySelector(".find-board");
+    if (!board && ++tries < 40) return;
+    clearInterval(wait);
+    if (typeof paintParlay === "function") paintParlay();
+    const panel = document.querySelector(".find-saved .find-friends");
+    if (panel) panel.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, 150);
+}
+window.sharedGo = sharedGo;
+
+const friendsWait = setInterval(() => { if (window.saveWho) { clearInterval(friendsWait); friendsLoad(); setInterval(friendsLoad, 20000); } }, 1000);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") friendsLoad(); });
 
 function friendsAgo(at) {
@@ -104,10 +149,6 @@ function sharedToTray(item, again) {
   if (tray) tray.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
-function sharedLegs(legs) {
-  return `<ul>${legs.map((leg) => `<li><span>${esc(String(leg.label || "").replace(/^Alternate Total \w+:\s*/i, ""))}</span>${Number.isFinite(Number(leg.odds)) ? `<em>${esc(Number(leg.odds) > 0 ? `+${leg.odds}` : String(leg.odds))}</em>` : ""}</li>`).join("")}</ul>`;
-}
-
 function profileShared() {
   const spot = document.getElementById("profile-shared");
   if (!spot || spot.contains(document.activeElement)) return;
@@ -126,44 +167,29 @@ function sharedChips(box, after) {
   const head = document.createElement("p");
   head.className = "find-shared-head-row";
   head.textContent = "Shared bets";
-  const chips = items.map((item) => {
-    const chip = document.createElement("span");
-    chip.className = "find-saved-chip find-shared-chip";
-    const go = document.createElement("button");
-    go.type = "button";
-    const games = typeof gameShortList === "function" ? gameShortList(item.legs) : "";
-    const who = item.legs.map((leg) => String(leg.label || "").split(/\s+(?:\d|Over\b|Under\b)/)[0].split(" ").pop()).filter(Boolean);
-    const said = `${item.fromName}: ${who.slice(0, 2).join(", ")}${who.length > 2 ? ` +${who.length - 2}` : ""}`;
-    const price = typeof savePrice === "function" ? savePrice(item.legs) : "";
-    go.innerHTML = [games && `<i>${esc(games)}</i>`, `<span>${esc(said)}</span>`, price && `<b>${esc(price)}</b>`].filter(Boolean).join("");
-    go.title = item.note ? `“${item.note}”` : `From ${item.fromName}`;
-    go.addEventListener("click", () => sharedToTray(item));
-    const drop = document.createElement("button");
-    drop.type = "button";
-    drop.className = "find-saved-x";
-    drop.textContent = "×";
-    drop.setAttribute("aria-label", "Remove this shared bet");
-    drop.addEventListener("click", async () => { try { window.sharedItems = (await friendsCall("/api/shared", { action: "drop", id: item.id })).items || []; paintParlay(); } catch (error) { console.log("[friends] remove", error); } });
-    chip.append(go, drop);
-    return chip;
-  });
-  after.after(head, ...chips);
+  after.after(head, ...items.map(sharedChip));
 }
 
-function sharedCard(item) {
-  const card = document.createElement("div");
-  card.className = `find-shared-card${item.seen ? "" : " fresh"}`;
-  const price = typeof savePrice === "function" ? savePrice(item.legs) : "";
+function sharedChip(item) {
+  const chip = document.createElement("span");
+  chip.className = "find-saved-chip find-shared-chip";
+  const go = document.createElement("button");
+  go.type = "button";
   const games = typeof gameShortList === "function" ? gameShortList(item.legs) : "";
-  const started = item.legs.every((leg) => Date.parse(leg.kickoff || "") < Date.now());
-  card.innerHTML = `<p class="find-shared-head"><b>${esc(item.fromName)}</b><span>${esc(friendsAgo(item.at))}</span>${price ? `<i>${esc(price)}</i>` : ""}${games ? `<span>${esc(games)}</span>` : ""}</p>${item.note ? `<p class="find-shared-note">“${esc(item.note)}”</p>` : ""}${sharedLegs(item.legs)}`;
-  const row = document.createElement("p");
-  row.className = "find-shared-do";
-  if (started) { const said = document.createElement("span"); said.textContent = "These games have started."; row.append(said); }
-  else row.append(friendsButton("Open in my parlay", () => sharedToTray(item)));
-  row.append(friendsButton("Remove", async () => { try { window.sharedItems = (await friendsCall("/api/shared", { action: "drop", id: item.id })).items || []; paintParlay(); } catch (error) { console.log("[friends] remove", error); } }, "find-friends-quiet"));
-  card.append(row);
-  return card;
+  const who = item.legs.map((leg) => String(leg.label || "").split(/\s+(?:\d|Over\b|Under\b)/)[0].split(" ").pop()).filter(Boolean);
+  const said = `${item.fromName}: ${who.slice(0, 2).join(", ")}${who.length > 2 ? ` +${who.length - 2}` : ""}`;
+  const price = typeof savePrice === "function" ? savePrice(item.legs) : "";
+  go.innerHTML = [games && `<i>${esc(games)}</i>`, `<span>${esc(said)}</span>`, price && `<b>${esc(price)}</b>`].filter(Boolean).join("");
+  go.title = item.note ? `“${item.note}”` : `From ${item.fromName}`;
+  go.addEventListener("click", () => { sharedSeen(); sharedToTray(item); });
+  const drop = document.createElement("button");
+  drop.type = "button";
+  drop.className = "find-saved-x";
+  drop.textContent = "×";
+  drop.setAttribute("aria-label", "Remove this shared bet");
+  drop.addEventListener("click", async () => { try { window.sharedItems = (await friendsCall("/api/shared", { action: "drop", id: item.id })).items || []; paintParlay(); } catch (error) { console.log("[friends] remove", error); } });
+  chip.append(go, drop);
+  return chip;
 }
 
 function friendsPanel() {
@@ -182,7 +208,7 @@ function friendsPanel() {
     data.incoming.forEach((one) => { const row = document.createElement("p"); row.className = "find-friends-row"; row.innerHTML = `<span><b>${esc(one.name)}</b>${one.state ? ` · ${esc(one.state)}` : ""}</span>`; row.append(friendsButton("Accept", () => friendsAct({ action: "accept", id: one.id }, note)), friendsButton("Decline", () => friendsAct({ action: "decline", id: one.id }, note), "find-friends-quiet")); panel.append(row); });
   }
   panel.append(head("Sent to you"));
-  if (window.sharedItems.length) window.sharedItems.forEach((item) => panel.append(sharedCard(item)));
+  if (window.sharedItems.length) { const row = document.createElement("div"); row.className = "find-shared-chips"; row.append(...window.sharedItems.map(sharedChip)); panel.append(row); }
   else { const none = document.createElement("p"); none.className = "find-friends-empty"; none.textContent = "When a friend sends you a bet, it lands here."; panel.append(none); }
   panel.append(head(`Friends${data.friends.length ? ` (${data.friends.length})` : ""}`));
   data.friends.forEach((one) => { const row = document.createElement("p"); row.className = "find-friends-row"; row.innerHTML = `<span><b>${esc(one.name)}</b>${one.state ? ` · ${esc(one.state)}` : ""}</span>`; row.append(friendsButton("Remove", () => { if (window.confirm(`Remove ${one.name} from your friends?`)) friendsAct({ action: "remove", id: one.id }, note); }, "find-friends-quiet")); panel.append(row); });
@@ -203,7 +229,7 @@ function friendsPaint() {
     go.setAttribute("aria-expanded", String(window.sharedOpen));
     go.addEventListener("click", () => {
       window.sharedOpen = !window.sharedOpen;
-      if (window.sharedOpen && window.sharedItems.some((item) => !item.seen)) friendsCall("/api/shared", { action: "seen" }).then((data) => { window.sharedItems = data.items || []; }).catch(() => {});
+      if (window.sharedOpen) sharedSeen();
       friendsPaint();
     });
     const after = box.querySelector(":scope > .find-saved-done") || box.querySelector(":scope > .find-saved-st");
