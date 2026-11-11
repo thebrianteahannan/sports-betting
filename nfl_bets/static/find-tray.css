@@ -362,6 +362,8 @@
 .rec-board .find-script[open] > summary .find-script-head::after { content: " ▾"; }
 .rec-board .find-script p.find-script-short { margin-top: 0.25rem; color: #9fb3c8; font-size: 14px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .rec-board .find-script[open] p.find-script-short { display: none; }
+.rec-board .find-script:not([open]) > summary:has(p.find-script-short)::after { content: "Read the full game script ▾"; display: block; margin-top: 0.45rem; color: #3dff6e; font-size: 13px; font-weight: 700; letter-spacing: 0.02em; }
+.rec-board .find-script:not([open]) > summary:has(p.find-script-short):hover::after { text-decoration: underline; }
 .rec-board .find-script > .find-brief { margin-top: 0.8rem; }
 .rec-board .find-script.has-story p.find-script-short { color: #e6edf3; font-size: 15px; line-height: 1.5; }
 .rec-board .find-script.has-story > .find-brief > p.find-dive, .rec-board .find-script.has-story + .find-brief > p.find-dive { display: none; }
