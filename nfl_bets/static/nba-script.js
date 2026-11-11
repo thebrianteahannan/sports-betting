@@ -19,6 +19,62 @@ function scriptRecTag() {
   });
 }
 
+function scriptRecMark(match, bets) {
+  if (!match) return;
+  const fold = (text) => (typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase());
+  if (bets) { const picks = [bets, bets.stars].filter(Boolean).flatMap((set) => set.picks || []); match.scriptRec = { names: new Set(picks.map((pick) => fold(pick.who))), bets: new Set(picks.map((pick) => `${pick.label}|${pick.market}`)) }; }
+  const rec = match.scriptRec;
+  if (!rec) return;
+  const mark = (chip, on, test) => {
+    chip.classList.toggle("find-rec", on);
+    const go = chip.querySelector(":scope > button.find-rec-go");
+    if (on && !go) {
+      const button = document.createElement("button"); button.type = "button"; button.className = "find-rec-go"; button.title = "See Parlay's recommendation"; button.setAttribute("aria-label", button.title);
+      button.addEventListener("click", (event) => { event.stopPropagation(); scriptRecJump(match, test); });
+      const plus = chip.querySelector(":scope > .find-plus"); if (plus) plus.before(button); else chip.append(button);
+    }
+    if (!on && go) go.remove();
+  };
+  match.querySelectorAll(".find-everyone .find-chip").forEach((chip) => { const name = fold(chip.firstElementChild ? chip.firstElementChild.textContent.replace(/, out$/, "") : ""); mark(chip, rec.names.has(name), (info) => String(info.who || "").split("|").some((who) => fold(who) === name)); });
+  match.querySelectorAll(".find-line-chip").forEach((chip) => { const key = `${chip.dataset.label}|${chip.dataset.market}`; mark(chip, rec.bets.has(key), (info) => String(info.legs || "").split("||").includes(key)); });
+  const board = match.closest(".find-board"), head = board && board.querySelector(".find-list > .find-profile > h3");
+  if (!head) return;
+  const name = fold(((head.firstChild && head.firstChild.textContent) || "").split(",")[0]), on = rec.names.has(name);
+  const tag = head.querySelector(":scope > i.find-rec-tag");
+  if (on && !tag) { const pill = document.createElement("i"); pill.className = "find-rec-tag"; pill.textContent = "Recommended"; pill.title = "See Parlay's recommendation with him"; pill.addEventListener("click", (event) => { event.stopPropagation(); scriptRecJump(match, (info) => String(info.who || "").split("|").some((who) => fold(who) === name)); }); head.append(pill); }
+  if (!on && tag) tag.remove();
+}
+
+function scriptRecInfo(set, parlay) {
+  const legs = parlay.legs.map((at) => set.picks[at] || {});
+  return { who: legs.map((pick) => pick.who).join("|"), legs: legs.map((pick) => `${pick.label}|${pick.market}`).join("||") };
+}
+
+function scriptRecShow(tab) {
+  const box = tab.closest(".find-bets"), block = tab.closest(".find-script-bets");
+  box.open = true; block.hidden = false; tab.click();
+  const tray = document.querySelector(".find-board .find-tray:not([hidden]):not(.find-shut)"), fold = tray && tray.querySelector(".find-fold");
+  if (fold) { fold.click(); if (typeof saveAutoShut !== "undefined") { saveAutoShut.add(tray); saveFoldAt = Date.now(); } }
+  block.style.scrollMarginTop = "5.5rem";
+  if (window.gameScrollQuit) gameScrollQuit();
+  if (typeof gameScrollTo === "function") gameScrollTo(block); else block.scrollIntoView({ block: "start" });
+}
+
+function scriptRecJump(match, test) {
+  const box = match && match.querySelector(":scope > .find-bets");
+  if (!box) return;
+  const find = () => [...box.querySelectorAll(":scope > .find-script-bets .find-script-tabs button[data-who]")].find((tab) => test(tab.dataset));
+  let tab = find();
+  if (!tab && box.scriptBets) {
+    const bets = box.scriptBets, group = [bets, bets.stars].filter(Boolean).flatMap((set) => (set.groups || []).filter((row) => (row.parlays || []).some((parlay) => test(scriptRecInfo(set, parlay)))))[0];
+    const block = group && [...box.querySelectorAll(":scope > .find-script-bets")].find((node) => node.dataset.team === group.name), check = block && block.querySelector("label.find-script-stars input");
+    if (check) { check.click(); tab = find(); }
+  }
+  if (tab) { scriptRecShow(tab); return; }
+  box.open = true; box.style.scrollMarginTop = "5.5rem";
+  if (typeof gameScrollTo === "function") gameScrollTo(box);
+}
+
 function scriptRecGo() {
   if (typeof parlayLeg === "undefined" || !parlayLeg.size) return;
   const sig = scriptRecSig([...parlayLeg.values()]);
@@ -29,15 +85,7 @@ function scriptRecGo() {
     const block = group && [...box.querySelectorAll(":scope > .find-script-bets")].find((node) => node.dataset.team === group.name), check = block && block.querySelector("label.find-script-stars input");
     if (check) check.click(); return !!check;
   });
-  const show = (tab) => {
-    const box = tab.closest(".find-bets"), block = tab.closest(".find-script-bets");
-    box.open = true; block.hidden = false; tab.click();
-    const tray = document.querySelector(".find-board .find-tray:not([hidden]):not(.find-shut)"), fold = tray && tray.querySelector(".find-fold");
-    if (fold) { fold.click(); if (typeof saveAutoShut !== "undefined") { saveAutoShut.add(tray); saveFoldAt = Date.now(); } }
-    block.style.scrollMarginTop = "5.5rem";
-    if (window.gameScrollQuit) gameScrollQuit();
-    if (typeof gameScrollTo === "function") gameScrollTo(block); else block.scrollIntoView({ block: "start" });
-  };
+  const show = scriptRecShow;
   const now = find() || (flip() && find()); if (now) { show(now); return; }
   const seek = document.querySelector(".find-tray:not([hidden]) button.find-leg-seek"); if (!seek) return;
   seek.click();
@@ -198,7 +246,7 @@ function scriptBetsBlock(bets, group, game, people, keep = {}) {
   const sizes = [...new Set([...(group.name === "Both teams" ? [2, 3, 4] : [1, 2, 3, 4]), ...group.parlays.map((parlay) => parlay.size)])].sort((a, b) => a - b);
   sizes.forEach((size) => {
     const parlay = group.parlays.find((row) => row.size === size), tab = document.createElement("button"); tab.type = "button"; tab.dataset.size = size; tab.textContent = size === 1 ? "Single" : `${size} legs`;
-    if (parlay) tab.dataset.sig = scriptRecSig(parlay.legs.map((at) => ({ ...bets.picks[at], match: game.match })));
+    if (parlay) { tab.dataset.sig = scriptRecSig(parlay.legs.map((at) => ({ ...bets.picks[at], match: game.match }))); Object.assign(tab.dataset, scriptRecInfo(bets, parlay)); }
     if (parlay) tab.addEventListener("click", (event) => { event.preventDefault(); keep[group.name] = size; show(parlay); }); else { tab.disabled = true; tab.title = "Not enough bets clear their price for this size"; }
     tabs.append(tab);
   });
@@ -244,7 +292,7 @@ function nbaScript(holder, game, people) {
     if (story && (story.plays || []).length) { const block = document.createElement("div"); block.className = "find-script-part"; block.innerHTML = `<b>How it plays out</b><p>${esc(story.plays.join(" "))}</p>`; add(block); }
     ((story && story.sections) || []).forEach((part) => { const block = document.createElement("div"); block.className = "find-script-part"; block.innerHTML = `<b>${esc(part.title || "")}</b>${(part.lines || []).map((line) => `<p>${esc(line)}</p>`).join("")}`; add(block); });
     const oldBets = box.parentElement && box.parentElement.querySelector(":scope > .find-bets");
-    if (story && story.bets && (story.bets.groups || []).length) { const fresh = scriptBetsBox(story.bets, full, people); scriptRecKeep(story.bets, full); fresh.open = !!(oldBets && oldBets.open); if (oldBets) oldBets.replaceWith(fresh); else { const next = box.nextElementSibling; (next && next.classList.contains("find-brief") ? next : box).after(fresh); } scriptBetsSide(match, fresh); }
+    if (story && story.bets && (story.bets.groups || []).length) { const fresh = scriptBetsBox(story.bets, full, people); scriptRecKeep(story.bets, full); scriptRecMark(match, story.bets); fresh.open = !!(oldBets && oldBets.open); if (oldBets) oldBets.replaceWith(fresh); else { const next = box.nextElementSibling; (next && next.classList.contains("find-brief") ? next : box).after(fresh); } scriptBetsSide(match, fresh); }
     ((nba && nba.parts) || []).forEach((part) => { const block = document.createElement("div"); block.className = "find-script-part"; block.innerHTML = `<b>${esc(part.title || "")}</b><p>${esc(part.text || "")}</p>${String(part.proof || "").split("\n").filter(Boolean).map((line) => `<p class="find-script-proof">${esc(line)}</p>`).join("")}`; add(block); });
   };
   ask("nba").then((data) => { got.nba = data; got.nbaDone = true; paint(); });

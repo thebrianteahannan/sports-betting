@@ -32,6 +32,7 @@ function gameEveryone(match, sides, people, list, hits) {
     const name = typeof whereNick === "function" ? whereNick(team.name) : team.name;
     new MutationObserver(() => {
       gameAlign(pair);
+      if (typeof scriptRecMark === "function") scriptRecMark(box.closest(".find-match"));
       const top = roster.querySelector(":scope > summary");
       if (!top) return;
       const off = (chip) => (roster.classList.contains("hide-bench") && chip.dataset.bench) || (roster.classList.contains("hide-fringe") && chip.dataset.fringe) || (roster.classList.contains("hide-def") && chip.dataset.def);
@@ -68,7 +69,7 @@ function gameClub(roster, name, sport) {
 function gameLines(fold, game, rows) {
   const chip = (bet, text) => {
     const price = Number(bet.odds), key = parlayKey(bet);
-    const wrap = document.createElement("span"); wrap.className = "find-chip find-line-chip"; wrap.dataset.key = key;
+    const wrap = document.createElement("span"); wrap.className = "find-chip find-line-chip"; wrap.dataset.key = key; wrap.dataset.label = bet.label; wrap.dataset.market = bet.market;
     const main = document.createElement("button"); main.type = "button"; main.textContent = `${text} ${price > 0 ? `+${price}` : price}`; main.dataset.pos = findPct(price); main.title = findCash(price) ? `$5 profits ${findCash(price)}` : "";
     main.classList.toggle("on", parlayLeg.has(key));
     const plus = document.createElement("button"); plus.type = "button"; plus.className = "find-plus"; plus.setAttribute("aria-label", `Add ${bet.label} to the parlay`);
@@ -102,6 +103,7 @@ function gameLines(fold, game, rows) {
   });
   pair.style.gridTemplateRows = "repeat(3, auto)";
   if (pair.childElementCount) fold.append(pair);
+  setTimeout(() => { if (typeof scriptRecMark === "function") scriptRecMark(fold.closest(".find-match")); }, 0);
   const totals = rows.filter((bet) => /^(over|under)\b/i.test(String(bet.label || "")));
   if (!totals.length) return;
   const { roster, names } = block("Game total");
@@ -158,6 +160,16 @@ function gameScrollTo(node) {
   setTimeout(go, 60);
   [800, 1600, 3000].forEach((ms) => setTimeout(go, ms));
   setTimeout(() => { quit.abort(); watch.disconnect(); }, 3100);
+}
+
+function findBlankOpen() {
+  const board = document.querySelector('#desk-glass-in .rec-board[data-page="find"]'), span = board && board.querySelector(".find-span"), input = board && board.querySelector("label.find input");
+  if (!span || span.classList.contains("find-picked") || (input && input.value.trim()) || board.querySelector(".find-match, .find-list > *")) return;
+  const today = span.querySelector(".find-games:not(.find-week)"), week = span.querySelector(".find-week");
+  const box = today && !today.hidden && today.querySelector(":scope > details") ? today : week;
+  if (!box || !box.querySelector(":scope > details")) return;
+  box.open = true;
+  box.querySelectorAll(":scope > details").forEach((group) => { group.open = true; });
 }
 
 function gameGuide(match, people, list, hits, noted) {
