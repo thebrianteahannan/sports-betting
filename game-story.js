@@ -116,10 +116,10 @@ function mismatches(boxes, fives, outs) {
   return out;
 }
 
-function minutes(read, boxes) {
+function minutes(read, boxes, outs) {
   const out = [];
   [boxes.away, boxes.home].forEach((team) => {
-    outsOf(read, team.name).filter((row) => /out|injured/.test(row.status)).forEach((row) => {
+    (team === boxes.away ? outs.away : outs.home).filter((row) => /out|injured/.test(row.status)).forEach((row) => {
       const was = team.players[row.name], next = row.next && team.players[row.next];
       if (!was || was.min < 20) return;
       out.push({ w: was.min / 8, text: `${row.name} is out, ${n1(was.min)} minutes a game.${row.next ? ` ${row.next} is next at his spot${next ? ` and plays ${n1(next.min)} now` : ""}${next && next.min < 24 ? ", so his props carry more minutes" : ""}.` : ""}`, brief: `${row.name} is out${row.next && next && next.min < 24 ? `, so ${row.next} gets his minutes` : ""}` });
@@ -186,9 +186,14 @@ async function build(body, board) {
   if (!boxes) return { sections: [] };
   const fives = { away: fiveOf(read, boxes.away.name), home: fiveOf(read, boxes.home.name) };
   const outs = { away: outsOf(read, boxes.away.name), home: outsOf(read, boxes.home.name) };
-  const groups = { "Mismatches": mismatches(boxes, fives, outs), "Tempo": tempo(boxes, game), "Threes and the paint": shots(boxes), "Fouls and free throws": fouls(boxes, fives), "Minutes": minutes(read, boxes), "History": history(read, boxes, game) };
+  return tell(game, boxes, read, fives, outs);
+}
+
+function tell(game, boxes, read, fives, outs) {
+  const groups = { "Mismatches": mismatches(boxes, fives, outs), "Tempo": tempo(boxes, game), "Threes and the paint": shots(boxes), "Fouls and free throws": fouls(boxes, fives), "Minutes": minutes(read, boxes, outs), "History": history(read, boxes, game) };
   const sections = Object.entries(groups).map(([title, rows]) => ({ title, lines: top(rows, 4).map((row) => row.text) })).filter((row) => row.lines.length);
-  return { plays: plays(groups, game, boxes), sections };
+  const watch = top((groups.Mismatches || []).filter((row) => row.say), 2).map((row) => ({ name: (row.say.match(/^(?:Watch )?([^:]+?)(?::| draws| has)/) || [])[1] || "", edge: !!row.edge }));
+  return { plays: plays(groups, game, boxes), sections, watch };
 }
 
 function gameStory(body, board) {
@@ -200,4 +205,4 @@ function gameStory(body, board) {
   return promise;
 }
 
-module.exports = { gameStory };
+module.exports = { gameStory, tell };

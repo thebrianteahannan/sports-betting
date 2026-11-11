@@ -192,6 +192,40 @@
 .rec-board .find-saved .find-saved-group > button.find-saved-x, #desk.tv-full #desk-glass .rec-board .find-saved .find-saved-group > button.find-saved-x { order: 9; width: auto; min-height: 0; margin: 0; padding: 0.2rem 0.45rem; border: 0; border-radius: 999px; background: transparent; box-shadow: none; color: #9fb3c8; font-size: 13px; cursor: pointer; }
 .rec-board .find-saved .find-saved-group > button.find-saved-x:hover { color: #ff6b6b; }
 .find-saved .find-saved-stacks .find-score { margin: 0.3rem 0 0; }
+.find-saved .find-done { flex: 1 0 100%; min-width: 0; display: grid; gap: 0.5rem; margin-top: 0.3rem; }
+.find-done > details { border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 12px; background: #0b1a14; padding: 0.5rem 0.75rem; }
+.find-done > details > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.6rem; cursor: pointer; color: #f4f7fb; }
+.find-done > details > summary span { color: #9fb3c8; font-size: 13px; }
+.find-done .find-done-league { margin: 0.6rem 0 0.3rem; color: #e7c15a; font-size: 13px; font-weight: 800; letter-spacing: 0.03em; }
+.find-done .find-done-card { margin: 0.35rem 0 0; padding: 0.45rem 0.65rem; border-left: 4px solid #6b7c8f; border-radius: 8px; background: #0f2219; }
+.find-done .find-done-card.won { border-left-color: #3dff6e; }
+.find-done .find-done-card.lost { border-left-color: #ff6b6b; }
+.find-done .find-done-head { display: flex; gap: 0.6rem; align-items: baseline; margin: 0 0 0.25rem; font-size: 14px; }
+.find-done .find-done-card.won .find-done-head b { color: #3dff6e; }
+.find-done .find-done-card.lost .find-done-head b { color: #ff6b6b; }
+.find-done .find-done-head i { font-style: normal; font-weight: 800; color: #f4f7fb; }
+.find-done .find-done-head span { color: #9fb3c8; font-size: 12px; font-weight: 700; }
+.find-done ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; }
+.find-done li { display: flex; gap: 0.5rem; align-items: baseline; font-size: 13px; color: #d6e0ea; }
+.find-done li > b { min-width: 1.2rem; text-align: center; }
+#desk-glass .find-done li.won > b { color: #3dff6e; }
+#desk-glass .find-done li.lost > b { color: #ff6b6b; }
+.find-done li.lost > span { color: #9fb3c8; }
+.find-done li > em { margin-left: auto; font-style: normal; color: #9fb3c8; white-space: nowrap; }
+.find-done li { flex-wrap: wrap; }
+.find-done li > p.find-done-why { flex: 1 0 100%; margin: 0.1rem 0 0.35rem 1.7rem; color: #9fb3c8; font-size: 12.5px; line-height: 1.45; }
+.find-done .find-done-game { margin: 0.5rem 0 0.8rem; padding-top: 0.5rem; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.find-done .find-done-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.6rem; margin: 0 0 0.35rem; color: #f4f7fb; font-size: 15px; }
+.find-done .find-done-title span { color: #9fb3c8; font-size: 12px; }
+.find-done .find-done-title i { margin-left: auto; font-style: normal; color: #9fb3c8; font-size: 12px; }
+.find-done .find-done-review { margin: 0 0 0.4rem; padding: 0.45rem 0.7rem; border-radius: 8px; background: #102a1f; border: 1px solid rgba(231, 193, 90, 0.25); }
+.find-done .find-done-review > summary { cursor: pointer; color: #e7c15a; font-weight: 800; font-size: 13.5px; }
+.find-done .find-done-review p { margin: 0.25rem 0; color: #d6e0ea; font-size: 13px; line-height: 1.5; }
+.find-done .find-done-review p.find-done-sub { margin-top: 0.55rem; color: #9fb3c8; font-size: 11.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.find-done .find-done-review li { flex-wrap: nowrap; line-height: 1.45; }
+#desk-glass .find-done .find-done-review li.odd > b { color: #e7c15a; }
+#desk-glass .find-done .find-done-review li.miss > b { color: #ff6b6b; }
+#desk-glass .find-done .find-done-review li.held > b { color: #3dff6e; }
 .find-games .find-total { float: right; margin-left: 0.75rem; color: #e7c15a; font-weight: 700; white-space: nowrap; }
 .find-games .find-edge { float: right; margin-left: 0.75rem; padding: 0 0.45rem; border: 1px solid #3dff6e; border-radius: 999px; color: #3dff6e; font-size: 0.85em; font-weight: 800; white-space: nowrap; }
 .find-games .find-edge.lose { border-color: #ff8a2a; color: #ff8a2a; }

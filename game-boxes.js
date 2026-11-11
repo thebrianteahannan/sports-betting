@@ -53,9 +53,11 @@ function readBox(doc, eventId) {
     const people = (sheet.athletes || []).filter((row) => (row.stats || []).length).map((row) => {
       const stats = row.stats || [];
       const num = (key) => Number(stats[at(key)]) || 0;
-      return { id: String((row.athlete || {}).id || ""), name: (row.athlete || {}).displayName || "", pos: ((row.athlete || {}).position || {}).abbreviation || "", starter: !!row.starter, min: num("minutes"), pts: num("points"), reb: num("rebounds"), ast: num("assists"), fta: two(stats[at("freeThrowsMade-freeThrowsAttempted")])[1], pf: num("fouls") };
+      const [fgm, fga] = two(stats[at("fieldGoalsMade-fieldGoalsAttempted")]), [tpm, tpa] = two(stats[at("threePointFieldGoalsMade-threePointFieldGoalsAttempted")]);
+      return { id: String((row.athlete || {}).id || ""), name: (row.athlete || {}).displayName || "", pos: ((row.athlete || {}).position || {}).abbreviation || "", starter: !!row.starter, min: num("minutes"), pts: num("points"), reb: num("rebounds"), ast: num("assists"), fta: two(stats[at("freeThrowsMade-freeThrowsAttempted")])[1], pf: num("fouls"), fgm, fga, tpm, tpa };
     });
-    return { id, name: (side.team || {}).displayName || "", pts: Number(comp.score) || 0, fga, tpa, fta, oreb: Number(bag.offensiveRebounds) || 0, tov: Number(bag.totalTurnovers || bag.turnovers) || 0, fouls: Number(bag.fouls) || 0, paint: Number(bag.pointsInPaint) || 0, fast: Number(bag.fastBreakPoints) || 0, blk: Number(bag.blocks) || 0, stl: Number(bag.steals) || 0, people };
+    const [fgm] = two(bag["fieldGoalsMade-fieldGoalsAttempted"]), [tpm] = two(bag["threePointFieldGoalsMade-threePointFieldGoalsAttempted"]);
+    return { id, name: (side.team || {}).displayName || "", abbr: (side.team || {}).abbreviation || "", pts: Number(comp.score) || 0, fgm, fga, tpm, tpa, fta, reb: Number(bag.totalRebounds) || 0, lead: Number(bag.largestLead) || 0, oreb: Number(bag.offensiveRebounds) || 0, tov: Number(bag.totalTurnovers || bag.turnovers) || 0, fouls: Number(bag.fouls) || 0, paint: Number(bag.pointsInPaint) || 0, fast: Number(bag.fastBreakPoints) || 0, blk: Number(bag.blocks) || 0, stl: Number(bag.steals) || 0, people };
   });
   if (teams.length !== 2 || !teams.every((team) => team.fga)) return null;
   const poss = teams.reduce((sum, team) => sum + team.fga + 0.44 * team.fta - team.oreb + team.tov, 0) / 2;
@@ -93,32 +95,33 @@ function playerBook(rows) {
   const book = new Map();
   rows.forEach((row) => row.team.people.forEach((one) => { if (one.min <= 0) return; const list = book.get(one.name) || []; list.push(one); book.set(one.name, list); }));
   const out = {};
-  book.forEach((list, name) => { out[name] = { games: list.length, min: avg(list, (one) => one.min), pts: avg(list, (one) => one.pts), reb: avg(list, (one) => one.reb), ast: avg(list, (one) => one.ast), fta: avg(list, (one) => one.fta), pf: avg(list, (one) => one.pf), pos: list[0].pos }; });
+  book.forEach((list, name) => { out[name] = { games: list.length, min: avg(list, (one) => one.min), pts: avg(list, (one) => one.pts), reb: avg(list, (one) => one.reb), ast: avg(list, (one) => one.ast), fta: avg(list, (one) => one.fta), pf: avg(list, (one) => one.pf), fga: avg(list, (one) => one.fga), tpm: avg(list, (one) => one.tpm), pos: list[0].pos }; });
   return out;
 }
 
-async function lastBoxes(id) {
-  const now = await played(id).catch(() => []);
+async function lastBoxes(id, before) {
+  const early = (ev) => !before || ev.when < before;
+  const now = (await played(id).catch(() => [])).filter(early);
   const year = new Date().getFullYear();
-  const rows = now.length >= LAST ? now : now.concat(await played(id, year).catch(() => []).then((more) => more.filter((ev) => !now.some((row) => row.id === ev.id))));
+  const rows = now.length >= LAST ? now : now.concat(await played(id, year).catch(() => []).then((more) => more.filter((ev) => early(ev) && !now.some((row) => row.id === ev.id))));
   return (await Promise.all(rows.slice(0, LAST).map((ev) => boxOf(ev.id)))).filter(Boolean);
 }
 
-async function meetBoxes(awayId, homeId) {
+async function meetBoxes(awayId, homeId, before) {
   const year = new Date().getFullYear();
   const lists = await Promise.all([played(awayId).catch(() => []), played(awayId, year).catch(() => []), played(awayId, year - 1).catch(() => [])]);
   const seen = new Set();
-  const ids = lists.flat().filter((ev) => ev.foe === String(homeId) && !seen.has(ev.id) && seen.add(ev.id)).sort((a, b) => b.when - a.when).slice(0, 4);
+  const ids = lists.flat().filter((ev) => ev.foe === String(homeId) && (!before || ev.when < before) && !seen.has(ev.id) && seen.add(ev.id)).sort((a, b) => b.when - a.when).slice(0, 4);
   return (await Promise.all(ids.map(async (ev) => { const box = await boxOf(ev.id); return box ? { ...box, when: ev.when } : null; }))).filter(Boolean);
 }
 
-async function gameBoxes(awayName, homeName) {
-  const key = `story|${awayName}|${homeName}`;
+async function gameBoxes(awayName, homeName, before) {
+  const key = `story|${awayName}|${homeName}|${before || ""}`;
   const hit = MEM.get(key);
   if (hit && Date.now() - hit.at < HOUR) return hit.data;
   const [awayId, homeId] = await Promise.all([teamId(awayName), teamId(homeName)]);
   if (!awayId || !homeId) return null;
-  const [awayBoxes, homeBoxes, meet] = await Promise.all([lastBoxes(awayId), lastBoxes(homeId), meetBoxes(awayId, homeId)]);
+  const [awayBoxes, homeBoxes, meet] = await Promise.all([lastBoxes(awayId, before), lastBoxes(homeId, before), meetBoxes(awayId, homeId, before)]);
   if (!awayBoxes.length || !homeBoxes.length) return null;
   const mine = (boxes, id) => sideRows(boxes).filter((row) => row.team.id === String(id));
   const all = new Map();
@@ -133,4 +136,4 @@ async function gameBoxes(awayName, homeName) {
   return data;
 }
 
-module.exports = { gameBoxes, group };
+module.exports = { gameBoxes, group, readBox };
