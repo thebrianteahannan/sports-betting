@@ -61,6 +61,16 @@ function proofTray() {
   });
 }
 
+function proofScript(root) {
+  (root || document).querySelectorAll(".find-script-leg[data-who]").forEach((line) => {
+    const who = line.dataset.who, prop = line.querySelector("i.prop");
+    if (!prop || line.querySelector(".find-proof")) return;
+    if (!proofData.has(who)) { proofAsk(who, "NBA"); return; }
+    const tip = proofOf(who, line.dataset.market, line.dataset.label, line.dataset.odds);
+    if (tip) prop.after(proofPill(tip));
+  });
+}
+
 function proofAsk(name, sport) {
   if (proofAsked.has(name)) return;
   proofAsked.add(name);
@@ -79,6 +89,7 @@ function proofTake(name, blowout) {
     if (!list.proofWatch) { list.proofWatch = new MutationObserver(() => proofList(list)); list.proofWatch.observe(list, { childList: true, subtree: true }); }
   }
   proofTray();
+  proofScript();
   if (document.querySelector(".find-tray .find-tray-swap") && typeof legSwapPaint === "function") legSwapPaint();
 }
 

@@ -19,6 +19,34 @@ function scriptRecTag() {
   });
 }
 
+function scriptRecGo() {
+  if (typeof parlayLeg === "undefined" || !parlayLeg.size) return;
+  const sig = scriptRecSig([...parlayLeg.values()]);
+  const find = () => [...document.querySelectorAll("#desk-glass-in .find-bets .find-script-tabs button")].find((tab) => tab.dataset.sig === sig);
+  const flip = () => [...document.querySelectorAll("#desk-glass-in .find-bets")].some((box) => {
+    const bets = box.scriptBets, game = box.scriptGame; if (!bets) return false;
+    const group = [bets, bets.stars].filter(Boolean).flatMap((set) => (set.groups || []).filter((row) => (row.parlays || []).some((parlay) => scriptRecSig(parlay.legs.map((at) => ({ ...set.picks[at], match: game.match }))) === sig)))[0];
+    const block = group && [...box.querySelectorAll(":scope > .find-script-bets")].find((node) => node.dataset.team === group.name), check = block && block.querySelector("label.find-script-stars input");
+    if (check) check.click(); return !!check;
+  });
+  const show = (tab) => {
+    const box = tab.closest(".find-bets"), block = tab.closest(".find-script-bets");
+    box.open = true; block.hidden = false; tab.click();
+    const tray = document.querySelector(".find-board .find-tray:not([hidden]):not(.find-shut)"), fold = tray && tray.querySelector(".find-fold");
+    if (fold) { fold.click(); if (typeof saveAutoShut !== "undefined") { saveAutoShut.add(tray); saveFoldAt = Date.now(); } }
+    block.style.scrollMarginTop = "5.5rem";
+    if (window.gameScrollQuit) gameScrollQuit();
+    if (typeof gameScrollTo === "function") gameScrollTo(block); else block.scrollIntoView({ block: "start" });
+  };
+  const now = find() || (flip() && find()); if (now) { show(now); return; }
+  const seek = document.querySelector(".find-tray:not([hidden]) button.find-leg-seek"); if (!seek) return;
+  seek.click();
+  let tries = 0, flipped = false;
+  const wait = setInterval(() => { const tab = find() || (!flipped && (flipped = flip()) && find()); if (tab || ++tries > 50) { clearInterval(wait); if (tab) show(tab); } }, 200);
+}
+
+document.addEventListener("click", (event) => { if (event.target.closest && event.target.closest(".find-tray .find-ticket > b i.rc")) scriptRecGo(); });
+
 function nbaScriptProps(people, match) {
   const rows = [];
   (people || []).forEach((person) => {
@@ -78,6 +106,7 @@ function scriptFitLine(legs, game) {
 function scriptBetsBox(bets, game, people) {
   const box = document.createElement("details"); box.className = "find-score find-script find-bets"; box.style.gridColumn = "1 / -1";
   box.innerHTML = `<summary><b class="find-script-head">Parlay's Recommended Bets</b></summary>`;
+  box.scriptBets = bets; box.scriptGame = game;
   const keep = {};
   const starOn = (name) => (localStorage.getItem(`scriptStars:${name}`) ?? localStorage.getItem("scriptStars")) === "1";
   const stars = (name) => {
@@ -140,8 +169,9 @@ function scriptBetsBlock(bets, group, game, people, keep = {}) {
     tabs.querySelectorAll("button").forEach((node) => node.classList.toggle("on", Number(node.dataset.size) === parlay.size));
     const legs = parlay.legs.map((at) => bets.picks[at]);
     const top = `<div class="find-script-top"><i class="px">${money(parlay.odds)}</i><i class="pct">${esc(parlay.need)}</i><i class="pay">$5 profits $${parlay.wins.toFixed(2)}</i>${parlay.size > 1 ? `<i class="sg">Same game</i>` : ""}</div>`;
-    const rows = legs.map((pick) => `<div class="find-script-leg"${scriptClubStyle(game, pick.team)}><i class="px">${money(pick.odds)}</i><i class="pct">${esc(typeof findPct === "function" ? findPct(pick.odds) : "")}</i><i class="who">${esc(pick.who)}</i><i class="tm">${esc([pick.team, pick.pos].filter(Boolean).join(" · "))}</i><i class="prop">${esc(pick.text)}</i></div>`).join("");
+    const rows = legs.map((pick) => `<div class="find-script-leg" data-who="${esc(pick.who)}" data-label="${esc(pick.label)}" data-market="${esc(pick.market)}" data-odds="${esc(pick.odds)}"${scriptClubStyle(game, pick.team)}><i class="px">${money(pick.odds)}</i><i class="pct">${esc(typeof findPct === "function" ? findPct(pick.odds) : "")}</i><i class="who">${esc(pick.who)}</i><i class="tm">${esc([pick.team, pick.pos].filter(Boolean).join(" · "))}</i><i class="prop">${esc(pick.text)}</i></div>`).join("");
     card.innerHTML = `${top}${rows}${parlay.how ? `<p class="find-script-why"><em>Why:</em> ${esc(parlay.how)}</p>` : ""}${parlay.size > 1 ? `<p class="find-script-proof">FanDuel prices same-game parlays itself, so the slip can pay less than this.</p>` : ""}`;
+    if (game.sport === "NBA" && typeof proofScript === "function") proofScript(card);
     const go = document.createElement("button"); go.type = "button"; go.className = "find-script-add"; go.textContent = "Build it";
     go.addEventListener("click", () => {
       if (typeof parlayLeg === "undefined") return;
@@ -168,6 +198,7 @@ function scriptBetsBlock(bets, group, game, people, keep = {}) {
   const sizes = [...new Set([...(group.name === "Both teams" ? [2, 3, 4] : [1, 2, 3, 4]), ...group.parlays.map((parlay) => parlay.size)])].sort((a, b) => a - b);
   sizes.forEach((size) => {
     const parlay = group.parlays.find((row) => row.size === size), tab = document.createElement("button"); tab.type = "button"; tab.dataset.size = size; tab.textContent = size === 1 ? "Single" : `${size} legs`;
+    if (parlay) tab.dataset.sig = scriptRecSig(parlay.legs.map((at) => ({ ...bets.picks[at], match: game.match })));
     if (parlay) tab.addEventListener("click", (event) => { event.preventDefault(); keep[group.name] = size; show(parlay); }); else { tab.disabled = true; tab.title = "Not enough bets clear their price for this size"; }
     tabs.append(tab);
   });
