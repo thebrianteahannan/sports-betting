@@ -160,15 +160,16 @@ function homeGamesPaint() {
   const desk = document.getElementById("desk"), bg = document.getElementById("desk-bg"), guide = document.getElementById("bird-guide");
   if (!desk || !bg) return;
   let box = document.getElementById("desk-games");
-  if (!box) { box = document.createElement("div"); box.id = "desk-games"; box.hidden = true; desk.append(box); }
+  if (!box) { box = document.createElement("div"); box.id = "desk-games"; box.hidden = true; desk.append(box); homeGamesGrow(box); }
   const now = Date.now(), games = homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now), fresh = typeof sharedUnopened === "function" ? sharedUnopened() : [];
   const top = Math.ceil(bg.getBoundingClientRect().bottom - desk.getBoundingClientRect().top);
   const show = (fresh.length > 0 || games.length > 0) && !document.body.classList.contains("needs-member") && !desk.classList.contains("tv-full") && Boolean(guide && !guide.hidden) && desk.clientHeight - top >= 160;
   box.hidden = !show;
   document.body.classList.toggle("home-games-on", show);
-  if (!show) return;
-  box.style.top = `${top}px`;
-  document.body.style.setProperty("--home-games-top", `${top + 12}px`);
+  if (!show) { box.classList.remove("desk-games-tall"); return; }
+  const menu = document.getElementById("desk-menu"), at = box.classList.contains("desk-games-tall") && menu ? Math.ceil(menu.getBoundingClientRect().bottom - desk.getBoundingClientRect().top) + 8 : top;
+  box.style.top = `${at}px`;
+  document.body.style.setProperty("--home-games-top", `${at + 12}px`);
   if (!fresh.length && homeGamesTab === "rec") homeRecsLoad();
   const sig = `${window.memberName || ""}|${homeGamesTab}|${homeRecMine ? "mine" : ""}:${(window.memberTeams || []).join(",")}|${homeRecs ? `${homeRecs.at}${homeRecs.loading ? "…" : ""}` : ""}|${fresh.length ? `shared:${fresh.map((item) => item.id).join(";")}` : games.map((game) => `${game.match}|${game.kickoff}`).join(";")}`;
   if (box.dataset.sig === sig) return;
@@ -183,6 +184,15 @@ function homeGamesPaint() {
   who.textContent = window.memberName || "";
   head.append(fresh.length ? said : homeGamesTabs(box, games), who);
   box.replaceChildren(head, ...(fresh.length ? fresh.map(homeSharedRow) : homeGamesTab === "rec" ? homeRecRows(games) : homeGameRows(games)));
+}
+
+function homeGamesGrow(box) {
+  const set = (tall) => { if (box.classList.contains("desk-games-tall") === tall) return; box.classList.toggle("desk-games-tall", tall); homeGamesPaint(); };
+  let touchY = 0;
+  box.addEventListener("scroll", () => { if (box.scrollTop > 8) set(true); }, { passive: true });
+  box.addEventListener("wheel", (event) => { if (event.deltaY < 0 && box.scrollTop <= 0) set(false); }, { passive: true });
+  box.addEventListener("touchstart", (event) => { touchY = event.touches[0].clientY; }, { passive: true });
+  box.addEventListener("touchmove", (event) => { if (event.touches[0].clientY > touchY + 12 && box.scrollTop <= 0) set(false); }, { passive: true });
 }
 
 setInterval(() => { homeGamesLoad(); homeGamesPaint(); }, 500);

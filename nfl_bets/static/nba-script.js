@@ -11,6 +11,13 @@ function scriptRecKeep(bets, game) {
 }
 
 function scriptRecTag() {
+  const recLegs = new Set([...scriptRecSigs].flatMap((sig) => sig.split("||")));
+  if (typeof parlayLeg !== "undefined") document.querySelectorAll(".find-tray .find-chose").forEach((line) => {
+    const hist = line.querySelector("button.find-leg-hist"), key = (hist && hist.dataset.key) || line.dataset.key, prop = line.querySelector("span i.prop"), bet = key && parlayLeg.get(key);
+    if (!prop || !bet) return;
+    const pill = line.querySelector(".find-rec-pill") || scriptRecPill(bet) || (recLegs.has(scriptRecSig([bet])) && scriptRecPill({ ...bet, rec: true }));
+    if (pill) prop.after(pill);
+  });
   if (typeof parlayLeg === "undefined" || !parlayLeg.size || !scriptRecSigs.has(scriptRecSig([...parlayLeg.values()]))) return;
   document.querySelectorAll(".find-tray .find-ticket > b").forEach((head) => {
     if (head.querySelector("i.rc")) return;
@@ -22,7 +29,7 @@ function scriptRecTag() {
 const scriptRecAll = new Set();
 
 function scriptRecPill(bet) {
-  if (!bet || !scriptRecAll.has(`${bet.label}|${bet.market}`)) return null;
+  if (!bet || !(bet.rec || scriptRecAll.has(`${bet.label}|${bet.market}`))) return null;
   const pill = document.createElement("i");
   pill.className = "find-rec-pill"; pill.textContent = "Recommended"; pill.title = "Parlay recommends this bet";
   return pill;

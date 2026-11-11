@@ -57,7 +57,7 @@ function proofTray() {
     if (!bet || !prop || !who || bet.sport !== "NBA" || line.querySelector(".find-proof")) return;
     if (!proofData.has(who.textContent)) { proofAsk(who.textContent, bet.sport); return; }
     const tip = proofOf(who.textContent, bet.market, bet.label, bet.odds);
-    if (tip) prop.after(proofPill(tip));
+    if (tip) (line.querySelector(".find-rec-pill") || prop).after(proofPill(tip));
   });
 }
 

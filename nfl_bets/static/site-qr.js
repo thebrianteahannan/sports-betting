@@ -21,5 +21,7 @@ function siteQrShow() {
 document.addEventListener("DOMContentLoaded", () => {
   const menu = document.getElementById("desk-menu");
   if (menu) menu.addEventListener("dblclick", (event) => { event.preventDefault(); siteQrShow(); });
+  let tapAt = 0;
+  if (menu) menu.addEventListener("click", () => { const now = Date.now(); if (now - tapAt < 400) { tapAt = 0; siteQrShow(); } else tapAt = now; });
   document.addEventListener("keydown", (event) => { if (event.key === "Escape") siteQrShut(); });
 });
