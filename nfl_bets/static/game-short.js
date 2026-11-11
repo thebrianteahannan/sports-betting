@@ -36,3 +36,18 @@ function gameShort(match) {
 function gameShortList(legs) {
   return [...new Set((legs || []).map((leg) => gameShort(leg.match)).filter(Boolean))].join(", ");
 }
+
+document.addEventListener("click", (event) => {
+  const tag = event.target.closest && event.target.closest(".find-board .find-ticket i.gm[data-game]");
+  if (!tag || typeof paintMatch !== "function" || typeof parlayLeg === "undefined") return;
+  const board = tag.closest(".find-board");
+  const leg = [...parlayLeg.values()].find((row) => gameShort(row.match) === tag.dataset.game);
+  const teams = board.querySelector(":scope > .find-teams"), list = board.querySelector(":scope > .find-list"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)"), span = board.querySelector(":scope > .find-span"), more = board.querySelector(".find-games-go");
+  if (!leg || !teams || !list) return;
+  if (hits) hits.replaceChildren();
+  teams.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on");
+  if (span) { span.classList.add("find-picked"); span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); }
+  if (more) more.hidden = false;
+  paintMatch(teams, leg, board.people || [], list, hits, true);
+  teams.scrollIntoView({ block: "start", behavior: "smooth" });
+});

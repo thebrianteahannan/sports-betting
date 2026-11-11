@@ -48,7 +48,7 @@ function reasons(team, foe, base, one, outs, both) {
 function goodProps(rows, log, read, loose, star) {
   const found = [];
   rows.forEach(({ prop, odds, label, market }) => {
-    const keys = STATS[prop.stat];
+    const keys = prop.keys || STATS[prop.stat];
     if (!keys || !Number.isFinite(Number(odds)) || odds < -500 || odds > 250) return;
     const against = keys.map((key) => read.hard.includes(key) && read.against[key]).find(Boolean) || "";
     if (keys.some((key) => read.hard.includes(key)) && !star) return;
@@ -57,7 +57,7 @@ function goodProps(rows, log, read, loose, star) {
     const chance = (hits + 0.5) / (log.length + 1), need = 1 / dec(odds), edge = chance - need;
     if (hits / log.length < (loose ? 0.55 : 0.6) || edge < (loose ? 0 : 0.02)) return;
     const score = edge + 0.25 * chance + (why ? 0.1 + Math.min(why.w, 4) * 0.02 : 0);
-    found.push({ text: prop.text, stat: prop.stat, reach: prop.need, avg: sums.reduce((a, b) => a + b, 0) / sums.length, odds: Number(odds), label, market, hits, n: log.length, chance, need, edge, score, why: why ? why.text : "", against });
+    found.push({ text: prop.text, stat: prop.stat, keys, word: prop.word, reach: prop.need, avg: sums.reduce((a, b) => a + b, 0) / sums.length, odds: Number(odds), label, market, hits, n: log.length, chance, need, edge, score, why: why ? why.text : "", against });
   });
   return found.sort((a, b) => b.score - a.score);
 }
@@ -66,14 +66,17 @@ function sign(odds) { return odds > 0 ? `+${odds}` : String(odds); }
 
 function howPick(pick) {
   const rate = pick.hits / pick.n;
-  return `He averages ${n1(pick.avg)} ${WORDS[pick.stat]} over his last ${pick.n} games and reached ${pick.reach} in ${pick.hits} of them (${Math.round(rate * 100)}%). At ${sign(pick.odds)} the bet needs ${pct(pick.need)}, so his record clears the price by ${n1((rate - pick.need) * 100)} percentage points.${pick.why ? ` The script backs it: ${pick.why}` : ""}${pick.against ? ` The matchup works against it: ${pick.against}` : ""}`;
+  return `He averages ${n1(pick.avg)} ${pick.word || WORDS[pick.stat]} over his last ${pick.n} games and reached ${pick.reach} in ${pick.hits} of them (${Math.round(rate * 100)}%). At ${sign(pick.odds)} the bet needs ${pct(pick.need)}, so his record clears the price by ${n1((rate - pick.need) * 100)} percentage points.${pick.why ? ` The script backs it: ${pick.why}` : ""}${pick.against ? ` The matchup works against it: ${pick.against}` : ""}`;
 }
 
 function howTicket(legs, kind, teams) {
   const name = (pick) => last(pick.who), rec = (pick) => `${name(pick)} ${pick.hits} of ${pick.n}`;
   const edged = legs.filter((pick) => pick.why).length;
-  const edge = edged ? ` ${edged === legs.length ? "Every leg" : `${edged} of the ${legs.length} legs`} also ${edged === legs.length || edged === 1 ? "has" : "have"} a matchup edge from the script.` : "";
-  if (legs.length === 1) return `Of the ${legs[0].team} props, ${name(legs[0])}'s record beats its price by the most: ${legs[0].hits} of ${legs[0].n} against the ${pct(legs[0].need)} the price needs.${legs[0].why ? " The script backs it too." : ""}`;
+  const byWhy = new Map();
+  legs.filter((pick) => pick.why).forEach((pick) => byWhy.set(pick.why, (byWhy.get(pick.why) || []).concat(name(pick))));
+  const and = (list) => (list.length < 3 ? list.join(" and ") : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`);
+  const edge = edged ? ` Matchup edges: ${[...byWhy].map(([why, names]) => `${and(names)}: ${why}`).join(" ")}` : "";
+  if (legs.length === 1) return `Of the ${legs[0].team} props, ${name(legs[0])}'s record beats its price by the most: ${legs[0].hits} of ${legs[0].n} against the ${pct(legs[0].need)} the price needs.${legs[0].why ? ` The script backs it: ${legs[0].why}` : ""}`;
   if (kind === "both") return `${name(legs[0])} has the most reliable ${legs[0].team} prop and ${name(legs[1])} the most reliable ${legs[1].team} prop${legs.length > 2 ? `, then ${legs.slice(2).map(rec).join(" and ")} add the next best records from either side` : ""}. Every leg's record clears its own break-even.${edge}`;
   return `The ${legs.length} ${teams} props with the best hit records: ${legs.map(rec).join(", ")}. Every leg's record clears its own break-even.${edge}`;
 }
@@ -121,13 +124,17 @@ function betsFrom(game, boxes, fives, outs, props, star) {
       const loose = goodProps(rows, row.log || [], read, true, star).map((prop) => ({ ...tag, ...prop }));      if (strict.length || loose.length) picks.push({ team: tag.team, strict, loose });
     });
   });
+  return ticketsFrom(picks, away, home);
+}
+
+function ticketsFrom(picks, away, home) {
   const rank = (a, b) => (b.why ? 1 : 0) - (a.why ? 1 : 0) || b.score - a.score;
   const sure = (rows) => rows.slice().sort((a, b) => b.chance - a.chance);
   const teams = [away, home].map((team) => {
     const mine = picks.filter((pick) => pick.team === last(team.name));
     let rows = mine.filter((pick) => pick.strict.length).map((pick) => pick.strict[0]).sort(rank);
     if (rows.length < 4) rows = rows.concat(mine.filter((pick) => !pick.strict.length).map((pick) => pick.loose[0]).sort(rank));
-    if (rows.length < 4) mine.forEach((pick) => { const first = pick.strict[0] || pick.loose[0], more = (pick.strict.length > 1 ? pick.strict : pick.loose).find((prop) => prop.stat !== first.stat && !STATS[prop.stat].some((key) => STATS[first.stat].includes(key))); if (more && rows.length < 4) rows.push(more); });
+    if (rows.length < 4) mine.forEach((pick) => { const first = pick.strict[0] || pick.loose[0], more = (pick.strict.length > 1 ? pick.strict : pick.loose).find((prop) => prop.stat !== first.stat && !prop.keys.some((key) => first.keys.includes(key))); if (more && rows.length < 4) rows.push(more); });
     return rows.slice(0, 5);
   });
   const top = teams.flat();
@@ -145,4 +152,4 @@ function betsFrom(game, boxes, fives, outs, props, star) {
   return { picks: top.map(({ chance, score, edge, avg, reach, ...rest }) => ({ ...rest, how: howPick({ ...rest, avg, reach }), need: pct(rest.need) })), groups };
 }
 
-module.exports = { scriptBets, readProp };
+module.exports = { scriptBets, readProp, goodProps, ticketsFrom };

@@ -21,7 +21,7 @@ const { createIgnore } = require("./desk-ignore");
 const { createAdmins } = require("./desk-admins");
 const { createDocs } = require("./desk-docs"); const { chooseBet } = require("./choose-api");
 const { createPull } = require("./desk-pull");
-const { createNotes } = require("./desk-notes"); const { createLooks } = require("./desk-looks"); const { createShelve } = require("./desk-shelve");
+const { createNotes } = require("./desk-notes"); const { createShelve } = require("./desk-shelve");
 const { createResearch } = require("./desk-research"); const { propLog } = require("./prop-log"); const { askTerm } = require("./bet-ask"); const { slipList, slipPost } = require("./slip-api"); const { howsPost } = require("./hows-api"); const { parlayList, parlayPut, parlayArchive } = require("./parlay-api"); const friendsApi = require("./friends-api");
 const ROOT = __dirname;
 loadEnv(path.join(ROOT, ".env"));
@@ -100,7 +100,7 @@ async function archive() {
 const { ignoreView, sweepIgnored } = createIgnore(readKey, writeKey, archive);
 const pullLive = createPull(readKey, writeKey, ROOT);
 const { adminList, setMemberAdmin, saveAsk, noteTaste, saveRated } = createAdmins(readKey, writeKey);
-const { list: noteList, save: noteSave } = createNotes(readKey, writeKey); const { list: lookList, save: lookSave } = createLooks(readKey, writeKey); const { cards: shelvedCards, save: shelveSave } = createShelve(readKey, writeKey);
+const { list: noteList, save: noteSave } = createNotes(readKey, writeKey); const { cards: shelvedCards, save: shelveSave } = createShelve(readKey, writeKey);
 const researchBet = createResearch(readKey);
 
 async function picks() {
@@ -399,7 +399,7 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/ones.js", "/stack.js", "/stack-more.js", "/game-stacks.js", "/stack-grade.js", "/close-calls.js", "/nba-script.js", "/blowout-proof.js", "/hows.js", "/player-card.js", "/find.js", "/game-note.js", "/sift.js", "/find-sort.js", "/find-roster.js", "/club-theme.css", "/club-theme.js", "/tray-stack.js", "/club-colors.js", "/prop-seek.js", "/band-pick.js", "/top-bar.css", "/top-bar.js", "/game-guide.js", "/bet-shot.js", "/game-short.js", "/game-until.js", "/game-done.js", "/parlay-save.js", "/parlay-archive.js", "/friends.js", "/leg-hist.js", "/leg-swap.js", "/leg-new.js", "/live-stats.js", "/td-dive.js", "/terms.js", "/prop-lines.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/bet-ask.js", "/ask-bet.css", "/find-tray.css", "/slip.js", "/us-map.svg", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/ones.js", "/stack.js", "/stack-more.js", "/game-stacks.js", "/stack-grade.js", "/close-calls.js", "/nba-script.js", "/blowout-proof.js", "/hows.js", "/player-card.js", "/find.js", "/game-note.js", "/sift.js", "/find-sort.js", "/find-roster.js", "/club-theme.css", "/club-theme.js", "/tray-stack.js", "/club-colors.js", "/prop-seek.js", "/band-pick.js", "/top-bar.css", "/top-bar.js", "/game-guide.js", "/bet-shot.js", "/game-short.js", "/game-until.js", "/game-done.js", "/parlay-save.js", "/parlay-archive.js", "/friends.js", "/leg-hist.js", "/leg-swap.js", "/leg-new.js", "/search-habit.js", "/live-stats.js", "/td-dive.js", "/terms.js", "/prop-lines.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/bet-ask.js", "/ask-bet.css", "/find-tray.css", "/slip.js", "/us-map.svg", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
       serveStatic(res, url.pathname.slice(1));
       return;
     }
@@ -414,7 +414,7 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, await adminList());
       return;
     }
-    if (req.method === "GET" && (url.pathname === "/api/friends" || url.pathname === "/api/shared")) { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, url.pathname === "/api/friends" ? await friendsApi.friendsView(user, readKey, loadMembers) : await friendsApi.sharedList(user, readKey)); return; } if (req.method === "GET" && url.pathname === "/api/parlays/archive") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await parlayArchive(user, readKey, writeKey)); return; } if (req.method === "GET" && url.pathname === "/api/parlays") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await parlayList(user, readKey)); return; } if (req.method === "GET" && (url.pathname === "/api/notes" || url.pathname === "/api/looks" || url.pathname === "/api/slip")) { if (url.pathname === "/api/slip") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await slipList(user, readKey, writeKey)); return; } sendJson(res, url.pathname.endsWith("/looks") ? await lookList() : await noteList()); return; }
+    if (req.method === "GET" && (url.pathname === "/api/friends" || url.pathname === "/api/shared")) { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, url.pathname === "/api/friends" ? await friendsApi.friendsView(user, readKey, loadMembers) : await friendsApi.sharedList(user, readKey)); return; } if (req.method === "GET" && url.pathname === "/api/parlays/archive") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await parlayArchive(user, readKey, writeKey)); return; } if (req.method === "GET" && url.pathname === "/api/parlays") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await parlayList(user, readKey)); return; } if (req.method === "GET" && (url.pathname === "/api/notes" || url.pathname === "/api/slip")) { if (url.pathname === "/api/slip") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await slipList(user, readKey, writeKey)); return; } sendJson(res, await noteList()); return; }
     if (req.method === "GET" && url.pathname === "/api/admin/ignore") {
       const user = await memberFrom(req);
       if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
@@ -553,10 +553,10 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, await sweepIgnored());
         return;
       }
-      if (url.pathname === "/api/admin/notes" || url.pathname === "/api/admin/shelve" || url.pathname === "/api/admin/looks") {
+      if (url.pathname === "/api/admin/notes" || url.pathname === "/api/admin/shelve") {
         const user = await memberFrom(req);
         if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
-        sendJson(res, url.pathname.endsWith("/looks") ? await lookSave(body) : url.pathname.endsWith("/shelve") ? await shelveSave(body) : await noteSave(body));
+        sendJson(res, url.pathname.endsWith("/shelve") ? await shelveSave(body) : await noteSave(body));
         return;
       }
       if (url.pathname === "/api/admin/role") {

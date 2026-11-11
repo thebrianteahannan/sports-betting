@@ -109,6 +109,9 @@ body.needs-member #activity { display: none; }
 body:not(.needs-member) #gate { display: none; }
 #activity { margin-top: 0.8rem; }
 #activity p { margin: 0.25rem 0; }
+#activity h2 .admin-tag { display: inline-block; margin-left: 0.7rem; padding: 0.2rem 0.65rem; vertical-align: middle; border: 1px solid #3dff6e; border-radius: 999px; background: rgba(61, 255, 110, 0.14); color: #3dff6e; font-size: 14px; line-height: 1.2; letter-spacing: 0.08em; text-transform: uppercase; }
+#activity .profile-block, #profile-admin, #desk #desk-glass #profile-admin { margin: 0.8rem 0 0; padding: 0.8rem 1rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: rgba(4, 16, 12, 0.82); }
+#desk.tv-full #desk-glass #profile-admin { box-sizing: border-box; width: calc(100% - 56px); max-width: 824px; margin: 1.2rem auto 0; }
 .report-form label { margin-top: 0.7rem; }
 .report-form textarea, .report-form input[type="file"] {
   display: block;

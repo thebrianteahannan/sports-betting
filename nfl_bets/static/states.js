@@ -97,7 +97,9 @@ function applyMember(code) {
   const row = STATE_LAW[String(code || "").toUpperCase()];
   window.memberState = row ? row.code : "";
   window.memberLaw = row ? row.kind : "";
-  ["member-state", "call-state", "laws-state"].forEach((id) => fillStateSelect(document.getElementById(id), window.memberState));
+  ["member-state", "laws-state"].forEach((id) => fillStateSelect(document.getElementById(id), window.memberState));
+  const callPick = document.getElementById("call-state-pick");
+  if (callPick && window.saveState) paintStatePick(callPick, saveState, window.memberState);
   fillBookSelect(document.getElementById("call-book"));
   if (document.getElementById("pane-laws") && !document.getElementById("pane-laws").hidden) paintLaws();
 }
@@ -134,7 +136,7 @@ function paintLaws() {
   fetch("/us-map.svg").then((response) => response.text()).then((text) => { lawsMap = text; map.innerHTML = text; draw(); }).catch(() => { map.textContent = "The map did not load."; });
 }
 
-function paintStatePick(row, save) {
+function paintStatePick(row, save, current) {
   const names = Object.values(STATE_LAW).sort((a, b) => a.name.localeCompare(b.name));
   row.innerHTML = `<div class="state-combo"><input id="bird-state" type="text" placeholder="Type your state" autocomplete="off" spellcheck="false"><button type="button" class="state-combo-drop" aria-label="Show all states">▾</button><div class="state-combo-list" hidden></div></div><button type="button" id="bird-state-go">That's my state</button><div id="bird-map"></div>`;
   const input = row.querySelector("#bird-state"), list = row.querySelector(".state-combo-list"), map = row.querySelector("#bird-map");
@@ -166,6 +168,7 @@ function paintStatePick(row, save) {
     });
     mark();
   };
+  if (current) choose(current);
   if (lawsMap) draw(lawsMap); else fetch("/us-map.svg").then((response) => response.text()).then((text) => { lawsMap = text; draw(text); }).catch(() => { map.hidden = true; });
 }
 
@@ -197,5 +200,4 @@ window.bookLink = bookLink;
 window.fillBookSelect = fillBookSelect;
 window.stateName = stateName;
 fillStateSelect(document.getElementById("member-state"));
-fillStateSelect(document.getElementById("call-state"));
 fillBookSelect(document.getElementById("call-book"));

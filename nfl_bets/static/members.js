@@ -62,7 +62,8 @@ function showMember(payload) {
   const admin = !!member.admin;
   who.innerHTML = `<button type="button" id="member-profile" aria-label="Profile" title="${esc(member.name)}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.5-3.1 4-4.6 7-4.6s5.5 1.5 7 4.6"/></svg></button>`;
   const heading = document.querySelector("#activity h2");
-  if (heading) heading.textContent = member.name || "Your membership";
+  window.memberAdmin = admin;
+  if (heading) heading.innerHTML = `${esc(member.name || "Your membership")}${admin ? `<span class="admin-tag">Admin</span>` : ""}`;
   window.memberName = member.name || "";
   window.memberBorn = member.born || "";
   window.memberState = member.state || "";
@@ -79,9 +80,8 @@ function showMember(payload) {
   const adminBox = document.getElementById("profile-admin");
   if (adminBox) adminBox.hidden = !admin;
   const plan = document.getElementById("activity-plan");
-  plan.textContent = admin
-    ? "Admin. Ratings are kept on this membership."
-    : "Free membership. Payments are not turned on. Ratings are kept on this membership.";
+  plan.hidden = admin;
+  plan.textContent = admin ? "" : "Free membership. Payments are not turned on. Ratings are kept on this membership.";
   const rows = payload.activity || [];
   window.ratedBuilt = rows.filter((row) => row.kind === "rate" && row.detail && row.detail.built && Number(row.detail.stars) > 0).map((row) => ({
     id: row.id, built: true, title: row.detail.title || "Built bet", american: row.detail.american,
@@ -296,7 +296,7 @@ async function saveCalledName(raw) {
   if (!response.ok) return;
   window.memberName = (payload.member && payload.member.name) || "";
   const heading = document.querySelector("#activity h2");
-  if (heading) heading.textContent = window.memberName || "Your membership";
+  if (heading) heading.innerHTML = `${esc(window.memberName || "Your membership")}${window.memberAdmin ? `<span class="admin-tag">Admin</span>` : ""}`;
   const call = document.getElementById("call-name");
   if (call) call.value = window.memberName;
   const who = document.querySelector("#member-profile");
@@ -472,7 +472,6 @@ document.getElementById("bird-guide").addEventListener("pointerdown", (event) =>
 document.getElementById("pane-profile").addEventListener("click", (event) => {
   if (event.target.closest("#member-out")) signOut();
   if (event.target.closest("#call-save")) saveCalledName(document.getElementById("call-name").value);
-  if (event.target.closest("#state-save")) saveState(document.getElementById("call-state").value);
   if (event.target.closest("#book-save")) saveBook(document.getElementById("call-book").value);
 });
 window.birdGreet = birdGreet;

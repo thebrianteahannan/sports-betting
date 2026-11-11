@@ -178,7 +178,7 @@ function plays(groups, game, boxes) {
 
 async function build(body, board) {
   const game = ((board && board.games) || []).find((row) => row.match === body.match && row.kickoff === body.kickoff);
-  if (game && (game.sport === "NFL" || game.sport === "NHL")) return require("./sport-story").buildSport(game, board);
+  if (game && (game.sport === "NFL" || game.sport === "NHL")) return require("./sport-story").buildSport(game, board, body.props);
   if (!game || game.sport !== "NBA") return { sections: [] };
   const [boxes, read] = await Promise.all([
     gameBoxes(game.awayName, game.homeName).catch(() => null),

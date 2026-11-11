@@ -452,7 +452,7 @@ function paintTrayBuild(tray) {
   line.className = "find-ticket";
   const head = document.createElement("b");
   const tag = price > 0 ? `+${price}` : String(price);
-  head.innerHTML = [tag && `<i class="px">${esc(tag)}</i>`, findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`, findCash(price) && `<i class="pay">${esc(`$5 profits ${findCash(price)}`)}</i>`, ((rows) => { const games = rows.map((leg) => String(leg.match || leg.gameId || "")); return games.length > 1 && games.every(Boolean) && new Set(games).size === 1; })(legs) && `<i class="sg">Same game</i>`, typeof gameShortList === "function" && gameShortList(legs) && `<i class="gm">${esc(gameShortList(legs))}</i>`].filter(Boolean).join("");
+  head.innerHTML = [tag && `<i class="px">${esc(tag)}</i>`, findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`, findCash(price) && `<i class="pay">${esc(`$5 profits ${findCash(price)}`)}</i>`, ((rows) => { const games = rows.map((leg) => String(leg.match || leg.gameId || "")); return games.length > 1 && games.every(Boolean) && new Set(games).size === 1; })(legs) && `<i class="sg">Same game</i>`, typeof gameShortList === "function" && gameShortList(legs) && gameShortList(legs).split(", ").map((game) => `<i class="gm" data-game="${esc(game)}" role="button" title="Open this game">${esc(game)}</i>`).join("")].filter(Boolean).join("");
   const share = document.createElement("button");
   share.type = "button";
   share.className = "share-bet";

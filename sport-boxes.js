@@ -123,7 +123,7 @@ function playerBook(sport, rows) {
   rows.forEach((row) => row.team.people.forEach((one) => { const list = book.get(one.name) || []; list.push(one); book.set(one.name, list); }));
   const out = {};
   const keys = sport === "NFL" ? ["passAtt", "passYds", "passTd", "rushAtt", "rushYds", "rushTd", "tgt", "rec", "recYds", "recTd"] : ["toi", "pptoi", "shots", "goals", "ast", "blk", "hits"];
-  book.forEach((list, name) => { const row = { games: list.length, pos: list[0].pos }; keys.forEach((key) => { row[key] = avg(list, (one) => one[key]); }); out[name] = row; });
+  book.forEach((list, name) => { const row = { games: list.length, pos: list[0].pos, log: list }; keys.forEach((key) => { row[key] = avg(list, (one) => one[key]); }); out[name] = row; });
   return out;
 }
 

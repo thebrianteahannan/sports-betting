@@ -9,7 +9,7 @@ function loginWhen(stamp) {
 }
 
 function showAdminTab(name) {
-  ["members", "habits", "strategy", "reads", "notes", "laws", "errors"].forEach((id) => {
+  ["members", "habits", "notes", "laws", "errors"].forEach((id) => {
     const pane = document.getElementById(`admin-${id}`);
     if (pane) pane.hidden = id !== name;
     const button = document.querySelector(`[data-admin-tab="${id}"]`);
@@ -42,49 +42,6 @@ function paintBoardErrors(errors) {
 function adminCard(head, gist, lines, extra) {
   const more = (lines || []).map((line) => `<span>${esc(line)}</span>`).join("");
   return `<div class="rec-bet"><b>${head}</b>${gist ? `<p class="rec-gist">${gist}</p>` : ""}${more}${extra || ""}</div>`;
-}
-
-function paintStrategies() {
-  const list = document.getElementById("admin-strategy-cards");
-  const names = window.CARD_NAMES || {};
-  if (!list) return;
-  const say = {
-    band: "The ticket on today's slate whose price lands between −150 and +100. Shorter prices, like −800, stay off this card.",
-    safe2: "Both legs are 75% or better.",
-    todayBet: "The parlay on today's slate with the highest chance.",
-    mid3: "Every leg is priced from −250 to −400.",
-    chalk: "Legs priced from −400 to −700 that multiply to about −180.",
-    win4: "Every leg is priced from −150 to −300.",
-    four: "Four small yardage prices, each near an 85% chance. Together that is about a coin flip, not an 85% parlay.",
-    plusLegs: "Both legs are priced from +100 to +200.",
-    plus: "Four small yardage legs aimed at +250. That price is about 29%, so it misses more often than it hits.",
-    mix21: "Two favorites and one underdog, each from a different game.",
-    hits: "The higher combined chance is the stack that hits more often. A 90% leg is not a 90% parlay.",
-    low3: "Three legs priced close to each other, each from a different game.",
-    weekThree: "Player props on different days, aimed at −200, so a $5 bet wins about $2.50.",
-    yards3: "Three yardage legs, each near an 80% price.",
-    weekFive: "Five legs on different days, aimed at −200.",
-    ou4: "Two overs and two unders, each from a different game.",
-    weekSafe: "Three legs on different days, near −350.",
-    alt3: "Three alt lines, each at 85% or better.",
-    weekEven: "Three legs on different days, near −100. That is even money, so a $5 bet wins $5.",
-    games4: "One player from each of four games.",
-    early3: "Legs from games that start before 4:00 PM ET.",
-    prime3: "Three legs from games that start at 7:00 PM ET or later.",
-    weekend4: "Four legs from Saturday and Sunday games.",
-    td2: "Two NFL players, each scoring one anytime touchdown, in a game totaled at 47 or higher.",
-    td3: "Three NFL players, each scoring one anytime touchdown, in a game totaled at 47 or higher.",
-    pay5: "A $5 bet aimed at winning $5.",
-    pay10: "A $5 bet aimed at winning $10.",
-    pay15: "A $5 bet aimed at winning $15.",
-    pay20: "A $5 bet aimed at winning $20.",
-    pay25: "A $5 bet aimed at winning $25.",
-    pay50: "A $5 bet aimed at winning $50.",
-    pra: "A player who scores, boards, and passes, on a points + rebounds + assists over he has cleared more often than not.",
-    sixth: "The first reserve, in a game the spread says can get away, on a prop he has cleared in blowouts more often than not.",
-  };
-  const rows = Object.entries(names).flatMap(([id, name]) => id === "hits" ? [["Five near 90% each", say.hits], ["Four near 80% each", say.hits]] : [[name, say[id] || ""]]);
-  list.innerHTML = rows.map(([name, line]) => adminCard(esc(name), esc(line))).join("");
 }
 
 function paintHabits(payload) {
@@ -159,9 +116,7 @@ function bindAdmin() {
       if (button.dataset.adminTab === "experimental") { if (window.birdMenu) birdMenu("bets"); return; }
       showAdminTab(button.dataset.adminTab);
       if (button.dataset.adminTab === "habits") loadAdmin();
-      if (button.dataset.adminTab === "strategy") paintStrategies();
       if (button.dataset.adminTab === "notes") loadNotes().catch((error) => { const msg = document.getElementById("note-msg"); if (msg) msg.textContent = String(error.message || error); });
-      if (button.dataset.adminTab === "reads") loadLooks().catch((error) => { const msg = document.getElementById("look-msg"); if (msg) msg.textContent = String(error.message || error); });
       if (button.dataset.adminTab === "laws" && window.paintLaws) window.paintLaws();
     }
   });
@@ -204,29 +159,6 @@ async function pullCard(id, button) {
   if (window.state && window.state.board) window.state.board[id] = payload.card;
   if (banner) banner.hidden = true;
   if (window.render) window.render();
-}
-
-function paintLooks(payload) {
-  const list = document.getElementById("look-list");
-  if (!list) return;
-  const rows = (payload && payload.looks) || [];
-  list._looks = rows;
-  list.innerHTML = rows.length ? rows.map((row) => adminCard(esc(row.name), esc(row.gist), [], `<p class="pick-save"><button type="button" data-look-edit="${esc(row.id)}">Edit</button><button type="button" data-look-drop="${esc(row.id)}">Delete</button></p>`)).join("") : "<p>Nothing on the list.</p>";
-}
-
-async function loadLooks() {
-  const response = await fetch("/api/looks", { cache: "no-store" });
-  paintLooks(await response.json());
-}
-
-async function saveLook(body) {
-  const response = await fetch("/api/admin/looks", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  const payload = await response.json();
-  const msg = document.getElementById("look-msg");
-  if (!response.ok) { if (msg) msg.textContent = payload.error || "That one did not save."; return; }
-  if (msg) msg.textContent = "";
-  if (body.op === "add") { const name = document.getElementById("look-name"); const gist = document.getElementById("look-gist"); if (name) name.value = ""; if (gist) gist.value = ""; }
-  paintLooks(payload);
 }
 
 function paintNotes(payload) {
@@ -273,31 +205,6 @@ document.body.addEventListener("click", (event) => {
   }
 });
 
-document.body.addEventListener("click", (event) => {
-  const edit = event.target.closest("[data-look-edit]");
-  const drop = event.target.closest("[data-look-drop]");
-  const save = event.target.closest("[data-look-save]");
-  if (edit) {
-    const list = document.getElementById("look-list");
-    const row = ((list && list._looks) || []).find((item) => item.id === edit.dataset.lookEdit);
-    const card = edit.closest(".rec-bet");
-    if (row && card) card.innerHTML = `<p class="pick-save"><input data-look-name="${esc(row.id)}" maxlength="48" value="${esc(row.name)}"><input data-look-gist="${esc(row.id)}" maxlength="180" value="${esc(row.gist)}"><button type="button" data-look-save="${esc(row.id)}">Save</button></p>`;
-  }
-  if (drop) saveLook({ op: "delete", id: drop.dataset.lookDrop }).catch((error) => { const msg = document.getElementById("look-msg"); if (msg) msg.textContent = String(error.message || error); });
-  if (save) {
-    const name = document.querySelector(`[data-look-name="${save.dataset.lookSave}"]`);
-    const gist = document.querySelector(`[data-look-gist="${save.dataset.lookSave}"]`);
-    saveLook({ op: "edit", id: save.dataset.lookSave, name: name ? name.value : "", gist: gist ? gist.value : "" }).catch((error) => { const msg = document.getElementById("look-msg"); if (msg) msg.textContent = String(error.message || error); });
-  }
-});
-
-const lookAdd = document.getElementById("look-add");
-if (lookAdd) lookAdd.addEventListener("click", () => {
-  const name = document.getElementById("look-name");
-  const gist = document.getElementById("look-gist");
-  saveLook({ op: "add", name: name ? name.value : "", gist: gist ? gist.value : "" }).catch((error) => { const msg = document.getElementById("look-msg"); if (msg) msg.textContent = String(error.message || error); });
-});
-
 const noteAdd = document.getElementById("note-add");
 if (noteAdd) noteAdd.addEventListener("click", () => {
   const field = document.getElementById("note-new");
@@ -321,4 +228,3 @@ window.shelveStrategy = shelveStrategy;
 window.loadAdmin = loadAdmin;
 window.paintRefresh = paintRefresh;
 bindAdmin();
-paintStrategies();

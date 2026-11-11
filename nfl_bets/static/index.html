@@ -15,10 +15,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/app.css?v=47"/>
-<link rel="stylesheet" href="/desk.css?v=65"/>
-<link rel="stylesheet" href="/states.css?v=5"/>
-<link rel="stylesheet" href="/ask-bet.css?v=328"/><link rel="stylesheet" href="/find-tray.css?v=103"/><link rel="stylesheet" href="/club-theme.css?v=9"/><link rel="stylesheet" href="/top-bar.css?v=7"/>
+<link rel="stylesheet" href="/app.css?v=50"/>
+<link rel="stylesheet" href="/desk.css?v=66"/>
+<link rel="stylesheet" href="/states.css?v=6"/>
+<link rel="stylesheet" href="/ask-bet.css?v=328"/><link rel="stylesheet" href="/find-tray.css?v=104"/><link rel="stylesheet" href="/club-theme.css?v=9"/><link rel="stylesheet" href="/top-bar.css?v=7"/>
 <style>
 #page-title { display: none; } #who { position: fixed; right: 0.7rem; bottom: 0.7rem; z-index: 20; margin: 0; }
 #member-profile { width: 2.7rem; height: 2.7rem; padding: 0; display: grid; place-items: center; border: 1px solid rgba(61, 255, 110, 0.85); border-radius: 8px; background: rgba(4, 16, 12, 0.88); color: #3dff6e; box-shadow: 0 0 14px rgba(61, 255, 110, 0.35); }
@@ -363,21 +363,25 @@ body.day-board #parrot-load[hidden] { display: none; }
 <section class="tracked" id="activity">
   <h2>Your membership</h2>
   <p class="quiet" id="activity-plan"></p>
+  <div class="profile-block">
   <p class="quiet">What should the parrot call you? Leave it blank and the parrot will ask.</p>
   <p class="pick-save"><input id="call-name" maxlength="40" autocomplete="nickname" placeholder="Your name"><button type="button" class="ghost" id="call-save">Save</button><button type="button" class="ghost" id="member-out">Sign out</button></p>
+  </div>
+  <div class="profile-block">
   <p class="quiet">Your state decides which bets can be placed. If you switch states, some bets may no longer show up.</p>
-  <p class="pick-save"><select id="call-state"></select><button type="button" class="ghost" id="state-save">Save state</button></p>
+  <div id="call-state-pick"></div>
+  </div>
+  <div class="profile-block">
   <p class="quiet">Which sportsbook are you using? These prices are FanDuel's. Another book's number is usually close, and sometimes the same.</p>
-  <p class="pick-save"><select id="call-book"></select><button type="button" class="ghost" id="book-save">Save book</button></p>
+  <p class="pick-save"><select id="call-book"></select><button type="button" class="ghost" id="book-save">Save Your Sports Book</button></p>
+  </div>
 </section>
 <section class="tracked" id="profile-admin" hidden>
   <h2>Admin</h2>
   <nav class="tabs" id="admin-tabs">
     <button type="button" class="tab on" data-admin-tab="members">Members</button>
-    <button type="button" class="tab" data-admin-tab="habits">Habits</button>
-    <button type="button" class="tab" data-admin-tab="strategy">Strategy</button>
+    <button type="button" class="tab" data-admin-tab="habits">Member Habits</button>
     <button type="button" class="tab" data-admin-tab="experimental">Experimental</button>
-    <button type="button" class="tab" data-admin-tab="reads">Reads</button>
     <button type="button" class="tab" data-admin-tab="notes">Notepad</button>
     <button type="button" class="tab" data-admin-tab="laws">States</button><button type="button" class="tab" data-admin-tab="errors">Errors</button>
   </nav>
@@ -386,27 +390,6 @@ body.day-board #parrot-load[hidden] { display: none; }
     <p class="quiet" id="admin-refresh">FanDuel is checked every 10 minutes.</p>
     <p id="admin-role-note" class="quiet"></p>
     <div id="admin-users"></div>
-  </div>
-  <div id="admin-strategy" hidden>
-    <p class="quiet">These are the recommended bets on the desk. This does not send a bet.</p>
-    <h2>Standing rules</h2>
-    <div class="rec-bet"><b>No college player props</b><p class="rec-gist">FanDuel does not allow player prop bets in college. Pennsylvania lists the game and no player props. Leave college player props off the cards.</p></div>
-    <div class="rec-bet"><b>The desk does not send the bet</b><p class="rec-gist">A member types the line into their own FanDuel account.</p></div>
-    <div class="rec-bet"><b>Same-game price can differ</b><p class="rec-gist">Legs in one game move together. FanDuel's same-game button can charge a different number than the multiplied price on the card.</p></div>
-    <h2>Recommended bets</h2>
-    <div id="admin-strategy-cards"></div>
-  </div>
-  <div id="admin-reads" hidden>
-    <p class="quiet">These are the things a recent trend looks for. Add one, change it, or take it off.</p>
-    <div id="look-list"></div>
-    <p class="pick-save"><input id="look-name" maxlength="48" placeholder="Name"><input id="look-gist" maxlength="180" placeholder="What we look for"><button type="button" id="look-add">Add</button></p>
-    <p class="quiet" id="look-msg"></p>
-    <h2>Not on the desk yet</h2>
-    <p class="quiet">The longer notes are in the <a href="/doc-view.html?file=attributes.pdf" target="_blank" rel="noopener">reads PDF</a>.</p>
-    <div class="rec-bet"><b>The trip, in miles</b><p class="rec-gist">Miles since the last game.</p></div>
-    <div class="rec-bet"><b>Baseball specifics</b><p class="rec-gist">Park factor as its own number. Whether the pitcher throws left or right. An umpire's strikeout tendency.</p></div>
-    <div class="rec-bet"><b>Who is assigned</b><p class="rec-gist">Which corner travels with this receiver. A goalie's save percentage. A referee's foul rate.</p></div>
-    <div class="rec-bet"><b>Where the prop opened</b><p class="rec-gist">The first number on this prop.</p></div>
   </div>
   <div id="admin-laws" hidden>
     <section class="tracked" id="pane-laws">
@@ -435,15 +418,15 @@ body.day-board #parrot-load[hidden] { display: none; }
 </footer>
 <script src="/app.js?v=117"></script>
 <script src="/desk.js?v=122"></script>
-<script src="/members.js?v=172"></script>
+<script src="/members.js?v=174"></script>
 <script src="/stars.js?v=8"></script>
 <script src="/choose.js?v=121"></script>
 <script src="/lessons.js?v=8"></script>
-<script src="/filters.js?v=91"></script><script src="/ones.js?v=3"></script><script src="/stack.js?v=42"></script><script src="/stack-more.js?v=24"></script><script src="/game-stacks.js?v=14"></script><script src="/stack-grade.js?v=2"></script><script src="/close-calls.js?v=1"></script><script src="/hows.js?v=3"></script><script src="/game-note.js?v=7"></script><script src="/player-card.js?v=6"></script><script src="/find.js?v=187"></script><script src="/td-dive.js?v=3"></script><script src="/game-short.js?v=1"></script><script src="/game-until.js?v=4"></script><script src="/game-done.js?v=1"></script><script src="/sift.js?v=97"></script><script src="/nba-script.js?v=17"></script><script src="/blowout-proof.js?v=3"></script><script src="/find-sort.js?v=2"></script><script src="/find-roster.js?v=9"></script><script src="/club-theme.js?v=2"></script><script src="/tray-stack.js?v=10"></script><script src="/club-colors.js?v=5"></script><script src="/prop-seek.js?v=3"></script><script src="/band-pick.js?v=1"></script><script src="/top-bar.js?v=6"></script><script src="/game-guide.js?v=8"></script><script src="/bet-shot.js?v=10"></script><script src="/parlay-save.js?v=33"></script><script src="/parlay-archive.js?v=3"></script><script src="/leg-hist.js?v=2"></script><script src="/leg-swap.js?v=17"></script><script src="/leg-new.js?v=2"></script><script src="/live-stats.js?v=3"></script><script src="/terms.js?v=2"></script>
+<script src="/filters.js?v=91"></script><script src="/ones.js?v=3"></script><script src="/stack.js?v=42"></script><script src="/stack-more.js?v=24"></script><script src="/game-stacks.js?v=14"></script><script src="/stack-grade.js?v=2"></script><script src="/close-calls.js?v=1"></script><script src="/hows.js?v=3"></script><script src="/game-note.js?v=7"></script><script src="/player-card.js?v=6"></script><script src="/find.js?v=187"></script><script src="/td-dive.js?v=3"></script><script src="/game-short.js?v=2"></script><script src="/game-until.js?v=4"></script><script src="/game-done.js?v=1"></script><script src="/sift.js?v=98"></script><script src="/nba-script.js?v=17"></script><script src="/blowout-proof.js?v=3"></script><script src="/find-sort.js?v=2"></script><script src="/find-roster.js?v=9"></script><script src="/club-theme.js?v=2"></script><script src="/tray-stack.js?v=10"></script><script src="/club-colors.js?v=5"></script><script src="/prop-seek.js?v=3"></script><script src="/band-pick.js?v=1"></script><script src="/top-bar.js?v=6"></script><script src="/game-guide.js?v=8"></script><script src="/bet-shot.js?v=10"></script><script src="/parlay-save.js?v=33"></script><script src="/parlay-archive.js?v=3"></script><script src="/leg-hist.js?v=2"></script><script src="/leg-swap.js?v=17"></script><script src="/leg-new.js?v=2"></script><script src="/search-habit.js?v=1"></script><script src="/live-stats.js?v=3"></script><script src="/terms.js?v=2"></script>
 <script src="/reports.js?v=1"></script>
-<script src="/admin.js?v=50"></script>
+<script src="/admin.js?v=52"></script>
 <script src="/sharecard.js?v=57"></script><script src="/friends.js?v=3"></script>
-<script src="/states.js?v=12"></script>
+<script src="/states.js?v=13"></script>
 <script src="/ask-bet.js?v=113"></script><script src="/bet-ask.js?v=15"></script><script src="/prop-lines.js?v=1"></script>
 <script>
 function fitPoster() {

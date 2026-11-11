@@ -405,13 +405,10 @@ async function whyPlayer(name, text, sport, bet, odds, games) {
   } catch (err) { found = null; }
   if (asked.read) { const dub = pack ? require("./double-read").doubleRead(nick(name), pack, bet, priceOf(bet.odds != null ? bet.odds : odds)) : null; if (dub) return dub; const read = pack ? savedRead(name, text, sport || league, odds, pack, bet) : null; const why = (found && found.why) || (read && read.why) || ""; const spans = (found && found.spans) || (read && read.spans) || ""; const lean = (found && found.lean) || (read && read.lean) || ""; return (why || spans || lean) ? { ...(found || {}), why, spans, lean } : { why: "" }; }
   if (!found) return { why: "The game log did not load." };
-  let looks = [];
-  try { looks = (await require("./desk-looks").currentLooks()).looks || []; } catch (err) { looks = []; }
-  const allowed = new Set(looks.map((row) => row.id));
-  const measured = (found.hits || []).filter((row) => row && row.line && (!allowed.size || allowed.has(row.id))).map((row) => row.line).join(" ");
+  const measured = (found.hits || []).filter((row) => row && row.line).map((row) => row.line).join(" ");
   const facts = [found.why, measured].filter(Boolean).join(" ");
   try {
-    const spoken = await require("./bet-ask").askTrend(name, text, facts, sport, looks);
+    const spoken = await require("./bet-ask").askTrend(name, text, facts, sport);
     if (spoken && !found.why) return { why: spoken };
   } catch (err) { /* keep the box score */ }
   return { why: facts || found.why || "" };
