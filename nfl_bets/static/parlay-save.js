@@ -116,8 +116,7 @@ function savePaint() {
       save.textContent = save.title = same ? "Saved ✓" : open ? "Save changes" : "Save";
       save.classList.toggle("on", Boolean(same));
       save.addEventListener("click", () => { saveNow(); paintParlay(); });
-      const edit = ticket.querySelector("button.find-edit");
-      if (edit) edit.title = "Edit props";
+      const edit = ticket.querySelector("button.share-bet");
       if (edit) edit.before(save); else ticket.append(save);
       const wipe = document.createElement("button");
       wipe.type = "button";

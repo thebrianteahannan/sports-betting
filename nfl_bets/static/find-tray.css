@@ -72,7 +72,7 @@
 :is(.rec-board, #choice-result) .find-tray .find-say button.find-close { width: auto !important; margin: 0 !important; padding: 0.15rem 0.55rem !important; min-height: 0 !important; border: 0 !important; border-radius: 999px !important; background: transparent !important; color: #c9d4dd !important; box-shadow: inset 0 0 0 1px #3a4652 !important; font-size: 0.8rem !important; font-weight: 700 !important; line-height: inherit !important; text-transform: none !important; }
 :is(.rec-board, #choice-result) .find-tray .find-say button.find-close:hover { color: #ff6b6b !important; }
 :is(.rec-board, #choice-result) .find-tray.find-shut > :not(.find-say, .find-ticket, .find-row:has(.find-ticket)), :is(.rec-board, #choice-result) .find-tray.find-shut .find-row:has(.find-ticket) > :not(.find-ticket) { display: none !important; }
-:is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket > button, :is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket > b > i:is(.sg, .gm) { display: none !important; }
+:is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket > button { display: none !important; }
 :is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket { padding-right: 0 !important; padding-bottom: 0 !important; }
 :is(.rec-board, #choice-result) .find-tray .find-ticket { flex-shrink: 0; }
 .rec-board .find-match > .find-guide, #desk.tv-full #desk-glass .rec-board .find-match > .find-guide { grid-column: 1 / -1; margin: 0.15rem 0 0.1rem; color: #c9d4df; font-size: 14px; line-height: 1.35; text-align: center; }
@@ -139,6 +139,7 @@
 .rec-board > .find-shot-near button:hover { background: #0c2418; }
 .rec-board .find-tray i.gm { font-style: normal; color: #f4f7fb; border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 999px; padding: 0.05rem 0.5rem; font-size: 11px; font-weight: 700; letter-spacing: 0.03em; }
 .rec-board .find-tray i.gm[data-game] { cursor: pointer; }
+.rec-board .find-tray .find-ticket > b i.sg, .find-board.club-on .find-tray .find-ticket > b i.sg { color: #f4f7fb !important; background: transparent !important; border: 1px solid rgba(255, 255, 255, 0.28); text-shadow: none; }
 .rec-board .find-tray i.gm[data-game]:hover { border-color: #3dff6e; color: #3dff6e; }
 .rec-board > .find-shot-wait[hidden] { display: none; }
 .rec-board > .find-shot-wait button.find-shot-stop, #desk.tv-full #desk-glass .rec-board > .find-shot-wait button.find-shot-stop { flex: none; width: auto; min-height: 0; margin: 0; padding: 0.4rem 0.9rem; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 999px; background: transparent; box-shadow: none; color: #f4f7fb; font-size: 13px; font-weight: 700; text-transform: none; letter-spacing: normal; cursor: pointer; }
@@ -157,6 +158,8 @@
 .find-saved .find-saved-chip > button b { color: #3dff6e; }
 .rec-board .find-saved .find-saved-chip > button.find-saved-x, #desk.tv-full #desk-glass .rec-board .find-saved .find-saved-chip > button.find-saved-x { padding: 0.35rem 0.6rem; border-left: 1px solid rgba(255, 255, 255, 0.15); color: #9fb3c8; }
 .rec-board .find-saved .find-saved-chip > button.find-saved-x:hover { color: #ff6b6b; }
+.find-saved .find-saved-chip:not(.find-shared-chip) > button.find-saved-x { font-size: 0 !important; }
+.find-saved .find-saved-chip:not(.find-shared-chip) > button.find-saved-x::before { content: ""; width: 15px; height: 15px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16'/%3E%3Cpath d='M9 7V4h6v3'/%3E%3Cpath d='M6 7l1 13h10l1-13'/%3E%3Cpath d='M10 11v6M14 11v6'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16'/%3E%3Cpath d='M9 7V4h6v3'/%3E%3Cpath d='M6 7l1 13h10l1-13'/%3E%3Cpath d='M10 11v6M14 11v6'/%3E%3C/svg%3E") center / contain no-repeat; }
 .rec-board .find-saved button.find-saved-new, #desk.tv-full #desk-glass .rec-board .find-saved button.find-saved-new { width: auto; min-height: 0; margin: 0; padding: 0.35rem 0.8rem; border: 1px dashed #3dff6e; border-radius: 999px; background: transparent; box-shadow: none; color: #3dff6e; font-size: 13px; font-weight: 700; text-transform: none; letter-spacing: normal; cursor: pointer; }
 .rec-board .find-tray button.find-save.find-save-wipe, #desk.tv-full #desk-glass .rec-board .find-tray button.find-save.find-save-wipe { border-color: rgba(255, 255, 255, 0.3); background: transparent; color: #d5deea; }
 .rec-board .find-tray button.find-save.find-save-wipe:hover, #desk.tv-full #desk-glass .rec-board .find-tray button.find-save.find-save-wipe:hover, .rec-board .find-tray button.find-save.find-save-wipe.sure, #desk.tv-full #desk-glass .rec-board .find-tray button.find-save.find-save-wipe.sure { border-color: #ff6b6b; background: #ff6b6b; color: #1a0505; }
@@ -225,6 +228,12 @@
 .find-done .find-done-card.lost .find-done-head b { color: #ff6b6b; }
 .find-done .find-done-head i { font-style: normal; font-weight: 800; color: #f4f7fb; }
 .find-done .find-done-head span { color: #9fb3c8; font-size: 12px; font-weight: 700; }
+.find-done .find-done-card > summary.find-done-head { list-style: none; cursor: pointer; }
+.find-done .find-done-card > summary.find-done-head::-webkit-details-marker { display: none; }
+.find-done .find-done-card > summary.find-done-head::before { content: "▸"; color: #3dff6e; font-size: 12px; }
+.find-done .find-done-card[open] > summary.find-done-head::before { content: "▾"; }
+.find-done .find-done-card:not([open]) > summary.find-done-head { margin-bottom: 0; }
+.find-done .find-done-head .find-done-sum { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: normal; font-size: 12px; color: #c9d6e3; }
 .find-done ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; }
 .find-done li { display: flex; gap: 0.5rem; align-items: baseline; font-size: 13px; color: #d6e0ea; }
 .find-done li > b { min-width: 1.2rem; text-align: center; }
@@ -380,6 +389,8 @@
 .find-card i.find-swing.find-blow.flat { border-color: #8b98a5; color: #b8c4cf; }
 :is(.rec-board, #choice-result) .find-tray .find-chose button.find-leg-seek { flex: none; width: 1.6rem !important; height: 1.6rem !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 999px !important; background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b97a3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='6'/%3E%3Cpath d='M20 20l-4.5-4.5'/%3E%3C/svg%3E") center / 14px 14px no-repeat !important; box-shadow: inset 0 0 0 1px #3a4652 !important; cursor: pointer; }
 :is(.rec-board, #choice-result) .find-tray .find-chose button.find-leg-seek:hover { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233dff6e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='6'/%3E%3Cpath d='M20 20l-4.5-4.5'/%3E%3C/svg%3E") !important; box-shadow: inset 0 0 0 1px #3dff6e !important; }
+:is(.rec-board, #choice-result) .find-tray .find-chose button.find-out { font-size: 0 !important; color: transparent !important; background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b97a3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16'/%3E%3Cpath d='M9 7V4h6v3'/%3E%3Cpath d='M6 7l1 13h10l1-13'/%3E%3Cpath d='M10 11v6M14 11v6'/%3E%3C/svg%3E") center / 14px 14px no-repeat !important; }
+:is(.rec-board, #choice-result) .find-tray .find-chose button.find-out:hover { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff6b6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16'/%3E%3Cpath d='M9 7V4h6v3'/%3E%3Cpath d='M6 7l1 13h10l1-13'/%3E%3Cpath d='M10 11v6M14 11v6'/%3E%3C/svg%3E") !important; box-shadow: inset 0 0 0 1px #ff6b6b !important; }
 :is(.rec-board, #choice-result) .find-tray .find-chose i.spot { margin-left: -0.15rem; color: #7f8c99; font-size: 0.72em; font-weight: 500; letter-spacing: 0.02em; white-space: nowrap; }
 :is(.rec-board, #choice-result) .find-tray.find-edit .find-chose i.spot { display: none; }
 .rec-bet > b i.find-proof, .find-tray .find-chose i.find-proof, .find-tray .find-swap-go i.find-proof { display: inline-block; align-self: center; margin: 0 0.3rem; padding: 0 0.4rem; border: 1px solid #49d3ff; border-radius: 999px; color: #49d3ff; font-size: 0.66rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.45; text-transform: uppercase; white-space: nowrap; cursor: help; }
