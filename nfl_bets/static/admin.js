@@ -9,7 +9,7 @@ function loginWhen(stamp) {
 }
 
 function showAdminTab(name) {
-  ["members", "rates", "habits", "ignore", "strategy", "reads", "built", "asks", "notes", "laws", "errors"].forEach((id) => {
+  ["members", "habits", "strategy", "reads", "notes", "laws", "errors"].forEach((id) => {
     const pane = document.getElementById(`admin-${id}`);
     if (pane) pane.hidden = id !== name;
     const button = document.querySelector(`[data-admin-tab="${id}"]`);
@@ -42,38 +42,6 @@ function paintBoardErrors(errors) {
 function adminCard(head, gist, lines, extra) {
   const more = (lines || []).map((line) => `<span>${esc(line)}</span>`).join("");
   return `<div class="rec-bet"><b>${head}</b>${gist ? `<p class="rec-gist">${gist}</p>` : ""}${more}${extra || ""}</div>`;
-}
-
-function legGistLine(line) {
-  return window.legGist ? legGist({ label: line }) : "";
-}
-
-function builtSay(row) {
-  const when = row.when === "week" ? "This week" : "Today";
-  const sports = (row.sports || []).length ? row.sports.join(", ") : "all leagues";
-  const kind = { any: "any player prop", yards: "yards", points: "points", assists: "assists", shots: "shots", strikeouts: "strikeouts", hits: "hits" }[row.kind] || "any player prop";
-  const aim = { top: "the safest price", safe: "a safe price", good: "a price near −100", payout: "the longest price" }[row.aim] || "the safest price";
-  return `${when}, ${sports}, ${kind}, ${row.legs || 3} legs, ${aim}.`;
-}
-
-function paintBuilt(payload) {
-  const list = document.getElementById("admin-built");
-  if (!list) return;
-  const rows = (payload && payload.built) || [];
-  window.builtTypes = rows;
-  if (!rows.length) {
-    list.innerHTML = "<p>No one has finished a build yet.</p>";
-    return;
-  }
-  list.innerHTML = `<p class="quiet">These are the bets people finished building.</p>${rows.map((row, index) => {
-    const clock = row.at && typeof when === "function" ? `${when(row.at)} ET` : "";
-    const who = (row.names || []).join(", ") || "Member";
-    const times = `${row.count} ${row.count === 1 ? "person has" : "people have"} built this.`;
-    const gist = (row.lines || []).map(legGistLine).filter(Boolean).join(", ");
-    const said = `${esc(builtSay(row))} ${esc(times)}${gist ? ` ${gist}` : ""}<em>${esc([who, clock].filter(Boolean).join(" · "))}</em>`;
-    const share = (row.lines || []).length ? `<button type="button" class="share-bet" data-share="saved" data-share-id="${index}" aria-label="Share this bet"></button>` : "";
-    return adminCard(esc(row.title || who), said, row.lines || [], share);
-  }).join("")}`;
 }
 
 function paintStrategies() {
@@ -119,42 +87,6 @@ function paintStrategies() {
   list.innerHTML = rows.map(([name, line]) => adminCard(esc(name), esc(line))).join("");
 }
 
-function paintRates(payload) {
-  const list = document.getElementById("admin-rates");
-  if (!list) return;
-  const rows = (window.rateShare = (payload && payload.rates) || []);
-  if (!rows.length) {
-    list.innerHTML = "<p>No ratings yet.</p>";
-    return;
-  }
-  list.innerHTML = rows.map((row, index) => {
-    const clock = row.at && typeof when === "function" ? `${when(row.at)} ET` : "";
-    const price = row.american == null || row.american === "" ? "" : (typeof american === "function" ? american(row.american) : String(row.american));
-    const stars = `<span class="stars">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="star${n <= row.stars ? " on" : ""}" tabindex="-1" aria-hidden="true">★</button>`).join("")}</span>`;
-    const gist = (row.lines || []).map((line) => (window.legGist ? legGist({ label: line }) : "")).filter(Boolean).join(", ");
-    const lines = (row.lines || []).map((line) => `<span>${esc(line)}</span>`).join("");
-    const who = [row.name || "Member", clock].filter(Boolean).join(" · ");
-    const serial = typeof betSerial === "function" ? betSerial({ legs: (row.lines || []).map((label) => ({ label })) }) : "";
-    const share = (row.lines || []).length ? `<button type="button" class="share-bet" data-share="rate" data-share-id="${index}" aria-label="Share this bet"></button>` : "";
-    return `<div class="rec-bet">${share}<b>${esc([serial, price].filter(Boolean).join(" · "))} ${stars}</b><p class="rec-gist">${esc(row.title || "Bet")}${gist ? ` ${gist}` : " That bet is no longer on the record."}<em>${esc(who)}</em></p>${lines}</div>`;
-  }).join("");
-}
-
-function paintAsks(payload) {
-  const list = document.getElementById("admin-ask-list");
-  if (!list || !payload || !Array.isArray(payload.asks)) return;
-  const rows = payload.asks;
-  if (!rows.length) {
-    list.innerHTML = "<p>No one has asked for an option that is not on Build a Bet.</p>";
-    return;
-  }
-  list.innerHTML = rows.map((row) => {
-    const clock = row.at && typeof when === "function" ? `${when(row.at)} ET` : "";
-    const missing = row.missing ? [row.missing] : [];
-    return adminCard(esc(row.name || "Member"), `${esc(row.said || "")}<em>${esc(clock)}</em>`, missing);
-  }).join("");
-}
-
 function paintHabits(payload) {
   const list = document.getElementById("admin-habits");
   if (!list || !payload || !Array.isArray(payload.habits)) return;
@@ -167,9 +99,6 @@ function paintHabits(payload) {
 
 function paintAdmin(payload) {
   paintRefresh();
-  paintBuilt(payload);
-  paintRates(payload);
-  paintAsks(payload);
   paintHabits(payload);
   const list = document.getElementById("admin-users");
   if (!list) return;
@@ -209,45 +138,6 @@ async function setAdminRole(email, admin) {
   paintAdmin(payload);
 }
 
-function paintIgnore(payload) {
-  const rules = document.getElementById("ignore-rules");
-  const list = document.getElementById("ignore-list");
-  if (!rules || !list) return;
-  const rows = (payload && payload.rules) || [];
-  rules.innerHTML = rows.map((rule) => (
-    adminCard(esc(rule.label), `${esc(rule.onRecord)} still on the record<em>${esc(rule.ignored)} set aside</em>`)
-  )).join("");
-  const ignored = (payload && payload.ignored) || [];
-  list.innerHTML = ignored.length
-    ? ignored.map((row) => {
-      const clock = row.at && typeof when === "function" ? `${when(row.at)} ET` : "";
-      const whenLine = [row.result || "open", clock].filter(Boolean).join(" · ");
-      return adminCard(esc(row.title || "Bet"), `${esc((row.reasons || []).join(", "))}<em>${esc(whenLine)}</em>`);
-    }).join("")
-    : "<p>Nothing is set aside yet.</p>";
-}
-
-async function loadIgnore() {
-  const response = await fetch("/api/admin/ignore", { cache: "no-store" });
-  if (!response.ok) return;
-  paintIgnore(await response.json());
-}
-
-async function deleteIgnored() {
-  const note = document.getElementById("ignore-note");
-  if (note) note.textContent = "";
-  const response = await fetch("/api/admin/ignore", { method: "POST" });
-  const payload = await response.json();
-  if (!response.ok) {
-    if (note) note.textContent = payload.error || "Could not delete those bets.";
-    return;
-  }
-  paintIgnore(payload);
-  const left = (payload.rules || []).reduce((sum, rule) => sum + Number(rule.onRecord || 0), 0);
-  if (note) note.textContent = left ? `${left} matching bets are still on the record.` : "Matching open bets, wins, and losses are off the record.";
-  if (window.startDesk) window.startDesk();
-}
-
 async function loadAdmin() {
   const tab = document.getElementById("tab-admin");
   const response = await fetch("/api/admin", { cache: "no-store" });
@@ -257,7 +147,6 @@ async function loadAdmin() {
   }
   if (tab) tab.hidden = false;
   paintAdmin(await response.json());
-  loadIgnore();
 }
 
 function bindAdmin() {
@@ -268,17 +157,14 @@ function bindAdmin() {
     const button = event.target.closest("[data-admin-tab]");
     if (button) {
       if (button.dataset.adminTab === "experimental") { if (window.birdMenu) birdMenu("bets"); return; }
-      if (button.dataset.adminTab === "hows") { if (window.birdMenu) birdMenu("how"); return; }
       showAdminTab(button.dataset.adminTab);
-      if (button.dataset.adminTab === "built" || button.dataset.adminTab === "asks" || button.dataset.adminTab === "habits" || button.dataset.adminTab === "rates") loadAdmin();
+      if (button.dataset.adminTab === "habits") loadAdmin();
       if (button.dataset.adminTab === "strategy") paintStrategies();
       if (button.dataset.adminTab === "notes") loadNotes().catch((error) => { const msg = document.getElementById("note-msg"); if (msg) msg.textContent = String(error.message || error); });
       if (button.dataset.adminTab === "reads") loadLooks().catch((error) => { const msg = document.getElementById("look-msg"); if (msg) msg.textContent = String(error.message || error); });
       if (button.dataset.adminTab === "laws" && window.paintLaws) window.paintLaws();
     }
   });
-  const del = document.getElementById("ignore-delete");
-  if (del) del.addEventListener("click", () => { deleteIgnored().catch((error) => { document.getElementById("ignore-note").textContent = String(error.message || error); }); });
   const admin = document.getElementById("profile-admin");
   if (admin) admin.addEventListener("click", (event) => {
     if (event.target.closest("button, a, input, select, textarea")) return;

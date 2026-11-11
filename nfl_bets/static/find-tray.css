@@ -168,6 +168,19 @@
 :is(.rec-board, #choice-result) .find-tray .find-chose button.find-leg-swap.on, :is(.rec-board, #choice-result) .find-tray .find-chose button.find-leg-swap:hover { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233dff6e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 8h15l-4-4'/%3E%3Cpath d='M20 16H5l4 4'/%3E%3C/svg%3E") !important; box-shadow: inset 0 0 0 1px #3dff6e !important; }
 .find-tray .find-tray-swap { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.1rem 0 0.55rem 1rem; }
 .find-tray .find-tray-swap p { margin: 0; color: #8b97a3; font-size: 0.85rem; }
+.find-tray .find-new { margin: 0.4rem 0 0.3rem; }
+.find-tray .find-new.on { padding: 0.55rem 0.6rem 0.2rem; border: 1px dashed #3dff6e; border-radius: 10px; background: rgba(61, 255, 110, 0.04); }
+:is(.rec-board, #choice-result) .find-tray .find-new button.find-new-add { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.35rem 0.8rem !important; border: 1px dashed #3dff6e !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #3dff6e !important; font-size: 13px !important; font-weight: 700 !important; text-transform: none !important; letter-spacing: normal !important; cursor: pointer; }
+.find-tray .find-new-top { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.45rem; color: #f4f7fb; }
+:is(.rec-board, #choice-result) .find-tray .find-new-top button { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.15rem 0.6rem !important; border: 1px solid #3a4652 !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #c9d4dd !important; font-size: 12px !important; font-weight: 700 !important; text-transform: none !important; letter-spacing: normal !important; cursor: pointer; }
+:is(.rec-board, #choice-result) .find-tray .find-new-top button.find-new-x { margin-left: auto !important; }
+:is(.rec-board, #choice-result) .find-tray .find-new > input { width: 100% !important; min-height: 0 !important; height: auto !important; margin: 0 0 0.45rem !important; padding: 0.4rem 0.6rem !important; border: 1px solid #3dff6e !important; border-radius: 8px !important; background: #041018 !important; color: #f4f7fb !important; font-size: 16px !important; }
+.find-tray .find-new-who { display: flex; flex-wrap: wrap; gap: 0.35rem; padding-bottom: 0.45rem; }
+.find-tray .find-new-who p { margin: 0; color: #8b97a3; font-size: 0.85rem; }
+:is(.rec-board, #choice-result) .find-tray .find-new-who button.find-new-pick { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.3rem 0.7rem !important; border: 1px solid #2c3742 !important; border-radius: 999px !important; background: rgba(255, 255, 255, 0.04) !important; box-shadow: none !important; color: #f4f7fb !important; font-size: 0.88rem !important; font-weight: 600 !important; text-transform: none !important; letter-spacing: normal !important; cursor: pointer; }
+:is(.rec-board, #choice-result) .find-tray .find-new-who button.find-new-pick.team { border-color: #e7c15a !important; color: #e7c15a !important; }
+:is(.rec-board, #choice-result) .find-tray .find-new-who button.find-new-pick:hover { border-color: #3dff6e !important; }
+.find-tray .find-new .find-tray-swap { padding-left: 0; }
 :is(.rec-board, #choice-result) .find-tray .find-tray-swap button.find-swap-go { display: flex !important; align-items: baseline; flex-wrap: wrap; gap: 0.1rem 0.5rem; width: 100% !important; min-height: 0 !important; margin: 0 !important; padding: 0.3rem 0.5rem !important; border: 0 !important; border-radius: 8px !important; background: rgba(255, 255, 255, 0.04) !important; box-shadow: inset 0 0 0 1px #2c3742 !important; color: #f4f7fb !important; font-size: 0.9rem !important; font-weight: 600 !important; text-align: left !important; text-transform: none !important; letter-spacing: 0 !important; cursor: pointer; }
 :is(.rec-board, #choice-result) .find-tray .find-tray-swap button.find-swap-go:hover { box-shadow: inset 0 0 0 1px #3dff6e !important; }
 .find-tray .find-tray-swap button.find-swap-go i { font-style: normal; }
@@ -277,6 +290,8 @@
 .rec-board .find-script .find-script-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.7rem 0 0.4rem; }
 .rec-board .find-script .find-script-tabs button { padding: 0.3rem 0.75rem; border: 1px solid #3dff6e; border-radius: 999px; background: transparent; color: #d8ffe4; box-shadow: none; font-size: 14px; }
 .rec-board .find-script .find-script-tabs button.on { background: #3dff6e; color: #04140c; }
+.rec-board .find-script label.find-script-stars { display: flex; align-items: center; gap: 0.4rem; margin: 0.2rem 0 0.6rem; color: #c9d4dd; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+.rec-board .find-script label.find-script-stars input { width: auto !important; min-height: 0 !important; height: auto !important; margin: 0 !important; accent-color: #3dff6e; }
 .rec-board .find-script .find-script-ticket { padding: 0.6rem 0.75rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: #08130e; }
 .rec-board .find-script .find-script-ticket p { margin: 0.15rem 0; }
 .rec-board .find-script .find-script-ticket i { font-style: normal; }

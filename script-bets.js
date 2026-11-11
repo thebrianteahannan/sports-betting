@@ -27,36 +27,37 @@ function readProp(row) {
 function reasons(team, foe, base, one, outs, both) {
   const out = [], slot = foe.slots[one.group] || {}, mid = base.slots[one.group] || {}, row = team.players[one.name] || {};
   const label = { G: "guards", F: "forwards", C: "centers" }[one.group] || "starters";
-  const loose = foe.oppFta - base.oppFta, hard = [];
+  const loose = foe.oppFta - base.oppFta, hard = [], against = {};
   if (one.starter && slot.n >= 5) [["pts", 1.5, "points"], ["reb", 0.7, "rebounds"], ["ast", 0.5, "assists"]].forEach(([key, step, word]) => {
     const gap = slot[key] - mid[key];
     if (!Number.isFinite(gap)) return;
-    if (gap <= -step) hard.push(key);
+    if (gap <= -step) { hard.push(key); against[key] = `The ${last(foe.name)} hold starting ${label} to ${n1(slot[key])} ${word} a night, ${n1(-gap)} under usual.`; }
     else if (gap >= step) out.push({ uses: key, w: gap / step, text: `The ${last(foe.name)} allow ${n1(slot[key])} ${word} a night to starting ${label}, ${n1(gap)} more than usual.` });
   });
   const threes = foe.oppTpa - base.oppTpa, paint = foe.oppPaint - base.oppPaint;
-  if (threes <= -2) hard.push("tpm");
+  if (threes <= -2) { hard.push("tpm"); against.tpm = `The ${last(foe.name)} hold opponents to ${n1(foe.oppTpa)} threes a game, ${n1(-threes)} under usual.`; }
   else if (threes >= 2) out.push({ uses: "tpm", w: threes / 1.5, text: `The ${last(foe.name)} let opponents take ${n1(foe.oppTpa)} threes a game, ${n1(threes)} more than usual.` });
   if (paint >= 4 && one.group !== "G") out.push({ uses: "pts", w: paint / 3, text: `The ${last(foe.name)} give up ${n1(foe.oppPaint)} points in the paint, ${n1(paint)} more than usual.` });
   if (row.fta >= 6 && loose >= 1) out.push({ uses: "pts", w: 2 + loose / 2, text: `He gets ${n1(row.fta)} free throws a game and the ${last(foe.name)} allow ${n1(loose)} more than usual. His points have a floor.` });
   const gone = outs.find((item) => item.next === one.name && /out|injured/.test(item.status) && (team.players[item.name] || {}).min >= 20);
   if (gone) out.push({ uses: "", w: 3, text: `${gone.name} is out, and his ${n1(team.players[gone.name].min)} minutes go to ${last(one.name)}.` });
   if (both) out.push({ uses: "", w: 1, text: "Both teams run, so every counting stat gets extra trips." });
-  return { hard, list: out.sort((a, b) => b.w - a.w) };
+  return { hard, against, list: out.sort((a, b) => b.w - a.w) };
 }
 
-function goodProps(rows, log, read, loose) {
+function goodProps(rows, log, read, loose, star) {
   const found = [];
   rows.forEach(({ prop, odds, label, market }) => {
     const keys = STATS[prop.stat];
     if (!keys || !Number.isFinite(Number(odds)) || odds < -500 || odds > 250) return;
-    if (keys.some((key) => read.hard.includes(key))) return;
+    const against = keys.map((key) => read.hard.includes(key) && read.against[key]).find(Boolean) || "";
+    if (keys.some((key) => read.hard.includes(key)) && !star) return;
     const why = read.list.find((item) => !item.uses || keys.includes(item.uses));
     const sums = log.map((game) => keys.reduce((sum, key) => sum + (Number(game[key]) || 0), 0)), hits = sums.filter((value) => value >= prop.need).length;
     const chance = (hits + 0.5) / (log.length + 1), need = 1 / dec(odds), edge = chance - need;
     if (hits / log.length < (loose ? 0.55 : 0.6) || edge < (loose ? 0 : 0.02)) return;
     const score = edge + 0.25 * chance + (why ? 0.1 + Math.min(why.w, 4) * 0.02 : 0);
-    found.push({ text: prop.text, stat: prop.stat, reach: prop.need, avg: sums.reduce((a, b) => a + b, 0) / sums.length, odds: Number(odds), label, market, hits, n: log.length, chance, need, edge, score, why: why ? why.text : "" });
+    found.push({ text: prop.text, stat: prop.stat, reach: prop.need, avg: sums.reduce((a, b) => a + b, 0) / sums.length, odds: Number(odds), label, market, hits, n: log.length, chance, need, edge, score, why: why ? why.text : "", against });
   });
   return found.sort((a, b) => b.score - a.score);
 }
@@ -65,7 +66,7 @@ function sign(odds) { return odds > 0 ? `+${odds}` : String(odds); }
 
 function howPick(pick) {
   const rate = pick.hits / pick.n;
-  return `He averages ${n1(pick.avg)} ${WORDS[pick.stat]} over his last ${pick.n} games and reached ${pick.reach} in ${pick.hits} of them (${Math.round(rate * 100)}%). At ${sign(pick.odds)} the bet needs ${pct(pick.need)}, so his record clears the price by ${n1((rate - pick.need) * 100)} percentage points.${pick.why ? ` The script backs it: ${pick.why}` : ""}`;
+  return `He averages ${n1(pick.avg)} ${WORDS[pick.stat]} over his last ${pick.n} games and reached ${pick.reach} in ${pick.hits} of them (${Math.round(rate * 100)}%). At ${sign(pick.odds)} the bet needs ${pct(pick.need)}, so his record clears the price by ${n1((rate - pick.need) * 100)} percentage points.${pick.why ? ` The script backs it: ${pick.why}` : ""}${pick.against ? ` The matchup works against it: ${pick.against}` : ""}`;
 }
 
 function howTicket(legs, kind, teams) {
@@ -82,7 +83,24 @@ function ticket(legs) {
   return { odds: american(price), wins: Math.round(5 * (price - 1) * 100) / 100, need: pct(1 / price) };
 }
 
+function starNames(boxes) {
+  const stars = new Set();
+  [boxes.away, boxes.home].forEach((team) => {
+    const rows = Object.entries(team.players).filter(([, row]) => row.games >= 2), top = Math.max(0, ...rows.map(([, row]) => Number(row.pts) || 0));
+    rows.forEach(([name, row]) => { const pts = Number(row.pts) || 0; if (pts >= 18 || (top && pts === top)) stars.add(fold(name)); });
+  });
+  return stars;
+}
+
 function scriptBets(game, boxes, fives, outs, props) {
+  const all = betsFrom(game, boxes, fives, outs, props);
+  if (!all) return null;
+  const stars = starNames(boxes), only = props.filter((row) => stars.has(fold(row.who)));
+  all.stars = only.length ? betsFrom(game, boxes, fives, outs, only, true) : null;
+  return all;
+}
+
+function betsFrom(game, boxes, fives, outs, props, star) {
   if (!boxes || !Array.isArray(props) || !props.length) return null;
   const { away, home, base } = boxes;
   const both = away.pace >= base.pace + 1.5 && home.pace >= base.pace + 1.5;
@@ -99,9 +117,8 @@ function scriptBets(game, boxes, fives, outs, props) {
       one.starter = starters.has(name);
       const read = reasons(team, foe, base, one, gone, both);
       const tag = { who: name, team: last(team.name), pos: one.spot || row.pos || "" };
-      const strict = goodProps(rows, row.log || [], read, false).map((prop) => ({ ...tag, ...prop }));
-      const loose = goodProps(rows, row.log || [], read, true).map((prop) => ({ ...tag, ...prop }));
-      if (strict.length || loose.length) picks.push({ team: tag.team, strict, loose });
+      const strict = goodProps(rows, row.log || [], read, false, star).map((prop) => ({ ...tag, ...prop }));
+      const loose = goodProps(rows, row.log || [], read, true, star).map((prop) => ({ ...tag, ...prop }));      if (strict.length || loose.length) picks.push({ team: tag.team, strict, loose });
     });
   });
   const rank = (a, b) => (b.why ? 1 : 0) - (a.why ? 1 : 0) || b.score - a.score;

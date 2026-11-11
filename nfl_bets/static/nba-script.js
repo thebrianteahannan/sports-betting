@@ -5,7 +5,7 @@ const scriptRecSigs = new Set((() => { try { return JSON.parse(localStorage.getI
 const scriptRecSig = (legs) => legs.map((leg) => `${leg.label}|${leg.market}|${leg.match}`).sort().join("||");
 
 function scriptRecKeep(bets, game) {
-  (bets.groups || []).forEach((group) => (group.parlays || []).forEach((parlay) => scriptRecSigs.add(scriptRecSig(parlay.legs.map((at) => ({ ...bets.picks[at], match: game.match }))))));
+  [bets, bets.stars].filter(Boolean).forEach((set) => (set.groups || []).forEach((group) => (group.parlays || []).forEach((parlay) => scriptRecSigs.add(scriptRecSig(parlay.legs.map((at) => ({ ...set.picks[at], match: game.match })))))));
   try { localStorage.setItem("scriptRecs", JSON.stringify([...scriptRecSigs].slice(-300))); } catch (error) { console.log("[nba-script] could not keep recommended bets", error); }
   if (typeof parlayLeg !== "undefined" && parlayLeg.size && typeof paintParlay === "function") paintParlay();
 }
@@ -78,7 +78,20 @@ function scriptFitLine(legs, game) {
 function scriptBetsBox(bets, game, people) {
   const box = document.createElement("details"); box.className = "find-score find-script find-bets"; box.style.gridColumn = "1 / -1";
   box.innerHTML = `<summary><b class="find-script-head">Parlay's Recommended Bets</b></summary>`;
-  (bets.groups || []).forEach((group) => { const block = scriptBetsBlock(bets, group, game, people); block.dataset.team = group.name; box.append(block); });
+  const fill = () => {
+    box.querySelectorAll(":scope > .find-script-bets, :scope > .find-script-none").forEach((node) => node.remove());
+    const set = localStorage.getItem("scriptStars") === "1" && bets.stars !== undefined ? bets.stars : bets;
+    if (!set || !(set.groups || []).length) { const none = document.createElement("p"); none.className = "find-script-why find-script-none"; none.textContent = "No star has a prop tonight whose record clears its price. Uncheck the box for the rest of the roster."; box.append(none); return; }
+    set.groups.forEach((group) => { const block = scriptBetsBlock(set, group, game, people); block.dataset.team = group.name; box.append(block); });
+    const match = box.closest(".find-match"); if (match) scriptBetsSide(match, box);
+  };
+  if (bets.stars !== undefined) {
+    const label = document.createElement("label"); label.className = "find-hide find-script-stars";
+    const check = document.createElement("input"); check.type = "checkbox"; check.checked = localStorage.getItem("scriptStars") === "1";
+    check.addEventListener("change", () => { try { localStorage.setItem("scriptStars", check.checked ? "1" : "0"); } catch (error) { console.log("[nba-script] could not keep the stars box", error); } fill(); });
+    label.append(check, " Only star players"); box.append(label);
+  }
+  fill();
   return box;
 }
 
