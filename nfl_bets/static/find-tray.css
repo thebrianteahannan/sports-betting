@@ -93,7 +93,8 @@
 .rec-board .find-team-bets > .find-line-total > summary { display: block; margin: 0 0 0.3rem; cursor: default; list-style: none; }
 .rec-board :is(.find-everyone, .find-team-bets) > .find-sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 0.6rem; }
 .rec-board .find-sides > .find-roster.find-all { display: grid; grid-template-rows: subgrid; grid-row: 1 / -1; align-content: start; margin: 0; }
-.rec-board .find-sides > .find-roster.find-all[hidden] { display: none; }
+.rec-board .find-sides > .find-roster.find-all[hidden], .rec-board .find-sides > .find-roster.find-all.find-off, .rec-board .find-match > .find-body.find-body-off { display: none; }
+.rec-board :is(.find-everyone, .find-team-bets) > .find-sides.find-one { grid-template-columns: minmax(0, 1fr); }
 .rec-board .find-sides > .find-roster.find-all > .find-names { display: contents; }
 .find-roster .find-names button.find-rec-go, #desk.tv-full #desk-glass .find-board .find-roster .find-names button.find-rec-go { width: 2.5rem; min-width: 2.5rem; min-height: 0; margin: 0 !important; padding: 0; border: 0 !important; border-left: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 0 !important; background: url("/scene/parrot-head-tight.png?v=1") center / auto 88% no-repeat, #3dff6e !important; box-shadow: inset 0 0 0 3rem rgba(0, 0, 0, 0.14) !important; opacity: 0.9; cursor: pointer; transition: box-shadow 0.15s, opacity 0.15s; }
 .find-roster .find-names button.find-rec-go:hover, #desk.tv-full #desk-glass .find-board .find-roster .find-names button.find-rec-go:hover { box-shadow: inset 0 0 0 3rem rgba(255, 255, 255, 0.1) !important; opacity: 1; }

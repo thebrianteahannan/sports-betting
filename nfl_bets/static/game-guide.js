@@ -4,7 +4,17 @@ function gameGuidePaint(match, guide) {
   const nick = (button) => (typeof whereNick === "function" ? whereNick(button.textContent) : button.textContent.split(",")[0].trim());
   const on = match.querySelector(":scope > .find-side-go.on");
   const everyone = match.querySelector(":scope > .find-everyone");
-  if (everyone) everyone.hidden = !!on;
+  if (everyone) {
+    const at = [...match.querySelectorAll(":scope > .find-side-go")].indexOf(on), pair = everyone.querySelector(":scope > .find-sides"), body = match.querySelector(":scope > .find-body");
+    [...everyone.querySelectorAll(":scope > .find-sides > .find-roster")].forEach((roster, index) => roster.classList.toggle("find-off", at >= 0 && index !== at));
+    if (pair) pair.classList.toggle("find-one", at >= 0);
+    if (body) body.classList.add("find-body-off");
+  }
+  const lines = match.querySelector(":scope > .find-odds > .find-sides"), pick = on ? nick(on) : "";
+  if (lines) {
+    [...lines.querySelectorAll(":scope > .find-roster")].forEach((roster) => roster.classList.toggle("find-off", !!pick && (roster.querySelector(":scope > summary") || {}).textContent !== pick));
+    lines.classList.toggle("find-one", !!pick);
+  }
   if (!on) { guide.textContent = "Everything below is for the whole game. Tap a team to see just that team's bets for this game."; return; }
   const back = document.createElement("button");
   back.type = "button"; back.className = "find-guide-back"; back.textContent = "Back to the whole game";

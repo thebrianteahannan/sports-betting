@@ -129,10 +129,21 @@ function homeRecRows(games) {
   return [bar, ...(rows.length ? rows : note(mine ? "Nothing fits your teams' prices yet." : "Nothing fits today's prices yet."))];
 }
 
+function homeMineGames(games) {
+  return homeRecMine && (window.memberTeams || []).length > 0 && typeof favTeamsHas === "function" ? games.filter(favTeamsHas) : games;
+}
+
+function homeGameRows(games) {
+  const mine = homeMineGames(games), line = document.createElement("p");
+  if (mine.length || mine === games) return [homeRecBar(), ...mine.map(homeGamesRow)];
+  line.className = "desk-games-note"; line.textContent = "Your teams are off today. Tap My teams to see every game.";
+  return [homeRecBar(), line];
+}
+
 function homeGamesTabs(box, games) {
   const tabs = document.createElement("span");
   tabs.className = "desk-games-tabs";
-  [["games", `Games ${games.length}`], ["rec", "Recommended"]].forEach(([id, label]) => {
+  [["games", `Games ${homeMineGames(games).length}`], ["rec", "Recommended"]].forEach(([id, label]) => {
     const tab = document.createElement("button");
     tab.type = "button";
     tab.className = `desk-games-tab${homeGamesTab === id ? " on" : ""}`;
@@ -170,7 +181,7 @@ function homeGamesPaint() {
   who.className = "desk-games-who";
   who.textContent = window.memberName || "";
   head.append(fresh.length ? said : homeGamesTabs(box, games), who);
-  box.replaceChildren(head, ...(fresh.length ? fresh.map(homeSharedRow) : homeGamesTab === "rec" ? homeRecRows(games) : games.map(homeGamesRow)));
+  box.replaceChildren(head, ...(fresh.length ? fresh.map(homeSharedRow) : homeGamesTab === "rec" ? homeRecRows(games) : homeGameRows(games)));
 }
 
 setInterval(() => { homeGamesLoad(); homeGamesPaint(); }, 500);
