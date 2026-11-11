@@ -19,7 +19,9 @@ async function friendsLoad() {
     const [friends, shared] = await Promise.all([friendsCall("/api/friends"), friendsCall("/api/shared")]);
     window.friendsData = friends;
     window.sharedItems = shared.items || [];
+    window.sharedSent = shared.sent || [];
     if (document.querySelector(".find-board") && typeof paintParlay === "function") paintParlay();
+    else profileShared();
   } catch (error) { console.log("[friends] could not load", error); } finally { friendsBusy = false; }
 }
 
@@ -78,7 +80,14 @@ function friendsAdd() {
   return form;
 }
 
-function sharedToTray(item) {
+function sharedToTray(item, again) {
+  if (!document.querySelector(".find-board") && window.birdMenu && !again) {
+    if (window.goFull) goFull();
+    birdMenu("find");
+    let tries = 0;
+    const wait = setInterval(() => { if (document.querySelector(".find-board") || ++tries > 40) { clearInterval(wait); sharedToTray(item, true); } }, 150);
+    return;
+  }
   if (typeof saveNew === "function") saveNew();
   const board = document.querySelector(".find-board"), people = (board && board.people) || [];
   item.legs.forEach((bet) => {
@@ -96,13 +105,45 @@ function sharedToTray(item) {
   if (tray) tray.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
+function sharedLegs(legs) {
+  return `<ul>${legs.map((leg) => `<li><span>${esc(String(leg.label || "").replace(/^Alternate Total \w+:\s*/i, ""))}</span>${Number.isFinite(Number(leg.odds)) ? `<em>${esc(Number(leg.odds) > 0 ? `+${leg.odds}` : String(leg.odds))}</em>` : ""}</li>`).join("")}</ul>`;
+}
+
+function sentCard(item) {
+  const card = document.createElement("div");
+  card.className = "find-shared-card";
+  const names = new Map(window.friendsData.friends.map((one) => [one.id, one.name]));
+  const price = typeof savePrice === "function" ? savePrice(item.legs) : "";
+  const games = typeof gameShortList === "function" ? gameShortList(item.legs) : "";
+  const to = item.to.map((one) => `${names.get(one.id) || "A friend"}${one.seen ? " (seen)" : ""}`).join(", ");
+  card.innerHTML = `<p class="find-shared-head"><b>To ${esc(to)}</b><span>${esc(friendsAgo(item.at))}</span>${price ? `<i>${esc(price)}</i>` : ""}${games ? `<span>${esc(games)}</span>` : ""}</p>${item.note ? `<p class="find-shared-note">“${esc(item.note)}”</p>` : ""}${sharedLegs(item.legs)}`;
+  return card;
+}
+
+function profileShared() {
+  const spot = document.getElementById("profile-shared");
+  if (!spot || spot.contains(document.activeElement)) return;
+  spot.hidden = !window.saveWho;
+  if (spot.hidden) return;
+  const panel = friendsPanel(), sent = window.sharedSent || [];
+  panel.querySelector(".find-done-x").remove();
+  const friendsHead = [...panel.querySelectorAll(":scope > .find-friends-sub")].find((p) => p.textContent.startsWith("Friends"));
+  const head = document.createElement("p");
+  head.className = "find-friends-sub";
+  head.textContent = "You sent";
+  friendsHead.before(head);
+  if (sent.length) sent.forEach((item) => friendsHead.before(sentCard(item)));
+  else { const none = document.createElement("p"); none.className = "find-friends-empty"; none.textContent = "Bets you send to friends show up here."; friendsHead.before(none); }
+  spot.replaceChildren(panel);
+}
+
 function sharedCard(item) {
   const card = document.createElement("div");
   card.className = `find-shared-card${item.seen ? "" : " fresh"}`;
   const price = typeof savePrice === "function" ? savePrice(item.legs) : "";
   const games = typeof gameShortList === "function" ? gameShortList(item.legs) : "";
   const started = item.legs.every((leg) => Date.parse(leg.kickoff || "") < Date.now());
-  card.innerHTML = `<p class="find-shared-head"><b>${esc(item.fromName)}</b><span>${esc(friendsAgo(item.at))}</span>${price ? `<i>${esc(price)}</i>` : ""}${games ? `<span>${esc(games)}</span>` : ""}</p>${item.note ? `<p class="find-shared-note">“${esc(item.note)}”</p>` : ""}<ul>${item.legs.map((leg) => `<li><span>${esc(String(leg.label || "").replace(/^Alternate Total \w+:\s*/i, ""))}</span>${Number.isFinite(Number(leg.odds)) ? `<em>${esc(Number(leg.odds) > 0 ? `+${leg.odds}` : String(leg.odds))}</em>` : ""}</li>`).join("")}</ul>`;
+  card.innerHTML = `<p class="find-shared-head"><b>${esc(item.fromName)}</b><span>${esc(friendsAgo(item.at))}</span>${price ? `<i>${esc(price)}</i>` : ""}${games ? `<span>${esc(games)}</span>` : ""}</p>${item.note ? `<p class="find-shared-note">“${esc(item.note)}”</p>` : ""}${sharedLegs(item.legs)}`;
   const row = document.createElement("p");
   row.className = "find-shared-do";
   if (started) { const said = document.createElement("span"); said.textContent = "These games have started."; row.append(said); }
@@ -156,6 +197,7 @@ function friendsPaint() {
     if (after) after.after(go); else box.append(go);
     if (window.sharedOpen) box.append(friendsPanel());
   });
+  profileShared();
 }
 
 if (typeof paintParlay === "function") {
@@ -196,13 +238,21 @@ function shareFriendPick() {
       const to = [...box.querySelectorAll("input:checked")].map((input) => input.value);
       try {
         const done = await friendsCall("/api/share", { to, title: shareRaw.title || "", legs: shareRaw.legs, note: box.querySelector("textarea").value });
-        note.textContent = `Sent to ${done.sent} ${done.sent === 1 ? "friend" : "friends"}.`;
+        const sent = `Sent to ${done.sent} ${done.sent === 1 ? "friend" : "friends"}.`, under = document.getElementById("share-card-note");
+        friendsLoad();
+        if (done.sent && under) { under.textContent = sent; box.remove(); return; }
+        note.textContent = sent;
         box.querySelectorAll("input:checked").forEach((input) => { input.checked = false; });
       } catch (error) { note.textContent = error.message; }
     }), note);
   }
   view.querySelector(".pick-save").after(box);
 }
+
+document.addEventListener("click", (event) => {
+  const box = document.getElementById("share-friends");
+  if (box && event.target.isConnected && !box.contains(event.target) && !event.target.closest("#share-card-friend")) box.remove();
+});
 
 if (typeof openShare === "function") {
   const openShareFriends = openShare;
