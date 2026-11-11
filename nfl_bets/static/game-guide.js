@@ -213,7 +213,23 @@ function findBlankOpen() {
   box.querySelectorAll(":scope > details").forEach((group) => { group.open = true; });
 }
 
+function gameBarTools(match, shut) {
+  const bar = match && match.querySelector(":scope > .find-when");
+  if (!bar || bar.querySelector(".find-game-tools")) return;
+  if (shut) match.classList.add("find-game-shut");
+  const tools = document.createElement("span"); tools.className = "find-game-tools";
+  const fold = document.createElement("button"); fold.type = "button"; fold.className = "find-game-fold";
+  const say = () => { fold.textContent = match.classList.contains("find-game-shut") ? "Show ▾" : "Hide ▴"; };
+  say();
+  fold.addEventListener("click", () => { match.classList.toggle("find-game-shut"); say(); });
+  const close = document.createElement("button"); close.type = "button"; close.className = "find-game-x"; close.textContent = "×";
+  close.setAttribute("aria-label", "Close this game"); close.title = "Close this game";
+  close.addEventListener("click", () => { const board = match.closest(".find-board"), input = board && board.querySelector("label.find input"); if (!input) return; input.value = ""; input.dispatchEvent(new Event("input")); });
+  tools.append(fold, close); bar.append(tools);
+}
+
 function gameGuide(match, people, list, hits, noted) {
+  gameBarTools(match, noted === "shut" && !!(list && list.parentElement && list.parentElement.querySelector(".find-teams[data-who]:not([data-who=''])")));
   if (!match || match.querySelectorAll(":scope > .find-side-go").length < 2) return;
   const guide = document.createElement("p");
   guide.className = "find-guide";

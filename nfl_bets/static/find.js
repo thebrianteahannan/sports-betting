@@ -108,7 +108,7 @@ function fillFind(board, data) {
   const load = board.querySelector(".bet-load");
   if (load) load.remove();
   const heading = document.createElement("h2");
-  heading.textContent = "Search by player, team or game.";
+  heading.textContent = "Build a bet";
   const people = Array.isArray(data.people) ? data.people : [];
   const label = document.createElement("label");
   label.className = "find";
