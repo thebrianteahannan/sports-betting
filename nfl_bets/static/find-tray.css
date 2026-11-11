@@ -302,6 +302,8 @@
 .rec-board .find-script p.find-script-proof { margin-top: 0.3rem; color: #9fb3c8; font-size: 14px; }
 .rec-board .find-script .find-script-bets strong { color: #f4fff6; }
 .rec-board .find-script .find-script-pick { margin-top: 0.55rem; }
+.rec-board .find-script .find-script-pick[style] { padding: 0.4rem 0.6rem; border-left: 3px solid; border-radius: 6px; }
+.rec-board .find-script .find-script-part.find-script-club { padding: 0.55rem 0.7rem; border-left-width: 4px; border-radius: 0 10px 10px 0; }
 .rec-board .find-script p.find-script-why { margin-top: 0.15rem; color: #b9c7d4; font-size: 14px; }
 .rec-board .find-script p.find-script-why em { color: #e7c15a; font-style: normal; font-weight: 700; }
 .rec-board .find-script .find-script-ticket p.find-script-why { margin-top: 0.4rem; }
@@ -356,6 +358,10 @@
 .rec-board .rec-strategy.rec-focus { border-color: #e7c15a !important; box-shadow: 0 0 0 1px #e7c15a, 0 0 18px rgba(231, 193, 90, 0.25); }
 .rec-board .rec-strategy .stack-set.stack-mine { outline: 2px solid #e7c15a; outline-offset: 2px; border-radius: 8px; }
 .rec-board .rec-strategy .stack-set.stack-mine::before { content: "Your parlay"; display: inline-block; margin-bottom: 0.3rem; padding: 0.1rem 0.45rem; border-radius: 6px; background: #e7c15a; color: #1a1405; font-size: 12px; font-weight: 800; }
+@keyframes find-flash { 0%, 100% { box-shadow: 0 0 0 0 rgba(231, 193, 90, 0); } 20%, 45%, 70% { box-shadow: 0 0 0 2px #e7c15a, 0 0 22px rgba(231, 193, 90, 0.5); } 32%, 58% { box-shadow: 0 0 0 1px rgba(231, 193, 90, 0.4); } }
+@keyframes find-flash-head { 0%, 100% { color: #e7c15a; text-shadow: none; } 20%, 70% { color: #ffe08a; text-shadow: 0 0 12px rgba(231, 193, 90, 0.8); } }
+.rec-board .find-span.find-flash > details[open] { animation: find-flash 1.8s ease-in-out 0.35s; }
+.rec-board .find-span.find-flash .find-span-head { animation: find-flash-head 1.8s ease-in-out 0.35s; }
 .rec-board .find-span .find-span-head { order: -2; margin: 0 0 -1.6rem; padding-right: 9rem; color: #e7c15a; font-size: 16px; font-weight: 700; line-height: 1.6rem; }
 .rec-board .stack-set > button.stack-set-st, #desk.tv-full #desk-glass .rec-board .stack-set > button.stack-set-st { display: inline-block; width: auto; min-height: 0; margin: 0 0 0.3rem; padding: 0; border: 0; border-bottom: 1px dotted #6e7d8a; border-radius: 0; background: transparent; box-shadow: none; color: #9fb3c8; font-size: 12px !important; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
 .rec-board .stack-set > button.stack-set-st::after { content: " ▸"; }
