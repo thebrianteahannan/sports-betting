@@ -95,7 +95,7 @@ function playerBook(rows) {
   const book = new Map();
   rows.forEach((row) => row.team.people.forEach((one) => { if (one.min <= 0) return; const list = book.get(one.name) || []; list.push(one); book.set(one.name, list); }));
   const out = {};
-  book.forEach((list, name) => { out[name] = { games: list.length, min: avg(list, (one) => one.min), pts: avg(list, (one) => one.pts), reb: avg(list, (one) => one.reb), ast: avg(list, (one) => one.ast), fta: avg(list, (one) => one.fta), pf: avg(list, (one) => one.pf), fga: avg(list, (one) => one.fga), tpm: avg(list, (one) => one.tpm), pos: list[0].pos }; });
+  book.forEach((list, name) => { out[name] = { games: list.length, min: avg(list, (one) => one.min), pts: avg(list, (one) => one.pts), reb: avg(list, (one) => one.reb), ast: avg(list, (one) => one.ast), fta: avg(list, (one) => one.fta), pf: avg(list, (one) => one.pf), fga: avg(list, (one) => one.fga), tpm: avg(list, (one) => one.tpm), pos: list[0].pos, log: list.map((one) => ({ pts: one.pts, reb: one.reb, ast: one.ast, tpm: one.tpm })) }; });
   return out;
 }
 

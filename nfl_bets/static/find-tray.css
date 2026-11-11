@@ -269,6 +269,30 @@
 .rec-board .find-script .find-script-part { margin-top: 0.6rem; padding-left: 0.65rem; border-left: 3px solid #e7c15a; }
 .rec-board .find-script .find-script-part > b { display: block; color: #e7c15a; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .rec-board .find-script p.find-script-proof { margin-top: 0.3rem; color: #9fb3c8; font-size: 14px; }
+.rec-board .find-script .find-script-bets strong { color: #f4fff6; }
+.rec-board .find-script .find-script-pick { margin-top: 0.55rem; }
+.rec-board .find-script p.find-script-why { margin-top: 0.15rem; color: #b9c7d4; font-size: 14px; }
+.rec-board .find-script p.find-script-why em { color: #e7c15a; font-style: normal; font-weight: 700; }
+.rec-board .find-script .find-script-ticket p.find-script-why { margin-top: 0.4rem; }
+.rec-board .find-script .find-script-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.7rem 0 0.4rem; }
+.rec-board .find-script .find-script-tabs button { padding: 0.3rem 0.75rem; border: 1px solid #3dff6e; border-radius: 999px; background: transparent; color: #d8ffe4; box-shadow: none; font-size: 14px; }
+.rec-board .find-script .find-script-tabs button.on { background: #3dff6e; color: #04140c; }
+.rec-board .find-script .find-script-ticket { padding: 0.6rem 0.75rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: #08130e; }
+.rec-board .find-script .find-script-ticket p { margin: 0.15rem 0; }
+.rec-board .find-script .find-script-ticket i { font-style: normal; }
+.rec-board .find-script .find-script-top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.7rem; margin: 0 0 0.45rem; font-size: 1.02rem; font-weight: 800; }
+.rec-board .find-script .find-script-top .px, .rec-board .find-script .find-script-top .pay { color: #3dff6e; }
+.rec-board .find-script .find-script-top .pct { color: #e7c15a; }
+.rec-board .find-script .find-script-top .sg { color: #04140c; background: #e7c15a; border-radius: 999px; padding: 0.05rem 0.45rem; font-size: 11px; letter-spacing: 0.03em; text-transform: uppercase; }
+.rec-board .find-script .find-script-leg { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 0.6rem; margin: 0 0 0.3rem; padding: 0.4rem 0.6rem; border-left: 3px solid #3dff6e; border-radius: 6px; background: rgba(61, 255, 110, 0.06); font-weight: 600; }
+.rec-board .find-script .find-script-leg .px { min-width: 3.2em; color: #3dff6e; font-weight: 700; }
+.rec-board .find-script .find-script-leg .pct { min-width: 3.4em; color: #c9d4dd; font-size: 0.88em; }
+.rec-board .find-script .find-script-leg .who { color: #f4f7fb; font-weight: 700; }
+.rec-board .find-script .find-script-leg .tm { color: #8b97a3; font-size: 0.85em; }
+.rec-board .find-script .find-script-leg .prop { color: #e7c15a; }
+.rec-board .find-script .find-script-ticket p.find-script-pay { margin-top: 0.45rem; color: #3dff6e; font-weight: 700; }
+.rec-board .find-script .find-script-ticket button.find-script-add, #desk.tv-full #desk-glass .rec-board .find-script .find-script-ticket button.find-script-add { width: auto; min-height: 0; height: auto; margin-top: 0.5rem; padding: 0.45rem 0.9rem; border: 0; border-radius: 999px; background: #3dff6e; color: #04140c; box-shadow: none; font-weight: 700; }
+.rec-board .find-script .find-script-ticket button.find-script-add.on { background: transparent; color: #3dff6e; border: 1px solid #3dff6e; }
 .rec-board .find-script > summary { display: block; cursor: pointer; list-style: none; }
 .rec-board .find-script > summary::-webkit-details-marker { display: none; }
 .rec-board .find-script > summary .find-script-head::after { content: " ▸"; }
@@ -341,3 +365,4 @@
 #desk-glass #gate .gate-age { display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem; margin: 0.5rem 0 0.2rem; text-align: right; font-family: "Outfit", sans-serif; font-size: 13px; font-weight: 500; line-height: 1.3; color: #e7eef4; text-shadow: 0 1px 2px #07131a, 0 0 10px #07131a; }
 #desk-glass #gate .gate-age .age { display: block; font-family: "Oswald", sans-serif; font-size: 2.8rem; font-weight: 600; line-height: 1; letter-spacing: 0.04em; color: #ff4d4d; text-shadow: 0 0 16px rgba(255, 60, 60, 0.7); }
 #desk.tv-full #desk-glass #gate .gate-age { font-size: 15px; } #desk.tv-full #desk-glass #gate .gate-age .age { font-size: 4.2rem; }
+.find-ticket > b i.rc { font-style: normal; color: #04140c; background: #3dff6e; border-radius: 999px; padding: 0.05rem 0.45rem; font-size: 11px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }

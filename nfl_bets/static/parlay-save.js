@@ -79,7 +79,11 @@ function saveOpen(id) {
   paintParlay();
 }
 
+let saveDropAt = 0;
+
 function saveDrop(id) {
+  if (Date.now() - saveDropAt > 5 * 60 * 1000 && !window.confirm("Delete this saved parlay?")) return;
+  saveDropAt = Date.now();
   saveStore(saveList().filter((row) => row.id !== id));
   if (window.parlayOpenId === id) { window.parlayOpenId = ""; parlayPick.clear(); parlayLeg.clear(); if (typeof trayRoster === "function") trayRoster(); }
   paintParlay();

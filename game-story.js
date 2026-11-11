@@ -187,7 +187,9 @@ async function build(body, board) {
   if (!boxes) return { sections: [] };
   const fives = { away: fiveOf(read, boxes.away.name), home: fiveOf(read, boxes.home.name) };
   const outs = { away: outsOf(read, boxes.away.name), home: outsOf(read, boxes.home.name) };
-  return tell(game, boxes, read, fives, outs);
+  const story = tell(game, boxes, read, fives, outs);
+  try { story.bets = require("./script-bets").scriptBets(game, boxes, fives, outs, body.props); } catch (error) { console.error("script bets failed:", error); }
+  return story;
 }
 
 function tell(game, boxes, read, fives, outs) {
