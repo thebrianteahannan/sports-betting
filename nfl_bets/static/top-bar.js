@@ -10,7 +10,7 @@ function whereNick(team) {
 }
 
 function whereFind(board) {
-  const who = board.querySelector(".find-list > h3 .rec-count");
+  const who = board.querySelector(".find-list > h3 .rec-count, .find-list > .find-profile > h3 .rec-count");
   if (who) return `Search results for ${who.parentElement.firstChild.textContent.split(",")[0].trim()}`;
   const match = [...board.querySelectorAll(".find-teams .find-match")].pop();
   const sides = match ? [...match.querySelectorAll(":scope > .find-side-go")].map((side) => whereNick(side.textContent)) : [];

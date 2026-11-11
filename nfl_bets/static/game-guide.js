@@ -18,26 +18,103 @@ function gameEveryone(match, sides, people, list, hits) {
   const teams = sides.map((side) => people.find((item) => item.kind !== "player" && item.name === side.textContent.replace(/, \d+ bets?$/, ""))).filter(Boolean);
   if (teams.length < 2) return null;
   const box = document.createElement("details");
-  box.className = "find-everyone"; box.open = true;
+  box.className = "find-everyone find-team-bets"; box.open = true;
   const head = document.createElement("summary");
-  head.textContent = "Players with bets";
-  box.append(head);
+  head.innerHTML = `<b class="find-script-head">Player bets</b>`;
+  const pair = document.createElement("div");
+  pair.className = "find-sides";
+  box.append(head, pair);
   teams.forEach((team) => {
-    const roster = document.createElement("details");
+    const roster = document.createElement("div");
     roster.className = "find-roster find-all";
-    box.append(roster);
-    const club = typeof clubPalette === "function" && clubPalette(team.name, team.sport || ((team.bets || []).find((bet) => bet.sport) || {}).sport || "");
-    if (club) Object.entries({ chip: club.c1, "chip-ink": "#ffffff", pick: club.c2, "pick-ink": club.ink2, "pick-shadow": "none", card: club.card, line: club.line, edge: club.edge }).forEach(([key, value]) => roster.style.setProperty(`--club-${key}`, value));
+    pair.append(roster);
+    gameClub(roster, team.name, team.sport || ((team.bets || []).find((bet) => bet.sport) || {}).sport || "");
     const name = typeof whereNick === "function" ? whereNick(team.name) : team.name;
     new MutationObserver(() => {
+      gameAlign(pair);
       const top = roster.querySelector(":scope > summary");
       if (!top) return;
-      const text = `${name}, ${roster.querySelectorAll(".find-chip").length}`;
+      const off = (chip) => (roster.classList.contains("hide-bench") && chip.dataset.bench) || (roster.classList.contains("hide-fringe") && chip.dataset.fringe) || (roster.classList.contains("hide-def") && chip.dataset.def);
+      const text = `${name}, ${[...roster.querySelectorAll(".find-chip")].filter((chip) => !off(chip)).length}`;
       if (top.textContent !== text) { top.textContent = text; roster.open = true; }
-    }).observe(roster, { childList: true, subtree: true });
+    }).observe(roster, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
     fillRoster(roster, team, list, hits, people);
   });
   return box;
+}
+
+function gameAlign(pair) {
+  const rosters = [...pair.children], count = new Map();
+  const groups = (roster) => [...roster.querySelectorAll(":scope > .find-names > .find-group:not(.find-outs)")];
+  const spot = (group) => { const node = group.querySelector("button[data-pos]"); return node ? node.dataset.pos : ""; };
+  rosters.forEach((roster) => groups(roster).forEach((group) => count.set(spot(group), (count.get(spot(group)) || 0) + group.querySelectorAll(".find-chip").length)));
+  const rows = [...count.keys()].sort((a, b) => count.get(b) - count.get(a) || a.localeCompare(b));
+  pair.style.gridTemplateRows = `repeat(${rows.length + 2}, auto)`;
+  rosters.forEach((roster) => {
+    const top = roster.querySelector(":scope > summary"), bar = roster.querySelector(":scope > .find-names > .find-hides");
+    if (top) top.style.gridRow = "1";
+    if (bar) bar.style.gridRow = "2";
+    const own = groups(roster), sorted = own.slice().sort((a, b) => rows.indexOf(spot(a)) - rows.indexOf(spot(b)));
+    if (sorted.some((group, at) => group !== own[at])) { if (bar) bar.after(...sorted); else roster.querySelector(":scope > .find-names").prepend(...sorted); }
+    sorted.forEach((group) => { group.style.gridRow = String(rows.indexOf(spot(group)) + 3); });
+  });
+}
+
+function gameClub(roster, name, sport) {
+  const club = typeof clubPalette === "function" && clubPalette(name, sport || "");
+  if (club) Object.entries({ chip: club.c1, "chip-ink": "#ffffff", pick: club.c2, "pick-ink": club.ink2, "pick-shadow": "none", card: club.card, line: club.line, edge: club.edge }).forEach(([key, value]) => roster.style.setProperty(`--club-${key}`, value));
+}
+
+function gameLines(fold, game, rows) {
+  const chip = (bet, text) => {
+    const price = Number(bet.odds), key = parlayKey(bet);
+    const wrap = document.createElement("span"); wrap.className = "find-chip find-line-chip"; wrap.dataset.key = key;
+    const main = document.createElement("button"); main.type = "button"; main.textContent = `${text} ${price > 0 ? `+${price}` : price}`; main.dataset.pos = findPct(price); main.title = findCash(price) ? `$5 profits ${findCash(price)}` : "";
+    main.classList.toggle("on", parlayLeg.has(key));
+    const plus = document.createElement("button"); plus.type = "button"; plus.className = "find-plus"; plus.setAttribute("aria-label", `Add ${bet.label} to the parlay`);
+    const flip = () => { if (parlayLeg.has(key)) parlayLeg.delete(key); else if (parlayLeg.size < 8) parlayLeg.set(key, bet); else return; paintParlay(); };
+    main.addEventListener("click", flip); plus.addEventListener("click", flip);
+    wrap.append(main, plus);
+    return wrap;
+  };
+  const block = (title, sport, name) => {
+    const roster = document.createElement("div"); roster.className = "find-roster find-all";
+    if (name) gameClub(roster, name, sport);
+    const head = document.createElement("summary"); head.textContent = title;
+    const names = document.createElement("div"); names.className = "find-names";
+    roster.append(head, names);
+    return { roster, head, names };
+  };
+  const kinds = ["spread", "moneyline"], pair = document.createElement("div"); pair.className = "find-sides";
+  String(game.match || "").split(/ @ | v /).map((side) => side.trim()).filter(Boolean).forEach((side) => {
+    const mine = rows.filter((bet) => kinds.includes(String(bet.market || "").toLowerCase()) && String(bet.label || "").toLowerCase().startsWith(side.toLowerCase()));
+    if (!mine.length) return;
+    const { roster, head, names } = block(typeof whereNick === "function" ? whereNick(side) : side, game.sport, side);
+    head.style.gridRow = "1";
+    kinds.forEach((kind, at) => {
+      const bets = mine.filter((bet) => String(bet.market || "").toLowerCase() === kind);
+      if (!bets.length) return;
+      const group = document.createElement("div"); group.className = "find-group"; group.style.gridRow = String(at + 2);
+      bets.forEach((bet) => group.append(chip(bet, kind === "moneyline" ? "Win" : String(bet.label).slice(side.length).replace(/\s+spread$/i, "").trim())));
+      names.append(group);
+    });
+    pair.append(roster);
+  });
+  pair.style.gridTemplateRows = "repeat(3, auto)";
+  if (pair.childElementCount) fold.append(pair);
+  const totals = rows.filter((bet) => /^(over|under)\b/i.test(String(bet.label || "")));
+  if (!totals.length) return;
+  const { roster, names } = block("Game total");
+  roster.classList.add("find-line-total");
+  const group = document.createElement("div"); group.className = "find-group";
+  totals.forEach((bet) => group.append(chip(bet, String(bet.label))));
+  names.append(group);
+  fold.append(roster);
+}
+
+if (typeof paintParlay === "function") {
+  const paintParlayLines = paintParlay;
+  paintParlay = function () { paintParlayLines.apply(this, arguments); document.querySelectorAll(".find-line-chip").forEach((chip) => { if (chip.firstElementChild) chip.firstElementChild.classList.toggle("on", parlayLeg.has(chip.dataset.key)); }); };
 }
 
 function gameAddLine(add, bets) {
@@ -90,7 +167,7 @@ function gameGuide(match, people, list, hits, noted) {
   const sides = [...match.querySelectorAll(":scope > .find-side-go")];
   sides[sides.length - 1].after(guide);
   const everyone = gameEveryone(match, sides, people, list, hits);
-  if (everyone) { guide.after(everyone); if (noted === "shut") everyone.open = false; }
+  if (everyone) { guide.after(everyone); const stacks = match.querySelector(":scope > .find-stacks"); if (stacks) everyone.before(stacks); }
   gameGuidePaint(match, guide);
   match.addEventListener("click", (event) => { const side = event.target.closest(".find-side-go"); if (!side || !match.contains(side) || side.parentElement !== match) return; sides.forEach((node) => node.removeAttribute("aria-label")); gameGuidePaint(match, guide); });
 }

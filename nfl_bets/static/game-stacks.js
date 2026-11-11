@@ -47,8 +47,11 @@ function paintGameStacks(holder, game, who = "") {
   const box = document.createElement("details");
   box.className = "find-score find-stacks";
   box.style.gridColumn = "1 / -1";
-  box.innerHTML = `<summary><b>Parlay strategies ${who ? `with ${esc(who)}` : "for this game"}</b></summary><p class="quiet">Looking for stacks.</p>`;
-  match.append(box);
+  const card = !holder.classList.contains("find-stack-host");
+  if (card) box.classList.add("find-team-bets");
+  box.innerHTML = `<summary>${card ? `<b class="find-script-head">Strategies</b>` : `<b>Parlay strategies ${who ? `with ${esc(who)}` : "for this game"}</b>`}</summary><p class="quiet">Looking for stacks.</p>`;
+  const crowd = card && match.querySelector(":scope > .find-odds.find-team-bets, :scope > .find-everyone");
+  if (crowd) crowd.before(box); else match.append(box);
   if (game.match && !holder.classList.contains("find-stack-host")) { box.dataset.match = game.match; if (window.saveStacksOpen && typeof saveStacksSync === "function") saveStacksSync(); }
   box.addEventListener("click", (event) => {
     if (event.target.closest("button, a, input, select, textarea, .stack-grade, .stack-close")) return;
@@ -67,7 +70,7 @@ function paintGameStacks(holder, game, who = "") {
     const hits = rows.filter((row) => row.stacks.length).length;
     const wait = box.querySelector(".quiet");
     if (!hits) wait.textContent = data && data.error && window.state && state.admin ? data.error : who ? `None of the current FanDuel prices fit a stack with ${who}.` : game.match ? "None of the current FanDuel prices fit a stack in this game." : "None of the current FanDuel prices fit a stack.";
-    else { wait.remove(); box.querySelector("summary b").append(`, ${hits}`); }
+    else { wait.remove(); if (!card) box.querySelector("summary b").append(`, ${hits}`); }
     const board = document.createElement("div");
     board.className = "find-stack-list";
     live.forEach((row) => board.append(gameStackBlock(row, count(row), notes[row.name])));

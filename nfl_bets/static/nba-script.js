@@ -219,12 +219,12 @@ function nbaScript(holder, game, people) {
   const sum = box.querySelector("summary");
   const call = match.querySelector(".find-pick"), top = call && call.parentElement;
   if (top && top.parentElement === match) top.after(box);
-  else { const crowd = match.querySelector(":scope > .find-everyone, :scope > .find-body"); if (crowd) crowd.before(box); else match.append(box); }
+  else { const crowd = match.querySelector(":scope > .find-stacks.find-team-bets, :scope > .find-odds.find-team-bets, :scope > .find-everyone, :scope > .find-body"); if (crowd) crowd.before(box); else match.append(box); }
   const key = `${full.match}|${full.kickoff}`, props = nbaScriptProps(people, full.match);
   const ask = (list) => { const id = `${list}|${key}`; let job = nbaScriptJobs.get(id); if (!job) { job = fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list, match: full.match, kickoff: full.kickoff, props }) }).then((res) => res.json()).catch(() => ({})); nbaScriptJobs.set(id, job); job.then((data) => { if (!data || !(data.summary || (data.sections || []).length)) nbaScriptJobs.delete(id); }); } return job; };
   const got = { nba: null, story: null, nbaDone: false, storyDone: false };
   const brief = () => holder.querySelector(".find-brief:not(.find-script .find-brief)");
-  const adopt = () => { const node = brief(); if (node && box.isConnected) { node.open = false; box.append(node); } };
+  const adopt = () => { const node = brief(); if (node && box.isConnected) { node.open = false; node.style.gridColumn = "1 / -1"; box.after(node); } };
   setTimeout(adopt, 0);
   const paint = () => {
     if (!box.isConnected) return;
@@ -244,7 +244,7 @@ function nbaScript(holder, game, people) {
     if (story && (story.plays || []).length) { const block = document.createElement("div"); block.className = "find-script-part"; block.innerHTML = `<b>How it plays out</b><p>${esc(story.plays.join(" "))}</p>`; add(block); }
     ((story && story.sections) || []).forEach((part) => { const block = document.createElement("div"); block.className = "find-script-part"; block.innerHTML = `<b>${esc(part.title || "")}</b>${(part.lines || []).map((line) => `<p>${esc(line)}</p>`).join("")}`; add(block); });
     const oldBets = box.parentElement && box.parentElement.querySelector(":scope > .find-bets");
-    if (story && story.bets && (story.bets.groups || []).length) { const fresh = scriptBetsBox(story.bets, full, people); scriptRecKeep(story.bets, full); fresh.open = !!(oldBets && oldBets.open); if (oldBets) oldBets.replaceWith(fresh); else box.after(fresh); scriptBetsSide(match, fresh); }
+    if (story && story.bets && (story.bets.groups || []).length) { const fresh = scriptBetsBox(story.bets, full, people); scriptRecKeep(story.bets, full); fresh.open = !!(oldBets && oldBets.open); if (oldBets) oldBets.replaceWith(fresh); else { const next = box.nextElementSibling; (next && next.classList.contains("find-brief") ? next : box).after(fresh); } scriptBetsSide(match, fresh); }
     ((nba && nba.parts) || []).forEach((part) => { const block = document.createElement("div"); block.className = "find-script-part"; block.innerHTML = `<b>${esc(part.title || "")}</b><p>${esc(part.text || "")}</p>${String(part.proof || "").split("\n").filter(Boolean).map((line) => `<p class="find-script-proof">${esc(line)}</p>`).join("")}`; add(block); });
   };
   ask("nba").then((data) => { got.nba = data; got.nbaDone = true; paint(); });
