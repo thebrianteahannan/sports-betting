@@ -283,7 +283,7 @@ function nbaScript(holder, game, people) {
   if (top && top.parentElement === match) top.after(box);
   else { const crowd = match.querySelector(":scope > .find-stacks.find-team-bets, :scope > .find-odds.find-team-bets, :scope > .find-everyone, :scope > .find-body"); if (crowd) crowd.before(box); else match.append(box); }
   const key = `${full.match}|${full.kickoff}`, props = nbaScriptProps(people, full.match);
-  const ask = (list) => { const id = `${list}|${key}`; let job = nbaScriptJobs.get(id); if (!job) { job = fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list, match: full.match, kickoff: full.kickoff, props }) }).then((res) => res.json()).catch(() => ({})); nbaScriptJobs.set(id, job); job.then((data) => { if (!data || !(data.summary || (data.sections || []).length)) nbaScriptJobs.delete(id); }); } return job; };
+  const ask = (list) => { const id = `${list}|${key}|${list === "story" ? props.length : ""}`; let job = nbaScriptJobs.get(id); if (!job) { job = fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list, match: full.match, kickoff: full.kickoff, props }) }).then((res) => res.json()).catch(() => ({})); nbaScriptJobs.set(id, job); job.then((data) => { if (!data || !(data.summary || (data.sections || []).length)) nbaScriptJobs.delete(id); }); } return job; };
   const got = { nba: null, story: null, nbaDone: false, storyDone: false };
   const brief = () => holder.querySelector(".find-brief:not(.find-script .find-brief)");
   const adopt = () => { const node = brief(); if (node && box.isConnected) { node.open = false; node.style.gridColumn = "1 / -1"; box.after(node); } };

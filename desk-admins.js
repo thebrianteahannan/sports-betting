@@ -78,32 +78,19 @@ function createAdmins(readKey, writeKey) {
     return `${when}, ${sports}, ${KIND_SAY[row.kind] || "any player prop"}, ${row.legs || 3} legs, ${AIM_SAY[row.aim] || "the safest price"}`;
   }
 
-  function describe(user, rates, parlays) {
+  const HABITS_SINCE = Date.parse("2026-11-11T22:36:00Z");
+  function fresh(at) {
+    const time = typeof at === "number" ? at : Date.parse(at || "");
+    return Number.isFinite(time) && time >= HABITS_SINCE;
+  }
+
+  function describe(user, parlays) {
     const taste = tasteOf(user);
     const bits = [];
-    const built = parlayLine(parlays || []);
+    const built = parlayLine((parlays || []).filter((row) => fresh(/^p\d+$/.test(String(row.id)) ? Number(String(row.id).slice(1)) : Number(row.at))));
     if (built) bits.push(built);
-    const looked = mode(taste.search, (row) => String(row.q || "").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()));
+    const looked = mode(taste.search.filter((row) => fresh(row.at)), (row) => String(row.q || "").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()));
     if (looked) bits.push(`Searches ${looked} most.`);
-    if (taste.quiz.length === 1) bits.push(`Has answered once: ${quizLine(taste.quiz[0])}.`);
-    else if (taste.quiz.length) bits.push(`Answers lean toward ${mode(taste.quiz, (row) => (row.when === "week" ? "this week" : "today"))}, ${mode(taste.quiz, (row) => (Array.isArray(row.sports) && row.sports.length ? row.sports.join(", ") : "all leagues"))}, ${mode(taste.quiz, (row) => KIND_SAY[row.kind] || "any player prop")}, ${mode(taste.quiz, (row) => `${row.legs || 3} legs`)}, and ${mode(taste.quiz, (row) => AIM_SAY[row.aim] || "the safest price")}.`);
-    const opened = mode(taste.open, (row) => CARD_SAY[row.card] || "");
-    if (opened) bits.push(taste.open.length === 1 ? `Opened ${opened}.` : `Opens ${opened} most often.`);
-    const foundAim = mode(taste.found, (row) => AIM_SAY[row.aim] || "");
-    const wide = taste.found.filter((row) => Array.isArray(row.sports) && row.sports.length > 3).length;
-    const foundSports = mode(taste.found.flatMap((row) => (Array.isArray(row.sports) && row.sports.length <= 3 ? row.sports : []).map((sport) => ({ sport }))), (row) => row.sport);
-    if (taste.found.length && wide >= taste.found.length / 2) bits.push(`The bets that come back spread across several leagues${foundAim ? `, aimed at ${foundAim}` : ""}.`);
-    else if (foundSports || foundAim) bits.push(`The bets that come back are mostly ${foundSports || "mixed leagues"}${foundAim ? `, aimed at ${foundAim}` : ""}.`);
-    const likes = [];
-    const seen = new Set();
-    rates.forEach((row) => {
-      const stars = Number(row.detail && row.detail.stars) || 0;
-      const label = row.detail ? (CARD_SAY[row.detail.card] || row.detail.card || "") : "";
-      if (!label || stars < 1 || seen.has(label)) return;
-      seen.add(label);
-      likes.push(`${label} ${stars} star${stars === 1 ? "" : "s"}`);
-    });
-    if (likes.length) bits.push(`Gives ${likes.slice(0, 4).join(", ")}.`);
     return bits.join(" ") || "Nothing tracked yet.";
   }
 
@@ -113,16 +100,12 @@ function createAdmins(readKey, writeKey) {
   }
 
   async function habitsOf(data) {
-    return Promise.all(data.users.map(async (user) => {
-      const taste = tasteOf(user);
-      const rates = data.activity.filter((row) => row.kind === "rate" && row.userId === user.id && row.detail);
-      return {
-        name: user.name || "Member",
-        email: user.email || "",
-        blurb: describe(user, rates, await parlaysOf(user)),
-        recent: taste.quiz.slice(0, 5).map(quizLine),
-      };
-    }));
+    return Promise.all(data.users.map(async (user) => ({
+      name: user.name || "Member",
+      email: user.email || "",
+      blurb: describe(user, await parlaysOf(user)),
+      recent: [],
+    })));
   }
 
   function typeKey(row) {

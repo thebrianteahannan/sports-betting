@@ -200,11 +200,11 @@ function tell(game, boxes, read, fives, outs) {
 }
 
 function gameStory(body, board) {
-  const key = `${body.match}|${body.kickoff}`;
+  const key = `${body.match}|${body.kickoff}`, count = Array.isArray(body.props) ? body.props.length : 0;
   const hit = MEM.get(key);
-  if (hit && Date.now() - hit.at < KEEP) return hit.promise;
+  if (hit && Date.now() - hit.at < KEEP && count <= hit.count) return hit.promise;
   const promise = build(body, board).then((data) => { if (!data.sections.length) MEM.delete(key); return data; }).catch(() => { MEM.delete(key); return { sections: [] }; });
-  MEM.set(key, { at: Date.now(), promise });
+  MEM.set(key, { at: Date.now(), promise, count });
   return promise;
 }
 
