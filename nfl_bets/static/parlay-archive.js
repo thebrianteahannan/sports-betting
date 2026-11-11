@@ -79,6 +79,11 @@ function archiveGame(key, rows) {
 function archivePanel() {
   const panel = document.createElement("div");
   panel.className = "find-done";
+  const top = document.createElement("p");
+  top.className = "find-done-top";
+  top.innerHTML = `<b>Finished bets</b><span>${esc(archiveTally(window.archiveRows.filter((row) => row.done)))}</span><button type="button" class="find-done-x" aria-label="Close finished bets">×</button>`;
+  top.querySelector("button").addEventListener("click", () => { window.archiveOpen = false; archivePaint(); });
+  panel.append(top);
   const days = new Map();
   window.archiveRows.filter((row) => row.done).forEach((row) => { if (!days.has(row.done.day)) days.set(row.done.day, []); days.get(row.done.day).push(row); });
   [...days.keys()].sort().reverse().forEach((day, index) => {
