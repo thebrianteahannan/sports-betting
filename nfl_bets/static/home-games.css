@@ -1,6 +1,7 @@
-#desk-games { position: absolute; left: 0; right: 0; bottom: 80px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; box-sizing: border-box; padding: 14px 16px 8px; color: #f4f7fb; }
+#desk-games { position: absolute; left: 0; right: 0; bottom: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; box-sizing: border-box; padding: 0 16px 16px; color: #f4f7fb; }
 #desk-games[hidden] { display: none; }
-#desk-games .desk-games-head { margin: 0 0 10px; color: #e7c15a; font-size: 18px; font-weight: 800; }
+#desk-games .desk-games-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; box-sizing: content-box; min-height: 2.7rem; margin: 0; padding: 12px 3.4rem 10px 0; background: #07090e; color: #e7c15a; font-size: 18px; font-weight: 800; }
+body.home-games-on #who { top: var(--home-games-top); right: 16px; bottom: auto; }
 #desk-games .desk-game { display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "sport match match" ". when until"; column-gap: 8px; row-gap: 3px; align-items: center; width: 100%; min-height: 0; margin: 0 0 8px; padding: 10px 12px; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: #041018; box-shadow: none; color: #f4f7fb; font: inherit; text-align: left; text-transform: none; letter-spacing: normal; cursor: pointer; }
 #desk-games .desk-game:active { border-color: #3dff6e; }
 #desk-games .desk-game-sport { grid-area: sport; padding: 2px 6px; border: 1px solid #2a3a48; border-radius: 6px; color: #9fb3c8; font-size: 11px; font-weight: 800; }

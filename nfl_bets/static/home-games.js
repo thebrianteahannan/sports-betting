@@ -39,24 +39,39 @@ function homeGamesRow(game) {
   return row;
 }
 
+function homeSharedRow(item) {
+  const row = document.createElement("button");
+  row.type = "button";
+  row.className = "desk-game";
+  const who = item.legs.map((leg) => String(leg.label || "").split(/\s+(?:\d|Over\b|Under\b)/)[0].split(" ").pop()).filter(Boolean);
+  const games = typeof gameShortList === "function" ? gameShortList(item.legs) : "";
+  const price = typeof savePrice === "function" ? savePrice(item.legs) : "";
+  row.innerHTML = `<span class="desk-game-sport">${esc(games)}</span><span class="desk-game-match">${esc(`${who.slice(0, 2).join(", ")}${who.length > 2 ? ` +${who.length - 2}` : ""}`)}</span><span class="desk-game-when">${esc(`From ${item.fromName}`)}</span><span class="desk-game-until">${esc(price)}</span>`;
+  row.addEventListener("click", () => { window.asking = true; if (window.goFull) goFull(); if (window.sharedGo) sharedGo(); });
+  return row;
+}
+
 function homeGamesPaint() {
   const desk = document.getElementById("desk"), bg = document.getElementById("desk-bg"), guide = document.getElementById("bird-guide");
   if (!desk || !bg) return;
   let box = document.getElementById("desk-games");
   if (!box) { box = document.createElement("div"); box.id = "desk-games"; box.hidden = true; desk.append(box); }
-  const now = Date.now(), games = homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now);
+  const now = Date.now(), games = homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now), fresh = typeof sharedUnopened === "function" ? sharedUnopened() : [];
   const top = Math.ceil(bg.getBoundingClientRect().bottom - desk.getBoundingClientRect().top);
-  const show = games.length > 0 && !document.body.classList.contains("needs-member") && !desk.classList.contains("tv-full") && Boolean(guide && !guide.hidden) && desk.clientHeight - top >= 160;
+  const show = (fresh.length > 0 || games.length > 0) && !document.body.classList.contains("needs-member") && !desk.classList.contains("tv-full") && Boolean(guide && !guide.hidden) && desk.clientHeight - top >= 160;
   box.hidden = !show;
+  document.body.classList.toggle("home-games-on", show);
   if (!show) return;
   box.style.top = `${top}px`;
-  const sig = games.map((game) => `${game.match}|${game.kickoff}`).join(";");
+  document.body.style.setProperty("--home-games-top", `${top + 12}px`);
+  const sig = fresh.length ? `shared:${fresh.map((item) => item.id).join(";")}` : games.map((game) => `${game.match}|${game.kickoff}`).join(";");
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
   const head = document.createElement("p");
   head.className = "desk-games-head";
-  head.textContent = `Today's games, ${games.length}`;
-  box.replaceChildren(head, ...games.map(homeGamesRow));
+  const names = [...new Set(fresh.map((item) => item.fromName))];
+  head.textContent = !fresh.length ? `Today's games, ${games.length}` : `${names.length === 1 ? names[0] : "Your friends"} sent you ${fresh.length === 1 ? "a bet" : `${fresh.length} bets`}`;
+  box.replaceChildren(head, ...(fresh.length ? fresh.map(homeSharedRow) : games.map(homeGamesRow)));
 }
 
 setInterval(() => { homeGamesLoad(); homeGamesPaint(); }, 500);
