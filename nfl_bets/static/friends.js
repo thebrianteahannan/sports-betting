@@ -57,17 +57,20 @@ function sharedSeen() {
 }
 
 function sharedGo() {
+  const fresh = new Set(sharedUnopened().map((item) => String(item.id)));
   window.sharedOpen = true;
   sharedSeen();
-  if (!document.querySelector(".find-board") && window.birdMenu) birdMenu("find");
+  if (!document.querySelector("#desk-glass-in .find-board") && window.birdMenu) birdMenu("find");
   let tries = 0;
   const wait = setInterval(() => {
-    const board = document.querySelector(".find-board");
+    const board = document.querySelector("#desk-glass-in .find-board");
     if (!board && ++tries < 40) return;
     clearInterval(wait);
     if (typeof paintParlay === "function") paintParlay();
     const panel = document.querySelector(".find-saved .find-friends");
     if (panel) panel.scrollIntoView({ block: "start", behavior: "smooth" });
+    const chips = panel ? [...panel.querySelectorAll(".find-shared-chip[data-shared]")].filter((chip) => fresh.has(chip.dataset.shared)) : [];
+    chips.forEach((chip) => { chip.classList.remove("find-flash"); void chip.offsetWidth; chip.classList.add("find-flash"); setTimeout(() => chip.classList.remove("find-flash"), 2400); });
   }, 150);
 }
 window.sharedGo = sharedGo;
@@ -146,11 +149,11 @@ function friendsAdd() {
 }
 
 function sharedToTray(item, again) {
-  if (!document.querySelector(".find-board") && window.birdMenu && !again) {
+  if (!document.querySelector("#desk-glass-in .find-board") && window.birdMenu && !again) {
     if (window.goFull) goFull();
     birdMenu("find");
     let tries = 0;
-    const wait = setInterval(() => { if (document.querySelector(".find-board") || ++tries > 40) { clearInterval(wait); sharedToTray(item, true); } }, 150);
+    const wait = setInterval(() => { if (document.querySelector("#desk-glass-in .find-board") || ++tries > 40) { clearInterval(wait); sharedToTray(item, true); } }, 150);
     return;
   }
   if (typeof saveNew === "function") saveNew();
@@ -209,6 +212,7 @@ function sharedState(one) {
 function sharedChip(item) {
   const chip = document.createElement("span");
   chip.className = "find-saved-chip find-shared-chip";
+  if (!item.mine) chip.dataset.shared = item.id;
   const go = document.createElement("button");
   go.type = "button";
   const games = typeof gameShortList === "function" ? gameShortList(item.legs) : "";
@@ -221,7 +225,17 @@ function sharedChip(item) {
   go.innerHTML = [games && `<i>${esc(games)}</i>`, `<span>${esc(said)}</span>`, price && `<b>${esc(price)}</b>`, marks].filter(Boolean).join("");
   go.title = item.note ? `“${item.note}”` : item.mine ? "A bet you sent" : `From ${item.fromName}`;
   go.addEventListener("click", () => { if (!item.mine) sharedSeen(); sharedToTray(item); });
-  if (item.mine) { chip.append(go); return chip; }
+  if (item.mine) {
+    const unsend = document.createElement("button");
+    unsend.type = "button"; unsend.className = "find-saved-x"; unsend.textContent = "×"; unsend.setAttribute("aria-label", "Delete this bet you sent");
+    unsend.addEventListener("click", async () => {
+      const who = item.to.map((one) => names.get(one.id) || "your friend").join(", ");
+      if (!window.confirm(`Delete this bet? ${who} won't see it anymore.`)) return;
+      try { const data = await friendsCall("/api/shared", { action: "unsend", id: item.id }); window.sharedItems = data.items || []; window.sharedSent = (data.sent || []).map((row) => ({ ...row, mine: true })); paintParlay(); } catch (error) { console.log("[friends] unsend", error); }
+    });
+    chip.append(go, unsend);
+    return chip;
+  }
   const drop = document.createElement("button");
   drop.type = "button";
   drop.className = "find-saved-x";

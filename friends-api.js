@@ -103,6 +103,14 @@ async function sharedList(user, readKey) {
 }
 
 async function sharedPost(user, body, readKey, writeKey) {
+  if (body.action === "unsend") {
+    const id = String(body.id || ""), mine = (row) => row.id === id && row.from === user.id;
+    for (const friend of friendIds(await linksOf(readKey), user.id)) {
+      const theirs = (await readKey(inboxKey(friend))) || {}, rows = Array.isArray(theirs.items) ? theirs.items : [];
+      if (rows.some(mine)) await writeKey(inboxKey(friend), { items: rows.filter((row) => !mine(row)), at: Date.now() });
+    }
+    return sharedList(user, readKey);
+  }
   const box = (await readKey(inboxKey(user.id))) || {};
   let items = Array.isArray(box.items) ? box.items : [];
   if (body.action === "seen") items = items.map((row) => ({ ...row, seen: true }));
