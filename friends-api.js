@@ -13,7 +13,7 @@ async function linksOf(readKey) {
 
 function who(users, id) {
   const user = users.find((row) => row.id === id);
-  return user ? { id: user.id, name: String(user.name || "").trim() || String(user.email || "").split("@")[0], email: user.email || "" } : null;
+  return user ? { id: user.id, name: String(user.name || "").trim() || String(user.email || "").split("@")[0], state: user.state || "" } : null;
 }
 
 function friendIds(links, me) {
@@ -35,12 +35,19 @@ async function friendsView(user, readKey, loadMembers) {
 async function friendsPost(user, body, readKey, writeKey, loadMembers) {
   const links = await linksOf(readKey), data = await loadMembers();
   const action = String(body.action || "");
+  if (action === "find") {
+    const q = String(body.q || "").replace(/\s+/g, " ").trim().toLowerCase();
+    if (q.length < 2) return { people: [] };
+    const status = (id) => { const row = links.find((one) => one.key === pairOf(user.id, id)); return !row ? "" : row.status === "friends" ? "friends" : row.from === user.id ? "sent" : "asked"; };
+    const people = data.users.filter((row) => row.id !== user.id && String(row.name || "").toLowerCase().includes(q))
+      .sort((x, y) => String(x.name).toLowerCase().indexOf(q) - String(y.name).toLowerCase().indexOf(q) || String(x.name).localeCompare(String(y.name)))
+      .slice(0, 8).map((row) => ({ id: row.id, name: String(row.name || "").trim(), state: row.state || "", status: status(row.id) }));
+    return { people };
+  }
   if (action === "ask") {
-    const email = String(body.email || "").trim().toLowerCase();
-    const them = data.users.find((row) => String(row.email || "").trim().toLowerCase() === email);
-    if (!email) throw new Error("Type your friend's email.");
-    if (!them) throw new Error("No member uses that email. They need a free membership first.");
-    if (them.id === user.id) throw new Error("That is your own email.");
+    const them = data.users.find((row) => row.id === String(body.id || ""));
+    if (!them) throw new Error("Pick a member from the list.");
+    if (them.id === user.id) throw new Error("That is you.");
     const key = pairOf(user.id, them.id), row = links.find((one) => one.key === key);
     if (row && row.status === "friends") throw new Error(`You are already friends with ${who(data.users, them.id).name}.`);
     if (row && row.from !== user.id) { row.status = "friends"; row.at = Date.now(); }

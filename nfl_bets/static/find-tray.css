@@ -193,11 +193,11 @@
 .rec-board .find-saved .find-saved-group > button.find-saved-x:hover { color: #ff6b6b; }
 .find-saved .find-saved-stacks .find-score { margin: 0.3rem 0 0; }
 .find-saved .find-done { flex: 1 0 100%; min-width: 0; display: grid; gap: 0.5rem; margin-top: 0.3rem; padding: 0.6rem 0.7rem 0.7rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 14px; background: #08130e; }
-.find-done .find-done-top { display: flex; align-items: center; gap: 0.6rem; margin: 0; }
-.find-done .find-done-top b { color: #f4f7fb; font-size: 17px; font-weight: 800; }
-.find-done .find-done-top span { color: #9fb3c8; font-size: 13px; }
-#desk.tv-full #desk-glass .find-done button.find-done-x, #desk-glass .find-done button.find-done-x { width: 2rem; height: 2rem; min-height: 0; margin: 0 0 0 auto; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 999px; background: transparent; box-shadow: none; color: #d6e0ea; font-size: 20px; line-height: 1; cursor: pointer; }
-#desk-glass .find-done button.find-done-x:hover { border-color: #3dff6e; color: #3dff6e; }
+.find-done .find-done-top, .find-friends .find-done-top { display: flex; align-items: center; gap: 0.6rem; margin: 0; }
+.find-done .find-done-top b, .find-friends .find-done-top b { color: #f4f7fb; font-size: 17px; font-weight: 800; }
+.find-done .find-done-top span, .find-friends .find-done-top span { color: #9fb3c8; font-size: 13px; }
+#desk.tv-full #desk-glass .find-done button.find-done-x, #desk-glass .find-done button.find-done-x, #desk.tv-full #desk-glass .find-friends button.find-done-x, #desk-glass .find-friends button.find-done-x { width: 2rem; height: 2rem; min-height: 0; margin: 0 0 0 auto; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 999px; background: transparent; box-shadow: none; color: #d6e0ea; font-size: 20px; line-height: 1; cursor: pointer; }
+#desk-glass .find-done button.find-done-x:hover, #desk-glass .find-friends button.find-done-x:hover { border-color: #3dff6e; color: #3dff6e; }
 .find-done > details { border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 12px; background: #0b1a14; padding: 0.5rem 0.75rem; }
 .find-done > details > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.6rem; cursor: pointer; color: #f4f7fb; }
 .find-done > details > summary span { color: #9fb3c8; font-size: 13px; }
@@ -231,7 +231,7 @@
 #desk-glass .find-done .find-done-review li.odd > b { color: #e7c15a; }
 #desk-glass .find-done .find-done-review li.miss > b { color: #ff6b6b; }
 #desk-glass .find-done .find-done-review li.held > b { color: #3dff6e; }
-.find-saved .find-friends { flex: 1 0 100%; min-width: 0; margin-top: 0.3rem; padding: 0.6rem 0.8rem; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 12px; background: #0b1a14; }
+.find-saved .find-friends { flex: 1 0 100%; min-width: 0; margin-top: 0.3rem; padding: 0.6rem 0.8rem 0.7rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 14px; background: #08130e; }
 .find-friends-sub { margin: 0.7rem 0 0.35rem; color: #e7c15a; font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
 .find-friends > .find-friends-sub:first-child, #share-friends > .find-friends-sub:first-child { margin-top: 0; }
 .find-friends-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0.25rem 0; color: #9fb3c8; font-size: 13px; }
@@ -244,6 +244,10 @@
 .find-friends-add { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; margin-top: 0.5rem; }
 .find-friends-add input { flex: 1 1 12rem; min-width: 0; padding: 0.4rem 0.6rem; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 8px; background: #07140f; color: #f4f7fb; font-size: 14px; }
 .find-friends-add .find-friends-note { flex-basis: 100%; }
+.find-friends-add .find-friends-hits { flex-basis: 100%; display: grid; gap: 0.2rem; }
+.find-friends-add .find-friends-hits:empty { display: none; }
+.find-friends-hits .find-friends-row { margin: 0; padding: 0.3rem 0.5rem; border-radius: 8px; background: #0f2219; }
+.find-friends-row > span.find-friends-tag { flex: 0 0 auto; color: #3dff6e; font-size: 12px; font-weight: 700; }
 .find-shared-card { margin: 0.4rem 0; padding: 0.5rem 0.7rem; border-left: 4px solid #6b7c8f; border-radius: 8px; background: #0f2219; }
 .find-shared-card.fresh { border-left-color: #3dff6e; }
 .find-shared-head { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: baseline; margin: 0 0 0.25rem; font-size: 14px; color: #f4f7fb; }

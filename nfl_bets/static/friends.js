@@ -50,12 +50,31 @@ async function friendsAct(body, note) {
 function friendsAdd() {
   const form = document.createElement("form");
   form.className = "find-friends-add";
-  form.innerHTML = `<input type="email" placeholder="Friend's email" aria-label="Friend's email" required><button type="submit" class="find-friends-go">Send request</button><p class="find-friends-note"></p>`;
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const input = form.querySelector("input"), note = form.querySelector("p");
-    try { window.friendsData = await friendsCall("/api/friends", { action: "ask", email: input.value }); input.value = ""; note.textContent = "Request sent. Once they accept, you can send them bets."; paintParlay(); } catch (error) { note.textContent = error.message; }
-  });
+  form.innerHTML = `<input type="search" placeholder="Find a member by name" aria-label="Find a member by name" autocomplete="off"><div class="find-friends-hits"></div><p class="find-friends-note"></p>`;
+  const input = form.querySelector("input"), hits = form.querySelector(".find-friends-hits"), note = form.querySelector("p");
+  let timer = 0, asked = 0;
+  const look = async () => {
+    const q = input.value.trim(), ticket = ++asked;
+    if (q.length < 2) { hits.replaceChildren(); note.textContent = ""; return; }
+    try {
+      const people = (await friendsCall("/api/friends", { action: "find", q })).people || [];
+      if (ticket !== asked) return;
+      note.textContent = people.length ? "" : "No member by that name yet.";
+      hits.replaceChildren(...people.map((one) => {
+        const row = document.createElement("div");
+        row.className = "find-friends-row";
+        row.innerHTML = `<span><b>${esc(one.name)}</b>${one.state ? ` · ${esc(one.state)}` : ""}</span>`;
+        const said = { friends: "Friends", sent: "Requested" }[one.status];
+        if (said) row.insertAdjacentHTML("beforeend", `<span class="find-friends-tag">${said}</span>`);
+        else row.append(friendsButton(one.status === "asked" ? "Accept" : "Add friend", async () => {
+          try { window.friendsData = await friendsCall("/api/friends", { action: "ask", id: one.id }); note.textContent = one.status === "asked" ? `You and ${one.name} are friends.` : `Request sent to ${one.name}.`; input.value = ""; hits.replaceChildren(); paintParlay(); } catch (error) { note.textContent = error.message; }
+        }));
+        return row;
+      }));
+    } catch (error) { note.textContent = error.message; }
+  };
+  input.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(look, 250); });
+  form.addEventListener("submit", (event) => { event.preventDefault(); clearTimeout(timer); look(); });
   return form;
 }
 
@@ -99,15 +118,20 @@ function friendsPanel() {
   const data = window.friendsData, note = document.createElement("p");
   note.className = "find-friends-note";
   const head = (text) => { const p = document.createElement("p"); p.className = "find-friends-sub"; p.textContent = text; return p; };
+  const top = document.createElement("p"), count = window.sharedItems.length;
+  top.className = "find-done-top";
+  top.innerHTML = `<b>Shared bets</b>${count ? `<span>${count} from friends</span>` : ""}<button type="button" class="find-done-x" aria-label="Close shared bets">×</button>`;
+  top.querySelector("button").addEventListener("click", () => { window.sharedOpen = false; friendsPaint(); });
+  panel.append(top);
   if (data.incoming.length) {
     panel.append(head("Friend requests"));
-    data.incoming.forEach((one) => { const row = document.createElement("p"); row.className = "find-friends-row"; row.innerHTML = `<span><b>${esc(one.name)}</b> ${esc(one.email)}</span>`; row.append(friendsButton("Accept", () => friendsAct({ action: "accept", id: one.id }, note)), friendsButton("Decline", () => friendsAct({ action: "decline", id: one.id }, note), "find-friends-quiet")); panel.append(row); });
+    data.incoming.forEach((one) => { const row = document.createElement("p"); row.className = "find-friends-row"; row.innerHTML = `<span><b>${esc(one.name)}</b>${one.state ? ` · ${esc(one.state)}` : ""}</span>`; row.append(friendsButton("Accept", () => friendsAct({ action: "accept", id: one.id }, note)), friendsButton("Decline", () => friendsAct({ action: "decline", id: one.id }, note), "find-friends-quiet")); panel.append(row); });
   }
   panel.append(head("Sent to you"));
   if (window.sharedItems.length) window.sharedItems.forEach((item) => panel.append(sharedCard(item)));
   else { const none = document.createElement("p"); none.className = "find-friends-empty"; none.textContent = "When a friend sends you a bet, it lands here."; panel.append(none); }
   panel.append(head(`Friends${data.friends.length ? ` (${data.friends.length})` : ""}`));
-  data.friends.forEach((one) => { const row = document.createElement("p"); row.className = "find-friends-row"; row.innerHTML = `<span><b>${esc(one.name)}</b> ${esc(one.email)}</span>`; row.append(friendsButton("Remove", () => { if (window.confirm(`Remove ${one.name} from your friends?`)) friendsAct({ action: "remove", id: one.id }, note); }, "find-friends-quiet")); panel.append(row); });
+  data.friends.forEach((one) => { const row = document.createElement("p"); row.className = "find-friends-row"; row.innerHTML = `<span><b>${esc(one.name)}</b>${one.state ? ` · ${esc(one.state)}` : ""}</span>`; row.append(friendsButton("Remove", () => { if (window.confirm(`Remove ${one.name} from your friends?`)) friendsAct({ action: "remove", id: one.id }, note); }, "find-friends-quiet")); panel.append(row); });
   data.outgoing.forEach((one) => { const row = document.createElement("p"); row.className = "find-friends-row"; row.innerHTML = `<span><b>${esc(one.name)}</b> has not accepted yet</span>`; row.append(friendsButton("Cancel", () => friendsAct({ action: "cancel", id: one.id }, note), "find-friends-quiet")); panel.append(row); });
   panel.append(friendsAdd(), note);
   return panel;
