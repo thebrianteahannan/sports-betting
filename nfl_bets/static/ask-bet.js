@@ -142,7 +142,8 @@ document.getElementById("desk-glass").addEventListener("pointerdown", (event) =>
   tvOpen = true;
   event.preventDefault();
   event.stopPropagation();
-  if (window.paintFind && !document.body.classList.contains("needs-member") && !event.target.closest("#bird-picks")) paintFind();
+  const pick = event.target.closest("#bird-picks [data-menu]");
+  if (pick && window.birdMenu && !document.body.classList.contains("needs-member")) { window.asking = true; if (window.goFull) goFull(); birdMenu(pick.dataset.menu); }
   else document.getElementById("desk-full").click();
 }, true);
 document.getElementById("desk-glass").addEventListener("click", (event) => {
