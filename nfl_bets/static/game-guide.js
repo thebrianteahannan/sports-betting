@@ -69,10 +69,18 @@ function gameScrollTo(node) {
   let moved = false;
   ["wheel", "touchstart", "pointerdown", "keydown"].forEach((kind) => window.addEventListener(kind, () => { moved = true; quit.abort(); }, { passive: true, signal: quit.signal }));
   window.gameScrollQuit = () => { moved = true; quit.abort(); };
-  const go = (smooth) => { if (!moved && node.isConnected) node.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" }); };
-  setTimeout(() => go(true), 60);
-  [800, 1600, 3000].forEach((ms) => setTimeout(() => go(false), ms));
-  setTimeout(() => quit.abort(), 3100);
+  const glass = document.getElementById("desk-glass-in"), board = node.closest(".find-board");
+  const go = () => {
+    if (moved || !node.isConnected) return;
+    if (!glass || !glass.contains(node)) { node.scrollIntoView({ block: "start" }); return; }
+    const top = glass.scrollTop + node.getBoundingClientRect().top - glass.getBoundingClientRect().top - (parseFloat(getComputedStyle(node).scrollMarginTop) || 0);
+    if (Math.abs(top - glass.scrollTop) > 1) glass.scrollTop = top;
+  };
+  const watch = new ResizeObserver(() => go());
+  if (board) watch.observe(board);
+  setTimeout(go, 60);
+  [800, 1600, 3000].forEach((ms) => setTimeout(go, ms));
+  setTimeout(() => { quit.abort(); watch.disconnect(); }, 3100);
 }
 
 function gameGuide(match, people, list, hits, noted) {

@@ -310,7 +310,10 @@
 .rec-board .find-script .find-script-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.7rem 0 0.4rem; }
 .rec-board .find-script .find-script-tabs button { padding: 0.3rem 0.75rem; border: 1px solid #3dff6e; border-radius: 999px; background: transparent; color: #d8ffe4; box-shadow: none; font-size: 14px; }
 .rec-board .find-script .find-script-tabs button.on { background: #3dff6e; color: #04140c; }
+.rec-board .find-script .find-script-tabs button:disabled { border-color: #2a3a48; color: #5d6b78; opacity: 0.7; cursor: default; }
 .rec-board .find-script label.find-script-stars { display: flex; align-items: center; gap: 0.4rem; margin: 0.2rem 0 0.6rem; color: #c9d4dd; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+.rec-board .find-script .find-script-tabs label.find-script-stars { margin: 0 0 0 0.4rem; }
+.rec-board .find-script .find-script-none label.find-script-stars { margin: 0.5rem 0 0; }
 .rec-board .find-script label.find-script-stars input { width: auto !important; min-height: 0 !important; height: auto !important; margin: 0 !important; accent-color: #3dff6e; }
 .rec-board .find-script .find-script-ticket { padding: 0.6rem 0.75rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: #08130e; }
 .rec-board .find-script .find-script-ticket p { margin: 0.15rem 0; }
@@ -327,8 +330,18 @@
 .rec-board .find-script .find-script-leg .prop { color: #e7c15a; }
 .rec-board .find-script .find-script-ticket p.find-script-pay { margin-top: 0.45rem; color: #3dff6e; font-weight: 700; }
 .rec-board .find-script .find-script-ticket button.find-script-add, #desk.tv-full #desk-glass .rec-board .find-script .find-script-ticket button.find-script-add { width: auto; min-height: 0; height: auto; margin-top: 0.5rem; padding: 0.45rem 0.9rem; border: 0; border-radius: 999px; background: #3dff6e; color: #04140c; box-shadow: none; font-weight: 700; }
+.rec-board .find-script .find-script-ticket { position: relative; }
+.rec-board .find-script .find-script-ticket .find-script-top { padding-right: 5.5rem; }
+.rec-board .find-script .find-script-ticket button.find-script-add, #desk.tv-full #desk-glass .rec-board .find-script .find-script-ticket button.find-script-add { position: absolute; top: 0.5rem; right: 0.6rem; margin: 0; padding: 0.25rem 0.65rem; font-size: 12px; line-height: 1.2; }
 .rec-board .find-script .find-script-ticket button.find-script-add.on { background: transparent; color: #3dff6e; border: 1px solid #3dff6e; }
 .rec-board .find-script > summary { display: block; cursor: pointer; list-style: none; }
+.rec-board .find-odds.find-team-bets { display: block; margin: 0.2rem 0 0.6rem; padding: 0.7rem 0.85rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: rgba(4, 16, 24, 0.55); }
+.rec-board .find-odds.find-team-bets > summary { display: block; margin: 0; list-style: none; }
+.rec-board .find-odds.find-team-bets > summary::-webkit-details-marker { display: none; }
+.rec-board .find-odds.find-team-bets[open] > summary { margin-bottom: 0.45rem; }
+.rec-board .find-team-bets .find-script-head { display: block; color: #3dff6e; font-size: 13px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.rec-board .find-team-bets > summary .find-script-head::after { content: " ▸"; }
+.rec-board .find-team-bets[open] > summary .find-script-head::after { content: " ▾"; }
 .rec-board .find-script > summary::-webkit-details-marker { display: none; }
 .rec-board .find-script > summary .find-script-head::after { content: " ▸"; }
 .rec-board .find-script[open] > summary .find-script-head::after { content: " ▾"; }

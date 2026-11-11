@@ -48,8 +48,13 @@ function legSeek(name) {
     const picks = hits ? [...hits.querySelectorAll("button:not([data-week])")] : [];
     const pick = picks.find((node) => plainName(node.textContent.split(",")[0]) === plainName(name)) || (picks.length === 1 ? picks[0] : null);
     if (pick) pick.click();
-    const list = input.closest(".find-board").querySelector(":scope > .find-list");
-    (list && list.childNodes.length ? list : input).scrollIntoView({ block: "start", behavior: "smooth" });
+    const board = input.closest(".find-board"), list = board.querySelector(":scope > .find-list"), target = list && list.childNodes.length ? list : input;
+    const glass = document.getElementById("desk-glass-in"), tray = board.querySelector(".find-tray"), fold = tray && !tray.hidden && !tray.classList.contains("find-shut") && tray.querySelector(".find-fold");
+    if (fold) { fold.click(); if (typeof saveAutoShut !== "undefined") { saveAutoShut.add(tray); saveFoldAt = Date.now(); } }
+    if (pick) return true;
+    if (!glass || !glass.contains(target)) { target.scrollIntoView({ block: "start", behavior: "smooth" }); return true; }
+    const stuck = tray && !tray.hidden && tray.getClientRects().length ? tray.offsetHeight : 0;
+    glass.scrollTo({ top: glass.scrollTop + target.getBoundingClientRect().top - glass.getBoundingClientRect().top - stuck - 8, behavior: "smooth" });
     return true;
   };
   if (run()) return;

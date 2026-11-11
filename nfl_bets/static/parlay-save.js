@@ -287,7 +287,7 @@ if (typeof paintParlay === "function") {
 
 const saveScrollTop = new WeakMap(), saveAutoShut = new Set(); let saveFoldAt = 0;
 function saveReopen(box) {
-  if (box.scrollTop > 2 || Date.now() - saveFoldAt < 700) return;
+  if (box.scrollTop > 2 || Date.now() - saveFoldAt < 700 || (box !== document.scrollingElement && !/auto|scroll/.test(getComputedStyle(box).overflowY))) return;
   const shut = [...saveAutoShut].find((node) => node.isConnected && box.contains(node) && node.classList.contains("find-shut")); const fold = shut && shut.querySelector(".find-fold");
   if (fold) { saveAutoShut.delete(shut); fold.click(); }
 }

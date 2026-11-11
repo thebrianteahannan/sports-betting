@@ -78,19 +78,29 @@ function scriptFitLine(legs, game) {
 function scriptBetsBox(bets, game, people) {
   const box = document.createElement("details"); box.className = "find-score find-script find-bets"; box.style.gridColumn = "1 / -1";
   box.innerHTML = `<summary><b class="find-script-head">Parlay's Recommended Bets</b></summary>`;
+  const keep = {};
+  const starOn = (name) => (localStorage.getItem(`scriptStars:${name}`) ?? localStorage.getItem("scriptStars")) === "1";
+  const stars = (name) => {
+    const label = document.createElement("label"); label.className = "find-hide find-script-stars";
+    const check = document.createElement("input"); check.type = "checkbox"; check.checked = starOn(name);
+    check.addEventListener("change", () => {
+      try { localStorage.setItem(`scriptStars:${name}`, check.checked ? "1" : "0"); } catch (error) { console.log("[nba-script] could not keep the stars box", error); }
+      const block = label.closest(".find-script-bets"), team = block && block.dataset.team, glass = document.getElementById("desk-glass-in"), at = label.getBoundingClientRect().top;
+      fill();
+      const again = [...box.querySelectorAll(":scope > .find-script-bets")].find((node) => node.dataset.team === team) || box.querySelector(":scope > .find-script-bets, :scope > .find-script-none");
+      const spot = again && (again.querySelector("label.find-script-stars") || again);
+      if (glass && spot && glass.contains(spot)) glass.scrollTop += spot.getBoundingClientRect().top - at;
+    });
+    label.append(check, " Only star players"); return label;
+  };
   const fill = () => {
     box.querySelectorAll(":scope > .find-script-bets, :scope > .find-script-none").forEach((node) => node.remove());
-    const set = localStorage.getItem("scriptStars") === "1" && bets.stars !== undefined ? bets.stars : bets;
-    if (!set || !(set.groups || []).length) { const none = document.createElement("p"); none.className = "find-script-why find-script-none"; none.textContent = "No star has a prop tonight whose record clears its price. Uncheck the box for the rest of the roster."; box.append(none); return; }
-    set.groups.forEach((group) => { const block = scriptBetsBlock(set, group, game, people); block.dataset.team = group.name; box.append(block); });
+    const pick = (name) => (starOn(name) && bets.stars !== undefined ? bets.stars : bets) || { groups: [], picks: [] };
+    const names = [...new Set([...(bets.groups || []), ...((bets.stars && bets.stars.groups) || [])].map((group) => group.name))];
+    if (!names.length) { const none = document.createElement("p"); none.className = "find-script-why find-script-none"; none.textContent = "No star has a prop tonight whose record clears its price."; box.append(none); return; }
+    names.forEach((name) => { const set = pick(name); const group = (set.groups || []).find((row) => row.name === name) || { name, parlays: [] }; const block = scriptBetsBlock({ picks: set.picks || [] }, group, game, people, keep); block.dataset.team = name; if (bets.stars !== undefined) block.querySelector(":scope > .find-script-tabs").append(stars(name)); box.append(block); });
     const match = box.closest(".find-match"); if (match) scriptBetsSide(match, box);
   };
-  if (bets.stars !== undefined) {
-    const label = document.createElement("label"); label.className = "find-hide find-script-stars";
-    const check = document.createElement("input"); check.type = "checkbox"; check.checked = localStorage.getItem("scriptStars") === "1";
-    check.addEventListener("change", () => { try { localStorage.setItem("scriptStars", check.checked ? "1" : "0"); } catch (error) { console.log("[nba-script] could not keep the stars box", error); } fill(); });
-    label.append(check, " Only star players"); box.append(label);
-  }
   fill();
   return box;
 }
@@ -116,7 +126,7 @@ function scriptClubStyle(game, team) {
   return club ? ` style="border-left-color: ${club.color}; background: linear-gradient(90deg, ${club.color}66, ${club.color}1f 75%)"` : "";
 }
 
-function scriptBetsBlock(bets, group, game, people) {
+function scriptBetsBlock(bets, group, game, people, keep = {}) {
   const money = (odds) => (odds > 0 ? `+${odds}` : String(odds));
   const who = (pick) => `${esc(pick.who)} (${esc([pick.pos, pick.team].filter(Boolean).join(", "))})`;
   const mine = bets.picks.filter((pick) => pick.team === group.name);
@@ -148,13 +158,22 @@ function scriptBetsBlock(bets, group, game, people) {
       if (typeof saveNow === "function") saveNow();
       if (typeof paintParlay === "function") paintParlay();
       const tray = go.closest(".find-board") && go.closest(".find-board").querySelector(".find-tray:not([hidden])"), fold = tray && tray.querySelector(".find-fold");
+      if (tray && typeof saveAutoShut !== "undefined") saveAutoShut.delete(tray);
       if (tray && tray.classList.contains("find-shut") && fold) fold.click();
-      if (tray) tray.scrollIntoView({ block: "start", behavior: "smooth" });
+      const glass = document.getElementById("desk-glass-in");
+      if (glass) glass.scrollTo({ top: 0, behavior: "smooth" });
     });
     card.append(go);
   };
-  group.parlays.forEach((parlay) => { const tab = document.createElement("button"); tab.type = "button"; tab.dataset.size = parlay.size; tab.textContent = parlay.size === 1 ? "Single" : `${parlay.size} legs`; tab.addEventListener("click", (event) => { event.preventDefault(); show(parlay); }); tabs.append(tab); });
-  if (group.parlays.length) { block.append(tabs, card); show(group.parlays[0]); }
+  const sizes = [...new Set([...(group.name === "Both teams" ? [2, 3, 4] : [1, 2, 3, 4]), ...group.parlays.map((parlay) => parlay.size)])].sort((a, b) => a - b);
+  sizes.forEach((size) => {
+    const parlay = group.parlays.find((row) => row.size === size), tab = document.createElement("button"); tab.type = "button"; tab.dataset.size = size; tab.textContent = size === 1 ? "Single" : `${size} legs`;
+    if (parlay) tab.addEventListener("click", (event) => { event.preventDefault(); keep[group.name] = size; show(parlay); }); else { tab.disabled = true; tab.title = "Not enough bets clear their price for this size"; }
+    tabs.append(tab);
+  });
+  block.append(tabs);
+  if (group.parlays.length) { block.append(card); show(group.parlays.find((parlay) => parlay.size === keep[group.name]) || group.parlays[0]); }
+  else { const none = document.createElement("p"); none.className = "find-script-why"; none.textContent = "No star here has a prop tonight whose record clears its price."; block.append(none); }
   return block;
 }
 

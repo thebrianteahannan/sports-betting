@@ -3,6 +3,7 @@ function rosterGroup(roster, names, lined, rows, team) {
   const bare = (name) => plainName(String(name || "").replace(/, out$/, "")).replace(/ (jr|sr|ii|iii|iv|v)$/, "");
   const info = new Map(rows.filter((row) => row && row.name).map((row) => [bare(row.name), row]));
   if (team && team.name) rows.forEach((row) => { if (row && row.name) clubOf.set(bare(row.name), team.name); if (row && row.name && row.pos && typeof clubSpot !== "undefined") clubSpot.set(bare(row.name), String(row.pos)); });
+  if (roster && team && team.name) roster.dataset.team = team.name;
   const tag = (node, row) => { if (row.def) node.dataset.def = "1"; if (row.bench) node.dataset.bench = "1"; };
   const buttons = [...names.querySelectorAll(":scope > button")];
   const groups = new Map();
@@ -52,10 +53,12 @@ function rosterGroup(roster, names, lined, rows, team) {
     const box = document.createElement("input");
     box.type = "checkbox";
     box.dataset.kind = kind;
-    box.checked = !!(window.memberHide || {})[kind];
+    box.checked = !!rosterFlags(roster)[kind];
     label.append(box, text);
     box.addEventListener("change", () => {
-      window.memberHide = { ...(window.memberHide || {}), [kind]: box.checked };
+      const hide = window.memberHide || {}, name = roster.dataset.team;
+      if (name) { const base = rosterFlags(roster), own = Object.fromEntries(["defense", "bench", "empty", "out", "stars"].map((key) => [key, !!base[key]])); window.memberHide = { ...hide, teams: { ...(hide.teams || {}), [name]: { ...own, [kind]: box.checked } } }; }
+      else window.memberHide = { ...hide, [kind]: box.checked };
       rosterHide();
       fetch("/api/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hide: window.memberHide }) }).catch(() => {});
     });
@@ -91,9 +94,14 @@ function rosterPlus(button, person) {
   chip.append(button, plus);
 }
 
+function rosterFlags(roster) {
+  const hide = window.memberHide || {}, name = roster && roster.dataset.team;
+  return (name && hide.teams && hide.teams[name]) || hide;
+}
+
 function rosterHide() {
-  const hide = window.memberHide || {};
   document.querySelectorAll(".find-roster").forEach((roster) => {
+    const hide = rosterFlags(roster);
     roster.classList.toggle("hide-def", !!hide.defense);
     roster.classList.toggle("hide-bench", !!hide.bench);
     roster.classList.toggle("hide-empty", !!hide.empty);
