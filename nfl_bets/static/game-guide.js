@@ -126,7 +126,38 @@ function gameLines(fold, game, rows) {
 
 if (typeof paintParlay === "function") {
   const paintParlayLines = paintParlay;
-  paintParlay = function () { paintParlayLines.apply(this, arguments); document.querySelectorAll(".find-line-chip").forEach((chip) => { if (chip.firstElementChild) chip.firstElementChild.classList.toggle("on", parlayLeg.has(chip.dataset.key)); }); };
+  paintParlay = function () { paintParlayLines.apply(this, arguments); document.querySelectorAll(".find-line-chip").forEach((chip) => { if (chip.firstElementChild) chip.firstElementChild.classList.toggle("on", parlayLeg.has(chip.dataset.key)); }); gameTrayNew(); };
+}
+
+let gameTrayLegs = null, gameTrayPicks = null, gameTrayLast = "";
+
+document.addEventListener("click", (event) => {
+  const hit = event.target.closest(".find-tray.find-shut > .find-row.find-just :is(.find-name, .find-pick-hint)"), fold = hit && hit.closest(".find-tray").querySelector(".find-fold");
+  if (!fold) return;
+  fold.click();
+  const hold = () => { if (typeof saveScrollTop !== "undefined") for (let node = fold; node; node = node.parentElement) saveScrollTop.delete(node); };
+  window.addEventListener("scroll", hold, true);
+  setTimeout(() => window.removeEventListener("scroll", hold, true), 1000);
+}, true);
+
+function gameTrayNew() {
+  const legs = new Set(parlayLeg.keys()), picks = new Set(parlayPick.keys());
+  if (gameTrayLegs) {
+    const leg = [...legs].filter((key) => !gameTrayLegs.has(key)), pick = [...picks].filter((key) => !gameTrayPicks.has(key));
+    if (leg.length === 1) gameTrayLast = `leg:${leg[0]}`; else if (!leg.length && pick.length === 1) gameTrayLast = `pick:${pick[0]}`; else if (leg.length || pick.length) gameTrayLast = "";
+  }
+  if (gameTrayLast && !(gameTrayLast.startsWith("leg:") ? legs.has(gameTrayLast.slice(4)) : picks.has(gameTrayLast.slice(5)))) gameTrayLast = "";
+  gameTrayLegs = legs; gameTrayPicks = picks;
+  document.querySelectorAll(".find-tray .find-just").forEach((node) => node.classList.remove("find-just"));
+  if (!gameTrayLast) return;
+  const key = CSS.escape(gameTrayLast.replace(/^(leg|pick):/, ""));
+  document.querySelectorAll(".find-tray").forEach((tray) => {
+    const node = gameTrayLast.startsWith("leg:") ? tray.querySelector(`.find-chose[data-key="${key}"]`) || (tray.querySelector(`.find-chose > .find-leg-hist[data-key="${key}"]`) || {}).parentElement : tray.querySelector(`.find-row > .find-in > .find-name[data-key="${key}"]`);
+    const row = node && node.closest(".find-row");
+    if (!row) return;
+    row.classList.add("find-just");
+    if (gameTrayLast.startsWith("leg:")) node.classList.add("find-just");
+  });
 }
 
 function gameAddLine(add, bets) {

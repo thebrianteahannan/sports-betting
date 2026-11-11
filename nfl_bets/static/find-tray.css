@@ -73,6 +73,9 @@
 :is(.rec-board, #choice-result) .find-tray .find-say button.find-close:hover { color: #ff6b6b !important; }
 :is(.rec-board, #choice-result) .find-tray.find-shut > :not(.find-say, .find-ticket, .find-row:has(.find-ticket)), :is(.rec-board, #choice-result) .find-tray.find-shut .find-row:has(.find-ticket) > :not(.find-ticket) { display: none !important; }
 :is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket > button { display: none !important; }
+:is(.rec-board, #choice-result) .find-tray.find-shut > .find-row.find-just { display: flex !important; }
+:is(.rec-board, #choice-result) .find-tray.find-shut > .find-row.find-just > :not(.find-in, .find-pick-hint, .find-chose.find-just) { display: none !important; }
+:is(.rec-board, #choice-result) .find-tray.find-shut > .find-row.find-just:has(> .find-chose.find-just) > :is(.find-in, .find-pick-hint) { display: none !important; }
 :is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket { padding-right: 0 !important; padding-bottom: 0 !important; }
 :is(.rec-board, #choice-result) .find-tray .find-ticket { flex-shrink: 0; }
 .rec-board .find-match > .find-guide, #desk.tv-full #desk-glass .rec-board .find-match > .find-guide { grid-column: 1 / -1; margin: 0.15rem 0 0.1rem; color: #c9d4df; font-size: 14px; line-height: 1.35; text-align: center; }
