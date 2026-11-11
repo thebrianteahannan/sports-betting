@@ -17,19 +17,19 @@ function nbaScriptProps(people, match) {
 
 function nbaScript(holder, game, people) {
   const full = game && ((window.state && state.board && state.board.games) || []).find((row) => row.match === game.match && row.kickoff === game.kickoff);
-  const match = full && /^(NBA|NFL)$/.test(full.sport) && [...holder.querySelectorAll(".find-match")].pop();
+  const match = full && /^(NBA|NFL|NHL)$/.test(full.sport) && [...holder.querySelectorAll(".find-match")].pop();
   if (!match || match.querySelector(":scope > .find-script")) return;
   const box = document.createElement("details");
   box.className = "find-score find-script";
   box.style.gridColumn = "1 / -1";
-  box.innerHTML = `<summary><b class="find-script-head">Game script</b><p class="quiet">${full.sport === "NFL" ? "Reading both offenses." : "Reading both rotations."}</p></summary>`;
+  box.innerHTML = `<summary><b class="find-script-head">Game script</b><p class="quiet">${full.sport === "NFL" ? "Reading both offenses." : full.sport === "NHL" ? "Reading both teams." : "Reading both rotations."}</p></summary>`;
   const sum = box.querySelector("summary");
   const call = match.querySelector(".find-pick"), top = call && call.parentElement;
   if (top && top.parentElement === match) top.after(box);
   else { const crowd = match.querySelector(":scope > .find-everyone, :scope > .find-body"); if (crowd) crowd.before(box); else match.append(box); }
   const key = `${full.match}|${full.kickoff}`, props = nbaScriptProps(people, full.match);
   const ask = (list) => { const id = `${list}|${key}`; let job = nbaScriptJobs.get(id); if (!job) { job = fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list, match: full.match, kickoff: full.kickoff, props }) }).then((res) => res.json()).catch(() => ({})); nbaScriptJobs.set(id, job); job.then((data) => { if (!data || !(data.summary || (data.sections || []).length)) nbaScriptJobs.delete(id); }); } return job; };
-  const got = { nba: null, story: null, nbaDone: false, storyDone: full.sport !== "NBA" };
+  const got = { nba: null, story: null, nbaDone: false, storyDone: false };
   const brief = () => holder.querySelector(".find-brief:not(.find-script .find-brief)");
   const adopt = () => { const node = brief(); if (node && box.isConnected) { node.open = false; box.append(node); } };
   setTimeout(adopt, 0);
@@ -53,7 +53,7 @@ function nbaScript(holder, game, people) {
     ((nba && nba.parts) || []).forEach((part) => { const block = document.createElement("div"); block.className = "find-script-part"; block.innerHTML = `<b>${esc(part.title || "")}</b><p>${esc(part.text || "")}</p>${String(part.proof || "").split("\n").filter(Boolean).map((line) => `<p class="find-script-proof">${esc(line)}</p>`).join("")}`; add(block); });
   };
   ask("nba").then((data) => { got.nba = data; got.nbaDone = true; paint(); });
-  if (full.sport === "NBA") ask("story").then((data) => { got.story = data; got.storyDone = true; paint(); });
+  ask("story").then((data) => { got.story = data; got.storyDone = true; paint(); });
 }
 
 if (typeof paintTotal === "function") {

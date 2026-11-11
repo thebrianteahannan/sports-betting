@@ -79,6 +79,7 @@ async function reviewGame(leg, summary) {
     const comp = (((summary || {}).header || {}).competitions || [])[0] || {};
     const header = (comp.competitors || []).map((side) => ({ name: (side.team || {}).displayName || "", abbr: (side.team || {}).abbreviation || "", home: side.homeAway === "home", score: Number(side.score) }));
     const final = header.slice().sort((x, y) => y.score - x.score).map((side) => `${last(side.name)} ${side.score}`).join(", ");
+    if (/^(NFL|NHL)$/.test(String(leg.sport).toUpperCase())) return require("./sport-review").reviewSport(leg, summary, key, final);
     if (String(leg.sport).toUpperCase() !== "NBA") return { key, final };
     const actual = readBox(summary, "");
     const away = header.find((side) => !side.home), home = header.find((side) => side.home);
@@ -103,6 +104,7 @@ async function reviewGame(leg, summary) {
 }
 
 function legWhy(leg, review, player) {
+  if (review && review.sport) return require("./sport-review").sportWhy(leg, review, player);
   const p = review && review.players ? Object.entries(review.players).find(([name]) => samePlayer(name, player)) : null;
   if (!p) return "";
   const [name, row] = p, avg = row.avg || {}, first = last(name), out = [];
@@ -137,7 +139,7 @@ function teamWhy(leg, review) {
   const text = `${leg.market || ""}`.toLowerCase();
   const team = /team total/.test(leg.text || "") && review.went.find((line) => line.startsWith(`The ${String(leg.text).split(" ")[0]}:`));
   if (team) return `${leg.note}. ${team}`;
-  if (/total/.test(text)) return [review.went[0]].concat((review.checks || []).filter((row) => /trips/.test(row.text)).map((row) => row.text)).join(" ");
+  if (/total/.test(text)) return [review.went[0]].concat((review.checks || []).filter((row) => /trips|plays|shots/.test(row.text)).map((row) => row.text)).join(" ");
   return (review.checks || [])[0] ? review.checks[0].text : "";
 }
 
