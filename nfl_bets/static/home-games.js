@@ -12,6 +12,7 @@ function homeGamesLoad() {
 }
 
 function homeGamesOpen(game) {
+  if (window.saveNew && !document.getElementById("desk").classList.contains("tv-full")) saveNew();
   window.asking = true;
   if (window.goFull) goFull();
   if (window.birdMenu) birdMenu("find");

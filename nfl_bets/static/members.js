@@ -358,7 +358,7 @@ function recLine(leg) {
 }
 
 function birdMenu(kind) {
-  if (kind === "shared" && window.sharedOpenFresh) { sharedOpenFresh(); return; } if (kind === "how" && window.paintHow) { paintHow(); return; } if (kind === "stack" && window.trayStackOpen) { trayStackOpen(""); return; } if (kind === "pick" || kind === "ones") { if (window.birdMenu) birdMenu("bets"); return; } if (kind === "find" && window.paintFind) { paintFind(); return; } if (kind !== "bets") return;
+  if (kind === "shared" && window.sharedOpenFresh) { sharedOpenFresh(); return; } if (kind === "how" && window.paintHow) { paintHow(); return; } if (kind === "stack" && window.trayStackOpen) { trayStackOpen(""); return; } if (kind === "pick" || kind === "ones") { if (window.birdMenu) birdMenu("bets"); return; } if (kind === "find" && window.paintFind) { if (window.saveNew && !document.getElementById("desk").classList.contains("tv-full")) saveNew(); paintFind(); return; } if (kind !== "bets") return;
   window.asking = true; if (window.goFull) goFull(); if (window.birdQuiet) birdQuiet(); if (window.tvPush && (document.querySelector("#desk-glass-in .rec-board") || { dataset: { page: "" } }).dataset.page !== "bets") tvPush();
   const desk = document.getElementById("desk"); if (!desk || !desk.classList.contains("tv-full")) { window.asking = false; if (window.birdGreet) birdGreet(); return; }
   desk.classList.remove("bird-on", "solo", "dug"); window.recOpen = false; const guide = document.getElementById("bird-guide"); if (guide) guide.hidden = true;
