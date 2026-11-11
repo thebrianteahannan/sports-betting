@@ -142,7 +142,7 @@ document.getElementById("desk-glass").addEventListener("pointerdown", (event) =>
   tvOpen = true;
   event.preventDefault();
   event.stopPropagation();
-  if (window.paintFind && !document.body.classList.contains("needs-member")) paintFind();
+  if (window.paintFind && !document.body.classList.contains("needs-member") && !event.target.closest("#bird-picks")) paintFind();
   else document.getElementById("desk-full").click();
 }, true);
 document.getElementById("desk-glass").addEventListener("click", (event) => {
@@ -150,10 +150,11 @@ document.getElementById("desk-glass").addEventListener("click", (event) => {
   if (tvOpen) { tvOpen = false; event.preventDefault(); event.stopPropagation(); return; }
   if (onPhone() || !desk || desk.classList.contains("tv-full")) return;
   if (!event.target.closest("button, a, input, select") && event.target.closest("#greet-rate, #best, #today, #chalk, #four, #plus, #hits, #week, #week5, #safe, #even")) return;
-  if (event.target.closest("#bird-born, #bird-born-go, #greet-legal span, #bird-line.warn, .gate-legal")) return;
-  const button = event.target.closest("button");
+  if (event.target.closest("#greet-legal span, #bird-line.warn, .gate-legal")) return;
+  const button = event.target.closest("button"), field = event.target.closest("#bird-picks input, #bird-picks select");
   event.preventDefault(); event.stopPropagation(); document.getElementById("desk-full").click();
   if (button && desk.contains(button)) setTimeout(() => button.click(), 0);
+  if (field && field.id) setTimeout(() => { const again = document.getElementById(field.id); if (!again) return; again.focus(); try { again.showPicker(); } catch (error) {} }, 0);
 }, true);
 document.getElementById("desk-glass").addEventListener("pointerup", () => { if (tvOpen) setTimeout(() => { tvOpen = false; }, 80); }, true);
 window.paintDig = paintDig;

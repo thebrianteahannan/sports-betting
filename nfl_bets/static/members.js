@@ -230,10 +230,7 @@ function birdAskState() {
   window.asking = true;
   birdSay("Which state are you in? We need it so the desk only shows bets you are allowed to place there.", []);
   const row = document.getElementById("bird-picks");
-  if (!row || !window.fillStateSelect) return;
-  row.innerHTML = `<select id="bird-state"></select><button type="button" id="bird-state-go">That's my state</button>`;
-  fillStateSelect(document.getElementById("bird-state"));
-  document.getElementById("bird-state-go").addEventListener("click", () => saveState(document.getElementById("bird-state").value));
+  if (row && window.paintStatePick) paintStatePick(row, saveState);
 }
 
 function birdAskBook() {
@@ -243,15 +240,10 @@ function birdAskBook() {
   const place = window.stateName ? stateName() : "your state";
   birdSay(`Which sportsbook are you using in ${place}? These prices are FanDuel's. Another book's number is usually close, and sometimes the same.`, []);
   const row = document.getElementById("bird-picks");
-  const all = window.bookRoster ? bookRoster() : books;
-  const openIds = new Set(books.map((book) => book.id));
-  if (row) {
-    row.innerHTML = all.map((book) => {
-      const open = openIds.has(book.id);
-      const label = open ? book.name : `${book.name} (not available in your state)`;
-      return `<button type="button" data-book="${book.id}"${open ? "" : " disabled"}>${label}</button>`;
-    }).join("");
-    row.querySelectorAll("[data-book]:not([disabled])").forEach((button) => button.addEventListener("click", () => saveBook(button.dataset.book)));
+  if (row && window.fillBookSelect) {
+    row.innerHTML = `<select id="bird-book"></select><button type="button" id="bird-book-go">That's my sportsbook</button>`;
+    fillBookSelect(document.getElementById("bird-book"));
+    document.getElementById("bird-book-go").addEventListener("click", () => saveBook(document.getElementById("bird-book").value));
   }
   return true;
 }

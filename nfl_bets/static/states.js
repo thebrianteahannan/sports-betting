@@ -134,6 +134,41 @@ function paintLaws() {
   fetch("/us-map.svg").then((response) => response.text()).then((text) => { lawsMap = text; map.innerHTML = text; draw(); }).catch(() => { map.textContent = "The map did not load."; });
 }
 
+function paintStatePick(row, save) {
+  const names = Object.values(STATE_LAW).sort((a, b) => a.name.localeCompare(b.name));
+  row.innerHTML = `<div class="state-combo"><input id="bird-state" type="text" placeholder="Type your state" autocomplete="off" spellcheck="false"><button type="button" class="state-combo-drop" aria-label="Show all states">▾</button><div class="state-combo-list" hidden></div></div><button type="button" id="bird-state-go">That's my state</button><div id="bird-map"></div>`;
+  const input = row.querySelector("#bird-state"), list = row.querySelector(".state-combo-list"), map = row.querySelector("#bird-map");
+  let picked = "";
+  const match = (text) => { const q = String(text || "").trim().toLowerCase(); return names.find((item) => item.name.toLowerCase() === q || item.code.toLowerCase() === q); };
+  const mark = () => map.querySelectorAll("[data-code]").forEach((node) => node.classList.toggle("on", node.dataset.code === picked.toLowerCase()));
+  const choose = (code) => { const item = STATE_LAW[code]; if (!item) return; picked = item.code; input.value = item.name; input.classList.remove("bad"); list.hidden = true; mark(); };
+  const show = (text) => {
+    const q = String(text || "").trim().toLowerCase();
+    const hits = q ? [...names.filter((item) => item.name.toLowerCase().startsWith(q) || item.code.toLowerCase() === q), ...names.filter((item) => !item.name.toLowerCase().startsWith(q) && item.code.toLowerCase() !== q && item.name.toLowerCase().includes(q))] : names;
+    list.innerHTML = hits.map((item) => `<button type="button" data-state-pick="${item.code}">${item.name}</button>`).join("");
+    list.hidden = !hits.length;
+  };
+  const send = () => { const item = STATE_LAW[picked] || match(input.value) || (list.hidden ? null : STATE_LAW[(list.querySelector("[data-state-pick]") || {}).dataset?.statePick]); if (!item) { input.classList.add("bad"); input.focus(); return; } choose(item.code); save(item.code); };
+  input.addEventListener("focus", () => show(input.value === (STATE_LAW[picked] || {}).name ? "" : input.value));
+  input.addEventListener("input", () => { picked = (match(input.value) || {}).code || ""; input.classList.remove("bad"); mark(); show(input.value); });
+  input.addEventListener("keydown", (event) => { if (event.key === "Escape") list.hidden = true; if (event.key === "Enter") send(); });
+  input.addEventListener("blur", () => setTimeout(() => { if (!row.contains(document.activeElement)) list.hidden = true; }, 150));
+  row.querySelector(".state-combo-drop").addEventListener("click", () => { if (list.hidden) { show(""); input.focus(); } else list.hidden = true; });
+  list.addEventListener("pointerdown", (event) => { const hit = event.target.closest("[data-state-pick]"); if (!hit) return; event.preventDefault(); choose(hit.dataset.statePick); });
+  row.querySelector("#bird-state-go").addEventListener("click", send);
+  map.addEventListener("click", (event) => { const node = event.target.closest("[data-code]"); if (node) choose(node.dataset.code.toUpperCase()); });
+  const draw = (text) => {
+    map.innerHTML = text;
+    map.querySelectorAll("path, circle").forEach((node) => {
+      const code = (node.getAttribute("class") || "").toLowerCase().split(/\s+/).find((bit) => STATE_LAW[bit.toUpperCase()] && !bit.includes("-"));
+      if (!code) return;
+      node.dataset.code = code; node.setAttribute("role", "button"); node.setAttribute("aria-label", STATE_LAW[code.toUpperCase()].name);
+    });
+    mark();
+  };
+  if (lawsMap) draw(lawsMap); else fetch("/us-map.svg").then((response) => response.text()).then((text) => { lawsMap = text; draw(text); }).catch(() => { map.hidden = true; });
+}
+
 document.getElementById("laws-map").addEventListener("click", (event) => {
   const node = event.target.closest("[data-code]");
   if (!node) return;
@@ -155,7 +190,7 @@ document.getElementById("banner-x").addEventListener("click", () => {
 window.paintLaws = paintLaws;
 window.blockCollege = blockCollege;
 window.applyMember = applyMember;
-window.fillStateSelect = fillStateSelect;
+window.fillStateSelect = fillStateSelect; window.paintStatePick = paintStatePick;
 window.booksHere = booksHere;
 window.bookRoster = () => BOOKS.slice();
 window.bookLink = bookLink;
