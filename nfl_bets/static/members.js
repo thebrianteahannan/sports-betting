@@ -67,7 +67,7 @@ function showMember(payload) {
   window.memberName = member.name || "";
   window.memberBorn = member.born || "";
   window.memberState = member.state || "";
-  window.memberBook = member.book || ""; window.memberHide = member.hide || {};
+  window.memberBook = member.book || ""; window.memberHide = member.hide || {}; window.memberTeams = Array.isArray(member.teams) ? member.teams : null;
   window.fullAt = member.fullAt || "";
   if (window.applyMember) applyMember(window.memberState);
   window.memberReady = true;
@@ -176,7 +176,7 @@ function birdGreet() {
   if (!window.memberReady || document.body.classList.contains("needs-member") || !window.birdSay) return;
   const called = calledName();
   if (!called) return birdAskName();
-  if (!window.memberBorn) return birdAskBorn(); if (!window.memberState) return birdAskState(); if (birdAskBook() || birdLaw()) return;
+  if (!window.memberBorn) return birdAskBorn(); if (!window.memberState) return birdAskState(); if (birdAskBook() || (window.birdAskTeams && birdAskTeams()) || birdLaw()) return;
   window.asking = false;
   const shared = window.sharedGreet ? sharedGreet() : ""; birdSay(`Hey, ${called}. ${shared || "How are we going to find your favorite bet for today?"}`, [...(shared ? [["menu", shared.includes("see it") ? "See the bet" : "See the bets", "shared"]] : []), ["menu", "Build A Bet", "find"]]);
 }

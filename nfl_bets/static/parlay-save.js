@@ -117,7 +117,7 @@ function savePaint() {
       save.classList.toggle("on", Boolean(same));
       save.addEventListener("click", () => { saveNow(); paintParlay(); });
       const edit = ticket.querySelector("button.share-bet");
-      if (edit) edit.before(save); else ticket.append(save);
+      if (!same) { if (edit) edit.before(save); else ticket.append(save); }
       const wipe = document.createElement("button");
       wipe.type = "button";
       wipe.className = "find-save find-save-wipe";
@@ -131,15 +131,16 @@ function savePaint() {
         if (typeof trayRoster === "function") trayRoster();
         paintParlay();
       });
-      save.before(wipe);
+      const last = same ? edit : save;
+      if (last) last.before(wipe); else ticket.append(wipe);
       const pin = () => {
         if (!edit || getComputedStyle(edit).position !== "absolute") return;
-        save.classList.add("find-save-pin"); save.style.right = `${ticket.clientWidth - edit.offsetLeft + 6}px`;
-        wipe.classList.add("find-save-pin"); wipe.style.right = `${ticket.clientWidth - save.offsetLeft + 6}px`;
+        if (!same) { save.classList.add("find-save-pin"); save.style.right = `${ticket.clientWidth - edit.offsetLeft + 6}px`; }
+        wipe.classList.add("find-save-pin"); wipe.style.right = `${ticket.clientWidth - last.offsetLeft + 6}px`;
         const text = ticket.querySelector(":scope > b");
         if (text && (text.lastElementChild || text).getBoundingClientRect().right - text.getBoundingClientRect().left > wipe.offsetLeft - text.offsetLeft - 6) {
           save.style.top = wipe.style.top = `${edit.offsetHeight + 6}px`; save.style.right = "0px";
-          wipe.style.right = `${ticket.clientWidth - save.offsetLeft + 6}px`;
+          wipe.style.right = same ? "0px" : `${ticket.clientWidth - save.offsetLeft + 6}px`;
           ticket.style.paddingBottom = `${edit.offsetHeight + 8}px`;
         } else ticket.style.paddingRight = `${ticket.clientWidth - wipe.offsetLeft + 6}px`;
       };

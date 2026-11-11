@@ -82,9 +82,42 @@ function homeRecRow(row) {
   return card;
 }
 
+let homeRecMine = false;
+try { homeRecMine = localStorage.getItem("home-rec-mine") === "1"; } catch (error) { homeRecMine = false; }
+
+function homeGamesRepaint() {
+  const box = document.getElementById("desk-games");
+  if (box) box.dataset.sig = "";
+  homeGamesPaint();
+}
+
+function homeRecBar() {
+  const bar = document.createElement("p"), mine = document.createElement("button"), has = (window.memberTeams || []).length > 0;
+  bar.className = "desk-rec-bar";
+  mine.type = "button";
+  mine.className = `desk-rec-mine${homeRecMine && has ? " on" : ""}`;
+  mine.textContent = "★ My teams";
+  mine.setAttribute("aria-pressed", String(homeRecMine && has));
+  const set = (on) => { homeRecMine = on; try { localStorage.setItem("home-rec-mine", on ? "1" : "0"); } catch (error) { console.log("[home-games] could not keep the filter", error); } homeGamesRepaint(); };
+  mine.addEventListener("click", () => { if (!has && typeof favTeamsOpen === "function") favTeamsOpen(() => set((window.memberTeams || []).length > 0)); else set(!homeRecMine); });
+  bar.append(mine);
+  if (has && typeof favTeamsOpen === "function") {
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "desk-rec-edit";
+    edit.textContent = "Edit teams";
+    edit.addEventListener("click", () => favTeamsOpen(homeGamesRepaint));
+    bar.append(edit);
+  }
+  return bar;
+}
+
 function homeRecRows(games) {
   const note = (text) => { const line = document.createElement("p"); line.className = "desk-games-note"; line.textContent = text; return [line]; };
-  if (!homeRecs || homeRecs.loading) return note("Looking up the picks.");
+  const bar = homeRecBar(), mine = homeRecMine && (window.memberTeams || []).length > 0 && typeof favTeamsHas === "function";
+  if (!homeRecs || homeRecs.loading) return [bar, ...note("Looking up the picks.")];
+  if (mine) games = games.filter(favTeamsHas);
+  if (mine && !games.length) return [bar, ...note("Your teams are off today. Tap My teams to see every game.")];
   const rows = games.flatMap((game) => {
     const picks = homeRecsFor(game);
     if (!picks.length) return [];
@@ -93,7 +126,7 @@ function homeRecRows(games) {
     head.textContent = [game.match, game.kickoff ? `${new Date(game.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET` : ""].filter(Boolean).join(", ");
     return [head, ...picks.map(homeRecRow)];
   });
-  return rows.length ? rows : note("Nothing fits today's prices yet.");
+  return [bar, ...(rows.length ? rows : note(mine ? "Nothing fits your teams' prices yet." : "Nothing fits today's prices yet."))];
 }
 
 function homeGamesTabs(box, games) {
@@ -125,7 +158,7 @@ function homeGamesPaint() {
   box.style.top = `${top}px`;
   document.body.style.setProperty("--home-games-top", `${top + 12}px`);
   if (!fresh.length && homeGamesTab === "rec") homeRecsLoad();
-  const sig = `${window.memberName || ""}|${homeGamesTab}|${homeRecs ? `${homeRecs.at}${homeRecs.loading ? "…" : ""}` : ""}|${fresh.length ? `shared:${fresh.map((item) => item.id).join(";")}` : games.map((game) => `${game.match}|${game.kickoff}`).join(";")}`;
+  const sig = `${window.memberName || ""}|${homeGamesTab}|${homeRecMine ? "mine" : ""}:${(window.memberTeams || []).join(",")}|${homeRecs ? `${homeRecs.at}${homeRecs.loading ? "…" : ""}` : ""}|${fresh.length ? `shared:${fresh.map((item) => item.id).join(";")}` : games.map((game) => `${game.match}|${game.kickoff}`).join(";")}`;
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
   const head = document.createElement("p");
