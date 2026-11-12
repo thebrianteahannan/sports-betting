@@ -463,6 +463,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/live") { serveStatic(res, "live.html"); return; }
     if (req.method === "GET" && url.pathname === "/guide") { serveStatic(res, "guide.html"); return; }
     if (req.method === "GET" && url.pathname === "/legal") { serveStatic(res, "legal.html"); return; }
+    if (req.method === "GET" && url.pathname === "/why") { serveStatic(res, "why.html"); return; }
     if (req.method === "GET" && url.pathname.startsWith("/guide/") && !url.pathname.includes("..")) { serveStatic(res, url.pathname.slice(1), keepFor(url)); return; }
     if (req.method === "GET" && url.pathname === "/api/logos") { sendJson(res, await require("./live-api").teamLogos()); return; }
     if (req.method === "GET" && url.pathname === "/api/live") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to see live games." }, 401); return; } const recs = require("./live-recs"); board().then((now) => recs.recWarm(now)).catch((error) => console.error("live recs warm failed:", error)); sendJson(res, { ...(await require("./live-api").liveBoard(url.searchParams.get("all") === "1")), recs: await recs.recsList(), week: await require("./live-api").liveWeek(board).catch(() => []), tally: await require("./live-grade").gradeTally() }); require("./live-grade").gradeTick().catch((error) => console.error("live recs grade failed:", error)); return; }

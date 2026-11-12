@@ -247,6 +247,7 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
   padding: 0 0.12em;
   border-radius: 2px;
 }
+#desk-note-in .note-reason a { color: inherit; text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 6px; pointer-events: auto; cursor: pointer; }
 #desk-note-in .note-reason.pop { animation: note-pop 0.55s cubic-bezier(0.15, 1.35, 0.35, 1) both; }
 #desk-books { position: absolute; left: 648px; top: 678px; width: 285px; height: 167px; z-index: 6; pointer-events: none; }
 #desk-laptop { width: 250px; height: 340px; z-index: 8; }

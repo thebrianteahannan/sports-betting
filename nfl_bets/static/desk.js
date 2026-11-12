@@ -185,7 +185,7 @@ function mount(name) {
 let noteLines = ["Skip the hour of homework."];
 let noteTick = 0;
 function noteHtml(text) {
-  return String(text || "").replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch])).replace(/\*([^*]+)\*/g, "<b>$1</b>");
+  return String(text || "").replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch])).replace(/\*([^*]+)\*/g, "<b>$1</b>").replace(/\[([^\]]+)\]\((\/[\w\-/]*)\)/g, '<a href="$2">$1</a>');
 }
 function paintNote() {
   const box = document.getElementById("desk-note-in");
@@ -194,6 +194,7 @@ function paintNote() {
   box.innerHTML = `<p class="note-reason" id="note-reason"></p>`;
   const line = document.getElementById("note-reason");
   const show = () => {
+    if (line.querySelector("a:hover")) return;
     const text = noteLines[noteTick++ % noteLines.length] || "";
     line.innerHTML = noteHtml(text);
     line.classList.toggle("hint", text.length > 70);
