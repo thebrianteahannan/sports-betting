@@ -169,6 +169,7 @@ function savePrice(legs) {
 
 function savePaint() {
   if (parlayLeg.size || parlayPick.size) document.querySelectorAll(".find-tips").forEach((node) => node.remove());
+  else { const board = document.querySelector("#desk-glass-in .find-board"), input = board && board.querySelector("label.find input"); if (board && !board.tipsSeen && board.querySelector(":scope > .find-tray") && !(input && input.value.trim())) { board.tipsSeen = true; setTimeout(saveTips); } }
   const list = saveList();
   const open = list.find((row) => row.id === window.parlayOpenId);
   const same = open && saveSig(open.legs) === saveSig([...parlayLeg.values()]);

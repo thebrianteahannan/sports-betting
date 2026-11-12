@@ -21,7 +21,7 @@ from nfl_bets.http_util import get_json
 from nfl_bets.store import out_dir, read_json, write_json
 from nfl_bets.sway import _nick
 
-_CACHE = "nfl_script.json"
+_CACHE = "nfl_script_v2.json"
 _TTL = 6 * 3600
 _SCATTER = 13.5
 _GAP = 8
@@ -40,6 +40,11 @@ _KINDS = (
 )
 _VOLUME = {"RB": ("rushingAttempts", 3, "carries", "times"), "QB": ("passingAttempts", 5, "throws", "times"), "WR": ("receivingTargets", 2, "is targeted", "times"), "TE": ("receivingTargets", 2, "is targeted", "times")}
 _DRIVES = {"rushingAttempts": {"rushingAttempts", "rushingYards"}, "passingAttempts": {"passingAttempts", "passingYards", "completions"}, "receivingTargets": {"receptions", "receivingYards"}}
+_INJURIES = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/injuries"
+_CLEARED = re.compile(r"not listed on|full participant|practiced fully|cleared to (play|return)|no injury designation|will play|expected to play", re.I)
+_BIG = {"RB": 8, "QB": 15, "WR": 4, "TE": 4}
+_MATES = {"RB": ("RB",), "QB": ("QB",), "WR": ("WR", "TE"), "TE": ("WR", "TE")}
+_NOUN = {"RB": "carries", "QB": "throws", "WR": "targets", "TE": "targets"}
 _cache: dict[str, Any] = {}
 
 
@@ -58,10 +63,12 @@ def script(game: dict[str, Any]) -> dict[str, Any]:
     props = [row for row in game.get("props") or [] if isinstance(row, dict)]
     with ThreadPoolExecutor(max_workers=2) as pool:
         sides = dict(zip((fav, dog), pool.map(lambda team: _side(team, props), (fav, dog))))
+    hurt = _hurt()
+    outs = [part for team in (away, home) for part in _missing(team, sides[team], hurt.get(team.casefold(), []))]
     _save()
     head = f"{_nick(fav)} by {_num(lead)}." if lead >= 0.5 else "No favorite."
     summary = f"{head} {_pct(1 - fav_up - dog_up)} of games at this spread finish within one score. The {_nick(fav)} win by {_GAP}+ in {_pct(fav_up)}, the {_nick(dog)} in {_pct(dog_up)}."
-    parts = []
+    parts = outs
     for up, down, chance in ((fav, dog, fav_up), (dog, fav, dog_up)):
         lines = [line for line in (_mover(sides[up], "ahead", chance), _mover(sides[down], "behind", chance)) if line]
         if lines:
@@ -113,6 +120,74 @@ def _mover(rows: list[dict[str, Any]], state: str, chance: float) -> tuple[str, 
             text = f"{row['name']} {verb} {a:.0f} {unit} a game when the {_nick(row['team'])} {when}, {b:.0f} in their other games."
             best = (edge, text, _proof(pick, state))
     return (best[1], best[2]) if best else None
+
+
+def _hurt() -> dict[str, list[str]]:
+    try:
+        data = get_json(_INJURIES, referer=_REF, timeout=12)
+    except (RuntimeError, OSError, TypeError, ValueError):
+        return {}
+    found: dict[str, list[str]] = {}
+    for block in data.get("injuries") or []:
+        for item in block.get("injuries") or []:
+            status, note = str(item.get("status") or "").lower(), str(item.get("shortComment") or "")
+            name = str((item.get("athlete") or {}).get("displayName") or "")
+            if name and status in ("out", "injured reserve") and not _CLEARED.search(note):
+                found.setdefault(str(block.get("displayName") or "").casefold(), []).append(name)
+    return found
+
+
+def _missing(team: str, rows: list[dict[str, Any]], gone: list[str]) -> list[dict[str, Any]]:
+    roster, parts = {row["name"].casefold(): row for row in _roster(team)}, []
+    recent = sorted({game["date"][:10] for row in rows for game in row["games"]}, reverse=True)[:4]
+    for name in gone:
+        out = roster.get(name.casefold())
+        if not out:
+            continue
+        key, _need, verb, unit = _VOLUME[out["pos"]]
+        logs = [game for game in _log(out["id"]) if key in game["stats"]]
+        club = logs[0].get("club", "") if logs else ""
+        logs = [game for game in logs if game.get("club", "") == club]
+        his = _mean(logs[:8], (key,))
+        early = [game for game in logs if _sum(game, (key,)) < 0.4 * his]
+        played = {game["date"][:10] for game in logs if game not in early}
+        if len(logs) < _FEW or not played or his < _BIG[out["pos"]] or (len(recent) == 4 and max(played) < recent[-1]):
+            continue
+        short = re.sub(r"\s+(jr|sr|ii|iii|iv|v)\.?$", "", out["name"], flags=re.I).split()[-1]
+        left = f" He left the last game after {_sum(logs[0], (key,)):.0f} {_NOUN[out['pos']]}." if logs[0] in early else ""
+        took = max(((row, _sum(game, (_VOLUME[row["pos"]][0],))) for row in rows if row["pos"] in _MATES[out["pos"]] and row["name"] != out["name"] for game in row["games"] if left and game["date"][:10] == logs[0]["date"][:10]), key=lambda pair: pair[1], default=None)
+        if took and took[1] >= _BIG[took[0]["pos"]]:
+            left += f" {took[0]['name']} had {took[1]:.0f} {_NOUN[took[0]['pos']]} in that game."
+        lines, proofs, next_up = [f"{out['name']} is out. He {verb} {his:.0f} {unit} a game.{left}"], [], None
+        for row in rows:
+            spec = _VOLUME.get(row["pos"])
+            if row["name"] == out["name"] or row["pos"] not in _MATES[out["pos"]] or not spec:
+                continue
+            mine, need, mine_verb, mine_unit = spec
+            span = [game for game in row["games"] if game["date"][:10] >= min(played) and game.get("club", "") == club]
+            without = [game for game in span if game["date"][:10] not in played]
+            with_him = [game for game in span if game["date"][:10] in played]
+            a, b = _mean(without, (mine,)), _mean(with_him, (mine,))
+            if with_him and len(without) < 2:
+                if next_up is None or b > next_up[1]:
+                    next_up = (row, b, mine_verb, mine_unit)
+                continue
+            if not without or (with_him and abs(a - b) < need) or (not with_him and a < _BIG[row["pos"]]):
+                continue
+            count = f"{len(without)} game{'s' if len(without) > 1 else ''}"
+            lines.append(f"{row['name']} {mine_verb} {a:.0f} {mine_unit} a game in {count} without {short}" + (f", {b:.0f} with him." if with_him else "."))
+            bets = [bet for bet in _bets(row, without, with_him, 1.0) if bet["keys"] & _DRIVES[mine] and bet["in"] > bet["out"]] if with_him and len(without) >= _FEW else []
+            if bets:
+                pick = max(bets, key=lambda bet: bet["chance"] - implied_prob(bet["odds"]))
+                price, won = f"+{pick['odds']}" if pick["odds"] > 0 else str(pick["odds"]), 5 * (american_decimal(pick["odds"]) - 1)
+                hit, n = pick["hits"][0], pick["hits"][1]
+                proofs.append(f"{pick['label']}, {price}: {hit} of {n} games without {short}, so that is {hit / n * 100:.0f}%. {price} needs {implied_prob(pick['odds']) * 100:.1f}%. $5 wins ${won:.2f}.")
+        if len(lines) == 1 and next_up:
+            row, b, mine_verb, mine_unit = next_up
+            lines.append(f"{row['name']} is next in line. He {mine_verb} {b:.0f} {mine_unit} a game with {short} playing, and the job is his now.")
+        if len(lines) > 1:
+            parts.append({"title": f"{out['name']} is out", "text": " ".join(lines), "proof": "\n".join(proofs)})
+    return parts
 
 
 def _bets(row: dict[str, Any], inside: list[dict[str, Any]], outside: list[dict[str, Any]], chance: float) -> list[dict[str, Any]]:
@@ -227,7 +302,7 @@ def _season(athlete: str, year: int | None) -> tuple[list[dict[str, Any]], int]:
                         stats[key] = float(str(raw).replace(",", ""))
                     except ValueError:
                         continue
-                rows.append({"date": str(event.get("gameDate") or ""), "margin": sign * gap, "stats": stats})
+                rows.append({"date": str(event.get("gameDate") or ""), "margin": sign * gap, "stats": stats, "club": str((event.get("team") or {}).get("abbreviation") or "")})
     return rows, max(seasons) if seasons else 0
 
 

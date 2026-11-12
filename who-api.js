@@ -147,7 +147,7 @@ async function outPlayers() {
       for (const team of data.injuries || []) {
         for (const item of team.injuries || []) {
           const status = String(item.status || "").toLowerCase();
-          if (status !== "out" && status !== "doubtful") continue;
+          if ((status !== "out" && status !== "doubtful") || /not listed on|full participant|practiced fully|cleared to (play|return)|no injury designation|will play|expected to play/i.test(String(item.shortComment || ""))) continue;
           const player = String((item.athlete || {}).displayName || "").trim();
           if (player) rows.push({ player, team: String(team.displayName || ""), status, note: String(item.shortComment || "").trim(), spot: status === "out" ? spotLine(item.longComment) : "", back: String((item.details || {}).returnDate || "").slice(0, 10) });
         }
