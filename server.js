@@ -242,11 +242,11 @@ async function settleArchive(id, result) {
   return { archive: rows };
 }
 
-function send(res, code, body, type) {
+function send(res, code, body, type, cache) {
   const raw = Buffer.from(body);
   res.writeHead(code, {
     "Content-Type": type || "application/json; charset=utf-8",
-    "Cache-Control": "no-store",
+    "Cache-Control": cache || "no-store",
     "Content-Length": raw.length,
   });
   res.end(raw);
@@ -377,7 +377,11 @@ function readBody(req) {
   });
 }
 
-function serveStatic(res, name) {
+function keepFor(url) {
+  return /\.html$/.test(url.pathname) ? "no-store" : url.searchParams.has("v") ? "public, max-age=31536000, immutable" : "public, max-age=3600";
+}
+
+function serveStatic(res, name, cache) {
   const file = path.join(STATIC, name);
   if (!file.startsWith(STATIC)) {
     sendJson(res, { error: "not found" }, 404);
@@ -388,7 +392,7 @@ function serveStatic(res, name) {
       sendJson(res, { error: "not found" }, 404);
       return;
     }
-    send(res, 200, data, TYPES[path.extname(file)] || "application/octet-stream");
+    send(res, 200, data, TYPES[path.extname(file)] || "application/octet-stream", cache);
   });
 }
 
@@ -399,12 +403,12 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/ones.js", "/stack.js", "/stack-more.js", "/game-stacks.js", "/stack-grade.js", "/close-calls.js", "/nba-script.js", "/blowout-proof.js", "/hows.js", "/player-card.js", "/find.js", "/game-note.js", "/sift.js", "/find-sort.js", "/find-roster.js", "/club-theme.css", "/club-theme.js", "/tray-stack.js", "/club-colors.js", "/prop-seek.js", "/band-pick.js", "/top-bar.css", "/top-bar.js", "/game-guide.js", "/bet-shot.js", "/game-short.js", "/game-until.js", "/game-done.js", "/home-games.js", "/home-games.css", "/fav-teams.js", "/parlay-save.js", "/parlay-archive.js", "/friends.js", "/site-qr.js", "/site-qr.css", "/bird-tips.js", "/leg-hist.js", "/leg-swap.js", "/leg-new.js", "/search-habit.js", "/live-stats.js", "/td-dive.js", "/terms.js", "/prop-lines.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/bet-ask.js", "/ask-bet.css", "/find-tray.css", "/slip.js", "/us-map.svg", "/doc-view.html", "/live.js", "/live.css", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
-      serveStatic(res, url.pathname.slice(1));
+    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/ones.js", "/stack.js", "/stack-more.js", "/game-stacks.js", "/stack-grade.js", "/close-calls.js", "/nba-script.js", "/blowout-proof.js", "/hows.js", "/player-card.js", "/find.js", "/game-note.js", "/sift.js", "/find-sort.js", "/find-roster.js", "/club-theme.css", "/club-theme.js", "/tray-stack.js", "/club-colors.js", "/prop-seek.js", "/band-pick.js", "/top-bar.css", "/top-bar.js", "/game-guide.js", "/bet-shot.js", "/game-short.js", "/game-until.js", "/game-done.js", "/home-games.js", "/home-games.css", "/fav-teams.js", "/parlay-save.js", "/parlay-archive.js", "/friends.js", "/site-qr.js", "/site-qr.css", "/bird-tips.js", "/gate-sample.js", "/gate-sample.css", "/leg-hist.js", "/leg-swap.js", "/leg-new.js", "/search-habit.js", "/live-stats.js", "/td-dive.js", "/terms.js", "/prop-lines.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/bet-ask.js", "/ask-bet.css", "/find-tray.css", "/slip.js", "/us-map.svg", "/doc-view.html", "/live.js", "/live.css", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
+      serveStatic(res, url.pathname.slice(1), keepFor(url));
       return;
     }
     if (req.method === "GET" && url.pathname.startsWith("/scene/") && !url.pathname.includes("..")) {
-      serveStatic(res, url.pathname.slice(1));
+      serveStatic(res, url.pathname.slice(1), keepFor(url));
       return;
     }
     if ((req.method === "GET" && url.pathname === "/api/admin") || ((req.method === "GET" || req.method === "HEAD") && url.pathname.startsWith("/api/admin/doc/"))) {
@@ -454,9 +458,11 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, { won, lost, pct: decided ? ((won / decided) * 100).toFixed(1) : null });
       return;
     }
+    if (req.method === "GET" && url.pathname === "/api/sample") { sendJson(res, await require("./live-recs").recSample().catch(() => ({ pick: null, more: 0 }))); return; }
     if (req.method === "GET" && url.pathname === "/live") { serveStatic(res, "live.html"); return; }
     if (req.method === "GET" && url.pathname === "/guide") { serveStatic(res, "guide.html"); return; }
-    if (req.method === "GET" && url.pathname.startsWith("/guide/") && !url.pathname.includes("..")) { serveStatic(res, url.pathname.slice(1)); return; }
+    if (req.method === "GET" && url.pathname === "/legal") { serveStatic(res, "legal.html"); return; }
+    if (req.method === "GET" && url.pathname.startsWith("/guide/") && !url.pathname.includes("..")) { serveStatic(res, url.pathname.slice(1), keepFor(url)); return; }
     if (req.method === "GET" && url.pathname === "/api/logos") { sendJson(res, await require("./live-api").teamLogos()); return; }
     if (req.method === "GET" && url.pathname === "/api/live") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to see live games." }, 401); return; } const recs = require("./live-recs"); board().then((now) => recs.recWarm(now)).catch((error) => console.error("live recs warm failed:", error)); sendJson(res, { ...(await require("./live-api").liveBoard(url.searchParams.get("all") === "1")), recs: await recs.recsList(), week: await require("./live-api").liveWeek(board).catch(() => []), tally: await require("./live-grade").gradeTally() }); require("./live-grade").gradeTick().catch((error) => console.error("live recs grade failed:", error)); return; }
     if (req.method === "GET" && url.pathname === "/api/board") {

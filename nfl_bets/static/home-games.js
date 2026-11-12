@@ -52,7 +52,7 @@ function homeSharedRow(item) {
   return row;
 }
 
-let homeGamesTab = "games", homeRecs = null;
+let homeGamesTab = "rec", homeRecs = null;
 
 function homeRecsLoad() {
   if (typeof gameStackData !== "function" || (homeRecs && (homeRecs.loading || Date.now() - homeRecs.at < 10 * 60 * 1000))) return;
@@ -119,13 +119,13 @@ function homeRecRows(games) {
   if (!homeRecs || homeRecs.loading) return [bar, ...note("Looking up the picks.")];
   if (mine) games = games.filter(favTeamsHas);
   if (mine && !games.length) return [bar, ...note("Your teams are off today. Tap My teams to see every game.")];
-  const rows = games.flatMap((game) => {
-    const picks = homeRecsFor(game);
-    if (!picks.length) return [];
-    const head = document.createElement("p");
+  const picks = games.flatMap((game) => homeRecsFor(game).map((row) => ({ ...row, game }))).sort((a, b) => b.score - a.score);
+  const rows = picks.flatMap((row, index) => {
+    if (index && picks[index - 1].game === row.game) return [homeRecRow(row)];
+    const head = document.createElement("p"), game = row.game;
     head.className = "desk-rec-game";
     head.textContent = [game.match, game.kickoff ? `${new Date(game.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET` : ""].filter(Boolean).join(", ");
-    return [head, ...picks.map(homeRecRow)];
+    return [head, homeRecRow(row)];
   });
   return [bar, ...(rows.length ? rows : note(mine ? "Nothing fits your teams' prices yet." : "Nothing fits today's prices yet."))];
 }
@@ -144,7 +144,7 @@ function homeGameRows(games) {
 function homeGamesTabs(box, games) {
   const tabs = document.createElement("span");
   tabs.className = "desk-games-tabs";
-  [["games", `Games ${homeMineGames(games).length}`], ["rec", "Recommended"], ["live", "Live"]].forEach(([id, label]) => {
+  [["rec", "Recommended"], ["games", `Games ${homeMineGames(games).length}`], ["live", "Live"]].forEach(([id, label]) => {
     const tab = document.createElement("button");
     tab.type = "button";
     tab.className = `desk-games-tab${homeGamesTab === id ? " on" : ""}`;

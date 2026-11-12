@@ -134,30 +134,6 @@ document.getElementById("desk-full").addEventListener("click", () => {
   if (window.birdGreet) birdGreet();
   else birdSay("Hey. How are we going to find your favorite bet for today?", [["menu", "Build A Bet", "find"]]);
 });
-const onPhone = () => window.matchMedia("(hover: none), (pointer: coarse)").matches;
-let tvOpen = false;
-document.getElementById("desk-glass").addEventListener("pointerdown", (event) => {
-  const desk = document.getElementById("desk");
-  if (!onPhone() || !desk || desk.classList.contains("tv-full") || event.target.closest("#site-qr")) return;
-  tvOpen = true;
-  event.preventDefault();
-  event.stopPropagation();
-  const pick = event.target.closest("#bird-picks [data-menu]");
-  if (pick && window.birdMenu && !document.body.classList.contains("needs-member")) { window.asking = true; if (window.goFull) goFull(); birdMenu(pick.dataset.menu); }
-  else document.getElementById("desk-full").click();
-}, true);
-document.getElementById("desk-glass").addEventListener("click", (event) => {
-  const desk = document.getElementById("desk");
-  if (tvOpen) { tvOpen = false; event.preventDefault(); event.stopPropagation(); return; }
-  if (onPhone() || !desk || desk.classList.contains("tv-full") || event.target.closest("#site-qr")) return;
-  if (!event.target.closest("button, a, input, select") && event.target.closest("#greet-rate, #best, #today, #chalk, #four, #plus, #hits, #week, #week5, #safe, #even")) return;
-  if (event.target.closest("#greet-legal span, #bird-line.warn, .gate-legal")) return;
-  const button = event.target.closest("button"), field = event.target.closest("#bird-picks input, #bird-picks select");
-  event.preventDefault(); event.stopPropagation(); document.getElementById("desk-full").click();
-  if (button && desk.contains(button)) setTimeout(() => button.click(), 0);
-  if (field && field.id) setTimeout(() => { const again = document.getElementById(field.id); if (!again) return; again.focus(); try { again.showPicker(); } catch (error) {} }, 0);
-}, true);
-document.getElementById("desk-glass").addEventListener("pointerup", () => { if (tvOpen) setTimeout(() => { tvOpen = false; }, 80); }, true);
 window.paintDig = paintDig;
 
 const sayBird = window.birdSay;

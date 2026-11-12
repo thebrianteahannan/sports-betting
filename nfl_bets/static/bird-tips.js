@@ -1,20 +1,6 @@
-/** The parrot's bubble tips: one feature at a time, skipping anything this person has already used on this device. */
+/** The parrot's bubble: asks if you need help, and a tap opens the guide. */
 const BIRD_TIPS = [
-  { id: "name", when: ".find-tray .find-chose i.who[data-key]", hit: ".find-tray .find-chose i.who[data-key], .find-tray .find-in button.find-name", text: "Tap a player's name in your bet to swap him to another prop." },
-  { id: "prop", when: ".find-tray .find-chose i.prop[data-key]", hit: ".find-tray .find-chose i.prop[data-key]", text: "Tap the prop in your bet to move the number up or down." },
-  { id: "hist", when: ".find-tray .find-chose", hit: "button.find-leg-hist", point: "button.find-leg-hist", text: "Tap the chart on a leg to see how he's done in his recent games." },
-  { id: "swap", when: ".find-tray .find-chose", hit: "button.find-leg-swap", point: "button.find-leg-swap", text: "Tap the arrows on a leg and I'll find other bets at the same price." },
-  { id: "to", when: ".find-tray .find-chose", hit: "button.find-leg-to", point: "button.find-leg-to", text: "Tap the list button on a leg to put it in another saved bet too." },
-  { id: "seek", when: ".find-tray .find-chose", hit: "button.find-leg-seek", point: "button.find-leg-seek", text: "Tap the magnifier on a leg to pull up everything on that player." },
-  { id: "share", when: ".find-tray button.share-bet", hit: "button.share-bet, #share-card-friend", text: "Tap the share arrow on your bet to send it straight to a friend." },
-  { id: "recgo", when: "button.find-rec-go", hit: "button.find-rec-go", text: "See my face next to a player? Tap it and I'll tell you why I like him." },
-  { id: "plus", when: ".find-roster .find-names .find-chip:not(.find-line-chip) > button.find-plus", hit: ".find-roster .find-names .find-chip:not(.find-line-chip) > button.find-plus", text: "Tap the + on a player to throw him in your bet now. Pick his prop later." },
-  { id: "profile", hit: "#member-profile, #live-profile", text: "Tap the little person in the corner. Your record and your settings live in your profile.", go: () => { const me = document.getElementById("member-profile"); if (me) me.click(); } },
-  { id: "qr", text: "Double-tap me and I'll put a QR code on the TV. Your friends scan it and they're in.", go: () => { if (window.siteQrShow) siteQrShow(); } },
-  { id: "shot", hit: ".find-shot, .find-shot-box", text: "Friend sent you a screenshot of a bet? Tap here, paste it, and I'll build it for you.", go: () => { if (window.birdMenu) birdMenu("find"); birdWait(".find-shot", () => birdPoint(".find-shot")); } },
-  { id: "games", hit: ".find-games summary, .find-games-go, .desk-games-tab, .desk-game, .live-leagues button", text: "Every game today and this week is on The Games. Tap here and I'll take you.", go: () => { if (window.birdMenu) birdMenu("live"); } },
-  { id: "history", hit: ".find-saved-done, #live-score [data-history], .rec-hist", text: "Want to know how your old bets went? Tap here and I'll show you what hit and what missed.", go: () => { if (window.birdMenu) birdMenu("find"); birdWait(".find-saved-done", (done) => done.click(), () => { localStorage.setItem("liveSpan", "past"); location.href = "/live"; }); } },
-  { id: "recs", hit: "#live-recs", text: "On The Games, flip on Recommended bets and my picks show up on every game.", go: () => { sessionStorage.setItem("birdPoint", ".live-court:has(#live-recs)"); location.href = "/live"; } },
+  { id: "help", text: "Need help? Tap me and I'll show you around.", go: () => { location.href = "/guide"; } },
 ];
 
 function birdUsed() {

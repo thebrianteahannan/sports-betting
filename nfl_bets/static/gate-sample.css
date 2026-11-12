@@ -1,0 +1,25 @@
+#gate-sample { margin: 0 auto 0.9rem; padding: 0.6rem 0.8rem 0.55rem 1.6rem; max-width: 30rem; border: 1px solid #3dff6e; border-radius: 12px; background: rgba(4, 16, 10, 0.9); box-shadow: 0 0 16px rgba(61, 255, 110, 0.22); font-family: "Outfit", sans-serif; text-align: left; cursor: pointer; }
+#gate-sample p, .gate-sample-sheet p { margin: 0; }
+.gate-sample-head { color: #e7c15a; font-family: "Oswald", sans-serif; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.gate-sample-bet { margin-top: 0.15rem; color: #f4f7fb; font-size: 1.1rem; font-weight: 700; line-height: 1.25; }
+.gate-sample-bet b { margin-left: 0.3rem; color: #3dff6e; }
+.gate-sample-game { color: #9fb3c8; font-size: 0.8rem; }
+.gate-sample-why { margin-top: 0.35rem; color: #d5deea; font-size: 0.86rem; line-height: 1.35; }
+.gate-sample-pay { margin-top: 0.3rem; color: #3dff6e; font-size: 0.9rem; font-weight: 700; }
+.gate-sample-more { margin-top: 0.3rem; color: #e7c15a; font-size: 0.86rem; font-weight: 600; }
+#desk.tv-full #gate-sample .gate-sample-bet { font-size: 1.35rem; }
+#desk.tv-full #gate-sample .gate-sample-why, #desk.tv-full #gate-sample .gate-sample-more { font-size: 1rem; }
+#desk-glass #gate .gate-guide { text-align: center; }
+
+#gate-sample-pop { position: fixed; inset: 0; z-index: 9000; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(0, 0, 0, 0.72); }
+.gate-sample-sheet { position: relative; width: min(34rem, 100%); max-height: calc(100vh - 2rem); overflow-y: auto; padding: 1.3rem 1.4rem 1.2rem; border: 1px solid #3dff6e; border-radius: 16px; background: #04100a; box-shadow: 0 0 28px rgba(61, 255, 110, 0.3); font-family: "Outfit", sans-serif; text-align: left; }
+.gate-sample-sheet .gate-sample-head { font-size: 1.1rem; }
+.gate-sample-sheet .gate-sample-bet { margin-top: 0.3rem; padding-right: 2rem; font-size: 1.5rem; }
+.gate-sample-sheet .gate-sample-game { margin-top: 0.15rem; font-size: 0.95rem; }
+.gate-sample-sheet .gate-sample-why { margin-top: 0.7rem; font-size: 1.08rem; line-height: 1.5; }
+.gate-sample-sheet .gate-sample-pay { margin-top: 0.6rem; font-size: 1.2rem; }
+.gate-sample-sheet .gate-sample-more { margin-top: 0.4rem; font-size: 1.05rem; }
+.gate-sample-x { position: absolute; top: 0.9rem; right: 0.9rem; display: flex; align-items: center; justify-content: center; width: 2.2rem; height: 2.2rem; min-width: 0; min-height: 0; margin: 0; padding: 0; border: 1px solid #3dff6e; border-radius: 50%; background: transparent; box-shadow: none; color: #3dff6e; font-family: Arial, sans-serif; font-size: 1.5rem; font-weight: 400; letter-spacing: 0; line-height: 1; text-transform: none; cursor: pointer; }
+.gate-sample-go { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.1rem !important; }
+.gate-sample-go button { flex: 1 1 12rem; padding: 0.75rem 1rem; border: 1px solid #3dff6e; border-radius: 999px; background: #3dff6e; color: #04100a; font-family: "Rajdhani", sans-serif; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+.gate-sample-go button.ghost { background: transparent; color: #f4f7fb; }
