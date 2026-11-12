@@ -1,5 +1,6 @@
 /** Live tracker page: scores, clocks, and every player's box score line for the games in progress, refreshed every 20 seconds. */
 
+try { sessionStorage.setItem("fromLive", "1"); } catch (error) {}
 const liveOpen = new Set((() => { try { return JSON.parse(localStorage.getItem("liveOpen") || "[]"); } catch (error) { return []; } })());
 const liveSlide = new Map();
 
@@ -54,9 +55,9 @@ function liveNow(game, pick) {
   return { row: null, now: null };
 }
 
-function liveRoot(game, picks, rec) {
+function liveRoot(game, picks, rec, show) {
   if (!picks.length) return "";
-  return `<span class="live-mine${rec ? " live-rec" : ""}"><b>${rec ? "Recommended" : "Rooting for"}</b>${picks.map((pick) => {
+  return `<span class="live-mine${rec ? " live-rec" : ""}${show ? " live-rec-show" : ""}"><b>${rec ? "Recommended" : "Rooting for"}</b>${picks.map((pick) => {
     const { now } = liveNow(game, pick), price = Number.isFinite(pick.odds) ? ` ${pick.odds > 0 ? `+${pick.odds}` : pick.odds}` : "";
     let state = "", say = "";
     if (now !== null && pick.need !== null) {
@@ -76,9 +77,13 @@ function liveHurt(game) {
   return `<span class="live-hurt"><b>Injured</b>${hurt.map((one) => `<i title="${liveEsc(one.head)}"><em>${liveEsc(one.name)}</em> ${liveEsc([one.team, starters.has(liveFold(one.name)) ? "starter" : "", one.part.toLowerCase(), one.out ? "ruled out" : one.status].filter(Boolean).join(" · "))}</i>`).join("")}</span>`;
 }
 
-function liveRecRow(game, picks) {
+function liveRecPicks(game, picks) {
   const mine = new Set(picks.map((pick) => `${liveFold(pick.who)}|${pick.text}`));
-  return liveRoot(game, liveMine(game, liveRecs).filter((pick) => !mine.has(`${liveFold(pick.who)}|${pick.text}`)), true);
+  return liveMine(game, liveRecs).filter((pick) => !mine.has(`${liveFold(pick.who)}|${pick.text}`));
+}
+
+function liveRecRow(game, picks, show) {
+  return liveRoot(game, liveRecPicks(game, picks), true, show);
 }
 
 function liveGroup(group, key, many, mine, recs, known) {
@@ -101,7 +106,7 @@ function liveGame(game) {
 
 function liveNext(next) {
   if (!next.length) return "";
-  return `<h2>Up next</h2><ul class="live-next">${next.map((game) => `<li><span class="live-sport">${liveEsc(game.sport)}</span><b>${liveEsc(game.away.short)} @ ${liveEsc(game.home.short)}</b><i>${liveEsc(liveTime(game.when))}</i>${liveRoot(game, liveMine(game))}${liveRecRow(game, liveMine(game))}</li>`).join("")}</ul>`;
+  return `<h2>Up next today</h2><ul class="live-next">${next.map((game) => `<li><span class="live-sport">${liveEsc(game.sport)}</span><b>${liveEsc(game.away.short)} @ ${liveEsc(game.home.short)}</b><i>${liveEsc(liveTime(game.when))}</i>${liveRoot(game, liveMine(game))}${liveRecRow(game, liveMine(game))}</li>`).join("")}</ul>`;
 }
 
 function liveScore(data) {
@@ -117,12 +122,74 @@ function liveScore(data) {
   document.getElementById("live-score").innerHTML = `<i>Recommended</i>${cell("Live", won, all, "Recommended bets in games on now that have already hit")}${cell("Today", today.won + won, today.won + today.lost + won + lost, "Recommended bets won today, out of the ones already decided")}${cell("All time", ever.won + won, ever.won + ever.lost + won + lost, "Every recommended bet won, out of the ones already decided")}`;
 }
 
-function livePaint(data) {
+const liveLeagues = new Set((() => { try { return JSON.parse(localStorage.getItem("liveLeagues") || "[]"); } catch (error) { return []; } })());
+let liveLast = null, liveSpan = localStorage.getItem("liveSpan") || (localStorage.getItem("liveWeek") === "1" ? "week" : "today");
+const liveRecOpen = new Set();
+
+function liveLeagueBar(data, count) {
+  const order = ["NBA", "NFL", "NHL", "MLB", "WNBA"], have = new Set([...(data.live || []), ...(data.done || []), ...(data.next || []), ...(data.week || [])].map((game) => game.sport));
+  const leagues = order.filter((sport) => have.has(sport) || liveLeagues.has(sport));
+  const chips = leagues.length < 2 && !liveLeagues.size ? "" : `<button type="button" data-league="" class="${liveLeagues.size ? "" : "on"}">All</button>${leagues.map((sport) => `<button type="button" data-league="${liveEsc(sport)}" class="${liveLeagues.has(sport) ? "on" : ""}">${liveEsc(sport)}</button>`).join("")}`;
+  const games = (n) => `${n} ${n === 1 ? "game" : "games"}`, span = (key, label) => `<button type="button" class="${key === "past" ? "live-week-go" : ""}${liveSpan === key ? " on" : ""}" data-week="${key}">${label}, ${games(count[key])}</button>`;
+  const go = `${span("past", "Past")}${span("today", "Today")}${(data.week || []).length ? span("week", "This week") : ""}`;
+  return chips || go ? `<div class="live-leagues">${chips}${go}</div>` : "";
+}
+
+const liveDayKey = (when) => new Date(when).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+const liveEdge = new Map();
+let liveEdgeJob = null;
+
+function liveEdgeLoad() {
+  if (typeof gameStackData !== "function" || typeof STACK_GRADE === "undefined") return;
+  const job = gameStackData();
+  if (job === liveEdgeJob) return;
+  liveEdgeJob = job;
+  job.then((data) => {
+    const found = (data && data.found) || {};
+    liveEdge.clear();
+    Object.keys(found).filter((name) => STACK_GRADE[name] && STACK_GRADE[name][0] === "edge").forEach((name) => found[name].forEach((stack) => [stack.game, ...(stack.bets || []).map((bet) => bet.game)].filter(Boolean).forEach((match) => {
+      if (!liveEdge.has(match)) liveEdge.set(match, { names: new Set(), best: null });
+      liveEdge.get(match).names.add(name);
+    })));
+    (found["Key-number middle"] || []).forEach((stack) => { const row = liveEdge.get(stack.game), got = typeof gameEdgeProfit === "function" ? gameEdgeProfit(stack) : null; if (row && got && (!row.best || got.profit > row.best.profit)) row.best = got; });
+    if (liveLast) livePaint(liveLast, true);
+  });
+}
+
+function liveEdgeTag(match) {
+  const row = liveEdge.get(match);
+  if (!row) return "";
+  const best = row.best, text = best ? `Edge ${best.profit < 0 ? "-" : "+"}$${Math.abs(best.profit).toFixed(2)}` : "Known edge";
+  const title = best ? `Middle on ${best.key}: $5 on each side. A win by exactly ${best.key} cashes both. ${best.profit < 0 ? `At these prices it loses $${Math.abs(best.profit).toFixed(2)}` : `Expected profit $${best.profit.toFixed(2)}`} per $10.` : [...row.names].join(", ");
+  return `<span class="live-edge${best && best.profit < 0 ? " lose" : ""}" title="${liveEsc(title)}">${liveEsc(text)}</span>`;
+}
+
+function liveSoonCard(game) {
+  const day = `${new Date(Date.parse(game.kickoff)).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} ET`;
+  const like = { id: `${game.match}|${game.kickoff}`, away: game.away || { name: game.awayName }, home: game.home || { name: game.homeName }, when: game.kickoff }, picks = liveMine(like), recs = liveRecPicks(like, picks).length, open = liveRecOpen.has(like.id);
+  const tag = recs ? `<button type="button" class="live-rec-tag${open ? " on" : ""}" data-rec-open="${liveEsc(like.id)}">Recommended<b>${recs}</b></button>` : "";
+  const until = typeof gameUntilText === "function" ? gameUntilText(game.kickoff) : "";
+  const meta = `<span class="live-meta">${liveEdgeTag(game.match)}${game.total ? `<span class="live-total">O/U ${liveEsc(game.total)}</span>` : ""}${until ? `<span class="find-until live-until" data-kick="${liveEsc(game.kickoff)}">${liveEsc(until)}</span>` : ""}<a class="live-week-game" href="/?${liveEsc(new URLSearchParams({ game: game.match }).toString())}" title="Open this game in Build a bet">Build a bet ›</a></span>`;
+  return `<div class="live-game live-soon${picks.length ? " has-mine" : ""}"><div class="live-head"><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(like.away, false, `${like.id}|away`)}<span class="live-at-sign">@</span>${liveSide(like.home, false, `${like.id}|home`)}<span class="live-clock live-when">${liveEsc(day)}</span>${tag}${meta}${liveRoot(like, picks)}${liveRecRow(like, picks, open)}</div></div>`;
+}
+
+function liveWeekList(week) {
+  if (liveSpan !== "week" || !week.length) return "";
+  return `<h2>This week, ${week.length} ${week.length === 1 ? "game" : "games"}</h2>${week.map(liveSoonCard).join("")}`;
+}
+
+function livePaint(data, quiet) {
+  liveLast = data;
   const box = document.getElementById("live");
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => liveSlide.set(node.dataset.slide, node.scrollLeft));
-  const was = new Map([...box.querySelectorAll("[data-k]")].map((node) => [node.dataset.k, node.textContent])), games = new Set([...box.querySelectorAll(".live-game[data-id]")].map((node) => node.dataset.id)), first = !box.querySelector(".live-game, h2");
-  const live = data.live || [];
-  box.innerHTML = `${live.length ? `<h2>Live now, ${live.length} ${live.length === 1 ? "game" : "games"}</h2>${live.map(liveGame).join("")}` : `<p class="live-note">No games are live right now.</p>`}${(data.done || []).length ? `<h2>Final today, ${data.done.length} ${data.done.length === 1 ? "game" : "games"}</h2>${data.done.map(liveGame).join("")}` : ""}${liveNext(data.next || [])}`;
+  const was = new Map([...box.querySelectorAll("[data-k]")].map((node) => [node.dataset.k, node.textContent])), games = new Set([...box.querySelectorAll(".live-game[data-id]")].map((node) => node.dataset.id)), first = quiet || !box.querySelector(".live-game, h2");
+  const keep = (game) => !liveLeagues.size || liveLeagues.has(game.sport), live = (data.live || []).filter(keep), done = (data.done || []).filter(keep);
+  const board = (data.week || []).filter(keep), today = liveDayKey(Date.now()), week = board.filter((game) => liveDayKey(game.kickoff) > today), soon = board.filter((game) => liveDayKey(game.kickoff) === today && Date.parse(game.kickoff) > Date.now());
+  const next = (data.week || []).length ? (soon.length ? `<h2>Up next today, ${soon.length} ${soon.length === 1 ? "game" : "games"}</h2>${soon.map(liveSoonCard).join("")}` : "") : liveNext((data.next || []).filter(keep));
+  const past = done.filter((game) => liveDayKey(game.when) !== today), ended = done.filter((game) => liveDayKey(game.when) === today);
+  const final = (day, list) => list.length ? `<h2>Final ${day}, ${list.length} ${list.length === 1 ? "game" : "games"}</h2>${list.map(liveGame).join("")}` : "";
+  const bar = liveLeagueBar(data, { past: past.length, today: live.length + ended.length + ((data.week || []).length ? soon.length : (data.next || []).filter(keep).length), week: week.length });
+  box.innerHTML = liveSpan === "week" && week.length ? `${bar}${liveWeekList(week)}` : liveSpan === "past" ? `${bar}${final("yesterday", past) || `<p class="live-note">No past games to show.</p>`}` : `${bar}${live.length ? `<h2>Live now, ${live.length} ${live.length === 1 ? "game" : "games"}</h2>${live.map(liveGame).join("")}` : `<p class="live-note">No games are live right now.</p>`}${final("today", ended)}${next}`;
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => { const left = liveSlide.get(node.dataset.slide); if (left) node.scrollLeft = left; });
   if (!first) {
     box.querySelectorAll("[data-k]").forEach((node) => { if (was.has(node.dataset.k) && was.get(node.dataset.k) !== node.textContent) node.classList.add("live-flash"); });
@@ -134,12 +201,13 @@ function livePaint(data) {
 
 async function liveLoad() {
   try {
-    const [res, mine] = await Promise.all([fetch(`/api/live${document.getElementById("live-all").checked ? "?all=1" : ""}`, { credentials: "same-origin" }), fetch("/api/parlays", { credentials: "same-origin" }).then((reply) => (reply.ok ? reply.json() : null)).catch(() => null)]);
+    const [res, mine] = await Promise.all([fetch("/api/live?all=1", { credentials: "same-origin" }), fetch("/api/parlays", { credentials: "same-origin" }).then((reply) => (reply.ok ? reply.json() : null)).catch(() => null)]);
     if (res.status === 401) { document.getElementById("live").innerHTML = `<p class="live-note">Sign in on <a href="/">Parlay of the Day</a> to see live games.</p>`; return; }
     if (mine) liveLegs = (mine.parlays || []).flatMap((row) => (row.legs || []).map((leg) => ({ ...leg, parlay: row.id })));
     const data = await res.json();
     liveRecs = data.recs || [];
     livePaint(data);
+    liveEdgeLoad();
   } catch (error) {
     console.log("[live] could not load", error);
     document.getElementById("live-at").textContent = "Could not reach the live feed. Trying again.";
@@ -153,7 +221,7 @@ document.addEventListener("toggle", (event) => {
   try { localStorage.setItem("liveOpen", JSON.stringify([...liveOpen].slice(-40))); } catch (error) { console.log("[live] could not keep open games", error); }
 }, true);
 
-[["live-court", "liveCourt", "live-court-only"], ["live-recs", "liveRecs", "live-recs-on"], ["live-all", "liveAll", "live-all-on"]].forEach(([id, store, cls]) => {
+[["live-court", "liveCourt", "live-court-only"], ["live-recs", "liveRecs", "live-recs-on"]].forEach(([id, store, cls]) => {
   const box = document.getElementById(id);
   box.checked = localStorage.getItem(store) === "1";
   document.body.classList.toggle(cls, box.checked);
@@ -163,7 +231,28 @@ document.addEventListener("toggle", (event) => {
   });
 });
 
-document.getElementById("live-all").addEventListener("change", liveLoad);
+document.getElementById("live").addEventListener("click", (event) => {
+  const recTag = event.target.closest("[data-rec-open]");
+  if (recTag) {
+    const id = recTag.dataset.recOpen;
+    if (liveRecOpen.has(id)) liveRecOpen.delete(id); else liveRecOpen.add(id);
+    if (liveLast) livePaint(liveLast, true);
+    return;
+  }
+  const span = event.target.closest("[data-week]");
+  if (span) {
+    liveSpan = span.dataset.week;
+    try { localStorage.setItem("liveSpan", liveSpan); } catch (error) { console.log("[live] could not keep this week", error); }
+    if (liveLast) livePaint(liveLast, true);
+    return;
+  }
+  const chip = event.target.closest("[data-league]");
+  if (!chip) return;
+  const sport = chip.dataset.league;
+  if (!sport) liveLeagues.clear(); else if (liveLeagues.has(sport)) liveLeagues.delete(sport); else liveLeagues.add(sport);
+  try { localStorage.setItem("liveLeagues", JSON.stringify([...liveLeagues])); } catch (error) { console.log("[live] could not keep leagues", error); }
+  if (liveLast) livePaint(liveLast, true);
+});
 fetch("/api/me", { credentials: "same-origin" }).then((res) => (res.ok ? res.json() : null)).then((me) => { const name = me && me.member && me.member.name; if (name) document.getElementById("live-profile").dataset.name = name; }).catch((error) => console.log("[live] could not load profile name", error));
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") liveLoad(); });
 liveLoad();

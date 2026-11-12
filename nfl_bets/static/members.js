@@ -179,7 +179,7 @@ function birdGreet() {
   if (!called) return birdAskName();
   if (!window.memberBorn) return birdAskBorn(); if (!window.memberState) return birdAskState(); if (birdAskBook() || (window.birdAskTeams && birdAskTeams()) || birdLaw()) return;
   window.asking = false;
-  const shared = window.sharedGreet ? sharedGreet() : ""; birdSay(`Hey, ${called}. ${shared || "How are we going to find your favorite bet for today?"}`, [...(shared ? [["menu", shared.includes("see it") ? "See the bet" : "See the bets", "shared"]] : []), ["menu", "Build A Bet", "find"], ["menu", "Live Tracker", "live"]]);
+  const shared = window.sharedGreet ? sharedGreet() : ""; birdSay(`Hey, ${called}. ${shared || "How are we going to find your favorite bet for today?"}`, [...(shared ? [["menu", shared.includes("see it") ? "See the bet" : "See the bets", "shared"]] : []), ["menu", "Build A Bet", "find"], ["menu", "The Games", "live"]]);
 }
 
 function birdLaw() {

@@ -135,7 +135,13 @@ function ball(rows, names) {
   if (pass >= 150) line = rush >= 20 ? "He throws it, and he runs when the pocket breaks." : "He throws it. The yards come through the air.";
   else if (rush >= 35 && rec >= 20) line = "He runs and he catches. The touches come both ways.";
   else if (rush >= (rec || 0) && rush >= 30) line = "He is the runner. The yards come on the ground.";
-  else if (rec >= 30) line = targets >= 6 ? "He is the receiver. The ball comes his way." : "He is the receiver. The yards come on the catch.";
+  else if (rec >= 30 && catches > 0) {
+    const each = Math.round(rec / catches), rate = targets > 0 ? Math.round((catches / targets) * 10) : null;
+    if (each >= 14) line = `He averages ${each} yards a catch. One long catch can clear his yards line by itself, and a game without one misses it.`;
+    else if (rate != null && rate < 6) line = `He catches only ${rate} of every 10 balls thrown to him. The targets are there, the catches are not sure.`;
+    else if (rate != null && rate >= 7) line = `He catches ${rate} of every 10 balls thrown to him, at ${each} yards a catch. The catches are the steady part. The yards ride on how far each one goes.`;
+    else line = `He gets ${shown(targets || catches)} ${targets ? "targets" : "catches"} a game at ${each} yards a catch. His yards rise and fall with the targets.`;
+  }
   else if (catches >= 3) line = "He catches the ball. The receptions are the prop.";
   const stats = [];
   const add = (value, label) => { if (value > 0) stats.push({ label, value: shown(value) }); };

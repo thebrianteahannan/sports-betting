@@ -55,6 +55,19 @@ if (saveGoId) {
 }
 
 const saveSeek = new URLSearchParams(location.search), saveSeekGame = saveSeek.get("game") || "";
+if (document.documentElement.classList.contains("desk-going")) {
+  const born = Date.now();
+  const reveal = setInterval(() => {
+    if (!document.querySelector("#desk-glass-in .find-board") && !(Date.now() - born > 4000 && document.body.classList.contains("needs-member")) && Date.now() - born < 10000) return;
+    clearInterval(reveal);
+    requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove("desk-going")));
+  }, 100);
+}
+if (saveSeek.get("go") === "find") {
+  window.deskGoing = true;
+  history.replaceState(null, "", "/");
+  const wait = setInterval(() => { if (!window.memberReady || typeof window.birdMenu !== "function") return; clearInterval(wait); birdMenu("find"); }, 250);
+}
 if (saveSeekGame) {
   const bet = saveSeek.get("bet") || "", leg = `${saveSeek.get("label") || ""}|${saveSeek.get("market") || ""}`;
   window.deskGoing = true;
@@ -66,6 +79,7 @@ if (saveSeekGame) {
     const board = document.querySelector(".find-board");
     if (!board) { if (!seekAsked) { seekAsked = true; birdMenu("find"); } return; }
     if (!seekOpened) {
+      if (!((window.state && state.board && state.board.games) || []).length && seekTries < 120) return;
       if (bet && (!window.saveWho || (!(board.people || []).length && seekTries < 40))) return;
       const hit = [...board.querySelectorAll('.find-games[data-span="today"] button, .find-games button')].find((node) => node.textContent.startsWith(saveSeekGame));
       if (!hit) return;
@@ -209,8 +223,15 @@ function savePaint() {
     const old = [...tray.parentElement.querySelectorAll(":scope > .find-saved")]; let box = old.shift(); old.forEach((node) => node.remove());
     if (!box) { box = document.createElement("div"); box.className = "find-saved"; } if (box.nextElementSibling !== tray) tray.before(box);
     box.replaceChildren();
-    box.hidden = false;
-    if (list.some((row) => !row.group)) { const head = document.createElement("p"); head.textContent = "Saved parlays"; box.append(head); }
+    box.hidden = !!window.saveGone;
+    if (window.saveShut === undefined) window.saveShut = localStorage.getItem("savedShut") === "1";
+    box.classList.toggle("find-saved-shut", window.saveShut);
+    const head = document.createElement("p"); head.className = "find-say"; head.textContent = "Saved parlays";
+    const fold = document.createElement("button"); fold.type = "button"; fold.className = "find-fold"; fold.textContent = window.saveShut ? `Show ${list.length} parlay${list.length === 1 ? "" : "s"} ▾` : "Hide ▴";
+    fold.addEventListener("click", () => { window.saveShut = !window.saveShut; try { localStorage.setItem("savedShut", window.saveShut ? "1" : "0"); } catch (error) { console.log("[parlay-save] could not keep fold", error); } paintParlay(); });
+    const shut = document.createElement("button"); shut.type = "button"; shut.className = "find-close"; shut.textContent = "×"; shut.title = "Close saved parlays"; shut.setAttribute("aria-label", shut.title);
+    shut.addEventListener("click", () => { window.saveGone = true; box.hidden = true; });
+    head.append(fold, shut); box.append(head);
     const stacks = document.createDocumentFragment(), groups = new Map();
     list.forEach((row) => {
       const chip = document.createElement("span");
@@ -256,9 +277,9 @@ function savePaint() {
     box.append(fresh);
     saveStacks(box);
     if (!groups.size) return;
-    const head = document.createElement("p");
-    head.textContent = "Saved stacks";
-    stacks.prepend(head);
+    const top = document.createElement("p");
+    top.textContent = "Saved stacks";
+    stacks.prepend(top);
     box.insertBefore(stacks, box.querySelector(":scope > .find-saved-stacks"));
   });
 }

@@ -29,3 +29,4 @@ body:not(.home-games-on) #member-profile[data-name]:not([data-name=""]):is(:hove
   #desk.tv-full #desk-menu.bird-has:not(.say-open)::after { max-width: calc(100vw - 16rem); }
   #desk.tv-full.find-up #desk-menu.bird-has:not(.say-open)::after { max-width: calc(100vw - 16.5rem - 43px); }
 }
+.rec-board .find-span { display: none !important; }

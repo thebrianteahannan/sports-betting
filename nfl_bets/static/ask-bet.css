@@ -390,6 +390,7 @@
 #bird-line.pow::before { content: none; }
 #bird-line.pow::after { display: none; }
 #desk.tv-full #desk-glass #bird-line.pow { font-size: 72px; }
+body.skip-pow #bird-guide:has(#bird-line.pow) { visibility: hidden; }
 @keyframes squawk-pow { 0% { transform: rotate(-8deg) scale(0.35); } 60% { transform: rotate(-8deg) scale(1.14); } 100% { transform: rotate(-8deg) scale(1); } }
 #greet-rate, #greet-legal { display: none; }
 #desk.bird-on #bird-guide:has(button[data-menu]) { justify-content: flex-start; padding-top: 3.2rem; padding-bottom: 0.7rem; } #desk.tv-full.bird-on #bird-guide:has(button[data-menu]) { padding-bottom: 4.4rem; } #desk.bird-on #bird-guide:has(button[data-menu]) #bird-line { margin-top: auto; } #desk.bird-on #bird-guide:has(button[data-menu]) #bird-picks { margin-bottom: auto; }

@@ -289,8 +289,6 @@ function friendsPaint() {
     });
     const after = box.querySelector(":scope > .find-saved-done") || box.querySelector(":scope > .find-saved-st");
     if (after) after.after(go); else box.append(go);
-    const live = document.createElement("button"); live.type = "button"; live.className = "find-saved-st find-saved-live"; live.textContent = "Live"; live.title = "Live stats for the games being played";
-    live.addEventListener("click", () => { window.location.href = "/live"; }); go.after(live);
     if (window.sharedOpen) box.append(friendsPanel());
   });
   profileShared();

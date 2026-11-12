@@ -84,6 +84,7 @@ function scriptRecShow(tab) {
 function scriptRecJump(match, test) {
   const box = match && match.querySelector(":scope > .find-bets");
   if (!box) return;
+  if (match.classList.contains("find-game-shut")) { const fold = match.querySelector(":scope > .find-when .find-game-fold"); if (fold) fold.click(); else match.classList.remove("find-game-shut"); }
   const find = () => [...box.querySelectorAll(":scope > .find-script-bets .find-script-tabs button[data-who]")].find((tab) => test(tab.dataset));
   let tab = find();
   if (!tab && box.scriptBets) {
@@ -115,6 +116,20 @@ function scriptRecGo() {
 }
 
 document.addEventListener("click", (event) => { if (event.target.closest && event.target.closest(".find-tray .find-ticket > b i.rc")) scriptRecGo(); });
+
+function scriptRecLeg(line) {
+  const hist = line.querySelector("button.find-leg-hist"), key = (hist && hist.dataset.key) || line.dataset.key, bet = key && typeof parlayLeg !== "undefined" && parlayLeg.get(key);
+  if (!bet) return;
+  const want = `${bet.label}|${bet.market}`, test = (info) => String(info.legs || "").split("||").includes(want);
+  const hit = () => [...document.querySelectorAll("#desk-glass-in .find-match")].find((match) => match.scriptRec && match.scriptRec.bets.has(want) && match.querySelector(":scope > .find-bets"));
+  const now = hit(); if (now) { scriptRecJump(now, test); return; }
+  const seek = line.querySelector("button.find-leg-seek"); if (!seek) return;
+  seek.click();
+  let tries = 0;
+  const wait = setInterval(() => { const match = hit(); if (match || ++tries > 50) { clearInterval(wait); if (match) scriptRecJump(match, test); } }, 200);
+}
+
+document.addEventListener("click", (event) => { const pill = event.target.closest && event.target.closest(".find-tray .find-chose .find-rec-pill"); if (pill) scriptRecLeg(pill.closest(".find-chose")); });
 
 function nbaScriptProps(people, match) {
   const rows = [];
