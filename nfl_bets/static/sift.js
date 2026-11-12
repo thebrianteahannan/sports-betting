@@ -355,8 +355,6 @@ function parlayHint(legs) {
       said = label;
     }
   }
-  const next = parlayNext(rows, said);
-  if (next) { const more = document.createElement("span"); more.className = "find-exp"; more.textContent = note.childNodes.length ? ` ${next}` : `Experimental: ${next}`; note.append(more); }
   return note.childNodes.length ? note : "";
 }
 function parlayNext(legs, said) {

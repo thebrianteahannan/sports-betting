@@ -52,6 +52,8 @@ function legSeek(name) {
     input.value = name;
     input.dispatchEvent(new Event("input"));
     const hits = input.closest(".find-board").querySelector(":scope > .find-hits:not(.find-tray)");
+    const week = hits && !hits.querySelector("button:not([data-week])") && hits.querySelector("button[data-week]");
+    if (week) week.click();
     const picks = hits ? [...hits.querySelectorAll("button:not([data-week])")] : [];
     const pick = picks.find((node) => plainName(node.textContent.split(",")[0]) === plainName(name)) || (picks.length === 1 ? picks[0] : null);
     if (pick) pick.click();

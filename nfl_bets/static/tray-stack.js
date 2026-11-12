@@ -19,6 +19,7 @@ function trayStack(tray, legs) {
         if (!shared) return;
         const missing = bets.filter((bet) => !mine.has(key(bet.label)));
         const extra = rows.filter((leg) => !theirs.has(key(leg.label)));
+        if (shared < 2 && (missing.length || extra.length) && (extra.length || !(typeof stackApart === "function" && stackApart(stack)))) return;
         const score = [missing.length || extra.length ? 0 : 1, shared, -(missing.length + extra.length), -rank];
         const ahead = !best || (() => { for (let at = 0; at < score.length; at += 1) if (score[at] !== best.score[at]) return score[at] > best.score[at]; return false; })();
         if (ahead) best = { score, name: row[0], no: index + 1, missing, extra, apart: typeof stackApart === "function" && stackApart(stack) };
@@ -35,12 +36,9 @@ function trayStack(tray, legs) {
     go.addEventListener("click", () => trayStackOpen(best.name, rows.map((leg) => leg.label)));
     const list = (items) => items.length === 1 ? items[0] : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
     const fit = !best.missing.length && !best.extra.length;
-    const join = (nodes) => nodes.flatMap((node, at) => (at === 0 ? [node] : [at === nodes.length - 1 ? " and " : ", ", node]));
-    const act = (text, run) => { const button = document.createElement("button"); button.type = "button"; button.className = "find-near find-do"; button.textContent = text; button.addEventListener("click", run); return button; };
     const piece = !fit && best.apart && !best.extra.length;
     if (piece) note.append("This is one bet in the ", go, " stack.");
     else note.append(fit ? "This is " : "This is close to ", go, ".");
-    if (!fit && best.extra.length && best.extra.length <= 2) note.append(" Take out ", ...join(best.extra.map((leg) => act(String(leg.label).split(/\s+—\s+/)[0], () => trayStackDrop(leg)))), ".");
     const hint = tray.querySelector(":scope > .find-undo") || tray.querySelector(":scope > .find-why");
     if (hint) hint.before(note); else tray.append(note);
   });

@@ -72,7 +72,8 @@ function scriptRecInfo(set, parlay) {
 }
 
 function scriptRecShow(tab) {
-  const box = tab.closest(".find-bets"), block = tab.closest(".find-script-bets");
+  const box = tab.closest(".find-bets"), block = tab.closest(".find-script-bets"), match = tab.closest(".find-match");
+  if (match && match.classList.contains("find-game-shut")) { const fold = match.querySelector(":scope > .find-when .find-game-fold"); if (fold) fold.click(); else match.classList.remove("find-game-shut"); }
   box.open = true; block.hidden = false; tab.click();
   const tray = document.querySelector(".find-board .find-tray:not([hidden]):not(.find-shut)"), fold = tray && tray.querySelector(".find-fold");
   if (fold) { fold.click(); if (typeof saveAutoShut !== "undefined") { saveAutoShut.add(tray); saveFoldAt = Date.now(); } }
