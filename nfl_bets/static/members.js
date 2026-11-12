@@ -179,7 +179,7 @@ function birdGreet() {
   if (!called) return birdAskName();
   if (!window.memberBorn) return birdAskBorn(); if (!window.memberState) return birdAskState(); if (birdAskBook() || (window.birdAskTeams && birdAskTeams()) || birdLaw()) return;
   window.asking = false;
-  const shared = window.sharedGreet ? sharedGreet() : ""; birdSay(`Hey, ${called}. ${shared || "How are we going to find your favorite bet for today?"}`, [...(shared ? [["menu", shared.includes("see it") ? "See the bet" : "See the bets", "shared"]] : []), ["menu", "Build A Bet", "find"]]);
+  const shared = window.sharedGreet ? sharedGreet() : ""; birdSay(`Hey, ${called}. ${shared || "How are we going to find your favorite bet for today?"}`, [...(shared ? [["menu", shared.includes("see it") ? "See the bet" : "See the bets", "shared"]] : []), ["menu", "Build A Bet", "find"], ["menu", "Live Tracker", "live"]]);
 }
 
 function birdLaw() {
@@ -359,6 +359,7 @@ function recLine(leg) {
 }
 
 function birdMenu(kind) {
+  if (kind === "live") { window.location.href = "/live"; return; }
   if (kind === "shared" && window.sharedOpenFresh) { sharedOpenFresh(); return; } if (kind === "how" && window.paintHow) { paintHow(); return; } if (kind === "stack" && window.trayStackOpen) { trayStackOpen(""); return; } if (kind === "pick" || kind === "ones") { if (window.birdMenu) birdMenu("bets"); return; } if (kind === "find" && window.paintFind) { if (window.saveNew && !document.getElementById("desk").classList.contains("tv-full")) saveNew(); paintFind(); return; } if (kind !== "bets") return;
   window.asking = true; if (window.goFull) goFull(); if (window.birdQuiet) birdQuiet(); if (window.tvPush && (document.querySelector("#desk-glass-in .rec-board") || { dataset: { page: "" } }).dataset.page !== "bets") tvPush();
   const desk = document.getElementById("desk"); if (!desk || !desk.classList.contains("tv-full")) { window.asking = false; if (window.birdGreet) birdGreet(); return; }

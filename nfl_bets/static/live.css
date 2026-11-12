@@ -13,7 +13,7 @@ a { color: #3dff6e; }
 .live-court input { accent-color: #3dff6e; width: 15px; height: 15px; margin: 0; cursor: pointer; }
 .live-court.live-court-next { margin-left: 0; }
 @media (max-width: 700px) { .live-top { flex-wrap: wrap; } }
-body.live-court-only .live-table tr[class]:not(.on) { display: none; }
+body.live-court-only .live-table tr[class]:not(.on):not(.mine) { display: none; }
 .live-at { color: #9fb3c8; font-size: 13px; }
 #live { max-width: 1100px; margin: 0 auto; padding: 14px 16px 40px; }
 #live h2 { margin: 18px 0 10px; color: #e7c15a; font-size: 18px; font-weight: 800; }
