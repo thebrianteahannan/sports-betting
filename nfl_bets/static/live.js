@@ -74,18 +74,19 @@ function liveRecRow(game, picks) {
   return liveRoot(game, liveMine(game, liveRecs).filter((pick) => !mine.has(`${liveFold(pick.who)}|${pick.text}`)), true);
 }
 
-function liveGroup(group, key, many, mine, recs) {
+function liveGroup(group, key, many, mine, recs, known) {
   const head = `<tr><th>${liveEsc(many ? group.name : "Player")}</th>${group.labels.map((label) => `<th>${liveEsc(label)}</th>`).join("")}</tr>`;
-  const rows = group.rows.map((row) => `<tr class="${row.on ? "on" : ""}${row.starter ? " start" : ""}${mine.has(liveFold(row.name)) ? " mine" : recs.has(liveFold(row.name)) ? " rec" : ""}"><td><span class="live-name">${liveEsc(row.name)}</span>${row.pos ? `<span class="live-pos">${liveEsc(row.pos)}</span>` : ""}</td>${row.stats.map((stat, at) => `<td data-k="${liveEsc(`${key}|${row.name}|${group.labels[at] || at}`)}">${liveEsc(stat)}</td>`).join("")}</tr>`).join("");
+  const rows = group.rows.map((row) => `<tr class="${row.on ? "on" : known ? "" : "all"}${row.starter ? " start" : ""}${mine.has(liveFold(row.name)) ? " mine" : recs.has(liveFold(row.name)) ? " rec" : ""}"><td><span class="live-name">${liveEsc(row.name)}</span>${row.pos ? `<span class="live-pos">${liveEsc(row.pos)}</span>` : ""}</td>${row.stats.map((stat, at) => `<td data-k="${liveEsc(`${key}|${row.name}|${group.labels[at] || at}`)}">${liveEsc(stat)}</td>`).join("")}</tr>`).join("");
   return `<div class="live-table" data-slide="${liveEsc(key)}"><table>${head}${rows}</table></div>`;
 }
 
 function liveGame(game) {
   const away = Number(game.away.score), home = Number(game.home.score), picks = liveMine(game), mine = new Set(picks.map((pick) => liveFold(pick.who))), recs = new Set(liveMine(game, liveRecs).map((pick) => liveFold(pick.who)));
+  const known = (game.teams || []).some((team) => team.groups.some((group) => group.rows.some((row) => row.on)));
   const teams = (game.teams || []).map((team) => {
     const side = [game.away, game.home].find((row) => row.short === team.short) || {};
     const many = team.groups.length > 1;
-    return `<section class="live-team" style="border-left-color: ${liveEsc(side.color || "#3dff6e")}"><h3>${liveEsc(team.name)}</h3>${team.groups.map((group, at) => liveGroup(group, `${game.id}|${team.short}|${at}`, many, mine, recs)).join("")}</section>`;
+    return `<section class="live-team" style="border-left-color: ${liveEsc(side.color || "#3dff6e")}"><h3>${liveEsc(team.name)}</h3>${team.groups.map((group, at) => liveGroup(group, `${game.id}|${team.short}|${at}`, many, mine, recs, known)).join("")}</section>`;
   }).join("");
   const body = teams || `<p class="live-note">ESPN has not posted player stats for this game yet.</p>`;
   return `<details class="live-game${picks.length ? " has-mine" : ""}" data-id="${liveEsc(game.id)}"${liveOpen.has(game.id) ? " open" : ""}><summary><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(game.away, away > home, `${game.id}|away`)}<span class="live-at-sign">@</span>${liveSide(game.home, home > away, `${game.id}|home`)}<span class="live-clock">${liveEsc(game.clock)}</span>${game.last ? `<span class="live-last" data-k="${liveEsc(`${game.id}|last`)}">${liveEsc(game.last)}</span>` : ""}${liveRoot(game, picks)}${liveRecRow(game, picks)}</summary>${body}</details>`;

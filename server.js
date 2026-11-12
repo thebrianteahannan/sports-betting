@@ -645,4 +645,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log("Betting desk site on port " + PORT);
+  const warm = () => board().then((now) => require("./live-recs").recWarm(now)).catch((error) => console.error("live recs warm failed:", error));
+  setTimeout(warm, 30000); setInterval(warm, 10 * 60000);
 });
