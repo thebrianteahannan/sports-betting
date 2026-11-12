@@ -37,8 +37,11 @@ function when(iso) {
 }
 
 async function load() {
-  const response = await fetch("/api/board", { cache: "no-store" });
-  state.board = await response.json();
+  const had = state.board && state.board.archiveTag && state.board.archive ? state.board : null;
+  const response = await fetch(had ? `/api/board?have=${had.archiveTag}` : "/api/board", { cache: "no-store" });
+  const next = await response.json();
+  if (had && !next.archive) next.archive = had.archive;
+  state.board = next;
   render();
   clearTimeout(state.timer);
   state.timer = setTimeout(load, 120000);

@@ -475,7 +475,9 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/live") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to see live games." }, 401); return; } const recs = require("./live-recs"); board().then((now) => recs.recWarm(now)).catch((error) => console.error("live recs warm failed:", error)); sendJson(res, { ...(await require("./live-api").liveBoard(url.searchParams.get("all") === "1")), recs: await recs.recsList(), week: await require("./live-api").liveWeek(board).catch(() => []), tally: await require("./live-grade").gradeTally() }); require("./live-grade").gradeTick().catch((error) => console.error("live recs grade failed:", error)); return; }
     if (req.method === "GET" && url.pathname === "/api/board") {
       if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to open the board." }, 401); return; }
-      sendJson(res, await publicBoard());
+      const { archive: rows, ...rest } = await publicBoard();
+      rest.archiveTag = crypto.createHash("sha1").update(JSON.stringify(rows)).digest("hex").slice(0, 12);
+      sendJson(res, url.searchParams.get("have") === rest.archiveTag ? rest : { ...rest, archive: rows });
       return;
     }
     if (req.method === "POST") {
