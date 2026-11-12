@@ -84,6 +84,10 @@ window.sharedGreet = function () {
   if (!fresh.length) return "";
   return fresh.length === 1 ? `${names[0]} sent you a bet. Want to see it?` : `${names.length === 1 ? names[0] : "Your friends"} sent you ${fresh.length} bets. Want to see them?`;
 };
+window.sharedLabel = function () {
+  const fresh = sharedUnopened();
+  return fresh.length === 1 ? `See ${fresh[0].fromName}'s bet` : `See the ${fresh.length} bets`;
+};
 
 window.sharedOpenFresh = sharedGo;
 
