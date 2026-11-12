@@ -28,7 +28,7 @@ function favTeamsOpen(done) {
   if (!leagues.includes(favLeague)) favLeague = (leagues.find((league) => [...pick].some((key) => key.startsWith(`${league}|`))) || leagues[0]);
   const box = document.createElement("div");
   box.id = "fav-teams";
-  box.innerHTML = `<div class="fav-teams-card" role="dialog" aria-label="Your teams"><p class="fav-teams-head">Your teams</p><p class="fav-teams-say">Tap the teams you root for. Recommended can show just their games.</p><div class="fav-teams-leagues"></div><div class="fav-teams-list"></div><p class="fav-teams-do"><button type="button" class="fav-teams-skip">Not now</button><button type="button" class="fav-teams-save">Save my teams</button></p></div>`;
+  box.innerHTML = `<div class="fav-teams-card" role="dialog" aria-label="Your teams"><p class="fav-teams-head">Your teams</p><p class="fav-teams-say">Tap the teams you root for. Their games and picks get a gold star.</p><div class="fav-teams-leagues"></div><div class="fav-teams-list"></div><p class="fav-teams-do"><button type="button" class="fav-teams-skip">Not now</button><button type="button" class="fav-teams-save">Save my teams</button></p></div>`;
   const tabs = box.querySelector(".fav-teams-leagues"), list = box.querySelector(".fav-teams-list"), save = box.querySelector(".fav-teams-save");
   const paint = () => {
     tabs.replaceChildren(...leagues.map((league) => {

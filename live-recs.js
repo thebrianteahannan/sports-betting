@@ -84,17 +84,26 @@ function recStory(match, kickoff) {
   return kept && kept.story ? kept.story : null;
 }
 
-async function recSample() {
+async function recRanked() {
   await pull();
   const now = Date.now(), day = (when) => new Date(when - 6 * 3600000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
   const tonight = Object.values(recs).filter((row) => Date.parse(row.kickoff) > now && day(Date.parse(row.kickoff)) === day(now));
   const picks = tonight.flatMap((row) => (((row.story || {}).bets || {}).picks || []).map((pick) => ({ ...pick, match: row.match, kickoff: row.kickoff })));
   const edge = (pick) => (pick.n >= 5 ? (pick.hits / pick.n) * 100 - parseFloat(pick.need) : -Infinity);
-  const best = picks.filter((pick) => pick.how && Number.isFinite(edge(pick))).sort((a, b) => edge(b) - edge(a))[0];
-  if (!best) return { pick: null, more: 0 };
-  return { pick: { who: best.who, team: best.team, label: best.label, odds: best.odds, need: best.need, hits: best.hits, n: best.n, how: best.how, match: best.match, kickoff: best.kickoff }, more: picks.length - 1 };
+  const ranked = picks.filter((pick) => pick.how && Number.isFinite(edge(pick))).sort((a, b) => edge(b) - edge(a));
+  return { all: picks.length, ranked: ranked.map((pick) => ({ who: pick.who, team: pick.team, label: pick.label, market: pick.market, odds: pick.odds, need: pick.need, hits: pick.hits, n: pick.n, how: pick.how, match: pick.match, kickoff: pick.kickoff })) };
+}
+
+async function recSample() {
+  const { all, ranked } = await recRanked();
+  return ranked.length ? { pick: ranked[0], more: all - 1 } : { pick: null, more: 0 };
+}
+
+async function recTop(count) {
+  const { ranked } = await recRanked();
+  return { picks: ranked.slice(0, count) };
 }
 
 pull();
 
-module.exports = { recRecord, recWarm, recsList, recStory, recSample, kv };
+module.exports = { recRecord, recWarm, recsList, recStory, recSample, recTop, kv };
