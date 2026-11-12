@@ -455,7 +455,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (req.method === "GET" && url.pathname === "/live") { serveStatic(res, "live.html"); return; }
-    if (req.method === "GET" && url.pathname === "/api/live") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to see live games." }, 401); return; } sendJson(res, await require("./live-api").liveBoard()); return; }
+    if (req.method === "GET" && url.pathname === "/api/live") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to see live games." }, 401); return; } const recs = require("./live-recs"); board().then((now) => recs.recWarm(now)).catch((error) => console.error("live recs warm failed:", error)); sendJson(res, { ...(await require("./live-api").liveBoard()), recs: recs.recsList() }); return; }
     if (req.method === "GET" && url.pathname === "/api/board") {
       if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to open the board." }, 401); return; }
       sendJson(res, await publicBoard());

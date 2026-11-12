@@ -11,6 +11,8 @@ a { color: #3dff6e; }
 .live-top h1 { margin: 0; font-family: Oswald, sans-serif; font-size: 24px; font-weight: 600; letter-spacing: 0.02em; }
 .live-court { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; color: #c4cde0; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .live-court input { accent-color: #3dff6e; width: 15px; height: 15px; margin: 0; cursor: pointer; }
+.live-court.live-court-next { margin-left: 0; }
+@media (max-width: 700px) { .live-top { flex-wrap: wrap; } }
 body.live-court-only .live-table tr[class]:not(.on) { display: none; }
 .live-at { color: #9fb3c8; font-size: 13px; }
 #live { max-width: 1100px; margin: 0 auto; padding: 14px 16px 40px; }
@@ -58,6 +60,9 @@ body.live-court-only .live-table tr[class]:not(.on) { display: none; }
 .live-mine > b { color: #e7c15a; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .live-mine-leg { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border: 1px solid rgba(231, 193, 90, 0.55); border-radius: 999px; background: rgba(231, 193, 90, 0.1); font-size: 13px; }
 .live-mine-leg i { font-style: normal; }
+a.live-mine-leg { text-decoration: none; cursor: pointer; }
+a.live-mine-leg:hover { border-color: #e7c15a; background: rgba(231, 193, 90, 0.2); }
+.live-rec a.live-mine-leg:not(.hit):not(.lost):hover { border-color: #3dff6e; background: rgba(61, 255, 110, 0.16); }
 .live-mine-leg .who { color: #e7c15a; font-weight: 700; }
 .live-mine-leg .prop { color: #f4f7fb; }
 .live-mine-leg .now { padding: 0 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); color: #c4cde0; font-weight: 700; }
@@ -70,3 +75,11 @@ body.live-court-only .live-table tr[class]:not(.on) { display: none; }
 .live-table tr.mine td { background: rgba(231, 193, 90, 0.14); }
 .live-table tr.mine td:first-child { background: #2a2614; box-shadow: inset 3px 0 0 #e7c15a; }
 .live-table tr.mine .live-name { color: #e7c15a; }
+.live-mine.live-rec { display: none; }
+body.live-recs-on .live-mine.live-rec { display: flex; }
+.live-rec > b { color: #3dff6e; }
+.live-rec .live-mine-leg:not(.hit):not(.lost) { border-color: rgba(61, 255, 110, 0.45); background: rgba(61, 255, 110, 0.06); }
+.live-rec .live-mine-leg .who { color: #3dff6e; }
+body.live-recs-on .live-table tr.rec td { background: rgba(61, 255, 110, 0.08); }
+body.live-recs-on .live-table tr.rec td:first-child { background: #0c2416; box-shadow: inset 3px 0 0 #3dff6e; }
+body.live-recs-on .live-table tr.rec .live-name { color: #3dff6e; }

@@ -36,6 +36,59 @@ async function saveSync() {
 }
 
 const saveWait = setInterval(() => { if (window.memberReady) { clearInterval(saveWait); saveSync(); } }, 1000);
+
+const saveGoId = new URLSearchParams(location.search).get("bet") || "";
+if (saveGoId) {
+  window.deskGoing = true;
+  history.replaceState(null, "", "/");
+  let saveGoTries = 0, saveGoAsked = false;
+  const saveGo = setInterval(() => {
+    if (++saveGoTries > 80) { clearInterval(saveGo); console.log("[parlay-save] could not open bet", saveGoId); return; }
+    if (!window.saveWho || typeof window.birdMenu !== "function") return;
+    const board = document.querySelector(".find-board");
+    if (!board) { if (!saveGoAsked) { saveGoAsked = true; birdMenu("find"); } return; }
+    if (!(board.people || []).length && saveGoTries < 30) return;
+    clearInterval(saveGo);
+    saveOpen(saveGoId);
+    document.querySelectorAll(".find-tray.find-shut").forEach((tray) => { const fold = tray.querySelector(".find-fold"); if (fold) { saveAutoShut.delete(tray); fold.click(); } });
+  }, 250);
+}
+
+const saveSeek = new URLSearchParams(location.search), saveSeekWho = saveSeek.get("find") || "";
+if (saveSeekWho) {
+  const label = saveSeek.get("label") || "", market = saveSeek.get("market") || "", fold = (text) => String(text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  window.deskGoing = true;
+  history.replaceState(null, "", "/");
+  let seekTries = 0, seekAsked = false;
+  const seek = setInterval(() => {
+    if (++seekTries > 80) { clearInterval(seek); console.log("[parlay-save] could not find", saveSeekWho); return; }
+    if (!window.memberReady || typeof window.birdMenu !== "function" || typeof showFind !== "function") return;
+    const board = document.querySelector(".find-board");
+    if (!board) { if (!seekAsked) { seekAsked = true; birdMenu("find"); } return; }
+    const person = (board.people || []).find((row) => row.kind === "player" && fold(row.name) === fold(saveSeekWho));
+    const list = board.querySelector(".find-list"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)"), field = board.querySelector("label.find input");
+    if (!person && (board.people || []).length && seekTries > 20 && field) { clearInterval(seek); field.value = saveSeekWho; field.dispatchEvent(new Event("input", { bubbles: true })); return; }
+    if (!person || !list || !hits) return;
+    clearInterval(seek);
+    if (field) { field.value = person.name; field.dispatchEvent(new Event("input", { bubbles: true })); }
+    showFind(list, hits, person, board.querySelector(":scope > .find-roster"), board.people);
+    if (typeof scriptRecAll !== "undefined" && label) scriptRecAll.add(`${label}|${market}`);
+    if (typeof legSwapOpen === "undefined" || typeof legWhoFind !== "function") return;
+    const add = list.querySelector("button.find-parlay");
+    if (add && !parlayPick.has(person.key)) add.click();
+    const key = `who:${person.key}`;
+    legSwapOpen.set(key, "who");
+    paintParlay();
+    setTimeout(() => {
+      const at = legWhoFind(key).findIndex((row) => row.bet.label === label && row.bet.market === market);
+      const box = [...document.querySelectorAll(".find-tray .find-tray-swap")].find((node) => node.dataset.key === key);
+      const row = box && at >= 0 && box.querySelectorAll(".find-swap-row")[at];
+      if (!row) { console.log("[parlay-save] bet not in the prop list", label, market); return; }
+      row.scrollIntoView({ block: "center", behavior: "smooth" });
+      row.classList.add("find-flash"); setTimeout(() => row.classList.remove("find-flash"), 4400);
+    }, 1200);
+  }, 250);
+}
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && window.memberReady) saveSync(); });
 
 function saveSig(legs) {

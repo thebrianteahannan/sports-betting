@@ -416,6 +416,7 @@ function startGuide() {
     birdHeld = false;
     window.squawkUntil = Date.now() + 900; birdSay("Aight, bet!", []);
     setTimeout(function land(tryN) {
+      if (window.deskGoing) return;
       if (!birdOn || ((birdHeld || window.asking) && (document.getElementById("bird-line") || {}).textContent !== "Aight, bet!") || document.body.classList.contains("needs-member")) return; if (new URLSearchParams(location.search).get("p") && window.birdMenu) { if (!((window.state && window.state.board && window.state.board.archive) || []).length && (tryN || 0) < 20) { setTimeout(() => land((tryN || 0) + 1), 300); return; } birdMenu("bets"); return; }
       if (window.birdGreet) birdGreet(); else birdSay("Hey. How are we going to find your favorite bet for today?", [["menu", "Build A Bet", "find"]]);
     }, 900);

@@ -120,7 +120,7 @@ function fillFind(board, data) {
   const hits = document.createElement("div");
   hits.className = "find-hits";
   const roster = document.createElement("details"); roster.className = "find-roster"; roster.hidden = true;
-  const teams = document.createElement("div"); teams.className = "find-teams"; const tray = document.createElement("div"); tray.className = parlayPick.size || parlayLeg.size ? "find-hits find-tray find-shut" : "find-hits find-tray"; tray.hidden = true;
+  const teams = document.createElement("div"); teams.className = "find-teams"; const tray = document.createElement("div"); tray.className = (parlayPick.size || parlayLeg.size) && !window.parlayOpenId ? "find-hits find-tray find-shut" : "find-hits find-tray"; tray.hidden = true;
   const list = document.createElement("div");
   list.className = "find-list";
   board.people = people;

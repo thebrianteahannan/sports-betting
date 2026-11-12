@@ -203,7 +203,7 @@ function gameStory(body, board) {
   const key = `${body.match}|${body.kickoff}`, count = Array.isArray(body.props) ? body.props.length : 0;
   const hit = MEM.get(key);
   if (hit && Date.now() - hit.at < KEEP && count <= hit.count) return hit.promise;
-  const promise = build(body, board).then((data) => { if (!data.sections.length) MEM.delete(key); return data; }).catch(() => { MEM.delete(key); return { sections: [] }; });
+  const promise = build(body, board).then((data) => { if (!data.sections.length) MEM.delete(key); if (data.bets) require("./live-recs").recRecord(body.match, body.kickoff, data.bets); return data; }).catch(() => { MEM.delete(key); return { sections: [] }; });
   MEM.set(key, { at: Date.now(), promise, count });
   return promise;
 }
