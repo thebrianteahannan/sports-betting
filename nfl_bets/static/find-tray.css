@@ -407,7 +407,7 @@
 @keyframes find-flash-head { 0%, 100% { color: #e7c15a; text-shadow: none; } 20%, 70% { color: #ffe08a; text-shadow: 0 0 12px rgba(231, 193, 90, 0.8); } }
 .rec-board .find-span.find-flash > details[open] { animation: find-flash 1.8s ease-in-out 0.35s; }
 .rec-board .find-shared-chip.find-flash { animation: find-flash 1.8s ease-in-out 0.35s; }
-.find-tray .find-tray-swap .find-swap-row.find-flash { border-radius: 8px; animation: find-flash 1.8s ease-in-out 0.35s 2; }
+.find-script-leg.find-flash, .find-bets.find-flash { border-radius: 8px; animation: find-flash 1.8s ease-in-out 0.35s 2; }
 .rec-board .find-span.find-flash .find-span-head { animation: find-flash-head 1.8s ease-in-out 0.35s; }
 .rec-board .find-span .find-span-head { order: -2; margin: 0 0 -1.6rem; padding-right: 9rem; color: #e7c15a; font-size: 16px; font-weight: 700; line-height: 1.6rem; }
 .rec-board .stack-set > button.stack-set-st, #desk.tv-full #desk-glass .rec-board .stack-set > button.stack-set-st { display: inline-block; width: auto; min-height: 0; margin: 0 0 0.3rem; padding: 0; border: 0; border-bottom: 1px dotted #6e7d8a; border-radius: 0; background: transparent; box-shadow: none; color: #9fb3c8; font-size: 12px !important; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }

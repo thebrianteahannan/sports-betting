@@ -30,7 +30,7 @@ function liveLegRead(leg) {
   const plus = market.match(/^(\d+)\+\s+(.+)$/), named = market.match(/\s-\s(?:Alt\s+)?(.+)$/), line = label.match(/\b(Over|Under)\s+(\d+(?:\.\d+)?)/i);
   const stat = ((plus && plus[2]) || (named && named[1]) || (label.match(/\b(?:Over|Under)\s+\d+(?:\.\d+)?\s+(.+)$/i) || [])[1] || "").toLowerCase();
   const text = plus ? `${plus[1]}+ ${stat}` : line ? `${line[1]} ${line[2]} ${stat}`.trim() : label.slice(who.length).trim() || market;
-  return { parlay: leg.parlay || "", label, market, who, stat, text, odds: Number(leg.odds), need: plus ? Number(plus[1]) : line ? Number(line[2]) : null, plus: !!plus, under: !!(line && /under/i.test(line[1])) };
+  return { parlay: leg.parlay || "", label, market, match: leg.match || "", kickoff: leg.kickoff || "", who, stat, text, odds: Number(leg.odds), need: plus ? Number(plus[1]) : line ? Number(line[2]) : null, plus: !!plus, under: !!(line && /under/i.test(line[1])) };
 }
 
 function liveMine(game, list = liveLegs) {
@@ -64,7 +64,7 @@ function liveRoot(game, picks, rec) {
       else { const goal = pick.plus ? pick.need : Math.floor(pick.need) + 1; state = now >= goal ? "hit" : ""; say = `${now} of ${goal}`; }
     }
     const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${say ? `<i class="now" data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}`;
-    const href = pick.parlay ? `/?bet=${encodeURIComponent(pick.parlay)}` : `/?find=${encodeURIComponent(pick.who)}&label=${encodeURIComponent(pick.label)}&market=${encodeURIComponent(pick.market)}`;
+    const href = `/?${new URLSearchParams({ game: pick.match, ...(pick.parlay ? { bet: pick.parlay } : {}), label: pick.label, market: pick.market })}`;
     return `<a class="live-mine-leg ${state}" href="${liveEsc(href)}" title="Open this bet in Build a bet">${inner}</a>`;
   }).join("")}</span>`;
 }

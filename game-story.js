@@ -201,9 +201,11 @@ function tell(game, boxes, read, fives, outs) {
 
 function gameStory(body, board) {
   const key = `${body.match}|${body.kickoff}`, count = Array.isArray(body.props) ? body.props.length : 0;
+  const kept = Date.now() >= Date.parse(body.kickoff || "") && require("./live-recs").recStory(body.match, body.kickoff);
+  if (kept) return Promise.resolve({ ...kept, pregame: true });
   const hit = MEM.get(key);
   if (hit && Date.now() - hit.at < KEEP && count <= hit.count) return hit.promise;
-  const promise = build(body, board).then((data) => { if (!data.sections.length) MEM.delete(key); if (data.bets) require("./live-recs").recRecord(body.match, body.kickoff, data.bets); return data; }).catch(() => { MEM.delete(key); return { sections: [] }; });
+  const promise = build(body, board).then((data) => { if (!data.sections.length) MEM.delete(key); if (data.bets) require("./live-recs").recRecord(body.match, body.kickoff, data); return data; }).catch(() => { MEM.delete(key); return { sections: [] }; });
   MEM.set(key, { at: Date.now(), promise, count });
   return promise;
 }

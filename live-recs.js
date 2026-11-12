@@ -38,8 +38,8 @@ function prune() {
   });
 }
 
-function recRecord(match, kickoff, bets) {
-  const kick = Date.parse(kickoff || "");
+function recRecord(match, kickoff, story) {
+  const kick = Date.parse(kickoff || ""), bets = story && story.bets;
   if (!bets || !Number.isFinite(kick) || Date.now() >= kick) return;
   const seen = new Set();
   const picks = [bets, bets.stars].filter(Boolean).flatMap((set) => set.picks || []).filter((pick) => {
@@ -48,7 +48,7 @@ function recRecord(match, kickoff, bets) {
     seen.add(id); return true;
   }).map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, who: pick.who }));
   if (!picks.length) return;
-  recs[`${match}|${kickoff}`] = { match, kickoff, at: Date.now(), picks };
+  recs[`${match}|${kickoff}`] = { match, kickoff, at: Date.now(), picks, story };
   save(`${match}|${kickoff}`);
   prune();
 }
@@ -66,8 +66,7 @@ async function recWarm(board) {
   for (const game of todo) {
     const props = people.flatMap((person) => (person.bets || []).filter((bet) => bet.match === game.match && /\d/.test(`${bet.market} ${bet.label}`) && !SKIP.test(`${bet.market} ${bet.label}`)).map((bet) => ({ label: bet.label, market: bet.market, odds: bet.odds, who: person.name })));
     if (!props.length) continue;
-    try { await require("./game-story").gameStory({ match: game.match, kickoff: game.kickoff, props }, board); } catch (error) { console.error("live recs warm failed:", game.match, error); }
-  }
+    try { await require("./game-story").gameStory({ match: game.match, kickoff: game.kickoff, props }, board); } catch (error) { console.error("live recs warm failed:", game.match, error); }  }
 }
 
 async function recsList() {
@@ -75,6 +74,11 @@ async function recsList() {
   return Object.values(recs).flatMap((row) => (row.picks || []).map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, match: row.match, kickoff: row.kickoff })));
 }
 
+function recStory(match, kickoff) {
+  const kept = recs[`${match}|${kickoff}`];
+  return kept && kept.story ? kept.story : null;
+}
+
 pull();
 
-module.exports = { recRecord, recWarm, recsList };
+module.exports = { recRecord, recWarm, recsList, recStory };

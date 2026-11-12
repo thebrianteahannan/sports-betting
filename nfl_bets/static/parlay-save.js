@@ -37,7 +37,7 @@ async function saveSync() {
 
 const saveWait = setInterval(() => { if (window.memberReady) { clearInterval(saveWait); saveSync(); } }, 1000);
 
-const saveGoId = new URLSearchParams(location.search).get("bet") || "";
+const saveGoId = (!new URLSearchParams(location.search).get("game") && new URLSearchParams(location.search).get("bet")) || "";
 if (saveGoId) {
   window.deskGoing = true;
   history.replaceState(null, "", "/");
@@ -54,39 +54,34 @@ if (saveGoId) {
   }, 250);
 }
 
-const saveSeek = new URLSearchParams(location.search), saveSeekWho = saveSeek.get("find") || "";
-if (saveSeekWho) {
-  const label = saveSeek.get("label") || "", market = saveSeek.get("market") || "", fold = (text) => String(text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+const saveSeek = new URLSearchParams(location.search), saveSeekGame = saveSeek.get("game") || "";
+if (saveSeekGame) {
+  const bet = saveSeek.get("bet") || "", leg = `${saveSeek.get("label") || ""}|${saveSeek.get("market") || ""}`;
   window.deskGoing = true;
   history.replaceState(null, "", "/");
-  let seekTries = 0, seekAsked = false;
+  let seekTries = 0, seekAsked = false, seekOpened = false;
   const seek = setInterval(() => {
-    if (++seekTries > 80) { clearInterval(seek); console.log("[parlay-save] could not find", saveSeekWho); return; }
-    if (!window.memberReady || typeof window.birdMenu !== "function" || typeof showFind !== "function") return;
+    if (++seekTries > 160) { clearInterval(seek); console.log("[parlay-save] could not open game", saveSeekGame); return; }
+    if (!window.memberReady || typeof window.birdMenu !== "function") return;
     const board = document.querySelector(".find-board");
     if (!board) { if (!seekAsked) { seekAsked = true; birdMenu("find"); } return; }
-    const person = (board.people || []).find((row) => row.kind === "player" && fold(row.name) === fold(saveSeekWho));
-    const list = board.querySelector(".find-list"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)"), field = board.querySelector("label.find input");
-    if (!person && (board.people || []).length && seekTries > 20 && field) { clearInterval(seek); field.value = saveSeekWho; field.dispatchEvent(new Event("input", { bubbles: true })); return; }
-    if (!person || !list || !hits) return;
+    if (!seekOpened) {
+      if (bet && (!window.saveWho || (!(board.people || []).length && seekTries < 40))) return;
+      const hit = [...board.querySelectorAll('.find-games[data-span="today"] button, .find-games button')].find((node) => node.textContent.startsWith(saveSeekGame));
+      if (!hit) return;
+      seekOpened = true;
+      if (bet) { saveOpen(bet); document.querySelectorAll(".find-tray.find-shut").forEach((tray) => { const fold = tray.querySelector(".find-fold"); if (fold) { saveAutoShut.delete(tray); fold.click(); } }); }
+      hit.click();
+      return;
+    }
+    const box = board.querySelector(".find-match > .find-bets");
+    if (!box) return;
     clearInterval(seek);
-    if (field) { field.value = person.name; field.dispatchEvent(new Event("input", { bubbles: true })); }
-    showFind(list, hits, person, board.querySelector(":scope > .find-roster"), board.people);
-    if (typeof scriptRecAll !== "undefined" && label) scriptRecAll.add(`${label}|${market}`);
-    if (typeof legSwapOpen === "undefined" || typeof legWhoFind !== "function") return;
-    const add = list.querySelector("button.find-parlay");
-    if (add && !parlayPick.has(person.key)) add.click();
-    const key = `who:${person.key}`;
-    legSwapOpen.set(key, "who");
-    paintParlay();
+    if (typeof scriptRecJump === "function") scriptRecJump(box.parentElement, (info) => String(info.legs || "").split("||").includes(leg)); else box.open = true;
     setTimeout(() => {
-      const at = legWhoFind(key).findIndex((row) => row.bet.label === label && row.bet.market === market);
-      const box = [...document.querySelectorAll(".find-tray .find-tray-swap")].find((node) => node.dataset.key === key);
-      const row = box && at >= 0 && box.querySelectorAll(".find-swap-row")[at];
-      if (!row) { console.log("[parlay-save] bet not in the prop list", label, market); return; }
-      row.scrollIntoView({ block: "center", behavior: "smooth" });
+      const row = [...box.querySelectorAll(".find-script-leg")].find((node) => node.getClientRects().length && `${node.dataset.label}|${node.dataset.market}` === leg) || box;
       row.classList.add("find-flash"); setTimeout(() => row.classList.remove("find-flash"), 4400);
-    }, 1200);
+    }, 900);
   }, 250);
 }
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && window.memberReady) saveSync(); });
