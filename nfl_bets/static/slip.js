@@ -58,7 +58,7 @@ function paintSlips(payload) {
 
 function slipBird() {
   const list = document.getElementById("slip-list");
-  if (list) list.innerHTML = `<div class="slip-load"><span><img src="/scene/parrot-head.png?v=4" alt=""></span><p>Checking the bets.</p></div>`;
+  if (list) list.innerHTML = `<div class="slip-load"><span><img src="/scene/parrot-head.webp?v=1" alt=""></span><p>Checking the bets.</p></div>`;
 }
 
 async function loadSlips(wait) {

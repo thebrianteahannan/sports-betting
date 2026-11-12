@@ -119,7 +119,7 @@ function howsWait(board) {
   if (old) old.remove();
   const box = document.createElement("div");
   box.className = "how-result how-load";
-  box.innerHTML = `<span><img src="/scene/parrot-head.png?v=4" alt=""></span><p>Reading the bet.</p>`;
+  box.innerHTML = `<span><img src="/scene/parrot-head.webp?v=1" alt=""></span><p>Reading the bet.</p>`;
   board.append(box);
 }
 

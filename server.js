@@ -35,7 +35,7 @@ const TYPES = {
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".pdf": "application/pdf",
-  ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml",
+  ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
 };
 
@@ -400,7 +400,13 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", "http://localhost");
   try {
     if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
-      serveStatic(res, "index.html");
+      let made = null;
+      try { if (!url.searchParams.has("nobundle")) made = require("./script-bundle").bundlePage(); } catch (error) { console.error("script bundle failed:", error); }
+      if (made) send(res, 200, made.page, TYPES[".html"]); else serveStatic(res, "index.html");
+      return;
+    }
+    if (req.method === "GET" && url.pathname === "/bundle.js") {
+      send(res, 200, require("./script-bundle").bundlePage().body, TYPES[".js"], keepFor(url));
       return;
     }
     if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/ones.js", "/stack.js", "/stack-more.js", "/game-stacks.js", "/stack-grade.js", "/close-calls.js", "/nba-script.js", "/blowout-proof.js", "/hows.js", "/player-card.js", "/find.js", "/game-note.js", "/sift.js", "/find-sort.js", "/find-roster.js", "/club-theme.css", "/club-theme.js", "/tray-stack.js", "/club-colors.js", "/prop-seek.js", "/band-pick.js", "/top-bar.css", "/top-bar.js", "/game-guide.js", "/bet-shot.js", "/game-short.js", "/game-until.js", "/game-done.js", "/home-games.js", "/home-games.css", "/fav-teams.js", "/parlay-save.js", "/parlay-archive.js", "/friends.js", "/site-qr.js", "/site-qr.css", "/bird-tips.js", "/gate-sample.js", "/gate-sample.css", "/tv-ticker.js", "/tv-ticker.css", "/leg-hist.js", "/leg-swap.js", "/leg-new.js", "/search-habit.js", "/live-stats.js", "/td-dive.js", "/prop-lines.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/bet-ask.js", "/ask-bet.css", "/find-tray.css", "/slip.js", "/us-map.svg", "/doc-view.html", "/live.js", "/live.css", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {

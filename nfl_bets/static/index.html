@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="/app.css?v=50"/>
 <link rel="stylesheet" href="/desk.css?v=67"/>
 <link rel="stylesheet" href="/states.css?v=6"/>
-<link rel="stylesheet" href="/ask-bet.css?v=330"/><link rel="stylesheet" href="/find-tray.css?v=159"/><link rel="stylesheet" href="/club-theme.css?v=9"/><link rel="stylesheet" href="/site-qr.css?v=2"/><link rel="stylesheet" href="/top-bar.css?v=11"/><link rel="stylesheet" href="/home-games.css?v=11"/><link rel="stylesheet" href="/gate-sample.css?v=5"/><link rel="stylesheet" href="/tv-ticker.css?v=5"/>
+<link rel="stylesheet" href="/ask-bet.css?v=330"/><link rel="stylesheet" href="/find-tray.css?v=160"/><link rel="stylesheet" href="/club-theme.css?v=9"/><link rel="stylesheet" href="/site-qr.css?v=2"/><link rel="stylesheet" href="/top-bar.css?v=11"/><link rel="stylesheet" href="/home-games.css?v=11"/><link rel="stylesheet" href="/gate-sample.css?v=5"/><link rel="stylesheet" href="/tv-ticker.css?v=5"/>
 <style>
 #page-title { display: none; } #who { position: fixed; right: 0.7rem; bottom: 0.7rem; z-index: 20; margin: 0; }
 #member-profile, #gate-profile { width: 2.7rem; height: 2.7rem; padding: 0; display: grid; place-items: center; border: 1px solid rgba(61, 255, 110, 0.85); border-radius: 8px; background: rgba(4, 16, 12, 0.88); color: #3dff6e; box-shadow: 0 0 14px rgba(61, 255, 110, 0.35); }
@@ -63,36 +63,36 @@ html.desk-going body > :not(.grid-bg, .aurora, .scan) { visibility: hidden !impo
 <div class="scan" aria-hidden="true"></div>
 <div id="desk">
   <div id="desk-world">
-    <img id="desk-bg" alt="" src="/scene/bg.jpg?v=8">
+    <img id="desk-bg" alt="" src="/scene/bg.webp?v=1">
     <div id="desk-neon" aria-hidden="true"></div>
     <div class="warp glow" id="desk-glow" aria-hidden="true"></div>
     <div class="warp" id="desk-glass"><button type="button" id="desk-back" aria-label="Back"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button><div class="warp-in" id="desk-glass-in"></div><div id="bird-guide" hidden><p id="greet-rate"></p><p id="bird-pow">Aight, bet!</p><p id="bird-line"></p><div id="bird-picks"></div><p id="greet-legal"><span id="greet-warn">Gambling can really ruin people's lives. Only bet money you can afford to lose. If you need help, call 1-800-GAMBLER.</span><span class="age">21+</span><span>Gambling problem? Call 1-800-GAMBLER.</span></p></div></div>
-    <img id="desk-pad" alt="" src="/scene/notepad.png?v=6">
+    <img id="desk-pad" alt="" src="/scene/notepad.webp?v=1">
     <div class="warp" id="desk-url"><p>https://parlayoftheday.com</p></div>
     <div class="warp" id="desk-note"><div class="warp-in" id="desk-note-in"></div></div>
-    <img id="desk-books" alt="" src="/scene/books.png?v=3">
+    <img id="desk-books" alt="" src="/scene/books.webp?v=1">
     <div id="desk-actor">
-      <img id="desk-body" alt="" src="/scene/parrot-body.png?v=9">
+      <img id="desk-body" alt="" src="/scene/parrot-body.webp?v=1">
       <div id="desk-head">
-        <img id="desk-parrot" alt="" src="/scene/parrot-head.png?v=4">
+        <img id="desk-parrot" alt="" src="/scene/parrot-head.webp?v=1">
         <div id="desk-glint" aria-hidden="true"></div>
       </div>
     </div>
-    <img id="desk-sign" alt="" src="/scene/sign-words.png?v=1">
+    <img id="desk-sign" alt="" src="/scene/sign-words.webp?v=1">
     <div class="warp" id="desk-laptop"><div class="warp-in" id="desk-laptop-in"></div></div>
     <button type="button" class="hot" id="desk-home" aria-label="Parlay of the Day" style="left:8px;top:4px;width:410px;height:270px"></button>
     <button type="button" class="hot" aria-label="Listen to Parlay, Trust the Strategies, Build Your Own, Cash Money" style="left:640px;top:688px;width:280px;height:150px"></button>
     <button type="button" class="hot" aria-label="Football" style="left:860px;top:740px;width:99px;height:190px"></button>  </div>
   <div id="desk-fade" aria-hidden="true">
     <div id="desk-fade-bird">
-      <img alt="" src="/scene/parrot-body.png?v=9">
-      <div id="desk-fade-head"><img alt="" src="/scene/parrot-head.png?v=4"></div>
+      <img alt="" src="/scene/parrot-body.webp?v=1">
+      <div id="desk-fade-head"><img alt="" src="/scene/parrot-head.webp?v=1"></div>
     </div>
   </div>
   <a id="desk-logo" href="/"><img src="/logo.png?v=5" alt="Parlay of the Day"></a>
-  <img id="desk-name" alt="" src="/scene/wordmark.png?v=4">
+  <img id="desk-name" alt="" src="/scene/wordmark.webp?v=1">
   <button type="button" id="desk-menu" aria-label="Recommended bets">
-    <span class="desk-face"><img src="/scene/parrot.png" alt=""></span>
+    <span class="desk-face"><img src="/scene/parrot.webp?v=1" alt=""></span>
   </button>
   <button type="button" id="desk-full" aria-pressed="false" aria-label="Make the TV full screen">
     <svg class="open" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg>
@@ -429,9 +429,9 @@ html.desk-going body > :not(.grid-bg, .aurora, .scan) { visibility: hidden !impo
 <script src="/desk.js?v=134"></script>
 <script src="/members.js?v=192"></script>
 <script src="/stars.js?v=8"></script>
-<script src="/choose.js?v=121"></script>
+<script src="/choose.js?v=122"></script>
 <script src="/lessons.js?v=8"></script>
-<script src="/filters.js?v=91"></script><script src="/ones.js?v=3"></script><script src="/stack.js?v=43"></script><script src="/stack-more.js?v=24"></script><script src="/game-stacks.js?v=16"></script><script src="/stack-grade.js?v=2"></script><script src="/close-calls.js?v=1"></script><script src="/hows.js?v=3"></script><script src="/game-note.js?v=7"></script><script src="/player-card.js?v=6"></script><script src="/find.js?v=203"></script><script src="/td-dive.js?v=3"></script><script src="/game-short.js?v=2"></script><script src="/game-until.js?v=4"></script><script src="/game-done.js?v=2"></script><script src="/home-games.js?v=17"></script><script src="/fav-teams.js?v=3"></script><script src="/sift.js?v=103"></script><script src="/nba-script.js?v=42"></script><script src="/blowout-proof.js?v=5"></script><script src="/find-sort.js?v=2"></script><script src="/find-roster.js?v=10"></script><script src="/club-theme.js?v=2"></script><script src="/tray-stack.js?v=11"></script><script src="/club-colors.js?v=5"></script><script src="/prop-seek.js?v=3"></script><script src="/band-pick.js?v=1"></script><script src="/top-bar.js?v=8"></script><script src="/game-guide.js?v=27"></script><script src="/bet-shot.js?v=10"></script><script src="/parlay-save.js?v=57"></script><script src="/parlay-archive.js?v=6"></script><script src="/leg-hist.js?v=8"></script><script src="/leg-swap.js?v=20"></script><script src="/leg-new.js?v=2"></script><script src="/search-habit.js?v=1"></script><script src="/live-stats.js?v=3"></script><script src="/reports.js?v=1"></script>
+<script src="/filters.js?v=91"></script><script src="/ones.js?v=4"></script><script src="/stack.js?v=44"></script><script src="/stack-more.js?v=24"></script><script src="/game-stacks.js?v=16"></script><script src="/stack-grade.js?v=2"></script><script src="/close-calls.js?v=1"></script><script src="/hows.js?v=4"></script><script src="/game-note.js?v=7"></script><script src="/player-card.js?v=6"></script><script src="/find.js?v=204"></script><script src="/td-dive.js?v=3"></script><script src="/game-short.js?v=2"></script><script src="/game-until.js?v=4"></script><script src="/game-done.js?v=2"></script><script src="/home-games.js?v=17"></script><script src="/fav-teams.js?v=3"></script><script src="/sift.js?v=103"></script><script src="/nba-script.js?v=42"></script><script src="/blowout-proof.js?v=5"></script><script src="/find-sort.js?v=2"></script><script src="/find-roster.js?v=10"></script><script src="/club-theme.js?v=2"></script><script src="/tray-stack.js?v=11"></script><script src="/club-colors.js?v=5"></script><script src="/prop-seek.js?v=3"></script><script src="/band-pick.js?v=1"></script><script src="/top-bar.js?v=8"></script><script src="/game-guide.js?v=27"></script><script src="/bet-shot.js?v=10"></script><script src="/parlay-save.js?v=58"></script><script src="/parlay-archive.js?v=6"></script><script src="/leg-hist.js?v=8"></script><script src="/leg-swap.js?v=20"></script><script src="/leg-new.js?v=2"></script><script src="/search-habit.js?v=1"></script><script src="/live-stats.js?v=3"></script><script src="/reports.js?v=1"></script>
 <script src="/admin.js?v=52"></script>
 <script src="/sharecard.js?v=57"></script><script src="/friends.js?v=21"></script><script src="/site-qr.js?v=5"></script><script src="/bird-tips.js?v=2"></script><script src="/gate-sample.js?v=6"></script><script src="/tv-ticker.js?v=4"></script>
 <script src="/states.js?v=13"></script>

@@ -409,7 +409,7 @@ function saveTips() {
   clearTimeout(saveTipTimer); document.querySelectorAll(".find-tips").forEach((node) => node.remove());
   const tray = document.querySelector("#desk-glass-in .find-board > .find-tray");
   if (!tray) return;
-  const tips = document.createElement("div"); tips.className = "find-tips"; tips.innerHTML = `<img src="/scene/parrot-head-tight.png?v=1" alt=""><div></div>`; tray.after(tips);
+  const tips = document.createElement("div"); tips.className = "find-tips"; tips.innerHTML = `<img src="/scene/parrot-head-tight.webp?v=1" alt=""><div></div>`; tray.after(tips);
   const say = tips.lastElementChild; let line = 0, at = 0, row = null;
   const step = () => {
     if (!tips.isConnected) return;

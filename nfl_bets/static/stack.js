@@ -225,7 +225,7 @@ function paintStack() {
   if (hold) [...row.children].forEach((node) => hold.append(node));
   const wait = document.createElement("div");
   wait.className = "bet-load";
-  wait.innerHTML = `<span class="bet-bird"><img src="/scene/parrot-head.png?v=4" alt=""></span><p>Finding the stacks.</p>`;
+  wait.innerHTML = `<span class="bet-bird"><img src="/scene/parrot-head.webp?v=1" alt=""></span><p>Finding the stacks.</p>`;
   board.append(wait);
   row.append(board);
   row.scrollTop = 0;
@@ -466,7 +466,7 @@ async function showStackBuild() {
   if (again) again.hidden = true;
   if (!box) return;
   const name = (window.choice && choice.stack) || "A stack";
-  box.innerHTML = `<div class="bet-load"><span class="bet-bird"><img src="/scene/parrot-head.png?v=4" alt=""></span><p>Finding the stack.</p></div>`;
+  box.innerHTML = `<div class="bet-load"><span class="bet-bird"><img src="/scene/parrot-head.webp?v=1" alt=""></span><p>Finding the stack.</p></div>`;
   try {
     const data = typeof gameStackData === "function" ? await gameStackData() : await fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "stack" }) }).then((res) => res.json()).catch(() => ({}));
     if (!data || !data.found) { window.gameStackJob = null; throw new Error((data && data.error) || "FanDuel did not answer."); }

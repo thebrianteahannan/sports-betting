@@ -17,7 +17,7 @@ function paintOnes() {
   const board = document.createElement("div");
   board.className = "rec-board ones-board";
   board.dataset.page = "ones";
-  board.innerHTML = `<div class="bet-load"><span class="bet-bird"><img src="/scene/parrot-head.png?v=4" alt=""></span><p>Looking through the counts.</p></div>`;
+  board.innerHTML = `<div class="bet-load"><span class="bet-bird"><img src="/scene/parrot-head.webp?v=1" alt=""></span><p>Looking through the counts.</p></div>`;
   const hold = document.getElementById("desk-hold");
   if (hold) [...row.children].forEach((node) => hold.append(node));
   row.append(board);

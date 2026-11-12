@@ -104,7 +104,7 @@ async function runChoice() { takeMoney(); if (choice.shape === "stack" && window
   const key = choiceKey(); document.getElementById("choice-stars")?.remove();
   document.getElementById("choice-again").hidden = (document.getElementById("chooser").classList.add("built"), true);
   if (window.memberLaw === "off" && !(window.booksHere && booksHere().some((book) => book.id !== "fanduel"))) { box.textContent = "No sportsbook on this desk is offered in your state, so this bet cannot be placed there."; return; }
-  box.innerHTML = `<div class="bet-load"><span class="bet-bird"><img src="/scene/parrot-head.png?v=4" alt=""></span><p>${choice.shape === "single" && !(choice.hold || []).length ? "Looking through the counts." : "Picking the legs."}</p></div>`;
+  box.innerHTML = `<div class="bet-load"><span class="bet-bird"><img src="/scene/parrot-head.webp?v=1" alt=""></span><p>${choice.shape === "single" && !(choice.hold || []).length ? "Looking through the counts." : "Picking the legs."}</p></div>`;
   const response = await fetch("/api/choose", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

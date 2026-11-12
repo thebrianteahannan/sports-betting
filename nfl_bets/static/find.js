@@ -68,7 +68,7 @@ function paintFind() {
   board.className = "rec-board find-board";
   board.dataset.page = "find";
   const saved = findParts.today && findParts.today.data && Date.now() - findParts.today.at < 30 * 60 * 1000;
-  if (!saved) board.innerHTML = `<div class="bet-load"><span class="bet-bird"><img src="/scene/parrot-head.png?v=4" alt=""></span><p>Looking up the board.</p></div>`;
+  if (!saved) board.innerHTML = `<div class="bet-load"><span class="bet-bird"><img src="/scene/parrot-head.webp?v=1" alt=""></span><p>Looking up the board.</p></div>`;
   const hold = document.getElementById("desk-hold");
   if (hold) [...row.children].forEach((node) => hold.append(node));
   row.append(board);
@@ -336,7 +336,7 @@ function rosterScan(legs, price) {
 }
 
 function goldBuild(list, group) {
-  const board = list.closest(".find-board"), wait = document.createElement("div"); wait.className = "bet-load"; wait.innerHTML = `<span class="bet-bird"><img src="/scene/parrot-head.png?v=4" alt=""></span><p></p>`; wait.querySelector("p").textContent = "Picking the legs."; if (board) { board.classList.add("find-wait"); board.append(wait); } const done = () => { if (wait.isConnected) wait.remove(); if (board && !board.querySelector(".bet-load")) board.classList.remove("find-wait"); };
+  const board = list.closest(".find-board"), wait = document.createElement("div"); wait.className = "bet-load"; wait.innerHTML = `<span class="bet-bird"><img src="/scene/parrot-head.webp?v=1" alt=""></span><p></p>`; wait.querySelector("p").textContent = "Picking the legs."; if (board) { board.classList.add("find-wait"); board.append(wait); } const done = () => { if (wait.isConnected) wait.remove(); if (board && !board.querySelector(".bet-load")) board.classList.remove("find-wait"); };
   Promise.all(group.map((person) => { const chosen = [...parlayLeg.values()].filter((bet) => String(bet.label || "").startsWith(person.name)); if (chosen.length) return chosen; const bets = (person.bets || []).filter((bet) => Number(bet.odds)); return fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "mark", name: person.name, bets }) }).then((res) => res.json()).then((data) => { const picked = new Set((data.marks || []).map((mark) => mark.index)); const gold = bets.filter((bet, index) => picked.has(index)); return gold.length ? gold : bets.slice().sort((a, b) => findRank(a.odds) - findRank(b.odds)).slice(0, 12); }).catch(() => bets.slice().sort((a, b) => findRank(a.odds) - findRank(b.odds)).slice(0, 12)); })).then((books) => { done(); if (!list.isConnected) return; paintRosterParlay(list, rosterMix(books.map((bets) => ({ bets }))), group.length); }).catch(done);
 }
 
@@ -463,7 +463,7 @@ function showFind(list, hits, person, roster, people, keep, kind) {
 }
 
 function markFind(list, name, bets) {
-  const stamp = (markFind.stamp = (markFind.stamp || 0) + 1), wait = document.createElement("div"), board = list.closest(".find-board"); wait.className = "find-looking"; wait.innerHTML = `<img src="/scene/parrot-head.png?v=4" alt=""><p></p>`; wait.querySelector("p").textContent = `Looking up ${name}.`; const top = list.querySelector("h3"); if (top) top.after(wait); else list.prepend(wait);
+  const stamp = (markFind.stamp = (markFind.stamp || 0) + 1), wait = document.createElement("div"), board = list.closest(".find-board"); wait.className = "find-looking"; wait.innerHTML = `<img src="/scene/parrot-head.webp?v=1" alt=""><p></p>`; wait.querySelector("p").textContent = `Looking up ${name}.`; const top = list.querySelector("h3"); if (top) top.after(wait); else list.prepend(wait);
   fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "mark", name, bets }) }).then((res) => res.json()).then((data) => {
     if (wait.isConnected) wait.remove(); if (board && !board.querySelector(".bet-load")) board.classList.remove("find-wait"); if (stamp !== markFind.stamp || !list.isConnected || !data.known) return;
     const marks = Array.isArray(data.marks) ? data.marks : [];
