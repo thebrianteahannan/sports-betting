@@ -65,7 +65,7 @@ function liveRoot(game, picks, rec, show) {
       else { const goal = pick.plus ? pick.need : Math.floor(pick.need) + 1; state = now >= goal ? "hit" : game.final ? "lost" : ""; say = `${now} of ${goal}`; }
     }
     const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${say ? `<i class="now" data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}`;
-    const href = `/?${new URLSearchParams({ game: pick.match, ...(pick.parlay ? { bet: pick.parlay } : {}), label: pick.label, market: pick.market })}`;
+    const href = `/?${new URLSearchParams({ game: pick.match, ...(pick.parlay ? { bet: pick.parlay } : {}), label: pick.label, market: pick.market, from: "live" })}`;
     return `<a class="live-mine-leg ${state}" href="${liveEsc(href)}" title="Open this bet in Build a bet">${inner}</a>`;
   }).join("")}</span>`;
 }
@@ -201,7 +201,7 @@ function liveSoonCard(game) {
   const like = { id: `${game.match}|${game.kickoff}`, away: game.away || { name: game.awayName }, home: game.home || { name: game.homeName }, when: game.kickoff }, picks = liveMine(like), recs = liveRecPicks(like, picks).length, open = liveRecOpen.has(like.id);
   const tag = recs ? `<button type="button" class="live-rec-tag${open ? " on" : ""}" data-rec-open="${liveEsc(like.id)}">Recommended<b>${recs}</b></button>` : "";
   const until = typeof gameUntilText === "function" ? gameUntilText(game.kickoff) : "";
-  const meta = `<span class="live-meta">${liveEdgeTag(game.match)}${game.total ? `<span class="live-total">O/U ${liveEsc(game.total)}</span>` : ""}${until ? `<span class="find-until live-until" data-kick="${liveEsc(game.kickoff)}">${liveEsc(until)}</span>` : ""}<a class="live-week-game" href="/?${liveEsc(new URLSearchParams({ game: game.match }).toString())}" title="Open this game in Build a bet">Build a bet ›</a></span>`;
+  const meta = `<span class="live-meta">${liveEdgeTag(game.match)}${game.total ? `<span class="live-total">O/U ${liveEsc(game.total)}</span>` : ""}${until ? `<span class="find-until live-until" data-kick="${liveEsc(game.kickoff)}">${liveEsc(until)}</span>` : ""}<a class="live-week-game" href="/?${liveEsc(new URLSearchParams({ game: game.match, from: "live" }).toString())}" title="Open this game in Build a bet">Build a bet ›</a></span>`;
   return `<div class="live-game live-soon${picks.length ? " has-mine" : ""}"><div class="live-head"><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(like.away, false, `${like.id}|away`)}<span class="live-at-sign">@</span>${liveSide(like.home, false, `${like.id}|home`)}<span class="live-clock live-when">${liveEsc(day)}</span>${tag}${meta}${liveRoot(like, picks)}${liveRecRow(like, picks, open)}</div></div>`;
 }
 
@@ -284,7 +284,7 @@ document.getElementById("live").addEventListener("click", (event) => {
   const stats = event.target.closest(".live-game > summary .live-stats");
   if (stats) { event.preventDefault(); stats.closest(".live-game").open = !stats.closest(".live-game").open; return; }
   const head = event.target.closest(".live-game > summary");
-  if (head && !event.target.closest("a, button")) { event.preventDefault(); window.location.href = `/?${new URLSearchParams({ game: head.parentElement.dataset.match, sport: head.parentElement.dataset.sport })}`; return; }
+  if (head && !event.target.closest("a, button")) { event.preventDefault(); window.location.href = `/?${new URLSearchParams({ game: head.parentElement.dataset.match, sport: head.parentElement.dataset.sport, from: "live" })}`; return; }
   const chip = event.target.closest("[data-league]");
   if (!chip) return;
   const sport = chip.dataset.league;

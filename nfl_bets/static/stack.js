@@ -415,8 +415,7 @@ function stackNote(block, text) {
 }
 
 function fillStacks(board) {
-  fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "stack" }) })
-    .then((res) => res.json())
+  (typeof gameStackData === "function" ? gameStackData() : fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "stack" }) }).then((res) => res.json()))
     .then((data) => {
       const wait = board.querySelector(".bet-load");
       if (wait) wait.remove();
@@ -469,9 +468,8 @@ async function showStackBuild() {
   const name = (window.choice && choice.stack) || "A stack";
   box.innerHTML = `<div class="bet-load"><span class="bet-bird"><img src="/scene/parrot-head.png?v=4" alt=""></span><p>Finding the stack.</p></div>`;
   try {
-    const response = await fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "stack" }) });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || "FanDuel did not answer.");
+    const data = typeof gameStackData === "function" ? await gameStackData() : await fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "stack" }) }).then((res) => res.json()).catch(() => ({}));
+    if (!data || !data.found) { window.gameStackJob = null; throw new Error((data && data.error) || "FanDuel did not answer."); }
     if (!box.isConnected) return;
     const note = data.notes && data.notes[name];
     const stacks = (data.found && data.found[name]) || [];

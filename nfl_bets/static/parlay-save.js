@@ -68,6 +68,11 @@ if (saveSeek.get("go") === "find") {
   history.replaceState(null, "", "/");
   const wait = setInterval(() => { if (!window.memberReady || typeof window.birdMenu !== "function") return; clearInterval(wait); birdMenu("find"); }, 250);
 }
+if (saveSeek.get("from") === "live") document.addEventListener("click", (event) => {
+  const desk = document.getElementById("desk");
+  if (!event.target.closest || !event.target.closest("#desk-back") || !desk || desk.classList.contains("bird-on") || !document.querySelector("#desk-glass-in .find-board")) return;
+  event.stopImmediatePropagation(); event.preventDefault(); window.location.href = "/live";
+}, true);
 if (saveSeekGame) {
   const bet = saveSeek.get("bet") || "", leg = `${saveSeek.get("label") || ""}|${saveSeek.get("market") || ""}`;
   window.deskGoing = true;
