@@ -69,6 +69,13 @@ function liveRoot(game, picks, rec) {
   }).join("")}</span>`;
 }
 
+function liveHurt(game) {
+  const hurt = game.hurt || [];
+  if (!hurt.length) return "";
+  const starters = new Set((game.teams || []).flatMap((team) => team.groups.flatMap((group) => group.rows.filter((row) => row.starter).map((row) => liveFold(row.name)))));
+  return `<span class="live-hurt"><b>Injured</b>${hurt.map((one) => `<i title="${liveEsc(one.head)}"><em>${liveEsc(one.name)}</em> ${liveEsc([one.team, starters.has(liveFold(one.name)) ? "starter" : "", one.part.toLowerCase(), one.out ? "ruled out" : one.status].filter(Boolean).join(" · "))}</i>`).join("")}</span>`;
+}
+
 function liveRecRow(game, picks) {
   const mine = new Set(picks.map((pick) => `${liveFold(pick.who)}|${pick.text}`));
   return liveRoot(game, liveMine(game, liveRecs).filter((pick) => !mine.has(`${liveFold(pick.who)}|${pick.text}`)), true);
@@ -89,7 +96,7 @@ function liveGame(game) {
     return `<section class="live-team" style="border-left-color: ${liveEsc(side.color || "#3dff6e")}"><h3>${liveEsc(team.name)}</h3>${team.groups.map((group, at) => liveGroup(group, `${game.id}|${team.short}|${at}`, many, mine, recs, known)).join("")}</section>`;
   }).join("");
   const body = teams || `<p class="live-note">ESPN has not posted player stats for this game yet.</p>`;
-  return `<details class="live-game${picks.length ? " has-mine" : ""}" data-id="${liveEsc(game.id)}"${liveOpen.has(game.id) ? " open" : ""}><summary><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(game.away, away > home, `${game.id}|away`)}<span class="live-at-sign">@</span>${liveSide(game.home, home > away, `${game.id}|home`)}<span class="live-clock">${liveEsc(game.clock)}</span>${game.last ? `<span class="live-last" data-k="${liveEsc(`${game.id}|last`)}">${liveEsc(game.last)}</span>` : ""}${liveRoot(game, picks)}${liveRecRow(game, picks)}</summary>${body}</details>`;
+  return `<details class="live-game${picks.length ? " has-mine" : ""}" data-id="${liveEsc(game.id)}"${liveOpen.has(game.id) ? " open" : ""}><summary><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(game.away, away > home, `${game.id}|away`)}<span class="live-at-sign">@</span>${liveSide(game.home, home > away, `${game.id}|home`)}<span class="live-clock">${liveEsc(game.clock)}</span>${game.last ? `<span class="live-last" data-k="${liveEsc(`${game.id}|last`)}">${liveEsc(game.last)}</span>` : ""}${liveHurt(game)}${liveRoot(game, picks)}${liveRecRow(game, picks)}</summary>${body}</details>`;
 }
 
 function liveNext(next) {

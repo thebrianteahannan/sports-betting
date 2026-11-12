@@ -39,6 +39,15 @@ function boxOf(data) {
   }));
 }
 
+function hurtOf(data, when) {
+  const tip = Date.parse(when || ""), heads = ((data.news || {}).articles || []).map((one) => String(one.headline || ""));
+  return (data.injuries || []).flatMap((team) => (team.injuries || []).filter((one) => Date.parse(one.date || "") > tip).map((one) => {
+    const name = (one.athlete || {}).displayName || "", last = name.replace(/\s+(Jr\.?|Sr\.?|II|III|IV)$/, "").split(" ").pop(), info = one.details || {};
+    const head = heads.find((text) => last && text.includes(last) && /exit|injur|ruled out|leaves|return/i.test(text)) || "";
+    return { name, team: (team.team || {}).abbreviation || "", status: one.status || "", part: [info.type, info.detail].filter((text) => text && text !== "Not Specified").join(" "), out: /ruled out|won't return|will not return/i.test(head), head };
+  }));
+}
+
 function lastPlay(data) {
   const plays = data.plays || [], drive = ((data.drives || {}).current || {}).plays || [];
   const play = plays[plays.length - 1] || drive[drive.length - 1];
@@ -55,7 +64,7 @@ async function liveBoard() {
     else if (type.state === "pre" && Date.parse(ev.date || "") - now < 12 * 3600000) next.push(row);
   }));
   await Promise.all(live.map(async (row) => {
-    try { const data = await json(`${BASE}/${row.path}/summary?event=${row.id}`); row.teams = boxOf(data); if (!row.last) row.last = lastPlay(data); } catch (error) { row.teams = []; }
+    try { const data = await json(`${BASE}/${row.path}/summary?event=${row.id}`); row.teams = boxOf(data); row.hurt = hurtOf(data, row.when); if (!row.last) row.last = lastPlay(data); } catch (error) { row.teams = []; }
   }));
   [...live, ...next].forEach((row) => { delete row.path; });
   next.sort((a, b) => Date.parse(a.when) - Date.parse(b.when));
