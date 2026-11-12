@@ -296,11 +296,29 @@ function friendsPaint() {
   profileShared();
 }
 
+const liveSpanWatch = typeof ResizeObserver === "function" ? new ResizeObserver(() => liveSpanPaint()) : null;
+function liveSpanPaint() {
+  document.querySelectorAll(".rec-board .find-span").forEach((span) => {
+    let go = span.querySelector(":scope > .find-span-live");
+    if (!go) {
+      go = document.createElement("a"); go.className = "find-span-live"; go.href = "/live"; go.textContent = "Live"; go.title = "Live stats for the games being played";
+      span.append(go);
+      span.querySelectorAll(":scope > .find-games").forEach((box) => { if (liveSpanWatch) liveSpanWatch.observe(box); });
+    }
+    const chip = span.querySelector(":scope > .find-games:not(.find-on) > summary"), at = span.getBoundingClientRect(), spot = chip && chip.getBoundingClientRect();
+    go.hidden = !spot || !spot.width;
+    if (go.hidden) return;
+    go.style.right = `${at.right - spot.left + 8}px`; go.style.top = `${spot.top - at.top}px`; go.style.height = `${spot.height}px`;
+  });
+}
+document.addEventListener("toggle", (event) => { if (event.target.closest && event.target.closest(".find-span")) requestAnimationFrame(liveSpanPaint); }, true);
+
 if (typeof paintParlay === "function") {
   const paintParlayFriends = paintParlay;
   paintParlay = function () {
     paintParlayFriends.apply(this, arguments);
     friendsPaint();
+    liveSpanPaint();
   };
 }
 
