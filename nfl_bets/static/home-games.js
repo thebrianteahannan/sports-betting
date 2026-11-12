@@ -144,13 +144,13 @@ function homeGameRows(games) {
 function homeGamesTabs(box, games) {
   const tabs = document.createElement("span");
   tabs.className = "desk-games-tabs";
-  [["games", `Games ${homeMineGames(games).length}`], ["rec", "Recommended"]].forEach(([id, label]) => {
+  [["games", `Games ${homeMineGames(games).length}`], ["rec", "Recommended"], ["live", "Live"]].forEach(([id, label]) => {
     const tab = document.createElement("button");
     tab.type = "button";
     tab.className = `desk-games-tab${homeGamesTab === id ? " on" : ""}`;
     tab.textContent = label;
     tab.setAttribute("aria-pressed", String(homeGamesTab === id));
-    tab.addEventListener("click", () => { homeGamesTab = id; if (id === "rec") homeRecsLoad(); box.dataset.sig = ""; box.scrollTop = 0; homeGamesPaint(); });
+    tab.addEventListener("click", () => { if (id === "live") { window.location.href = "/live"; return; } homeGamesTab = id; if (id === "rec") homeRecsLoad(); box.dataset.sig = ""; box.scrollTop = 0; homeGamesPaint(); });
     tabs.append(tab);
   });
   return tabs;

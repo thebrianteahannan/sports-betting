@@ -466,3 +466,5 @@
   :is(.rec-board, #choice-result) .find-tray .find-chose.acts-open > span { flex: 1 1 calc(100% - 2.2rem); }
   :is(.rec-board, #choice-result) .find-tray .find-chose.acts-open > button:not(.find-leg-more) { order: 2; }
 }
+.find-script-bets .find-script-who, .find-script-leg[data-who] i.who { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+.find-script-bets .find-script-who:hover, .find-script-leg[data-who] i.who:hover { text-decoration-style: solid; }

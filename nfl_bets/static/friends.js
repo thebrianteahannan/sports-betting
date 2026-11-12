@@ -274,7 +274,7 @@ function friendsPanel() {
 
 function friendsPaint() {
   document.querySelectorAll(".find-saved").forEach((box) => {
-    box.querySelectorAll(":scope > .find-saved-friends, :scope > .find-friends, :scope > .find-shared-head-row, :scope > .find-shared-chip").forEach((node) => node.remove());
+    box.querySelectorAll(":scope > .find-saved-friends, :scope > .find-saved-live, :scope > .find-friends, :scope > .find-shared-head-row, :scope > .find-shared-chip").forEach((node) => node.remove());
     if (!window.saveWho) return;
     const fresh = window.sharedItems.filter((item) => !item.seen).length + window.friendsData.incoming.length;
     const go = document.createElement("button");
@@ -289,6 +289,8 @@ function friendsPaint() {
     });
     const after = box.querySelector(":scope > .find-saved-done") || box.querySelector(":scope > .find-saved-st");
     if (after) after.after(go); else box.append(go);
+    const live = document.createElement("button"); live.type = "button"; live.className = "find-saved-st find-saved-live"; live.textContent = "Live"; live.title = "Live stats for the games being played";
+    live.addEventListener("click", () => { window.location.href = "/live"; }); go.after(live);
     if (window.sharedOpen) box.append(friendsPanel());
   });
   profileShared();

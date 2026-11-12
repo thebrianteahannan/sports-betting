@@ -399,7 +399,7 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, "index.html");
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/ones.js", "/stack.js", "/stack-more.js", "/game-stacks.js", "/stack-grade.js", "/close-calls.js", "/nba-script.js", "/blowout-proof.js", "/hows.js", "/player-card.js", "/find.js", "/game-note.js", "/sift.js", "/find-sort.js", "/find-roster.js", "/club-theme.css", "/club-theme.js", "/tray-stack.js", "/club-colors.js", "/prop-seek.js", "/band-pick.js", "/top-bar.css", "/top-bar.js", "/game-guide.js", "/bet-shot.js", "/game-short.js", "/game-until.js", "/game-done.js", "/home-games.js", "/home-games.css", "/fav-teams.js", "/parlay-save.js", "/parlay-archive.js", "/friends.js", "/site-qr.js", "/site-qr.css", "/leg-hist.js", "/leg-swap.js", "/leg-new.js", "/search-habit.js", "/live-stats.js", "/td-dive.js", "/terms.js", "/prop-lines.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/bet-ask.js", "/ask-bet.css", "/find-tray.css", "/slip.js", "/us-map.svg", "/doc-view.html", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/ones.js", "/stack.js", "/stack-more.js", "/game-stacks.js", "/stack-grade.js", "/close-calls.js", "/nba-script.js", "/blowout-proof.js", "/hows.js", "/player-card.js", "/find.js", "/game-note.js", "/sift.js", "/find-sort.js", "/find-roster.js", "/club-theme.css", "/club-theme.js", "/tray-stack.js", "/club-colors.js", "/prop-seek.js", "/band-pick.js", "/top-bar.css", "/top-bar.js", "/game-guide.js", "/bet-shot.js", "/game-short.js", "/game-until.js", "/game-done.js", "/home-games.js", "/home-games.css", "/fav-teams.js", "/parlay-save.js", "/parlay-archive.js", "/friends.js", "/site-qr.js", "/site-qr.css", "/leg-hist.js", "/leg-swap.js", "/leg-new.js", "/search-habit.js", "/live-stats.js", "/td-dive.js", "/terms.js", "/prop-lines.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/bet-ask.js", "/ask-bet.css", "/find-tray.css", "/slip.js", "/us-map.svg", "/doc-view.html", "/live.js", "/live.css", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
       serveStatic(res, url.pathname.slice(1));
       return;
     }
@@ -454,6 +454,8 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, { won, lost, pct: decided ? ((won / decided) * 100).toFixed(1) : null });
       return;
     }
+    if (req.method === "GET" && url.pathname === "/live") { serveStatic(res, "live.html"); return; }
+    if (req.method === "GET" && url.pathname === "/api/live") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to see live games." }, 401); return; } sendJson(res, await require("./live-api").liveBoard()); return; }
     if (req.method === "GET" && url.pathname === "/api/board") {
       if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to open the board." }, 401); return; }
       sendJson(res, await publicBoard());

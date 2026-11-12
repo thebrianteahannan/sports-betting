@@ -226,7 +226,7 @@ function scriptClubStyle(game, team) {
 
 function scriptBetsBlock(bets, group, game, people, keep = {}) {
   const money = (odds) => (odds > 0 ? `+${odds}` : String(odds));
-  const who = (pick) => `${esc(pick.who)} (${esc([pick.pos, pick.team].filter(Boolean).join(", "))})`;
+  const who = (pick) => `<span class="find-script-who" data-who="${esc(pick.who)}" title="Search ${esc(pick.who)}">${esc(pick.who)}</span> (${esc([pick.pos, pick.team].filter(Boolean).join(", "))})`;
   const mine = bets.picks.filter((pick) => pick.team === group.name);
   const block = document.createElement("div"); block.className = "find-script-part find-script-bets";
   const club = group.name !== "Both teams" && scriptClub(game, group.name);
@@ -320,6 +320,17 @@ function nbaScript(holder, game, people) {
   ask("story").then((data) => { got.story = data; got.storyDone = true; paint(); });
   match.addEventListener("click", (event) => { if (!event.target.closest(".find-side-go")) return; setTimeout(() => { const bets = match.querySelector(":scope > .find-bets"); if (bets) scriptBetsSide(match, bets); }, 0); });
 }
+
+document.addEventListener("click", (event) => {
+  const hit = event.target.closest(".find-script-bets .find-script-who, .find-script-leg[data-who] i.who"), board = hit && hit.closest(".find-board");
+  if (!board || typeof showFind !== "function") return;
+  const name = hit.dataset.who || hit.closest("[data-who]").dataset.who, person = (board.people || []).find((row) => row.kind === "player" && row.name === name);
+  const list = board.querySelector(".find-list"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)"), roster = board.querySelector(":scope > .find-roster"), field = board.querySelector("label.find input");
+  if (!person || !list || !hits) return;
+  event.stopPropagation();
+  if (field) { field.value = person.name; field.dispatchEvent(new Event("input", { bubbles: true })); }
+  showFind(list, hits, person, roster, board.people);
+});
 
 if (typeof paintParlay === "function") {
   const paintParlayRec = paintParlay;
