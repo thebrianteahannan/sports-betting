@@ -150,12 +150,12 @@ async function signOut() {
 async function bootMember() {
   const response = await memberFetch("/api/me", { cache: "no-store" });
   if (!response.ok) {
-    showGate();
+    showGate(); document.documentElement.classList.remove("desk-going");
     return;
   }
   showMember(await response.json());
   if (window.startDesk) window.startDesk();
-  if (new URLSearchParams(location.search).get("go") === "profile") { history.replaceState(null, "", "/"); setTimeout(() => { const me = document.getElementById("member-profile"); if (me) me.click(); }, 600); }
+  if (new URLSearchParams(location.search).get("go") === "profile") { history.replaceState(null, "", "/"); setTimeout(() => { const me = document.getElementById("member-profile"); if (me) me.click(); requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove("desk-going"))); }, 600); }
 }
 
 window.fetch = async function memberAwareFetch(url, options) {
@@ -167,7 +167,7 @@ window.fetch = async function memberAwareFetch(url, options) {
 };
 
 document.getElementById("who").addEventListener("click", (event) => {
-  if (event.target.closest("#member-profile")) { goFull(); showTab("profile"); } else if (event.target.closest("#gate-profile")) showGateMode("login");
+  if (event.target.closest("#member-profile")) { const desk = document.getElementById("desk"); if (desk && desk.classList.contains("tv-full") && document.querySelector("#desk-glass-in > #pane-profile:not([hidden])")) { document.getElementById("desk-back").click(); if (document.querySelector("#desk-glass-in > #pane-profile:not([hidden])")) { showTab("today"); setTimeout(() => document.getElementById("desk-home").click()); } return; } goFull(); showTab("profile"); } else if (event.target.closest("#gate-profile")) showGateMode("login");
 });
 function calledName() {
   return String(window.memberName || "").trim().split(/\s+/)[0];

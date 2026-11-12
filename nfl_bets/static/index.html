@@ -55,7 +55,7 @@ body.day-board #parrot-load[hidden] { display: none; }
 @keyframes parrot-say { 0%, 28% { opacity: 1; } 34%, 100% { opacity: 0; } }
 html.desk-going body > :not(.grid-bg, .aurora, .scan) { visibility: hidden !important; }
 </style>
-<script>if (/[?&](go=find|game=)/.test(location.search)) document.documentElement.classList.add("desk-going");</script>
+<script>if (/[?&](go=find|go=profile|game=)/.test(location.search)) document.documentElement.classList.add("desk-going");</script>
 </head>
 <body class="needs-member">
 <div class="grid-bg" aria-hidden="true"></div>
@@ -425,7 +425,7 @@ html.desk-going body > :not(.grid-bg, .aurora, .scan) { visibility: hidden !impo
 </footer>
 <script src="/app.js?v=117"></script>
 <script src="/desk.js?v=129"></script>
-<script src="/members.js?v=184"></script>
+<script src="/members.js?v=189"></script>
 <script src="/stars.js?v=8"></script>
 <script src="/choose.js?v=121"></script>
 <script src="/lessons.js?v=8"></script>
