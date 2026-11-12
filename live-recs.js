@@ -81,4 +81,4 @@ function recStory(match, kickoff) {
 
 pull();
 
-module.exports = { recRecord, recWarm, recsList, recStory };
+module.exports = { recRecord, recWarm, recsList, recStory, kv };

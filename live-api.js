@@ -5,9 +5,9 @@ const LEAGUES = [["NBA", "basketball/nba"], ["NFL", "football/nfl"], ["NHL", "ho
 const KEEP = 15000;
 const MEM = new Map();
 
-function json(url) {
+function json(url, keep = KEEP) {
   const hit = MEM.get(url);
-  if (hit && Date.now() - hit.at < KEEP) return hit.promise;
+  if (hit && Date.now() - hit.at < keep) return hit.promise;
   const promise = fetch(url, { headers: { Accept: "application/json", Referer: "https://www.espn.com/", "User-Agent": "Mozilla/5.0" }, signal: AbortSignal.timeout(10000) })
     .then((res) => { if (!res.ok) throw new Error(String(res.status)); return res.json(); });
   promise.catch(() => MEM.delete(url));
@@ -54,21 +54,22 @@ function lastPlay(data) {
   return play ? String(play.text || "") : "";
 }
 
-async function liveBoard() {
-  const now = Date.now(), live = [], next = [];
+async function liveBoard(all) {
+  const now = Date.now(), live = [], next = [], done = [];
   const boards = await Promise.all(LEAGUES.map(([sport, path]) => json(`${BASE}/${path}/scoreboard`).then((data) => ({ sport, path, data })).catch(() => ({ sport, path, data: {} }))));
   boards.forEach(({ sport, path, data }) => (data.events || []).forEach((ev) => {
     const comp = (ev.competitions || [])[0] || {}, type = (comp.status || ev.status || {}).type || {};
     const row = { id: String(ev.id), sport, path, when: ev.date || "", clock: type.shortDetail || type.detail || "", away: side(comp, "away"), home: side(comp, "home"), last: ((comp.situation || {}).lastPlay || {}).text || "" };
     if (type.state === "in") live.push(row);
+    else if (all && type.state === "post") { row.final = true; done.push(row); }
     else if (type.state === "pre" && Date.parse(ev.date || "") - now < 12 * 3600000) next.push(row);
   }));
-  await Promise.all(live.map(async (row) => {
-    try { const data = await json(`${BASE}/${row.path}/summary?event=${row.id}`); row.teams = boxOf(data); row.hurt = hurtOf(data, row.when); if (!row.last) row.last = lastPlay(data); } catch (error) { row.teams = []; }
+  await Promise.all([...live, ...done].map(async (row) => {
+    try { const data = await json(`${BASE}/${row.path}/summary?event=${row.id}`, row.final ? 600000 : KEEP); row.teams = boxOf(data); row.hurt = hurtOf(data, row.when); if (!row.last) row.last = lastPlay(data); } catch (error) { row.teams = []; }
   }));
-  [...live, ...next].forEach((row) => { delete row.path; });
-  next.sort((a, b) => Date.parse(a.when) - Date.parse(b.when));
-  return { at: now, live, next: next.slice(0, 8) };
+  [...live, ...next, ...done].forEach((row) => { delete row.path; });
+  [next, done].forEach((list) => list.sort((a, b) => Date.parse(a.when) - Date.parse(b.when)));
+  return { at: now, live, next: next.slice(0, 8), ...(all ? { done } : {}) };
 }
 
-module.exports = { liveBoard };
+module.exports = { liveBoard, json, boxOf };

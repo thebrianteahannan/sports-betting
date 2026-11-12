@@ -455,7 +455,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (req.method === "GET" && url.pathname === "/live") { serveStatic(res, "live.html"); return; }
-    if (req.method === "GET" && url.pathname === "/api/live") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to see live games." }, 401); return; } const recs = require("./live-recs"); board().then((now) => recs.recWarm(now)).catch((error) => console.error("live recs warm failed:", error)); sendJson(res, { ...(await require("./live-api").liveBoard()), recs: await recs.recsList() }); return; }
+    if (req.method === "GET" && url.pathname === "/api/live") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to see live games." }, 401); return; } const recs = require("./live-recs"); board().then((now) => recs.recWarm(now)).catch((error) => console.error("live recs warm failed:", error)); sendJson(res, { ...(await require("./live-api").liveBoard(url.searchParams.get("all") === "1")), recs: await recs.recsList(), tally: await require("./live-grade").gradeTally() }); require("./live-grade").gradeTick().catch((error) => console.error("live recs grade failed:", error)); return; }
     if (req.method === "GET" && url.pathname === "/api/board") {
       if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to open the board." }, 401); return; }
       sendJson(res, await publicBoard());
@@ -645,6 +645,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log("Betting desk site on port " + PORT);
-  const warm = () => board().then((now) => require("./live-recs").recWarm(now)).catch((error) => console.error("live recs warm failed:", error));
+  const warm = () => { board().then((now) => require("./live-recs").recWarm(now)).catch((error) => console.error("live recs warm failed:", error)); require("./live-grade").gradeTick().catch((error) => console.error("live recs grade failed:", error)); };
   setTimeout(warm, 30000); setInterval(warm, 10 * 60000);
 });

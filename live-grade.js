@@ -1,0 +1,92 @@
+/** Grades recommended picks once their game is final and keeps the record in Supabase for the live tracker's Today and All time counts. */
+
+const { json, boxOf } = require("./live-api");
+const { kv, recsList } = require("./live-recs");
+
+const BASE = "https://site.api.espn.com/apis/site/v2/sports";
+const PATHS = ["basketball/nba", "hockey/nhl", "football/nfl"];
+const KEY = "bets/live-recs-graded/";
+const NBA = { points: ["PTS"], rebounds: ["REB"], assists: ["AST"], threes: ["3PT"], "made threes": ["3PT"], steals: ["STL"], blocks: ["BLK"], "pts + reb": ["PTS", "REB"], "pts + ast": ["PTS", "AST"], "reb + ast": ["REB", "AST"], "pts + reb + ast": ["PTS", "REB", "AST"] };
+const NHL = { points: ["G", "A"], goals: ["G"], assists: ["A"], "shots on goal": ["SOG"], "blocked shots": ["BS"], saves: ["SV"] };
+let tickAt = 0, done = null, doneAt = 0;
+
+function fold(name) {
+  return String(name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z ]/g, "").replace(/\b(jr|sr|ii|iii|iv)\b/g, "").replace(/\s+/g, " ").trim();
+}
+
+function dayOf(when) {
+  return new Date(new Date(when).getTime() - 6 * 3600000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+}
+
+function grade(teams, pick) {
+  const label = String(pick.label || ""), market = String(pick.market || "");
+  const who = fold(label.split(/\s+(?=\d+\+|Over\b|Under\b)/)[0].replace(/\s+-$/, ""));
+  const plus = market.match(/^(\d+)\+\s+(.+)$/), named = market.match(/\s-\s(?:Alt\s+)?(.+)$/), line = label.match(/\b(Over|Under)\s+(\d+(?:\.\d+)?)/i);
+  const stat = ((plus && plus[2]) || (named && named[1]) || (label.match(/\b(?:Over|Under)\s+\d+(?:\.\d+)?\s+(.+)$/i) || [])[1] || "").toLowerCase();
+  const need = plus ? Number(plus[1]) : line ? Number(line[2]) : null;
+  if (need === null) return "void";
+  for (const team of teams) for (const group of team.groups) {
+    const row = group.rows.find((one) => fold(one.name) === who);
+    if (!row) continue;
+    const keys = [NBA[stat], NHL[stat]].find((set) => set && set.every((key) => group.labels.includes(key)));
+    if (!keys) return "void";
+    const now = keys.reduce((sum, key) => sum + (Number(String(row.stats[group.labels.indexOf(key)] || "0").split("-")[0]) || 0), 0);
+    if (!plus && now === need) return "void";
+    if (line && /under/i.test(line[1])) return now < need ? "won" : "lost";
+    return (plus ? now >= need : now > need) ? "won" : "lost";
+  }
+  return "void";
+}
+
+async function graded() {
+  if (done && Date.now() - doneAt < 120000) return done;
+  const rows = await kv(`?k=like.${encodeURIComponent(KEY)}*&select=v`);
+  done = new Map((rows || []).filter((row) => row && row.v && row.v.id).map((row) => [row.v.id, row.v]));
+  doneAt = Date.now();
+  return done;
+}
+
+async function eventFor(match, kickoff) {
+  const tail = (name) => fold(name).split(" ").pop(), sides = String(match).split(/ @ | v /).map(tail), kick = Date.parse(kickoff);
+  const day = new Date(kick).toLocaleDateString("en-CA", { timeZone: "America/New_York" }).replace(/-/g, "");
+  for (const path of PATHS) {
+    const data = await json(`${BASE}/${path}/scoreboard?dates=${day}`).catch(() => ({}));
+    for (const ev of data.events || []) {
+      const comp = (ev.competitions || [])[0] || {}, names = (comp.competitors || []).map((one) => tail((one.team || {}).displayName));
+      if (sides.every((side) => names.includes(side)) && Math.abs(Date.parse(ev.date) - kick) < 12 * 3600000) return { id: String(ev.id), path, when: ev.date, state: ((comp.status || ev.status || {}).type || {}).state };
+    }
+  }
+  return null;
+}
+
+async function gradeTick() {
+  if (Date.now() - tickAt < 120000) return;
+  tickAt = Date.now();
+  const have = await graded(), games = new Map(), found = new Map();
+  (await recsList()).filter((pick) => Date.now() - Date.parse(pick.kickoff) > 2 * 3600000).forEach((pick) => {
+    const key = `${pick.match}|${pick.kickoff}`;
+    if (!games.has(key)) games.set(key, []);
+    games.get(key).push(pick);
+  });
+  for (const picks of games.values()) {
+    const ev = await eventFor(picks[0].match, picks[0].kickoff);
+    if (!ev || ev.state !== "post" || have.has(ev.id)) continue;
+    if (!found.has(ev.id)) found.set(ev.id, { ev, picks: [] });
+    found.get(ev.id).picks.push(...picks);
+  }
+  for (const { ev, picks } of found.values()) {
+    const teams = boxOf(await json(`${BASE}/${ev.path}/summary?event=${ev.id}`)), seen = new Set();
+    const out = picks.filter((pick) => { const id = `${pick.label}|${pick.market}`; if (seen.has(id)) return false; seen.add(id); return true; }).map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, result: grade(teams, pick) }));
+    const row = { id: ev.id, match: picks[0].match, kickoff: ev.when, day: dayOf(ev.when), at: Date.now(), picks: out };
+    await kv("", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { k: KEY + ev.id, v: row } });
+    have.set(ev.id, row);
+  }
+}
+
+async function gradeTally() {
+  const rows = [...(await graded().catch(() => new Map())).values()], today = dayOf(Date.now());
+  const count = (list) => { const results = list.flatMap((row) => (row.picks || []).map((pick) => pick.result)); return { won: results.filter((one) => one === "won").length, lost: results.filter((one) => one === "lost").length }; };
+  return { today: count(rows.filter((row) => row.day === today)), all: count(rows) };
+}
+
+module.exports = { gradeTick, gradeTally };
