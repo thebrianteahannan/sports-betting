@@ -120,6 +120,14 @@ document.addEventListener("toggle", (event) => {
   try { localStorage.setItem("liveOpen", JSON.stringify([...liveOpen].slice(-40))); } catch (error) { console.log("[live] could not keep open games", error); }
 }, true);
 
+const liveCourt = document.getElementById("live-court");
+liveCourt.checked = localStorage.getItem("liveCourt") === "1";
+document.body.classList.toggle("live-court-only", liveCourt.checked);
+liveCourt.addEventListener("change", () => {
+  document.body.classList.toggle("live-court-only", liveCourt.checked);
+  try { localStorage.setItem("liveCourt", liveCourt.checked ? "1" : "0"); } catch (error) { console.log("[live] could not keep on-court choice", error); }
+});
+
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") liveLoad(); });
 liveLoad();
 setInterval(() => { if (document.visibilityState === "visible") liveLoad(); }, 20000);

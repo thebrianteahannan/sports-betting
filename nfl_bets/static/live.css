@@ -4,7 +4,10 @@ a { color: #3dff6e; }
 .live-top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #000; border-bottom: 1px solid #16202a; }
 .live-home img { display: block; height: 46px; width: auto; }
 .live-top h1 { margin: 0; font-family: Oswald, sans-serif; font-size: 24px; font-weight: 600; letter-spacing: 0.02em; }
-.live-at { margin-left: auto; color: #9fb3c8; font-size: 13px; }
+.live-court { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; color: #c4cde0; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.live-court input { accent-color: #3dff6e; width: 15px; height: 15px; margin: 0; cursor: pointer; }
+body.live-court-only .live-table tr[class]:not(.on) { display: none; }
+.live-at { color: #9fb3c8; font-size: 13px; }
 #live { max-width: 1100px; margin: 0 auto; padding: 14px 16px 40px; }
 #live h2 { margin: 18px 0 10px; color: #e7c15a; font-size: 18px; font-weight: 800; }
 .live-note { color: #9fb3c8; font-size: 15px; }
