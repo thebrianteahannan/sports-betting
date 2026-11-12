@@ -84,10 +84,10 @@ function recStory(match, kickoff) {
   return kept && kept.story ? kept.story : null;
 }
 
-async function recRanked() {
+async function recRanked(days) {
   await pull();
   const now = Date.now(), day = (when) => new Date(when - 6 * 3600000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-  const tonight = Object.values(recs).filter((row) => Date.parse(row.kickoff) > now && day(Date.parse(row.kickoff)) === day(now));
+  const tonight = Object.values(recs).filter((row) => Date.parse(row.kickoff) > now && (days ? Date.parse(row.kickoff) - now < days * 86400000 : day(Date.parse(row.kickoff)) === day(now)));
   const picks = tonight.flatMap((row) => (((row.story || {}).bets || {}).picks || []).map((pick) => ({ ...pick, match: row.match, kickoff: row.kickoff })));
   const edge = (pick) => (pick.n >= 5 ? (pick.hits / pick.n) * 100 - parseFloat(pick.need) : -Infinity);
   const ranked = picks.filter((pick) => pick.how && Number.isFinite(edge(pick))).sort((a, b) => edge(b) - edge(a));
@@ -104,6 +104,11 @@ async function recTop(count) {
   return { picks: ranked.slice(0, count) };
 }
 
+async function recLazy() {
+  const today = (await recRanked()).ranked;
+  return today.length ? { span: "today", picks: today.slice(0, 30) } : { span: "week", picks: (await recRanked(7)).ranked.slice(0, 30) };
+}
+
 pull();
 
-module.exports = { recRecord, recWarm, recsList, recStory, recSample, recTop, kv };
+module.exports = { recRecord, recWarm, recsList, recStory, recSample, recTop, recLazy, kv };

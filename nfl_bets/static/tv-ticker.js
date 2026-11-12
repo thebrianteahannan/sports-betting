@@ -1,6 +1,15 @@
-/** TV ticker on the member menu: the parrot's menu, then tonight's free pick, sliding every 12 seconds. */
+/** TV ticker on the member menu: the parrot's menu, tonight's free pick, then "Feeling lazy?", sliding every 12 seconds. */
 
-const tvTick = { at: 0, timer: 0, pick: null, loading: false };
+const tvTick = { at: "menu", timer: 0, pick: null, loading: false, hold: false };
+
+function tvTickPages() { return ["menu", ...(tvTick.pick ? ["pick"] : []), "lazy"]; }
+
+function tvTickEl(id) { return document.getElementById(id === "menu" ? "bird-guide" : id === "pick" ? "tv-tick-pick" : "tv-tick-lazy"); }
+
+function tvTickDots() {
+  const dots = document.querySelector("#tv-tick .tv-tick-dots");
+  if (dots) dots.innerHTML = tvTickPages().map((id) => `<i${id === tvTick.at ? ' class="on"' : ""}></i>`).join("");
+}
 
 function tvTickMenuOn() {
   const desk = document.getElementById("desk"), guide = document.getElementById("bird-guide");
@@ -14,12 +23,12 @@ function tvTickBox() {
   if (!glass) return null;
   box = document.createElement("div");
   box.id = "tv-tick";
-  box.innerHTML = `<div id="tv-tick-pick" hidden></div><div class="tv-tick-nav"><button type="button" class="tv-tick-go" data-step="-1" aria-label="Back">&#8249;</button><p class="tv-tick-dots"><i class="on"></i><i></i></p><button type="button" class="tv-tick-go" data-step="1" aria-label="Next">&#8250;</button></div>`;
+  box.innerHTML = `<div id="tv-tick-pick" hidden></div><div id="tv-tick-lazy" hidden></div><div class="tv-tick-nav"><button type="button" class="tv-tick-go" data-step="-1" aria-label="Back">&#8249;</button><p class="tv-tick-dots"></p><button type="button" class="tv-tick-go" data-step="1" aria-label="Next">&#8250;</button></div>`;
   box.hidden = true;
   glass.append(box);
   box.addEventListener("click", (event) => {
     const go = event.target.closest(".tv-tick-go");
-    if (go) { event.stopPropagation(); tvTickStep(Number(go.dataset.step)); return; }
+    if (go) { event.stopPropagation(); tvTick.hold = false; tvTickStep(Number(go.dataset.step)); return; }
     const open = event.target.closest("[data-tick-open]");
     if (open && tvTick.pick) { event.stopPropagation(); tvTickOpen(tvTick.pick); }
   });
@@ -67,43 +76,44 @@ async function tvTickLoad() {
     const when = pick.kickoff ? new Date(pick.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }) + " ET" : "";
     const slot = document.getElementById("tv-tick-pick");
     if (slot) slot.innerHTML = `<div class="tv-tick-card"><p class="gate-sample-head">Tonight's free pick</p><p class="gate-sample-bet">${esc(pick.label)} <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p><p class="gate-sample-why">${esc(pick.how)}</p><p class="gate-sample-pay">$5 wins $${win}.</p><button type="button" class="tv-tick-open" data-tick-open>Open the game &#8250;</button></div>`;
+    tvTickDots();
   } catch (error) { console.log("[tv-ticker] could not load tonight's pick", error); } finally { tvTick.loading = false; }
 }
 
 function tvTickShow(next, dir) {
-  const guide = document.getElementById("bird-guide"), slot = document.getElementById("tv-tick-pick");
-  if (!guide || !slot || next === tvTick.at) return;
-  const inEl = next === 1 ? slot : guide, outEl = next === 1 ? guide : slot, ms = 600, ease = "cubic-bezier(0.45, 0, 0.2, 1)";
-  slot.hidden = false;
+  const inEl = tvTickEl(next), outEl = tvTickEl(tvTick.at);
+  if (!inEl || !outEl || next === tvTick.at) return;
+  const ms = 600, ease = "cubic-bezier(0.45, 0, 0.2, 1)";
+  if (next === "lazy" && window.tvLazyPaint) tvLazyPaint();
+  if (next !== "menu") inEl.hidden = false;
   inEl.animate([{ transform: `translateX(${dir * 100}%)` }, { transform: "none" }], { duration: ms, easing: ease });
-  outEl.animate([{ transform: "none" }, { transform: `translateX(${-dir * 100}%)` }], { duration: ms, easing: ease }).finished.then(() => { if (tvTick.at === 0) slot.hidden = true; }).catch(() => {});
+  outEl.animate([{ transform: "none" }, { transform: `translateX(${-dir * 100}%)` }], { duration: ms, easing: ease }).finished.then(() => { if (outEl.id !== "bird-guide" && outEl !== tvTickEl(tvTick.at)) outEl.hidden = true; }).catch(() => {});
   tvTick.at = next;
-  document.querySelectorAll("#tv-tick .tv-tick-dots i").forEach((dot, index) => dot.classList.toggle("on", index === next));
+  tvTickDots();
 }
 
 function tvTickStep(dir) {
-  if (!tvTick.pick) return;
-  tvTickShow((tvTick.at + dir + 2) % 2, dir);
+  const pages = tvTickPages(), at = Math.max(0, pages.indexOf(tvTick.at));
+  tvTickShow(pages[(at + dir + pages.length) % pages.length], dir);
   tvTickTime();
 }
 
 function tvTickTime() {
   clearInterval(tvTick.timer);
-  tvTick.timer = setInterval(() => { if (tvTickMenuOn() && tvTick.pick && document.visibilityState === "visible") tvTickStep(1); }, 12000);
+  tvTick.timer = setInterval(() => { if (tvTickMenuOn() && !tvTick.hold && document.visibilityState === "visible") tvTickStep(1); }, 12000);
 }
 
 function tvTickWatch() {
   const box = tvTickBox();
   if (!box) return;
-  const on = tvTickMenuOn() && !!tvTick.pick;
-  if (tvTickMenuOn()) tvTickLoad();
-  if (on && box.hidden) { box.hidden = false; tvTickTime(); }
+  const on = tvTickMenuOn();
+  if (on) tvTickLoad();
+  if (on && box.hidden) { box.hidden = false; tvTickDots(); tvTickTime(); }
   if (!on && !box.hidden) {
     box.hidden = true; clearInterval(tvTick.timer);
-    const slot = document.getElementById("tv-tick-pick");
-    if (slot) slot.hidden = true;
-    tvTick.at = 0;
-    document.querySelectorAll("#tv-tick .tv-tick-dots i").forEach((dot, index) => dot.classList.toggle("on", index === 0));
+    ["tv-tick-pick", "tv-tick-lazy"].forEach((id) => { const slot = document.getElementById(id); if (slot) slot.hidden = true; });
+    tvTick.at = "menu"; tvTick.hold = false;
+    tvTickDots();
   }
 }
 
