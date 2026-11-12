@@ -489,3 +489,7 @@
 .find-tray .find-leg-menu b { color: #e7c15a; font-size: 0.8rem; } .find-tray .find-leg-menu p { margin: 0; color: #c9d4dd; font-size: 0.85rem; }
 :is(.rec-board, #choice-result) .find-tray .find-leg-menu button, #desk.tv-full #desk-glass .rec-board .find-tray .find-leg-menu button { width: auto; min-height: 0; margin: 0; padding: 0.3rem 0.7rem; border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 999px; background: #0b1a14; color: #f4f7fb; font-size: 0.82rem; font-weight: 700; white-space: pre; cursor: pointer; } .find-tray .find-leg-menu button:hover { border-color: #3dff6e; color: #3dff6e; }
 .rec-board .find-saved-chip.find-flash { animation: find-flash 1.8s ease-in-out 0.35s; }
+.find-board .find-tips { display: flex; align-items: flex-start; gap: 0.7rem; margin: 0.6rem 0; padding: 0.7rem 0.9rem; border: 1px solid rgba(61, 255, 110, 0.18); border-radius: 12px; }
+.find-board .find-tips img { flex: none; width: 2.6rem; height: 2.6rem; object-fit: contain; animation: bet-look 0.9s ease-in-out infinite; transform-origin: 68% 26%; } .find-board .find-tips.done img { animation: none; }
+.find-board .find-tips p { margin: 0 0 0.35rem; color: #e6edf3; font-weight: 600; } .find-board .find-tips p:last-child { margin-bottom: 0; }
+.find-board .find-tips b[data-tip] { color: #3dff6e; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
