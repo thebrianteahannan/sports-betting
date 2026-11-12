@@ -246,6 +246,8 @@ document.getElementById("live").addEventListener("click", (event) => {
     if (liveLast) livePaint(liveLast, true);
     return;
   }
+  const card = event.target.closest(".live-soon"), go = card && !event.target.closest("a, button") && card.querySelector("a.live-week-game");
+  if (go) { window.location.href = go.href; return; }
   const chip = event.target.closest("[data-league]");
   if (!chip) return;
   const sport = chip.dataset.league;

@@ -88,6 +88,8 @@ if (saveSeekGame) {
       hit.click();
       return;
     }
+    const match = board.querySelector(".find-match");
+    if (match && leg === "|") { clearInterval(seek); if (typeof gameScrollTo === "function") gameScrollTo(match); else match.scrollIntoView({ block: "start" }); return; }
     const box = board.querySelector(".find-match > .find-bets");
     if (!box) return;
     clearInterval(seek);

@@ -116,3 +116,4 @@ body.live-recs-on .live-table tr.rec .live-name { color: #3dff6e; }
 #live-back:hover { background: #0d2418; }
 .live-build { flex: none; padding: 6px 14px; border: 1px solid #3dff6e; border-radius: 999px; background: rgba(61, 255, 110, 0.06); color: #3dff6e; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .live-build:hover { background: #3dff6e; color: #04140c; }
+.live-game.live-soon > .live-head { cursor: pointer; }
