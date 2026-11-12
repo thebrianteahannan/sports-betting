@@ -2,12 +2,14 @@
 
 const { json, boxOf } = require("./live-api");
 const { kv, recsList } = require("./live-recs");
+const { gradeParlay } = require("./parlay-grade");
+const SPORT = { "basketball/nba": "NBA", "hockey/nhl": "NHL", "football/nfl": "NFL" };
 
 const BASE = "https://site.api.espn.com/apis/site/v2/sports";
 const PATHS = ["basketball/nba", "hockey/nhl", "football/nfl"];
 const KEY = "bets/live-recs-graded/";
 const NBA = { points: ["PTS"], rebounds: ["REB"], assists: ["AST"], threes: ["3PT"], "made threes": ["3PT"], steals: ["STL"], blocks: ["BLK"], "pts + reb": ["PTS", "REB"], "pts + ast": ["PTS", "AST"], "reb + ast": ["REB", "AST"], "pts + reb + ast": ["PTS", "REB", "AST"] };
-const NHL = { points: ["G", "A"], goals: ["G"], assists: ["A"], "shots on goal": ["SOG"], "blocked shots": ["BS"], saves: ["SV"] };
+const NHL = { points: ["G", "A"], goals: ["G"], assists: ["A"], "shots on goal": ["S"], "blocked shots": ["BS"], saves: ["SV"] };
 let tickAt = 0, done = null, doneAt = 0;
 
 function fold(name) {
@@ -24,18 +26,20 @@ function grade(teams, pick) {
   const plus = market.match(/^(\d+)\+\s+(.+)$/), named = market.match(/\s-\s(?:Alt\s+)?(.+)$/), line = label.match(/\b(Over|Under)\s+(\d+(?:\.\d+)?)/i);
   const stat = ((plus && plus[2]) || (named && named[1]) || (label.match(/\b(?:Over|Under)\s+\d+(?:\.\d+)?\s+(.+)$/i) || [])[1] || "").toLowerCase();
   const need = plus ? Number(plus[1]) : line ? Number(line[2]) : null;
-  if (need === null) return "void";
+  if (need === null) return { result: "void" };
   for (const team of teams) for (const group of team.groups) {
     const row = group.rows.find((one) => fold(one.name) === who);
     if (!row) continue;
     const keys = [NBA[stat], NHL[stat]].find((set) => set && set.every((key) => group.labels.includes(key)));
-    if (!keys) return "void";
+    if (!keys) return { result: "void" };
     const now = keys.reduce((sum, key) => sum + (Number(String(row.stats[group.labels.indexOf(key)] || "0").split("-")[0]) || 0), 0);
-    if (!plus && now === need) return "void";
-    if (line && /under/i.test(line[1])) return now < need ? "won" : "lost";
-    return (plus ? now >= need : now > need) ? "won" : "lost";
+    if (!plus && now === need) return { result: "void", got: now };
+    const under = line && /under/i.test(line[1]), bar = plus ? need : under ? Math.ceil(need) - 1 : Math.floor(need) + 1, short = under ? now - bar : bar - now;
+    const out = { got: now, bar, under: !!under };
+    if (short <= 0) return { ...out, result: "won" };
+    return { ...out, result: "lost", short, close: short <= (keys.includes("PTS") ? 2 : 1) && (under || now >= 1) };
   }
-  return "void";
+  return { result: "void" };
 }
 
 async function graded() {
@@ -76,17 +80,43 @@ async function gradeTick() {
   }
   for (const { ev, picks } of found.values()) {
     const teams = boxOf(await json(`${BASE}/${ev.path}/summary?event=${ev.id}`)), seen = new Set();
-    const out = picks.filter((pick) => { const id = `${pick.label}|${pick.market}`; if (seen.has(id)) return false; seen.add(id); return true; }).map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, result: grade(teams, pick) }));
+    const out = picks.filter((pick) => { const id = `${pick.label}|${pick.market}`; if (seen.has(id)) return false; seen.add(id); return true; }).map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, ...grade(teams, pick) }));
     const row = { id: ev.id, match: picks[0].match, kickoff: ev.when, day: dayOf(ev.when), at: Date.now(), picks: out };
     await kv("", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { k: KEY + ev.id, v: row } });
     have.set(ev.id, row);
   }
+  await gradeFill().catch((error) => console.error("live recs fill failed:", error));
+}
+
+async function gradeFill() {
+  const have = await graded(), stale = [...have.values()].filter((row) => !row.explained || (row.picks || []).some((pick) => pick.result !== "void" && pick.bar === undefined)).slice(0, 3);
+  for (const row of stale) {
+    for (const path of PATHS) {
+      const teams = boxOf(await json(`${BASE}/${path}/summary?event=${row.id}`).catch(() => ({})));
+      if (!teams.some((team) => team.groups.some((group) => group.rows.length))) continue;
+      row.picks = row.picks.map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, ...grade(teams, pick) }));
+      await explain(row, SPORT[path]).catch((error) => console.error("live recs explain failed:", row.match, error && error.message));
+      row.explained = Date.now();
+      await kv("", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { k: KEY + row.id, v: row } });
+      break;
+    }
+  }
+}
+
+async function explain(row, sport) {
+  const legs = row.picks.map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, match: row.match, kickoff: row.kickoff, sport }));
+  const done = await gradeParlay({ id: row.id, legs });
+  if (!done) return;
+  const review = Object.values(done.reviews || {})[0];
+  if (review) { const { players, ...lean } = review; row.review = lean; }
+  row.picks = row.picks.map((pick, at) => ({ ...pick, why: ((done.legs || [])[at] || {}).why || "" }));
 }
 
 async function gradeTally() {
   const rows = [...(await graded().catch(() => new Map())).values()], today = dayOf(Date.now());
   const count = (list) => { const results = list.flatMap((row) => (row.picks || []).map((pick) => pick.result)); return { won: results.filter((one) => one === "won").length, lost: results.filter((one) => one === "lost").length }; };
-  return { today: count(rows.filter((row) => row.day === today)), all: count(rows) };
+  const history = rows.slice().sort((a, b) => Date.parse(b.kickoff) - Date.parse(a.kickoff)).map((row) => ({ id: row.id, match: row.match, kickoff: row.kickoff, picks: row.picks || [], review: row.review || null }));
+  return { today: count(rows.filter((row) => row.day === today)), all: count(rows), history };
 }
 
 module.exports = { gradeTick, gradeTally };

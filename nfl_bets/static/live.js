@@ -19,7 +19,7 @@ function liveSide(team, lead, key) {
 
 let liveLegs = [], liveRecs = [];
 const LIVE_STAT = { points: ["PTS"], rebounds: ["REB"], assists: ["AST"], threes: ["3PT"], "made threes": ["3PT"], steals: ["STL"], blocks: ["BLK"], "pts + reb": ["PTS", "REB"], "pts + ast": ["PTS", "AST"], "reb + ast": ["REB", "AST"], "pts + reb + ast": ["PTS", "REB", "AST"] };
-const LIVE_NHL = { points: ["G", "A"], goals: ["G"], assists: ["A"], "shots on goal": ["SOG"], "blocked shots": ["BS"], saves: ["SV"] };
+const LIVE_NHL = { points: ["G", "A"], goals: ["G"], assists: ["A"], "shots on goal": ["S"], "blocked shots": ["BS"], saves: ["SV"] };
 
 function liveFold(name) {
   return String(name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z ]/g, "").replace(/\b(jr|sr|ii|iii|iv)\b/g, "").replace(/\s+/g, " ").trim();
@@ -119,12 +119,42 @@ function liveScore(data) {
   }));
   const tally = data.tally || {}, today = tally.today || { won: 0, lost: 0 }, ever = tally.all || { won: 0, lost: 0 };
   const cell = (name, hit, of, tip) => `<span title="${liveEsc(tip)}"><b>${name}</b> ${hit} of ${of}${of ? ` · ${Math.round((100 * hit) / of)}%` : ""}</span>`;
-  document.getElementById("live-score").innerHTML = `<i>Recommended</i>${cell("Live", won, all, "Recommended bets in games on now that have already hit")}${cell("Today", today.won + won, today.won + today.lost + won + lost, "Recommended bets won today, out of the ones already decided")}${cell("All time", ever.won + won, ever.won + ever.lost + won + lost, "Every recommended bet won, out of the ones already decided")}`;
+  document.getElementById("live-score").innerHTML = `<i>Recommended</i>${cell("Live", won, all, "Recommended bets in games on now that have already hit")}${cell("Today", today.won + won, today.won + today.lost + won + lost, "Recommended bets won today, out of the ones already decided")}${cell("All time", ever.won + won, ever.won + ever.lost + won + lost, "See every recommended bet and how it finished")}`;
+  const allCell = document.querySelector("#live-score span:last-child"); if (allCell) allCell.dataset.history = "1";
+}
+
+function liveHistLabel(pick) {
+  const label = String(pick.label || "").replace(/\s+-\s+/, " "), market = String(pick.market || ""), stat = (market.match(/\s-\s(?:Alt\s+)?(.+)$/) || [])[1];
+  if (!/\d/.test(label)) return `${label} ${market}`;
+  if (/\b(Over|Under)\s+[\d.]+$/i.test(label) && stat) return `${label} ${stat}`;
+  return label;
+}
+
+function liveHistory(rows) {
+  const keep = rows || [];
+  if (!keep.length) return "";
+  const picks = keep.flatMap((row) => row.picks || []), won = picks.filter((pick) => pick.result === "won").length, lost = picks.filter((pick) => pick.result === "lost").length;
+  const pay = (odds) => (odds > 0 ? odds / 100 : 100 / Math.abs(odds)) * 5;
+  const net = picks.reduce((sum, pick) => sum + (pick.result === "won" ? pay(Number(pick.odds)) : pick.result === "lost" ? -5 : 0), 0);
+  const price = (odds) => (Number(odds) > 0 ? `+${Number(odds)}` : String(odds));
+  const mark = { won: "✓", lost: "✗", void: "–" };
+  const games = keep.map((row) => {
+    const day = new Date(Date.parse(row.kickoff)).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric" });
+    const tally = (row.picks || []).filter((pick) => pick.result === "won").length, done = (row.picks || []).filter((pick) => pick.result !== "void").length;
+    const review = row.review, open = (key) => (liveHistOpen.has(key) ? " open" : ""), check = { held: "✓", miss: "✗", odd: "!" };
+    const told = review && (review.script || review.checks) ? `<details class="live-hist-review" data-hk="r:${liveEsc(row.id)}"${open(`r:${row.id}`)}><summary>${liveEsc(review.verdict || "Game script vs what happened")}</summary>${(review.script || []).length ? `<p class="live-hist-sub">The script going in</p><p>${liveEsc(review.script.join(" "))}</p>` : ""}${(review.checks || []).length ? `<p class="live-hist-sub">What happened</p><ul>${review.checks.map((one) => `<li class="${liveEsc(one.kind)}"><b>${check[one.kind] || ""}</b><span>${liveEsc(one.text)}</span></li>`).join("")}</ul>` : ""}${(review.went || []).length ? `<p class="live-hist-sub">The box score</p><ul>${review.went.map((line) => `<li><span>${liveEsc(line)}</span></li>`).join("")}</ul>` : ""}</details>` : "";
+    const line = (pick) => `<b>${mark[pick.result] || ""}</b><span>${liveEsc(liveHistLabel(pick))}</span><i>${liveEsc(price(pick.odds))}</i>${Number.isFinite(pick.got) ? `<em>had ${liveEsc(pick.got)}${Number.isFinite(pick.bar) ? `, needed ${liveEsc(pick.bar)}${pick.under ? " or fewer" : ""}` : ""}</em>` : ""}${pick.close ? `<span class="live-close">${liveEsc(pick.short)} short</span>` : ""}`;
+    const rows = (row.picks || []).map((pick) => { const key = `p:${row.id}|${pick.label}|${pick.market}`; return `<li class="${liveEsc(pick.result || "")}${pick.close ? " close" : ""}">${pick.why ? `<details data-hk="${liveEsc(key)}"${open(key)}><summary>${line(pick)}</summary><p class="live-hist-why">${liveEsc(pick.why)}</p></details>` : line(pick)}</li>`; }).join("");
+    return `<div class="live-hist"><h3><span>${liveEsc(day)}</span> ${liveEsc(row.match)}${review && review.final ? `<em>${liveEsc(review.final)}</em>` : ""}<b>${tally} of ${done}</b></h3>${told}<ul>${rows}</ul></div>`;
+  }).join("");
+  const near = picks.filter((pick) => pick.close).length;
+  return `<h2 id="live-history">Recommended bets, ${won} of ${won + lost} won</h2><p class="live-note">$5 on every one: ${net < 0 ? "-" : "+"}$${Math.abs(net).toFixed(2)}.${near ? ` ${near} of the ${lost} losses came up 1 or 2 short. A lower line on those would have hit.` : ""}</p>${games}`;
 }
 
 const liveLeagues = new Set((() => { try { return JSON.parse(localStorage.getItem("liveLeagues") || "[]"); } catch (error) { return []; } })());
 let liveLast = null, liveSpan = localStorage.getItem("liveSpan") || (localStorage.getItem("liveWeek") === "1" ? "week" : "today");
-const liveRecOpen = new Set();
+const liveRecOpen = new Set(), liveHistOpen = new Set();
+document.addEventListener("toggle", (event) => { const key = event.target.dataset && event.target.dataset.hk; if (key) { if (event.target.open) liveHistOpen.add(key); else liveHistOpen.delete(key); } }, true);
 
 function liveLeagueBar(data, count) {
   const order = ["NBA", "NFL", "NHL", "MLB", "WNBA"], have = new Set([...(data.live || []), ...(data.done || []), ...(data.next || []), ...(data.week || [])].map((game) => game.sport));
@@ -188,8 +218,9 @@ function livePaint(data, quiet) {
   const next = (data.week || []).length ? (soon.length ? `<h2>Up next today, ${soon.length} ${soon.length === 1 ? "game" : "games"}</h2>${soon.map(liveSoonCard).join("")}` : "") : liveNext((data.next || []).filter(keep));
   const past = done.filter((game) => liveDayKey(game.when) !== today), ended = done.filter((game) => liveDayKey(game.when) === today);
   const final = (day, list) => list.length ? `<h2>Final ${day}, ${list.length} ${list.length === 1 ? "game" : "games"}</h2>${list.map(liveGame).join("")}` : "";
-  const bar = liveLeagueBar(data, { past: past.length, today: live.length + ended.length + ((data.week || []).length ? soon.length : (data.next || []).filter(keep).length), week: week.length });
-  box.innerHTML = liveSpan === "week" && week.length ? `${bar}${liveWeekList(week)}` : liveSpan === "past" ? `${bar}${final("yesterday", past) || `<p class="live-note">No past games to show.</p>`}` : `${bar}${live.length ? `<h2>Live now, ${live.length} ${live.length === 1 ? "game" : "games"}</h2>${live.map(liveGame).join("")}` : `<p class="live-note">No games are live right now.</p>`}${final("today", ended)}${next}`;
+  const hist = ((data.tally || {}).history || []), histIds = new Set(hist.map((row) => String(row.id)));
+  const bar = liveLeagueBar(data, { past: past.filter((game) => !histIds.has(String(game.id))).length + hist.length, today: live.length + ended.length + ((data.week || []).length ? soon.length : (data.next || []).filter(keep).length), week: week.length });
+  box.innerHTML = liveSpan === "week" && week.length ? `${bar}${liveWeekList(week)}` : liveSpan === "past" ? `${bar}${(final("yesterday", past) + liveHistory(hist)) || `<p class="live-note">No past games to show.</p>`}` : `${bar}${live.length ? `<h2>Live now, ${live.length} ${live.length === 1 ? "game" : "games"}</h2>${live.map(liveGame).join("")}` : `<p class="live-note">No games are live right now.</p>`}${final("today", ended)}${next}`;
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => { const left = liveSlide.get(node.dataset.slide); if (left) node.scrollLeft = left; });
   if (!first) {
     box.querySelectorAll("[data-k]").forEach((node) => { if (was.has(node.dataset.k) && was.get(node.dataset.k) !== node.textContent) node.classList.add("live-flash"); });
@@ -254,6 +285,13 @@ document.getElementById("live").addEventListener("click", (event) => {
   if (!sport) liveLeagues.clear(); else if (liveLeagues.has(sport)) liveLeagues.delete(sport); else liveLeagues.add(sport);
   try { localStorage.setItem("liveLeagues", JSON.stringify([...liveLeagues])); } catch (error) { console.log("[live] could not keep leagues", error); }
   if (liveLast) livePaint(liveLast, true);
+});
+document.getElementById("live-score").addEventListener("click", (event) => {
+  if (!event.target.closest("[data-history]")) return;
+  liveSpan = "past";
+  try { localStorage.setItem("liveSpan", liveSpan); } catch (error) { console.log("[live] could not keep past", error); }
+  if (liveLast) livePaint(liveLast, true);
+  const head = document.getElementById("live-history"); if (head) head.scrollIntoView({ block: "start", behavior: "smooth" });
 });
 fetch("/api/me", { credentials: "same-origin" }).then((res) => (res.ok ? res.json() : null)).then((me) => { const name = me && me.member && me.member.name; if (name) document.getElementById("live-profile").dataset.name = name; }).catch((error) => console.log("[live] could not load profile name", error));
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") liveLoad(); });

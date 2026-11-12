@@ -117,3 +117,17 @@ body.live-recs-on .live-table tr.rec .live-name { color: #3dff6e; }
 .live-build { flex: none; padding: 6px 14px; border: 1px solid #3dff6e; border-radius: 999px; background: rgba(61, 255, 110, 0.06); color: #3dff6e; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .live-build:hover { background: #3dff6e; color: #04140c; }
 .live-game.live-soon > .live-head { cursor: pointer; }
+.live-score span[data-history] { cursor: pointer; } .live-score span[data-history]:hover { border-color: #3dff6e; }
+#live-history { scroll-margin-top: 6rem; }
+.live-hist { margin: 0 0 10px; padding: 10px 14px; border: 1px solid #16202a; border-radius: 12px; background: #0b1017; }
+.live-hist h3 { display: flex; align-items: baseline; gap: 10px; margin: 0 0 6px; font-size: 15px; font-weight: 700; } .live-hist h3 span { color: #9fb3c8; font-size: 13px; } .live-hist h3 b { margin-left: auto; color: #e7c15a; font-size: 13px; }
+.live-hist ul { margin: 0; padding: 0; list-style: none; } .live-hist li { display: flex; align-items: baseline; gap: 10px; padding: 3px 0; font-size: 14px; color: #c4cde0; }
+.live-hist li b { width: 1em; text-align: center; } .live-hist li.won b { color: #3dff6e; } .live-hist li.lost b { color: #ff5a5a; } .live-hist li i { color: #9fb3c8; font-style: normal; } .live-hist li em { color: #e7c15a; font-style: normal; }
+.live-hist li.close b { color: #e7c15a; } .live-close { padding: 0 8px; border: 1px solid #e7c15a; border-radius: 999px; color: #e7c15a; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.live-hist h3 em { color: #c4cde0; font-size: 13px; font-style: normal; font-weight: 600; }
+.live-hist li details { flex: 1; } .live-hist li summary { display: flex; align-items: baseline; gap: 10px; cursor: pointer; list-style: none; } .live-hist li summary::-webkit-details-marker { display: none; }
+.live-hist li summary::after { content: "▾"; margin-left: auto; color: #6b7c8f; font-size: 12px; } .live-hist li details[open] > summary::after { content: "▴"; }
+.live-hist-why { margin: 4px 0 6px 1.6em; color: #c4cde0; font-size: 13.5px; line-height: 1.45; }
+.live-hist-review { margin: 0 0 8px; padding: 6px 10px; border: 1px solid rgba(231, 193, 90, 0.35); border-radius: 8px; background: rgba(231, 193, 90, 0.05); font-size: 13.5px; color: #c4cde0; }
+.live-hist-review > summary { color: #e7c15a; font-weight: 700; cursor: pointer; } .live-hist-review p { margin: 4px 0; line-height: 1.45; } .live-hist-sub { color: #9fb3c8; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.live-hist-review li.held b { color: #3dff6e; } .live-hist-review li.miss b { color: #ff5a5a; } .live-hist-review li.odd b { color: #e7c15a; }
