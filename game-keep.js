@@ -33,19 +33,28 @@ async function keepWarm(board) {
   } finally { warming = false; }
 }
 
-async function keptGame(match) {
+async function recGame(match, sport) {
+  const rows = await kv(`?k=like.${encodeURIComponent(`bets/live-recs/${match}|`)}*&select=v`).catch((error) => { console.error("kept recs load failed:", match, error); return []; });
+  const rec = (rows || []).map((row) => row.v).filter((row) => row && Date.parse(row.kickoff) <= Date.now()).sort((a, b) => b.at - a.at)[0];
+  if (!rec) return null;
+  const [awayName, homeName] = match.split(" @ ");
+  const picks = [...(((rec.story || {}).bets || {}).picks || []), ...(rec.picks || [])];
+  return { id: `kept:${match}`, match, sport, kickoff: rec.kickoff, awayName: awayName || "", homeName: homeName || "", props: picks.map((pick) => ({ market: pick.market || "", runner: pick.who || "", label: pick.label, odds: pick.odds })), kept: true };
+}
+
+async function keptGame(match, sport) {
   const hit = asked.get(match);
   if (hit && Date.now() - hit.at < 60000) return hit.game;
   const rows = await kv(`?k=like.${encodeURIComponent(`${KEY}${match}|`)}*&select=v`).catch((error) => { console.error("kept game load failed:", match, error); return []; });
-  const game = (rows || []).map((row) => row.v && row.v.game).filter((row) => row && Date.parse(row.kickoff) <= Date.now()).sort((a, b) => Date.parse(b.kickoff) - Date.parse(a.kickoff))[0] || null;
+  const game = (rows || []).map((row) => row.v && row.v.game).filter((row) => row && Date.parse(row.kickoff) <= Date.now()).sort((a, b) => Date.parse(b.kickoff) - Date.parse(a.kickoff))[0] || (sport ? await recGame(match, sport) : null);
   asked.set(match, { at: Date.now(), game });
   return game;
 }
 
-async function withKept(board, match) {
+async function withKept(board, match, sport) {
   const games = (board && board.games) || [];
   if (!match || games.some((game) => game.match === match && Date.parse(game.kickoff) <= Date.now())) return board;
-  const game = await keptGame(match);
+  const game = await keptGame(match, String(sport || ""));
   return game ? { ...board, games: [...games, game] } : board;
 }
 

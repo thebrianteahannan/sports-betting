@@ -294,7 +294,7 @@ function scriptBetsBlock(bets, group, game, people, keep = {}) {
 }
 
 function nbaScript(holder, game, people) {
-  const full = game && ((window.state && state.board && state.board.games) || []).find((row) => row.match === game.match && row.kickoff === game.kickoff);
+  const full = game && (((window.state && state.board && state.board.games) || []).find((row) => row.match === game.match && row.kickoff === game.kickoff) || (Date.parse(game.kickoff) <= Date.now() ? game : null));
   const match = full && /^(NBA|NFL|NHL)$/.test(full.sport) && [...holder.querySelectorAll(".find-match")].pop();
   if (!match || match.querySelector(":scope > .find-script")) return;
   const box = document.createElement("details");

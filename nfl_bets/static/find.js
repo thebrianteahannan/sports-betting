@@ -45,7 +45,7 @@ function loadFind(span) {
   const saved = findParts[span];
   if (saved && saved.data && Date.now() - saved.at < 30 * 60 * 1000) return Promise.resolve(saved.data);
   if (saved && saved.pending) return saved.pending;
-  const pending = fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "lookup", when: span, game: span === "today" && typeof saveSeekGame === "string" ? saveSeekGame : "" }) }).then((res) => res.json()).then((data) => { findParts[span] = { at: Date.now(), data }; return data; }).catch((error) => { delete findParts[span]; throw error; });
+  const pending = fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "lookup", when: span, game: span === "today" && typeof saveSeekGame === "string" ? saveSeekGame : "", gameSport: typeof saveSeek === "object" ? saveSeek.get("sport") || "" : "" }) }).then((res) => res.json()).then((data) => { findParts[span] = { at: Date.now(), data }; return data; }).catch((error) => { delete findParts[span]; throw error; });
   findParts[span] = { pending };
   return pending;
 }

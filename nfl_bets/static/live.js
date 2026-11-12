@@ -101,7 +101,7 @@ function liveGame(game) {
     return `<section class="live-team" style="border-left-color: ${liveEsc(side.color || "#3dff6e")}"><h3>${liveEsc(team.name)}</h3>${team.groups.map((group, at) => liveGroup(group, `${game.id}|${team.short}|${at}`, many, mine, recs, known)).join("")}</section>`;
   }).join("");
   const body = teams || `<p class="live-note">ESPN has not posted player stats for this game yet.</p>`;
-  return `<details class="live-game${picks.length ? " has-mine" : ""}${game.final ? " live-final" : ""}" data-id="${liveEsc(game.id)}" data-match="${liveEsc((liveMine(game, liveRecs)[0] || {}).match || `${game.away.name} @ ${game.home.name}`)}"${liveOpen.has(game.id) ? " open" : ""}><summary><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(game.away, away > home, `${game.id}|away`)}<span class="live-at-sign">@</span>${liveSide(game.home, home > away, `${game.id}|home`)}<span class="live-clock">${liveEsc(game.clock)}</span>${game.last ? `<span class="live-last" data-k="${liveEsc(`${game.id}|last`)}">${liveEsc(game.last)}</span>` : ""}${liveHurt(game)}${liveRoot(game, picks)}${liveRecRow(game, picks)}<button type="button" class="live-stats" aria-label="Players and stats"></button></summary>${body}</details>`;
+  return `<details class="live-game${picks.length ? " has-mine" : ""}${game.final ? " live-final" : ""}" data-id="${liveEsc(game.id)}" data-sport="${liveEsc(game.sport)}" data-match="${liveEsc((liveMine(game, liveRecs)[0] || {}).match || `${game.away.name} @ ${game.home.name}`)}"${liveOpen.has(game.id) ? " open" : ""}><summary><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(game.away, away > home, `${game.id}|away`)}<span class="live-at-sign">@</span>${liveSide(game.home, home > away, `${game.id}|home`)}<span class="live-clock">${liveEsc(game.clock)}</span>${game.last ? `<span class="live-last" data-k="${liveEsc(`${game.id}|last`)}">${liveEsc(game.last)}</span>` : ""}${liveHurt(game)}${liveRoot(game, picks)}${liveRecRow(game, picks)}<button type="button" class="live-stats" aria-label="Players and stats"></button></summary>${body}</details>`;
 }
 
 function liveNext(next) {
@@ -284,7 +284,7 @@ document.getElementById("live").addEventListener("click", (event) => {
   const stats = event.target.closest(".live-game > summary .live-stats");
   if (stats) { event.preventDefault(); stats.closest(".live-game").open = !stats.closest(".live-game").open; return; }
   const head = event.target.closest(".live-game > summary");
-  if (head && !event.target.closest("a, button")) { event.preventDefault(); window.location.href = `/?${new URLSearchParams({ game: head.parentElement.dataset.match })}`; return; }
+  if (head && !event.target.closest("a, button")) { event.preventDefault(); window.location.href = `/?${new URLSearchParams({ game: head.parentElement.dataset.match, sport: head.parentElement.dataset.sport })}`; return; }
   const chip = event.target.closest("[data-league]");
   if (!chip) return;
   const sport = chip.dataset.league;
