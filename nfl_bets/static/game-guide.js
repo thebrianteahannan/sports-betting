@@ -228,12 +228,25 @@ function gameBarTools(match, shut) {
   tools.append(fold, close); bar.append(tools);
 }
 
+let gameLogoJob = null;
+function gameLogos(sides) {
+  if (!gameLogoJob) gameLogoJob = fetch("/api/logos").then((res) => res.json()).catch(() => { gameLogoJob = null; return {}; });
+  gameLogoJob.then((logos) => sides.forEach((side) => {
+    if (!side.isConnected || side.querySelector("img.find-side-logo")) return;
+    const name = side.textContent.split(",")[0].trim(), nick = ` ${name.split(" ").pop().toLowerCase()}`;
+    const src = logos[name] || (Object.entries(logos).find(([key]) => key.toLowerCase().endsWith(nick)) || [])[1];
+    if (!src) return;
+    const img = document.createElement("img"); img.className = "find-side-logo"; img.src = src; img.alt = ""; side.prepend(img);
+  }));
+}
+
 function gameGuide(match, people, list, hits, noted) {
   gameBarTools(match, noted === "shut" && !!(list && list.parentElement && list.parentElement.querySelector(".find-teams[data-who]:not([data-who=''])")));
   if (!match || match.querySelectorAll(":scope > .find-side-go").length < 2) return;
   const guide = document.createElement("p");
   guide.className = "find-guide";
   const sides = [...match.querySelectorAll(":scope > .find-side-go")];
+  gameLogos(sides);
   sides[sides.length - 1].after(guide);
   const everyone = gameEveryone(match, sides, people, list, hits);
   if (everyone) { guide.after(everyone); const stacks = match.querySelector(":scope > .find-stacks"); if (stacks) everyone.before(stacks); }

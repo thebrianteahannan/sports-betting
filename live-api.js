@@ -103,4 +103,10 @@ async function liveWeek(board) {
   return games;
 }
 
-module.exports = { liveBoard, liveWeek, json, boxOf };
+async function teamLogos() {
+  const logos = {};
+  await Promise.all(LEAGUES.map(([sport, path]) => json(`${BASE}/${path}/teams`, 24 * 3600000).then((data) => (((((data.sports || [])[0] || {}).leagues || [])[0] || {}).teams || []).forEach(({ team = {} }) => { const logo = ((team.logos || [])[0] || {}).href; if (team.displayName && logo) logos[team.displayName] = logo; })).catch(() => null)));
+  return logos;
+}
+
+module.exports = { liveBoard, liveWeek, teamLogos, json, boxOf };

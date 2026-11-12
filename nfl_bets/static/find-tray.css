@@ -476,3 +476,6 @@
 .find-script-bets .find-script-who, .find-script-leg[data-who] i.who { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
 .find-script-bets .find-script-who:hover, .find-script-leg[data-who] i.who:hover { text-decoration-style: solid; }
 .find-tray .find-chose i.find-rec-pill { cursor: pointer; }
+.rec-board .find-match .find-side-go img.find-side-logo { width: 1.6em; height: 1.6em; margin: -0.2em 0.45rem -0.2em 0; object-fit: contain; vertical-align: middle; }
+#desk.tv-full #desk-glass .rec-board .find-match .find-side-go.on:has(img.find-side-logo), .rec-board .find-match .find-side-go.on:has(img.find-side-logo) { justify-content: flex-start; }
+.rec-board .find-match .find-side-go.on:has(img.find-side-logo)::after { margin-left: auto; }
