@@ -47,8 +47,9 @@ body.live-court-only .live-table tr[class]:not(.on):not(.mine):not(.all) { displ
 .live-game[open] { border-color: #3dff6e; }
 .live-game > summary, .live-game > .live-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 14px; cursor: pointer; list-style: none; }
 .live-game > summary::-webkit-details-marker { display: none; }
-.live-game > summary::after { content: "Players & Stats ▾"; margin-left: auto; color: #3dff6e; font-size: 13px; font-weight: 700; }
-.live-game[open] > summary::after { content: "Hide ▴"; }
+.live-stats { margin-left: auto; padding: 0; border: 0; background: none; color: #3dff6e; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.live-stats::after { content: "Players & Stats ▾"; }
+.live-game[open] .live-stats::after { content: "Hide ▴"; }
 .live-sport { padding: 2px 6px; border: 1px solid #2a3a48; border-radius: 6px; color: #9fb3c8; font-size: 11px; font-weight: 800; }
 .live-side { display: inline-flex; align-items: center; gap: 6px; color: #c4cde0; }
 .live-side img { width: 26px; height: 26px; object-fit: contain; }

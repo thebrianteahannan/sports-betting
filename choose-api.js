@@ -497,4 +497,4 @@ async function chooseBet(body, board) {
   await addSway(built.legs, games);
   return built;
 }
-module.exports = { chooseBet, eventPage };
+module.exports = { chooseBet, eventPage, offerLegs };

@@ -45,7 +45,7 @@ function loadFind(span) {
   const saved = findParts[span];
   if (saved && saved.data && Date.now() - saved.at < 30 * 60 * 1000) return Promise.resolve(saved.data);
   if (saved && saved.pending) return saved.pending;
-  const pending = fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "lookup", when: span }) }).then((res) => res.json()).then((data) => { findParts[span] = { at: Date.now(), data }; return data; }).catch((error) => { delete findParts[span]; throw error; });
+  const pending = fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "lookup", when: span, game: span === "today" && typeof saveSeekGame === "string" ? saveSeekGame : "" }) }).then((res) => res.json()).then((data) => { findParts[span] = { at: Date.now(), data }; return data; }).catch((error) => { delete findParts[span]; throw error; });
   findParts[span] = { pending };
   return pending;
 }
@@ -94,7 +94,7 @@ function loadedGames(people, span) {
   const buckets = { today: new Map(), week: new Map() };
   people.forEach((person) => (person.bets || []).forEach((bet) => {
     const kick = Date.parse(bet.kickoff || "");
-    if (!bet.match || kick !== kick || kick <= now - 6 * 60 * 60 * 1000 || !keep.test(bet.sport || "")) return;
+    if (!bet.match || kick !== kick || (kick <= now - 6 * 60 * 60 * 1000 && !(typeof saveSeekGame === "string" && bet.match === saveSeekGame)) || !keep.test(bet.sport || "")) return;
     const day = fmt.format(kick), key = `${bet.match}|${bet.kickoff}`;
     const bucket = day === today || kick <= now ? buckets.today : day > today && day <= end ? buckets.week : null;
     if (bucket && !bucket.has(key)) bucket.set(key, bet);

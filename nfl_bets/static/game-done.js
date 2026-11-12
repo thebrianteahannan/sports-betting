@@ -11,7 +11,7 @@ function gameDoneKey(sport, away, home) {
 
 function gameDoneOf(game) {
   const [away, home] = String(game.match || "").split(/\s@\s/);
-  return Boolean(home) && gameDoneSet.has(gameDoneKey(game.sport, away, home));
+  return Boolean(home) && game.match !== (typeof saveSeekGame === "string" ? saveSeekGame : "") && gameDoneSet.has(gameDoneKey(game.sport, away, home));
 }
 
 if (typeof loadedGames === "function") {
