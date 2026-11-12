@@ -137,6 +137,8 @@ function saveOpen(id) {
   const people = (board && board.people) || [];
   parlayPick.clear(); parlayLeg.clear();
   (entry.picks || []).forEach((lite) => { const live = people.find((who) => who.key === lite.key) || { ...lite, bets: [] }; parlayPick.set(live.key, live); });
+  const known = saveList().flatMap((row) => row.picks || []);
+  (entry.legs || []).forEach((bet) => { const label = String(bet.label || ""); if ([...parlayPick.values()].some((one) => one.name && label.startsWith(one.name))) return; const lite = known.find((one) => one.name && label.startsWith(one.name)); if (lite) parlayPick.set(lite.key, people.find((who) => who.key === lite.key) || { ...lite, bets: [] }); });
   (entry.legs || []).forEach((bet) => { const live = people.flatMap((who) => who.bets || []).find((row) => row.label === bet.label && row.market === bet.market && row.match === bet.match) || bet; parlayLeg.set(parlayKey(live), live); });
   window.parlayOpenId = id;
   if (typeof trayRoster === "function") trayRoster();

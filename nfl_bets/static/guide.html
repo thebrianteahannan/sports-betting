@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>How to use Parlay of the Day</title>
+<link rel="icon" href="/logo.png?v=5"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root { --bg: #070b10; --card: #0b1017; --line: #16202a; --green: #3dff6e; --gold: #e7c15a; --text: #e9eef5; --muted: #9fb3c8; }
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.55 "Outfit", system-ui, sans-serif; }
+a { color: var(--green); }
+header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 14px; padding: 10px 18px; background: rgba(0, 0, 0, 0.92); border-bottom: 1px solid var(--line); }
+header img { height: 46px; }
+header h1 { margin: 0; font: 600 24px/1.1 "Oswald", sans-serif; letter-spacing: 0.02em; }
+header .side { margin-left: auto; display: flex; gap: 10px; }
+.pill { display: inline-block; padding: 7px 14px; border: 1px solid var(--green); border-radius: 999px; color: var(--green); font-weight: 700; font-size: 14px; text-decoration: none; white-space: nowrap; }
+.pill.solid { background: var(--green); color: #07130b; }
+main { max-width: 980px; margin: 0 auto; padding: 24px 18px 60px; }
+.lead { font-size: 20px; color: var(--muted); }
+nav.toc { margin: 18px 0 30px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+nav.toc h2 { margin: 0 0 8px; font: 600 16px "Oswald", sans-serif; color: var(--gold); letter-spacing: 0.06em; text-transform: uppercase; }
+nav.toc ol { margin: 0; padding-left: 22px; columns: 2; column-gap: 32px; }
+nav.toc li { margin: 3px 0; break-inside: avoid; }
+nav.toc a { text-decoration: none; }
+section { margin: 0 0 38px; padding: 22px 24px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); }
+section h2 { display: flex; align-items: baseline; gap: 12px; margin: 0 0 6px; font: 600 26px/1.2 "Oswald", sans-serif; }
+section h2 span { color: var(--green); font-size: 18px; }
+section h3 { margin: 18px 0 4px; color: var(--gold); font-size: 18px; }
+section p { margin: 6px 0; }
+.say { margin: 4px 0 12px; color: var(--gold); font-style: italic; }
+figure { margin: 14px 0 6px; }
+figure img { display: block; width: 100%; border: 1px solid #22303d; border-radius: 12px; }
+figcaption { margin-top: 6px; color: var(--muted); font-size: 14px; }
+ul.steps { margin: 6px 0; padding-left: 22px; }
+ul.steps li { margin: 4px 0; }
+.icons { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 10px 0; }
+.icons div { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #0f1620; }
+.icons b { display: block; color: var(--green); }
+.ring { color: #ffd400; font-weight: 700; }
+footer { max-width: 980px; margin: 0 auto; padding: 0 18px 40px; color: var(--muted); font-size: 14px; }
+@media (max-width: 700px) { nav.toc ol { columns: 1; } header .side .pill:not(.solid) { display: none; } section { padding: 16px; } }
+@media print {
+  @page { margin: 12mm; }
+  :root { --bg: #ffffff; --card: #f6f8fa; --line: #dde3ea; --green: #0a8f3c; --gold: #9a6b00; --text: #14181d; --muted: #4c5b6b; }
+  header { position: static; border-radius: 12px; background: #000; color: #fff; }
+  header .side, nav.toc { display: none; }
+  body { font-size: 13px; }
+  main { padding: 12px 0; }
+  .icons div { background: #fff; }
+  .ring { color: #b38f00; }
+  footer { padding: 0; }
+  section { break-inside: avoid-page; page-break-inside: avoid; margin-bottom: 14px; }
+  section.tall { break-inside: auto; page-break-inside: auto; }
+  figure { break-inside: avoid; }
+  figure img { max-height: 118mm; width: auto; max-width: 100%; margin: 0 auto; }
+}
+</style>
+</head>
+<body>
+<header>
+  <a href="/"><img src="/logo.png?v=5" alt="Parlay of the Day"></a>
+  <h1>How to use Parlay of the Day</h1>
+  <div class="side"><a class="pill" href="/guide/parlay-of-the-day-guide.pdf" download>Download the PDF</a><a class="pill solid" href="/">Back to the desk</a></div>
+</header>
+<main>
+<p class="lead">Parlay the Parrot runs this desk. This page shows every button worth knowing, where it is, and what you get when you tap it. Anything circled in <span class="ring">yellow</span> in a picture is the thing to tap.</p>
+
+<nav class="toc"><h2>What's in here</h2><ol>
+  <li><a href="#parrot">The parrot in the corner</a></li>
+  <li><a href="#profile">Your profile</a></li>
+  <li><a href="#qr">Share the site with a QR code</a></li>
+  <li><a href="#games">Find the games: today and this week</a></li>
+  <li><a href="#recs">Show or hide Recommended bets</a></li>
+  <li><a href="#rec-icons">The parrot icons on players</a></li>
+  <li><a href="#plus">The + button on players</a></li>
+  <li><a href="#the-bet">Change a leg in THE BET</a></li>
+  <li><a href="#tools">The leg buttons: trends, swaps, move, search</a></li>
+  <li><a href="#paste">Paste a friend's bet from a screenshot</a></li>
+  <li><a href="#share">Send a bet to a friend</a></li>
+  <li><a href="#history">Look back at how your bets did</a></li>
+</ol></nav>
+
+<section id="parrot">
+  <h2><span>1</span> The parrot in the corner</h2>
+  <p class="say">"Tap me. I'll show you something you haven't tried yet."</p>
+  <p>The parrot sits in the top right corner. Leave the page alone for a bit and a speech bubble pops out next to him with a tip you have not used yet. Tap the bubble and he takes you there, or lights up the button he is talking about.</p>
+  <p>Once you use something, he stops bringing it up. When you have tried everything, he goes quiet.</p>
+  <figure><img src="/guide/01-parrot.jpg" alt="The parrot in the top right with a speech bubble, and the profile button in the bottom right"><figcaption>Top right: the parrot and his tip. Bottom right: your profile button.</figcaption></figure>
+  <p>On a phone, tap the bubble once to read the whole tip, then tap it again to go.</p>
+</section>
+
+<section id="profile">
+  <h2><span>2</span> Your profile</h2>
+  <p class="say">"Tap the little person in the corner. Your record and your settings live in your profile."</p>
+  <p>The person button sits in the bottom right corner, next to your name. Tap it to open your profile. Tap it again to go back to the desk.</p>
+  <ul class="steps">
+    <li><b>Your name</b>: what the parrot calls you.</li>
+    <li><b>Your state</b>: the desk only shows bets you can place where you live.</li>
+    <li><b>Your sportsbook</b>: the book you bet with.</li>
+    <li><b>Your teams</b>: so Recommended on the home screen can show only your teams' games.</li>
+    <li><b>Your friends</b>: the people you can send bets to.</li>
+  </ul>
+  <figure><img src="/guide/03-profile.jpg" alt="The profile page with name, state and map"><figcaption>Your profile. The person button stays in the corner on every screen.</figcaption></figure>
+</section>
+
+<section id="qr">
+  <h2><span>3</span> Share the site with a QR code</h2>
+  <p class="say">"Double-tap me and I'll put a QR code on the TV. Your friends scan it and they're in."</p>
+  <p>Double-tap the parrot in the top right corner. A QR code fills the TV. Anyone in the room points their phone camera at it and lands on parlayoftheday.com. Tap anywhere to close it.</p>
+  <figure><img src="/guide/02-qr.jpg" alt="The QR code on the TV"><figcaption>Double-tap the parrot and the QR code shows up on the TV.</figcaption></figure>
+</section>
+
+<section id="games" class="tall">
+  <h2><span>4</span> Find the games: today and this week</h2>
+  <p class="say">"Every game today and this week is on The Games. Tap here and I'll take you."</p>
+  <p>On Build a bet, tap <b>The Games</b> in the top right. You can also tap <b>The Games</b> on the parrot's first screen.</p>
+  <figure><img src="/guide/05-games.jpg" alt="The Games button on Build a bet"><figcaption>The Games button, top right of Build a bet.</figcaption></figure>
+  <p>The Games has three tabs on the right:</p>
+  <ul class="steps">
+    <li><b>Past</b>: games that are over, with how the recommended bets did.</li>
+    <li><b>Today</b>: every game today, with scores live while they play.</li>
+    <li><b>This week</b>: everything coming up this week.</li>
+  </ul>
+  <p>The league buttons on the left (All, NBA, NFL, NHL) narrow it down. Tap <b>Build a bet</b> on any game to start a bet on it.</p>
+  <figure><img src="/guide/16-the-games.jpg" alt="The Games page with Today and This week tabs"><figcaption>Today and This week sit on the right. The Recommended bets switch sits at the top.</figcaption></figure>
+</section>
+
+<section id="recs">
+  <h2><span>5</span> Show or hide Recommended bets</h2>
+  <p class="say">"On The Games, flip on Recommended bets and my picks show up on every game."</p>
+  <p>At the top of The Games, check <b>Recommended bets</b>. Every game the parrot likes gets a green <b>Recommended</b> tag and a row of his picks under it. Tap a pick to open it in Build a bet. Uncheck it to hide them and just watch the scores.</p>
+  <p>The scoreboard next to it keeps his record: how his picks are doing live, today, and all time.</p>
+  <p>See the picture in section 4: the checkbox is circled at the top.</p>
+</section>
+
+<section id="rec-icons">
+  <h2><span>6</span> The parrot icons on players</h2>
+  <p class="say">"See my face next to a player? Tap it and I'll tell you why I like him."</p>
+  <p>Open any game in Build a bet. Under <b>Player bets</b>, the players the parrot recommends have a little parrot face next to their name. Tap it to jump to his pick for that player, with the reason, the price, and what the record has to clear.</p>
+  <figure><img src="/guide/14-players.jpg" alt="Player bets with a parrot icon and a plus button circled"><figcaption>The parrot icon next to Rachaad White, and the + next to Antonio Williams.</figcaption></figure>
+  <figure><img src="/guide/15-rec.jpg" alt="The recommendation for Rachaad White"><figcaption>What you get: the pick, the reason, and a ready-made parlay you can build with one tap.</figcaption></figure>
+</section>
+
+<section id="plus">
+  <h2><span>7</span> The + button on players</h2>
+  <p class="say">"Tap the + on a player to throw him in your bet now. Pick his prop later."</p>
+  <p>Every player in a game has a <b>+</b> next to his name. Tap it and he goes into THE BET right away, before you pick a prop. The + turns into a check mark. Tap it again to take him out.</p>
+  <p>When you are ready, tap his name in THE BET to choose the prop (see section 8).</p>
+</section>
+
+<section id="the-bet" class="tall">
+  <h2><span>8</span> Change a leg in THE BET</h2>
+  <p>THE BET is the bet you are building. Every leg in it can be changed right where it is.</p>
+  <h3>Tap the name to change the prop</h3>
+  <p class="say">"Tap a player's name in your bet to swap him to another prop."</p>
+  <p>Tap a player's name and every prop he has comes up: yards, receptions, touchdowns, and more. Tap one to swap it in.</p>
+  <h3>Tap the prop to change the number</h3>
+  <p class="say">"Tap the prop in your bet to move the number up or down."</p>
+  <p>Tap the prop (the gold words) and the other lines come up with their prices and chances. A lower number hits more often and pays less. A higher number pays more.</p>
+  <figure><img src="/guide/07-bet.jpg" alt="THE BET with a player name and a prop circled"><figcaption>Tap the name to change the prop. Tap the prop to change the number.</figcaption></figure>
+  <figure><img src="/guide/09-prop.jpg" alt="The other lines for a prop"><figcaption>Tapping "1+ Passing Touchdowns" shows 2+, 3+ and 4+ with their prices.</figcaption></figure>
+</section>
+
+<section id="tools" class="tall">
+  <h2><span>9</span> The leg buttons: trends, swaps, move, search</h2>
+  <p>Every player leg has a row of small buttons on the right. On a phone, tap <b>⋯</b> to see them.</p>
+  <figure><img src="/guide/08-tools.jpg" alt="The four leg buttons circled"><figcaption>From left: search, trends, add to another bet, swap. The trash can removes the leg.</figcaption></figure>
+  <div class="icons">
+    <div><b>Magnifier: search</b>Pulls up everything on that player: every prop, every game.</div>
+    <div><b>Chart: trends</b>How often he has cleared this exact bet in his recent games, this season, and his career.</div>
+    <div><b>List: add to another bet</b>Puts this leg into another of your saved bets too.</div>
+    <div><b>Arrows: swap</b>Other bets at about the same price, if you want a different player.</div>
+  </div>
+  <h3>Trends</h3>
+  <p class="say">"Tap the chart on a leg to see how he's done in his recent games."</p>
+  <figure><img src="/guide/10-trends.jpg" alt="Trends for MarShawn Lloyd"><figcaption>Lloyd cleared 5+ rushing yards in 3 of his last 3 and 7 of 7 this season.</figcaption></figure>
+  <h3>Swap</h3>
+  <p class="say">"Tap the arrows on a leg and I'll find other bets at the same price."</p>
+  <figure><img src="/guide/11-swap.jpg" alt="Other bets at the same price"><figcaption>Tap + on any of them to put it in your bet.</figcaption></figure>
+  <h3>Add to another bet</h3>
+  <p class="say">"Tap the list button on a leg to put it in another saved bet too."</p>
+  <figure><img src="/guide/12-move.jpg" alt="Add this leg to another saved bet"><figcaption>Pick the saved bet you want it in.</figcaption></figure>
+  <h3>Search</h3>
+  <p class="say">"Tap the magnifier on a leg to pull up everything on that player."</p>
+</section>
+
+<section id="paste">
+  <h2><span>10</span> Paste a friend's bet from a screenshot</h2>
+  <p class="say">"Friend sent you a screenshot of a bet? Tap here, paste it, and I'll build it for you."</p>
+  <ul class="steps">
+    <li>Copy the screenshot (from a text, a group chat, or your betting app).</li>
+    <li>On Build a bet, tap <b>Paste a bet</b> at the top right.</li>
+    <li>Paste it (⌘V on a Mac, Ctrl+V on Windows), or tap <b>Choose a file</b>.</li>
+  </ul>
+  <p>The parrot reads the legs and builds the bet in THE BET, ready to change, check, or share.</p>
+  <figure><img src="/guide/04-paste.jpg" alt="Paste a bet button on Build a bet"><figcaption>Paste a bet sits next to The Games.</figcaption></figure>
+</section>
+
+<section id="share">
+  <h2><span>11</span> Send a bet to a friend</h2>
+  <p class="say">"Tap the share arrow on your bet to send it straight to a friend."</p>
+  <ul class="steps">
+    <li>Tap the share arrow, the green box at the top right of THE BET.</li>
+    <li>Your bet turns into a card on the TV.</li>
+    <li>Tap <b>Send to a friend</b>, check the friends you want, add a note if you like, and tap <b>Send</b>.</li>
+    <li>Or tap <b>Copy</b> to paste the card into a text or a post.</li>
+  </ul>
+  <p>Your friends see it under <b>Shared</b> in Saved bets. To add friends, open your profile.</p>
+  <figure><img src="/guide/13-share.jpg" alt="The share card with Send to a friend circled"><figcaption>The card your friends get, with Send to a friend circled.</figcaption></figure>
+</section>
+
+<section id="history" class="tall">
+  <h2><span>12</span> Look back at how your bets did</h2>
+  <p class="say">"Want to know how your old bets went? Tap here and I'll show you what hit and what missed."</p>
+  <h3>Your bets</h3>
+  <p>On Build a bet, under Saved bets, tap <b>Finished</b>. Your settled bets are grouped by day and by game.</p>
+  <figure><img src="/guide/06-history.jpg" alt="Finished bets grouped by day"><figcaption>Finished bets, grouped by day, with wins and losses.</figcaption></figure>
+  <p>Open a game to see the whole story: what the parrot expected going in, what actually happened, the box score, and why each leg hit or missed.</p>
+  <figure><img src="/guide/06b-history-review.jpg" alt="A finished game with the script, what happened and the box score"><figcaption>The script going in, what happened, and the box score.</figcaption></figure>
+  <h3>The parrot's picks</h3>
+  <p>On The Games, tap <b>All time</b> in the scoreboard at the top. You get every game the parrot recommended. Each pick shows what the player had against what the bet needed, and a gold <b>1 short</b> tag marks the near misses. Open a game for the full review, and tap any pick for why it hit or missed.</p>
+  <figure><img src="/guide/17-all-time.jpg" alt="The parrot's recommended bets history on The Games"><figcaption>All time: every recommended bet, how close it came, and why.</figcaption></figure>
+</section>
+</main>
+<footer>
+  <p>21+. This desk does not send bets. Type a line into your own sportsbook account if you want it. Gambling problem? Call 1-800-GAMBLER.</p>
+</footer>
+</body>
+</html>

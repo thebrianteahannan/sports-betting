@@ -95,6 +95,8 @@ function legToName(row) {
 function legTo(key, id) {
   const bet = parlayLeg.get(key), list = saveList(), row = list.find((one) => one.id === id);
   if (!bet || !row) return;
+  const person = [...parlayPick.values()].find((one) => one.name && String(bet.label || "").startsWith(one.name));
+  if (person && !(row.picks || []).some((one) => one.key === person.key)) { const { bets, ...lite } = person; row.picks = [...(row.picks || []), lite]; }
   if (!row.legs.some((leg) => parlayKey(leg) === key)) { row.legs.push(bet); row.at = Date.now(); saveStore(list); }
   paintParlay();
   const chip = document.querySelector(`.find-saved-chip[data-id="${CSS.escape(id)}"]`);

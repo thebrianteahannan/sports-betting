@@ -316,9 +316,9 @@ function bootDesk() {
   if (menu) menu.addEventListener("click", (event) => {
     event.stopPropagation(); if (menu.classList.contains("bird-has") && event.clientX < menu.getBoundingClientRect().left && /GAMBLER|ruin people's lives/i.test(menu.dataset.say || "")) { openHelp(); return; }
     if (!document.getElementById("desk").classList.contains("tv-full") && !menu.classList.contains("bird-has") && window.siteQrShow) { siteQrShow(); return; } if (window.goFull) goFull(); if (menu.classList.contains("bird-has") && birdPending && window.birdTold && birdPending[0] === window.birdTold && window.sharedGo) { sharedGo(); return; }
-    if (menu.classList.contains("bird-has") && event.clientX < menu.getBoundingClientRect().left) { const touch = window.matchMedia("(hover: none), (pointer: coarse)").matches; if (birdPending && birdPending[0] === birdStack.text && (!touch || menu.classList.contains("say-open")) && typeof trayStackOpen === "function") { birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Recommended bets"); trayStackOpen(birdStack.pick); return; } if (touch) menu.classList.toggle("say-open"); return; }
+    if (menu.classList.contains("bird-has") && event.clientX < menu.getBoundingClientRect().left) { const touch = window.matchMedia("(hover: none), (pointer: coarse)").matches; if (birdPending && birdPending[0] === birdStack.text && (!touch || menu.classList.contains("say-open")) && typeof trayStackOpen === "function") { birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Recommended bets"); trayStackOpen(birdStack.pick); return; } if (birdPending && (!touch || menu.classList.contains("say-open")) && window.birdTipGo && birdTipGo(birdPending[0])) { birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Recommended bets"); return; } if (touch) menu.classList.toggle("say-open"); return; }
     if (document.querySelector('#desk-glass-in .rec-board[data-page="find"]') && !document.getElementById("desk").classList.contains("bird-on")) { if (window.findBlankOpen) findBlankOpen(); document.getElementById("desk-glass-in").scrollTo({ top: 0, behavior: "smooth" }); return; } if (document.querySelector("#desk-glass-in .rec-board") && !document.getElementById("desk").classList.contains("bird-on") && !document.getElementById("desk").classList.contains("solo") && window.askStart) { birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); askStart(""); return; }
-    if (birdPending) { const pending = birdPending; birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Recommended bets"); if (pending[0] === birdStack.text && typeof trayStackOpen === "function") trayStackOpen(birdStack.pick); else if (!(window.birdBragGo && birdBragGo(pending[0]))) birdSay(pending[0], pending[1]); return; } if (window.birdGreet) birdGreet();
+    if (birdPending) { const pending = birdPending; birdPending = null; menu.classList.remove("bird-has", "bird-brag", "say-open"); menu.removeAttribute("data-say"); menu.setAttribute("aria-label", "Recommended bets"); if (pending[0] === birdStack.text && typeof trayStackOpen === "function") trayStackOpen(birdStack.pick); else if (!(window.birdBragGo && birdBragGo(pending[0])) && !(window.birdTipGo && birdTipGo(pending[0]))) birdSay(pending[0], pending[1]); return; } if (window.birdGreet) birdGreet();
   });
   document.addEventListener("click", (event) => {
     if (menu && !event.target.closest("#desk-menu")) menu.classList.remove("say-open");
@@ -340,10 +340,7 @@ function bootDesk() {
   if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. How are we going to find your favorite bet for today?", [["menu", "Build A Bet", "find"]]); tvSkip = false; birdBump(); }); const mug = document.getElementById("desk-mug"); if (mug) mug.addEventListener("click", () => { if (window.goFull) goFull(); if (window.paintTerms) paintTerms(); });
 }
 const BIRD_WAIT = 18000;
-const BIRD_NUDGES = [
-  ...Array(6).fill(["", [], "stack"]),
-  ["Gambling can really ruin people's lives. Only bet money you can afford to lose. If you need help, call 1‑800‑GAMBLER.", []],
-];
+const BIRD_NUDGES = [["", [], "tip"]];
 function birdStack() {
   const names = typeof STACK_RANK === "undefined" ? [] : (window.STACK_BUILD || []).filter((name) => STACK_RANK[name]).sort((a, b) => STACK_RANK[a][0] - STACK_RANK[b][0]);
   if (!names.length) return ""; birdStack.pick = names[(birdStack.turn = (birdStack.turn ?? -1) + 1) % names.length];
@@ -391,7 +388,7 @@ function birdBump() {
     if (document.body.classList.contains("needs-member") || window.asking || window.birdTold) { if (window.birdTold) birdBump(); return; }
     const nudge = BIRD_NUDGES[birdNudge % BIRD_NUDGES.length];
     birdNudge += 1;
-    const text = nudge[2] === "stack" ? birdStack() : nudge[2] === "brag" && window.birdBrag ? birdBrag() : nudge[0];
+    const text = nudge[2] === "tip" ? (window.birdTip ? birdTip() : "") : nudge[2] === "stack" ? birdStack() : nudge[2] === "brag" && window.birdBrag ? birdBrag() : nudge[0];
     if (text && /ruin people's lives/i.test(text) && document.getElementById("desk").classList.contains("bird-on")) { birdSay(text, []); setTimeout(() => { const line = document.getElementById("bird-line"); if (line && /ruin people's lives/i.test(line.textContent || "") && !window.asking && window.birdGreet) birdGreet(); }, 8000); } else if (text) { birdPending = [text, nudge[1]]; const menu = document.getElementById("desk-menu"); if (menu) { menu.classList.add("bird-has"); menu.classList.remove("say-open"); menu.classList.toggle("bird-brag", nudge[2] === "brag"); menu.dataset.say = text; menu.setAttribute("aria-label", "Parlay has something to say"); } }
     birdBump();
   }, BIRD_WAIT);
