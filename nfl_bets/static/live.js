@@ -164,6 +164,7 @@ document.addEventListener("toggle", (event) => {
 });
 
 document.getElementById("live-all").addEventListener("change", liveLoad);
+fetch("/api/me", { credentials: "same-origin" }).then((res) => (res.ok ? res.json() : null)).then((me) => { const name = me && me.member && me.member.name; if (name) document.getElementById("live-profile").dataset.name = name; }).catch((error) => console.log("[live] could not load profile name", error));
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") liveLoad(); });
 liveLoad();
 setInterval(() => { if (document.visibilityState === "visible") liveLoad(); }, 20000);

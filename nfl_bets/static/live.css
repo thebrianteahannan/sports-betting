@@ -7,6 +7,7 @@ a { color: #3dff6e; }
 .live-bird span { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; background: #05080c; transform: scaleX(-1); }
 .live-bird img { position: absolute; top: 0; left: -66.07%; width: 214.29%; height: auto; max-width: none; }
 #live-profile { position: fixed; right: 0.7rem; bottom: 0.7rem; z-index: 20; width: 2.7rem; height: 2.7rem; display: grid; place-items: center; border: 1px solid rgba(61, 255, 110, 0.85); border-radius: 8px; background: rgba(4, 16, 12, 0.88); color: #3dff6e; box-shadow: 0 0 14px rgba(61, 255, 110, 0.35); }
+#live-profile[data-name]:not([data-name=""]):is(:hover, :focus-visible)::before { content: attr(data-name); position: absolute; right: calc(100% + 0.5rem); top: 50%; transform: translateY(-50%); padding: 0.35rem 0.7rem; border: 1px solid rgba(61, 255, 110, 0.85); border-radius: 8px; background: rgba(4, 16, 12, 0.95); box-shadow: 0 0 14px rgba(61, 255, 110, 0.35); color: #f4f7fb; font-size: 14px; font-weight: 700; white-space: nowrap; pointer-events: none; }
 #live-profile:hover, .live-bird:hover { box-shadow: 0 0 18px rgba(61, 255, 110, 0.6); }
 .live-top h1 { margin: 0; font-family: Oswald, sans-serif; font-size: 24px; font-weight: 600; letter-spacing: 0.02em; }
 .live-score { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; color: #f4f7fb; font-size: 13px; font-weight: 600; }
