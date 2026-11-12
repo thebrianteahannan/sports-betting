@@ -225,19 +225,21 @@ function savePaint() {
     const old = [...tray.parentElement.querySelectorAll(":scope > .find-saved")]; let box = old.shift(); old.forEach((node) => node.remove());
     if (!box) { box = document.createElement("div"); box.className = "find-saved"; } if (box.nextElementSibling !== tray) tray.before(box);
     box.replaceChildren();
-    box.hidden = !!window.saveGone;
+    box.hidden = false; box.classList.toggle("find-saved-gone", !!window.saveGone);
+    const back = document.createElement("button"); back.type = "button"; back.className = "find-saved-back"; back.textContent = `Saved bets (${list.length}) ▾`;
+    back.addEventListener("click", () => { window.saveGone = false; paintParlay(); }); box.append(back);
     if (window.saveShut === undefined) window.saveShut = localStorage.getItem("savedShut") === "1";
     box.classList.toggle("find-saved-shut", window.saveShut);
-    const head = document.createElement("p"); head.className = "find-say"; head.textContent = "Saved parlays";
+    const head = document.createElement("p"); head.className = "find-say"; head.textContent = "SAVED BETS";
     const fold = document.createElement("button"); fold.type = "button"; fold.className = "find-fold"; fold.textContent = window.saveShut ? `Show ${list.length} parlay${list.length === 1 ? "" : "s"} ▾` : "Hide ▴";
     fold.addEventListener("click", () => { window.saveShut = !window.saveShut; try { localStorage.setItem("savedShut", window.saveShut ? "1" : "0"); } catch (error) { console.log("[parlay-save] could not keep fold", error); } paintParlay(); });
     const shut = document.createElement("button"); shut.type = "button"; shut.className = "find-close"; shut.textContent = "×"; shut.title = "Close saved parlays"; shut.setAttribute("aria-label", shut.title);
-    shut.addEventListener("click", () => { window.saveGone = true; box.hidden = true; });
+    shut.addEventListener("click", () => { window.saveGone = true; box.classList.add("find-saved-gone"); });
     head.append(fold, shut); box.append(head);
     const stacks = document.createDocumentFragment(), groups = new Map();
     list.forEach((row) => {
       const chip = document.createElement("span");
-      chip.className = "find-saved-chip";
+      chip.className = "find-saved-chip"; chip.dataset.id = row.id;
       chip.classList.toggle("on", row.id === window.parlayOpenId);
       const go = document.createElement("button");
       go.type = "button";

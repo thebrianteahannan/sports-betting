@@ -35,6 +35,13 @@ function legHistPaint() {
       seek.dataset.who = who.textContent;
       button.before(seek);
     }
+    if (line && !button.parentElement.querySelector("button.find-leg-to")) {
+      const to = document.createElement("button");
+      to.type = "button"; to.className = "find-leg-to"; to.dataset.key = key;
+      to.title = "Add this leg to another saved parlay"; to.setAttribute("aria-label", to.title);
+      button.after(to);
+      queueMicrotask(() => { if (to.isConnected && button.isConnected) button.after(to); });
+    }
   });
 }
 
@@ -76,7 +83,45 @@ document.addEventListener("click", (event) => {
   legHistPaint();
 });
 
+function legToName(row) {
+  const games = typeof gameShortList === "function" ? gameShortList(row.legs) : "";
+  const who = (row.picks || []).map((lite) => String(lite.name || "").split(" ").pop()).filter(Boolean);
+  const said = who.length ? `${who.slice(0, 2).join(", ")}${row.legs.length > 2 ? ` +${row.legs.length - 2}` : ""}` : `${row.legs.length} ${row.legs.length === 1 ? "leg" : "legs"}`;
+  return [games, said, savePrice(row.legs)].filter(Boolean).join("  ");
+}
+
+function legTo(key, id) {
+  const bet = parlayLeg.get(key), list = saveList(), row = list.find((one) => one.id === id);
+  if (!bet || !row) return;
+  if (!row.legs.some((leg) => parlayKey(leg) === key)) { row.legs.push(bet); row.at = Date.now(); saveStore(list); }
+  paintParlay();
+  const chip = document.querySelector(`.find-saved-chip[data-id="${CSS.escape(id)}"]`);
+  if (chip) { chip.classList.add("find-flash"); setTimeout(() => chip.classList.remove("find-flash"), 2400); }
+}
+
+let legMenuKey = "";
+
+function legMenuPaint() {
+  document.querySelectorAll(".find-leg-menu").forEach((node) => node.remove());
+  const to = legMenuKey && [...document.querySelectorAll(".find-tray button.find-leg-to")].find((node) => node.dataset.key === legMenuKey);
+  if (!to) return;
+  const others = saveList().filter((row) => row.id !== window.parlayOpenId);
+  const menu = document.createElement("div"); menu.className = "find-leg-menu"; menu.dataset.key = legMenuKey;
+  menu.innerHTML = others.length ? `<b>Add this leg to</b>${others.map((row) => `<button type="button" data-id="${esc(row.id)}">${esc(legToName(row))}</button>`).join("")}` : `<p>No other saved parlays yet.</p>`;
+  to.closest(".find-chose").after(menu);
+}
+
+document.addEventListener("click", (event) => {
+  if (!event.target.closest) return;
+  const pick = event.target.closest(".find-leg-menu button[data-id]");
+  if (pick) { const key = legMenuKey; legMenuKey = ""; legTo(key, pick.dataset.id); legMenuPaint(); return; }
+  if (event.target.closest(".find-leg-menu")) return;
+  const to = event.target.closest(".find-tray button.find-leg-to");
+  legMenuKey = to && to.dataset.key !== legMenuKey ? to.dataset.key : "";
+  legMenuPaint();
+});
+
 if (typeof paintParlay === "function") {
   const paintParlayLegs = paintParlay;
-  paintParlay = function () { paintParlayLegs.apply(this, arguments); legHistPaint(); };
+  paintParlay = function () { paintParlayLegs.apply(this, arguments); legHistPaint(); if (legMenuKey) legMenuPaint(); };
 }
