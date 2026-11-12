@@ -177,7 +177,6 @@ window.askBack = () => {
 window.tvPage = (prev) => {
   if (prev.board === "find" && window.paintFind) paintFind();
   else if (prev.board === "ones" && window.birdMenu) birdMenu("bets");
-  else if (prev.board === "terms" && window.paintTerms) paintTerms();
   else if (prev.board === "stack" && window.paintStack) paintStack(); else if (prev.board === "how" && window.paintHow) paintHow();
   else if (prev.board === "bets" && window.birdMenu) birdMenu("bets");
 };

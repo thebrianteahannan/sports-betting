@@ -130,7 +130,7 @@ function liveHistLabel(pick) {
   return label;
 }
 
-function liveHistory(rows) {
+function liveHistory(rows, today) {
   const keep = rows || [];
   if (!keep.length) return "";
   const picks = keep.flatMap((row) => row.picks || []), won = picks.filter((pick) => pick.result === "won").length, lost = picks.filter((pick) => pick.result === "lost").length;
@@ -148,7 +148,9 @@ function liveHistory(rows) {
     return `<div class="live-hist"><h3><span>${liveEsc(day)}</span> ${liveEsc(row.match)}${review && review.final ? `<em>${liveEsc(review.final)}</em>` : ""}<b>${tally} of ${done}</b></h3>${told}<ul>${rows}</ul></div>`;
   }).join("");
   const near = picks.filter((pick) => pick.close).length;
-  return `<h2 id="live-history">Recommended bets, ${won} of ${won + lost} won</h2><p class="live-note">$5 on every one: ${net < 0 ? "-" : "+"}$${Math.abs(net).toFixed(2)}.${near ? ` ${near} of the ${lost} losses came up 1 or 2 short. A lower line on those would have hit.` : ""}</p>${games}`;
+  const body = `<p class="live-note">$5 on every one: ${net < 0 ? "-" : "+"}$${Math.abs(net).toFixed(2)}.${near ? ` ${near} of the ${lost} losses came up 1 or 2 short. A lower line on those would have hit.` : ""}</p>${games}`;
+  if (today) return `<details class="live-today-box" data-hk="today"${liveHistOpen.has("today") ? " open" : ""}><summary><h2>Today's recommended bets, ${won} of ${won + lost} won</h2><span class="live-today-hint">Tap to see the game recaps</span></summary>${body}</details>`;
+  return `<h2 id="live-history">Recommended bets, ${won} of ${won + lost} won</h2>${body}`;
 }
 
 const liveLeagues = new Set((() => { try { return JSON.parse(localStorage.getItem("liveLeagues") || "[]"); } catch (error) { return []; } })());
@@ -220,7 +222,7 @@ function livePaint(data, quiet) {
   const final = (day, list) => list.length ? `<h2>Final ${day}, ${list.length} ${list.length === 1 ? "game" : "games"}</h2>${list.map(liveGame).join("")}` : "";
   const hist = ((data.tally || {}).history || []), histIds = new Set(hist.map((row) => String(row.id)));
   const bar = liveLeagueBar(data, { past: past.filter((game) => !histIds.has(String(game.id))).length + hist.length, today: live.length + ended.length + ((data.week || []).length ? soon.length : (data.next || []).filter(keep).length), week: week.length });
-  box.innerHTML = liveSpan === "week" && week.length ? `${bar}${liveWeekList(week)}` : liveSpan === "past" ? `${bar}${(final("yesterday", past) + liveHistory(hist)) || `<p class="live-note">No past games to show.</p>`}` : `${bar}${live.length ? `<h2>Live now, ${live.length} ${live.length === 1 ? "game" : "games"}</h2>${live.map(liveGame).join("")}` : `<p class="live-note">No games are live right now.</p>`}${final("today", ended)}${next}`;
+  box.innerHTML = liveSpan === "week" && week.length ? `${bar}${liveWeekList(week)}` : liveSpan === "past" ? `${bar}${(final("yesterday", past) + liveHistory(hist)) || `<p class="live-note">No past games to show.</p>`}` : `${bar}${live.length ? `<h2>Live now, ${live.length} ${live.length === 1 ? "game" : "games"}</h2>${live.map(liveGame).join("")}` : `<p class="live-note">No games are live right now.</p>`}<div class="live-today-recap">${liveHistory(hist.filter((row) => liveDayKey(row.kickoff) === today), true)}</div>${final("today", ended)}${next}`;
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => { const left = liveSlide.get(node.dataset.slide); if (left) node.scrollLeft = left; });
   if (!first) {
     box.querySelectorAll("[data-k]").forEach((node) => { if (was.has(node.dataset.k) && was.get(node.dataset.k) !== node.textContent) node.classList.add("live-flash"); });

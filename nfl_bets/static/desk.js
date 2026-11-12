@@ -338,8 +338,7 @@ function bootDesk() {
   const go = document.getElementById("choice-go");
   if (go) go.addEventListener("click", tvPush);
   const home = document.getElementById("desk-home");
-  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. How are we going to find your favorite bet for today?", [["menu", "Build A Bet", "find"]]); tvSkip = false; birdBump(); }); const mug = document.getElementById("desk-mug"); if (mug) mug.addEventListener("click", () => { if (window.goFull) goFull(); if (window.paintTerms) paintTerms(); });
-}
+  if (home) home.addEventListener("click", () => { tvStack = []; tvPaint(); tvSkip = true; birdOn = true; birdHeld = true; if (window.birdGreet) birdGreet(); else birdSay("Hey. How are we going to find your favorite bet for today?", [["menu", "Build A Bet", "find"]]); tvSkip = false; birdBump(); });}
 const BIRD_WAIT = 18000;
 const BIRD_NUDGES = [["", [], "tip"]];
 function birdStack() {

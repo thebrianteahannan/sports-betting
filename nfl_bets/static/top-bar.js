@@ -1,7 +1,7 @@
 /** The words in the middle of the top bar: where the user is. */
 
 const WHERE_TABS = { today: "Today's parlay", week: "This week's parlays", build: "Build your own bet", how: "How we pick", help: "Gambling help", open: "Our bets", history: "Finished bets", profile: "Your membership", laws: "State rules" };
-const WHERE_PAGES = { stack: "Parlay strategies", ones: "One-pick strategies", how: "How's my bet", terms: "Betting terms" };
+const WHERE_PAGES = { stack: "Parlay strategies", ones: "One-pick strategies", how: "How's my bet" };
 
 function whereNick(team) {
   const name = String(team || "").split(",")[0].replace(/\s*\([^)]*\)/g, "").trim();

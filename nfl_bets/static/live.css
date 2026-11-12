@@ -106,6 +106,11 @@ a.live-mine-leg:hover { border-color: #e7c15a; background: rgba(231, 193, 90, 0.
 .live-table tr.mine .live-name { color: #e7c15a; }
 .live-mine.live-rec { display: none; }
 body.live-recs-on .live-mine.live-rec { display: flex; }
+body:not(.live-recs-on) .live-today-recap { display: none; }
+.live-today-box > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; } .live-today-box > summary::-webkit-details-marker { display: none; }
+.live-today-box > summary::before { content: "▸"; color: #e7c15a; font-size: 14px; } .live-today-box[open] > summary::before { content: "▾"; }
+.live-today-box > summary h2 { margin-top: 0; margin-bottom: 0; }
+.live-today-hint { margin-left: auto; color: #9fb3c8; font-size: 13px; font-weight: 600; white-space: nowrap; } .live-today-box[open] .live-today-hint { display: none; } .live-today-box[open] > summary { margin-bottom: 6px; }
 .live-rec > b { color: #3dff6e; }
 .live-rec .live-mine-leg:not(.hit):not(.lost) { border-color: rgba(61, 255, 110, 0.45); background: rgba(61, 255, 110, 0.06); }
 .live-rec .live-mine-leg .who { color: #3dff6e; }
