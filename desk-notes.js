@@ -1,5 +1,24 @@
 function createNotes(readKey, writeKey) {
   const starter = [
+    "Skip the hour of homework.",
+    "Every game, done before you get here.",
+    "Tonight's prices. Not last week's.",
+    "I counted his last 10 games.",
+    "Who's out tonight? I already checked.",
+    "I checked who he plays tonight.",
+    "The odds math is done. You pick.",
+    "Best picks on top, every night.",
+    "Tell me the profit. I build the bet.",
+    "Don't like a leg? Swap it.",
+    "Paste the group chat's bet. I'll *check* it.",
+    "Send your bet to a friend.",
+    "By morning, every pick is graded.",
+    "A chatbot *forgets*. I don't.",
+    "Your bets are still here tomorrow.",
+    "Ask a bot what it means. Ask me if it's worth $5.",
+    "Free. No monthly plan.",
+  ];
+  const previous = new Set([
     "I already picked tonight.",
     "Tomorrow I pick again.",
     "Five dollars. That's the night.",
@@ -18,8 +37,6 @@ function createNotes(readKey, writeKey) {
     "Tap my head. Ask me.",
     "You place it when you're ready.",
     "You get the fun part.",
-  ];
-  const previous = new Set([
     "Come back tomorrow. New games.",
     "Come back tomorrow. New slate.",
     "A $5 night stays a $5 night.",

@@ -182,7 +182,7 @@ function mount(name) {
   glass.classList.add("arrive");
 }
 
-let noteLines = ["I already picked tonight."];
+let noteLines = ["Skip the hour of homework."];
 let noteTick = 0;
 function noteHtml(text) {
   return String(text || "").replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch])).replace(/\*([^*]+)\*/g, "<b>$1</b>");
