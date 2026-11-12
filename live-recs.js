@@ -1,16 +1,41 @@
 /** Recommended bets from each game script, kept from before tip-off so the live tracker can show whether they hit. */
 
-const fs = require("fs");
-const path = require("path");
-
-const FILE = path.join(__dirname, "output", "live-recs.json");
+const KEY = "bets/live-recs/";
 const SKIP = /under|quarter|qtr|half|each|most|touchdown|1st|first|minutes|double|triple/i;
 let recs = {};
-try { recs = JSON.parse(fs.readFileSync(FILE, "utf8")); } catch (error) { recs = {}; }
-let warmAt = 0;
+let warmAt = 0, pullAt = 0, pulling = null;
 
-function save() {
-  try { fs.mkdirSync(path.dirname(FILE), { recursive: true }); fs.writeFileSync(FILE, JSON.stringify(recs)); } catch (error) { console.error("live recs save failed:", error); }
+async function kv(query, options = {}) {
+  const url = String(process.env.SUPABASE_URL || "").trim().replace(/\/$/, ""), key = String(process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+  if (!url || !key) throw new Error("Supabase is not configured on the host.");
+  const response = await fetch(`${url}/rest/v1/kv${query}`, { method: options.method || "GET", headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", Prefer: options.prefer || "return=representation" }, body: options.body ? JSON.stringify(options.body) : undefined, signal: AbortSignal.timeout(20000) });
+  if (!response.ok) throw new Error(`Supabase ${response.status}`);
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
+}
+
+function pull() {
+  if (Date.now() - pullAt < 60000) return pulling || Promise.resolve();
+  pullAt = Date.now();
+  pulling = kv(`?k=like.${encodeURIComponent(KEY)}*&select=k,v`).then((rows) => {
+    const fresh = {};
+    (rows || []).forEach((row) => { if (row && row.v && row.v.match) fresh[`${row.v.match}|${row.v.kickoff}`] = row.v; });
+    Object.keys(recs).forEach((key) => { if (!fresh[key] || recs[key].at > fresh[key].at) fresh[key] = recs[key]; });
+    recs = fresh;
+  }).catch((error) => { pullAt = 0; console.error("live recs load failed:", error); });
+  return pulling;
+}
+
+function save(key) {
+  kv("", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { k: KEY + key, v: recs[key] } }).catch((error) => console.error("live recs save failed:", error));
+}
+
+function prune() {
+  Object.keys(recs).forEach((key) => {
+    if (Date.now() - Date.parse(recs[key].kickoff || "") <= 36 * 3600000) return;
+    delete recs[key];
+    kv(`?k=eq.${encodeURIComponent(KEY + key)}`, { method: "DELETE", prefer: "return=minimal" }).catch((error) => console.error("live recs prune failed:", error));
+  });
 }
 
 function recRecord(match, kickoff, bets) {
@@ -24,14 +49,15 @@ function recRecord(match, kickoff, bets) {
   }).map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, who: pick.who }));
   if (!picks.length) return;
   recs[`${match}|${kickoff}`] = { match, kickoff, at: Date.now(), picks };
-  Object.keys(recs).forEach((key) => { if (Date.now() - Date.parse(recs[key].kickoff || "") > 36 * 3600000) delete recs[key]; });
-  save();
+  save(`${match}|${kickoff}`);
+  prune();
 }
 
 async function recWarm(board) {
   const now = Date.now();
   if (now - warmAt < 10 * 60000) return;
   warmAt = now;
+  await pull();
   const games = ((board && board.games) || []).filter((game) => /^(NBA|NFL|NHL)$/.test(game.sport) && Date.parse(game.kickoff) > now && Date.parse(game.kickoff) - now < 12 * 3600000);
   const todo = games.filter((game) => { const kept = recs[`${game.match}|${game.kickoff}`]; return !kept || now - kept.at > 30 * 60000; });
   if (!todo.length) return;
@@ -44,8 +70,11 @@ async function recWarm(board) {
   }
 }
 
-function recsList() {
-  return Object.values(recs).flatMap((row) => row.picks.map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, match: row.match, kickoff: row.kickoff })));
+async function recsList() {
+  await pull();
+  return Object.values(recs).flatMap((row) => (row.picks || []).map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, match: row.match, kickoff: row.kickoff })));
 }
+
+pull();
 
 module.exports = { recRecord, recWarm, recsList };
