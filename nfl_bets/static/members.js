@@ -155,6 +155,7 @@ async function bootMember() {
   }
   showMember(await response.json());
   if (window.startDesk) window.startDesk();
+  if (new URLSearchParams(location.search).get("go") === "profile") { history.replaceState(null, "", "/"); setTimeout(() => { const me = document.getElementById("member-profile"); if (me) me.click(); }, 600); }
 }
 
 window.fetch = async function memberAwareFetch(url, options) {

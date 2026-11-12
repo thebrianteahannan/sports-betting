@@ -84,7 +84,7 @@ function liveGame(game) {
 
 function liveNext(next) {
   if (!next.length) return "";
-  return `<h2>Up next</h2><ul class="live-next">${next.map((game) => `<li><span class="live-sport">${liveEsc(game.sport)}</span><b>${liveEsc(game.away.short)} @ ${liveEsc(game.home.short)}</b><i>${liveEsc(liveTime(game.when))}</i></li>`).join("")}</ul>`;
+  return `<h2>Up next</h2><ul class="live-next">${next.map((game) => `<li><span class="live-sport">${liveEsc(game.sport)}</span><b>${liveEsc(game.away.short)} @ ${liveEsc(game.home.short)}</b><i>${liveEsc(liveTime(game.when))}</i>${liveRoot(game, liveMine(game))}</li>`).join("")}</ul>`;
 }
 
 function livePaint(data) {
