@@ -155,13 +155,6 @@ function homeLeagueOn(games) {
 function homeLeagues(box, games) {
   const leagues = homeLeagueList(games), on = homeLeagueOn(games);
   if (leagues.length < 2) return [];
-  const pick = document.createElement("button");
-  pick.type = "button";
-  pick.className = `desk-games-league desk-games-pick${on || homeLeagueOpen ? " on" : ""}`;
-  pick.textContent = `${on || "All"} ${homeLeagueOpen ? "▴" : "▾"}`;
-  pick.setAttribute("aria-expanded", String(homeLeagueOpen));
-  pick.addEventListener("click", () => { homeLeagueOpen = !homeLeagueOpen; homeLeagueSave(box); });
-  if (!homeLeagueOpen) return [pick];
   const row = document.createElement("span");
   row.className = "desk-games-leagues";
   ["", ...leagues].forEach((league) => {
@@ -173,7 +166,7 @@ function homeLeagues(box, games) {
     chip.addEventListener("click", () => { homeLeague = league; box.scrollTop = 0; homeLeagueSave(box); });
     row.append(chip);
   });
-  return [pick, row];
+  return [row];
 }
 
 function homeRecRows(games) {
