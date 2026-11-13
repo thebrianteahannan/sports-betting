@@ -59,7 +59,7 @@ function stackSavedPaint() {
     const row = list.find((one) => one.id === go.parentElement.dataset.id);
     if (!row || go.querySelector(".find-saved-cash") || typeof legBoostDec !== "function" || typeof legHedgeCash !== "function") return;
     const stake = stackSavedStake(row) || 5, dec = (row.legs || []).reduce((product, bet) => product * legBoostDec(bet.odds), 1);
-    go.append(stackSavedNode("em", "find-saved-cash", `${legHedgeCash(stake)} → ${legHedgeCash(stake * dec)}`));
+    go.append(stackSavedNode("em", "find-saved-cash", `${legHedgeCash(stake)} → ${legHedgeCash(stake * dec)} (${legHedgeCash(stake * (dec - 1), true)})`));
   });
   document.querySelectorAll(".find-saved .find-saved-group").forEach((wrap) => {
     if (wrap.querySelector(":scope > .find-saved-more")) return;
