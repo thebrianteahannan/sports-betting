@@ -1,0 +1,21 @@
+.find-shared-tab .find-shared-side { align-items: center; }
+#desk-glass .find-shared-tab .find-shared-side button.find-friends-quiet { margin-left: auto; padding: 0.3rem 0.85rem; font-size: 13px; }
+.find-shared-tab > .find-friends-row { margin: 0 0 0.5rem; padding: 0.4rem 0.6rem; border: 1px solid rgba(231, 193, 90, 0.4); border-radius: 10px; }
+.find-shared-tab .find-shared-card { margin: 0 0 0.5rem; padding: 0; border: 1px solid rgba(255, 255, 255, 0.18); border-left: 4px solid #6b7c8f; border-radius: 12px; background: #041018; }
+.find-shared-tab .find-shared-card.fresh { border-left-color: #3dff6e; }
+.find-shared-tab .find-shared-card.open { border-color: rgba(61, 255, 110, 0.45); padding-bottom: 0.6rem; }
+.find-shared-tab .find-shared-card.find-flash { animation: find-flash 1.8s ease-in-out 0.35s; }
+.find-shared-tab .find-saved-chip { display: flex; align-items: stretch; }
+.rec-board .find-shared-tab .find-saved-chip > button, #desk.tv-full #desk-glass .rec-board .find-shared-tab .find-saved-chip > button { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.55rem; flex: 1 1 auto; width: auto; min-height: 0; margin: 0; padding: 0.55rem 0.75rem; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: #f4f7fb; font-size: 14px; font-weight: 600; text-align: left; text-transform: none; letter-spacing: normal; cursor: pointer; }
+.find-shared-tab .find-saved-chip > button i { color: #9fb3c8; font-style: normal; font-weight: 800; letter-spacing: 0.03em; }
+.find-shared-tab .find-saved-chip > button b { color: #3dff6e; }
+.find-shared-tab .find-saved-chip > button em { padding: 0.1rem 0.45rem; border-radius: 999px; background: rgba(255, 255, 255, 0.1); color: #9fb3c8; font-size: 11px; font-style: normal; font-weight: 800; }
+.find-shared-tab .find-saved-chip > button em.st-new { background: rgba(231, 193, 90, 0.18); color: #e7c15a; }
+.find-shared-tab .find-saved-chip > button em.st-saved { background: rgba(61, 255, 110, 0.16); color: #3dff6e; }
+.rec-board .find-shared-tab .find-saved-chip > button.find-saved-x, #desk.tv-full #desk-glass .rec-board .find-shared-tab .find-saved-chip > button.find-saved-x { flex: 0 0 auto; padding: 0.55rem 0.75rem; color: #9fb3c8; font-size: 18px; }
+.rec-board .find-shared-tab .find-saved-chip > button.find-saved-x:hover { color: #ff6b6b; }
+.find-shared-tab .find-shared-from { margin: 0 0.75rem 0.2rem; color: #9fb3c8; font-size: 12.5px; }
+.find-shared-tab .find-shared-note { margin: 0 0.75rem 0.35rem; }
+.find-shared-tab .find-shared-legs { margin: 0 0.75rem; padding: 0; border: 0; background: transparent; }
+.find-shared-tab .find-shared-when { margin: 0.15rem 0 0; color: #9fb3c8; font-size: 12px; }
+.find-shared-tab .find-shared-do { margin: 0.5rem 0.75rem 0; }

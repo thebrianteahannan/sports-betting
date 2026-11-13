@@ -46,7 +46,7 @@ function birdTell(text) {
 
 function sharedNotify() {
   const fresh = window.sharedItems.filter((item) => !item.seen), names = [...new Set(fresh.map((item) => item.fromName))];
-  const panel = document.querySelector(".find-saved .find-friends"), looking = Boolean(panel && panel.offsetParent);
+  const panel = document.querySelector(".find-start .find-shared-tab"), looking = Boolean(panel && panel.offsetParent);
   const text = !fresh.length || looking ? "" : fresh.length === 1 ? `${names[0]} sent you a bet. Want to see it?` : `${names.length === 1 ? names[0] : "Your friends"} sent you ${fresh.length} bets. Want to see them?`;
   if (text !== (window.birdTold || "")) birdTell(text);
 }
@@ -68,11 +68,9 @@ function sharedGo() {
     const board = document.querySelector("#desk-glass-in .find-board");
     if (!board && ++tries < 40) return;
     clearInterval(wait);
+    window.sharedOpen = false;
     if (typeof paintParlay === "function") paintParlay();
-    const panel = document.querySelector(".find-saved .find-friends");
-    if (panel) panel.scrollIntoView({ block: "start", behavior: "smooth" });
-    const chips = panel ? [...panel.querySelectorAll(".find-shared-chip[data-shared]")].filter((chip) => fresh.has(chip.dataset.shared)) : [];
-    chips.forEach((chip) => { chip.classList.remove("find-flash"); void chip.offsetWidth; chip.classList.add("find-flash"); setTimeout(() => chip.classList.remove("find-flash"), 2400); });
+    sharedTabGo(fresh);
   }, 150);
 }
 window.sharedGo = sharedGo;
@@ -286,16 +284,10 @@ function friendsPaint() {
     const go = document.createElement("button");
     go.type = "button";
     go.className = "find-saved-st find-saved-friends";
-    go.textContent = window.sharedOpen ? "Hide shared" : `Shared bets${fresh ? ` (${fresh} new)` : ""}`;
-    go.setAttribute("aria-expanded", String(window.sharedOpen));
-    go.addEventListener("click", () => {
-      window.sharedOpen = !window.sharedOpen;
-      if (window.sharedOpen) sharedSeen();
-      friendsPaint();
-    });
+    go.textContent = `Shared bets${fresh ? ` (${fresh} new)` : ""}`;
+    go.addEventListener("click", () => sharedGo());
     const after = box.querySelector(":scope > .find-saved-done") || box.querySelector(":scope > .find-saved-st");
     if (after) after.after(go); else box.append(go);
-    if (window.sharedOpen) box.append(friendsPanel());
   });
   profileShared();
 }

@@ -60,15 +60,14 @@ function startRecs(board) {
 }
 
 function startUndoGo() {
-  const { board, key, ids } = startUndo || {};
+  const { board, key, keys = [key], ids, prior } = startUndo || {};
   startUndo = null;
-  if (!board || !board.isConnected || parlayLeg.size !== 1 || !parlayLeg.has(key)) return false;
+  if (!board || !board.isConnected || parlayLeg.size !== keys.length || !keys.every((one) => parlayLeg.has(one))) return false;
   if (window.parlayOpenId && !ids.has(window.parlayOpenId)) saveStore(saveList().filter((row) => row.id !== window.parlayOpenId));
-  window.parlayOpenId = "";
+  window.parlayOpenId = ""; window.sharedViewing = "";
   parlayPick.clear(); parlayLeg.clear();
-  if (typeof trayRoster === "function") trayRoster();
-  paintParlay();
-  saveTips();
+  if (prior && saveList().some((row) => row.id === prior)) saveOpen(prior);
+  else { if (typeof trayRoster === "function") trayRoster(); paintParlay(); saveTips(); }
   const glass = document.getElementById("desk-glass-in");
   if (glass) glass.scrollTop = 0;
   return true;
@@ -106,15 +105,17 @@ function startPaint(again) {
   homeRecsLoad(); homeLogosLoad(); homeLeagueSync();
   const box = document.createElement("div"), tabs = document.createElement("span");
   box.className = "find-start"; tabs.className = "desk-games-tabs";
-  const { recs, games } = startRecs(board);
-  [["rec", "Recommended"], ["games", `Games ${games.filter((node) => node.classList.contains("desk-game")).length}`], ["stacks", "Strategies"]].forEach(([id, label]) => {
+  const { recs, games } = startRecs(board), shared = Boolean(window.saveWho && typeof sharedTabBody === "function");
+  if (startTab === "shared" && !shared) startTab = "rec";
+  [["rec", "Recommended"], ["games", `Games ${games.filter((node) => node.classList.contains("desk-game")).length}`], ["stacks", "Strategies"], ...(shared ? [["shared", sharedTabLabel()]] : [])].forEach(([id, label]) => {
     const tab = Object.assign(document.createElement("button"), { type: "button", className: `desk-games-tab${startTab === id ? " on" : ""}`, textContent: label });
     tab.setAttribute("aria-pressed", String(startTab === id));
     tab.addEventListener("click", () => { startTab = id; startPaint(1); });
     tabs.append(tab);
   });
   box.dataset.stacks = startStackKey();
-  box.append(tabs, ...(startTab === "rec" ? recs : startTab === "stacks" ? startStacks() : games));
+  if (typeof sharedTabKey === "function") box.dataset.shared = sharedTabKey();
+  box.append(tabs, ...(startTab === "rec" ? recs : startTab === "stacks" ? startStacks() : startTab === "shared" && shared ? [sharedTabBody(board)] : games));
   box.hidden = Boolean(input && input.value.trim());
   spot.after(box);
   if ((!homeRecs || homeRecs.loading) && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
@@ -138,7 +139,7 @@ if (typeof paintParlay === "function") {
     if (window.saveStacksOpen) { window.saveStacksOpen = false; startTab = "stacks"; document.querySelectorAll(".find-start").forEach((node) => node.remove()); }
     paintParlayStart.apply(this, arguments); startPlace();
     const box = document.querySelector("#desk-glass-in .find-start");
-    if (box && startTab === "stacks" && box.dataset.stacks !== startStackKey()) startPaint(1);
+    if (box && ((startTab === "stacks" && box.dataset.stacks !== startStackKey()) || (typeof sharedTabKey === "function" && box.dataset.shared !== sharedTabKey()))) startPaint(1);
   };
 }
 document.addEventListener("input", (event) => { if (event.target.closest && event.target.closest("label.find")) { startBack = startUndo = null; document.querySelectorAll(".find-start").forEach((node) => { node.hidden = Boolean(event.target.value.trim()); }); } });
