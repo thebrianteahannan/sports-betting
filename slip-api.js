@@ -110,7 +110,7 @@ function parseSlip(text) {
   const legs = (Array.isArray(body.legs) ? body.legs : []).filter((leg) => leg && (leg.player || leg.market)).slice(0, 16);
   if (!legs.length) {
     console.error("slip read:", String(text || "").replace(/\s+/g, " ").slice(0, 300));
-    throw new Error("I could not read a bet on that screenshot.");
+    throw new Error("I read that screenshot but found no legs on it.");
   }
   return { book: String(body.book || "").slice(0, 40), odds: String(body.odds || "").slice(0, 20), stake: dollars(body.stake), payout: dollars(body.payout), kind: String(body.kind || "").slice(0, 40), legs };
 }
@@ -257,13 +257,15 @@ async function readShot(image, mime, ask) {
     signal: AbortSignal.timeout(45000),
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ inlineData: { mimeType: mime, data: image } }, { text: prompt }] }],
-      generationConfig: { maxOutputTokens: 1200, temperature: 0 },
+      generationConfig: { maxOutputTokens: 8192, temperature: 0 },
     }),
   });
   const payload = await response.json().catch(() => ({}));
   const parts = ((((payload.candidates || [])[0] || {}).content || {}).parts || []);
   const text = parts.filter((part) => part && part.text && !part.thought).map((part) => part.text).join(" ");
+  const why = (reply, body) => `${reply.status} ${String((body.error && body.error.message) || ((body.candidates || [])[0] || {}).finishReason || (body.promptFeedback && body.promptFeedback.blockReason) || "no text").slice(0, 160)}`;
   if (!response.ok || !text) {
+    console.error("slip gemini read 1:", geminiModel(), why(response, payload));
     const again = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel()}:generateContent`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
@@ -272,7 +274,7 @@ async function readShot(image, mime, ask) {
     });
     const second = await again.json().catch(() => ({}));
     const more = ((((second.candidates || [])[0] || {}).content || {}).parts || []).filter((part) => part && part.text && !part.thought).map((part) => part.text).join(" ");
-    if (!again.ok || !more) throw new Error("I could not read a bet on that screenshot.");
+    if (!again.ok || !more) { console.error("slip gemini read 2:", geminiModel(), why(again, second)); throw new Error(`I could not read a bet on that screenshot. Gemini (${geminiModel()}) said: ${why(again, second)}.`); }
     return parseSlip(more);
   }
   return parseSlip(text);

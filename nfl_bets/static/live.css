@@ -14,6 +14,7 @@ a { color: #3dff6e; }
 .live-score i { color: #3dff6e; font-size: 12px; font-style: normal; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .live-score span { padding: 3px 10px; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 999px; background: rgba(61, 255, 110, 0.06); white-space: nowrap; }
 .live-score b { color: #9fb3c8; font-weight: 700; margin-right: 2px; }
+.live-score i em { font-style: normal; text-transform: none; }
 .live-leagues { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 6px; }
 .live-leagues button { padding: 5px 14px; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 999px; background: rgba(61, 255, 110, 0.06); color: #c4cde0; font: 700 13px Outfit, system-ui, sans-serif; letter-spacing: 0.04em; cursor: pointer; }
 .live-leagues button:hover { border-color: #3dff6e; color: #f4f7fb; }

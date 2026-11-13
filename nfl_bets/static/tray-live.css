@@ -16,3 +16,5 @@
 .find-tray .find-chose i.prop:has(+ i.tray-now) { flex: 0 1 auto !important; margin-right: 0 !important; }
 .find-tray .find-chose i.tray-now { align-self: center; margin: 0 0 0 0.45rem !important; }
 .find-tray .find-chose i.tray-now:not(:has(+ i.find-rec-pill, + i.find-proof)) { margin-right: auto !important; }
+.find-tray .find-chose :is(i.find-proof, i.find-rec-pill):has(+ i.tray-now) { margin-right: 0 !important; }
+.find-tray .find-chose :is(i.find-proof, i.find-rec-pill) + i.tray-now { margin-right: auto !important; }

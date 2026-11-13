@@ -187,11 +187,11 @@ async function shotRead(board, file) {
     if (wait.signal.aborted) return;
     const response = await fetch("/api/how", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image }), signal: wait.signal });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || "I could not read a bet on that screenshot.");
+    if (!response.ok) { console.log("[bet-shot] read failed", response.status, data); throw new Error(data.error || `I could not read a bet on that screenshot. The server answered ${response.status}.`); }
     const split = Array.isArray(data.bets) && data.bets.length > 1 && new Set(data.bets.map((bet) => ((bet.legs || [])[0] || {}).stake).filter(Boolean)).size > 1;
     const bets = split ? data.bets : [{ legs: data.legs || [] }];
     const legs = (bets[0].legs || []).filter((leg) => leg && (leg.player || leg.market)).slice(0, 8);
-    if (!legs.length) throw new Error("I could not read a bet on that screenshot.");
+    if (!legs.length) { console.log("[bet-shot] no legs in reply", data); throw new Error("I read that screenshot but found no player or team legs on it."); }
     wait.step(`Found ${legs.length} ${legs.length === 1 ? "leg" : "legs"}. Building your parlay`);
     await new Promise((done) => setTimeout(done, 350));
     if (wait.signal.aborted) return;
