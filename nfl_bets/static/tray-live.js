@@ -16,8 +16,7 @@ function trayLiveLoad() {
 function trayLivePaint() {
   if (typeof parlayLeg === "undefined") return;
   const games = trayLive.games, legs = [...parlayLeg.values()], found = new Map();
-  document.querySelectorAll(".find-tray .tray-now, .find-tray .tray-live, .find-tray .tray-sum").forEach((node) => node.remove());
-  if (!games.length) return;
+  document.querySelectorAll(".find-tray .tray-now, .find-tray .tray-live, .find-tray .tray-sum, .find-tray .tray-soon").forEach((node) => node.remove());
   document.querySelectorAll(".find-tray .find-chose").forEach((line) => {
     const hist = line.querySelector("button.find-leg-hist"), key = (hist && hist.dataset.key) || line.dataset.key, bet = key && parlayLeg.get(key), prop = line.querySelector("span i.prop");
     const game = bet && games.find((one) => liveMine(one, [bet]).length);
@@ -31,12 +30,20 @@ function trayLivePaint() {
     if (read.tip) tag.title = read.tip;
     prop.after(tag);
   });
-  if (!found.size) return;
-  const sum = legs.length > 1 && liveParlaySay(liveParlayCount(legs, games));
+  const sum = found.size && legs.length > 1 && liveParlaySay(liveParlayCount(legs, games));
   document.querySelectorAll(".find-tray .find-ticket > b").forEach((head) => {
     head.querySelectorAll("i.gm[data-game]").forEach((chip) => {
       const game = found.get(chip.dataset.game);
-      if (!game) return;
+      if (!game) {
+        const kick = legs.filter((bet) => gameShort(bet.match) === chip.dataset.game).map((bet) => bet.kickoff).filter((at) => Date.parse(at || "") > Date.now()).sort()[0];
+        if (!kick || typeof gameUntilPaint !== "function") return;
+        const soon = document.createElement("i");
+        soon.className = "tray-soon find-until";
+        soon.dataset.kick = kick;
+        gameUntilPaint(soon);
+        chip.after(soon);
+        return;
+      }
       const live = document.createElement("i");
       live.className = `tray-live${game.final ? " done" : ""}`;
       live.textContent = game.final ? "Final" : `Live · ${game.clock}`;
