@@ -117,6 +117,7 @@ function saveNow() {
   const entry = { id: window.parlayOpenId || `p${Date.now()}`, at: Date.now(), legs: [...parlayLeg.values()], picks: [...parlayPick.values()].map(({ bets, ...rest }) => rest) };
   const at = list.findIndex((row) => row.id === entry.id);
   if (at >= 0 && list[at].group) entry.group = list[at].group;
+  if (at >= 0 && list[at].stake) entry.stake = list[at].stake;
   if (at >= 0) list[at] = entry; else list.unshift(entry);
   saveStore(list);
   window.parlayOpenId = entry.id;

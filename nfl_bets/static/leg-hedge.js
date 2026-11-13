@@ -91,7 +91,7 @@ function legHedgeCard(title, lines, go) {
   if (go) {
     const button = document.createElement("button");
     button.type = "button"; button.className = "leg-steady-go"; button.textContent = go[0];
-    button.addEventListener("click", go[1]);
+    button.addEventListener("click", () => go[1](card));
     card.append(button);
   }
   return card;
@@ -108,10 +108,18 @@ function legHedgeTable(rows) {
   return table;
 }
 
-function legHedgeSave(bets, say, tags) {
+function legHedgeBrief(card) {
+  const lines = [...card.querySelectorAll(":scope > p")].map((p) => { const input = p.querySelector("input"); return input ? `${p.textContent}${input.value}` : p.textContent; }).filter(Boolean);
+  const rows = [...card.querySelectorAll(".leg-steady-table p")].map((p) => [p.querySelector("span").textContent, p.querySelector("b").textContent]);
+  return { kind: "hedge", title: card.querySelector(":scope > b").textContent, lines, rows };
+}
+
+function legHedgeSave(bets, say, tags, stack) {
   if (!bets.length) return;
+  const brief = stack && stack.card ? legHedgeBrief(stack.card) : null;
   if (parlayLeg.size) saveNow();
-  const home = window.parlayOpenId || "";
+  const home = window.parlayOpenId || "", held = saveList(), base = held.find((row) => row.id === home), group = stack && base ? { ...(base.group || { id: `g${Date.now()}`, name: stack.name }), briefs: [...((base.group && base.group.briefs) || []), ...(brief ? [brief] : [])] } : null;
+  if (group) { held.forEach((row) => { if (row === base || (row.group && row.group.id === group.id)) row.group = group; }); saveStore(held); }
   saveNew();
   bets.forEach((bet) => {
     const key = parlayKey(bet), person = legHedgeWho(bet);
@@ -120,9 +128,10 @@ function legHedgeSave(bets, say, tags) {
     if (typeof betFrom !== "undefined") betFrom.set(key, (tags && tags.get(key)) || say);
   });
   paintParlay();
-  saveNow();
+  const made = saveNow();
+  if (group && made) { const list = saveList(), row = list.find((one) => one.id === made.id); if (row) { row.group = group; if (stack.stake) row.stake = Math.round(stack.stake * 100) / 100; saveStore(list); } }
   if (home) saveOpen(home);
-  legHedge.said = { text: `Saved ${bets.length > 1 ? `a ${bets.length}-leg bet` : legHedgeName(bets[0])} as its own bet in My bets.`, at: Date.now() };
+  legHedge.said = { text: group ? `Saved ${legHedgeName(bets[0])} with this ticket as the ${group.name} stack in My bets.` : `Saved ${bets.length > 1 ? `a ${bets.length}-leg bet` : legHedgeName(bets[0])} as its own bet in My bets.`, at: Date.now() };
   legBoostPaint();
 }
 
@@ -141,7 +150,7 @@ function legHedgeLockCard(pick, dec) {
   input.addEventListener("input", fill);
   fill();
   at.className = "leg-steady-at"; at.append(`${legHedgeName(pick.other)} at `, input);
-  return legHedgeCard("Lock it in", [`${pick.hits} legs are in. Only ${legHedgeName(pick.last)} is left.`, at, full, half], ["Save the hedge as a bet", () => legHedgeSave([pick.other], "Stability")]);
+  return legHedgeCard("Lock it in", [`${pick.hits} legs are in. Only ${legHedgeName(pick.last)} is left.`, at, full, half], ["Save as a stack", (card) => legHedgeSave([pick.other], "Stability", null, { name: "Last-leg hedge", card, stake: legHedgeLock(dec, legHedge.price.get(key) || pick.other.odds).full })]);
 }
 
 function legHedgeScript(legs) {
@@ -172,12 +181,12 @@ function legHedgeCards(legs) {
   }
   legHedgeScript(legs).forEach((row) => {
     const h = legBoostDec(row.bet.odds), stake = LEG_HEDGE_STAKE / (h - 1);
-    rest.push(legHedgeCard("Hedge the game script", [`Your ${row.n} ${typeof gameShort === "function" ? gameShort(row.match) : row.match} legs need a ${row.want === "under" ? "high" : "low"}-scoring game. ${legHedgeName(row.bet)} (${legHedgeOdds(row.bet.odds)}) pays if it goes the other way. ${legHedgeCash(stake)} on it wins back the $5 ticket.`, legHedgeTable(legHedgeOutcomes(win, stake, h - 1, "Hedge"))], ["Save the hedge as a bet", () => legHedgeSave([row.bet], "Stability")]));
+    rest.push(legHedgeCard("Hedge the game script", [`Your ${row.n} ${typeof gameShort === "function" ? gameShort(row.match) : row.match} legs need a ${row.want === "under" ? "high" : "low"}-scoring game. ${legHedgeName(row.bet)} (${legHedgeOdds(row.bet.odds)}) pays if it goes the other way. ${legHedgeCash(stake)} on it wins back the $5 ticket.`, legHedgeTable(legHedgeOutcomes(win, stake, h - 1, "Hedge"))], ["Save as a stack", (card) => legHedgeSave([row.bet], "Stability", null, { name: "Game script hedge", card, stake })]));
   });
   const cover = legHedgeCover(legs);
   if (cover) {
     const h = legBoostDec(cover.bet.odds), stake = LEG_HEDGE_STAKE / (h - 1);
-    rest.push(legHedgeCard("Cover the stake", [`${cover.person.name} ${legSwapWhat(cover.person, cover.bet)} (${legHedgeOdds(cover.bet.odds)}) hit ${cover.hits} of ${cover.n}. ${legHedgeCash(stake)} on it wins $5, the cost of this ticket.`, legHedgeTable(legHedgeOutcomes(win, stake, h - 1, "Safe bet"))], ["Save the safe bet", () => legHedgeSave([cover.bet], "Stability")]));
+    rest.push(legHedgeCard("Cover the stake", [`${cover.person.name} ${legSwapWhat(cover.person, cover.bet)} (${legHedgeOdds(cover.bet.odds)}) hit ${cover.hits} of ${cover.n}. ${legHedgeCash(stake)} on it wins $5, the cost of this ticket.`, legHedgeTable(legHedgeOutcomes(win, stake, h - 1, "Safe bet"))], ["Save as a stack", (card) => legHedgeSave([cover.bet], "Stability", null, { name: "Cover the stake", card, stake })]));
   }
   return { lock: last ? legHedgeLockCard(last, now.dec) : null, rest };
 }

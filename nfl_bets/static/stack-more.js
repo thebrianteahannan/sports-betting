@@ -340,8 +340,8 @@ function stackBuild(stack, tries = 0, title = "") {
     found.forEach(({ bet, person }) => { parlayLeg.set(parlayKey(bet), bet); if (person && parlayPick.size < 8) parlayPick.set(person.key, person); });
   };
   if (stackApart(stack) && typeof saveStore === "function") {
-    const group = { id: `g${Date.now()}`, name: title || stackName(stack) };
-    const made = (stack.bets || []).slice(0, 6).map((leg, at) => { fill(legsOf(leg)); return { id: `p${Date.now()}${at}`, at: Date.now(), legs: [...parlayLeg.values()], picks: [...parlayPick.values()].map(({ bets, ...rest }) => rest), group, from: Object.fromEntries([...parlayLeg.keys()].map((key) => [key, "Strategies"])) }; });
+    const group = { id: `g${Date.now()}`, name: title || stackName(stack), briefs: [{ kind: "strategy", about: ((typeof STACKS !== "undefined" && STACKS.find((row) => String(title).endsWith(row[0]))) || [])[1] || "", read: stack.read || "", legs: (stack.bets || []).map(({ label, odds, kind, rung, job, hits, games }) => ({ label, odds, kind, rung, job, hits, games })) }] };
+    const made = (stack.bets || []).slice(0, 6).map((leg, at) => { fill(legsOf(leg)); return { id: `p${Date.now()}${at}`, at: Date.now(), legs: [...parlayLeg.values()], picks: [...parlayPick.values()].map(({ bets, ...rest }) => rest), group, stake: Number(leg.stake) || 5, from: Object.fromEntries([...parlayLeg.keys()].map((key) => [key, "Strategies"])) }; });
     fill([]);
     saveStore([...made, ...saveList()]);
     saveOpen(made[0].id);
