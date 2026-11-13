@@ -63,6 +63,15 @@ function goodProps(rows, log, read, loose, star) {
   return found.sort((a, b) => b.score - a.score);
 }
 
+function propRecords(rows, log) {
+  if (!log.length) return [];
+  return rows.map(({ prop, label, market }) => {
+    const keys = prop.keys || STATS[prop.stat];
+    if (!keys) return null;
+    return { label, market, hits: log.filter((game) => keys.reduce((sum, key) => sum + (Number(game[key]) || 0), 0) >= prop.need).length, n: log.length };
+  }).filter(Boolean);
+}
+
 function sign(odds) { return odds > 0 ? `+${odds}` : String(odds); }
 
 function howPick(pick) {
@@ -110,7 +119,7 @@ function betsFrom(game, boxes, fives, outs, props, star) {
   const both = away.pace >= base.pace + 1.5 && home.pace >= base.pace + 1.5;
   const byWho = new Map();
   props.forEach((row) => { const prop = readProp(row); if (!prop || !row.who) return; const key = fold(row.who); if (!byWho.has(key)) byWho.set(key, []); byWho.get(key).push({ prop, odds: Number(row.odds), label: row.label, market: row.market }); });
-  const picks = [];
+  const picks = [], records = [];
   [[away, home, fives.away, outs.away], [home, away, fives.home, outs.home]].forEach(([team, foe, five, gone]) => {
     const starters = new Set(five.map((one) => one.name));
     Object.entries(team.players).forEach(([name, row]) => {
@@ -120,12 +129,15 @@ function betsFrom(game, boxes, fives, outs, props, star) {
       const one = five.find((item) => item.name === name) || { name, group: /C/.test(row.pos || "") ? "C" : /G/.test(row.pos || "") ? "G" : "F" };
       one.starter = starters.has(name);
       const read = reasons(team, foe, base, one, gone, both);
+      records.push(...propRecords(rows, row.log || []));
       const tag = { who: name, team: last(team.name), pos: one.spot || row.pos || "" };
       const strict = goodProps(rows, row.log || [], read, false, star).map((prop) => ({ ...tag, ...prop }));
       const loose = goodProps(rows, row.log || [], read, true, star).map((prop) => ({ ...tag, ...prop }));      if (strict.length || loose.length) picks.push({ team: tag.team, strict, loose });
     });
   });
-  return ticketsFrom(picks, away, home);
+  const out = ticketsFrom(picks, away, home);
+  if (out) out.records = records;
+  return out;
 }
 
 function ticketsFrom(picks, away, home) {
@@ -157,4 +169,4 @@ function ticketsFrom(picks, away, home) {
   return { picks: top.map(({ chance, score, edge, avg, reach, ...rest }) => ({ ...rest, how: howPick({ ...rest, avg, reach }), need: pct(rest.need) })), groups };
 }
 
-module.exports = { scriptBets, readProp, goodProps, ticketsFrom };
+module.exports = { scriptBets, readProp, goodProps, ticketsFrom, propRecords };

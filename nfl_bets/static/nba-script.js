@@ -26,7 +26,14 @@ function scriptRecTag() {
   });
 }
 
-const scriptRecAll = new Map();
+const scriptRecAll = new Map(), legRecAll = new Map();
+
+function scriptRecLearn(bets) {
+  (bets.records || []).forEach((row) => legRecAll.set(`${row.label}|${row.market}`, { hits: row.hits, n: row.n }));
+  const picks = [bets, bets.stars].filter(Boolean).flatMap((set) => set.picks || []);
+  picks.forEach((pick) => scriptRecAll.set(`${pick.label}|${pick.market}`, { kind: pick.kind, basis: pick.basis, tier: pick.tier, drop: pick.drop, hits: pick.hits, n: pick.n }));
+  return picks;
+}
 const SCRIPT_KIND = { safe: ["Safe", "Picked to hit. Judged by how often it wins."], balanced: ["Balanced", "Near even money. Judged by wins and dollars both."], payout: ["Payout", "Picked for the price. Judged by the dollars it makes over many bets."] };
 const SCRIPT_BASIS = { math: ["Math", "His record beats the price."], script: ["Script", "The game script points to it."], both: ["Math + script", "His record beats the price and the game script points to it."] };
 
@@ -59,9 +66,8 @@ function scriptRecMark(match, bets) {
   if (!match) return;
   const fold = (text) => (typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase());
   if (bets) {
-    const picks = [bets, bets.stars].filter(Boolean).flatMap((set) => set.picks || []), size = scriptRecAll.size;
+    const size = scriptRecAll.size, picks = scriptRecLearn(bets);
     match.scriptRec = { names: new Set(picks.map((pick) => fold(pick.who))), bets: new Set(picks.map((pick) => `${pick.label}|${pick.market}`)) };
-    picks.forEach((pick) => scriptRecAll.set(`${pick.label}|${pick.market}`, { kind: pick.kind, basis: pick.basis, tier: pick.tier, drop: pick.drop }));
     if (scriptRecAll.size !== size && document.querySelector(".find-tray .find-tray-swap") && typeof legSwapPaint === "function") legSwapPaint();
   }
   const rec = match.scriptRec;

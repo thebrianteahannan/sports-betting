@@ -1,0 +1,21 @@
+.find-tray .find-chose i.leg-role { flex: none; align-self: center; margin: 0 0.35rem 0 0; padding: 0 0.42rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.62rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.5; text-transform: uppercase; white-space: nowrap; cursor: help; }
+.find-tray .find-chose i.leg-role.r-anchor { color: #3dff6e; }
+.find-tray .find-chose i.leg-role.r-juice { color: #ff9a2e; }
+.find-tray .find-chose i.leg-role.r-filler { color: #9aa6b2; }
+.find-tray .find-chose i.leg-role.r-dead { color: #ff6b6b; border-style: dashed; }
+.find-tray p.leg-role-say { margin: 0.15rem 0 0.45rem; color: #c9d4dd; font-size: 0.82rem; font-weight: 600; line-height: 1.35; }
+.find-tray .find-new { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.find-tray .find-new.on { display: block; }
+:is(.rec-board, #choice-result) .find-tray .find-new button.leg-boost-add { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.35rem 0.8rem !important; border: 1px dashed currentColor !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; font-size: 13px !important; font-weight: 700 !important; text-transform: none !important; letter-spacing: normal !important; cursor: pointer; }
+:is(.rec-board, #choice-result) .find-tray .find-new button.leg-boost-add.juice { color: #ff9a2e !important; }
+:is(.rec-board, #choice-result) .find-tray .find-new button.leg-boost-add.steady { color: #8fb4ff !important; }
+:is(.rec-board, #choice-result) .find-tray .find-new button.leg-boost-add.on { border-style: solid !important; background: rgba(255, 255, 255, 0.06) !important; }
+.find-tray .find-new .leg-boost-box { flex-basis: 100%; }
+.find-tray .leg-boost-box p.leg-boost-head { margin: 0.2rem 0 0.4rem; color: #c9d4dd; font-size: 0.82rem; line-height: 1.35; }
+.find-tray .leg-boost-box p.leg-boost-head b { color: #f4f7fb; margin-right: 0.3rem; }
+.find-tray .leg-boost-box button.leg-boost-go { flex-wrap: wrap; row-gap: 0.15rem; }
+.find-tray .leg-boost-box i.boost-move { color: #f4f7fb; font-style: normal; font-weight: 800; }
+.find-tray .leg-boost-box i.boost-rec { color: #9aa6b2; font-size: 0.8em; font-style: normal; }
+.find-tray .leg-boost-box i.boost-fx { flex-basis: 100%; color: #c9d4dd; font-size: 0.78rem; font-style: normal; }
+.find-tray .leg-boost-box i.leg-role { flex: none; padding: 0 0.42rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.62rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.5; text-transform: uppercase; }
+.find-tray .leg-boost-box i.leg-role.r-anchor { color: #3dff6e; } .find-tray .leg-boost-box i.leg-role.r-juice { color: #ff9a2e; } .find-tray .leg-boost-box i.leg-role.r-filler { color: #9aa6b2; } .find-tray .leg-boost-box i.leg-role.r-dead { color: #ff6b6b; }

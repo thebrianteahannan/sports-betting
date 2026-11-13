@@ -1,6 +1,6 @@
 /** Recommended NFL and NHL props and parlays: which posted overs each player's recent games clear, and what the other team allows. */
 
-const { goodProps, ticketsFrom } = require("./script-bets");
+const { goodProps, ticketsFrom, propRecords } = require("./script-bets");
 const { iceGroup, footGroup } = require("./sport-boxes");
 
 const STATS = {
@@ -70,20 +70,23 @@ function sportBets(sport, boxes, outs, props) {
     if (!byWho.has(key)) byWho.set(key, []);
     byWho.get(key).push({ prop, odds: Number(row.odds), label: row.label, market: row.market });
   });
-  const picks = [];
+  const picks = [], records = [];
   [[away, home, (outs && outs.away) || []], [home, away, (outs && outs.home) || []]].forEach(([team, foe, gone]) => {
     Object.entries(team.players || {}).forEach(([name, row]) => {
       if (row.games < MIN[sport] || gone.some((item) => fold(item.name) === fold(name) && /out|doubtful|injured/.test(item.status))) return;
       const rows = byWho.get(fold(name));
       if (!rows) return;
       const read = reasons(sport, foe, base, row);
+      records.push(...propRecords(rows, row.log || []));
       const tag = { who: name, team: last(team.name), pos: row.pos || "" };
       const strict = goodProps(rows, row.log || [], read, false).map((prop) => ({ ...tag, ...prop }));
       const loose = goodProps(rows, row.log || [], read, true).map((prop) => ({ ...tag, ...prop }));
       if (strict.length || loose.length) picks.push({ team: tag.team, strict, loose });
     });
   });
-  return ticketsFrom(picks, away, home);
+  const out = ticketsFrom(picks, away, home);
+  if (out) out.records = records;
+  return out;
 }
 
 module.exports = { sportBets };
