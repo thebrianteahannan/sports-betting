@@ -1,6 +1,7 @@
-.find-board .find-start { margin: 0 0 0.8rem; }
+.find-board .find-start { margin: 0 0 0.8rem; overflow-x: clip; overflow-clip-margin: 8px; }
 .find-board:has(.find-guide, .find-match) .find-start { display: none; }
-.find-board .find-start .desk-games-tabs { display: inline-flex; margin: 0 0 0.6rem; }
+.find-board .find-start .desk-games-tabs { display: flex; width: fit-content; margin: 0 0 0.6rem; position: sticky; top: 0.4rem; z-index: 6; background: #07090e; box-shadow: 0 0 0 8px #07090e; }
+.find-board .find-start .desk-games-tabs::after { content: ""; position: absolute; left: 100%; right: -100vw; top: -8px; bottom: -8px; background: #07090e; box-shadow: 0 10px 12px -4px rgba(7, 9, 14, 0.85); pointer-events: none; }
 :is(.rec-board, #choice-result) .find-start button.desk-games-tab { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.3rem 0.65rem !important; border: 0 !important; border-radius: 7px !important; background: transparent !important; box-shadow: none !important; color: #9fb3c8 !important; font-size: 14px !important; font-weight: 800 !important; letter-spacing: normal !important; text-transform: none !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-games-tab.on { background: #e7c15a !important; color: #07090e !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-game { display: grid !important; width: 100% !important; min-height: 0 !important; margin: 0 0 8px !important; padding: 10px 12px !important; border: 1px solid rgba(61, 255, 110, 0.35) !important; border-radius: 12px !important; background: #041018 !important; box-shadow: none !important; color: #f4f7fb !important; font: inherit !important; text-align: left !important; text-transform: none !important; letter-spacing: normal !important; }
