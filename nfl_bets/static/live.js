@@ -2,6 +2,7 @@
 
 try { sessionStorage.setItem("fromLive", "1"); } catch (error) {}
 const liveOpen = new Set((() => { try { return JSON.parse(localStorage.getItem("liveOpen") || "[]"); } catch (error) { return []; } })());
+const liveCard = Object.fromEntries(["court", "mine"].map((kind) => [kind, new Set((() => { try { return JSON.parse(localStorage.getItem(`liveCard-${kind}`) || "[]"); } catch (error) { return []; } })())]));
 const liveSlide = new Map();
 
 function liveEsc(text) {
@@ -33,7 +34,7 @@ function liveLegRead(leg) {
   const stat = ((plus && plus[2]) || (named && named[1]) || (label.match(/\b(?:Over|Under)\s+\d+(?:\.\d+)?\s+(.+)$/i) || [])[1] || "").toLowerCase();
   const text = plus ? `${plus[1]}+ ${stat}` : line ? `${line[1]} ${line[2]} ${stat}`.trim() : label.slice(who.length).trim() || market;
   const score = !plus && !line && (market.match(/any\s*time touchdown|to score (\d+)\+ touchdowns/i) || null), tagged = !plus && !line && !score && label.slice(who.length).match(/^\s*(\d+)\+\s/);
-  return { parlay: leg.parlay || "", label, market, match: leg.match || "", kickoff: leg.kickoff || "", who, stat: score ? "touchdowns" : stat, text, odds: Number(leg.odds), need: plus ? Number(plus[1]) : line ? Number(line[2]) : score ? Number(score[1] || 1) : tagged ? Number(tagged[1]) : null, plus: !!plus || !!score || !!tagged, under: !!(line && /under/i.test(line[1])) };
+  return { parlay: leg.parlay || "", size: leg.parlaySize || 0, label, market, match: leg.match || "", kickoff: leg.kickoff || "", who, stat: score ? "touchdowns" : stat, text, odds: Number(leg.odds), need: plus ? Number(plus[1]) : line ? Number(line[2]) : score ? Number(score[1] || 1) : tagged ? Number(tagged[1]) : null, plus: !!plus || !!score || !!tagged, under: !!(line && /under/i.test(line[1])) };
 }
 
 function liveMine(game, list = liveLegs) {
@@ -74,7 +75,7 @@ function liveNow(game, pick) {
 
 function liveRoot(game, picks, rec, show) {
   if (!picks.length) return "";
-  return `<span class="live-mine${rec ? " live-rec" : ""}${show ? " live-rec-show" : ""}"><b>${rec ? "Recommended" : "Rooting for"}</b>${picks.map((pick) => {
+  const one = (pick) => {
     const { now } = liveNow(game, pick), price = Number.isFinite(pick.odds) ? ` ${pick.odds > 0 ? `+${pick.odds}` : pick.odds}` : "";
     let state = "", say = "";
     if (now !== null && pick.need !== null) {
@@ -84,7 +85,11 @@ function liveRoot(game, picks, rec, show) {
     const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${say ? `<i class="now" data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}`;
     const href = `/?${new URLSearchParams({ game: pick.match, ...(pick.parlay ? { bet: pick.parlay } : {}), label: pick.label, market: pick.market, from: "live" })}`;
     return `<a class="live-mine-leg ${state}" href="${liveEsc(href)}" title="Open this bet in Build a bet">${inner}</a>`;
-  }).join("")}</span>`;
+  };
+  const groups = [];
+  picks.forEach((pick) => { const group = !rec && pick.parlay && groups.find((row) => row.id === pick.parlay); if (group) group.picks.push(pick); else groups.push({ id: pick.parlay, picks: [pick] }); });
+  const body = groups.map((group) => (group.picks.length > 1 ? `<span class="live-parlay"><em>${group.picks[0].size > 1 ? `${group.picks[0].size}-leg parlay` : "Parlay"}</em>${group.picks.map(one).join("")}</span>` : one(group.picks[0]))).join("");
+  return `<span class="live-mine${rec ? " live-rec" : ""}${show ? " live-rec-show" : ""}"><b>${rec ? "Recommended" : "Rooting for"}</b>${body}</span>`;
 }
 
 function liveHurt(game) {
@@ -117,8 +122,10 @@ function liveGame(game) {
     const many = team.groups.length > 1;
     return `<section class="live-team" style="border-left-color: ${liveEsc(side.color || "#3dff6e")}"><h3>${liveEsc(team.name)}</h3>${team.groups.map((group, at) => liveGroup(group, `${game.id}|${team.short}|${at}`, many, mine, recs, known)).join("")}</section>`;
   }).join("");
-  const body = teams || `<p class="live-note">ESPN has not posted player stats for this game yet.</p>`;
-  return `<details class="live-game${picks.length ? " has-mine" : ""}${game.final ? " live-final" : ""}" data-id="${liveEsc(game.id)}" data-sport="${liveEsc(game.sport)}" data-match="${liveEsc((liveMine(game, liveRecs)[0] || {}).match || `${game.away.name} @ ${game.home.name}`)}"${liveOpen.has(game.id) ? " open" : ""}><summary><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(game.away, away > home, `${game.id}|away`)}<span class="live-at-sign">@</span>${liveSide(game.home, home > away, `${game.id}|home`)}<span class="live-clock">${liveEsc(game.clock)}</span>${game.last ? `<span class="live-last" data-k="${liveEsc(`${game.id}|last`)}">${liveEsc(game.last)}</span>` : ""}${liveHurt(game)}${liveRoot(game, picks)}${liveRecRow(game, picks)}<button type="button" class="live-stats" aria-label="Players and stats"></button></summary>${body}</details>`;
+  const box = (kind, say) => `<label class="live-court"><input type="checkbox" data-card="${kind}"${liveCard[kind].has(game.id) ? " checked" : ""}/> ${say}</label>`;
+  const bar = teams && (known || picks.length) ? `<p class="live-card-bar">${known ? box("court", "In play") : ""}${picks.length ? box("mine", "Only players in my bets") : ""}</p>` : "";
+  const body = teams ? `${bar}${teams}` : `<p class="live-note">ESPN has not posted player stats for this game yet.</p>`;
+  return `<details class="live-game${picks.length ? " has-mine" : ""}${game.final ? " live-final" : ""}${known && liveCard.court.has(game.id) ? " live-court-only" : ""}${picks.length && liveCard.mine.has(game.id) ? " live-mine-only" : ""}" data-id="${liveEsc(game.id)}" data-sport="${liveEsc(game.sport)}" data-match="${liveEsc((liveMine(game, liveRecs)[0] || {}).match || `${game.away.name} @ ${game.home.name}`)}"${liveOpen.has(game.id) ? " open" : ""}><summary><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(game.away, away > home, `${game.id}|away`)}<span class="live-at-sign">@</span>${liveSide(game.home, home > away, `${game.id}|home`)}<span class="live-clock">${liveEsc(game.clock)}</span>${game.last ? `<span class="live-last" data-k="${liveEsc(`${game.id}|last`)}">${liveEsc(game.last)}</span>` : ""}${liveHurt(game)}${liveRoot(game, picks)}${liveRecRow(game, picks)}<button type="button" class="live-stats" aria-label="Players and stats"></button></summary>${body}</details>`;
 }
 
 function liveNext(next) {
@@ -253,7 +260,7 @@ async function liveLoad() {
   try {
     const [res, mine] = await Promise.all([fetch("/api/live?all=1", { credentials: "same-origin" }), fetch("/api/parlays", { credentials: "same-origin" }).then((reply) => (reply.ok ? reply.json() : null)).catch(() => null)]);
     if (res.status === 401) { document.getElementById("live").innerHTML = `<p class="live-note">Sign in on <a href="/">Parlay of the Day</a> to see live games.</p>`; return; }
-    if (mine) liveLegs = (mine.parlays || []).flatMap((row) => (row.legs || []).map((leg) => ({ ...leg, parlay: row.id })));
+    if (mine) liveLegs = (mine.parlays || []).flatMap((row) => (row.legs || []).map((leg) => ({ ...leg, parlay: row.id, parlaySize: (row.legs || []).length })));
     const data = await res.json();
     liveRecs = data.recs || [];
     livePaint(data);
@@ -271,7 +278,15 @@ document.addEventListener("toggle", (event) => {
   try { localStorage.setItem("liveOpen", JSON.stringify([...liveOpen].slice(-40))); } catch (error) { console.log("[live] could not keep open games", error); }
 }, true);
 
-[["live-court", "liveCourt", "live-court-only"], ["live-recs", "liveRecs", "live-recs-on"]].forEach(([id, store, cls]) => {
+document.getElementById("live").addEventListener("change", (event) => {
+  const kind = event.target.dataset && event.target.dataset.card, game = kind && event.target.closest(".live-game");
+  if (!game) return;
+  if (event.target.checked) liveCard[kind].add(game.dataset.id); else liveCard[kind].delete(game.dataset.id);
+  game.classList.toggle(kind === "court" ? "live-court-only" : "live-mine-only", event.target.checked);
+  try { localStorage.setItem(`liveCard-${kind}`, JSON.stringify([...liveCard[kind]].slice(-40))); } catch (error) { console.log("[live] could not keep the card filter", kind, error); }
+});
+
+[["live-recs", "liveRecs", "live-recs-on"]].forEach(([id, store, cls]) => {
   const box = document.getElementById(id);
   box.checked = localStorage.getItem(store) === "1";
   document.body.classList.toggle(cls, box.checked);

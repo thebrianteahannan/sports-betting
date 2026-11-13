@@ -38,7 +38,11 @@ a { color: #3dff6e; }
 .live-court input { accent-color: #3dff6e; width: 15px; height: 15px; margin: 0; cursor: pointer; }
 .live-court.live-court-next { margin-left: 0; }
 @media (max-width: 700px) { .live-top { flex-wrap: wrap; } }
-body.live-court-only .live-table tr[class]:not(.on):not(.mine):not(.all) { display: none; }
+.live-game.live-court-only .live-table tr[class]:not(.on):not(.mine):not(.all) { display: none; }
+.live-game.live-mine-only .live-table tr[class]:not(.mine) { display: none; }
+.live-game.live-mine-only .live-table:not(:has(tr.mine)), .live-game.live-mine-only .live-team:not(:has(tr.mine)) { display: none; }
+.live-card-bar { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 4px; }
+.live-card-bar .live-court { margin-left: 0; }
 .live-at { color: #9fb3c8; font-size: 13px; }
 #live { max-width: 1100px; margin: 0 auto; padding: 14px 16px 40px; }
 #live h2 { margin: 18px 0 10px; color: #e7c15a; font-size: 18px; font-weight: 800; }
@@ -90,6 +94,8 @@ body.live-court-only .live-table tr[class]:not(.on):not(.mine):not(.all) { displ
 .live-mine > b { color: #e7c15a; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .live-mine-leg { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border: 1px solid rgba(231, 193, 90, 0.55); border-radius: 999px; background: rgba(231, 193, 90, 0.1); font-size: 13px; }
 .live-mine-leg i { font-style: normal; }
+.live-parlay { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 5px 8px; border: 1px dashed rgba(231, 193, 90, 0.6); border-radius: 14px; }
+.live-parlay > em { color: #e7c15a; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 a.live-mine-leg { text-decoration: none; cursor: pointer; }
 a.live-mine-leg:hover { border-color: #e7c15a; background: rgba(231, 193, 90, 0.2); }
 .live-rec a.live-mine-leg:not(.hit):not(.lost):hover { border-color: #3dff6e; background: rgba(61, 255, 110, 0.16); }
