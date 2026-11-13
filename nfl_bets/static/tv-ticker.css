@@ -57,3 +57,10 @@
 .tv-tick-dots { display: flex; gap: 0.35rem; margin: 0; }
 .tv-tick-dots i { width: 0.5rem; height: 0.5rem; border: 1px solid #3dff6e; border-radius: 50%; }
 .tv-tick-dots i.on { background: #3dff6e; }
+.tv-lazy-filters { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.4rem 0.8rem; }
+.tv-lazy-filters:empty { display: none; }
+.tv-lazy-leagues { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0.35rem; }
+#desk-glass .tv-lazy-league, #desk.tv-full #desk-glass .tv-lazy-league { width: auto; min-width: 0; min-height: 0; margin: 0; padding: 0.25rem 0.75rem; border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 999px; background: transparent; box-shadow: none; color: #f4fff6; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
+#desk-glass .tv-lazy-league.on, #desk.tv-full #desk-glass .tv-lazy-league.on { border-color: #3dff6e; background: rgba(61, 255, 110, 0.16); color: #3dff6e; }
+.tv-lazy-fav { display: inline-flex; align-items: center; gap: 0.4rem; color: #f4fff6; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+#desk-glass .tv-lazy-fav input { width: auto; height: auto; min-height: 0; margin: 0; padding: 0; accent-color: #3dff6e; }

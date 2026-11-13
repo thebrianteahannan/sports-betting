@@ -62,7 +62,7 @@ async function recWarm(board) {
     await pull();
     const near = (game) => Date.parse(game.kickoff) - now < 12 * 3600000;
     const games = ((board && board.games) || []).filter((game) => /^(NBA|NFL|NHL)$/.test(game.sport) && Date.parse(game.kickoff) > now && Date.parse(game.kickoff) - now < 14 * 24 * 3600000);
-    const todo = games.filter((game) => { const kept = recs[`${game.match}|${game.kickoff}`]; return !kept || now - kept.at > (near(game) ? 30 * 60000 : 6 * 3600000); }).sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
+    const todo = games.filter((game) => { const kept = recs[`${game.match}|${game.kickoff}`]; return !kept || now - kept.at > (near(game) ? 30 * 60000 : 6 * 3600000); }).sort((a, b) => Boolean(recs[`${a.match}|${a.kickoff}`]) - Boolean(recs[`${b.match}|${b.kickoff}`]) || Date.parse(a.kickoff) - Date.parse(b.kickoff));
     if (!todo.length) return;
     const book = await require("./choose-api").chooseBet({ list: "lookup", when: "week" }, board);
     const people = ((book && book.people) || []).filter((person) => person.kind === "player");
