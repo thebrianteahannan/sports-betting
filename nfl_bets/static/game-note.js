@@ -1,4 +1,4 @@
-/** Game notes from the public page, for when the desk comes back empty. */
+/** Game notes from the public page, for when the site comes back empty. */
 
 (function () {
   const PATHS = {

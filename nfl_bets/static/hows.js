@@ -1,4 +1,4 @@
-/** How's My Bet. Paste a ticket and the desk names the strategy. */
+/** How's My Bet. Paste a ticket and the site names the strategy. */
 
 function paintHow() {
   window.asking = true;

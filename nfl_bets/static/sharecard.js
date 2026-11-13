@@ -384,7 +384,7 @@ function shareFit() {
 
 async function copyLink() {
   const note = document.getElementById("share-card-note"), button = document.getElementById("share-card-link"), serial = shareBet && shareBet.serial;
-  if (!serial) { if (note) note.textContent = "This bet is not on the desk, so there is no link for it."; return; }
+  if (!serial) { if (note) note.textContent = "This bet is not on the site, so there is no link for it."; return; }
   const url = `${location.origin}/?p=${encodeURIComponent(serial)}`;
   try { await navigator.clipboard.writeText(url); if (button) button.textContent = "Link copied"; if (note) note.textContent = "Link copied. It opens this bet on the site."; } catch (error) { if (note) note.textContent = url; }
 }

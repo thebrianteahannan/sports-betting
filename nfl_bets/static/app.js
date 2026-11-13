@@ -496,7 +496,7 @@ document.body.addEventListener("click", (event) => {
 });
 
 window.startDesk = () => load().catch((error) => {
-  $("lede").textContent = "The desk did not load.";
+  $("lede").textContent = "The site did not load.";
   $("banner").hidden = false;
   $("banner").textContent = String(error);
 });

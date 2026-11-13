@@ -2,13 +2,13 @@
 
 const STACK_MORE = {
   "Prop ladder": [
-    "Three overs on the same player and the same stat, at three lines. The desk puts $5 on the top and middle rungs and sizes the bottom rung so its profit pays for those two $5 tickets.",
+    "Three overs on the same player and the same stat, at three lines. The site puts $5 on the top and middle rungs and sizes the bottom rung so its profit pays for those two $5 tickets.",
     "Example, a rebounds ladder: Over 3.5 at -166 is $17 to win $10.24. Over 4.5 at +140 is $5 to win $7. Over 5.5 at +280 is $5 to win $14. That is $27 in play.",
     "3 or fewer: you lose $27. Exactly 4: the bottom pays the other two, and you are up $0.24. Exactly 5: up $12.24. 6 or more: up $31.24.",
     "The ladder pays when the top rung lands more often than its price says. +280 needs 26.3%. The \"N of last 10\" on each rung is that check. A player who reached 6 in 4 of his last 10 is clearing the top more often than the price.",
   ],
   "Overlapping under": [
-    "Two unders on the same number, one tight and one with room. The desk sizes the higher under so its profit covers the $5 on the lower one.",
+    "Two unders on the same number, one tight and one with room. The site sizes the higher under so its profit covers the $5 on the lower one.",
     "Example, a team total: Under 20.5 at -150 is $8 to win $5.33. Under 16.5 at +190 is $5 to win $9.50. That is $13 in play.",
     "16 or fewer: both cash, up $14.83. 17 to 20: the higher under pays for the lower one, up $0.33. 21 or more: you lose $13.",
     "This is a ladder turned upside down. The big payout comes from the tight under, so the bet is on a quiet night.",
@@ -17,19 +17,19 @@ const STACK_MORE = {
     "An over on a low line and an under on a higher line of the same total. A finish between the two numbers wins both tickets. Anywhere else, one wins and one loses.",
     "Example: Over 222.5 at -140 is $5 to win $3.57. Under 230.5 at -140 is $5 to win $3.57. That is $10 in play.",
     "223 to 230: both win, up $7.14. 222 or lower, or 231 or higher: one wins and one loses, down $1.43.",
-    "Break-even: the game has to land inside the gap about 1 time in 6, or 16.7%. A wider gap and shorter juice make that easier. The desk keeps gaps of 3 to 8 points and leaves out either side priced past -170.",
+    "Break-even: the game has to land inside the gap about 1 time in 6, or 16.7%. A wider gap and shorter juice make that easier. The site keeps gaps of 3 to 8 points and leaves out either side priced past -170.",
   ],
   "Live middle": [
     "You bet a number before the game. During the game the line moves, and you take the other side at the new number. The space between the two numbers is the middle.",
     "Example: Under 47.5 at -110 before kickoff, $5 to win $4.55. After a fast start, the live total is 54.5, and you take Over 54.5 at -110 for $5.",
     "48 to 54: both win, up $9.09. Anything else: one wins and one loses, down $0.45.",
-    "Break-even is under 5%, so a 7-point gap is a strong spot. The board this desk reads is pre-game, so the live side is a ticket you watch for and place yourself.",
+    "Break-even is under 5%, so a 7-point gap is a strong spot. The board this site reads is pre-game, so the live side is a ticket you watch for and place yourself.",
   ],
   "Key-number middle": [
     "An NFL middle built around 3 or 7. You take the favorite at -2.5 and the dog at +3.5 in the same game. If the favorite wins by exactly 3, both tickets cash.",
     "Example: favorite -2.5 at -125 is $5 to win $4. Dog +3.5 at -125 is $5 to win $4. That is $10 in play.",
     "A win by exactly 3: up $8. Any other result: down $1.",
-    "Break-even is 1 game in 9, or 11.1%. NFL games land on exactly 3 about 15% of the time, and on 7 about 9%. At -200 on each side the break-even jumps to 33%, which is why the desk leaves out either side past -220.",
+    "Break-even is 1 game in 9, or 11.1%. NFL games land on exactly 3 about 15% of the time, and on 7 about 9%. At -200 on each side the break-even jumps to 33%, which is why the site leaves out either side past -220.",
   ],
   "Teaser": [
     "One parlay where every leg moves 6 points your way. In exchange, the payout drops to about -120 for two legs, and both legs have to win.",
@@ -47,20 +47,20 @@ const STACK_MORE = {
     "+600 needs 14.3%, so each leg needs about 37.8%. You give up the margins of 3 and 7, the two most common NFL finishes, so it cashes only on blowouts.",
   ],
   "Buying the hook": [
-    "Paying extra juice to move a spread half a point across 3 or 7. The desk lists the posted number and the bought number side by side.",
+    "Paying extra juice to move a spread half a point across 3 or 7. The site lists the posted number and the bought number side by side.",
     "Example: favorite -3.5 at -110 is $5 to win $4.55. The same team at -2.5 at -135 is $5 to win $3.70.",
     "-110 needs 52.4%. -135 needs 57.4%. The half point is worth buying when the favorite wins by exactly 3 more than 5% of the time. Across 4, 5, 6, 8, or 9 the same half point lands too rarely to pay the juice.",
   ],
   "Dutching": [
     "Betting several players in the same \"who does it first\" market, sized so any of them scoring first pays about the same. You are betting on \"one of these guys.\"",
-    "The desk takes the most likely first touchdown scorers, adds them until their prices reach 100%, and splits about $15 across them. More goes on the likely scorers and $1 on each long shot. The stakes round to whole dollars, so the payouts drift apart.",
+    "The site takes the most likely first touchdown scorers, adds them until their prices reach 100%, and splits about $15 across them. More goes on the likely scorers and $1 on each long shot. The stakes round to whole dollars, so the payouts drift apart.",
     "Example, 13 first-touchdown scorers for $16: if the +360 favorite scores first, you are down $2.20. A +700 pays you back even. A +1000 leaves you down $5. A +3000 long shot puts you up $15. Anyone else, a defense, or no touchdown loses all $16.",
     "The set adding to 99% is FanDuel's price, with its edge built in. The whole first-touchdown market adds to about 115%, so the real chance one of the 13 scores first is about 86%. That set costs about $2 per $16 on average. A dutch pays only when the set is under 100% after the edge, which takes a second book's prices.",
   ],
   "Arbitrage": [
     "Two books disagree enough that you can bet both sides and win either way.",
     "Example: Book A has Team X at +110 (47.6%). Book B has Team Y at -105 (51.2%). Together that is 98.8%, under 100%. $5 on X at +110 returns $10.50. $5.38 on Y at -105 also returns $10.50. You stake $10.38 and get back $10.50 either way, up $0.12.",
-    "The profit is small, so the stakes have to be large to matter. Both tickets have to be accepted at those prices. If one book cuts the bet or moves the line first, the other ticket is a regular bet. This desk reads FanDuel only, so the second book's side is one you find yourself.",
+    "The profit is small, so the stakes have to be large to matter. Both tickets have to be accepted at those prices. If one book cuts the bet or moves the line first, the other ticket is a regular bet. This site reads FanDuel only, so the second book's side is one you find yourself.",
   ],
   "Low-hold shopping": [
     "The same bet at a better price somewhere else. It is the one strategy that improves every bet you already make.",
@@ -71,7 +71,7 @@ const STACK_MORE = {
     "Every pair of your picks becomes its own 2-leg parlay. One miss kills only the pairs that used that leg.",
     "Example with three legs at -110: each pair pays +264, so $5 wins $13.22. Three pairs is $15 in play.",
     "All three hit: up $39.67. Two hit: one pair cashes, up $3.22. One or none: you lose $15. The same three legs as one $15 parlay pay $89.37 and only when all three hit.",
-    "The desk takes the spread nearest -110 from each game. With 10 games that is 45 pairs and $225, so pick the three or four sides you like.",
+    "The site takes the spread nearest -110 from each game. With 10 games that is 45 pairs and $225, so pick the three or four sides you like.",
   ],
   "If-bet": [
     "The second ticket is placed only if the first one wins. You risk the first stake, not both.",
@@ -140,22 +140,22 @@ const STACK_MORE = {
     "A long losing run is a stack of units you win back one at a time.",
   ],
   "Correlated stack": [
-    "Two bets that rise and fall together, like a quarterback's passing yards and his receiver's yards. The desk lists each as a $5 single.",
+    "Two bets that rise and fall together, like a quarterback's passing yards and his receiver's yards. The site lists each as a $5 single.",
     "Example: QB Over 249.5 at -110 and WR Over 64.5 at -110. A big passing night cashes both, up $9.09. A bad one loses both, down $10. A split is down $0.45.",
     "The multiplied parlay price, +264, treats them as two unrelated games. FanDuel's same-game price is shorter because the book knows they move together. Two singles here are one opinion at double the stake.",
   ],
   "Side and the total": [
     "A side and a total that need the same game. A big favorite pulls away and the clock runs, so the under cashes with it. A close game stays live, so the dog and the over cash together.",
-    "The desk pairs favorites of 6.5 or more with the under, and dogs within 3 with the over, at $5 each.",
+    "The site pairs favorites of 6.5 or more with the under, and dogs within 3 with the over, at $5 each.",
     "Example at -110 each: the script plays out, up $9.09. A split, down $0.45. The wrong script, down $10. The \"N of last 10\" on each leg is how often that team and that total have landed lately.",
   ],
   "Player and the total": [
-    "A player's over with the game total. A receiver's yards need points, so his over pairs with the game over. The desk lists each as a $5 single.",
+    "A player's over with the game total. A receiver's yards need points, so his over pairs with the game over. The site lists each as a $5 single.",
     "Example at -110 each: a shootout cashes both, up $9.09. A split, down $0.45. A low-scoring game, down $10.",
     "A running back's rushing over often needs a lead and a running clock. That script pairs with the under, not the over.",
   ],
   "First touchdown and anytime": [
-    "Two tickets on the same player: anytime touchdown and first touchdown. The desk sizes the anytime ticket so its profit covers the $5 first-touchdown ticket.",
+    "Two tickets on the same player: anytime touchdown and first touchdown. The site sizes the anytime ticket so its profit covers the $5 first-touchdown ticket.",
     "Example: anytime at -130 is $7 to win $5.38. First touchdown at +500 is $5 to win $25. That is $12 in play.",
     "He scores first: up $30.38. He scores later: up $0.38. No touchdown: down $12.",
     "The first-touchdown price is where the payout is. The anytime ticket keeps a later score from being a loss.",
@@ -165,42 +165,42 @@ const STACK_MORE = {
     "Example: $10 at +126 pays back $22.60. Every leg has to clear. One short leg and the $10 is gone.",
     "+126 needs to cash 44.2% of the time. Three legs cleared 8 times in 10 land together about 51% of the time if they were unrelated. They rise together, which pushes that higher.",
     "A big passing day lifts the receiver too, so FanDuel's same-game price is shorter than the multiplied price on this card. Build it on FanDuel and take that number.",
-    "The desk builds it from tonight's FanDuel alt lines, priced -150 to -500. The over goes in when both teams' recent games cleared it 8 times in 10. The back's touchdown goes in when his recent scoring beats FanDuel's price.",
+    "The site builds it from tonight's FanDuel alt lines, priced -150 to -500. The over goes in when both teams' recent games cleared it 8 times in 10. The back's touchdown goes in when his recent scoring beats FanDuel's price.",
   ],
   "Yardage and the spread": [
     "One ticket from one game. A quarterback's passing yards, one of his receivers, a running back, and the quarterback's team on the spread. Each yardage line is one that player cleared in at least 8 of his last 10. The spread is the alt line his team covered in 8 of its last 10.",
     "Example: $10 at +200 pays back $30. Every leg has to clear. One short leg and the $10 is gone.",
     "+200 needs to cash 33.3% of the time.",
     "Passing yards also pile up when a team is behind. The spread needs his team ahead. Both legs need the same game, the one where the throws build the lead.",
-    "The desk builds it from tonight's FanDuel alt lines, priced -150 to -500. A game where his team has no alt spread it covered 8 times in 10 is left off. FanDuel's same-game price is the one to take.",
+    "The site builds it from tonight's FanDuel alt lines, priced -150 to -500. A game where his team has no alt spread it covered 8 times in 10 is left off. FanDuel's same-game price is the one to take.",
   ],
   "Two touchdowns, one game": [
     "One ticket from one game: two players to score a touchdown. Each one is a player who has scored more often lately than FanDuel's price on him says.",
     "Example: two players at +110 each multiply to +341. $10 pays back $44.10. One of them kept out of the end zone and the $10 is gone.",
     "+341 needs to cash 22.7% of the time.",
     "Two scorers on the same team split that team's touchdowns. One from each side needs both offenses to score. FanDuel's same-game price is the one to take.",
-    "The desk builds it from tonight's FanDuel anytime prices, -250 to +300, and lists the three pairs per game where both players run furthest ahead of their prices.",
+    "The site builds it from tonight's FanDuel anytime prices, -250 to +300, and lists the three pairs per game where both players run furthest ahead of their prices.",
   ],
   "Three touchdowns, one game": [
     "One ticket from one game: three players to score a touchdown. Each one is a player who has scored more often lately than FanDuel's price on him says.",
     "Example: three players at +110 each multiply to +826. $10 pays back $92.61. One of the three kept out of the end zone and the $10 is gone.",
     "+826 needs to cash 10.8% of the time.",
     "Three scorers need a game with at least three touchdowns. Two or three from the same team split that team's touchdowns. FanDuel's same-game price is the one to take.",
-    "The desk builds it from tonight's FanDuel anytime prices, -250 to +300, and lists the three trios per game where the players run furthest ahead of their prices.",
+    "The site builds it from tonight's FanDuel anytime prices, -250 to +300, and lists the three trios per game where the players run furthest ahead of their prices.",
   ],
   "Four touchdowns, one game": [
     "One ticket from one game: four players to score a touchdown. Each one is a player who has scored more often lately than FanDuel's price on him says.",
     "Example: four players at +110 each multiply to +1845. $10 pays back $194.48. One of the four kept out of the end zone and the $10 is gone.",
     "+1845 needs to cash 5.1% of the time.",
     "Four scorers need a game with at least four touchdowns, and some of them share a team's touchdowns. FanDuel's same-game price is the one to take.",
-    "The desk builds it from tonight's FanDuel anytime prices, -250 to +300, and lists the three groups of four per game where the players run furthest ahead of their prices.",
+    "The site builds it from tonight's FanDuel anytime prices, -250 to +300, and lists the three groups of four per game where the players run furthest ahead of their prices.",
   ],
   "Five touchdowns, one game": [
     "One ticket from one game: five players to score a touchdown. Each one is a player who has scored more often lately than FanDuel's price on him says.",
     "Example: five players at +110 each multiply to +3984. $10 pays back $408.41. One of the five kept out of the end zone and the $10 is gone.",
     "+3984 needs to cash 2.4% of the time.",
     "Five scorers need a game with at least five touchdowns, and some of them share a team's touchdowns. FanDuel's same-game price is the one to take.",
-    "The desk builds it from tonight's FanDuel anytime prices, -250 to +300, and lists the three groups of five per game where the players run furthest ahead of their prices.",
+    "The site builds it from tonight's FanDuel anytime prices, -250 to +300, and lists the three groups of five per game where the players run furthest ahead of their prices.",
   ],
 };
 

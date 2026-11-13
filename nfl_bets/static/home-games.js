@@ -85,7 +85,8 @@ function homeRecRow(pick, index) {
   card.className = "desk-game desk-rec";
   const odds = Number(pick.odds), price = odds > 0 ? `+${odds}` : String(odds), win = (odds > 0 ? (5 * odds) / 100 : (5 * 100) / Math.abs(odds)).toFixed(2);
   const when = pick.kickoff ? `${new Date(pick.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET` : "";
-  card.innerHTML = `<span class="desk-rec-name">${homeTeamStar(homeGamesList.find((game) => game.match === pick.match))}${esc(pick.label)} ${esc(price)}</span><span class="desk-rec-how">${index ? `#${index + 1}` : "Today's free pick"}</span><span class="desk-rec-legs">${esc(when)}</span><span class="desk-rec-read">${esc(`${pick.match}. Hit in ${pick.hits} of his last ${pick.n}, the price needs ${pick.need}. $5 wins $${win}.`)}</span>`;
+  const side = String(pick.match || "").split(" @ ").find((name) => pick.team && (name === pick.team || name.endsWith(` ${pick.team}`))) || "", logo = (side && homeLogos && homeLogos[side]) || "", dark = logo.replace("/500/", "/500-dark/");
+  card.innerHTML = `<span class="desk-rec-name">${homeTeamStar(homeGamesList.find((game) => game.match === pick.match))}${logo ? `<img class="desk-team-logo desk-rec-logo" src="${esc(dark)}" alt="${esc(side)}" loading="lazy"${dark !== logo ? ` onerror="this.onerror=null;this.src='${esc(logo)}'"` : ""}>` : ""}${esc(pick.label)} ${esc(price)}</span><span class="desk-rec-how">${index ? `#${index + 1}` : "Today's free pick"}</span><span class="desk-rec-legs">${esc(when)}</span><span class="desk-rec-read">${esc(`${pick.match}. Hit in ${pick.hits} of his last ${pick.n}, the price needs ${pick.need}. $5 wins $${win}.`)}</span>`;
   card.addEventListener("click", () => { window.location.href = `/?${new URLSearchParams({ game: pick.match, label: pick.label, market: pick.market || "" })}`; });
   return card;
 }
@@ -96,20 +97,57 @@ function homeGamesRepaint() {
   homeGamesPaint();
 }
 
-function homeRecRows() {
+let homeLeague = localStorage.getItem("homeLeague") || "";
+
+function homePickSport(pick) {
+  const game = homeGamesList.find((row) => row.match === pick.match) || ((window.state && state.board && state.board.games) || []).find((row) => row.match === pick.match);
+  return (game && game.sport) || "";
+}
+
+function homeLeagueList(games) {
+  const order = ["NFL", "NBA", "NHL", "MLB", "WNBA"];
+  return [...new Set([...games.map((game) => game.sport), ...((homeRecs && homeRecs.picks) || []).map(homePickSport)].filter(Boolean))].sort((a, b) => ((order.indexOf(a) + 1) || 99) - ((order.indexOf(b) + 1) || 99) || a.localeCompare(b));
+}
+
+function homeLeagueOn(games) {
+  return homeLeagueList(games).includes(homeLeague) ? homeLeague : "";
+}
+
+function homeLeagues(box, games) {
+  const leagues = homeLeagueList(games), on = homeLeagueOn(games);
+  if (leagues.length < 2) return null;
+  const row = document.createElement("span");
+  row.className = "desk-games-leagues";
+  ["", ...leagues].forEach((league) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = `desk-games-league${league === on ? " on" : ""}`;
+    chip.textContent = league || "All";
+    chip.setAttribute("aria-pressed", String(league === on));
+    chip.addEventListener("click", () => { homeLeague = league; try { localStorage.setItem("homeLeague", league); } catch (error) { console.log("[home-games] could not save the league", error); } box.dataset.sig = ""; box.scrollTop = 0; homeGamesPaint(); });
+    row.append(chip);
+  });
+  return row;
+}
+
+function homeRecRows(games) {
   const note = (text) => { const line = document.createElement("p"); line.className = "desk-games-note"; line.textContent = text; return [line]; };
   if (!homeRecs || (homeRecs.loading && !homeRecs.picks.length)) return note("Looking up the picks.");
-  return homeRecs.picks.length ? homeRecs.picks.map(homeRecRow) : note("Tonight's picks are not posted yet.");
+  if (!homeRecs.picks.length) return note("Tonight's picks are not posted yet.");
+  const league = homeLeagueOn(games), rows = homeRecs.picks.map((pick, index) => [pick, index]).filter(([pick]) => !league || homePickSport(pick) === league);
+  return rows.length ? rows.map(([pick, index]) => homeRecRow(pick, index)) : note(`No ${league} picks tonight. Tap All for the rest.`);
 }
 
 function homeGameRows(games) {
-  return games.map(homeGamesRow);
+  const league = homeLeagueOn(games), rows = games.filter((game) => !league || game.sport === league);
+  return rows.length ? rows.map(homeGamesRow) : [Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: `No ${league} games left today. Tap All for the rest.` })];
 }
 
 function homeGamesTabs(box, games) {
   const tabs = document.createElement("span");
   tabs.className = "desk-games-tabs";
-  [["rec", "Recommended"], ["games", `Games ${games.length}`]].forEach(([id, label]) => {
+  const league = homeLeagueOn(games);
+  [["rec", "Recommended"], ["games", `Games ${games.filter((game) => !league || game.sport === league).length}`]].forEach(([id, label]) => {
     const tab = document.createElement("button");
     tab.type = "button";
     tab.className = `desk-games-tab${homeGamesTab === id ? " on" : ""}`;
@@ -136,19 +174,18 @@ function homeGamesPaint() {
   box.style.top = `${at}px`;
   document.body.style.setProperty("--home-games-top", `${at + 12}px`);
   if (!fresh.length && homeGamesTab === "rec") homeRecsLoad();
-  if (homeGamesTab === "games") homeLogosLoad();
-  const sig = `${window.memberName || ""}|${homeGamesTab}|${(window.memberTeams || []).join(",")}|${homeRecs ? `${homeRecs.at}${homeRecs.loading ? "…" : ""}` : ""}|${fresh.length ? `shared:${fresh.map((item) => item.id).join(";")}` : games.map((game) => `${game.match}|${game.kickoff}`).join(";")}`;
+  homeLogosLoad();
+  const sig = `${homeLeagueOn(games)}|${homeGamesTab}|${(window.memberTeams || []).join(",")}|${homeRecs ? `${homeRecs.at}${homeRecs.loading ? "…" : ""}` : ""}|${fresh.length ? `shared:${fresh.map((item) => item.id).join(";")}` : games.map((game) => `${game.match}|${game.kickoff}`).join(";")}`;
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
   const head = document.createElement("p");
   head.className = "desk-games-head";
   const names = [...new Set(fresh.map((item) => item.fromName))];
-  const said = document.createElement("span"), who = document.createElement("span");
+  const said = document.createElement("span");
   said.className = "desk-games-said";
   said.textContent = `${names.length === 1 ? names[0] : "Your friends"} sent you ${fresh.length === 1 ? "a bet" : `${fresh.length} bets`}`;
-  who.className = "desk-games-who";
-  who.textContent = window.memberName || "";
-  head.append(fresh.length ? said : homeGamesTabs(box, games), who);
+  const leagues = fresh.length ? null : homeLeagues(box, games);
+  head.append(fresh.length ? said : homeGamesTabs(box, games), ...(leagues ? [leagues] : []));
   box.replaceChildren(head, ...(fresh.length ? fresh.map(homeSharedRow) : homeGamesTab === "rec" ? homeRecRows(games) : homeGameRows(games)));
 }
 

@@ -179,7 +179,7 @@ function birdGreet() {
   if (!called) return birdAskName();
   if (!window.memberBorn) return birdAskBorn(); if (!window.memberState) return birdAskState(); if (birdAskBook() || (window.birdAskTeams && birdAskTeams()) || birdLaw()) return;
   window.asking = false;
-  const shared = window.sharedGreet ? sharedGreet() : ""; birdSay(`Hey, ${called}. ${shared || "How are we going to find your favorite bet for today?"}`, [...(shared ? [["menu", window.sharedLabel ? sharedLabel() : "See the bets", "shared"]] : []), ["menu", "Build A Bet", "find"], ["menu", "The Games", "live"], ["menu", "How It Works", "guide"]]);
+  const shared = window.sharedGreet ? sharedGreet() : ""; birdSay(`Hey, ${called}. ${shared || "How are we going to find your favorite bet for today?"}`, [...(shared ? [["menu", window.sharedLabel ? sharedLabel() : "See the bets", "shared"]] : []), ["menu", "Build A Bet", "find"], ["menu", "The Games", "live"]]);
 }
 
 function birdLaw() {
@@ -208,7 +208,7 @@ function bornRange(input) {
 }
 function birdAskBorn() {
   window.asking = true;
-  birdSay("When were you born? You have to be 21 to use this desk.", []);
+  birdSay("When were you born? You have to be 21 to use this site.", []);
   const row = document.getElementById("bird-picks");
   if (!row) return;
   row.innerHTML = `<input id="bird-born" type="date" autocomplete="bday"><button type="button" id="bird-born-go">That's my birthday</button><p id="bird-born-error"></p>`;
@@ -229,7 +229,7 @@ async function saveBorn(raw) {
 
 function birdAskState() {
   window.asking = true;
-  birdSay("Which state are you in? We need it so the desk only shows bets you are allowed to place there.", []);
+  birdSay("Which state are you in? We need it so the site only shows bets you are allowed to place there.", []);
   const row = document.getElementById("bird-picks");
   if (row && window.paintStatePick) paintStatePick(row, saveState);
 }

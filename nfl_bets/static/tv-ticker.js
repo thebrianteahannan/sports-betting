@@ -2,9 +2,9 @@
 
 const tvTick = { at: "menu", timer: 0, pick: null, loading: false, hold: false };
 
-function tvTickPages() { return ["menu", ...(tvTick.pick ? ["pick"] : []), "lazy"]; }
+function tvTickPages() { return ["menu", ...(tvTick.pick ? ["pick"] : []), "lazy", "how"]; }
 
-function tvTickEl(id) { return document.getElementById(id === "menu" ? "bird-guide" : id === "pick" ? "tv-tick-pick" : "tv-tick-lazy"); }
+function tvTickEl(id) { return document.getElementById(id === "menu" ? "bird-guide" : `tv-tick-${id}`); }
 
 function tvTickDots() {
   const dots = document.querySelector("#tv-tick .tv-tick-dots");
@@ -23,7 +23,7 @@ function tvTickBox() {
   if (!glass) return null;
   box = document.createElement("div");
   box.id = "tv-tick";
-  box.innerHTML = `<div id="tv-tick-pick" hidden></div><div id="tv-tick-lazy" hidden></div><div class="tv-tick-nav"><button type="button" class="tv-tick-go" data-step="-1" aria-label="Back">&#8249;</button><p class="tv-tick-dots"></p><button type="button" class="tv-tick-go" data-step="1" aria-label="Next">&#8250;</button></div>`;
+  box.innerHTML = `<div id="tv-tick-pick" hidden></div><div id="tv-tick-lazy" hidden></div><div id="tv-tick-how" hidden><div class="tv-how"><p class="tv-lazy-head">This site does a lot</p><p class="tv-how-say">Game scripts. Player trends. Swaps for a leg you don't like. Saved bets. Bets you send a friend. Every pick graded by morning.</p><p class="tv-how-say">Two minutes in the guide and you'll know where all of it is.</p><a class="tv-how-go" href="/guide">How It Works</a></div></div><div class="tv-tick-nav"><button type="button" class="tv-tick-go" data-step="-1" aria-label="Back">&#8249;</button><p class="tv-tick-dots"></p><button type="button" class="tv-tick-go" data-step="1" aria-label="Next">&#8250;</button></div>`;
   box.hidden = true;
   glass.append(box);
   box.addEventListener("click", (event) => {
@@ -111,7 +111,7 @@ function tvTickWatch() {
   if (on && box.hidden) { box.hidden = false; tvTickDots(); tvTickTime(); }
   if (!on && !box.hidden) {
     box.hidden = true; clearInterval(tvTick.timer);
-    ["tv-tick-pick", "tv-tick-lazy"].forEach((id) => { const slot = document.getElementById(id); if (slot) slot.hidden = true; });
+    ["tv-tick-pick", "tv-tick-lazy", "tv-tick-how"].forEach((id) => { const slot = document.getElementById(id); if (slot) slot.hidden = true; });
     tvTick.at = "menu"; tvTick.hold = false;
     tvTickDots();
   }

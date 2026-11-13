@@ -19,7 +19,7 @@ const STACK_GRADE = {
     ["The line has to move after you bet. Most weeks it does not cross 3.", "At -200 a side, break-even jumps to 33%."]],
   "Live middle": ["edge", "Known to pay when a game swings the live number past your ticket.",
     ["A 7-point gap at -110 a side breaks even under 5%.", "The first ticket is already placed. The live side is a choice."],
-    ["It needs a fast start or a big swing. Most games never open the gap.", "Live prices move in seconds, and this desk reads the pre-game board."]],
+    ["It needs a fast start or a big swing. Most games never open the gap.", "Live prices move in seconds, and this site reads the pre-game board."]],
   "Wong teaser": ["edge", "The best-known teaser edge in NFL betting. Books raised the price to shrink it.",
     ["Both legs cross 3 and 7, the two margins NFL games land on most.", "A clear rule for which games qualify."],
     ["At -120 each leg has to hold 73.9% of the time. At -130 it is 75.2%.", "Only NFL sides qualify, and only a few games a week."]],

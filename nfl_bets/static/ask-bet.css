@@ -336,6 +336,7 @@
   width: min(100%, 28rem); box-sizing: border-box; text-align: center;
   padding: 0.8rem 1rem; font-size: 18px;
 }
+#desk.bird-on #desk-glass #bird-picks button[data-menu] { padding-top: 1.15rem; padding-bottom: 1.15rem; font-size: 22px; }
 @media (min-width: 800px) {
   #desk.tv-full.bird-on #bird-guide:has(button[data-menu], #bird-law-go) { align-items: center; }
   #desk.tv-full.bird-on #bird-guide:has(button[data-menu], #bird-law-go) #bird-line {

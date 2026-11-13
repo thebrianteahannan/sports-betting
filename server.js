@@ -300,7 +300,7 @@ function cleanBorn(value) {
   const [ty, tm, td] = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()).split("-").map(Number);
   let age = ty - year;
   if (tm < month || (tm === month && td < day)) age -= 1;
-  if (age < 21) throw new Error("You have to be 21 to use this desk.");
+  if (age < 21) throw new Error("You have to be 21 to use this site.");
   if (year < ty - 120) throw new Error("Enter your date of birth.");
   return born;
 }
@@ -659,12 +659,12 @@ const server = http.createServer(async (req, res) => {
     }
     sendJson(res, { error: "not found" }, 404);
   } catch (err) {
-    sendJson(res, { error: err.message || "The desk could not answer." }, 400);
+    sendJson(res, { error: err.message || "The site could not answer." }, 400);
   }
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log("Betting desk site on port " + PORT);
+  console.log("Parlay of the Day site on port " + PORT);
   const warm = () => { board().then((now) => Promise.all([require("./live-recs").recWarm(now), require("./game-keep").keepWarm(now)])).catch((error) => console.error("live recs warm failed:", error)); require("./live-grade").gradeTick().catch((error) => console.error("live recs grade failed:", error)); };
   setTimeout(warm, 30000); setInterval(warm, 10 * 60000);
 });

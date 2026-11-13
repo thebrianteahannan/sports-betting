@@ -183,7 +183,7 @@ function fillFind(board, data) {
       (data.out || []).slice(0, 3).reverse().forEach((row) => { const line = document.createElement("p"); line.className = "find-why"; line.style.flex = "1 0 100%"; const note = String(row.note || "").trim(); line.textContent = row.status === "doubtful" ? `${row.player} is doubtful.${note ? ` ${note}` : ""}` : `${row.player} is not playing.${note ? ` ${note}` : ""}`; hits.prepend(line); });
       if ((data.out || []).length) { hits.querySelectorAll(":scope > p.quiet").forEach((node) => { if (/not posted yet/.test(node.textContent || "")) node.remove(); }); const ask = hits.querySelector("[data-week]"); if (ask) ask.remove(); }
       const clubs = (data.clubs || []).map((row) => ({ player: row.player, teamName: row.team || "", team: people.find((person) => person.kind === "team" && person.name.toLowerCase() === String(row.team || "").toLowerCase() && (person.bets || []).length) }));
-      if (clubs.length && !hits.querySelector("button") && !list.querySelector("h3") && !(data.out || []).length) { hits.replaceChildren(); clubs.forEach((row) => { const line = document.createElement("p"); line.className = "find-why"; line.style.flex = "1 0 100%"; line.textContent = row.team ? `${row.player} has no props posted. ${row.team.name} has lines.` : `${row.player}, ${row.teamName}. No bets on the desk.`; hits.append(line); if (!row.team) return; const button = document.createElement("button"); button.type = "button"; button.textContent = row.team.name; button.addEventListener("click", () => showFind(list, hits, row.team, roster, people)); hits.append(button); }); }
+      if (clubs.length && !hits.querySelector("button") && !list.querySelector("h3") && !(data.out || []).length) { hits.replaceChildren(); clubs.forEach((row) => { const line = document.createElement("p"); line.className = "find-why"; line.style.flex = "1 0 100%"; line.textContent = row.team ? `${row.player} has no props posted. ${row.team.name} has lines.` : `${row.player}, ${row.teamName}. No bets posted.`; hits.append(line); if (!row.team) return; const button = document.createElement("button"); button.type = "button"; button.textContent = row.team.name; button.addEventListener("click", () => showFind(list, hits, row.team, roster, people)); hits.append(button); }); }
       const only = [...hits.querySelectorAll("button:not([data-week])")]; const found = people.filter((item) => item.kind === "player" && item.team && only.some((node) => plainName(node.textContent.split(",")[0]) === plainName(item.name))); if (found.length && found.every((item) => item.team === found[0].team) && typeof clubTheme === "function") clubTheme(list, found[0]); if (only.length === 1 && !list.querySelector("h3") && !(data.out || []).length) only[0].click();
     }).catch(() => { if (stamp !== clubStamp || !hits.isConnected) return; const only = [...hits.querySelectorAll("button:not([data-week])")]; if (only.length === 1 && !list.querySelector("h3")) only[0].click(); });
   });
@@ -246,7 +246,7 @@ function rosterNear(card) {
   if (known) {
     const hits = known === "Five near 90% each" ? "five" : known === "Four near 80% each" ? "four" : "";
     const id = hits ? "hits" : Object.keys(window.CARD_NAMES || {}).find((key) => window.CARD_NAMES[key] === known) || "";
-    return `This is the one on the desk. ${rosterWho(id, hits, known)}.`;
+    return `This is the one on the board. ${rosterWho(id, hits, known)}.`;
   }
   const found = rosterScan(legs, Number(card.american));
   if (!found.length) return "";
