@@ -250,12 +250,13 @@ function scriptBetsBlock(bets, group, game, people, keep = {}) {
   block.innerHTML = `<b${club ? ` style="color: ${club.text}"` : ""}>${esc(group.name)}</b>${mine.map((pick) => `<div class="find-script-pick"${club ? "" : scriptClubStyle(game, pick.team)}><p><strong>${who(pick)} ${esc(pick.text)}, ${money(pick.odds)}.</strong></p><p class="find-script-why"><em>Why:</em> ${esc(pick.how || `Hit in ${pick.hits} of his last ${pick.n}. Needs ${pick.need}.`)}</p></div>`).join("")}`;
   const tabs = document.createElement("div"); tabs.className = "find-script-tabs";
   const card = document.createElement("div"); card.className = "find-script-ticket";
-  const show = (parlay) => {
+  const show = (parlay, edit) => {
     tabs.querySelectorAll("button").forEach((node) => node.classList.toggle("on", Number(node.dataset.size) === parlay.size));
-    const legs = parlay.legs.map((at) => bets.picks[at]);
-    const top = `<div class="find-script-top"><i class="px">${money(parlay.odds)}</i><i class="pct">${esc(parlay.need)}</i><i class="pay">$5 profits $${parlay.wins.toFixed(2)}</i>${parlay.size > 1 ? `<i class="sg">Same game</i>` : ""}</div>`;
+    const legs = edit || parlay.legs.map((at) => bets.picks[at]), deal = edit && typeof recLegDeal === "function" ? recLegDeal(legs) : parlay;
+    const top = `<div class="find-script-top"><i class="px">${money(deal.odds)}</i><i class="pct">${esc(deal.need)}</i><i class="pay">$5 profits $${deal.wins.toFixed(2)}</i>${parlay.size > 1 ? `<i class="sg">Same game</i>` : ""}</div>`;
     const rows = legs.map((pick) => `<div class="find-script-leg" data-who="${esc(pick.who)}" data-label="${esc(pick.label)}" data-market="${esc(pick.market)}" data-odds="${esc(pick.odds)}"${scriptClubStyle(game, pick.team)}><i class="px">${money(pick.odds)}</i><i class="pct">${esc(typeof findPct === "function" ? findPct(pick.odds) : "")}</i><i class="who">${esc(pick.who)}</i><i class="tm">${esc([pick.team, pick.pos].filter(Boolean).join(" · "))}</i><i class="prop">${esc(pick.text)}</i></div>`).join("");
-    card.innerHTML = `${top}${rows}${parlay.how ? `<p class="find-script-why"><em>Why:</em> ${esc(parlay.how)}</p>` : ""}${parlay.size > 1 ? `<p class="find-script-proof">FanDuel prices same-game parlays itself, so the slip can pay less than this.</p>` : ""}`;
+    card.innerHTML = `${top}${rows}${parlay.how && !edit ? `<p class="find-script-why"><em>Why:</em> ${esc(parlay.how)}</p>` : ""}${parlay.size > 1 ? `<p class="find-script-proof">FanDuel prices same-game parlays itself, so the slip can pay less than this.</p>` : ""}`;
+    if (typeof recLegTools === "function") recLegTools(card, legs, game, people, (next) => show(parlay, next), edit);
     if (game.sport === "NBA" && typeof proofScript === "function") proofScript(card);
     const go = document.createElement("button"); go.type = "button"; go.className = "find-script-add"; go.textContent = "Build it";
     go.addEventListener("click", () => {

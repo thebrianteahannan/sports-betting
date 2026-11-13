@@ -63,7 +63,20 @@ function liveMoney(game, pick) {
   return { state: "", say: gap > 0 ? `Up ${gap}` : gap < 0 ? `Down ${-gap}` : "Tied", level, tip: gap > 0 ? "Winning right now" : gap < 0 ? "Losing right now" : "Tied right now" };
 }
 
+function liveSpread(game, pick, line) {
+  const side = liveSideOf(game, pick), frac = liveFrac(game);
+  if (!side || frac === null) return { state: "", say: "", level: "" };
+  const mine = Number(game[side].score) || 0, other = Number(game[side === "home" ? "away" : "home"].score) || 0, cover = mine - other + line;
+  const say = cover > 0 ? `Covering by ${cover}` : cover < 0 ? `Short by ${-cover}` : "Even";
+  if (game.final) return { state: cover > 0 ? "hit" : cover < 0 ? "lost" : "", say: cover ? say : "Push", level: "" };
+  const big = { NFL: 14, NBA: 15, WNBA: 12, NHL: 2 }[String(game.sport || "").toUpperCase()] || 10;
+  const level = cover > 0 ? (cover >= big / 2 ? "ahead" : "close") : -cover >= big ? "far" : "behind";
+  return { state: "", say, level, tip: `${mine}-${other} with ${line > 0 ? "+" : ""}${line}` };
+}
+
 function liveLegState(game, pick) {
+  const spread = /spread/i.test(pick.market || "") && pick.label.match(/\(([+-]?\d+(?:\.\d+)?)\)/);
+  if (spread) return liveSpread(game, pick, Number(spread[1]));
   if (/moneyline/i.test(pick.market || "")) return liveMoney(game, pick);
   const { now } = liveNow(game, pick);
   if (now === null || pick.need === null) return { state: "", say: "", level: "" };
