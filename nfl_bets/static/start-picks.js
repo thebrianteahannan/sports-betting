@@ -1,6 +1,35 @@
 /** Build a bet always shows the home Recommended picks and Games under the bet, so a leg or a game is one tap away instead of on another page. */
 
 let startTab = "rec", startBack = null, startUndo = null, startRandomAt = null;
+let startFavOnly = localStorage.getItem("startFavOnly") === "1";
+const startKinds = new Set(), START_KINDS = [["safe", "Safe"], ["balanced", "Balanced"], ["payout", "Payout"], ["good", "Good bet"], ["math", "Math"], ["script", "Script"]];
+
+function startKindOf(pick) {
+  const key = typeof scriptKindSay === "function" ? scriptKindSay(pick).key : "";
+  return [key, ...(pick.basis === "both" ? ["math", "script"] : [pick.basis])].filter(Boolean);
+}
+
+function startKindOk(pick) {
+  const has = startKindOf(pick), kinds = ["safe", "balanced", "payout", "good"].filter((id) => startKinds.has(id)), bases = ["math", "script"].filter((id) => startKinds.has(id));
+  return (!kinds.length || kinds.some((id) => has.includes(id))) && (!bases.length || bases.some((id) => has.includes(id)));
+}
+
+function startKindBar(all) {
+  const bar = document.createElement("div"), have = new Set(all.flatMap(startKindOf));
+  bar.className = "find-start-kinds";
+  START_KINDS.filter(([id]) => have.has(id) || startKinds.has(id)).forEach(([id, label]) => {
+    const on = startKinds.has(id), chip = Object.assign(document.createElement("button"), { type: "button", className: `find-start-kind${on ? " on" : ""}`, textContent: label });
+    chip.setAttribute("aria-pressed", String(on));
+    chip.addEventListener("click", () => { if (on) startKinds.delete(id); else startKinds.add(id); startPaint(1); });
+    bar.append(chip);
+  });
+  if (startKinds.size) {
+    const clear = Object.assign(document.createElement("button"), { type: "button", className: "find-start-kind find-start-clear", textContent: "Clear" });
+    clear.addEventListener("click", () => { startKinds.clear(); startPaint(1); });
+    bar.append(clear);
+  }
+  return bar;
+}
 
 function startOpen(board, bet) {
   const teams = board.querySelector(":scope > .find-teams"), list = board.querySelector(":scope > .find-list"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)"), span = board.querySelector(":scope > .find-span"), more = board.querySelector(".find-games-go");
@@ -90,22 +119,33 @@ function startRandomBar(board, picks) {
   return bar;
 }
 
+function startFavBox() {
+  const box = document.createElement("label"), check = Object.assign(document.createElement("input"), { type: "checkbox", checked: startFavOnly });
+  box.className = "find-start-fav";
+  check.addEventListener("change", () => { startFavOnly = check.checked; localStorage.setItem("startFavOnly", startFavOnly ? "1" : ""); startPaint(1); });
+  box.append(check, document.createTextNode("Only my teams"));
+  return box;
+}
+
 function startRecs(board) {
-  const now = Date.now(), left = homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now), picks = [];
-  const recs = homeRecRows(left).map((node) => {
+  const now = Date.now(), left = homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now), picks = [], all = [];
+  const recs = homeRecRows(left).filter((node) => { if (node.startPick) all.push(node.startPick); return !node.startPick || startKindOk(node.startPick); }).map((node) => {
     if (node.startPick) picks.push(node.startPick);
     if (!node.classList.contains("desk-rec")) return node;
     const copy = node.cloneNode(true), pick = node.startPick;
     if (pick) { copy.title = "Add to a new bet"; copy.addEventListener("click", () => startBet(board, pick)); }
     return copy;
   });
-  const games = homeGameRows(left).map((node) => {
+  const fav = (game) => typeof favTeamsHas === "function" && favTeamsHas(game), allGames = homeGameRows(left), favAny = allGames.some((node) => node.startGame && fav(node.startGame));
+  const games = allGames.filter((node) => !startFavOnly || !node.startGame || fav(node.startGame)).map((node) => {
     if (!node.classList.contains("desk-game") || node.classList.contains("desk-game-live")) return node;
     const copy = node.cloneNode(true), game = node.startGame;
     if (game) copy.addEventListener("click", () => startGameOpen(board, game));
     return copy;
   });
-  return { recs, games, picks };
+  if (startFavOnly && !games.some((node) => node.startGame)) games.push(Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: "None of your teams play today. Uncheck Only my teams for the rest." }));
+  if (all.length && !picks.length) recs.push(Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: "No picks match these filters. Tap Clear for the rest." }));
+  return { recs, games, picks, all, favAny };
 }
 
 function startUndoGo() {
@@ -154,7 +194,7 @@ function startPaint(again) {
   homeRecsLoad(); homeLogosLoad(); homeLeagueSync();
   const box = document.createElement("div"), tabs = document.createElement("span");
   box.className = "find-start"; tabs.className = "desk-games-tabs";
-  const { recs, games, picks } = startRecs(board), shared = Boolean(window.saveWho && typeof sharedTabBody === "function");
+  const { recs, games, picks, all, favAny } = startRecs(board), shared = Boolean(window.saveWho && typeof sharedTabBody === "function");
   if (startTab === "shared" && !shared) startTab = "rec";
   [["rec", "Recommended"], ["games", `Games ${games.filter((node) => node.classList.contains("desk-game")).length}`], ["stacks", "Strategies"], ...(shared ? [["shared", sharedTabLabel()]] : [])].forEach(([id, label]) => {
     const tab = Object.assign(document.createElement("button"), { type: "button", className: `desk-games-tab${startTab === id ? " on" : ""}`, textContent: label });
@@ -166,8 +206,8 @@ function startPaint(again) {
   if (typeof sharedTabKey === "function") box.dataset.shared = sharedTabKey();
   const row = document.createElement("div");
   row.className = "find-start-row";
-  row.append(tabs, ...(startTab === "rec" ? [startRandomBar(board, picks)] : []));
-  box.append(row, ...(startTab === "rec" ? recs : startTab === "stacks" ? startStacks() : startTab === "shared" && shared ? [sharedTabBody(board)] : games));
+  row.append(tabs, ...(startTab === "rec" ? [startRandomBar(board, picks)] : startTab === "games" && (favAny || startFavOnly) ? [startFavBox()] : []));
+  box.append(row, ...(startTab === "rec" ? [...(all.length ? [startKindBar(all)] : []), ...recs] : startTab === "stacks" ? startStacks() : startTab === "shared" && shared ? [sharedTabBody(board)] : games));
   box.hidden = Boolean(input && input.value.trim());
   spot.after(box);
   if ((!homeRecs || homeRecs.loading) && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
