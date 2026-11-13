@@ -2,13 +2,20 @@
 
 const tvTick = { at: "menu", timer: 0, pick: null, loading: false, hold: false };
 
-function tvTickPages() { return ["menu", ...(tvTick.pick ? ["pick"] : []), "lazy", "how"]; }
+function tvTickPages() { return ["menu", ...(tvTick.pick ? ["pick"] : []), "lazy", "how", "risk", "help"]; }
 
 function tvTickEl(id) { return document.getElementById(id === "menu" ? "bird-guide" : `tv-tick-${id}`); }
 
 function tvTickDots() {
   const dots = document.querySelector("#tv-tick .tv-tick-dots");
   if (dots) dots.innerHTML = tvTickPages().map((id) => `<i${id === tvTick.at ? ' class="on"' : ""}></i>`).join("");
+  tvTickNavPlace();
+}
+
+function tvTickNavPlace() {
+  const nav = document.querySelector("#tv-tick .tv-tick-nav"), legal = document.getElementById("greet-legal"), glass = document.getElementById("tv-tick"), desk = document.getElementById("desk");
+  const lift = tvTick.at === "menu" && desk && !desk.classList.contains("tv-full") && legal && legal.getClientRects().length && glass && glass.offsetHeight ? `${Math.max(10, Math.round(((glass.getBoundingClientRect().bottom - legal.getBoundingClientRect().top) * glass.offsetHeight) / glass.getBoundingClientRect().height + 8))}px` : "";
+  if (nav && nav.style.bottom !== lift) nav.style.bottom = lift;
 }
 
 function tvTickMenuOn() {
@@ -23,12 +30,13 @@ function tvTickBox() {
   if (!glass) return null;
   box = document.createElement("div");
   box.id = "tv-tick";
-  box.innerHTML = `<div id="tv-tick-pick" hidden></div><div id="tv-tick-lazy" hidden></div><div id="tv-tick-how" hidden><div class="tv-how"><p class="tv-lazy-head">This site does a lot</p><p class="tv-how-say">Game scripts. Player trends. Swaps for a leg you don't like. Saved bets. Bets you send a friend. Every pick graded by morning.</p><p class="tv-how-say">Two minutes in the guide and you'll know where all of it is.</p><a class="tv-how-go" href="/guide">How It Works</a></div></div><div class="tv-tick-nav"><button type="button" class="tv-tick-go" data-step="-1" aria-label="Back">&#8249;</button><p class="tv-tick-dots"></p><button type="button" class="tv-tick-go" data-step="1" aria-label="Next">&#8250;</button></div>`;
+  box.innerHTML = `<div id="tv-tick-pick" hidden></div><div id="tv-tick-lazy" hidden></div><div id="tv-tick-how" hidden><div class="tv-how"><p class="tv-lazy-head">This site does a lot</p><p class="tv-how-say">Game scripts. Player trends. Swaps for a leg you don't like. Saved bets. Bets you send a friend. Every pick graded by morning.</p><p class="tv-how-say">Two minutes in the guide and you'll know where all of it is.</p><a class="tv-how-go" href="/guide">How It Works</a></div></div><div id="tv-tick-risk" hidden><div class="tv-how"><p class="tv-lazy-head">Your call, your risk</p><p class="tv-how-say">Everything on this site is betting advice. You choose the bet, you place it, and the result is yours.</p><p class="tv-how-say">Parlay of the Day is not liable or responsible for any losses, or for any bet you make because of this site. You proceed at your own risk.</p><p class="tv-how-say tv-how-strong">Proceed with caution.</p></div></div><div id="tv-tick-help" hidden><div class="tv-how"><p class="tv-lazy-head">When it stops being fun</p><p class="tv-how-say">Gambling can take a paycheck, a week, and the people around you with it. A loss does not get paid back by the next bet. Chasing it is how a small night turns into a problem.</p><p class="tv-how-say">If you or someone you know has a problem, call the gambling hotline. It's free and confidential, any hour.</p><a class="tv-how-go" href="tel:18004262537">Call 1-800-GAMBLER</a></div></div><div class="tv-tick-nav"><button type="button" class="tv-tick-go" data-step="-1" aria-label="Back">&#8249;</button><p class="tv-tick-dots"></p><button type="button" class="tv-tick-go" data-step="1" aria-label="Next">&#8250;</button></div>`;
   box.hidden = true;
   glass.append(box);
   box.addEventListener("click", (event) => {
     const go = event.target.closest(".tv-tick-go");
     if (go) { event.stopPropagation(); tvTick.hold = false; tvTickStep(Number(go.dataset.step)); return; }
+    if (event.target.closest("[data-tick-more]") && window.recPageOpen) { event.stopPropagation(); recPageOpen(); return; }
     const open = event.target.closest("[data-tick-open]");
     if (open && tvTick.pick) { event.stopPropagation(); tvTickOpen(tvTick.pick); }
   });
@@ -75,7 +83,7 @@ async function tvTickLoad() {
     const price = odds > 0 ? `+${odds}` : String(odds), win = (odds > 0 ? (5 * odds) / 100 : (5 * 100) / Math.abs(odds)).toFixed(2);
     const when = pick.kickoff ? new Date(pick.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }) + " ET" : "";
     const slot = document.getElementById("tv-tick-pick");
-    if (slot) slot.innerHTML = `<div class="tv-tick-card"><p class="gate-sample-head">Tonight's free pick</p><p class="gate-sample-bet">${esc(pick.label)} <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p><p class="gate-sample-why">${esc(pick.how)}</p><p class="gate-sample-pay">$5 wins $${win}.</p><button type="button" class="tv-tick-open" data-tick-open>Open the game &#8250;</button></div>`;
+    if (slot) slot.innerHTML = `<div class="tv-tick-stack"><div class="tv-tick-card"><p class="gate-sample-head">Tonight's free pick</p><p class="gate-sample-bet">${esc(pick.label)} <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p><p class="gate-sample-why">${esc(pick.how)}</p><p class="gate-sample-pay">$5 wins $${win}.</p><button type="button" class="tv-tick-open" data-tick-open>Open the game &#8250;</button></div><button type="button" class="tv-tick-more" data-tick-more>View more recommended bets &#8250;</button></div>`;
     tvTickDots();
   } catch (error) { console.log("[tv-ticker] could not load tonight's pick", error); } finally { tvTick.loading = false; }
 }
@@ -108,10 +116,11 @@ function tvTickWatch() {
   if (!box) return;
   const on = tvTickMenuOn();
   if (on) tvTickLoad();
+  tvTickNavPlace();
   if (on && box.hidden) { box.hidden = false; tvTickDots(); tvTickTime(); }
   if (!on && !box.hidden) {
     box.hidden = true; clearInterval(tvTick.timer);
-    ["tv-tick-pick", "tv-tick-lazy", "tv-tick-how"].forEach((id) => { const slot = document.getElementById(id); if (slot) slot.hidden = true; });
+    ["tv-tick-pick", "tv-tick-lazy", "tv-tick-how", "tv-tick-risk", "tv-tick-help"].forEach((id) => { const slot = document.getElementById(id); if (slot) slot.hidden = true; });
     tvTick.at = "menu"; tvTick.hold = false;
     tvTickDots();
   }
