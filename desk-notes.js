@@ -24,6 +24,9 @@ function createNotes(readKey, writeKey) {
     "Your bets are still here tomorrow.",
     "Ask a bot what it means. Ask me if it's worth $5.",
     "Free. No monthly plan.",
+    "$20 a day adds up to *$7,300* a year.",
+    "Skip the long shot. Bank the *$20*.",
+    "Small wins add up. Come get today's.",
   ];
   const previous = new Set([
     "I already picked tonight.",

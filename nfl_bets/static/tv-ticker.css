@@ -64,3 +64,9 @@
 #desk-glass .tv-lazy-league.on, #desk.tv-full #desk-glass .tv-lazy-league.on { border-color: #3dff6e; background: rgba(61, 255, 110, 0.16); color: #3dff6e; }
 .tv-lazy-fav { display: inline-flex; align-items: center; gap: 0.4rem; color: #f4fff6; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
 #desk-glass .tv-lazy-fav input { width: auto; height: auto; min-height: 0; margin: 0; padding: 0; accent-color: #3dff6e; }
+.tv-steady-row { display: flex; justify-content: center; gap: 0.6rem; width: 100%; }
+.tv-steady-row span { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0.6rem 0.4rem; border: 1px solid rgba(61, 255, 110, 0.45); border-radius: 10px; background: rgba(61, 255, 110, 0.06); color: #c9d4dd; font-size: 14px; }
+.tv-steady-row b { color: #3dff6e; font-family: "Rajdhani", sans-serif; font-size: 30px; font-weight: 800; line-height: 1.1; }
+.tv-steady-row span:last-child { border-color: #e7c15a; background: rgba(231, 193, 90, 0.1); }
+.tv-steady-row span:last-child b { color: #e7c15a; }
+#desk-glass button.tv-how-go { min-height: 0; border: 0; box-shadow: none; text-transform: none; cursor: pointer; }
