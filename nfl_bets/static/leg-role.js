@@ -31,7 +31,7 @@ function legRoleName(bet) {
 function legRoleSay(rows) {
   const names = (role) => rows.filter((row) => row.role === role).map((row) => legRoleName(row.bet)), join = (list) => (list.length > 1 ? `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}` : list[0]);
   const anchors = names("anchor"), juice = names("juice"), dead = names("dead");
-  return [anchors.length ? `Anchored by ${join(anchors)}.` : "No anchor under it.", juice.length ? `Juiced by ${join(juice)}.` : "Every leg is short. Steady, smaller payout.", dead.length ? `${join(dead)} ${dead.length > 1 ? "carry" : "carries"} risk without the payout.` : ""].filter(Boolean).join(" ");
+  return [anchors.length ? `Anchored by ${join(anchors)}.` : "", juice.length ? `Juiced by ${join(juice)}.` : "Every leg is short. Steady, smaller payout.", dead.length ? `${join(dead)} ${dead.length > 1 ? "carry" : "carries"} risk without the payout.` : ""].filter(Boolean).join(" ");
 }
 
 function legRolePaint() {

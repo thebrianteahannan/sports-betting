@@ -1,7 +1,7 @@
 /** Player names on the slate Build a bet is using. */
 
 function who(leg) {
-  return String(leg.runner || leg.label || "").split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "").trim().toLowerCase();
+  return String(leg.runner || leg.label || "").split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "").replace(/[\s\-–—:]+$/, "").trim().toLowerCase();
 }
 
 function playerNames(pools) {
@@ -12,7 +12,7 @@ function playerNames(pools) {
       const key = who(leg);
       const words = key.split(" ").filter(Boolean);
       if (words.length < 2 || words.length > 3 || skip.test(key) || names.has(key)) return;
-      const shown = String(leg.runner || leg.label || "").split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "").trim();
+      const shown = String(leg.runner || leg.label || "").split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "").replace(/[\s\-–—:]+$/, "").trim();
       names.set(key, shown || key);
     });
   });
@@ -73,7 +73,7 @@ function bookOf(pools) {
       if (team) { put(team.key, team.name, "team", bet); return; }
       const key = who(leg).replace(/\s+to\b.*$/, "").trim();
       const words = key.split(" ").filter(Boolean);
-      const shown = String(leg.runner || leg.label || "").split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "").replace(/\s+to\b.*$/i, "").trim();
+      const shown = String(leg.runner || leg.label || "").split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "").replace(/\s+to\b.*$/i, "").replace(/[\s\-–—:]+$/, "").trim();
       if (words.length < 2 || words.length > 3 || skip.test(key) || /^(over|under)\b/i.test(key) || /[()]/.test(shown)) return;
       put(key, shown || key, "player", bet);
     });
