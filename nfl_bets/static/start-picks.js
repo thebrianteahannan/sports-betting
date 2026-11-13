@@ -1,25 +1,6 @@
-/** An empty bet shows the next games and the best picks under the parrot's tips, so a bet starts right here instead of on another page. */
+/** An empty bet shows the home Recommended picks and Games under the parrot's tips, inline, so a bet starts right here instead of on another page. */
 
-function startGames(board) {
-  const now = Date.now(), seen = new Map();
-  (board.people || []).forEach((person) => (person.bets || []).forEach((bet) => {
-    const at = Date.parse(bet.kickoff || ""), key = `${bet.match}|${bet.kickoff}`;
-    if (bet.match && at > now && !seen.has(key)) seen.set(key, { bet, at });
-  }));
-  return [...seen.values()].sort((a, b) => a.at - b.at).slice(0, 6);
-}
-
-function startPicks(board) {
-  if (typeof legBoostFind !== "function" || typeof legBoostRecs === "undefined") return [];
-  const index = legBoostFind(board.people), now = Date.now(), rows = [];
-  legBoostRecs.list.forEach((rec) => {
-    const hit = index.get(`${rec.label}|${rec.market}|${rec.match}`);
-    if (!hit || !(Date.parse(hit.bet.kickoff || "") > now) || !Number(hit.bet.odds)) return;
-    const read = legRoleChance(hit.bet);
-    if (read.n) rows.push({ ...hit, ...read, rec, edge: read.chance - legSwapChance(hit.bet.odds) });
-  });
-  return rows.sort((a, b) => (a.rec.tier === "good") - (b.rec.tier === "good") || b.edge - a.edge).filter((row, at, list) => list.findIndex((one) => one.person === row.person) === at).slice(0, 6);
-}
+let startTab = "rec";
 
 function startOpen(board, bet) {
   const teams = board.querySelector(":scope > .find-teams"), list = board.querySelector(":scope > .find-list"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)"), span = board.querySelector(":scope > .find-span"), more = board.querySelector(".find-games-go");
@@ -32,38 +13,63 @@ function startOpen(board, bet) {
   teams.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
+function startBet(board, pick) {
+  const index = typeof legBoostFind === "function" ? legBoostFind(board.people) : new Map();
+  const hit = index.get(`${pick.label}|${pick.market}|${pick.match}`) || [...index.values()].find((row) => row.bet.label === pick.label && row.bet.match === pick.match);
+  if (hit) return legSwapAdd(hit.person, hit.bet);
+  window.location.href = `/?${new URLSearchParams({ game: pick.match, label: pick.label, market: pick.market || "" })}`;
+}
+
+function startGameOpen(board, game) {
+  let bet = null;
+  (board.people || []).some((person) => (person.bets || []).some((one) => (one.match === game.match ? (bet = one) : false)));
+  if (bet) startOpen(board, bet); else homeGamesOpen(game);
+}
+
+function startRecs(board) {
+  const now = Date.now(), left = homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now);
+  const recs = homeRecRows(left).map((node) => {
+    if (!node.classList.contains("desk-rec")) return node;
+    const copy = node.cloneNode(true), pick = node.startPick;
+    if (pick) { copy.title = "Add to a new bet"; copy.addEventListener("click", () => startBet(board, pick)); }
+    return copy;
+  });
+  const games = homeGameRows(left).map((node) => {
+    if (!node.classList.contains("desk-game") || node.classList.contains("desk-game-live")) return node;
+    const copy = node.cloneNode(true), game = node.startGame;
+    if (game) copy.addEventListener("click", () => startGameOpen(board, game));
+    return copy;
+  });
+  return { recs, games };
+}
+
 function startPaint(again) {
   document.querySelectorAll(".find-start").forEach((node) => node.remove());
   const tips = document.querySelector("#desk-glass-in .find-tips"), board = tips && tips.closest(".find-board");
-  if (!tips || !board || parlayLeg.size || parlayPick.size) return;
-  const box = document.createElement("div"), name = (team) => String(team || "").split(" ").pop();
-  box.className = "find-start";
-  const games = startGames(board), picks = startPicks(board);
-  if (games.length) {
-    const part = document.createElement("div"); part.className = "find-start-part"; part.innerHTML = "<b>Up next</b>";
-    games.forEach(({ bet }) => {
-      const count = typeof legBoostRecs !== "undefined" ? new Set(legBoostRecs.list.filter((rec) => rec.match === bet.match).map((rec) => rec.label)).size : 0;
-      const go = document.createElement("button"); go.type = "button"; go.className = "find-start-game";
-      go.innerHTML = `<i class="sp">${esc(bet.sport || "")}</i><i class="gm">${esc(String(bet.match).split(/\s+@\s+/).map(name).join(" @ "))}</i><i class="find-until" data-kick="${esc(bet.kickoff)}"></i>${count ? `<i class="ct">${count} pick${count > 1 ? "s" : ""}</i>` : ""}`;
-      go.addEventListener("click", () => startOpen(board, bet));
-      part.append(go);
-    });
-    box.append(part);
-  }
-  const part = document.createElement("div"); part.className = "find-start-part"; part.innerHTML = "<b>Start with a pick</b>";
-  picks.forEach((row) => {
-    const price = Number(row.bet.odds), go = document.createElement("button"); go.type = "button"; go.className = "find-start-pick"; go.title = "Add to a new bet";
-    go.innerHTML = `<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i><i class="who">${esc(row.person.name)}</i><i class="prop">${esc(legSwapWhat(row.person, row.bet))}</i><i class="tm">${esc(gameShort(row.bet.match))}</i>${typeof scriptKindTag === "function" ? scriptKindTag({ ...row.rec, odds: price, kind: scriptKindOf(price) }) : ""}<i class="rec">${row.hits} of ${row.n}</i>`;
-    go.addEventListener("click", () => legSwapAdd(row.person, row.bet));
-    part.append(go);
+  if (!tips || !board || parlayLeg.size || parlayPick.size || typeof homeRecRows !== "function") return;
+  homeRecsLoad(); homeLogosLoad(); homeLeagueSync();
+  const box = document.createElement("div"), tabs = document.createElement("span");
+  box.className = "find-start"; tabs.className = "desk-games-tabs";
+  const { recs, games } = startRecs(board);
+  [["rec", "Recommended"], ["games", `Games ${games.filter((node) => node.classList.contains("desk-game")).length}`]].forEach(([id, label]) => {
+    const tab = Object.assign(document.createElement("button"), { type: "button", className: `desk-games-tab${startTab === id ? " on" : ""}`, textContent: label });
+    tab.setAttribute("aria-pressed", String(startTab === id));
+    tab.addEventListener("click", () => { startTab = id; startPaint(1); });
+    tabs.append(tab);
   });
-  if (!picks.length) { const wait = document.createElement("p"); wait.textContent = typeof legBoostRecs !== "undefined" && legBoostRecs.at ? "No picks are posted for the games ahead yet." : "Loading the picks."; part.append(wait); }
-  box.append(part);
+  box.append(tabs, ...(startTab === "rec" ? recs : games));
   tips.after(box);
-  if (typeof gameUntilPaint === "function") box.querySelectorAll(".find-until").forEach(gameUntilPaint);
-  if (!again && typeof legBoostRecLoad === "function") legBoostRecLoad().then(() => { if (box.isConnected) startPaint(true); });
+  if ((!homeRecs || homeRecs.loading) && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
 }
 
+if (typeof homeRecRow === "function") {
+  const homeRecRowStart = homeRecRow;
+  homeRecRow = function (pick) { const card = homeRecRowStart.apply(this, arguments); card.startPick = pick; return card; };
+}
+if (typeof homeGamesRow === "function") {
+  const homeGamesRowStart = homeGamesRow;
+  homeGamesRow = function (game) { const row = homeGamesRowStart.apply(this, arguments); row.startGame = game; return row; };
+}
 if (typeof saveTips === "function") {
   const saveTipsStart = saveTips;
   saveTips = function () { saveTipsStart.apply(this, arguments); startPaint(); };
