@@ -198,6 +198,21 @@ function livePaint(data, quiet) {
   document.getElementById("live-at").textContent = `Updated ${new Date(data.at || Date.now()).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}`;
 }
 
+let liveFocusId = new URLSearchParams(location.search).get("game") || "";
+
+function liveFocus(data) {
+  if (!liveFocusId) return;
+  const id = liveFocusId, find = () => document.querySelector(`.live-game[data-id="${CSS.escape(id)}"]`);
+  liveFocusId = "";
+  history.replaceState(null, "", location.pathname);
+  if (!find() && liveSpan !== "today") { liveSpan = "today"; livePaint(data, true); }
+  if (!find() && liveLeagues.size) { liveLeagues.clear(); livePaint(data, true); }
+  const game = find();
+  if (!game) return;
+  game.open = true;
+  game.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
 async function liveLoad() {
   try {
     const [res, mine] = await Promise.all([fetch("/api/live?all=1", { credentials: "same-origin" }), fetch("/api/parlays", { credentials: "same-origin" }).then((reply) => (reply.ok ? reply.json() : null)).catch(() => null)]);
@@ -206,6 +221,7 @@ async function liveLoad() {
     const data = await res.json();
     liveRecs = data.recs || [];
     livePaint(data);
+    liveFocus(data);
     liveEdgeLoad();
   } catch (error) {
     console.log("[live] could not load", error);

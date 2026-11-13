@@ -46,6 +46,9 @@ function trayLivePaint() {
       }
       const live = document.createElement("i");
       live.className = `tray-live${game.final ? " done" : ""}`;
+      live.dataset.liveGame = game.id;
+      live.setAttribute("role", "link");
+      live.title = "Open this game on The Games";
       live.textContent = game.final ? "Final" : `Live · ${game.clock}`;
       chip.after(live);
     });
@@ -61,5 +64,12 @@ if (typeof paintParlay === "function") {
   const paintParlayLive = paintParlay;
   paintParlay = function () { paintParlayLive.apply(this, arguments); trayLivePaint(); trayLiveLoad(); };
 }
+document.addEventListener("click", (event) => {
+  const tag = event.target.closest && event.target.closest(".find-tray i.tray-live[data-live-game]");
+  if (!tag) return;
+  event.preventDefault();
+  event.stopPropagation();
+  window.location.href = `/live?${new URLSearchParams({ game: tag.dataset.liveGame })}`;
+});
 setInterval(trayLiveLoad, 20000);
 setTimeout(trayLiveLoad, 1500);

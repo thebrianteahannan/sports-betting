@@ -11,3 +11,5 @@
 .find-tray :is(i.tray-now, .find-ticket > b i.tray-sum):is(.pace-far, .lost, .pace-lost) { background: rgba(255, 107, 107, 0.24); color: #ff8a8a; }
 .find-tray .find-ticket > b i.tray-soon { font-style: normal; color: #3dff6e; border: 1px solid rgba(61, 255, 110, 0.5); border-radius: 999px; padding: 0.05rem 0.5rem; font-size: 11px; font-weight: 800; letter-spacing: 0.03em; white-space: nowrap; }
 .find-tray .find-ticket > b i.tray-soon[hidden] { display: none; }
+.find-tray .find-ticket > b i.tray-live[data-live-game] { cursor: pointer; }
+.find-tray .find-ticket > b i.tray-live[data-live-game]:hover { background: rgba(255, 107, 107, 0.15); }
