@@ -169,3 +169,7 @@ body.live-recs-on .live-table tr.rec .live-name { color: #3dff6e; }
 .live-mine-leg i.bet-kind { padding: 0 6px; border: 1px solid currentColor; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; cursor: help; }
 .live-mine-leg i.bet-kind.k-safe { color: #3dff6e; } .live-mine-leg i.bet-kind.k-balanced { color: #8fb4ff; } .live-mine-leg i.bet-kind.k-payout { color: #ff9a2e; } .live-mine-leg i.bet-kind.k-good { color: #c4cde0; border-style: dashed; }
 .live-score span.k-cash b { color: #ff9a2e; } .live-score span.k-good b { color: #c4cde0; }
+.live-load { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; min-height: 60vh; }
+.live-load img { width: 200px; height: auto; animation: live-look 0.9s ease-in-out infinite; transform-origin: 68% 26%; filter: drop-shadow(0 10px 16px rgba(61, 255, 110, 0.35)); }
+.live-load p { margin: 0; color: #f4fff6; font-family: "Outfit", sans-serif; font-size: 20px; font-weight: 700; }
+@keyframes live-look { 0%, 100% { transform: scale(1.04) rotate(-2deg); } 50% { transform: translateY(-8px) scale(1.08) rotate(2deg); } }
