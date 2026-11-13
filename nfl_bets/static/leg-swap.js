@@ -117,7 +117,7 @@ function legWhoFind(key) {
     const gap = Math.abs(chance - want), had = best.get(group), rec = typeof scriptRecAll !== "undefined" && scriptRecAll.has(`${bet.label}|${bet.market}`);
     if (!had || (rec && !had.rec) || (rec === had.rec && gap < had.gap)) best.set(group, { person, bet, gap, rec });
   });
-  const rank = ({ bet, rec }) => (rec ? -4 : 0) + (/^(1st|2nd|3rd|4th)\s+(qtr|half|quarter)\b|\b(first \d+ minutes|each quarter|first basket)\b/i.test(String(bet.market || "").replace(person.name, "").replace(/^\s*-\s*/, "")) ? 2 : 0) + (/\bunder\b/i.test(bet.label || "") ? 1 : 0);
+  const rank = ({ bet, rec }) => (typeof shotWantHit === "function" && shotWantHit(person, bet) ? -8 : 0) + (rec ? -4 : 0) + (/^(1st|2nd|3rd|4th)\s+(qtr|half|quarter)\b|\b(first \d+ minutes|each quarter|first basket)\b/i.test(String(bet.market || "").replace(person.name, "").replace(/^\s*-\s*/, "")) ? 2 : 0) + (/\bunder\b/i.test(bet.label || "") ? 1 : 0);
   return [...best.values()].sort((a, b) => rank(a) - rank(b) || a.gap - b.gap);
 }
 

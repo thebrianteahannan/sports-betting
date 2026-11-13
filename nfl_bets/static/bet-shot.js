@@ -67,6 +67,19 @@ function shotGame(people, leg, found) {
   return (found[0] && found[0].bet.match) || "";
 }
 
+const shotWant = new Map();
+
+function shotWho(people, leg) {
+  const name = plainName(leg.player);
+  if (!name) return null;
+  return people.find((who) => who.kind === "player" && plainName(who.name) === name) || people.find((who) => who.kind === "team" && (plainName(who.name) === name || plainName(who.name).endsWith(` ${name}`))) || null;
+}
+
+function shotWantHit(person, bet) {
+  const want = shotWant.get(person.key), sig = want && shotSig(want);
+  return Boolean(sig) && shotSig(`${String(bet.label || "").replace(person.name, "")} ${String(bet.market || "").replace(person.name, "")}`) === sig;
+}
+
 function shotLine(bet) {
   const label = String(bet.label || "");
   const hit = label.match(/(\d+(?:\.\d+)?)\+/) || label.match(/\b(?:over|under)\b\s*\(?(-?\d+(?:\.\d+)?)/i) || label.match(/\(([+-]?\d+(?:\.\d+)?)\)/);
@@ -186,16 +199,28 @@ async function shotRead(board, file) {
     const rows = legs.map((leg) => ({ leg, hit: shotPlayer(people, leg) }));
     rows.forEach((row) => { if (!row.hit) row.hit = shotTeam(people, row.leg, shotGame(people, row.leg, rows.filter((one) => one.hit).map((one) => one.hit))); });
     const found = rows.filter((row) => row.hit).map((row) => row.hit), missed = rows.filter((row) => !row.hit).map((row) => row.leg);
-    if (found.length) {
+    shotWant.clear();
+    const drafts = [];
+    missed.forEach((leg) => {
+      const person = shotWho(people, leg);
+      if (!person || found.some((hit) => hit.person && hit.person.key === person.key) || drafts.some((one) => one.person.key === person.key)) return;
+      drafts.push({ person, leg });
+      if (leg.market) shotWant.set(person.key, String(leg.market).trim());
+    });
+    if (found.length || drafts.length) {
       if (typeof saveDetach === "function") saveDetach();
-      trayStackDo(`Read ${found.length} ${found.length === 1 ? "leg" : "legs"} from the screenshot.`, () => {
+      const total = found.length + drafts.length;
+      trayStackDo(`Read ${total} ${total === 1 ? "leg" : "legs"} from the screenshot.`, () => {
         parlayPick.clear(); parlayLeg.clear();
         found.forEach(({ person, bet }) => { if (person) parlayPick.set(person.key, person); parlayLeg.set(parlayKey(bet), bet); });
+        drafts.forEach(({ person }) => parlayPick.set(person.key, person));
       });
     }
     const say = (leg) => [leg.player, leg.side && leg.line != null ? `${leg.side} ${leg.line}` : "", leg.market].filter(Boolean).join(" ");
     const more = bets.length > 1 ? " That screenshot has more than one bet. This is the top one." : "";
-    shotNote(board, missed.length ? `Not on the board right now: ${missed.map(say).join(", ")}.${more}` : more.trim());
+    const lost = missed.filter((leg) => !drafts.some((one) => one.leg === leg));
+    const told = [drafts.length && `FanDuel doesn't have ${drafts.map(({ leg }) => say(leg)).join(", ")} at that number. ${drafts.length === 1 ? "It's" : "They're"} in your bet. Pick the line.`, lost.length && `Not on the board right now: ${lost.map(say).join(", ")}.`].filter(Boolean).join(" ");
+    shotNote(board, `${told}${more}`.trim());
     shotNearPaint(board, missed.map((leg) => ({ text: say(leg), near: shotNear(people, leg, shotGame(people, leg, found)) })));
     const tray = board.querySelector(":scope > .find-tray");
     if (tray && !tray.hidden) tray.scrollIntoView({ behavior: "smooth", block: "start" });
