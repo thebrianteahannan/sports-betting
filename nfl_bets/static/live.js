@@ -75,16 +75,16 @@ function liveNext(next) {
 }
 
 function liveScore(data) {
-  let won = 0, lost = 0, all = 0;
+  let won = 0, lost = 0, all = 0, pace = 0;
   (data.live || []).forEach((game) => liveMine(game, liveRecs).forEach((pick) => {
-    const { now } = liveNow(game, pick);
+    const { state, level } = liveLegState(game, pick);
     all += 1;
-    if (now === null || pick.need === null) return;
-    if (pick.under) { if (now > pick.need) lost += 1; } else if (now >= (pick.plus ? pick.need : Math.floor(pick.need) + 1)) won += 1;
+    if (state === "hit") won += 1; else if (state === "lost") lost += 1;
+    if (state === "hit" || level === "ahead" || level === "close") pace += 1;
   }));
   const tally = data.tally || {}, today = tally.today || { won: 0, lost: 0 }, ever = tally.all || { won: 0, lost: 0 };
-  const cell = (name, hit, of, tip) => `<span title="${liveEsc(tip)}"><b>${name}</b> ${hit} of ${of}${of ? ` · ${Math.round((100 * hit) / of)}%` : ""}</span>`;
-  document.getElementById("live-score").innerHTML = `<i>Recommended</i>${cell("Live", won, all, "Recommended bets in games on now that have already hit")}${cell("Today", today.won + won, today.won + today.lost + won + lost, "Recommended bets won today, out of the ones already decided")}${cell("All time", ever.won + won, ever.won + ever.lost + won + lost, "See every recommended bet and how it finished")}`;
+  const cell = (name, hit, of, tip, say = "") => `<span title="${liveEsc(tip)}"><b>${name}</b> ${hit} of ${of}${say}${of ? ` · ${Math.round((100 * hit) / of)}%` : ""}</span>`;
+  document.getElementById("live-score").innerHTML = `<i>Recommended</i>${cell("Live", pace, all, "Recommended bets in games on now that have hit or are on pace to hit", " on pace")}${cell("Today", today.won + won, today.won + today.lost + won + lost, "Recommended bets won today, out of the ones already decided")}${cell("All time", ever.won + won, ever.won + ever.lost + won + lost, "See every recommended bet and how it finished")}`;
   const allCell = document.querySelector("#live-score span:last-child"); if (allCell) allCell.dataset.history = "1";
 }
 
