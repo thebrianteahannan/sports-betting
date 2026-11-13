@@ -136,7 +136,7 @@ function liveHistory(rows, today) {
 }
 
 const liveLeagues = new Set((() => { try { return JSON.parse(localStorage.getItem("liveLeagues") || "[]"); } catch (error) { return []; } })());
-let liveLast = null, liveSpan = localStorage.getItem("liveSpan") || (localStorage.getItem("liveWeek") === "1" ? "week" : "today");
+let liveLast = null, liveSpan = "today";
 const liveRecOpen = new Set(), liveHistOpen = new Set();
 document.addEventListener("toggle", (event) => { const key = event.target.dataset && event.target.dataset.hk; if (key) { if (event.target.open) liveHistOpen.add(key); else liveHistOpen.delete(key); } }, true);
 
@@ -262,8 +262,8 @@ document.getElementById("live").addEventListener("change", (event) => {
   try { localStorage.setItem(`liveCard-${kind}`, JSON.stringify([...liveCard[kind]].slice(-40))); } catch (error) { console.log("[live] could not keep the card filter", kind, error); }
 });
 
-document.body.classList.toggle("live-recs-on", localStorage.getItem("liveRecs") === "1");
-document.body.classList.toggle("live-mine-off", localStorage.getItem("liveMine") === "0");
+document.body.classList.toggle("live-recs-on", false);
+document.body.classList.toggle("live-mine-off", true);
 document.getElementById("live").addEventListener("change", (event) => {
   if (!event.target.matches("input.live-mine-box")) return;
   const on = event.target.checked;
