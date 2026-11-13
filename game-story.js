@@ -178,7 +178,7 @@ function plays(groups, game, boxes) {
 
 async function build(body, board) {
   const game = ((board && board.games) || []).find((row) => row.match === body.match && row.kickoff === body.kickoff);
-  if (game && (game.sport === "NFL" || game.sport === "NHL")) return require("./sport-story").buildSport(game, board, body.props);
+  if (game && (game.sport === "NFL" || game.sport === "NHL")) return require("./sport-story").buildSport(game, board, body.props, body.lines);
   if (!game || game.sport !== "NBA") return { sections: [] };
   const [boxes, read] = await Promise.all([
     gameBoxes(game.awayName, game.homeName).catch(() => null),
@@ -189,6 +189,7 @@ async function build(body, board) {
   const outs = { away: outsOf(read, boxes.away.name), home: outsOf(read, boxes.home.name) };
   const story = tell(game, boxes, read, fives, outs);
   try { story.bets = require("./script-bets").scriptBets(game, boxes, fives, outs, body.props); } catch (error) { console.error("script bets failed:", error); }
+  try { story.lines = require("./team-bets").teamBets(boxes, body.lines); } catch (error) { console.error("team bets failed:", error); }
   return story;
 }
 

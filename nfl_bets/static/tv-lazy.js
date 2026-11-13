@@ -16,7 +16,29 @@ function tvLazyPaint() {
     const die = event.target.closest(".tv-lazy-die, .tv-lazy-again");
     if (die) { event.stopPropagation(); tvLazyRoll(slot.querySelector(".tv-lazy-die")); return; }
     if (event.target.closest("[data-lazy-open]") && tvLazy.pick && window.tvTickOpen) { event.stopPropagation(); tvTickOpen(tvLazy.pick); }
+    if (event.target.closest("[data-lazy-add]") && tvLazy.pick) { event.stopPropagation(); tvLazyAdd(tvLazy.pick); }
   });
+}
+
+function tvLazyAdd(pick) {
+  window.asking = true;
+  if (window.goFull) goFull();
+  if (window.birdMenu) birdMenu("find");
+  let tries = 0;
+  const wait = setInterval(() => {
+    const board = document.querySelector("#desk-glass-in .find-board"), give = ++tries > 80;
+    if (!give && (!board || !(board.people || []).length || typeof legBoostFind !== "function")) return;
+    const index = board ? legBoostFind(board.people) : new Map();
+    const hit = index.get(`${pick.label}|${pick.market}|${pick.match}`) || [...index.values()].find((row) => row.bet.label === pick.label && row.bet.match === pick.match);
+    if (!hit && !give) return;
+    clearInterval(wait);
+    if (!hit) { if (window.tvTickOpen) tvTickOpen(pick); return; }
+    if (parlayLeg.size) saveNew();
+    legSwapAdd(hit.person, hit.bet);
+    saveNow(); paintParlay();
+    const glass = document.getElementById("desk-glass-in");
+    if (glass) glass.scrollTop = 0;
+  }, 150);
 }
 
 async function tvLazyLoad() {
@@ -48,7 +70,7 @@ function tvLazyChoose() {
 function tvLazyCard(pick) {
   const odds = Number(pick.odds), price = odds > 0 ? `+${odds}` : String(odds), win = (odds > 0 ? (5 * odds) / 100 : (5 * 100) / Math.abs(odds)).toFixed(2);
   const when = pick.kickoff ? new Date(pick.kickoff).toLocaleString("en-US", { timeZone: "America/New_York", ...(tvLazy.span === "week" ? { weekday: "short" } : {}), hour: "numeric", minute: "2-digit" }) + " ET" : "";
-  return `<div class="tv-tick-card"><p class="gate-sample-head">${tvLazy.span === "week" ? "This week's" : "Tonight's"} lazy pick${pick.fav ? " · one of your teams" : ""}</p><p class="gate-sample-bet">${esc(pick.label)} <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p><p class="gate-sample-why">${esc(pick.how || "")}</p><p class="gate-sample-pay">$5 wins $${win}.</p><button type="button" class="tv-tick-open" data-lazy-open>Open the game &#8250;</button></div>`;
+  return `<div class="tv-tick-card"><p class="gate-sample-head">${tvLazy.span === "week" ? "This week's" : "Tonight's"} lazy pick${pick.fav ? " · one of your teams" : ""}</p><p class="gate-sample-bet">${esc(pick.label)} <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p><p class="gate-sample-why">${esc(pick.how || "")}</p><p class="gate-sample-pay">$5 wins $${win}.</p><button type="button" class="tv-tick-open" data-lazy-open>Open the game &#8250;</button><button type="button" class="tv-tick-open tv-tick-add" data-lazy-add>+ Add to my bets</button></div>`;
 }
 
 async function tvLazyRoll(die) {

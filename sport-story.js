@@ -22,7 +22,7 @@ function tellSport(sport, game, boxes, extra) {
   return { plays: [], sections: [], watch: [] };
 }
 
-async function buildSport(game, board, props) {
+async function buildSport(game, board, props, lines) {
   const { gameRead } = require("./game-read");
   const [boxes, read] = await Promise.all([
     sportBoxes(game.sport, game.awayName, game.homeName, game.kickoff).catch(() => null),
@@ -37,6 +37,7 @@ async function buildSport(game, board, props) {
   };
   const story = tellSport(game.sport, game, boxes, extra);
   try { story.bets = require("./sport-bets").sportBets(game.sport, boxes, extra.outs, props); } catch (error) { console.error("sport bets failed:", error); }
+  try { story.lines = require("./team-bets").teamBets(boxes, lines); } catch (error) { console.error("team bets failed:", error); }
   return story;
 }
 

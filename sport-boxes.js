@@ -177,7 +177,7 @@ async function sportBoxes(sport, awayName, homeName, kickoff, before) {
   await positions(sport, [...all.values()]);
   const mine = (boxes, id) => sideRows(boxes).filter((row) => row.team.id === String(id));
   const start = Date.parse(kickoff || "") || before || Date.now();
-  const side = (id, name, last) => ({ id, name, ...profile(sport, mine(last.boxes, id)), players: playerBook(sport, mine(last.boxes, id)), goalies: sport === "NHL" ? goalieBook(mine(last.boxes, id)) : [], rest: last.lastAt ? (start - last.lastAt) / 86400000 : null });
+  const side = (id, name, last) => ({ id, name, ...profile(sport, mine(last.boxes, id)), players: playerBook(sport, mine(last.boxes, id)), goalies: sport === "NHL" ? goalieBook(mine(last.boxes, id)) : [], scores: mine(last.boxes, id).map((row) => [row.team.pts, row.foe.pts]), rest: last.lastAt ? (start - last.lastAt) / 86400000 : null });
   const data = { sport, away: side(awayId, awayName, awayLast), home: side(homeId, homeName, homeLast), base: profile(sport, sideRows(awayLast.boxes.concat(homeLast.boxes).filter((box, at, list) => list.findIndex((one) => one.id === box.id) === at))), meet };
   MEM.set(key, { at: Date.now(), data });
   return data;

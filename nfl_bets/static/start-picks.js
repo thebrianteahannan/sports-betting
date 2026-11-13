@@ -1,6 +1,6 @@
 /** Build a bet always shows the home Recommended picks and Games under the bet, so a leg or a game is one tap away instead of on another page. */
 
-let startTab = "rec", startBack = null, startUndo = null;
+let startTab = "rec", startBack = null, startUndo = null, startRandomAt = null;
 
 function startOpen(board, bet) {
   const teams = board.querySelector(":scope > .find-teams"), list = board.querySelector(":scope > .find-list"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)"), span = board.querySelector(":scope > .find-span"), more = board.querySelector(".find-games-go");
@@ -42,9 +42,57 @@ function startGameOpen(board, game) {
   if (bet) startOpen(board, bet); else homeGamesOpen(game);
 }
 
+function startRandomPool(board, picks) {
+  const index = typeof legBoostFind === "function" ? legBoostFind(board.people) : new Map(), seen = new Set();
+  return picks.map((pick) => index.get(`${pick.label}|${pick.market}|${pick.match}`) || [...index.values()].find((row) => row.bet.label === pick.label && row.bet.match === pick.match)).filter((hit) => hit && !seen.has(hit.person.key) && seen.add(hit.person.key));
+}
+
+function startRandom(board, picks, n) {
+  const pool = startRandomPool(board, picks);
+  for (let at = pool.length - 1; at > 0; at--) { const swap = Math.floor(Math.random() * (at + 1)); [pool[at], pool[swap]] = [pool[swap], pool[at]]; }
+  const legs = pool.slice(0, n);
+  if (!legs.length) return;
+  const again = startRandomAt && window.parlayOpenId === startRandomAt.id && saveSig([...parlayLeg.values()]) === startRandomAt.sig;
+  if (again) { parlayLeg.clear(); parlayPick.clear(); }
+  else {
+    const had = parlayLeg.size > 0;
+    if (had && saveSig([...parlayLeg.values()]) !== saveHeld) saveNow();
+    startRandomAt = { prior: had ? window.parlayOpenId || "" : "", ids: new Set(saveList().map((row) => row.id)) };
+    saveNew();
+  }
+  legs.forEach(({ person, bet }) => { parlayLeg.set(parlayKey(bet), bet); if (!parlayPick.has(person.key)) parlayPick.set(person.key, person); });
+  if (typeof trayRoster === "function") trayRoster();
+  saveNow(); paintParlay();
+  Object.assign(startRandomAt, { id: window.parlayOpenId, sig: saveSig([...parlayLeg.values()]) });
+  startUndo = { board, keys: [...parlayLeg.keys()], ids: startRandomAt.ids, prior: startRandomAt.prior };
+  const glass = document.getElementById("desk-glass-in");
+  if (glass) glass.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function startRandomBar(board, picks) {
+  const most = startRandomPool(board, picks).length, bar = document.createElement("span");
+  bar.className = "find-start-random";
+  if (most < 2) return bar;
+  bar.append(Object.assign(document.createElement("i"), { textContent: "Random parlay" }));
+  [2, 3, 4, 5].filter((n) => n <= most).forEach((n) => {
+    const go = Object.assign(document.createElement("button"), { type: "button", textContent: String(n), title: `Build a random ${n}-leg parlay from the recommended picks` });
+    go.addEventListener("click", () => startRandom(board, picks, n));
+    bar.append(go);
+  });
+  if (most > 5) {
+    const more = document.createElement("select");
+    more.setAttribute("aria-label", "Random parlay with more legs");
+    more.innerHTML = `<option value="">More</option>${Array.from({ length: most - 5 }, (_, at) => `<option value="${at + 6}">${at + 6} legs</option>`).join("")}`;
+    more.addEventListener("change", () => { const n = Number(more.value); more.value = ""; if (n) startRandom(board, picks, n); });
+    bar.append(more);
+  }
+  return bar;
+}
+
 function startRecs(board) {
-  const now = Date.now(), left = homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now);
+  const now = Date.now(), left = homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now), picks = [];
   const recs = homeRecRows(left).map((node) => {
+    if (node.startPick) picks.push(node.startPick);
     if (!node.classList.contains("desk-rec")) return node;
     const copy = node.cloneNode(true), pick = node.startPick;
     if (pick) { copy.title = "Add to a new bet"; copy.addEventListener("click", () => startBet(board, pick)); }
@@ -56,7 +104,7 @@ function startRecs(board) {
     if (game) copy.addEventListener("click", () => startGameOpen(board, game));
     return copy;
   });
-  return { recs, games };
+  return { recs, games, picks };
 }
 
 function startUndoGo() {
@@ -105,7 +153,7 @@ function startPaint(again) {
   homeRecsLoad(); homeLogosLoad(); homeLeagueSync();
   const box = document.createElement("div"), tabs = document.createElement("span");
   box.className = "find-start"; tabs.className = "desk-games-tabs";
-  const { recs, games } = startRecs(board), shared = Boolean(window.saveWho && typeof sharedTabBody === "function");
+  const { recs, games, picks } = startRecs(board), shared = Boolean(window.saveWho && typeof sharedTabBody === "function");
   if (startTab === "shared" && !shared) startTab = "rec";
   [["rec", "Recommended"], ["games", `Games ${games.filter((node) => node.classList.contains("desk-game")).length}`], ["stacks", "Strategies"], ...(shared ? [["shared", sharedTabLabel()]] : [])].forEach(([id, label]) => {
     const tab = Object.assign(document.createElement("button"), { type: "button", className: `desk-games-tab${startTab === id ? " on" : ""}`, textContent: label });
@@ -115,7 +163,10 @@ function startPaint(again) {
   });
   box.dataset.stacks = startStackKey();
   if (typeof sharedTabKey === "function") box.dataset.shared = sharedTabKey();
-  box.append(tabs, ...(startTab === "rec" ? recs : startTab === "stacks" ? startStacks() : startTab === "shared" && shared ? [sharedTabBody(board)] : games));
+  const row = document.createElement("div");
+  row.className = "find-start-row";
+  row.append(tabs, ...(startTab === "rec" ? [startRandomBar(board, picks)] : []));
+  box.append(row, ...(startTab === "rec" ? recs : startTab === "stacks" ? startStacks() : startTab === "shared" && shared ? [sharedTabBody(board)] : games));
   box.hidden = Boolean(input && input.value.trim());
   spot.after(box);
   if ((!homeRecs || homeRecs.loading) && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);

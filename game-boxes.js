@@ -127,8 +127,8 @@ async function gameBoxes(awayName, homeName, before) {
   const all = new Map();
   awayBoxes.concat(homeBoxes).forEach((box) => all.set(box.id, box));
   const data = {
-    away: { id: awayId, name: awayName, ...profile(mine(awayBoxes, awayId)), players: playerBook(mine(awayBoxes, awayId)) },
-    home: { id: homeId, name: homeName, ...profile(mine(homeBoxes, homeId)), players: playerBook(mine(homeBoxes, homeId)) },
+    away: { id: awayId, name: awayName, ...profile(mine(awayBoxes, awayId)), players: playerBook(mine(awayBoxes, awayId)), scores: mine(awayBoxes, awayId).map((row) => [row.team.pts, row.foe.pts]) },
+    home: { id: homeId, name: homeName, ...profile(mine(homeBoxes, homeId)), players: playerBook(mine(homeBoxes, homeId)), scores: mine(homeBoxes, homeId).map((row) => [row.team.pts, row.foe.pts]) },
     base: profile(sideRows([...all.values()])),
     meet,
   };
