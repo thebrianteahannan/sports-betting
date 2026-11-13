@@ -131,7 +131,7 @@ function legBoostRow(row, legs, now) {
   go.type = "button"; go.className = "find-swap-go leg-boost-go";
   go.innerHTML = [`<i class="boost-move">${esc(word)}</i>`, `<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, row.person && row.move !== "raise" && row.move !== "lower" && `<i class="who">${esc(row.person.name)}</i>`, `<i class="prop">${esc(what)}</i>`, row.rec && !legs.some((bet) => bet.match === row.bet.match) && typeof gameShort === "function" && `<i class="tm">${esc(gameShort(row.bet.match))}</i>`, row.rec && typeof scriptKindTag === "function" && scriptKindTag({ ...row.rec, odds: row.bet.odds }), row.n && `<i class="boost-rec">${row.hits} of ${row.n}</i>`, role && `<i class="leg-role r-${role.role}">${esc(LEG_ROLE[role.role][0])}</i>`, `<i class="boost-fx">${esc(`Payout ${legBoostPrice(now.dec)} → ${next.length ? legBoostPrice(fx.dec) : "-"} · Chance ${Math.round(100 * now.chance)}% → ${Math.round(100 * fx.chance)}%`)}</i>`].filter(Boolean).join("");
   go.addEventListener("click", () => {
-    if (row.move !== "drop" && typeof betFromSay === "function") betFromSay(legBoost.mode === "juice" ? "Add juice" : "Add stability");
+    if (row.move !== "drop" && typeof betFromSay === "function") betFromSay(legBoost.mode === "juice" ? "Juice" : "Stability");
     legBoost.mode = "";
     if (row.move === "add") legSwapAdd(row.person, row.bet);
     else if (row.move === "drop") legBoostDrop(row.old);

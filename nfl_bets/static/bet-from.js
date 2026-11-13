@@ -17,12 +17,26 @@ function betFromTag() {
   }
   [...betFrom.keys()].forEach((key) => { if (!parlayLeg.has(key)) betFrom.delete(key); });
   const next = betFromNext && Date.now() - betFromNext.at < 5000 ? betFromNext : null;
-  parlayLeg.forEach((bet, key) => { if (!betFrom.has(key) || (next && next.all)) betFrom.set(key, next ? next.say : "you"); });
+  parlayLeg.forEach((bet, key) => { if (!betFrom.has(key) || (next && next.all)) betFrom.set(key, next ? next.say : "you"); if (betFrom.get(key) === "you" && betFromRec(bet)) betFrom.set(key, "Recommended"); });
   if (next && parlayLeg.size) betFromNext = null;
 }
 
+function betFromStore() {
+  const list = saveList(), row = window.parlayOpenId && list.find((one) => one.id === window.parlayOpenId);
+  if (!row) return;
+  const from = Object.fromEntries([...betFrom].filter(([key, say]) => say && parlayLeg.has(key)));
+  if (JSON.stringify(row.from || {}) !== JSON.stringify(from)) { row.from = from; saveStore(list); }
+}
+
+function betFromRec(bet) {
+  const pill = typeof scriptRecPill === "function" && scriptRecPill(bet);
+  return Boolean(pill && !pill.classList.contains("good"));
+}
+
+const BET_FROM_OLD = { "Random parlay": "Random Recommended", "Add juice": "Juice", "Add stability": "Stability" };
+
 function betFromText() {
-  const says = [...new Set([...parlayLeg.keys()].map((key) => betFrom.get(key)).filter(Boolean))].sort((a, b) => (a === "you") - (b === "you"));
+  const says = [...new Set([...parlayLeg.keys()].map((key) => BET_FROM_OLD[betFrom.get(key)] || betFrom.get(key)).filter(Boolean))].sort((a, b) => (a === "you") - (b === "you"));
   if (!says.length) return "";
   if (says.length === 1 && says[0] === "you") return "Built by you";
   return `From ${says.join(" + ")}`;
@@ -36,8 +50,7 @@ function betFromPill() {
     const pill = document.createElement("i");
     pill.className = "fr";
     pill.textContent = text;
-    const pay = head.querySelector(":scope > i.pay");
-    if (pay) pay.after(pill); else head.append(pill);
+    head.append(pill);
   });
 }
 
@@ -46,10 +59,7 @@ if (typeof saveNow === "function") {
   saveNow = function () {
     betFromTag();
     const entry = betFromSaveBase.apply(this, arguments);
-    if (!entry) return entry;
-    entry.from = Object.fromEntries([...betFrom].filter(([key, say]) => say && parlayLeg.has(key)));
-    const list = saveList(), row = list.find((one) => one.id === entry.id);
-    if (row && JSON.stringify(row.from || {}) !== JSON.stringify(entry.from)) { row.from = entry.from; saveStore(list); }
+    if (entry) betFromStore();
     return entry;
   };
 }
@@ -69,5 +79,15 @@ if (typeof paintParlay === "function") {
     betFromTag();
     betFromPaintBase.apply(this, arguments);
     betFromPill();
+  };
+}
+
+if (typeof legRolePaint === "function") {
+  const betFromRoleBase = legRolePaint;
+  legRolePaint = function () {
+    betFromRoleBase.apply(this, arguments);
+    betFromTag();
+    betFromPill();
+    betFromStore();
   };
 }

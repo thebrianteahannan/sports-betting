@@ -60,7 +60,7 @@ function startRandom(board, picks, n) {
     startRandomAt = { prior: had ? window.parlayOpenId || "" : "", ids: new Set(saveList().map((row) => row.id)) };
     saveNew();
   }
-  if (typeof betFromSay === "function") betFromSay("Random parlay", true);
+  if (typeof betFromSay === "function") betFromSay("Random Recommended", true);
   legs.forEach(({ person, bet }) => { parlayLeg.set(parlayKey(bet), bet); if (!parlayPick.has(person.key)) parlayPick.set(person.key, person); });
   if (typeof trayRoster === "function") trayRoster();
   saveNow(); paintParlay();
