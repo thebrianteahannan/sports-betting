@@ -3,6 +3,7 @@
 const { json, boxOf } = require("./live-api");
 const { kv, recsList } = require("./live-recs");
 const { gradeParlay } = require("./parlay-grade");
+const { betKind, betCash } = require("./bet-kind");
 const SPORT = { "basketball/nba": "NBA", "hockey/nhl": "NHL", "football/nfl": "NFL" };
 
 const BASE = "https://site.api.espn.com/apis/site/v2/sports";
@@ -14,6 +15,10 @@ let tickAt = 0, done = null, doneAt = 0;
 
 function fold(name) {
   return String(name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z ]/g, "").replace(/\b(jr|sr|ii|iii|iv)\b/g, "").replace(/\s+/g, " ").trim();
+}
+
+function keep(pick) {
+  return { label: pick.label, market: pick.market, odds: pick.odds, kind: pick.kind || betKind(pick.odds), basis: pick.basis || "", tier: pick.tier || "", drop: pick.drop || "", hits: pick.hits, n: pick.n, need: pick.need };
 }
 
 function dayOf(when) {
@@ -80,8 +85,8 @@ async function gradeTick() {
   }
   for (const { ev, picks } of found.values()) {
     const teams = boxOf(await json(`${BASE}/${ev.path}/summary?event=${ev.id}`)), seen = new Set();
-    const out = picks.filter((pick) => { const id = `${pick.label}|${pick.market}`; if (seen.has(id)) return false; seen.add(id); return true; }).map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, ...grade(teams, pick) }));
-    const row = { id: ev.id, match: picks[0].match, kickoff: ev.when, day: dayOf(ev.when), at: Date.now(), picks: out };
+    const out = picks.filter((pick) => { const id = `${pick.label}|${pick.market}`; if (seen.has(id)) return false; seen.add(id); return true; }).map((pick) => ({ ...keep(pick), ...grade(teams, pick) }));
+    const row = { id: ev.id, match: picks[0].match, kickoff: ev.when, day: dayOf(ev.when), sport: SPORT[ev.path] || "", at: Date.now(), picks: out };
     await kv("", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { k: KEY + ev.id, v: row } });
     have.set(ev.id, row);
   }
@@ -94,7 +99,7 @@ async function gradeFill() {
     for (const path of PATHS) {
       const teams = boxOf(await json(`${BASE}/${path}/summary?event=${row.id}`).catch(() => ({})));
       if (!teams.some((team) => team.groups.some((group) => group.rows.length))) continue;
-      row.picks = row.picks.map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, ...grade(teams, pick) }));
+      row.picks = row.picks.map((pick) => ({ ...keep(pick), ...grade(teams, pick) }));
       await explain(row, SPORT[path]).catch((error) => console.error("live recs explain failed:", row.match, error && error.message));
       row.explained = Date.now();
       await kv("", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { k: KEY + row.id, v: row } });
@@ -114,9 +119,19 @@ async function explain(row, sport) {
 
 async function gradeTally() {
   const rows = [...(await graded().catch(() => new Map())).values()], today = dayOf(Date.now());
-  const count = (list) => { const results = list.flatMap((row) => (row.picks || []).map((pick) => pick.result)); return { won: results.filter((one) => one === "won").length, lost: results.filter((one) => one === "lost").length }; };
+  const count = (list) => { const results = list.flatMap((row) => (row.picks || []).filter((pick) => pick.tier !== "good").map((pick) => pick.result)); return { won: results.filter((one) => one === "won").length, lost: results.filter((one) => one === "lost").length }; };
+  const kinds = (list) => {
+    const out = {};
+    list.flatMap((row) => row.picks || []).forEach((pick) => {
+      if (pick.result !== "won" && pick.result !== "lost") return;
+      const box = out[pick.tier === "good" ? "good" : pick.kind || betKind(pick.odds)] ||= { won: 0, lost: 0, cash: 0 };
+      box[pick.result] += 1; box.cash = Math.round((box.cash + betCash(pick.odds, pick.result)) * 100) / 100;
+    });
+    return out;
+  };
   const history = rows.slice().sort((a, b) => Date.parse(b.kickoff) - Date.parse(a.kickoff)).map((row) => ({ id: row.id, match: row.match, kickoff: row.kickoff, picks: row.picks || [], review: row.review || null }));
-  return { today: count(rows.filter((row) => row.day === today)), all: count(rows), history };
+  const mine = rows.filter((row) => row.day === today);
+  return { today: count(mine), all: count(rows), kinds: { today: kinds(mine), all: kinds(rows) }, history };
 }
 
 module.exports = { gradeTick, gradeTally };

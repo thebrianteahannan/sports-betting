@@ -18,12 +18,22 @@ function liveSide(team, lead, key) {
   return `<span class="live-side${lead ? " lead" : ""}">${team.logo ? `<img src="${liveEsc(team.logo)}" alt=""/>` : ""}<b>${liveEsc(team.short || team.name)}</b><i data-k="${liveEsc(key)}">${liveEsc(team.score)}</i></span>`;
 }
 
+const LIVE_KIND = { safe: ["Safe", "Picked to hit. Judged by how often it wins."], balanced: ["Balanced", "Near even money. Judged by wins and dollars both."], payout: ["Payout", "Picked for the price. Judged by the dollars it makes over many bets."] };
+const LIVE_BASIS = { math: ["Math", "His record beats the price."], script: ["Script", "The game script points to it."], both: ["Math + script", "His record beats the price and the game script points to it."] };
+const liveKindOf = (odds) => (Number(odds) <= -150 ? "safe" : Number(odds) <= 100 ? "balanced" : "payout");
+
+function liveKindTag(pick) {
+  const kind = LIVE_KIND[pick.kind || liveKindOf(pick.odds)], basis = LIVE_BASIS[pick.basis];
+  if (pick.tier === "good") return `<i class="bet-kind k-good" title="${liveEsc(`The record clears the price, but ${pick.drop || "it misses a rule"}. It stays off the recommended record.`)}">Good bet</i>`;
+  return `<i class="bet-kind k-${pick.kind || liveKindOf(pick.odds)}" title="${liveEsc(`${kind[1]}${basis ? ` ${basis[1]}` : ""}`)}">${liveEsc(`${kind[0]}${basis ? ` · ${basis[0]}` : ""}`)}</i>`;
+}
+
 function liveRoot(game, picks, rec, show) {
   if (!picks.length) return "";
   const one = (pick) => {
     const price = Number.isFinite(pick.odds) ? ` ${pick.odds > 0 ? `+${pick.odds}` : pick.odds}` : "";
     const { state, say, level, tip } = liveLegState(game, pick);
-    const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${say ? `<i class="now${level ? ` pace-${level}` : ""}"${tip ? ` title="${liveEsc(tip)}"` : ""} data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}`;
+    const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${rec ? liveKindTag(pick) : ""}${say ? `<i class="now${level ? ` pace-${level}` : ""}"${tip ? ` title="${liveEsc(tip)}"` : ""} data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}`;
     const href = `/?${new URLSearchParams({ game: pick.match, ...(pick.parlay ? { bet: pick.parlay } : {}), label: pick.label, market: pick.market, from: "live" })}`;
     return `<a class="live-mine-leg ${state}" href="${liveEsc(href)}" title="Open this bet in Build a bet">${inner}</a>`;
   };
@@ -77,6 +87,7 @@ function liveNext(next) {
 function liveScore(data) {
   let won = 0, lost = 0, all = 0, pace = 0;
   (data.live || []).forEach((game) => liveMine(game, liveRecs).forEach((pick) => {
+    if (pick.tier === "good") return;
     const { state, level } = liveLegState(game, pick);
     all += 1;
     if (state === "hit") won += 1; else if (state === "lost") lost += 1;
@@ -84,8 +95,14 @@ function liveScore(data) {
   }));
   const tally = data.tally || {}, today = tally.today || { won: 0, lost: 0 }, ever = tally.all || { won: 0, lost: 0 };
   const cell = (name, hit, of, tip, say = "") => `<span title="${liveEsc(tip)}"><b>${name}</b> ${hit} of ${of}${say}${of ? ` · ${Math.round((100 * hit) / of)}%` : ""}</span>`;
-  document.getElementById("live-score").innerHTML = `<i>Recommended %<em>'s</em></i>${cell("Live", pace, all, "Recommended bets in games on now that have hit or are on pace to hit", " on pace")}${cell("Today", today.won + won, today.won + today.lost + won + lost, "Recommended bets won today, out of the ones already decided")}${cell("All time", ever.won + won, ever.won + ever.lost + won + lost, "See every recommended bet and how it finished")}`;
-  const allCell = document.querySelector("#live-score span:last-child"); if (allCell) allCell.dataset.history = "1";
+  document.getElementById("live-score").innerHTML = `<i>Recommended %<em>'s</em></i>${cell("Live", pace, all, "Recommended bets in games on now that have hit or are on pace to hit", " on pace")}${cell("Today", today.won + won, today.won + today.lost + won + lost, "Recommended bets won today, out of the ones already decided")}${cell("All time", ever.won + won, ever.won + ever.lost + won + lost, "See every recommended bet and how it finished")}${liveKindCells((tally.kinds || {}).all || {}, cell)}`;
+  const allCell = document.querySelector("#live-score span:nth-of-type(3)"); if (allCell) allCell.dataset.history = "1";
+}
+
+function liveKindCells(kinds, cell) {
+  const box = (key) => kinds[key] || { won: 0, lost: 0, cash: 0 }, cash = (row) => `${row.cash < 0 ? "-" : "+"}$${Math.abs(row.cash).toFixed(2)}`;
+  const safe = box("safe"), even = box("balanced"), pay = box("payout"), good = box("good");
+  return `${cell("Safe", safe.won, safe.won + safe.lost, "Recommended at -150 or shorter, all time. Judged by how often they win.")}${cell("Balanced", even.won, even.won + even.lost, "Recommended from -149 to +100, all time.")}<span class="k-cash" title="Recommended longer than +100, all time. Judged by dollars at $5 a bet."><b>Payout</b> ${cash(pay)} at $5 · ${pay.won} of ${pay.won + pay.lost}</span><span class="k-good" title="Their record clears the price but they miss a rule, so they stay off the recommended record. All time at $5 a bet."><b>Good bets</b> ${good.won} of ${good.won + good.lost} · ${cash(good)}</span>`;
 }
 
 function liveHistLabel(pick) {

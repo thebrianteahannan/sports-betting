@@ -16,7 +16,7 @@ function liveLegRead(leg) {
   const stat = ((plus && plus[2]) || (named && named[1]) || (label.match(/\b(?:Over|Under)\s+\d+(?:\.\d+)?\s+(.+)$/i) || [])[1] || "").toLowerCase();
   const text = plus ? `${plus[1]}+ ${stat}` : line ? `${line[1]} ${line[2]} ${stat}`.trim() : label.slice(who.length).trim() || market;
   const score = !plus && !line && (market.match(/any\s*time touchdown|to score (\d+)\+ touchdowns/i) || null), tagged = !plus && !line && !score && label.slice(who.length).match(/^\s*(\d+)\+\s/);
-  return { parlay: leg.parlay || "", size: leg.parlaySize || 0, label, market, match: leg.match || "", kickoff: leg.kickoff || "", who, stat: score ? "touchdowns" : stat, text, odds: Number(leg.odds), need: plus ? Number(plus[1]) : line ? Number(line[2]) : score ? Number(score[1] || 1) : tagged ? Number(tagged[1]) : null, plus: !!plus || !!score || !!tagged, under: !!(line && /under/i.test(line[1])) };
+  return { parlay: leg.parlay || "", size: leg.parlaySize || 0, kind: leg.kind || "", basis: leg.basis || "", tier: leg.tier || "", drop: leg.drop || "", label, market, match: leg.match || "", kickoff: leg.kickoff || "", who, stat: score ? "touchdowns" : stat, text, odds: Number(leg.odds), need: plus ? Number(plus[1]) : line ? Number(line[2]) : score ? Number(score[1] || 1) : tagged ? Number(tagged[1]) : null, plus: !!plus || !!score || !!tagged, under: !!(line && /under/i.test(line[1])) };
 }
 
 function liveMine(game, list = liveLegs) {

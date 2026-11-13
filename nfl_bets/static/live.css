@@ -161,3 +161,6 @@ body.live-recs-on .live-table tr.rec .live-name { color: #3dff6e; }
 .live-hist-review { margin: 0 0 8px; padding: 6px 10px; border: 1px solid rgba(231, 193, 90, 0.35); border-radius: 8px; background: rgba(231, 193, 90, 0.05); font-size: 13.5px; color: #c4cde0; }
 .live-hist-review > summary { color: #e7c15a; font-weight: 700; cursor: pointer; } .live-hist-review p { margin: 4px 0; line-height: 1.45; } .live-hist-sub { color: #9fb3c8; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .live-hist-review li.held b { color: #3dff6e; } .live-hist-review li.miss b { color: #ff5a5a; } .live-hist-review li.odd b { color: #e7c15a; }
+.live-mine-leg i.bet-kind { padding: 0 6px; border: 1px solid currentColor; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; cursor: help; }
+.live-mine-leg i.bet-kind.k-safe { color: #3dff6e; } .live-mine-leg i.bet-kind.k-balanced { color: #8fb4ff; } .live-mine-leg i.bet-kind.k-payout { color: #ff9a2e; } .live-mine-leg i.bet-kind.k-good { color: #c4cde0; border-style: dashed; }
+.live-score span.k-cash b { color: #ff9a2e; } .live-score span.k-good b { color: #c4cde0; }

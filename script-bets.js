@@ -5,6 +5,7 @@ const STATS = {
   "pts + reb": ["pts", "reb"], "pts + ast": ["pts", "ast"], "pts + reb + ast": ["pts", "reb", "ast"], "reb + ast": ["reb", "ast"],
 };
 const WORDS = { points: "points", rebounds: "rebounds", assists: "assists", threes: "threes", "made threes": "threes", "pts + reb": "points + rebounds", "pts + ast": "points + assists", "pts + reb + ast": "points + rebounds + assists", "reb + ast": "rebounds + assists" };
+const { betKind, betTag } = require("./bet-kind");
 const KINDS = "Points|Rebounds|Assists|Made Threes|Threes|Pts \\+ Reb \\+ Ast|Pts \\+ Reb|Pts \\+ Ast|Reb \\+ Ast";
 
 function n1(value) { return Number.isFinite(value) ? (Math.round(value * 10) / 10).toFixed(1).replace(/\.0$/, "") : ""; }
@@ -139,15 +140,19 @@ function ticketsFrom(picks, away, home) {
   });
   const top = teams.flat();
   if (!top.length) return null;
-  const build = (legs, kind, teamName) => ({ size: legs.length, legs: legs.map((pick) => top.indexOf(pick)), how: howTicket(legs, kind, teamName), ...ticket(legs) });
-  const groups = teams.map((rows, side) => {
-    if (!rows.length) return null;
-    const single = rows.slice().sort((a, b) => (b.chance - b.need) - (a.chance - a.need))[0], teamName = last([away, home][side].name);
+  top.forEach((pick) => Object.assign(pick, betTag(pick)));
+  const ok = (rows) => rows.filter((pick) => pick.tier === "rec"), good = teams.map(ok), pool = good.flat();
+  const build = (legs, kind, teamName) => { const price = ticket(legs); return { size: legs.length, legs: legs.map((pick) => top.indexOf(pick)), how: howTicket(legs, kind, teamName), kind: betKind(price.odds), ...price }; };
+  const groups = teams.map((all, side) => {
+    if (!all.length) return null;
+    const rows = good[side], teamName = last([away, home][side].name);
+    if (!rows.length) return { name: teamName, parlays: [] };
+    const single = rows.slice().sort((a, b) => (b.chance - b.need) - (a.chance - a.need))[0];
     return { name: teamName, parlays: [1, 2, 3, 4].filter((size) => size <= rows.length).map((size) => build(size === 1 ? [single] : sure(rows).slice(0, size), "team", teamName)) };
   }).filter(Boolean);
-  if (teams[0].length && teams[1].length) {
-    const lead = [sure(teams[0])[0], sure(teams[1])[0]], rest = sure(top).filter((pick) => !lead.includes(pick));
-    groups.push({ name: "Both teams", parlays: [2, 3, 4].filter((size) => size <= top.length).map((size) => build(lead.concat(rest.slice(0, size - 2)), "both")) });
+  if (good[0].length && good[1].length) {
+    const lead = [sure(good[0])[0], sure(good[1])[0]], rest = sure(pool).filter((pick) => !lead.includes(pick));
+    groups.push({ name: "Both teams", parlays: [2, 3, 4].filter((size) => size <= pool.length).map((size) => build(lead.concat(rest.slice(0, size - 2)), "both")) });
   }
   return { picks: top.map(({ chance, score, edge, avg, reach, ...rest }) => ({ ...rest, how: howPick({ ...rest, avg, reach }), need: pct(rest.need) })), groups };
 }

@@ -46,7 +46,7 @@ function recRecord(match, kickoff, story) {
     const id = `${pick.label}|${pick.market}`;
     if (!pick.label || seen.has(id)) return false;
     seen.add(id); return true;
-  }).map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, who: pick.who }));
+  }).map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, who: pick.who, kind: pick.kind || "", basis: pick.basis || "", tier: pick.tier || "", drop: pick.drop || "", hits: pick.hits, n: pick.n, need: pick.need }));
   if (!picks.length) return;
   recs[`${match}|${kickoff}`] = { match, kickoff, at: Date.now(), picks, story };
   save(`${match}|${kickoff}`);
@@ -76,7 +76,7 @@ async function recWarm(board) {
 
 async function recsList() {
   await pull();
-  return Object.values(recs).flatMap((row) => (row.picks || []).map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, match: row.match, kickoff: row.kickoff })));
+  return Object.values(recs).flatMap((row) => (row.picks || []).map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, kind: pick.kind || "", basis: pick.basis || "", tier: pick.tier || "", drop: pick.drop || "", hits: pick.hits, n: pick.n, need: pick.need, match: row.match, kickoff: row.kickoff })));
 }
 
 function recStory(match, kickoff) {
@@ -90,8 +90,8 @@ async function recRanked(days) {
   const tonight = Object.values(recs).filter((row) => Date.parse(row.kickoff) > now && (days ? Date.parse(row.kickoff) - now < days * 86400000 : day(Date.parse(row.kickoff)) === day(now)));
   const picks = tonight.flatMap((row) => (((row.story || {}).bets || {}).picks || []).map((pick) => ({ ...pick, match: row.match, kickoff: row.kickoff })));
   const edge = (pick) => (pick.n >= 5 ? (pick.hits / pick.n) * 100 - parseFloat(pick.need) : -Infinity);
-  const ranked = picks.filter((pick) => pick.how && Number.isFinite(edge(pick))).sort((a, b) => edge(b) - edge(a));
-  return { all: picks.length, ranked: ranked.map((pick) => ({ who: pick.who, team: pick.team, label: pick.label, market: pick.market, odds: pick.odds, need: pick.need, hits: pick.hits, n: pick.n, how: pick.how, match: pick.match, kickoff: pick.kickoff })) };
+  const ranked = picks.filter((pick) => pick.how && pick.tier !== "good" && Number.isFinite(edge(pick))).sort((a, b) => edge(b) - edge(a));
+  return { all: picks.length, ranked: ranked.map((pick) => ({ who: pick.who, team: pick.team, label: pick.label, market: pick.market, odds: pick.odds, need: pick.need, hits: pick.hits, n: pick.n, how: pick.how, kind: pick.kind || "", basis: pick.basis || "", match: pick.match, kickoff: pick.kickoff })) };
 }
 
 async function recSample() {

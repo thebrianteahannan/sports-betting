@@ -29,3 +29,6 @@
 .find-script-ticket .find-tray-swap button.find-swap-go i.pct { min-width: 3.4em; color: #c9d4dd; font-size: 0.88em; }
 .find-script-ticket .find-tray-swap button.find-swap-go i.who { font-weight: 700; white-space: nowrap; }
 .find-script-ticket .find-tray-swap button.find-swap-go i.prop { color: #e7c15a; }
+i.bet-kind { display: inline-block; align-self: center; margin: 0 0.2rem; padding: 0 0.45rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.66rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.5; text-transform: uppercase; white-space: nowrap; vertical-align: middle; cursor: help; }
+i.bet-kind.k-safe { color: #3dff6e; } i.bet-kind.k-balanced { color: #8fb4ff; } i.bet-kind.k-payout { color: #ff9a2e; } i.bet-kind.k-good { color: #c4cde0; border-style: dashed; }
+.find-tray .find-swap-go i.find-rec-pill.good, .find-tray .find-chose i.find-rec-pill.good { background: transparent; border: 1px dashed #c4cde0; color: #c4cde0; }
