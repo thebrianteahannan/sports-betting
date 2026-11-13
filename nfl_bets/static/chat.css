@@ -1,7 +1,6 @@
-#chat-go { position: fixed; right: calc(0.7rem + 2.7rem + 0.5rem); bottom: 0.7rem; z-index: 20; width: 2.7rem; height: 2.7rem; min-height: 0; margin: 0; padding: 0; display: grid; place-items: center; border: 1px solid rgba(61, 255, 110, 0.85); border-radius: 8px; background: rgba(4, 16, 12, 0.92); color: #3dff6e; box-shadow: 0 0 14px rgba(61, 255, 110, 0.35); cursor: pointer; }
+#chat-go { position: fixed; right: 0.7rem; bottom: calc(0.7rem + 2.7rem + 0.5rem); z-index: 20; width: 2.7rem; height: 2.7rem; min-height: 0; margin: 0; padding: 0; display: grid; place-items: center; border: 1px solid rgba(61, 255, 110, 0.85); border-radius: 8px; background: rgba(4, 16, 12, 0.92); color: #3dff6e; box-shadow: 0 0 14px rgba(61, 255, 110, 0.35); cursor: pointer; }
 #chat-go[hidden] { display: none; }
-#who > #chat-go { position: relative; right: auto; bottom: auto; margin-right: 0.5rem; }
-body:has(#chat-go:not([hidden])) :is(#member-profile, #live-profile)[data-name]::before { right: calc(100% + 3.7rem) !important; }
+#who > #chat-go { position: absolute; right: 0; bottom: calc(100% + 0.5rem); }
 #chat-go:hover, #chat-go.on { background: #3dff6e; color: #04140c; }
 #chat-go b { position: absolute; top: -0.35rem; right: -0.35rem; min-width: 1.2rem; height: 1.2rem; padding: 0 0.3rem; box-sizing: border-box; display: grid; place-items: center; border-radius: 999px; background: #ff5a5a; color: #ffffff; font: 800 11px/1 "Rajdhani", sans-serif; }
 #chat-go b[hidden] { display: none; }
