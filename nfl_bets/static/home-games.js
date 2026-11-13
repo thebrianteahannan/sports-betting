@@ -98,7 +98,7 @@ let homeGamesTab = "rec", homeRecs = null;
 function homeRecsLoad() {
   if (homeRecs && (homeRecs.loading || Date.now() - homeRecs.at < 10 * 60 * 1000)) return;
   homeRecs = { loading: true, at: Date.now(), picks: (homeRecs && homeRecs.picks) || [] };
-  fetch("/api/top-picks", { credentials: "same-origin" }).then((reply) => (reply.ok ? reply.json() : { picks: [] })).then((data) => { homeRecs = { at: Date.now(), picks: (data && data.picks) || [] }; homeGamesPaint(); }).catch((error) => { console.log("[home-games] could not load top picks", error); homeRecs = { at: Date.now(), picks: [] }; homeGamesPaint(); });
+  fetch("/api/top-picks", { credentials: "same-origin" }).then((reply) => (reply.ok ? reply.json() : { picks: [] })).then((data) => { homeRecs = { at: Date.now(), span: (data && data.span) || "today", picks: (data && data.picks) || [] }; homeGamesPaint(); }).catch((error) => { console.log("[home-games] could not load top picks", error); homeRecs = { at: Date.now(), picks: [] }; homeGamesPaint(); });
 }
 
 function homeRecRow(pick, index) {
@@ -106,9 +106,10 @@ function homeRecRow(pick, index) {
   card.type = "button";
   card.className = "desk-game desk-rec";
   const odds = Number(pick.odds), price = odds > 0 ? `+${odds}` : String(odds), win = (odds > 0 ? (5 * odds) / 100 : (5 * 100) / Math.abs(odds)).toFixed(2);
-  const when = pick.kickoff ? `${new Date(pick.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET` : "";
+  const span = (homeRecs && homeRecs.span) || "today";
+  const when = pick.kickoff ? `${span === "week" ? `${new Date(pick.kickoff).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short" })} ` : ""}${new Date(pick.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET` : "";
   const side = String(pick.match || "").split(" @ ").find((name) => pick.team && (name === pick.team || name.endsWith(` ${pick.team}`))) || "", logo = (side && homeLogos && homeLogos[side]) || "", dark = logo.replace("/500/", "/500-dark/");
-  card.innerHTML = `<span class="desk-rec-name">${homeTeamStar(homeGamesList.find((game) => game.match === pick.match))}${logo ? `<img class="desk-team-logo desk-rec-logo" src="${esc(dark)}" alt="${esc(side)}" loading="lazy"${dark !== logo ? ` onerror="this.onerror=null;this.src='${esc(logo)}'"` : ""}>` : ""}${esc(pick.label)} ${esc(price)}</span><span class="desk-rec-how">${index ? `#${index + 1}` : "Today's free pick"}</span><span class="desk-rec-legs">${esc(when)}</span><span class="desk-rec-read">${esc(`${pick.match}. Hit in ${pick.hits} of his last ${pick.n}, the price needs ${pick.need}. $5 wins $${win}.`)}</span>`;
+  card.innerHTML = `<span class="desk-rec-name">${homeTeamStar(homeGamesList.find((game) => game.match === pick.match))}${logo ? `<img class="desk-team-logo desk-rec-logo" src="${esc(dark)}" alt="${esc(side)}" loading="lazy"${dark !== logo ? ` onerror="this.onerror=null;this.src='${esc(logo)}'"` : ""}>` : ""}${esc(pick.label)} ${esc(price)}</span><span class="desk-rec-how">${index ? `#${index + 1}` : span === "today" ? "Today's free pick" : span === "tomorrow" ? "Tomorrow's top pick" : "Top pick"}</span><span class="desk-rec-legs">${esc(when)}</span><span class="desk-rec-read">${esc(`${pick.match}. Hit in ${pick.hits} of his last ${pick.n}, the price needs ${pick.need}. $5 wins $${win}.`)}</span>`;
   card.addEventListener("click", () => { window.location.href = `/?${new URLSearchParams({ game: pick.match, label: pick.label, market: pick.market || "" })}`; });
   return card;
 }
@@ -178,9 +179,10 @@ function homeLeagues(box, games) {
 function homeRecRows(games) {
   const note = (text) => { const line = document.createElement("p"); line.className = "desk-games-note"; line.textContent = text; return [line]; };
   if (!homeRecs || (homeRecs.loading && !homeRecs.picks.length)) return note("Looking up the picks.");
-  if (!homeRecs.picks.length) return note("Tonight's picks are not posted yet.");
-  const league = homeLeagueOn(games), rows = homeRecs.picks.map((pick, index) => [pick, index]).filter(([pick]) => !league || homePickSport(pick) === league);
-  return rows.length ? rows.map(([pick, index]) => homeRecRow(pick, index)) : note(`No ${league} picks tonight. Tap All for the rest.`);
+  if (!homeRecs.picks.length) return note("No picks are posted yet.");
+  const league = homeLeagueOn(games), rows = homeRecs.picks.map((pick, index) => [pick, index]).filter(([pick]) => !league || homePickSport(pick) === league), span = homeRecs.span || "today";
+  const head = span === "today" ? [] : [Object.assign(document.createElement("p"), { className: "desk-games-note desk-games-label", textContent: span === "tomorrow" ? "Tomorrow" : "Coming up" })];
+  return rows.length ? [...head, ...rows.map(([pick, index]) => homeRecRow(pick, index))] : note(`No ${league} picks ${span === "today" ? "tonight" : span === "tomorrow" ? "tomorrow" : "coming up"}. Tap All for the rest.`);
 }
 
 function homeGameRows(games) {

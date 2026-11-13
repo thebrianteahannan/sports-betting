@@ -190,6 +190,7 @@ function livePaint(data, quiet) {
   const bar = liveLeagueBar(data, { past: past.filter((game) => !histIds.has(String(game.id))).length + hist.length, today: live.length + ended.length + ((data.week || []).length ? soon.length : (data.next || []).filter(keep).length), week: week.length });
   box.innerHTML = liveSpan === "week" && week.length ? `${bar}${liveWeekList(week)}` : liveSpan === "past" ? `${bar}${(final("yesterday", past) + liveHistory(hist)) || `<p class="live-note">No past games to show.</p>`}` : `${bar}${live.length ? `<h2>Live now, ${live.length} ${live.length === 1 ? "game" : "games"}</h2>${live.map(liveGame).join("")}` : `<p class="live-note">No games are live right now.</p>`}${next}<div class="live-today-recap">${liveHistory(hist.filter((row) => liveDayKey(row.kickoff) === today), true)}</div>${final("today", ended)}`;
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => { const left = liveSlide.get(node.dataset.slide); if (left) node.scrollLeft = left; });
+  box.querySelectorAll("h2").forEach((head) => head.insertAdjacentHTML("beforeend", `<label class="live-court"><input type="checkbox" class="live-recs-box"${document.body.classList.contains("live-recs-on") ? " checked" : ""}/> Recommended bets</label>`));
   if (!first) {
     box.querySelectorAll("[data-k]").forEach((node) => { if (was.has(node.dataset.k) && was.get(node.dataset.k) !== node.textContent) node.classList.add("live-flash"); });
     box.querySelectorAll(".live-game[data-id]:not(.live-final)").forEach((node) => { if (!games.has(node.dataset.id)) node.classList.add("live-flash"); });
@@ -244,14 +245,13 @@ document.getElementById("live").addEventListener("change", (event) => {
   try { localStorage.setItem(`liveCard-${kind}`, JSON.stringify([...liveCard[kind]].slice(-40))); } catch (error) { console.log("[live] could not keep the card filter", kind, error); }
 });
 
-[["live-recs", "liveRecs", "live-recs-on"]].forEach(([id, store, cls]) => {
-  const box = document.getElementById(id);
-  box.checked = localStorage.getItem(store) === "1";
-  document.body.classList.toggle(cls, box.checked);
-  box.addEventListener("change", () => {
-    document.body.classList.toggle(cls, box.checked);
-    try { localStorage.setItem(store, box.checked ? "1" : "0"); } catch (error) { console.log("[live] could not keep checkbox", id, error); }
-  });
+document.body.classList.toggle("live-recs-on", localStorage.getItem("liveRecs") === "1");
+document.getElementById("live").addEventListener("change", (event) => {
+  if (!event.target.matches("input.live-recs-box")) return;
+  const on = event.target.checked;
+  document.body.classList.toggle("live-recs-on", on);
+  document.querySelectorAll("input.live-recs-box").forEach((box) => { box.checked = on; });
+  try { localStorage.setItem("liveRecs", on ? "1" : "0"); } catch (error) { console.log("[live] could not keep checkbox", error); }
 });
 
 document.getElementById("live").addEventListener("click", (event) => {
@@ -283,6 +283,7 @@ document.getElementById("live").addEventListener("click", (event) => {
   if (liveLast) livePaint(liveLast, true);
 });
 document.getElementById("live-score").addEventListener("click", (event) => {
+  if (event.target.closest("i")) { event.currentTarget.classList.toggle("open"); return; }
   if (!event.target.closest("[data-history]")) return;
   liveSpan = "past";
   try { localStorage.setItem("liveSpan", liveSpan); } catch (error) { console.log("[live] could not keep past", error); }
