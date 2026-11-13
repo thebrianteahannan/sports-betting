@@ -199,3 +199,7 @@ document.addEventListener("click", (event) => {
   if (!(startBack || startUndo) || !event.target.closest || !event.target.closest("#desk-back") || document.getElementById("desk").classList.contains("bird-on")) return;
   if (startClose() || startUndoGo()) { event.stopImmediatePropagation(); event.preventDefault(); }
 }, true);
+document.addEventListener("scroll", () => {
+  const row = document.querySelector("#desk-glass-in .find-start-row"), tray = row && row.closest(".find-board").querySelector(":scope > .find-tray:not([hidden])");
+  if (row) row.style.top = tray && tray.classList.contains("find-shut") && getComputedStyle(tray).position === "sticky" ? `${tray.offsetHeight + 8}px` : "";
+}, true);

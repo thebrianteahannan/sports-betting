@@ -381,16 +381,18 @@ document.addEventListener("scroll", (event) => {
   if (!saveScrollTop.has(box) || top < saveScrollTop.get(box)) { saveScrollTop.set(box, top); return; }
   saveScrollTop.set(box, top);
   const board = box.querySelector(".find-board");
-  if (!board || typeof whereFind !== "function" || !whereFind(board).startsWith("Search results")) return;
+  if (!board || typeof whereFind !== "function") return;
   const tray = box.querySelector(".find-tray:not([hidden]):not(.find-shut):not(.find-edit)");
   const fold = tray && tray.querySelector(".find-fold");
   if (!fold) return;
   let next = tray.nextElementSibling; while (next && !next.getClientRects().length) next = next.nextElementSibling;
   if (!next) return;
+  const start = next.classList.contains("find-start");
+  if (!start && !whereFind(board).startsWith("Search results")) return;
   const rect = tray.getBoundingClientRect(), at = next.getBoundingClientRect().top;
   const past = at <= rect.top + 1, stuck = at < rect.bottom - 1;
   const end = tray.scrollTop + tray.clientHeight >= tray.scrollHeight - 2, long = tray.scrollHeight > tray.clientHeight + 2;
-  if (past || (stuck && long && end)) { saveFoldAt = Date.now(); fold.click(); saveAutoShut.add(tray); }
+  if (past || (stuck && (start || (long && end)))) { saveFoldAt = Date.now(); fold.click(); saveAutoShut.add(tray); }
 }, true);
 document.addEventListener("click", (event) => {
   const go = event.target.closest && event.target.closest(".find-games-go");
