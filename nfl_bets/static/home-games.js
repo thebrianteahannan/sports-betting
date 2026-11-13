@@ -85,7 +85,7 @@ function homeSharedRow(item) {
   const row = document.createElement("button");
   row.type = "button";
   row.className = "desk-game";
-  const who = item.legs.map((leg) => String(leg.label || "").split(/\s+(?:\d|Over\b|Under\b)/)[0].split(" ").pop()).filter(Boolean);
+  const who = item.legs.map((leg) => String(leg.label || "").split(/\s+(?:\d|Over\b|Under\b)/)[0].replace(/[\s\-–—:]+$/, "").split(" ").pop()).filter(Boolean);
   const games = typeof gameShortList === "function" ? gameShortList(item.legs) : "";
   const price = typeof savePrice === "function" ? savePrice(item.legs) : "";
   row.innerHTML = `<span class="desk-game-sport">${esc(games)}</span><span class="desk-game-match">${esc(`${who.slice(0, 2).join(", ")}${who.length > 2 ? ` +${who.length - 2}` : ""}`)}</span><span class="desk-game-when">${esc(`From ${item.fromName}`)}</span><span class="desk-game-until">${esc(price)}</span>`;

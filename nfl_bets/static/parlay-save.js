@@ -253,7 +253,7 @@ function savePaint() {
       const go = document.createElement("button");
       go.type = "button";
       const games = typeof gameShortList === "function" ? gameShortList(row.legs) : "";
-      const who = (row.picks || []).map((lite) => String(lite.name || "").split(" ").pop()).filter(Boolean);
+      const who = (row.picks || []).map((lite) => String(lite.name || "").replace(/[\s\-–—:]+$/, "").split(" ").pop()).filter(Boolean);
       const said = who.length ? `${who.slice(0, 2).join(", ")}${row.legs.length > 2 ? ` +${row.legs.length - 2}` : ""}` : row.group && row.legs.length < 3 ? row.legs.map((bet) => String(bet.label || "").replace(/\s+spread$/i, "")).join(", ") : `${row.legs.length} ${row.legs.length === 1 ? "leg" : "legs"}`;
       go.innerHTML = [games && `<i>${esc(games)}</i>`, `<span>${esc(said)}</span>`, savePrice(row.legs) && `<b>${esc(savePrice(row.legs))}</b>`].filter(Boolean).join("");
       go.addEventListener("click", () => { if (row.id === window.parlayOpenId) { saveNew(); return; } saveOpen(row.id); document.querySelectorAll(".find-tray.find-shut").forEach((tray) => { const fold = tray.querySelector(".find-fold"); if (!fold) return; saveAutoShut.delete(tray); fold.click(); }); });

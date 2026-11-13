@@ -220,7 +220,7 @@ function sharedChip(item) {
   const go = document.createElement("button");
   go.type = "button";
   const games = typeof gameShortList === "function" ? gameShortList(item.legs) : "";
-  const who = item.legs.map((leg) => String(leg.label || "").split(/\s+(?:\d|Over\b|Under\b)/)[0].split(" ").pop()).filter(Boolean);
+  const who = item.legs.map((leg) => String(leg.label || "").split(/\s+(?:\d|Over\b|Under\b)/)[0].replace(/[\s\-–—:]+$/, "").split(" ").pop()).filter(Boolean);
   const names = new Map(window.friendsData.friends.map((one) => [one.id, one.name]));
   const from = item.mine ? `To ${item.to.map((one) => names.get(one.id) || "a friend").join(", ")}` : item.fromName;
   const said = `${from}: ${who.slice(0, 2).join(", ")}${who.length > 2 ? ` +${who.length - 2}` : ""}`;
