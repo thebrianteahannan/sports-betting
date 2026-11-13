@@ -250,7 +250,13 @@ function homeGamesPaint() {
 }
 
 function homeGamesGrow(box) {
-  const set = (tall) => { if (box.classList.contains("desk-games-tall") === tall) return; box.classList.toggle("desk-games-tall", tall); homeGamesPaint(); };
+  const set = (tall) => {
+    if (box.classList.contains("desk-games-tall") === tall) return;
+    box.classList.toggle("desk-games-tall", tall); homeGamesPaint();
+    if (!tall) return;
+    box.style.overflowY = "hidden"; box.scrollTop = 0;
+    setTimeout(() => { box.style.overflowY = ""; box.scrollTop = 0; }, 80);
+  };
   let touchY = 0;
   box.addEventListener("scroll", () => { if (box.scrollTop > 8) set(true); }, { passive: true });
   box.addEventListener("wheel", (event) => { if (event.deltaY < 0 && box.scrollTop <= 0) set(false); }, { passive: true });
