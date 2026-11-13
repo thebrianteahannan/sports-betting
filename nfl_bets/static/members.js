@@ -177,7 +177,7 @@ function birdGreet() {
   if (!window.memberReady || document.body.classList.contains("needs-member") || !window.birdSay) return;
   const called = calledName();
   if (!called) return birdAskName();
-  if (!window.memberBorn) return birdAskBorn(); if (!window.memberState) return birdAskState(); if (birdAskBook() || (window.birdAskTeams && birdAskTeams()) || birdLaw()) return;
+  if (!window.memberBorn) return birdAskBorn(); if (!window.memberState) return birdAskState(); if (birdAskBook() || (window.birdAskTeams && birdAskTeams())) return;
   window.asking = false;
   const shared = window.sharedGreet ? sharedGreet() : ""; birdSay(`Hey, ${called}. ${shared || "How are we going to find your favorite bet for today?"}`, [...(shared ? [["menu", window.sharedLabel ? sharedLabel() : "See the bets", "shared"]] : []), ["menu", "Build A Bet", "find"], ["menu", "The Games", "live"]]);
 }

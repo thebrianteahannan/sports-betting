@@ -30,3 +30,7 @@ body.needs-member #desk-find-go { display: none !important; }
   #desk.tv-full.find-up #desk-menu.bird-has:not(.say-open)::after { max-width: calc(100vw - 16.5rem - 43px); }
 }
 .rec-board .find-span { display: none !important; }
+#who > .who-bets { display: none; position: absolute; width: auto; height: auto; min-height: 0; right: calc(100% + 0.9rem); bottom: calc(50% + 0.55rem); z-index: 1; align-items: center; gap: 0.3rem; margin: 0; padding: 0.15rem 0.55rem; border: 1px solid #04140c; border-radius: 999px; background: #3dff6e; color: #04140c; font-family: "Rajdhani", sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; cursor: pointer; box-shadow: 0 0 10px rgba(61, 255, 110, 0.45); }
+#who > .who-bets b { min-width: 1.1rem; padding: 0 0.3rem; border-radius: 999px; background: #04140c; color: #3dff6e; text-align: center; }
+#who > .who-bets:hover { background: #6bff92; }
+body:not(.home-games-on) #desk:not(.tv-full) ~ #who > .who-bets:not([hidden]) { display: inline-flex; }
