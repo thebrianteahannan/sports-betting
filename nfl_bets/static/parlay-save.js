@@ -286,7 +286,7 @@ function savePaint() {
     fresh.type = "button";
     fresh.className = "find-saved-new";
     fresh.textContent = "+ New parlay";
-    fresh.addEventListener("click", () => { const input = document.querySelector("label.find input"), empty = !parlayLeg.size && !parlayPick.size && !(input && input.value.trim()); saveNew(); if (input) input.focus(); if (empty) saveTips(); });
+    fresh.addEventListener("click", () => { const input = document.querySelector("label.find input"); saveNew(); if (input) input.focus(); if (!parlayLeg.size && !parlayPick.size && !(input && input.value.trim())) saveTips(); });
     box.append(fresh);
     saveStacks(box);
     if (!groups.size) return;

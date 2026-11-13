@@ -19,3 +19,9 @@
 .find-tray .leg-boost-box i.boost-fx { flex-basis: 100%; color: #c9d4dd; font-size: 0.78rem; font-style: normal; }
 .find-tray .leg-boost-box i.leg-role { flex: none; padding: 0 0.42rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.62rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.5; text-transform: uppercase; }
 .find-tray .leg-boost-box i.leg-role.r-anchor { color: #3dff6e; } .find-tray .leg-boost-box i.leg-role.r-juice { color: #ff9a2e; } .find-tray .leg-boost-box i.leg-role.r-filler { color: #9aa6b2; } .find-tray .leg-boost-box i.leg-role.r-dead { color: #ff6b6b; }
+.find-tray .leg-boost-box label.leg-boost-keep { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0 0 0.45rem; color: #ff9a2e; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+:is(.rec-board, #choice-result) .find-tray .leg-boost-box label.leg-boost-keep input { width: auto !important; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; accent-color: #ff9a2e; }
+.find-tray .leg-boost-box .leg-boost-checks { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; margin: 0 0 0.45rem; }
+.find-tray .leg-boost-box .leg-boost-checks label.leg-boost-keep { margin: 0; color: #c9d4dd; }
+.find-tray .leg-boost-box .leg-boost-checks label.leg-boost-keep:has(input:checked) { color: #ff9a2e; }
+:is(.rec-board, #choice-result) .find-tray .leg-boost-box button.leg-boost-more { width: auto !important; min-height: 0 !important; margin: 0.2rem 0 0 !important; padding: 0.3rem 0.8rem !important; border: 1px dashed #8fb4ff !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #8fb4ff !important; font-size: 13px !important; font-weight: 700 !important; text-transform: none !important; letter-spacing: normal !important; cursor: pointer; }

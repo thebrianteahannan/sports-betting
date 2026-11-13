@@ -17,15 +17,17 @@ async function friendsLoad() {
   friendsBusy = true;
   try {
     const [friends, shared] = await Promise.all([friendsCall("/api/friends"), friendsCall("/api/shared")]);
-    const same = JSON.stringify([friends, shared.items || [], shared.sent || []]) === JSON.stringify([window.friendsData, window.sharedItems, window.sharedSent || []]);
+    const sent = (shared.sent || []).map((item) => ({ ...item, mine: true }));
+    const same = JSON.stringify([friends, shared.items || [], sent]) === JSON.stringify([window.friendsData, window.sharedItems, window.sharedSent || []]);
     window.friendsData = friends;
     window.sharedItems = shared.items || [];
-    window.sharedSent = (shared.sent || []).map((item) => ({ ...item, mine: true }));
+    window.sharedSent = sent;
     sharedNotify();
     if (same) return;
     const line = document.getElementById("bird-line"), desk = document.getElementById("desk");
     if (line && desk && desk.classList.contains("bird-on") && !window.asking && /^Hey, /.test(line.textContent || "") && window.birdGreet && typeof tvSkip !== "undefined") { tvSkip = true; birdGreet(); tvSkip = false; }
-    if (document.querySelector(".find-board") && typeof paintParlay === "function") paintParlay();
+    const glass = document.getElementById("desk-glass-in"), at = glass ? glass.scrollTop : 0;
+    if (document.querySelector(".find-board") && typeof paintParlay === "function") { paintParlay(); if (glass) glass.scrollTop = at; }
     else profileShared();
   } catch (error) { console.log("[friends] could not load", error); } finally { friendsBusy = false; }
 }

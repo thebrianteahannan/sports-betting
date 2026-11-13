@@ -464,6 +464,7 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, { won, lost, pct: decided ? ((won / decided) * 100).toFixed(1) : null });
       return;
     }
+    if (req.method === "GET" && url.pathname === "/api/recs") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to see the picks." }, 401); return; } const now = Date.now(); sendJson(res, { recs: (await require("./live-recs").recsList().catch(() => [])).filter((pick) => Date.parse(pick.kickoff) > now) }); return; }
     if (req.method === "GET" && url.pathname === "/api/top-picks") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to see the picks." }, 401); return; } sendJson(res, await require("./live-recs").recTop(11).catch(() => ({ picks: [] }))); return; }
     if (req.method === "GET" && url.pathname === "/api/lazy-pick") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to roll." }, 401); return; } sendJson(res, await require("./live-recs").recLazy().catch(() => ({ span: "today", picks: [] }))); return; }
     if (req.method === "GET" && url.pathname === "/api/sample") { sendJson(res, await require("./live-recs").recSample().catch(() => ({ pick: null, more: 0 }))); return; }
