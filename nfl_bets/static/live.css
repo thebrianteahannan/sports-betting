@@ -129,6 +129,11 @@ a.live-mine-leg:hover { border-color: #e7c15a; background: rgba(231, 193, 90, 0.
 .live-table tr.mine td { background: rgba(231, 193, 90, 0.14); }
 .live-table tr.mine td:first-child { background: #2a2614; box-shadow: inset 3px 0 0 #e7c15a; }
 .live-table tr.mine .live-name { color: #e7c15a; }
+body.live-mine-off .live-mine:not(.live-rec) { display: none; }
+body.live-mine-off .live-game.has-mine { border-color: rgba(61, 255, 110, 0.35); }
+body.live-mine-off .live-table tr.mine td { background: none; }
+body.live-mine-off .live-table tr.mine td:first-child { background: #041018; box-shadow: none; }
+body.live-mine-off .live-table tr.mine .live-name { color: inherit; }
 .live-mine.live-rec { display: none; }
 body.live-recs-on .live-mine.live-rec { display: flex; }
 body:not(.live-recs-on) .live-today-recap { display: none; }

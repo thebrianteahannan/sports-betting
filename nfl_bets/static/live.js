@@ -207,7 +207,7 @@ function livePaint(data, quiet) {
   const bar = liveLeagueBar(data, { past: past.filter((game) => !histIds.has(String(game.id))).length + hist.length, today: live.length + ended.length + ((data.week || []).length ? soon.length : (data.next || []).filter(keep).length), week: week.length });
   box.innerHTML = liveSpan === "week" && week.length ? `${bar}${liveWeekList(week)}` : liveSpan === "past" ? `${bar}${(final("yesterday", past) + liveHistory(hist)) || `<p class="live-note">No past games to show.</p>`}` : `${bar}${live.length ? `<h2>Live now, ${live.length} ${live.length === 1 ? "game" : "games"}</h2>${live.map(liveGame).join("")}` : `<p class="live-note">No games are live right now.</p>`}${next}<div class="live-today-recap">${liveHistory(hist.filter((row) => liveDayKey(row.kickoff) === today), true)}</div>${final("today", ended)}`;
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => { const left = liveSlide.get(node.dataset.slide); if (left) node.scrollLeft = left; });
-  box.querySelectorAll("h2").forEach((head) => head.insertAdjacentHTML("beforeend", `<label class="live-court"><input type="checkbox" class="live-recs-box"${document.body.classList.contains("live-recs-on") ? " checked" : ""}/> Recommended bets</label>`));
+  box.querySelectorAll("h2").forEach((head) => head.insertAdjacentHTML("beforeend", `<label class="live-court"><input type="checkbox" class="live-mine-box"${document.body.classList.contains("live-mine-off") ? "" : " checked"}/> My bets</label><label class="live-court live-court-next"><input type="checkbox" class="live-recs-box"${document.body.classList.contains("live-recs-on") ? " checked" : ""}/> Recommended bets</label>`));
   if (!first) {
     box.querySelectorAll("[data-k]").forEach((node) => { if (was.has(node.dataset.k) && was.get(node.dataset.k) !== node.textContent) node.classList.add("live-flash"); });
     box.querySelectorAll(".live-game[data-id]:not(.live-final)").forEach((node) => { if (!games.has(node.dataset.id)) node.classList.add("live-flash"); });
@@ -263,6 +263,14 @@ document.getElementById("live").addEventListener("change", (event) => {
 });
 
 document.body.classList.toggle("live-recs-on", localStorage.getItem("liveRecs") === "1");
+document.body.classList.toggle("live-mine-off", localStorage.getItem("liveMine") === "0");
+document.getElementById("live").addEventListener("change", (event) => {
+  if (!event.target.matches("input.live-mine-box")) return;
+  const on = event.target.checked;
+  document.body.classList.toggle("live-mine-off", !on);
+  document.querySelectorAll("input.live-mine-box").forEach((box) => { box.checked = on; });
+  try { localStorage.setItem("liveMine", on ? "1" : "0"); } catch (error) { console.log("[live] could not keep the My bets checkbox", error); }
+});
 document.getElementById("live").addEventListener("change", (event) => {
   if (!event.target.matches("input.live-recs-box")) return;
   const on = event.target.checked;
