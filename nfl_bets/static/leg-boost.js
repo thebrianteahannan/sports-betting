@@ -38,7 +38,8 @@ function legBoostLoad() {
 const legBoostRecs = { at: 0, list: [], job: null, people: null, index: new Map() };
 
 function legBoostRecLoad() {
-  if (legBoostRecs.job || Date.now() - legBoostRecs.at < 10 * 60000) return;
+  if (legBoostRecs.job) return legBoostRecs.job;
+  if (Date.now() - legBoostRecs.at < 10 * 60000) return Promise.resolve();
   legBoostRecs.job = fetch("/api/recs").then((res) => res.json()).then((data) => {
     legBoostRecs.list = (data && data.recs) || []; legBoostRecs.at = Date.now();
     legBoostRecs.list.forEach((rec) => {
@@ -49,6 +50,7 @@ function legBoostRecLoad() {
     if (typeof legRolePaint === "function") legRolePaint();
     if (legBoost.mode) legBoostPaint();
   }).catch((error) => console.log("[leg-boost] could not load the recommended bets", error)).finally(() => { legBoostRecs.job = null; });
+  return legBoostRecs.job;
 }
 
 function legBoostFind(people) {
