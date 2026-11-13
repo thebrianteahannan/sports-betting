@@ -67,7 +67,7 @@ function showMember(payload) {
   window.memberName = member.name || "";
   window.memberBorn = member.born || "";
   window.memberState = member.state || "";
-  window.memberBook = member.book || ""; window.memberHide = member.hide || {}; window.memberTeams = Array.isArray(member.teams) ? member.teams : null;
+  window.memberBook = member.book || ""; window.memberHide = member.hide || {}; window.memberTeams = Array.isArray(member.teams) ? member.teams : null; window.memberLeague = member.league || null;
   window.fullAt = member.fullAt || "";
   if (window.applyMember) applyMember(window.memberState);
   window.memberReady = true;

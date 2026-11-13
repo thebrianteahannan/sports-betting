@@ -97,7 +97,23 @@ function homeGamesRepaint() {
   homeGamesPaint();
 }
 
-let homeLeague = localStorage.getItem("homeLeague") || "";
+let homeLeague = "", homeLeagueOpen = false, homeLeagueFrom = null;
+
+function homeLeagueSync() {
+  const saved = window.memberLeague;
+  if (!saved || saved === homeLeagueFrom) return;
+  homeLeagueFrom = saved;
+  homeLeague = saved.pick || "";
+  homeLeagueOpen = Boolean(saved.open);
+}
+
+function homeLeagueSave(box) {
+  const next = { pick: homeLeague, open: homeLeagueOpen };
+  window.memberLeague = homeLeagueFrom = next;
+  box.dataset.sig = "";
+  homeGamesPaint();
+  fetch("/api/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ league: next }) }).catch((error) => console.log("[home-games] could not save the league", error));
+}
 
 function homePickSport(pick) {
   const game = homeGamesList.find((row) => row.match === pick.match) || ((window.state && state.board && state.board.games) || []).find((row) => row.match === pick.match);
@@ -115,7 +131,14 @@ function homeLeagueOn(games) {
 
 function homeLeagues(box, games) {
   const leagues = homeLeagueList(games), on = homeLeagueOn(games);
-  if (leagues.length < 2) return null;
+  if (leagues.length < 2) return [];
+  const pick = document.createElement("button");
+  pick.type = "button";
+  pick.className = `desk-games-league desk-games-pick${on || homeLeagueOpen ? " on" : ""}`;
+  pick.textContent = `${on || "All"} ${homeLeagueOpen ? "▴" : "▾"}`;
+  pick.setAttribute("aria-expanded", String(homeLeagueOpen));
+  pick.addEventListener("click", () => { homeLeagueOpen = !homeLeagueOpen; homeLeagueSave(box); });
+  if (!homeLeagueOpen) return [pick];
   const row = document.createElement("span");
   row.className = "desk-games-leagues";
   ["", ...leagues].forEach((league) => {
@@ -124,10 +147,10 @@ function homeLeagues(box, games) {
     chip.className = `desk-games-league${league === on ? " on" : ""}`;
     chip.textContent = league || "All";
     chip.setAttribute("aria-pressed", String(league === on));
-    chip.addEventListener("click", () => { homeLeague = league; try { localStorage.setItem("homeLeague", league); } catch (error) { console.log("[home-games] could not save the league", error); } box.dataset.sig = ""; box.scrollTop = 0; homeGamesPaint(); });
+    chip.addEventListener("click", () => { homeLeague = league; box.scrollTop = 0; homeLeagueSave(box); });
     row.append(chip);
   });
-  return row;
+  return [pick, row];
 }
 
 function homeRecRows(games) {
@@ -175,7 +198,8 @@ function homeGamesPaint() {
   document.body.style.setProperty("--home-games-top", `${at + 12}px`);
   if (!fresh.length && homeGamesTab === "rec") homeRecsLoad();
   homeLogosLoad();
-  const sig = `${homeLeagueOn(games)}|${homeGamesTab}|${(window.memberTeams || []).join(",")}|${homeRecs ? `${homeRecs.at}${homeRecs.loading ? "…" : ""}` : ""}|${fresh.length ? `shared:${fresh.map((item) => item.id).join(";")}` : games.map((game) => `${game.match}|${game.kickoff}`).join(";")}`;
+  homeLeagueSync();
+  const sig = `${homeLeagueOpen}|` + `${homeLeagueOn(games)}|${homeGamesTab}|${(window.memberTeams || []).join(",")}|${homeRecs ? `${homeRecs.at}${homeRecs.loading ? "…" : ""}` : ""}|${fresh.length ? `shared:${fresh.map((item) => item.id).join(";")}` : games.map((game) => `${game.match}|${game.kickoff}`).join(";")}`;
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
   const head = document.createElement("p");
@@ -184,8 +208,7 @@ function homeGamesPaint() {
   const said = document.createElement("span");
   said.className = "desk-games-said";
   said.textContent = `${names.length === 1 ? names[0] : "Your friends"} sent you ${fresh.length === 1 ? "a bet" : `${fresh.length} bets`}`;
-  const leagues = fresh.length ? null : homeLeagues(box, games);
-  head.append(fresh.length ? said : homeGamesTabs(box, games), ...(leagues ? [leagues] : []));
+  head.append(fresh.length ? said : homeGamesTabs(box, games), ...(fresh.length ? [] : homeLeagues(box, games)));
   box.replaceChildren(head, ...(fresh.length ? fresh.map(homeSharedRow) : homeGamesTab === "rec" ? homeRecRows(games) : homeGameRows(games)));
 }
 
