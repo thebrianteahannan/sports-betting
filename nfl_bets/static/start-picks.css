@@ -18,3 +18,10 @@
 :is(.rec-board, #choice-result) .find-start-kinds > button.find-start-clear { border-style: dashed !important; text-transform: none !important; }
 .find-start-fav { display: inline-flex; align-items: center; gap: 0.45rem; color: #c9d6e3; font-size: 13px; font-weight: 800; cursor: pointer; user-select: none; }
 #desk-glass .find-start-fav input, .find-start-fav input { width: 1rem !important; height: 1rem !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; accent-color: #3dff6e; cursor: pointer; }
+#desk-glass-in .find-start .desk-rec { grid-template-areas: "name bet" "how legs" "read read"; }
+#desk-glass-in .find-start .desk-rec-bet { grid-area: bet; justify-self: end; align-self: start; padding: 0.2rem 0.8rem; border: 1px solid #3dff6e; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 13px; font-weight: 800; white-space: nowrap; }
+#desk-glass-in .find-start .desk-rec-bet:hover { background: #6bff92; }
+#desk-glass-in .find-start .desk-rec-ask { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.3rem; padding-top: 0.55rem; border-top: 1px solid rgba(61, 255, 110, 0.25); }
+#desk-glass-in .find-start .desk-rec-ask i { margin-right: 0.2rem; color: #f4f7fb; font-size: 13px; font-style: normal; font-weight: 700; }
+#desk-glass-in .find-start .desk-rec-ask [data-bet-go] { padding: 0.25rem 0.8rem; border: 1px solid #3dff6e; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 13px; font-weight: 800; cursor: pointer; }
+#desk-glass-in .find-start .desk-rec-ask [data-bet-go="new"] { background: transparent; color: #3dff6e; }

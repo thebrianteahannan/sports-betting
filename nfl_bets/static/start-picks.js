@@ -58,9 +58,38 @@ function startClose() {
   return true;
 }
 
-function startBet(board, pick) {
+function startHit(board, pick) {
   const index = typeof legBoostFind === "function" ? legBoostFind(board.people) : new Map();
-  const hit = index.get(`${pick.label}|${pick.market}|${pick.match}`) || [...index.values()].find((row) => row.bet.label === pick.label && row.bet.match === pick.match);
+  return index.get(`${pick.label}|${pick.market}|${pick.match}`) || [...index.values()].find((row) => row.bet.label === pick.label && row.bet.match === pick.match);
+}
+
+function startSeek(board, pick) {
+  const hit = startHit(board, pick), name = hit ? hit.person.name : pick.who || String(pick.label || "").split(/\s+(?:\d|Over\b|Under\b)/)[0].trim();
+  if (name && typeof legSeek === "function") legSeek(name);
+}
+
+function startBetGo(board, pick, mode) {
+  if (mode !== "new" || !parlayLeg.size) { startBet(board, pick); return; }
+  if (saveSig([...parlayLeg.values()]) !== saveHeld) saveNow();
+  const prior = window.parlayOpenId || "", ids = new Set(saveList().map((row) => row.id));
+  saveNew();
+  startBet(board, pick);
+  if (startUndo) Object.assign(startUndo, { ids, prior });
+}
+
+function startBetAsk(board, pick, card) {
+  const open = card.querySelector(".desk-rec-ask");
+  document.querySelectorAll(".find-start .desk-rec-ask").forEach((node) => node.remove());
+  if (open) return;
+  if (!parlayLeg.size) { startBetGo(board, pick, "new"); return; }
+  const ask = document.createElement("span");
+  ask.className = "desk-rec-ask";
+  ask.innerHTML = `<i>You have a bet open.</i><span role="button" tabindex="0" data-bet-go="add">Add to this bet</span><span role="button" tabindex="0" data-bet-go="new">Start a new bet</span>`;
+  card.append(ask);
+}
+
+function startBet(board, pick) {
+  const hit = startHit(board, pick);
   if (hit) { startUndo = { board, key: parlayKey(hit.bet), ids: new Set(saveList().map((row) => row.id)) }; if (typeof betFromSay === "function") betFromSay("Recommended"); return legSwapAdd(hit.person, hit.bet); }
   window.location.href = `/?${new URLSearchParams({ game: pick.match, label: pick.label, market: pick.market || "" })}`;
 }
@@ -142,7 +171,17 @@ function startRecs(board) {
     if (node.startPick) picks.push(node.startPick);
     if (!node.classList.contains("desk-rec")) return node;
     const copy = node.cloneNode(true), pick = node.startPick;
-    if (pick) { copy.title = "Add to a new bet"; copy.addEventListener("click", () => startBet(board, pick)); }
+    if (pick) {
+      copy.title = "Open in search";
+      copy.append(Object.assign(document.createElement("span"), { className: "desk-rec-bet", textContent: "Bet it", title: "Bet it" }));
+      copy.addEventListener("click", (event) => {
+        const go = event.target.closest("[data-bet-go]");
+        if (go) { copy.querySelectorAll(".desk-rec-ask").forEach((node) => node.remove()); startBetGo(board, pick, go.dataset.betGo); return; }
+        if (event.target.closest(".desk-rec-bet")) { startBetAsk(board, pick, copy); return; }
+        if (event.target.closest(".desk-rec-ask")) return;
+        startSeek(board, pick);
+      });
+    }
     return copy;
   });
   const games = homeGameRows(left).filter((node) => !startFavOnly || !node.startGame || startFavGame(node.startGame.match)).map((node) => {
