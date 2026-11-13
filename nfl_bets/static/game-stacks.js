@@ -61,7 +61,7 @@ function paintGameStacks(holder, game, who = "") {
   gameStackData().then((data) => {
     if (!box.isConnected) return;
     const found = (data && data.found) || {}, near = (data && data.near) || {}, notes = (data && data.notes) || {};
-    const fits = (stack) => (!game.match || stack.game === game.match || (stack.bets || []).some((bet) => bet.game === game.match)) && (!who || (stack.bets || []).some((bet) => String(bet.label || "").toLowerCase().includes(who.toLowerCase())));
+    const fits = (stack) => (game.match ? stack.game === game.match || (stack.bets || []).some((bet) => bet.game === game.match) : typeof startStackFav !== "function" || startStackFav(stack)) && (!who || (stack.bets || []).some((bet) => String(bet.label || "").toLowerCase().includes(who.toLowerCase())));
     const rows = STACKS.map((row, index) => ({ name: row[0], text: row[1], bets: row[2] || [], no: index + 1, rank: (typeof STACK_RANK !== "undefined" && STACK_RANK[row[0]]) || [99, ""], stacks: (found[row[0]] || []).filter(fits), close: (near[row[0]] || []).filter(fits) }))
       .sort((a, b) => a.rank[0] - b.rank[0]);
     const where = who ? `with ${who}` : game.match ? "for this game" : "on FanDuel now";

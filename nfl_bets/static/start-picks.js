@@ -119,33 +119,41 @@ function startRandomBar(board, picks) {
   return bar;
 }
 
+function startFavGame(match) {
+  const game = homeGamesList.find((row) => row.match === match) || ((window.state && state.board && state.board.games) || []).find((row) => row.match === match);
+  return Boolean(game && typeof favTeamsHas === "function" && favTeamsHas(game));
+}
+
+function startStackFav(stack) {
+  return !startFavOnly || [stack.game, ...(stack.bets || []).map((bet) => bet.game)].filter(Boolean).some(startFavGame);
+}
+
 function startFavBox() {
   const box = document.createElement("label"), check = Object.assign(document.createElement("input"), { type: "checkbox", checked: startFavOnly });
   box.className = "find-start-fav";
-  check.addEventListener("change", () => { startFavOnly = check.checked; localStorage.setItem("startFavOnly", startFavOnly ? "1" : ""); startPaint(1); });
+  check.addEventListener("change", () => { startFavOnly = check.checked; localStorage.setItem("startFavOnly", startFavOnly ? "1" : ""); window.saveStacksPanel = null; startPaint(1); });
   box.append(check, document.createTextNode("Only my teams"));
   return box;
 }
 
 function startRecs(board) {
   const now = Date.now(), left = homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now), picks = [], all = [];
-  const recs = homeRecRows(left).filter((node) => { if (node.startPick) all.push(node.startPick); return !node.startPick || startKindOk(node.startPick); }).map((node) => {
+  const recs = homeRecRows(left).filter((node) => { if (node.startPick) all.push(node.startPick); return !node.startPick || (startKindOk(node.startPick) && (!startFavOnly || startFavGame(node.startPick.match))); }).map((node) => {
     if (node.startPick) picks.push(node.startPick);
     if (!node.classList.contains("desk-rec")) return node;
     const copy = node.cloneNode(true), pick = node.startPick;
     if (pick) { copy.title = "Add to a new bet"; copy.addEventListener("click", () => startBet(board, pick)); }
     return copy;
   });
-  const fav = (game) => typeof favTeamsHas === "function" && favTeamsHas(game), allGames = homeGameRows(left), favAny = allGames.some((node) => node.startGame && fav(node.startGame));
-  const games = allGames.filter((node) => !startFavOnly || !node.startGame || fav(node.startGame)).map((node) => {
+  const games = homeGameRows(left).filter((node) => !startFavOnly || !node.startGame || startFavGame(node.startGame.match)).map((node) => {
     if (!node.classList.contains("desk-game") || node.classList.contains("desk-game-live")) return node;
     const copy = node.cloneNode(true), game = node.startGame;
     if (game) copy.addEventListener("click", () => startGameOpen(board, game));
     return copy;
   });
   if (startFavOnly && !games.some((node) => node.startGame)) games.push(Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: "None of your teams play today. Uncheck Only my teams for the rest." }));
-  if (all.length && !picks.length) recs.push(Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: "No picks match these filters. Tap Clear for the rest." }));
-  return { recs, games, picks, all, favAny };
+  if (all.length && !picks.length) recs.push(Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: startKinds.size ? "No picks match these filters. Tap Clear for the rest." : "None of your teams have a pick. Uncheck Only my teams for the rest." }));
+  return { recs, games, picks, all };
 }
 
 function startUndoGo() {
@@ -194,7 +202,7 @@ function startPaint(again) {
   homeRecsLoad(); homeLogosLoad(); homeLeagueSync();
   const box = document.createElement("div"), tabs = document.createElement("span");
   box.className = "find-start"; tabs.className = "desk-games-tabs";
-  const { recs, games, picks, all, favAny } = startRecs(board), shared = Boolean(window.saveWho && typeof sharedTabBody === "function");
+  const { recs, games, picks, all } = startRecs(board), shared = Boolean(window.saveWho && typeof sharedTabBody === "function");
   if (startTab === "shared" && !shared) startTab = "rec";
   [["rec", "Recommended"], ["games", `Games ${games.filter((node) => node.classList.contains("desk-game")).length}`], ["stacks", "Strategies"], ...(shared ? [["shared", sharedTabLabel()]] : [])].forEach(([id, label]) => {
     const tab = Object.assign(document.createElement("button"), { type: "button", className: `desk-games-tab${startTab === id ? " on" : ""}`, textContent: label });
@@ -206,7 +214,7 @@ function startPaint(again) {
   if (typeof sharedTabKey === "function") box.dataset.shared = sharedTabKey();
   const row = document.createElement("div");
   row.className = "find-start-row";
-  row.append(tabs, ...(startTab === "rec" ? [startRandomBar(board, picks)] : startTab === "games" && (favAny || startFavOnly) ? [startFavBox()] : []));
+  row.append(tabs, ...(startTab === "rec" ? [startRandomBar(board, picks)] : []), ...(startTab !== "shared" && ((window.memberTeams || []).length || startFavOnly) ? [startFavBox()] : []));
   box.append(row, ...(startTab === "rec" ? [...(all.length ? [startKindBar(all)] : []), ...recs] : startTab === "stacks" ? startStacks() : startTab === "shared" && shared ? [sharedTabBody(board)] : games));
   box.hidden = Boolean(input && input.value.trim());
   spot.after(box);

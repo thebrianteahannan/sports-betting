@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Outfit:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/live.css?v=39"/>
+<link rel="stylesheet" href="/live.css?v=40"/>
 </head>
 <body>
 <header class="live-top">
@@ -20,7 +20,25 @@
   <span id="live-at" class="live-at"></span>
   <a class="live-bird" href="/" aria-label="Back to Parlay of the Day"><span><img src="/scene/parrot.webp?v=1" alt=""/></span></a>
 </header>
-<main id="live"><div class="live-load"><img src="/scene/parrot-head.webp?v=1" alt=""/><p>Loading past, present, and future games.</p></div></main>
+<main id="live"><div class="live-load"><img src="/scene/parrot-head.webp?v=1" alt=""/><div class="live-load-say" aria-label="Loading past, present, and future games."><p></p><p></p><p></p></div></div></main>
+<script>
+(() => {
+  const lines = ["Pulling last night's finals.", "Checking the games on now.", "Lining up what's coming next."], rows = [...document.querySelectorAll(".live-load-say p")];
+  let line = 0, at = 0;
+  const tick = () => {
+    const row = rows[line];
+    if (!row || !row.isConnected) return;
+    row.classList.add("on");
+    row.textContent = lines[line].slice(0, ++at);
+    if (at < lines[line].length) { setTimeout(tick, 28); return; }
+    if (line === lines.length - 1) return;
+    row.classList.replace("on", "done");
+    line += 1; at = 0;
+    setTimeout(tick, 350);
+  };
+  tick();
+})();
+</script>
 <a id="live-profile" href="/?go=profile" aria-label="Profile"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.5-3.1 4-4.6 7-4.6s5.5 1.5 7 4.6"/></svg></a>
 <script>const STACK_RANK = {};</script>
 <script src="/stack-grade.js?v=3"></script><script src="/game-stacks.js?v=16"></script><script src="/game-until.js?v=4"></script>
