@@ -274,7 +274,7 @@ function savePaint() {
         const wipe = document.createElement("button");
         wipe.type = "button";
         wipe.className = "find-saved-x";
-        wipe.textContent = "×";
+        wipe.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5"/></svg>`;
         wipe.setAttribute("aria-label", "Delete this whole stack");
         wipe.addEventListener("click", () => { const ids = saveList().filter((one) => one.group && one.group.id === row.group.id).map((one) => one.id); if (ids.includes(window.parlayOpenId)) { window.parlayOpenId = ""; parlayPick.clear(); parlayLeg.clear(); if (typeof trayRoster === "function") trayRoster(); } saveStore(saveList().filter((one) => !ids.includes(one.id))); paintParlay(); });
         wrap.append(name, wipe);

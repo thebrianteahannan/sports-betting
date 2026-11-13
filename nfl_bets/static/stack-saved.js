@@ -55,6 +55,12 @@ function stackSavedTicket(list) {
 function stackSavedPaint() {
   const list = typeof saveList === "function" ? saveList() : [];
   stackSavedTicket(list);
+  document.querySelectorAll(".find-saved .find-saved-group .find-saved-chip[data-id] > button:first-child").forEach((go) => {
+    const row = list.find((one) => one.id === go.parentElement.dataset.id);
+    if (!row || go.querySelector(".find-saved-cash") || typeof legBoostDec !== "function" || typeof legHedgeCash !== "function") return;
+    const stake = stackSavedStake(row) || 5, dec = (row.legs || []).reduce((product, bet) => product * legBoostDec(bet.odds), 1);
+    go.append(stackSavedNode("em", "find-saved-cash", `${legHedgeCash(stake)} → ${legHedgeCash(stake * dec)}`));
+  });
   document.querySelectorAll(".find-saved .find-saved-group").forEach((wrap) => {
     if (wrap.querySelector(":scope > .find-saved-more")) return;
     const ids = [...wrap.querySelectorAll(".find-saved-chip")].map((chip) => chip.dataset.id), rows = list.filter((row) => row.group && ids.includes(row.id));
