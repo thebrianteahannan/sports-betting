@@ -1,7 +1,7 @@
 /** The player line and the prop numbers, under the name. */
 
 function paintCard(list, heading, person) {
-  const sport = String(((person.bets || []).find((bet) => bet && bet.sport) || {}).sport || "");
+  const sport = String(((person.bets || []).find((bet) => bet && bet.sport) || {}).sport || person.sport || "");
   const box = document.createElement("div");
   box.className = "find-card";
   const wait = document.createElement("p");

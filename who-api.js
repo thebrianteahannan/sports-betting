@@ -183,7 +183,7 @@ async function playerClub(raw) {
       const pos = String((item.position || {}).abbreviation || "");
       if (!team || seen.has(plainName(name))) continue;
       seen.add(plainName(name));
-      clubs.push({ player: name, team, nick, pos });
+      clubs.push({ player: name, team, nick, pos, sport: String(item.league || "").toUpperCase() });
     }
     clubs.sort((a, b) => (plainName(a.player).startsWith(words[0]) ? 0 : 1) - (plainName(b.player).startsWith(words[0]) ? 0 : 1) || a.player.length - b.player.length);
     clubs = clubs.slice(0, 4);
