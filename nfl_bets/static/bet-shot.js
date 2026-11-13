@@ -43,14 +43,33 @@ function shotPlayer(people, leg) {
   return bet ? { person, bet } : null;
 }
 
+function shotTeamOf(people, leg) {
+  const words = plainName(leg.player).split(" ").filter(Boolean), teams = people.filter((who) => who.kind === "team");
+  for (let k = words.length; k > 0; k -= 1) {
+    const tail = words.slice(-k).join(" "), head = words.slice(0, -k).join(" ");
+    let hits = teams.filter((who) => { const full = plainName(who.name); return full === tail || full.endsWith(` ${tail}`); });
+    if (hits.length > 1 && head) {
+      const city = (who) => plainName(who.name).slice(0, -tail.length).trim();
+      const near = hits.filter((who) => city(who).startsWith(head) || city(who).split(" ").map((word) => word[0]).join("") === head.replace(/ /g, ""));
+      if (near.length) hits = near;
+    }
+    if (hits.length > 1 && leg.match) {
+      const sides = String(leg.match).split(/\s+(?:@|at|vs\.?|v)\s+/i).map((side) => plainName(side).split(" ").pop()).filter(Boolean);
+      const near = hits.filter((who) => (who.bets || []).some((bet) => sides.every((side) => plainName(bet.match).includes(side))));
+      if (near.length) hits = near;
+    }
+    if (hits.length) return hits[0];
+  }
+  return null;
+}
+
 function shotTeam(people, leg, game) {
-  const name = plainName(leg.player);
-  const team = name && people.find((who) => who.kind === "team" && (plainName(who.name) === name || plainName(who.name).endsWith(` ${name}`)));
+  const team = shotTeamOf(people, leg);
   const market = String(leg.market || "").toLowerCase();
   const plain = (bet) => !SHOT_PART.test(`${bet.label} ${bet.market}`.toLowerCase());
   let rows = [];
   if (team && /win|moneyline/.test(market)) rows = team.bets.filter((bet) => /^moneyline$/i.test(bet.market) && bet.label === team.name);
-  else if (team && /spread/.test(market)) rows = team.bets.filter((bet) => /spread/i.test(bet.market) && plain(bet) && Number(((bet.label || "").match(/\(([+-]?\d+(?:\.\d+)?)\)/) || [])[1]) === leg.line);
+  else if (team && /spread/.test(market)) rows = team.bets.filter((bet) => /spread/i.test(bet.market) && plain(bet) && Number(((bet.label || "").match(/\(([+-]?\d+(?:\.\d+)?)\)/) || [])[1]) === leg.line).sort((a, b) => /^spread$/i.test(b.market) - /^spread$/i.test(a.market));
   else if (team && /total/.test(market)) rows = team.bets.filter((bet) => /total/i.test(bet.market) && plain(bet) && shotFits(bet, leg, String(bet.label).split(":").pop()));
   else if (/total/.test(market) && game) rows = people.filter((who) => who.kind === "team").flatMap((who) => who.bets.filter((bet) => bet.match === game && /^(total|alternate total points?)$/i.test(bet.market) && shotFits(bet, leg, bet.label)));
   const bet = shotBest(rows, leg);
@@ -72,7 +91,7 @@ const shotWant = new Map();
 function shotWho(people, leg) {
   const name = plainName(leg.player);
   if (!name) return null;
-  return people.find((who) => who.kind === "player" && plainName(who.name) === name) || people.find((who) => who.kind === "team" && (plainName(who.name) === name || plainName(who.name).endsWith(` ${name}`))) || null;
+  return people.find((who) => who.kind === "player" && plainName(who.name) === name) || shotTeamOf(people, leg);
 }
 
 function shotWantHit(person, bet) {
@@ -95,7 +114,7 @@ function shotNear(people, leg, game) {
     const sig = shotSig(leg.market);
     pool = (person.bets || []).filter((bet) => plain(bet) && shotSig(`${String(bet.label || "").replace(person.name, "")} ${String(bet.market || "").replace(person.name, "")}`) === sig).map((bet) => ({ person, bet }));
   } else {
-    const team = name && people.find((who) => who.kind === "team" && (plainName(who.name) === name || plainName(who.name).endsWith(` ${name}`)));
+    const team = name && shotTeamOf(people, leg);
     const kind = /spread/.test(market) ? /spread/i : /total/.test(market) ? /total/i : null;
     if (team && kind) pool = (team.bets || []).filter((bet) => kind.test(bet.market) && plain(bet)).map((bet) => ({ person: String(bet.label).startsWith(team.name) ? team : null, bet }));
     else if (kind && game) pool = people.filter((who) => who.kind === "team").flatMap((who) => (who.bets || []).filter((bet) => bet.match === game && /^(total|alternate total points?)$/i.test(bet.market)).map((bet) => ({ person: null, bet })));
@@ -216,7 +235,7 @@ async function shotRead(board, file) {
         drafts.forEach(({ person }) => parlayPick.set(person.key, person));
       });
     }
-    const say = (leg) => [leg.player, leg.side && leg.line != null ? `${leg.side} ${leg.line}` : "", leg.market].filter(Boolean).join(" ");
+    const say = (leg) => { const market = String(leg.market || ""), line = leg.line != null && /spread/i.test(market) && leg.line > 0 ? `+${leg.line}` : leg.line; return [leg.player, leg.side && leg.line != null ? (market.toLowerCase().includes(String(leg.side).toLowerCase()) ? line : `${leg.side} ${line}`) : "", market].filter(Boolean).join(" "); };
     const more = bets.length > 1 ? " That screenshot has more than one bet. This is the top one." : "";
     const lost = missed.filter((leg) => !drafts.some((one) => one.leg === leg));
     const told = [drafts.length && `FanDuel doesn't have ${drafts.map(({ leg }) => say(leg)).join(", ")} at that number. ${drafts.length === 1 ? "It's" : "They're"} in your bet. Pick the line.`, lost.length && `Not on the board right now: ${lost.map(say).join(", ")}.`].filter(Boolean).join(" ");

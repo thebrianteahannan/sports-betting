@@ -74,6 +74,19 @@ function startUndoGo() {
   return true;
 }
 
+function startStackKey() {
+  return [...new Set([...parlayLeg.values()].map((bet) => bet.match).filter(Boolean))].join("|");
+}
+
+function startStacks() {
+  if (typeof saveStacks !== "function") return [];
+  const temp = document.createElement("div");
+  window.saveStacksOpen = true; saveStacks(temp); window.saveStacksOpen = false;
+  const panel = temp.querySelector(".find-saved-stacks");
+  if (panel && typeof stackKindBar === "function" && !panel.querySelector(":scope > .stack-kind-bar")) panel.prepend(stackKindBar(panel));
+  return panel ? [panel] : [];
+}
+
 function startSpot() {
   const tray = document.querySelector("#desk-glass-in .find-board > .find-tray");
   return tray && (tray.parentElement.querySelector(":scope > .find-tips") || tray);
@@ -94,13 +107,14 @@ function startPaint(again) {
   const box = document.createElement("div"), tabs = document.createElement("span");
   box.className = "find-start"; tabs.className = "desk-games-tabs";
   const { recs, games } = startRecs(board);
-  [["rec", "Recommended"], ["games", `Games ${games.filter((node) => node.classList.contains("desk-game")).length}`]].forEach(([id, label]) => {
+  [["rec", "Recommended"], ["games", `Games ${games.filter((node) => node.classList.contains("desk-game")).length}`], ["stacks", "Strategies"]].forEach(([id, label]) => {
     const tab = Object.assign(document.createElement("button"), { type: "button", className: `desk-games-tab${startTab === id ? " on" : ""}`, textContent: label });
     tab.setAttribute("aria-pressed", String(startTab === id));
     tab.addEventListener("click", () => { startTab = id; startPaint(1); });
     tabs.append(tab);
   });
-  box.append(tabs, ...(startTab === "rec" ? recs : games));
+  box.dataset.stacks = startStackKey();
+  box.append(tabs, ...(startTab === "rec" ? recs : startTab === "stacks" ? startStacks() : games));
   box.hidden = Boolean(input && input.value.trim());
   spot.after(box);
   if ((!homeRecs || homeRecs.loading) && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
@@ -120,7 +134,12 @@ if (typeof saveTips === "function") {
 }
 if (typeof paintParlay === "function") {
   const paintParlayStart = paintParlay;
-  paintParlay = function () { paintParlayStart.apply(this, arguments); startPlace(); };
+  paintParlay = function () {
+    if (window.saveStacksOpen) { window.saveStacksOpen = false; startTab = "stacks"; document.querySelectorAll(".find-start").forEach((node) => node.remove()); }
+    paintParlayStart.apply(this, arguments); startPlace();
+    const box = document.querySelector("#desk-glass-in .find-start");
+    if (box && startTab === "stacks" && box.dataset.stacks !== startStackKey()) startPaint(1);
+  };
 }
 document.addEventListener("input", (event) => { if (event.target.closest && event.target.closest("label.find")) { startBack = startUndo = null; document.querySelectorAll(".find-start").forEach((node) => { node.hidden = Boolean(event.target.value.trim()); }); } });
 document.addEventListener("click", (event) => {

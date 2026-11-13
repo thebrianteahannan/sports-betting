@@ -118,16 +118,16 @@ function archivePanel() {
 
 function archivePaint() {
   document.querySelectorAll(".find-saved").forEach((box) => {
-    box.querySelectorAll(":scope > .find-saved-done, :scope > .find-done").forEach((node) => node.remove());
+    box.querySelectorAll(":scope > .find-saved-done, :scope > p.find-say > .find-saved-done, :scope > .find-done").forEach((node) => node.remove());
     if (!window.archiveRows.length) return;
     const go = document.createElement("button");
     go.type = "button";
     go.className = "find-saved-st find-saved-done";
     go.textContent = window.archiveOpen ? "Hide finished" : `Finished (${window.archiveRows.length})`;
     go.setAttribute("aria-expanded", String(window.archiveOpen));
-    go.addEventListener("click", () => { window.archiveOpen = !window.archiveOpen; archivePaint(); });
-    const strat = box.querySelector(":scope > .find-saved-st");
-    if (strat) strat.after(go); else box.append(go);
+    go.addEventListener("click", () => { window.archiveOpen = !window.archiveOpen; if (window.archiveOpen && window.saveShut) { window.saveShut = false; paintParlay(); } else archivePaint(); });
+    const fresh = box.querySelector(":scope > p.find-say > .find-saved-new");
+    if (fresh) fresh.after(go); else box.append(go);
     if (window.archiveOpen) box.append(archivePanel());
   });
 }

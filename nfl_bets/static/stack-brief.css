@@ -1,0 +1,20 @@
+.rec-strategy h3 i.stack-kind { display: inline-block; margin: 0 0.4rem; padding: 0 0.45rem; border: 1px solid currentColor; border-radius: 999px; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.5; text-transform: uppercase; vertical-align: 0.1em; }
+.rec-strategy h3 i.stack-kind.k-team { color: #8fb4ff; }
+.rec-strategy h3 i.stack-kind.k-player { color: #e7c15a; }
+.rec-strategy h3 i.stack-kind.k-player-team { color: #c99bff; }
+.stack-only-team .rec-strategy:not([data-kind~="team"]), .stack-only-player .rec-strategy:not([data-kind~="player"]) { display: none !important; }
+.stack-kind-bar { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.6rem; }
+.rec-board .stack-kind-bar button, #desk.tv-full #desk-glass .rec-board .stack-kind-bar button { width: auto; min-height: 0; margin: 0; padding: 0.3rem 0.85rem; border: 1px solid #2a3a48; border-radius: 999px; background: transparent; box-shadow: none; color: #c4cde0; font-size: 13px; font-weight: 800; letter-spacing: normal; text-transform: none; cursor: pointer; }
+.rec-board .stack-kind-bar button.on, #desk.tv-full #desk-glass .rec-board .stack-kind-bar button.on { border-color: #3dff6e; background: rgba(61, 255, 110, 0.12); color: #3dff6e; }
+.stack-set.stack-brief:not(.stack-open) > :is(.stack-set-name, .stack-read), .stack-set.stack-brief:not(.stack-open) .stack-leg .rec-gist { display: none !important; }
+:is(.rec-board, #choice-result) .stack-set.stack-brief .rec-bet.stack-leg { padding: 0.4rem 0.15rem; }
+:is(.rec-board, #choice-result) .stack-set.stack-brief .stack-leg > b { flex-wrap: wrap; gap: 0.2rem 0.75rem; font-size: 16px; }
+:is(.rec-board, #choice-result) .stack-set.stack-brief .stack-leg > b .odds { order: 1; min-width: 3.4em; }
+:is(.rec-board, #choice-result) .stack-set.stack-brief .stack-leg > b .chance { order: 2; min-width: 3.6em; }
+:is(.rec-board, #choice-result) .stack-set.stack-brief .stack-leg > b .prop { order: 3; }
+:is(.rec-board, #choice-result) .stack-set.stack-brief .stack-leg > b .seen { order: 4; margin-left: auto; }
+.stack-set.stack-brief .stack-ticket i.stack-game { padding: 0.05rem 0.5rem; border: 1px solid #3a4652; border-radius: 999px; color: #c9d4dd; font-size: 11px; font-style: normal; letter-spacing: 0.03em; }
+.rec-board .stack-set.stack-brief label.stack-why, #desk.tv-full #desk-glass .rec-board .stack-set.stack-brief label.stack-why { display: inline-flex; flex: none; order: 9; align-items: center; gap: 0.35rem; width: auto; margin: 0; padding: 0; color: #c4cde0; font-size: 13px; font-weight: 600; letter-spacing: normal; text-transform: none; cursor: pointer; white-space: nowrap; }
+.rec-board .stack-set.stack-brief .stack-ticket label.stack-why, #desk.tv-full #desk-glass .rec-board .stack-set.stack-brief .stack-ticket label.stack-why { margin-left: auto; }
+.stack-set.stack-brief .stack-ticket label.stack-why { align-self: center; }
+.stack-set.stack-brief label.stack-why input { width: 15px !important; height: 15px !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; accent-color: #3dff6e; cursor: pointer; }

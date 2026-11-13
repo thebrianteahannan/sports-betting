@@ -285,10 +285,9 @@ function savePaint() {
     const fresh = document.createElement("button");
     fresh.type = "button";
     fresh.className = "find-saved-new";
-    fresh.textContent = "+ New parlay";
+    fresh.textContent = "+ New bet";
     fresh.addEventListener("click", () => { const input = document.querySelector("label.find input"); saveNew(); if (input) input.focus(); if (!parlayLeg.size && !parlayPick.size && !(input && input.value.trim())) saveTips(); });
-    box.append(fresh);
-    saveStacks(box);
+    head.insertBefore(fresh, fold);
     if (!groups.size) return;
     const top = document.createElement("p");
     top.textContent = "Saved stacks";

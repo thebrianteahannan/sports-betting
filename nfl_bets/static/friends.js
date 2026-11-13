@@ -286,7 +286,7 @@ function friendsPaint() {
     const go = document.createElement("button");
     go.type = "button";
     go.className = "find-saved-st find-saved-friends";
-    go.textContent = window.sharedOpen ? "Hide shared" : `Shared${fresh ? ` (${fresh} new)` : ""}`;
+    go.textContent = window.sharedOpen ? "Hide shared" : `Shared bets${fresh ? ` (${fresh} new)` : ""}`;
     go.setAttribute("aria-expanded", String(window.sharedOpen));
     go.addEventListener("click", () => {
       window.sharedOpen = !window.sharedOpen;
