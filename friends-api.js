@@ -120,4 +120,4 @@ async function sharedPost(user, body, readKey, writeKey) {
   return { items };
 }
 
-module.exports = { friendsView, friendsPost, shareSend, sharedList, sharedPost };
+module.exports = { friendsView, friendsPost, shareSend, sharedList, sharedPost, linksOf, friendIds, cleanLeg };
