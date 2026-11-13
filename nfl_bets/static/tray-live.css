@@ -13,3 +13,6 @@
 .find-tray .find-ticket > b i.tray-soon[hidden] { display: none; }
 .find-tray .find-ticket > b i.tray-live[data-live-game] { cursor: pointer; }
 .find-tray .find-ticket > b i.tray-live[data-live-game]:hover { background: rgba(255, 107, 107, 0.15); }
+.find-tray .find-chose i.prop:has(+ i.tray-now) { flex: 0 1 auto !important; margin-right: 0 !important; }
+.find-tray .find-chose i.tray-now { align-self: center; margin: 0 0 0 0.45rem !important; }
+.find-tray .find-chose i.tray-now:not(:has(+ i.find-rec-pill, + i.find-proof)) { margin-right: auto !important; }

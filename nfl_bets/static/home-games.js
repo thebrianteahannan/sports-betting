@@ -11,6 +11,28 @@ function homeGamesLoad() {
   }).catch((error) => { homeGamesAt = 0; console.log("[home-games] could not load", error); });
 }
 
+let homeLater = { at: 0, weekAt: 0, loading: false, live: [], tomorrow: [] };
+
+function homeLaterLoad() {
+  if (homeLater.loading || Date.now() - homeLater.at < 60 * 1000 || typeof loadFind !== "function") return;
+  homeLater.loading = true;
+  const day = (at) => new Date(at).toLocaleDateString("en-CA", { timeZone: "America/New_York" }), next = day(Date.now() + 24 * 60 * 60 * 1000);
+  const week = Date.now() - homeLater.weekAt < 5 * 60 * 1000 ? Promise.resolve(null) : loadFind("week").then((data) => loadedGames(Array.isArray(data && data.people) ? data.people : [], "week"));
+  Promise.all([fetch("/api/live?all=1", { credentials: "same-origin" }).then((reply) => (reply.ok ? reply.json() : null)), week]).then(([live, games]) => {
+    homeLater.live = (live && live.live) || [];
+    if (games) { homeLater.weekAt = Date.now(); homeLater.tomorrow = games.filter((game) => day(Date.parse(game.kickoff || "")) === next).sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff)); }
+  }).catch((error) => console.log("[home-games] could not load live and tomorrow", error)).finally(() => { homeLater.at = Date.now(); homeLater.loading = false; homeGamesPaint(); });
+}
+
+function homeLiveRow(game) {
+  const row = document.createElement("button");
+  row.type = "button";
+  row.className = "desk-game desk-game-live";
+  row.innerHTML = `<span class="desk-game-sport">${esc(game.sport || "")}</span><span class="desk-game-match">${homeTeam(game.away.name)} ${esc(game.away.score)} @ ${homeTeam(game.home.name)} ${esc(game.home.score)}</span><span class="desk-game-when">${esc(game.clock || "")}</span><span class="desk-game-until desk-game-on">Live</span>`;
+  row.addEventListener("click", () => { window.location.href = `/live?${new URLSearchParams({ game: game.id })}`; });
+  return row;
+}
+
 function homeGamesOpen(game) {
   if (window.saveNew && !document.getElementById("desk").classList.contains("tv-full")) saveNew();
   window.asking = true;
@@ -163,7 +185,18 @@ function homeRecRows(games) {
 
 function homeGameRows(games) {
   const league = homeLeagueOn(games), rows = games.filter((game) => !league || game.sport === league);
+  if (!homeGamesLeft()) {
+    const live = homeLater.live.filter((game) => !league || game.sport === league), next = homeLater.tomorrow.filter((game) => !league || game.sport === league);
+    const label = (text) => Object.assign(document.createElement("p"), { className: "desk-games-note desk-games-label", textContent: text });
+    const list = [...(live.length ? [label("Live now"), ...live.map(homeLiveRow)] : []), ...(next.length ? [label("Tomorrow"), ...next.map(homeGamesRow)] : [])];
+    if (list.length) return list;
+  }
   return rows.length ? rows.map(homeGamesRow) : [Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: `No ${league} games left today. Tap All for the rest.` })];
+}
+
+function homeGamesLeft() {
+  const now = Date.now();
+  return homeGamesList.some((game) => Date.parse(game.kickoff || "") > now);
 }
 
 function homeGamesTabs(box, games) {
@@ -187,7 +220,9 @@ function homeGamesPaint() {
   if (!desk || !bg) return;
   let box = document.getElementById("desk-games");
   if (!box) { box = document.createElement("div"); box.id = "desk-games"; box.hidden = true; desk.append(box); homeGamesGrow(box); }
-  const now = Date.now(), games = homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now), fresh = typeof sharedUnopened === "function" ? sharedUnopened() : [];
+  const now = Date.now(), left = homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now), fresh = typeof sharedUnopened === "function" ? sharedUnopened() : [];
+  if (!left.length) homeLaterLoad();
+  const games = left.length ? left : [...homeLater.live.map((game) => ({ match: `${game.away.name} @ ${game.home.name}`, kickoff: game.when, sport: game.sport })), ...homeLater.tomorrow];
   const top = Math.ceil(bg.getBoundingClientRect().bottom - desk.getBoundingClientRect().top);
   const show = (fresh.length > 0 || games.length > 0) && !document.body.classList.contains("needs-member") && !desk.classList.contains("tv-full") && Boolean(guide && !guide.hidden) && desk.clientHeight - top >= 160;
   box.hidden = !show;
@@ -199,7 +234,7 @@ function homeGamesPaint() {
   if (!fresh.length && homeGamesTab === "rec") homeRecsLoad();
   homeLogosLoad();
   homeLeagueSync();
-  const sig = `${homeLeagueOpen}|` + `${homeLeagueOn(games)}|${homeGamesTab}|${(window.memberTeams || []).join(",")}|${homeRecs ? `${homeRecs.at}${homeRecs.loading ? "…" : ""}` : ""}|${fresh.length ? `shared:${fresh.map((item) => item.id).join(";")}` : games.map((game) => `${game.match}|${game.kickoff}`).join(";")}`;
+  const sig = `${homeLeagueOpen}|` + `${homeLeagueOn(games)}|${homeGamesTab}|${(window.memberTeams || []).join(",")}|${homeRecs ? `${homeRecs.at}${homeRecs.loading ? "…" : ""}` : ""}|${fresh.length ? `shared:${fresh.map((item) => item.id).join(";")}` : games.map((game) => `${game.match}|${game.kickoff}`).join(";")}${left.length ? "" : `|${homeLater.at}`}`;
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
   const head = document.createElement("p");

@@ -54,3 +54,6 @@ body.home-games-on #who { top: var(--home-games-top); right: 16px; bottom: auto;
 :is(#desk-games, #rec-page) .desk-game-match { grid-area: match; overflow: hidden; font-size: 15px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 :is(#desk-games, #rec-page) .desk-game-when { grid-area: when; color: #9fb3c8; font-size: 13px; }
 :is(#desk-games, #rec-page) .desk-game-until { grid-area: until; color: #3dff6e; font-size: 13px; font-weight: 700; white-space: nowrap; }
+#desk-games .desk-games-label { margin: 10px 0 2px; color: #e7c15a; font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+#desk-games .desk-game-until.desk-game-on { justify-self: start; padding: 0 0.5rem; border: 1px solid rgba(255, 107, 107, 0.6); border-radius: 999px; color: #ff6b6b; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+#desk-games .desk-game-until.desk-game-on::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 0.35rem; border-radius: 50%; background: currentColor; vertical-align: middle; }
