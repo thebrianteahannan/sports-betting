@@ -3,6 +3,9 @@
 #tv-tick-pick, #tv-tick-lazy, #tv-tick-how, #tv-tick-risk, #tv-tick-help { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1.2rem 1.2rem 3rem; overflow: auto; background: #07131a; pointer-events: auto; }
 #tv-tick-pick[hidden], #tv-tick-lazy[hidden], #tv-tick-how[hidden], #tv-tick-risk[hidden], #tv-tick-help[hidden] { display: none; }
 .tv-how-strong { color: #e7c15a; font-weight: 800; }
+#desk.bird-on:not(.tv-full) #bird-guide:has(button[data-menu]) #greet-legal { flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; align-self: center; gap: 0.2rem 0.45rem; margin: 0.6rem 0 2.6rem; text-align: center; }
+#desk.bird-on:not(.tv-full) #bird-guide:has(button[data-menu]) #greet-legal .age { margin: 0; font-size: 1.5rem; }
+#desk.bird-on:not(.tv-full) #bird-guide:has(button[data-menu]) #greet-legal span:last-child { max-width: none; }
 #tv-tick-help .tv-lazy-head { color: #ff9a2e; text-shadow: 0 0 14px rgba(255, 154, 46, 0.55); }
 #desk-glass #tv-tick-help .tv-how-go { background: #ff9a2e; color: #1a0d00; }
 #desk-glass #tv-tick-help .tv-how-go:hover { background: #ffb35c; }

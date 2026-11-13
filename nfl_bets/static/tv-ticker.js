@@ -9,13 +9,6 @@ function tvTickEl(id) { return document.getElementById(id === "menu" ? "bird-gui
 function tvTickDots() {
   const dots = document.querySelector("#tv-tick .tv-tick-dots");
   if (dots) dots.innerHTML = tvTickPages().map((id) => `<i${id === tvTick.at ? ' class="on"' : ""}></i>`).join("");
-  tvTickNavPlace();
-}
-
-function tvTickNavPlace() {
-  const nav = document.querySelector("#tv-tick .tv-tick-nav"), legal = document.getElementById("greet-legal"), glass = document.getElementById("tv-tick"), desk = document.getElementById("desk");
-  const lift = tvTick.at === "menu" && desk && !desk.classList.contains("tv-full") && legal && legal.getClientRects().length && glass && glass.offsetHeight ? `${Math.max(10, Math.round(((glass.getBoundingClientRect().bottom - legal.getBoundingClientRect().top) * glass.offsetHeight) / glass.getBoundingClientRect().height + 8))}px` : "";
-  if (nav && nav.style.bottom !== lift) nav.style.bottom = lift;
 }
 
 function tvTickMenuOn() {
@@ -97,18 +90,29 @@ function tvTickShow(next, dir) {
   inEl.animate([{ transform: `translateX(${dir * 100}%)` }, { transform: "none" }], { duration: ms, easing: ease });
   outEl.animate([{ transform: "none" }, { transform: `translateX(${-dir * 100}%)` }], { duration: ms, easing: ease }).finished.then(() => { if (outEl.id !== "bird-guide" && outEl !== tvTickEl(tvTick.at)) outEl.hidden = true; }).catch(() => {});
   tvTick.at = next;
+  if (next !== "menu") tvTick.last = next;
   tvTickDots();
 }
 
+function tvTickAuto(dir = 1) {
+  const pages = tvTickPages().filter((id) => id !== "menu"), at = pages.indexOf(tvTick.last);
+  if (tvTick.at !== "menu") {
+    const from = pages.indexOf(tvTick.at);
+    tvTickShow("menu", dir);
+    if (dir < 0) tvTick.last = pages[(from - 1 + pages.length) % pages.length];
+    return;
+  }
+  tvTickShow(dir > 0 ? pages[(at + 1) % pages.length] : pages[at < 0 ? pages.length - 1 : at], dir);
+}
+
 function tvTickStep(dir) {
-  const pages = tvTickPages(), at = Math.max(0, pages.indexOf(tvTick.at));
-  tvTickShow(pages[(at + dir + pages.length) % pages.length], dir);
+  tvTickAuto(dir);
   tvTickTime();
 }
 
 function tvTickTime() {
   clearInterval(tvTick.timer);
-  tvTick.timer = setInterval(() => { if (tvTickMenuOn() && !tvTick.hold && document.visibilityState === "visible") tvTickStep(1); }, 12000);
+  tvTick.timer = setInterval(() => { if (tvTickMenuOn() && !tvTick.hold && document.visibilityState === "visible") tvTickAuto(); }, 12000);
 }
 
 function tvTickWatch() {
@@ -116,7 +120,6 @@ function tvTickWatch() {
   if (!box) return;
   const on = tvTickMenuOn();
   if (on) tvTickLoad();
-  tvTickNavPlace();
   if (on && box.hidden) { box.hidden = false; tvTickDots(); tvTickTime(); }
   if (!on && !box.hidden) {
     box.hidden = true; clearInterval(tvTick.timer);
