@@ -73,26 +73,34 @@ function liveLegState(game, pick) {
   return { state, say: pick.under ? `${now}, stays under ${pick.need}` : `${now} of ${goal}`, level: pace ? pace.level : "", tip: pace ? pace.tip : "" };
 }
 
-function liveParlayTally(games) {
-  const tally = new Map();
-  liveLegs.forEach((leg) => {
-    if (!leg.parlay) return;
-    const row = tally.get(leg.parlay) || { hit: 0, ahead: 0, close: 0, behind: 0, far: 0, lost: 0, wait: 0, total: 0 };
-    tally.set(leg.parlay, row);
+function liveParlayCount(legs, games) {
+  const row = { hit: 0, ahead: 0, close: 0, behind: 0, far: 0, lost: 0, wait: 0, total: 0 };
+  legs.forEach((leg) => {
     row.total += 1;
     const game = games.find((one) => liveMine(one, [leg]).length);
     if (!game) { row.wait += 1; return; }
     const { state, level } = liveLegState(game, liveLegRead(leg));
     if (state) row[state] += 1; else if (level) row[level] += 1; else row.wait += 1;
   });
-  liveParlays = tally;
+  return row;
+}
+
+function liveParlayTally(games) {
+  const sets = new Map();
+  liveLegs.forEach((leg) => { if (leg.parlay) sets.set(leg.parlay, [...(sets.get(leg.parlay) || []), leg]); });
+  liveParlays = new Map([...sets].map(([id, legs]) => [id, liveParlayCount(legs, games)]));
+}
+
+function liveParlaySay(row) {
+  const good = row.ahead + row.close, bad = row.behind + row.far;
+  const parts = [row.lost && `${row.lost} lost`, row.hit && `${row.hit} hit`, good && `${good} on pace`, bad && `${bad} behind`, row.wait && `${row.wait} to go`].filter(Boolean);
+  const level = row.lost ? "lost" : row.far ? "far" : row.behind ? "behind" : row.hit === row.total ? "hit" : row.close ? "close" : row.ahead || row.hit ? "ahead" : "";
+  return { parts, level };
 }
 
 function liveParlayHead(id, size) {
   const name = size > 1 ? `${size}-leg parlay` : "Parlay", row = liveParlays.get(id);
   if (!row) return { text: name, level: "" };
-  const good = row.ahead + row.close, bad = row.behind + row.far;
-  const parts = [row.lost && `${row.lost} lost`, row.hit && `${row.hit} hit`, good && `${good} on pace`, bad && `${bad} behind`, row.wait && `${row.wait} to go`].filter(Boolean);
-  const level = row.lost ? "lost" : row.far ? "far" : row.behind ? "behind" : row.hit === row.total ? "hit" : row.close ? "close" : row.ahead || row.hit ? "ahead" : "";
+  const { parts, level } = liveParlaySay(row);
   return { text: [name, ...parts].join(" · "), level };
 }

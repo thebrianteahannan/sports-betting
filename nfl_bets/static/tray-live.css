@@ -1,0 +1,11 @@
+.find-tray .find-ticket > b i.tray-live { font-style: normal; color: #ff6b6b; border: 1px solid rgba(255, 107, 107, 0.6); border-radius: 999px; padding: 0.05rem 0.5rem; font-size: 11px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; }
+.find-tray .find-ticket > b i.tray-live::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 0.35rem; border-radius: 50%; background: currentColor; vertical-align: middle; animation: tray-live-blink 1.4s ease-in-out infinite; }
+.find-tray .find-ticket > b i.tray-live.done { color: #9aa6b2; border-color: rgba(255, 255, 255, 0.28); }
+.find-tray .find-ticket > b i.tray-live.done::before { display: none; }
+@keyframes tray-live-blink { 50% { opacity: 0.25; } }
+.find-tray i.tray-now, .find-tray .find-ticket > b i.tray-sum { font-style: normal; border-radius: 999px; padding: 0.05rem 0.5rem; font-size: 11px; font-weight: 800; white-space: nowrap; color: #f4f7fb; background: rgba(255, 255, 255, 0.1); }
+.find-tray i.tray-now { margin-left: 0.4rem; }
+.find-tray :is(i.tray-now, .find-ticket > b i.tray-sum):is(.hit, .pace-hit, .pace-ahead) { background: rgba(61, 255, 110, 0.2); color: #3dff6e; }
+.find-tray :is(i.tray-now, .find-ticket > b i.tray-sum).pace-close { background: rgba(231, 193, 90, 0.24); color: #ffd36b; }
+.find-tray :is(i.tray-now, .find-ticket > b i.tray-sum).pace-behind { background: rgba(255, 154, 46, 0.24); color: #ffb35c; }
+.find-tray :is(i.tray-now, .find-ticket > b i.tray-sum):is(.pace-far, .lost, .pace-lost) { background: rgba(255, 107, 107, 0.24); color: #ff8a8a; }
