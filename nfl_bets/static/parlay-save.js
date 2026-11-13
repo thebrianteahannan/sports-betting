@@ -291,7 +291,7 @@ function savePaint() {
     head.insertBefore(fresh, fold);
     if (!groups.size) return;
     const top = document.createElement("p");
-    top.textContent = "Saved stacks";
+    top.textContent = "MY STACKS";
     stacks.prepend(top);
     box.insertBefore(stacks, box.querySelector(":scope > .find-saved-stacks"));
   });
