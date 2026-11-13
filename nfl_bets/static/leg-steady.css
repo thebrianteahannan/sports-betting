@@ -1,0 +1,15 @@
+.find-tray .leg-steady { display: flex; flex-direction: column; gap: 0.4rem; margin: 0 0 0.5rem; }
+.find-tray .leg-boost-box p.leg-steady-sub { margin: 0.25rem 0 0.1rem; color: #8fb4ff; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.find-tray .leg-steady p.leg-steady-said { margin: 0; color: #3dff6e; font-size: 0.85rem; font-weight: 700; }
+.find-tray .leg-steady-card { padding: 0.45rem 0.6rem; border-radius: 8px; background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px #2c3742; }
+.find-tray .leg-steady-card > b { display: block; margin-bottom: 0.15rem; color: #f4f7fb; font-size: 0.9rem; }
+.find-tray .leg-steady-card p { margin: 0.1rem 0; color: #c9d4dd; font-size: 0.82rem; line-height: 1.35; }
+.find-tray .leg-steady-table { display: grid; gap: 0.05rem; max-width: 22rem; margin: 0.3rem 0; }
+.find-tray .leg-steady-table p { display: flex; justify-content: space-between; gap: 1rem; margin: 0; }
+.find-tray .leg-steady-table b { color: #f4f7fb; font-weight: 800; }
+.find-tray .leg-steady-table b.up { color: #3dff6e; }
+.find-tray .leg-steady-table b.down { color: #ff8a8a; }
+:is(.rec-board, #choice-result) .find-tray .leg-steady button.leg-steady-go { width: auto !important; min-height: 0 !important; margin: 0.3rem 0 0 !important; padding: 0.3rem 0.8rem !important; border: 1px solid #3dff6e !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #3dff6e !important; font-size: 13px !important; font-weight: 700 !important; text-transform: none !important; letter-spacing: normal !important; cursor: pointer; }
+:is(.rec-board, #choice-result) .find-tray .leg-steady input.leg-steady-price { display: inline-block !important; width: 5.2em !important; height: auto !important; min-height: 0 !important; margin: 0 0.2rem !important; padding: 0.1rem 0.35rem !important; border: 1px solid #3a4652 !important; border-radius: 6px !important; background: #0d1319 !important; color: #f4f7fb !important; font-size: 0.82rem !important; }
+.find-tray .leg-boost-box i.boost-why { color: #8fb4ff; font-size: 0.78rem; font-style: normal; font-weight: 700; }
+.find-tray button.leg-boost-add i.leg-steady-ready { margin-left: 0.4rem; padding: 0 0.4rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 0.66rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }

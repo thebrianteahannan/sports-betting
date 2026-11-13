@@ -147,9 +147,9 @@ async function outPlayers() {
       for (const team of data.injuries || []) {
         for (const item of team.injuries || []) {
           const status = String(item.status || "").toLowerCase();
-          if ((status !== "out" && status !== "doubtful") || /not listed on|full participant|practiced fully|cleared to (play|return)|no injury designation|will play|expected to play/i.test(String(item.shortComment || ""))) continue;
+          if (!["out", "doubtful", "questionable", "day-to-day"].includes(status) || /not listed on|full participant|practiced fully|cleared to (play|return)|no injury designation|will play|expected to play/i.test(String(item.shortComment || ""))) continue;
           const player = String((item.athlete || {}).displayName || "").trim();
-          if (player) rows.push({ player, team: String(team.displayName || ""), status, note: String(item.shortComment || "").trim(), spot: status === "out" ? spotLine(item.longComment) : "", back: String((item.details || {}).returnDate || "").slice(0, 10) });
+          if (player) rows.push({ player, team: String(team.displayName || ""), status, note: String(item.shortComment || "").trim(), spot: status === "out" ? spotLine(item.longComment) : "", back: String((item.details || {}).returnDate || "").slice(0, 10), sport: path.split("/")[1] });
         }
       }
     } catch (error) { /* a league feed can miss */ }
@@ -190,7 +190,7 @@ async function playerClub(raw) {
     clubCache.set(want, { clubs });
   }
   let out = [];
-  try { out = (await outPlayers()).filter((row) => nameHit(row.player, want)).sort((a, b) => a.player.length - b.player.length).slice(0, 3); } catch (error) { out = []; }
+  try { out = (await outPlayers()).filter((row) => (row.status === "out" || row.status === "doubtful") && nameHit(row.player, want)).sort((a, b) => a.player.length - b.player.length).slice(0, 3); } catch (error) { out = []; }
   return { clubs, out };
 }
 
@@ -248,4 +248,15 @@ async function outList() {
   return { out: rows };
 }
 
-module.exports = { playerNames, nameBook, playerClub, teamRoster, outList };
+async function hurtList(names, games) {
+  const want = new Set((Array.isArray(names) ? names : []).slice(0, 40).map(plainName).filter(Boolean)), matches = (Array.isArray(games) ? games : []).slice(0, 20).map(String);
+  let rows = [];
+  try { rows = await outPlayers(); } catch (error) { rows = []; }
+  const hurt = rows.filter((row) => want.has(plainName(row.player))).map(({ player, team, status, sport }) => ({ player, team, status, sport }));
+  const gone = rows.filter((row) => row.status === "out" && row.spot && row.team && matches.some((match) => match.includes(row.team))).map(({ player, team, spot, sport }) => ({ player, team, spot, sport }));
+  const teams = {};
+  await Promise.all([...new Map([...hurt, ...gone].map((row) => [row.team, row.sport])).entries()].map(async ([team, sport]) => { teams[team] = ((await teamRoster(team, sport)).players || []).map((one) => one.name); }));
+  return { hurt, gone, teams };
+}
+
+module.exports = { playerNames, nameBook, playerClub, teamRoster, outList, hurtList };

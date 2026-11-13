@@ -4,7 +4,7 @@ const LEG_BOOST_SAVE = { keep: "legBoostKeep", game: "legBoostGame", league: "le
 const legBoost = { mode: "", asked: new Set(), more: false, ...Object.fromEntries(Object.entries(LEG_BOOST_SAVE).map(([key, name]) => [key, (() => { try { return localStorage.getItem(name) === "1"; } catch (error) { return false; } })()])) };
 const LEG_BOOST = {
   juice: ["Add juice", "Bigger payout. Recommended and good bets from every game, each clearing its price over its last 10."],
-  steady: ["Add stability", "Higher chance. Swap the leg dragging it, lower a line, or drop it. The last rows add anchors from the recommended and good bets."],
+  steady: ["Add stability", "Higher chance. Split it, hedge it, swap the leg dragging it, lower a line, or drop it. The last rows add anchors from the recommended and good bets."],
 };
 
 function legBoostDec(odds) {

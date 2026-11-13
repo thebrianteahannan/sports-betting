@@ -25,3 +25,5 @@
 #desk-glass-in .find-start .desk-rec-ask i { margin-right: 0.2rem; color: #f4f7fb; font-size: 13px; font-style: normal; font-weight: 700; }
 #desk-glass-in .find-start .desk-rec-ask [data-bet-go] { padding: 0.25rem 0.8rem; border: 1px solid #3dff6e; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 13px; font-weight: 800; cursor: pointer; }
 #desk-glass-in .find-start .desk-rec-ask [data-bet-go="new"] { background: transparent; color: #3dff6e; }
+#desk-glass-in .find-start .desk-rec .desk-rec-more { grid-column: 1 / -1; margin-top: 0.35rem; padding-top: 0.4rem; border-top: 1px solid rgba(255, 255, 255, 0.1); cursor: default; }
+#desk-glass-in .find-start .desk-rec .desk-rec-more .find-card { margin: 0; }

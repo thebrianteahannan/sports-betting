@@ -68,6 +68,16 @@ function startSeek(board, pick) {
   if (name && typeof legSeek === "function") legSeek(name);
 }
 
+function startCard(board, pick, card) {
+  const open = card.querySelector(":scope > .desk-rec-more"), hit = startHit(board, pick);
+  if (open) { open.remove(); return; }
+  if (!hit || typeof paintCard !== "function") { startSeek(board, pick); return; }
+  const more = document.createElement("div"), mark = document.createElement("span");
+  more.className = "desk-rec-more"; mark.hidden = true;
+  more.append(mark); card.append(more);
+  paintCard(more, mark, hit.person);
+}
+
 function startBetGo(board, pick, mode) {
   if (mode !== "new" || !parlayLeg.size) { startBet(board, pick); return; }
   if (saveSig([...parlayLeg.values()]) !== saveHeld) saveNow();
@@ -172,14 +182,14 @@ function startRecs(board) {
     if (!node.classList.contains("desk-rec")) return node;
     const copy = node.cloneNode(true), pick = node.startPick;
     if (pick) {
-      copy.title = "Open in search";
+      copy.title = "Show the player";
       copy.append(Object.assign(document.createElement("span"), { className: "desk-rec-bet", textContent: "Bet it", title: "Bet it" }));
       copy.addEventListener("click", (event) => {
         const go = event.target.closest("[data-bet-go]");
         if (go) { copy.querySelectorAll(".desk-rec-ask").forEach((node) => node.remove()); startBetGo(board, pick, go.dataset.betGo); return; }
         if (event.target.closest(".desk-rec-bet")) { startBetAsk(board, pick, copy); return; }
-        if (event.target.closest(".desk-rec-ask")) return;
-        startSeek(board, pick);
+        if (event.target.closest(".desk-rec-ask, .desk-rec-more")) return;
+        startCard(board, pick, copy);
       });
     }
     return copy;
