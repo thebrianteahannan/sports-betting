@@ -64,6 +64,7 @@ function trayStackAdd(tray, bet) {
   const person = people.find((who) => who.kind === "player" && (who.bets || []).some(exact)) || people.find((who) => who.kind === "player" && (who.bets || []).some((row) => same(row.label, bet.label)));
   const real = person ? person.bets.find(exact) || person.bets.find((row) => same(row.label, bet.label)) : { ...bet, match: bet.match || bet.game };
   trayStackDo(`Added ${bet.label}.`, () => {
+    if (typeof betFromSay === "function") betFromSay("Strategies");
     if (person && !parlayPick.has(person.key)) parlayPick.set(person.key, person);
     parlayLeg.set(parlayKey(real), real);
   });

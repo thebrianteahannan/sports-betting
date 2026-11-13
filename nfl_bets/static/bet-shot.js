@@ -144,7 +144,7 @@ function shotNearPaint(board, misses) {
       pick.type = "button";
       pick.innerHTML = `<span>${esc(bet.label)}</span><b>${esc(american(bet.odds))}</b>`;
       pick.addEventListener("click", () => {
-        trayStackDo(`Added ${bet.label}.`, () => { if (person) parlayPick.set(person.key, person); parlayLeg.set(parlayKey(bet), bet); });
+        trayStackDo(`Added ${bet.label}.`, () => { if (typeof betFromSay === "function") betFromSay("Pasted bet"); if (person) parlayPick.set(person.key, person); parlayLeg.set(parlayKey(bet), bet); });
         box.remove();
       });
       box.append(pick);
@@ -230,7 +230,7 @@ async function shotRead(board, file) {
       if (typeof saveDetach === "function") saveDetach();
       const total = found.length + drafts.length;
       trayStackDo(`Read ${total} ${total === 1 ? "leg" : "legs"} from the screenshot.`, () => {
-        parlayPick.clear(); parlayLeg.clear();
+        parlayPick.clear(); parlayLeg.clear(); if (typeof betFromSay === "function") betFromSay("Pasted bet", true);
         found.forEach(({ person, bet }) => { if (person) parlayPick.set(person.key, person); parlayLeg.set(parlayKey(bet), bet); });
         drafts.forEach(({ person }) => parlayPick.set(person.key, person));
       });

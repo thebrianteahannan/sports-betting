@@ -295,7 +295,7 @@ function scriptBetsBlock(bets, group, game, people, keep = {}) {
       if (!found.length) return;
       if (typeof saveLeave === "function") saveLeave();
       window.saveStacksOpen = false;
-      parlayLeg.clear(); parlayPick.clear();
+      parlayLeg.clear(); parlayPick.clear(); if (typeof betFromSay === "function") betFromSay("Game script", true);
       found.forEach(({ bet, person }) => { parlayLeg.set(parlayKey(bet), bet); if (parlayPick.size < 8) parlayPick.set(person.key, person); });
       if (typeof saveNow === "function") saveNow();
       if (typeof paintParlay === "function") paintParlay();

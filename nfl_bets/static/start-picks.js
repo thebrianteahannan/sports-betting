@@ -32,7 +32,7 @@ function startClose() {
 function startBet(board, pick) {
   const index = typeof legBoostFind === "function" ? legBoostFind(board.people) : new Map();
   const hit = index.get(`${pick.label}|${pick.market}|${pick.match}`) || [...index.values()].find((row) => row.bet.label === pick.label && row.bet.match === pick.match);
-  if (hit) { startUndo = { board, key: parlayKey(hit.bet), ids: new Set(saveList().map((row) => row.id)) }; return legSwapAdd(hit.person, hit.bet); }
+  if (hit) { startUndo = { board, key: parlayKey(hit.bet), ids: new Set(saveList().map((row) => row.id)) }; if (typeof betFromSay === "function") betFromSay("Recommended"); return legSwapAdd(hit.person, hit.bet); }
   window.location.href = `/?${new URLSearchParams({ game: pick.match, label: pick.label, market: pick.market || "" })}`;
 }
 
@@ -60,6 +60,7 @@ function startRandom(board, picks, n) {
     startRandomAt = { prior: had ? window.parlayOpenId || "" : "", ids: new Set(saveList().map((row) => row.id)) };
     saveNew();
   }
+  if (typeof betFromSay === "function") betFromSay("Random parlay", true);
   legs.forEach(({ person, bet }) => { parlayLeg.set(parlayKey(bet), bet); if (!parlayPick.has(person.key)) parlayPick.set(person.key, person); });
   if (typeof trayRoster === "function") trayRoster();
   saveNow(); paintParlay();

@@ -34,7 +34,7 @@ function tvLazyAdd(pick) {
     clearInterval(wait);
     if (!hit) { if (window.tvTickOpen) tvTickOpen(pick); return; }
     if (parlayLeg.size) saveNew();
-    legSwapAdd(hit.person, hit.bet);
+    if (typeof betFromSay === "function") betFromSay("Lazy pick"); legSwapAdd(hit.person, hit.bet);
     saveNow(); paintParlay();
     const glass = document.getElementById("desk-glass-in");
     if (glass) glass.scrollTop = 0;

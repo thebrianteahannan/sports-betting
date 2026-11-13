@@ -161,6 +161,7 @@ function sharedToTray(item, again) {
     return;
   }
   if (typeof saveNew === "function") saveNew();
+  if (typeof betFromSay === "function") betFromSay(item.mine ? "Shared" : item.fromName || "Shared", true);
   const board = document.querySelector(".find-board"), people = (board && board.people) || [];
   item.legs.forEach((bet) => {
     let live = null, owner = null;

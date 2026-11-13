@@ -15,6 +15,7 @@ function teamRecAdd(pick, game, people) {
   if (!bet || typeof parlayLeg === "undefined") return;
   const key = parlayKey(bet);
   if (!parlayLeg.has(key) && parlayLeg.size >= 8) return;
+  if (typeof betFromSay === "function") betFromSay("Game script");
   parlayLeg.set(key, bet);
   paintParlay();
 }

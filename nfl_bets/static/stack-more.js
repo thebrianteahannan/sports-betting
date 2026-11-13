@@ -341,12 +341,13 @@ function stackBuild(stack, tries = 0, title = "") {
   };
   if (stackApart(stack) && typeof saveStore === "function") {
     const group = { id: `g${Date.now()}`, name: title || stackName(stack) };
-    const made = (stack.bets || []).slice(0, 6).map((leg, at) => { fill(legsOf(leg)); return { id: `p${Date.now()}${at}`, at: Date.now(), legs: [...parlayLeg.values()], picks: [...parlayPick.values()].map(({ bets, ...rest }) => rest), group }; });
+    const made = (stack.bets || []).slice(0, 6).map((leg, at) => { fill(legsOf(leg)); return { id: `p${Date.now()}${at}`, at: Date.now(), legs: [...parlayLeg.values()], picks: [...parlayPick.values()].map(({ bets, ...rest }) => rest), group, from: Object.fromEntries([...parlayLeg.keys()].map((key) => [key, "Strategies"])) }; });
     fill([]);
     saveStore([...made, ...saveList()]);
     saveOpen(made[0].id);
   } else {
     fill((stack.bets || []).slice(0, 8).flatMap(legsOf));
+    if (typeof betFromSay === "function") betFromSay("Strategies", true);
     paintParlay();
   }
   const tray = board && board.querySelector(".find-tray:not([hidden])");
