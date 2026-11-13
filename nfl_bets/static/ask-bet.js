@@ -189,7 +189,7 @@ document.getElementById("desk-back").addEventListener("click", (event) => {
   if (window.recBack && recBack()) return;
   if (window.askBack && askBack()) return;
   const home = document.getElementById("desk-home");
-  if (home && !desk.classList.contains("bird-on") && document.querySelector("#desk-glass-in .find-board")) { home.click(); return; }
+  if (home && !desk.classList.contains("bird-on") && document.querySelector("#desk-glass-in .find-board")) { const full = document.getElementById("desk-full"); if (full) full.click(); if (typeof showTab === "function") showTab("today"); home.click(); return; }
   const page = document.querySelector("#desk-glass-in .rec-board"), fromTray = !!(page && page.dataset.page === "stack" && page.dataset.fromTray);
   if (page && page.dataset.page === "stack" && window.paintFind && typeof tvStack !== "undefined" && !(tvStack.at(-1) && tvStack.at(-1).board === "find")) { tvSkip = true; paintFind(); tvSkip = false; tvPaint(); } else if (window.tvBack) tvBack();
   if (fromTray) requestAnimationFrame(() => document.querySelectorAll(".find-tray.find-shut:not([hidden])").forEach((tray) => { const fold = tray.querySelector(".find-fold"); if (fold) fold.click(); }));

@@ -1,6 +1,6 @@
-/** An empty bet shows the home Recommended picks and Games under the parrot's tips, inline, so a bet starts right here instead of on another page. */
+/** Build a bet always shows the home Recommended picks and Games under the bet, so a leg or a game is one tap away instead of on another page. */
 
-let startTab = "rec";
+let startTab = "rec", startBack = null, startUndo = null;
 
 function startOpen(board, bet) {
   const teams = board.querySelector(":scope > .find-teams"), list = board.querySelector(":scope > .find-list"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)"), span = board.querySelector(":scope > .find-span"), more = board.querySelector(".find-games-go");
@@ -8,15 +8,31 @@ function startOpen(board, bet) {
   if (hits) hits.replaceChildren();
   teams.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on");
   if (span) { span.classList.add("find-picked"); span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); }
+  startBack = { board, picked: span ? span.classList.contains("find-picked") : false, more: more ? more.hidden : true };
   if (more) more.hidden = false;
   paintMatch(teams, bet, board.people || [], list, hits, true);
   teams.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
+function startClose() {
+  const { board, picked, more } = startBack || {};
+  startBack = null;
+  if (!board || !board.isConnected || !board.querySelector(":scope > .find-teams .find-match")) return false;
+  const span = board.querySelector(":scope > .find-span"), go = board.querySelector(".find-games-go"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)");
+  board.querySelector(":scope > .find-teams").replaceChildren(); board.querySelector(":scope > .find-list").replaceChildren();
+  if (hits) hits.replaceChildren();
+  if (span && !picked) span.classList.remove("find-picked");
+  if (go) go.hidden = more;
+  if (!document.querySelector("#desk-glass-in .find-start")) startPaint();
+  const glass = document.getElementById("desk-glass-in");
+  if (glass) glass.scrollTop = 0;
+  return true;
+}
+
 function startBet(board, pick) {
   const index = typeof legBoostFind === "function" ? legBoostFind(board.people) : new Map();
   const hit = index.get(`${pick.label}|${pick.market}|${pick.match}`) || [...index.values()].find((row) => row.bet.label === pick.label && row.bet.match === pick.match);
-  if (hit) return legSwapAdd(hit.person, hit.bet);
+  if (hit) { startUndo = { board, key: parlayKey(hit.bet), ids: new Set(saveList().map((row) => row.id)) }; return legSwapAdd(hit.person, hit.bet); }
   window.location.href = `/?${new URLSearchParams({ game: pick.match, label: pick.label, market: pick.market || "" })}`;
 }
 
@@ -43,10 +59,37 @@ function startRecs(board) {
   return { recs, games };
 }
 
+function startUndoGo() {
+  const { board, key, ids } = startUndo || {};
+  startUndo = null;
+  if (!board || !board.isConnected || parlayLeg.size !== 1 || !parlayLeg.has(key)) return false;
+  if (window.parlayOpenId && !ids.has(window.parlayOpenId)) saveStore(saveList().filter((row) => row.id !== window.parlayOpenId));
+  window.parlayOpenId = "";
+  parlayPick.clear(); parlayLeg.clear();
+  if (typeof trayRoster === "function") trayRoster();
+  paintParlay();
+  saveTips();
+  const glass = document.getElementById("desk-glass-in");
+  if (glass) glass.scrollTop = 0;
+  return true;
+}
+
+function startSpot() {
+  const tray = document.querySelector("#desk-glass-in .find-board > .find-tray");
+  return tray && (tray.parentElement.querySelector(":scope > .find-tips") || tray);
+}
+
+function startPlace() {
+  const spot = startSpot(), box = document.querySelector("#desk-glass-in .find-start");
+  if (!spot) return;
+  if (!box) startPaint(); else if (spot.nextElementSibling !== box) spot.after(box);
+}
+
 function startPaint(again) {
   document.querySelectorAll(".find-start").forEach((node) => node.remove());
-  const tips = document.querySelector("#desk-glass-in .find-tips"), board = tips && tips.closest(".find-board");
-  if (!tips || !board || parlayLeg.size || parlayPick.size || typeof homeRecRows !== "function") return;
+  const spot = startSpot(), board = spot && spot.closest(".find-board");
+  if (!spot || !board || typeof homeRecRows !== "function") return;
+  const input = board.querySelector("label.find input");
   homeRecsLoad(); homeLogosLoad(); homeLeagueSync();
   const box = document.createElement("div"), tabs = document.createElement("span");
   box.className = "find-start"; tabs.className = "desk-games-tabs";
@@ -58,7 +101,8 @@ function startPaint(again) {
     tabs.append(tab);
   });
   box.append(tabs, ...(startTab === "rec" ? recs : games));
-  tips.after(box);
+  box.hidden = Boolean(input && input.value.trim());
+  spot.after(box);
   if ((!homeRecs || homeRecs.loading) && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
 }
 
@@ -72,10 +116,14 @@ if (typeof homeGamesRow === "function") {
 }
 if (typeof saveTips === "function") {
   const saveTipsStart = saveTips;
-  saveTips = function () { saveTipsStart.apply(this, arguments); startPaint(); };
+  saveTips = function () { saveTipsStart.apply(this, arguments); startPlace(); };
 }
 if (typeof paintParlay === "function") {
   const paintParlayStart = paintParlay;
-  paintParlay = function () { paintParlayStart.apply(this, arguments); if (parlayLeg.size || parlayPick.size) document.querySelectorAll(".find-start").forEach((node) => node.remove()); };
+  paintParlay = function () { paintParlayStart.apply(this, arguments); startPlace(); };
 }
-document.addEventListener("input", (event) => { if (event.target.closest && event.target.closest("label.find")) document.querySelectorAll(".find-start").forEach((node) => node.remove()); });
+document.addEventListener("input", (event) => { if (event.target.closest && event.target.closest("label.find")) { startBack = startUndo = null; document.querySelectorAll(".find-start").forEach((node) => { node.hidden = Boolean(event.target.value.trim()); }); } });
+document.addEventListener("click", (event) => {
+  if (!(startBack || startUndo) || !event.target.closest || !event.target.closest("#desk-back") || document.getElementById("desk").classList.contains("bird-on")) return;
+  if (startClose() || startUndoGo()) { event.stopImmediatePropagation(); event.preventDefault(); }
+}, true);
