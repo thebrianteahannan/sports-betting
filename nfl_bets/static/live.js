@@ -76,19 +76,15 @@ function liveNow(game, pick) {
 function liveRoot(game, picks, rec, show) {
   if (!picks.length) return "";
   const one = (pick) => {
-    const { now } = liveNow(game, pick), price = Number.isFinite(pick.odds) ? ` ${pick.odds > 0 ? `+${pick.odds}` : pick.odds}` : "";
-    let state = "", say = "";
-    if (now !== null && pick.need !== null) {
-      if (pick.under) { state = now > pick.need ? "lost" : game.final ? "hit" : ""; say = `${now}, stays under ${pick.need}`; }
-      else { const goal = pick.plus ? pick.need : Math.floor(pick.need) + 1; state = now >= goal ? "hit" : game.final ? "lost" : ""; say = `${now} of ${goal}`; }
-    }
-    const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${say ? `<i class="now" data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}`;
+    const price = Number.isFinite(pick.odds) ? ` ${pick.odds > 0 ? `+${pick.odds}` : pick.odds}` : "";
+    const { state, say, level, tip } = liveLegState(game, pick);
+    const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${say ? `<i class="now${level ? ` pace-${level}` : ""}"${tip ? ` title="${liveEsc(tip)}"` : ""} data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}`;
     const href = `/?${new URLSearchParams({ game: pick.match, ...(pick.parlay ? { bet: pick.parlay } : {}), label: pick.label, market: pick.market, from: "live" })}`;
     return `<a class="live-mine-leg ${state}" href="${liveEsc(href)}" title="Open this bet in Build a bet">${inner}</a>`;
   };
   const groups = [];
   picks.forEach((pick) => { const group = !rec && pick.parlay && groups.find((row) => row.id === pick.parlay); if (group) group.picks.push(pick); else groups.push({ id: pick.parlay, picks: [pick] }); });
-  const body = groups.map((group) => (group.picks.length > 1 ? `<span class="live-parlay"><em>${group.picks[0].size > 1 ? `${group.picks[0].size}-leg parlay` : "Parlay"}</em>${group.picks.map(one).join("")}</span>` : one(group.picks[0]))).join("");
+  const body = groups.map((group) => { if (group.picks.length < 2) return one(group.picks[0]); const head = liveParlayHead(group.id, group.picks[0].size); return `<span class="live-parlay${head.level ? ` pace-${head.level}` : ""}"><em>${liveEsc(head.text)}</em>${group.picks.map(one).join("")}</span>`; }).join("");
   return `<span class="live-mine${rec ? " live-rec" : ""}${show ? " live-rec-show" : ""}"><b>${rec ? "Recommended" : "Rooting for"}</b>${body}</span>`;
 }
 
@@ -236,6 +232,7 @@ function liveWeekList(week) {
 
 function livePaint(data, quiet) {
   liveLast = data;
+  liveParlayTally([...(data.live || []), ...(data.done || [])]);
   const box = document.getElementById("live");
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => liveSlide.set(node.dataset.slide, node.scrollLeft));
   const was = new Map([...box.querySelectorAll("[data-k]")].map((node) => [node.dataset.k, node.textContent])), games = new Set([...box.querySelectorAll(".live-game[data-id]")].map((node) => node.dataset.id)), first = quiet || !box.querySelector(".live-game, h2");

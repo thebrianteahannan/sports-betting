@@ -69,8 +69,8 @@ async function liveBoard(all) {
   const now = Date.now(), live = [], next = [], done = [];
   const boards = await Promise.all(LEAGUES.map(([sport, path]) => json(`${BASE}/${path}/scoreboard`).then((data) => ({ sport, path, data })).catch(() => ({ sport, path, data: {} }))));
   boards.forEach(({ sport, path, data }) => (data.events || []).forEach((ev) => {
-    const comp = (ev.competitions || [])[0] || {}, type = (comp.status || ev.status || {}).type || {};
-    const row = { id: String(ev.id), sport, path, when: ev.date || "", clock: type.shortDetail || type.detail || "", away: side(comp, "away"), home: side(comp, "home"), last: ((comp.situation || {}).lastPlay || {}).text || "" };
+    const comp = (ev.competitions || [])[0] || {}, status = comp.status || ev.status || {}, type = status.type || {};
+    const row = { id: String(ev.id), sport, path, when: ev.date || "", clock: type.shortDetail || type.detail || "", period: Number(status.period) || 0, left: Number(status.clock) || 0, away: side(comp, "away"), home: side(comp, "home"), last: ((comp.situation || {}).lastPlay || {}).text || "" };
     if (type.state === "in") live.push(row);
     else if (all && type.state === "post" && now - Date.parse(ev.date || "") < 24 * 3600000) { row.final = true; done.push(row); }
     else if (type.state === "pre" && Date.parse(ev.date || "") - now < 12 * 3600000) next.push(row);

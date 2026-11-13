@@ -95,6 +95,16 @@ a { color: #3dff6e; }
 .live-mine-leg { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border: 1px solid rgba(231, 193, 90, 0.55); border-radius: 999px; background: rgba(231, 193, 90, 0.1); font-size: 13px; }
 .live-mine-leg i { font-style: normal; }
 .live-parlay { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 5px 8px; border: 1px dashed rgba(231, 193, 90, 0.6); border-radius: 14px; }
+.live-mine-leg .now.pace-ahead { background: rgba(61, 255, 110, 0.2); color: #3dff6e; }
+.live-mine-leg .now.pace-close { background: rgba(231, 193, 90, 0.24); color: #ffd36b; }
+.live-mine-leg .now.pace-behind { background: rgba(255, 154, 46, 0.24); color: #ffb35c; }
+.live-mine-leg .now.pace-far { background: rgba(255, 107, 107, 0.24); color: #ff8a8a; }
+.live-parlay.pace-hit, .live-parlay.pace-ahead { border-color: rgba(61, 255, 110, 0.7); }
+.live-parlay.pace-behind { border-color: rgba(255, 154, 46, 0.8); }
+.live-parlay.pace-far, .live-parlay.pace-lost { border-color: rgba(255, 107, 107, 0.8); }
+.live-mine .live-parlay.pace-hit > em, .live-mine .live-parlay.pace-ahead > em { color: #3dff6e; }
+.live-mine .live-parlay.pace-behind > em { color: #ffb35c; }
+.live-mine .live-parlay.pace-far > em, .live-mine .live-parlay.pace-lost > em { color: #ff8a8a; }
 .live-parlay > em { color: #e7c15a; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 a.live-mine-leg { text-decoration: none; cursor: pointer; }
 a.live-mine-leg:hover { border-color: #e7c15a; background: rgba(231, 193, 90, 0.2); }
