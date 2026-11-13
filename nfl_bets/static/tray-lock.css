@@ -1,0 +1,2 @@
+.find-tray.find-locked :is(.find-chose button.find-out, button.find-leg-swap, button.find-leg-to, .find-in button.find-out, .find-new, .find-tray-swap, .find-leg-menu, .find-undo) { display: none !important; }
+.find-tray.find-locked :is(.find-chose i.prop[data-key], .find-chose i.who[data-key], .find-in button.find-name) { cursor: default !important; text-decoration: none !important; }
