@@ -493,3 +493,4 @@
 .find-board .find-tips img { flex: none; width: 2.6rem; height: 2.6rem; object-fit: contain; animation: bet-look 0.9s ease-in-out infinite; transform-origin: 68% 26%; } .find-board .find-tips.done img { animation: none; }
 .find-board .find-tips p { margin: 0 0 0.35rem; color: #e6edf3; font-weight: 600; } .find-board .find-tips p:last-child { margin-bottom: 0; }
 .find-board .find-tips b[data-tip] { color: #3dff6e; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; } .find-board:has(.find-guide, .find-match) .find-tips { display: none; }
+.rec-board .find-tray.find-flow, #choice-result .find-tray.find-flow { position: relative; }
