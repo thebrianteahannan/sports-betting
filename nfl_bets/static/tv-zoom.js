@@ -17,6 +17,8 @@ function tvZoomShut() {
   zoom.hidden = true;
   glow.after(glass);
   document.body.classList.remove("tv-zoom-on");
+  const login = document.getElementById("login-form"), join = document.getElementById("member-form");
+  if (document.body.classList.contains("needs-member") && ((login && !login.hidden) || (join && !join.hidden)) && window.showGateMode) showGateMode("pick");
 }
 
 window.tvZoomOpen = tvZoomOpen;

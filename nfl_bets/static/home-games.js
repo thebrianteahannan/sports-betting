@@ -206,7 +206,7 @@ function homeMoreNote(count) {
     button.className = "desk-games-link";
     button.textContent = label;
     button.addEventListener("click", () => {
-      if (window.tvTickRest) tvTickRest();
+      if (window.tvTickStay) tvTickStay(); else if (window.tvTickRest) tvTickRest();
       if (window.goFull) goFull();
       if (window.showGateMode) showGateMode(mode);
     });

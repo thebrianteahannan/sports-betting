@@ -3,7 +3,9 @@ const memberFetch = window.fetch.bind(window);
 function showGateMode(mode) {
   const wait = document.getElementById("gate-wait"); if (wait) wait.hidden = true;
   document.getElementById("gate-pick").hidden = mode !== "pick"; document.getElementById("member-form").hidden = mode !== "join"; document.getElementById("login-form").hidden = mode !== "login";
-  if (mode === "join") { bornRange(document.getElementById("member-born")); goFull(); }
+  if (mode === "join") bornRange(document.getElementById("member-born"));
+  if (mode === "join" || mode === "login") { goFull(); if (window.tvTickStay) tvTickStay(); }
+  else if (window.tvTickRelease) tvTickRelease();
 }
 
 async function paintGateRecord() {
@@ -47,15 +49,16 @@ function showGate() {
   if (window.state) window.state.showLive = false;
   const who = document.getElementById("who");
   if (who) { who.hidden = false; if (who.parentElement !== document.body) document.body.append(who); who.innerHTML = `<button type="button" id="gate-profile" aria-label="Sign in" title="Sign in"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.5-3.1 4-4.6 7-4.6s5.5 1.5 7 4.6"/></svg></button>`; }
-  showGateMode("pick");
+  const login = document.getElementById("login-form"), join = document.getElementById("member-form");
+  if (!((login && !login.hidden) || (join && !join.hidden))) showGateMode("pick");
   if (window.deskGate) window.deskGate();
 }
 
 window.birdBrag = birdBrag; window.birdBragGo = birdBragGo; window.recBlurb = recBlurb;
 
 function showMember(payload) {
-  if (window.tvZoomShut) tvZoomShut();
   document.body.classList.remove("needs-member");
+  if (window.tvZoomShut) tvZoomShut();
   const member = payload.member || {};
   const who = document.getElementById("who");
   who.hidden = false;
@@ -168,7 +171,7 @@ window.fetch = async function memberAwareFetch(url, options) {
 };
 
 document.getElementById("who").addEventListener("click", (event) => {
-  if (event.target.closest("#member-profile")) { const desk = document.getElementById("desk"); if (desk && desk.classList.contains("tv-full") && document.querySelector("#desk-glass-in > #pane-profile:not([hidden])")) { document.getElementById("desk-back").click(); if (document.querySelector("#desk-glass-in > #pane-profile:not([hidden])")) { showTab("today"); setTimeout(() => document.getElementById("desk-home").click()); } return; } goFull(); showTab("profile"); } else if (event.target.closest("#gate-profile")) { goFull(); showGateMode("login"); if (window.tvTickRest) tvTickRest(); }
+  if (event.target.closest("#member-profile")) { const desk = document.getElementById("desk"); if (desk && desk.classList.contains("tv-full") && document.querySelector("#desk-glass-in > #pane-profile:not([hidden])")) { document.getElementById("desk-back").click(); if (document.querySelector("#desk-glass-in > #pane-profile:not([hidden])")) { showTab("today"); setTimeout(() => document.getElementById("desk-home").click()); } return; } goFull(); showTab("profile"); } else if (event.target.closest("#gate-profile")) { goFull(); showGateMode("login"); if (window.tvTickStay) tvTickStay(); else if (window.tvTickRest) tvTickRest(); }
 });
 function calledName() {
   return String(window.memberName || "").trim().split(/\s+/)[0];

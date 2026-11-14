@@ -150,6 +150,8 @@ function tvTickWatch() {
   if (!box) return;
   const on = tvTickOn();
   if (on) tvTickLoad();
+  if (on && tvTickFormOn()) { if (!tvTick.hold) tvTickStay(); }
+  else if (on && tvTick.hold) tvTickRelease();
   if (on && box.hidden) { box.hidden = false; tvTickDots(); tvTickTime(); }
   if (!on && !box.hidden) {
     box.hidden = true; clearInterval(tvTick.timer);
@@ -161,7 +163,7 @@ function tvTickWatch() {
 }
 
 function tvTickGateGo(mode) {
-  if (window.tvTickRest) tvTickRest();
+  tvTickStay();
   if (window.goFull) goFull();
   if (window.showGateMode) showGateMode(mode);
 }
@@ -172,15 +174,32 @@ function tvTickRest() {
   tvTickDots();
 }
 
+function tvTickFormOn() {
+  if (!tvTickGateOn()) return false;
+  const login = document.getElementById("login-form"), join = document.getElementById("member-form");
+  return (login && !login.hidden) || (join && !join.hidden);
+}
+
+function tvTickRelease() {
+  tvTick.hold = false;
+  tvTick.typed = false;
+  const box = document.getElementById("tv-tick");
+  if (box) box.classList.remove("tv-tick-quiet");
+  if (tvTickOn()) tvTickTime();
+}
+
 function tvTickStay() {
   tvTick.typed = true;
   tvTick.hold = true;
+  document.querySelectorAll("#tv-tick [id^='tv-tick-']").forEach((slot) => slot.getAnimations().forEach((anim) => anim.cancel()));
   tvTickRest();
   const box = document.getElementById("tv-tick");
   if (box) box.classList.add("tv-tick-quiet");
 }
 
 window.tvTickRest = tvTickRest;
+window.tvTickStay = tvTickStay;
+window.tvTickRelease = tvTickRelease;
 
 document.addEventListener("input", (event) => {
   const field = event.target.closest && event.target.closest("#login-form input, #member-form input, #member-form select");
