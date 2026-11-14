@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Plan runner</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #121418;
+    --card: #1c2028;
+    --line: #2c3340;
+    --text: #e7ecf3;
+    --muted: #93a0b5;
+    --ok: #7dcea0;
+    --err: #e07a7a;
+    --run: #e6c07b;
+    --bar: #3d8bfd;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 ui-sans-serif, system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  main { max-width: 860px; margin: 0 auto; padding: 28px 20px 48px; }
+  h1 { font-size: 22px; font-weight: 650; margin: 0 0 4px; }
+  p { margin: 0 0 14px; }
+  .muted { color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 0 0 12px; }
+  label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+  input, textarea { width: 100%; background: #121418; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  textarea { min-height: 240px; resize: vertical; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  button { background: var(--bar); color: white; border: 0; border-radius: 8px; padding: 8px 12px; font: inherit; cursor: pointer; }
+  button.quiet { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .ok { color: var(--ok); }
+  .error { color: var(--err); }
+  .running { color: var(--run); }
+  .skipped { color: var(--muted); }
+  h2 { font-size: 15px; margin: 0 0 4px; }
+  .task { white-space: pre-wrap; }
+  footer { color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Plan runner</h1>
+  <p class="muted">Grok writes the plan. This page sends each step to the 9B as one small file edit. A small step takes a few seconds.</p>
+
+  <section class="card">
+    <p>Start a new Grok chat on this Mac and paste this prompt. Add the change you want at the bottom. Grok should reply with JSON only and leave the files alone.</p>
+    <div class="row">
+      <button type="button" id="copy">Copy the Grok prompt</button>
+      <span class="muted" id="copied"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <label for="repo">Repo</label>
+    <input id="repo" value="/Users/brianhannan/Documents/sports-betting">
+    <label for="plan" style="margin-top:12px">Plan from Grok</label>
+    <textarea id="plan" placeholder='{
+  "repo": "/Users/brianhannan/Documents/sports-betting",
+  "steps": [
+    {
+      "file": "friends-api.js",
+      "task": "One concrete change.",
+      "find": "exact lines copied from the file",
+      "replace": "the new lines for that same spot"
+    }
+  ]
+}'></textarea>
+    <div class="row">
+      <button type="button" id="run">Send steps to the 9B</button>
+      <button type="button" class="quiet" id="restore" hidden>Put the files back</button>
+      <span id="health" class="muted"></span>
+    </div>
+  </section>
+
+  <div id="steps"></div>
+  <p id="summary" class="muted"></p>
+  <footer>Originals from a run are kept in ~/.ai-server/plan-backups. Put the files back uses that copy.</footer>
+</main>
+<script>
+const repo = document.querySelector("#repo");
+const plan = document.querySelector("#plan");
+const runBtn = document.querySelector("#run");
+const restoreBtn = document.querySelector("#restore");
+const stepsEl = document.querySelector("#steps");
+const summary = document.querySelector("#summary");
+const health = document.querySelector("#health");
+let jobId = "";
+let timer = 0;
+
+function grokPrompt() {
+  return [
+    "Do not edit any files. Read the repo, then reply with one JSON object and no other text.",
+    "",
+    "{",
+    `  "repo": ${JSON.stringify(repo.value.trim() || "/Users/brianhannan/Documents/sports-betting")},`,
+    '  "steps": [',
+    "    {",
+    '      "file": "path/from/the/repo/root",',
+    '      "task": "one concrete change, in one sentence",',
+    '      "find": "exact text copied from the current file",',
+    '      "replace": "exact new text for that same spot"',
+    "    }",
+    "  ]",
+    "}",
+    "",
+    "Rules:",
+    "- Each step touches one spot in one file.",
+    "- Copy find from the file. It has to match once.",
+    "- Include a few surrounding lines in find so it is unique.",
+    "- replace is the full new text for that spot.",
+    "- Leave out a step if you are not sure of the exact text.",
+    "- No markdown fence around the JSON.",
+    "",
+    "What I want changed:",
+    ""
+  ].join("\n");
+}
+
+document.querySelector("#copy").onclick = async () => {
+  await navigator.clipboard.writeText(grokPrompt());
+  document.querySelector("#copied").textContent = "Copied.";
+};
+
+function card(step) {
+  const cls = step.status === "done" ? "ok" : step.status === "failed" ? "error" : step.status === "running" ? "running" : "skipped";
+  const bits = [];
+  if (step.seconds != null) bits.push(step.seconds + "s");
+  if (step.prompt_tokens != null) bits.push(step.prompt_tokens + " prompt tokens");
+  const meta = bits.length ? " · " + bits.join(" · ") : "";
+  return `<section class="card"><h2 class="${cls}">${step.n}. ${step.file} · ${step.status}${meta}</h2><p class="task">${escapeText(step.task)}</p><p class="muted">${escapeText(step.detail || "")}</p></section>`;
+}
+
+function escapeText(value) {
+  return String(value).replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]));
+}
+
+function show(job) {
+  if (!job) return;
+  jobId = job.id;
+  stepsEl.innerHTML = job.steps.map(card).join("");
+  restoreBtn.hidden = !job.done || !job.written.length;
+  runBtn.disabled = !job.done;
+  const site = job.site ? " " + job.site : "";
+  if (!job.done) summary.textContent = "Working through the steps.";
+  else if (job.ok) summary.textContent = (job.written.length ? "Wrote " + job.written.length + " file" + (job.written.length === 1 ? "" : "s") + "." : "Finished with nothing to write.") + site;
+  else summary.textContent = (job.error || "Stopped on a failed step. Earlier files stay edited until you put them back.") + site;
+}
+
+async function poll() {
+  const res = await fetch("/api/job?id=" + encodeURIComponent(jobId));
+  const data = await res.json();
+  show(data.job);
+  if (data.job && data.job.done) clearInterval(timer);
+}
+
+runBtn.onclick = async () => {
+  summary.textContent = "";
+  stepsEl.innerHTML = "";
+  runBtn.disabled = true;
+  restoreBtn.hidden = true;
+  const res = await fetch("/api/run", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ plan: plan.value, repo: repo.value.trim() })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    runBtn.disabled = false;
+    summary.textContent = data.error || "Could not start.";
+    return;
+  }
+  show(data.job);
+  clearInterval(timer);
+  timer = setInterval(poll, 1000);
+};
+
+restoreBtn.onclick = async () => {
+  restoreBtn.disabled = true;
+  const res = await fetch("/api/restore", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: jobId })
+  });
+  const data = await res.json();
+  restoreBtn.disabled = false;
+  summary.textContent = res.ok ? "Put back " + data.restored.length + " file" + (data.restored.length === 1 ? "" : "s") + "." : (data.error || "Could not put the files back.");
+};
+
+fetch("/api/health").then((res) => res.json()).then((data) => {
+  health.textContent = data.model ? "9B is up." : "9B is not answering on port 1234.";
+  health.className = data.model ? "ok" : "error";
+});
+fetch("/api/job").then((res) => res.json()).then((data) => { if (data.job && !data.job.done) { show(data.job); timer = setInterval(poll, 1000); } });
+</script>
+</body>
+</html>
