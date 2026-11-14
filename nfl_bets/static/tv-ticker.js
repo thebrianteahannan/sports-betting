@@ -4,6 +4,13 @@ const tvTick = { at: "menu", timer: 0, pick: null, loading: false, hold: false }
 
 function tvTickPages() { return ["menu", ...(tvTick.pick ? ["pick"] : []), "lazy", "steady", "how", "odds", ...(tvTickLaw() ? ["law"] : []), "risk", "help"]; }
 
+function tvTickGateOn() {
+  const gate = document.getElementById("gate");
+  return document.body.classList.contains("needs-member") && !!(gate && gate.parentElement && gate.parentElement.id === "desk-glass-in");
+}
+
+function tvTickOn() { return tvTickMenuOn() || tvTickGateOn(); }
+
 function tvTickLaw() { return window.lawText ? lawText() : ""; }
 
 function tvTickLawPaint(slot) {
@@ -89,6 +96,15 @@ async function tvTickLoad() {
 }
 
 function tvTickShow(next, dir) {
+  if (tvTickGateOn() && next === "menu") {
+    const page = tvTickEl(tvTick.at);
+    if (!page || page.id === "bird-guide" || tvTick.at === "menu") return;
+    const ms = 600, ease = "cubic-bezier(0.45, 0, 0.2, 1)";
+    page.animate([{ transform: "none" }, { transform: `translateX(${-dir * 100}%)` }], { duration: ms, easing: ease }).finished.then(() => { if (tvTick.at === "menu") page.hidden = true; }).catch(() => {});
+    tvTick.at = "menu";
+    tvTickDots();
+    return;
+  }
   const inEl = tvTickEl(next), outEl = tvTickEl(tvTick.at);
   if (!inEl || !outEl || next === tvTick.at) return;
   const ms = 600, ease = "cubic-bezier(0.45, 0, 0.2, 1)";
@@ -120,13 +136,13 @@ function tvTickStep(dir) {
 
 function tvTickTime() {
   clearInterval(tvTick.timer);
-  tvTick.timer = setInterval(() => { if (tvTickMenuOn() && !tvTick.hold && document.visibilityState === "visible") tvTickAuto(); }, 12000);
+  tvTick.timer = setInterval(() => { if (tvTickOn() && !tvTick.hold && document.visibilityState === "visible") tvTickAuto(); }, 12000);
 }
 
 function tvTickWatch() {
   const box = tvTickBox();
   if (!box) return;
-  const on = tvTickMenuOn();
+  const on = tvTickOn();
   if (on) tvTickLoad();
   if (on && box.hidden) { box.hidden = false; tvTickDots(); tvTickTime(); }
   if (!on && !box.hidden) {
