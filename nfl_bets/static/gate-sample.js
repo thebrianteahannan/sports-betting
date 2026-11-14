@@ -11,7 +11,7 @@ async function gateSamplePaint() {
   const when = pick.kickoff ? new Date(pick.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }) + " ET" : "";
   const card = document.createElement("div");
   card.id = "gate-sample";
-  card.innerHTML = `<p class="gate-sample-head">Tonight's free pick</p><p class="gate-sample-bet">${esc(pick.label)} <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p><p class="gate-sample-why">${esc(pick.how)}</p><p class="gate-sample-pay">$5 wins $${win}.</p>${data.more > 0 ? `<p class="gate-sample-more">${data.more} more picks tonight. Free membership opens them.</p>` : ""}`;
+  card.innerHTML = `<p class="gate-sample-head">Tonight's free pick</p><p class="gate-sample-bet">${esc(pick.label)} <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p><p class="gate-sample-why">${esc(pick.how)}</p><p class="gate-sample-pay">$5 wins $${win}.</p>${data.more > 0 ? `<p class="gate-sample-more">${data.more} more recommended picks tonight. Sign up or sign in to see them.</p>` : ""}`;
   card.addEventListener("click", () => gateSampleOpen(card));
   box.prepend(card);
 }
@@ -20,7 +20,7 @@ function gateSampleOpen(card) {
   if (document.getElementById("gate-sample-pop")) return;
   const pop = document.createElement("div");
   pop.id = "gate-sample-pop";
-  pop.innerHTML = `<div class="gate-sample-sheet" role="dialog" aria-label="Tonight's free pick"><button type="button" class="gate-sample-x" aria-label="Close">&times;</button>${card.innerHTML}<p class="gate-sample-go"><button type="button" data-go="gate-join">Create a free membership</button><button type="button" class="ghost" data-go="gate-have">I already have one</button></p></div>`;
+  pop.innerHTML = `<div class="gate-sample-sheet" role="dialog" aria-label="Tonight's free pick"><button type="button" class="gate-sample-x" aria-label="Close">&times;</button>${card.innerHTML}<p class="gate-sample-go"><button type="button" data-go="gate-join">Create a free membership</button><button type="button" class="ghost" data-go="gate-have">Sign in</button></p></div>`;
   const shut = () => { pop.remove(); document.removeEventListener("keydown", onKey); };
   const onKey = (event) => { if (event.key === "Escape") shut(); };
   pop.addEventListener("click", (event) => {

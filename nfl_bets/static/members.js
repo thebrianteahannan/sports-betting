@@ -54,6 +54,7 @@ function showGate() {
 window.birdBrag = birdBrag; window.birdBragGo = birdBragGo; window.recBlurb = recBlurb;
 
 function showMember(payload) {
+  if (window.tvZoomShut) tvZoomShut();
   document.body.classList.remove("needs-member");
   const member = payload.member || {};
   const who = document.getElementById("who");
@@ -167,7 +168,7 @@ window.fetch = async function memberAwareFetch(url, options) {
 };
 
 document.getElementById("who").addEventListener("click", (event) => {
-  if (event.target.closest("#member-profile")) { const desk = document.getElementById("desk"); if (desk && desk.classList.contains("tv-full") && document.querySelector("#desk-glass-in > #pane-profile:not([hidden])")) { document.getElementById("desk-back").click(); if (document.querySelector("#desk-glass-in > #pane-profile:not([hidden])")) { showTab("today"); setTimeout(() => document.getElementById("desk-home").click()); } return; } goFull(); showTab("profile"); } else if (event.target.closest("#gate-profile")) showGateMode("login");
+  if (event.target.closest("#member-profile")) { const desk = document.getElementById("desk"); if (desk && desk.classList.contains("tv-full") && document.querySelector("#desk-glass-in > #pane-profile:not([hidden])")) { document.getElementById("desk-back").click(); if (document.querySelector("#desk-glass-in > #pane-profile:not([hidden])")) { showTab("today"); setTimeout(() => document.getElementById("desk-home").click()); } return; } goFull(); showTab("profile"); } else if (event.target.closest("#gate-profile")) { goFull(); showGateMode("login"); if (window.tvTickRest) tvTickRest(); }
 });
 function calledName() {
   return String(window.memberName || "").trim().split(/\s+/)[0];
@@ -438,6 +439,7 @@ function birdMenu(kind) {
 function goFull() {
   const desk = document.getElementById("desk");
   const full = document.getElementById("desk-full");
+  if (document.body.classList.contains("needs-member") && window.tvZoomOpen) { tvZoomOpen(); return; }
   if (full && desk && !desk.classList.contains("tv-full")) { if (window.tvPush) tvPush(); full.click(); }
 }
 window.goFull = goFull;

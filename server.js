@@ -468,6 +468,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/top-picks") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to see the picks." }, 401); return; } sendJson(res, await require("./live-recs").recTop(11).catch(() => ({ picks: [] }))); return; }
     if (req.method === "GET" && url.pathname === "/api/lazy-pick") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to roll." }, 401); return; } sendJson(res, await require("./live-recs").recLazy().catch(() => ({ span: "today", picks: [] }))); return; }
     if (req.method === "GET" && url.pathname === "/api/sample") { sendJson(res, await require("./live-recs").recSample().catch(() => ({ pick: null, more: 0 }))); return; }
+    if (req.method === "GET" && url.pathname === "/api/slate") { sendJson(res, require("./live-api").homeSlate(((await board().catch(() => ({}))) || {}).games)); return; }
     if (req.method === "GET" && url.pathname === "/live") { serveStatic(res, "live.html"); return; }
     if (req.method === "GET" && url.pathname === "/guide") { serveStatic(res, "guide.html"); return; }
     if (req.method === "GET" && url.pathname === "/legal") { serveStatic(res, "legal.html"); return; }

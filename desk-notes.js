@@ -27,6 +27,7 @@ function createNotes(readKey, writeKey) {
     "$20 a day adds up to *$7,300* a year.",
     "Skip the long shot. Bank the *$20*.",
     "Small wins add up. Come get today's.",
+    "Not a sportsbook. No bet is placed here.",
   ];
   const previous = new Set([
     "I already picked tonight.",
@@ -90,7 +91,10 @@ function createNotes(readKey, writeKey) {
     const data = (await readKey("bets/notes.json")) || {};
     const notes = Array.isArray(data.notes) ? data.notes.filter((row) => row && row.text) : [];
     if (!notes.length || notes.every((row) => previous.has(String(row.text)))) return fresh();
-    return notes.map((row) => ({ id: String(row.id || ""), text: String(row.text) }));
+    const saved = notes.map((row) => ({ id: String(row.id || ""), text: String(row.text) }));
+    const have = new Set(saved.map((row) => row.text));
+    starter.forEach((text, index) => { if (!have.has(text)) saved.push({ id: `n${index}`, text }); });
+    return saved;
   }
 
   async function list() {

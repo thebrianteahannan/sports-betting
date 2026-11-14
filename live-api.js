@@ -109,4 +109,18 @@ async function teamLogos() {
   return logos;
 }
 
-module.exports = { liveBoard, liveWeek, teamLogos, json, boxOf };
+function homeSlate(games) {
+  const now = Date.now();
+  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
+  const today = fmt.format(now), next = fmt.format(now + 24 * 60 * 60 * 1000);
+  const rows = (games || []).filter((game) => /^(NFL|NBA|MLB|NHL|WNBA)$/.test(game.sport || "") && Date.parse(game.kickoff || "") > now - 6 * 60 * 60 * 1000);
+  const day = (game) => fmt.format(Date.parse(game.kickoff));
+  const pick = (game) => ({ sport: game.sport || "", match: game.match || "", kickoff: game.kickoff || "" });
+  const sort = (a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff);
+  return {
+    today: rows.filter((game) => day(game) === today || Date.parse(game.kickoff) <= now).map(pick).sort(sort),
+    tomorrow: rows.filter((game) => day(game) === next).map(pick).sort(sort),
+  };
+}
+
+module.exports = { liveBoard, liveWeek, teamLogos, homeSlate, json, boxOf };

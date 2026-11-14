@@ -19,6 +19,7 @@ body.home-games-on #who { top: var(--home-games-top); right: 16px; bottom: auto;
 :is(#desk-games, #rec-page, .find-start) .desk-games-league { width: auto; min-height: 0; margin: 0; padding: 0.3rem 0.6rem; border: 1px solid #2a3a48; border-radius: 999px; background: transparent; box-shadow: none; color: #9fb3c8; font: inherit; font-size: 13px; font-weight: 800; letter-spacing: normal; text-transform: none; white-space: nowrap; cursor: pointer; }
 :is(#desk-games, #rec-page, .find-start) .desk-games-league.on { border-color: #3dff6e; background: rgba(61, 255, 110, 0.16); color: #f4f7fb; }
 :is(#desk-games, #rec-page, .find-start) .desk-games-note { margin: 4px 0; color: #9fb3c8; font-size: 14px; }
+#desk-games .desk-games-link { display: inline; width: auto; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: #3dff6e; font: inherit; font-size: inherit; font-weight: 700; letter-spacing: normal; line-height: inherit; text-decoration: underline; text-transform: none; cursor: pointer; }
 :is(#desk-games, #rec-page, .find-start) .desk-team-star { color: #e7c15a; font-weight: 800; }
 :is(#desk-games, #rec-page, .find-start) .desk-team-logo { width: 20px; height: 20px; margin: 0 5px 0 0; object-fit: contain; vertical-align: -5px; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec-logo { width: 26px; height: 26px; margin-right: 8px; vertical-align: -7px; }
