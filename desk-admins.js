@@ -7,16 +7,17 @@ function createAdmins(readKey, writeKey) {
   }
 
   function onlineOf(data) {
-    const now = Date.now() / 1000;
-    const seen = new Set();
+    const now = Date.now();
+    const signed = new Set();
     Object.values(data.sessions || {}).forEach((session) => {
-      if (session && session.userId && Number(session.expires) >= now) seen.add(session.userId);
+      if (session && session.userId && Number(session.expires) >= now / 1000) signed.add(session.userId);
     });
     const by = {};
     let none = 0;
     let total = 0;
     data.users.forEach((user) => {
-      if (!seen.has(user.id)) return;
+      const then = Date.parse(user.seenAt || "");
+      if (!signed.has(user.id) || !Number.isFinite(then) || now - then > 2 * 60 * 1000) return;
       total += 1;
       const code = String(user.state || "").trim().toUpperCase();
       if (!code) none += 1;
@@ -284,16 +285,19 @@ function createAdmins(readKey, writeKey) {
         if (!row) return { ok: false };
         const taste = tasteOf(row);
         const now = Date.now();
+        let seen = false;
         (Array.isArray(detail.events) ? detail.events : []).slice(0, 20).forEach((event) => {
-          const type = ["page", "click", "bet"].includes(event.kind) ? event.kind : "";
+          const type = ["page", "click", "bet", "here"].includes(event.kind) ? event.kind : "";
           const name = String(event.name || "").replace(/\s+/g, " ").trim().slice(0, 80);
           const ms = Math.max(0, Math.min(30 * 60 * 1000, Number(event.ms) || 0));
-          if (!type || name.length < 2 || (type === "page" && ms < 3000)) return;
+          if (type === "here" || type === "click" || type === "bet" || (type === "page" && name === "The Games")) seen = true;
+          if (!type || type === "here" || name.length < 2 || (type === "page" && ms < 3000)) return;
           const prior = taste.trail.find((item) => item.kind === type && item.name === name && now - Date.parse(item.at || "") < 15000);
           if (prior && type === "page") { prior.ms = Math.min(30 * 60 * 1000, (Number(prior.ms) || 0) + ms); prior.at = new Date().toISOString(); prior.part = event.part ? 1 : 0; return; }
           if (prior) return;
           taste.trail.unshift({ at: new Date().toISOString(), kind: type, name, ms: type === "page" ? ms : 0, part: event.part ? 1 : 0 });
         });
+        if (seen) row.seenAt = new Date().toISOString();
         taste.trail = taste.trail.slice(0, 160);
         row.taste = taste;
         await writeKey("bets/members.json", data);
@@ -313,8 +317,13 @@ function createAdmins(readKey, writeKey) {
         ? { at: new Date().toISOString(), card: ["today", "week", "open"].includes(detail.card) ? detail.card : "" }
         : { at: new Date().toISOString(), when: detail.when === "week" ? "week" : "today", aim: ["top", "safe", "good", "payout"].includes(detail.aim) ? detail.aim : "top", kind: ["any", "yards", "points", "assists", "shots", "strikeouts", "hits"].includes(detail.kind) ? detail.kind : "any", legs: Math.min(10, Math.max(1, Number(detail.legs) || 3)), sports, title: String(detail.title || "").slice(0, 80), lines };
       if ((slot === "open" && !item.card) || (slot === "search" && item.q.length < 3)) return { ok: false };
+      const busy = slot === "search" || slot === "quiz" || slot === "found" || slot === "open";
+      if (busy) row.seenAt = new Date().toISOString();
       const prior = taste[slot][0];
-      if (prior && Date.now() - Date.parse(prior.at || "") < 120000 && JSON.stringify({ ...prior, at: "" }) === JSON.stringify({ ...item, at: "" })) return { ok: true, already: true };
+      if (prior && Date.now() - Date.parse(prior.at || "") < 120000 && JSON.stringify({ ...prior, at: "" }) === JSON.stringify({ ...item, at: "" })) {
+        if (busy) await writeKey("bets/members.json", data);
+        return { ok: true, already: true };
+      }
       taste[slot].unshift(item);
       taste[slot] = taste[slot].slice(0, 24);
       row.taste = taste;
@@ -328,6 +337,9 @@ function createAdmins(readKey, writeKey) {
       const archived = (await readKey("bets/archive.json")) || {};
       const tickets = Array.isArray(archived.tickets) ? archived.tickets : [];
       return { users: rows(data.users), online: onlineOf(data), asks: asksOf(data), habits: await habitsOf(data), built: builtOf(data), strategies: strategiesOf(data), rates: ratesOf(data, tickets) };
+    },
+    async whoIsHere() {
+      return onlineOf(await load());
     },
     noteTaste(user, kind, detail) {
       const run = tasteChain.then(() => saveTaste(user, kind, detail));

@@ -50,9 +50,12 @@ function paintOnline(online) {
   const rows = online.states || [];
   const total = Number(online.total) || 0;
   const none = Number(online.none) || 0;
-  const say = total === 0 ? "Nobody is signed in." : total === 1 ? "1 person signed in." : `${total} people signed in.`;
+  const say = total === 0 ? "Nobody is on the site." : total === 1 ? "1 person on the site." : `${total} people on the site.`;
   const where = rows.map((row) => `${window.stateName ? stateName(row.code) : row.code} ${row.count}`);
   if (none) where.push(none === 1 ? "1 with no state" : `${none} with no state`);
+  const key = `${say}|${where.join(",")}`;
+  if (box.dataset.key === key && box.querySelector("svg")) return;
+  box.dataset.key = key;
   box.innerHTML = `<p class="quiet" id="admin-online-say"></p><div id="admin-online-map"></div><p class="quiet" id="admin-online-where"></p>`;
   document.getElementById("admin-online-say").textContent = say;
   document.getElementById("admin-online-where").textContent = where.length ? `${where.join(". ")}.` : "";
@@ -168,6 +171,18 @@ async function loadAdmin() {
   }
   if (tab) tab.hidden = false;
   paintAdmin(await response.json());
+  watchHere();
+}
+
+function watchHere() {
+  if (document.body.dataset.hereWatch) return;
+  document.body.dataset.hereWatch = "1";
+  setInterval(() => {
+    const admin = document.getElementById("profile-admin");
+    const members = document.getElementById("admin-members");
+    if (!admin || admin.hidden || !members || members.hidden || document.body.classList.contains("needs-member")) return;
+    fetch("/api/admin/here", { cache: "no-store" }).then((response) => (response.ok ? response.json() : null)).then((online) => { if (online) paintOnline(online); }).catch(() => {});
+  }, 20000);
 }
 
 function bindAdmin() {

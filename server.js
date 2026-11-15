@@ -99,7 +99,7 @@ async function archive() {
 
 const { ignoreView, sweepIgnored } = createIgnore(readKey, writeKey, archive);
 const pullLive = createPull(readKey, writeKey, ROOT);
-const { adminList, setMemberAdmin, saveAsk, noteTaste, saveRated } = createAdmins(readKey, writeKey);
+const { adminList, whoIsHere, setMemberAdmin, saveAsk, noteTaste, saveRated } = createAdmins(readKey, writeKey);
 const { list: noteList, save: noteSave } = createNotes(readKey, writeKey); const { cards: shelvedCards, save: shelveSave } = createShelve(readKey, writeKey);
 const researchBet = createResearch(readKey);
 
@@ -417,6 +417,12 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, url.pathname.slice(1), keepFor(url));
       return;
     }
+    if (req.method === "GET" && url.pathname === "/api/admin/here") {
+      const user = await memberFrom(req);
+      if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
+      sendJson(res, await whoIsHere());
+      return;
+    }
     if ((req.method === "GET" && url.pathname === "/api/admin") || ((req.method === "GET" || req.method === "HEAD") && url.pathname.startsWith("/api/admin/doc/"))) {
       const user = await memberFrom(req);
       if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
@@ -623,7 +629,11 @@ const server = http.createServer(async (req, res) => {
       }
       if (url.pathname === "/api/logout") {
         const data = await loadMembers();
-        delete data.sessions[cookieToken(req)];
+        const token = cookieToken(req);
+        const session = data.sessions[token];
+        const gone = session && data.users.find((row) => row.id === session.userId);
+        if (gone) delete gone.seenAt;
+        delete data.sessions[token];
         await writeKey("bets/members.json", data);
         sendJson(res, { ok: true }, 200, { "Set-Cookie": "pod=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax" });
         return;

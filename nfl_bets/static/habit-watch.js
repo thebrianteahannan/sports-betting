@@ -1,6 +1,12 @@
 // Pages, time on each page, clicks, and bets, for the admin habit card.
 const habitQueue = [];
-let habitPage = "", habitAt = Date.now(), habitLast = "";
+let habitPage = "", habitAt = Date.now(), habitLast = "", habitSeen = 0;
+
+function habitHereNow() {
+  if (document.body.classList.contains("needs-member") || Date.now() - habitSeen < 20000) return;
+  habitSeen = Date.now();
+  habitPush({ kind: "here", name: "here" });
+}
 
 function habitHere() {
   if (document.body.classList.contains("needs-member")) return "";
@@ -46,6 +52,9 @@ function habitSend(bye) {
   if (bye) { fetch("/api/taste", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {}); return; }
   if (window.noteTaste) noteTaste("trail", { events });
 }
+
+document.addEventListener("click", habitHereNow, true);
+document.addEventListener("keydown", (event) => { if (event.target && event.target.type !== "password") habitHereNow(); }, true);
 
 document.addEventListener("click", (event) => {
   if (document.body.classList.contains("needs-member")) return;

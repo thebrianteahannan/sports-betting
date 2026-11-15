@@ -411,18 +411,9 @@ function saveTips() {
   clearTimeout(saveTipTimer); document.querySelectorAll(".find-tips").forEach((node) => node.remove());
   const tray = document.querySelector("#desk-glass-in .find-board > .find-tray");
   if (!tray) return;
-  const tips = document.createElement("div"); tips.className = "find-tips"; tips.innerHTML = `<img src="/scene/parrot-head-tight.webp?v=1" alt=""><div></div>`; tray.after(tips);
-  const say = tips.lastElementChild; let line = 0, at = 0, row = null;
-  const step = () => {
-    if (!tips.isConnected) return;
-    const html = SAVE_TIPS[line], text = html.replace(/<[^>]+>/g, "");
-    if (!row) { row = document.createElement("p"); say.append(row); }
-    at += 1; row.textContent = text.slice(0, at);
-    if (at < text.length) { saveTipTimer = setTimeout(step, 22); return; }
-    row.innerHTML = html; row = null; at = 0; line += 1;
-    if (line < SAVE_TIPS.length) saveTipTimer = setTimeout(step, 450); else tips.classList.add("done");
-  };
-  step();
+  const tips = document.createElement("div"); tips.className = "find-tips done";
+  tips.innerHTML = `<img src="/scene/parrot-head-tight.webp?v=1" alt=""><div>${SAVE_TIPS.map((html) => `<p>${html}</p>`).join("")}</div>`;
+  tray.after(tips);
 }
 
 document.addEventListener("click", (event) => {
