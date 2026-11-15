@@ -154,40 +154,13 @@ function liveLeagueBar(data, count) {
 }
 
 const liveDayKey = (when) => new Date(when).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-const liveEdge = new Map();
-let liveEdgeJob = null;
-
-function liveEdgeLoad() {
-  if (typeof gameStackData !== "function" || typeof STACK_GRADE === "undefined") return;
-  const job = gameStackData();
-  if (job === liveEdgeJob) return;
-  liveEdgeJob = job;
-  job.then((data) => {
-    const found = (data && data.found) || {};
-    liveEdge.clear();
-    Object.keys(found).filter((name) => STACK_GRADE[name] && STACK_GRADE[name][0] === "edge").forEach((name) => found[name].forEach((stack) => [stack.game, ...(stack.bets || []).map((bet) => bet.game)].filter(Boolean).forEach((match) => {
-      if (!liveEdge.has(match)) liveEdge.set(match, { names: new Set(), best: null });
-      liveEdge.get(match).names.add(name);
-    })));
-    (found["Key-number middle"] || []).forEach((stack) => { const row = liveEdge.get(stack.game), got = typeof gameEdgeProfit === "function" ? gameEdgeProfit(stack) : null; if (row && got && (!row.best || got.profit > row.best.profit)) row.best = got; });
-    if (liveLast) livePaint(liveLast, true);
-  });
-}
-
-function liveEdgeTag(match) {
-  const row = liveEdge.get(match);
-  if (!row) return "";
-  const best = row.best, text = best ? `Edge ${best.profit < 0 ? "-" : "+"}$${Math.abs(best.profit).toFixed(2)}` : "Known edge";
-  const title = best ? `Middle on ${best.key}: $5 on each side. A win by exactly ${best.key} cashes both. ${best.profit < 0 ? `At these prices it loses $${Math.abs(best.profit).toFixed(2)}` : `Expected profit $${best.profit.toFixed(2)}`} per $10.` : [...row.names].join(", ");
-  return `<span class="live-edge${best && best.profit < 0 ? " lose" : ""}" title="${liveEsc(title)}">${liveEsc(text)}</span>`;
-}
 
 function liveSoonCard(game) {
   const day = `${new Date(Date.parse(game.kickoff)).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} ET`;
   const like = { id: `${game.match}|${game.kickoff}`, away: game.away || { name: game.awayName }, home: game.home || { name: game.homeName }, when: game.kickoff }, picks = liveMine(like), recs = liveRecPicks(like, picks).length, open = liveRecOpen.has(like.id);
   const tag = recs ? `<button type="button" class="live-rec-tag${open ? " on" : ""}" data-rec-open="${liveEsc(like.id)}">Recommended<b>${recs}</b></button>` : "";
   const until = typeof gameUntilText === "function" ? gameUntilText(game.kickoff) : "";
-  const meta = `<span class="live-meta">${liveEdgeTag(game.match)}${game.total ? `<span class="live-total">O/U ${liveEsc(game.total)}</span>` : ""}${until ? `<span class="find-until live-until" data-kick="${liveEsc(game.kickoff)}">${liveEsc(until)}</span>` : ""}<a class="live-week-game" href="/?${liveEsc(new URLSearchParams({ game: game.match, from: "live" }).toString())}" title="Open this game in Build a bet">Build a bet ›</a></span>`;
+  const meta = `<span class="live-meta">${game.total ? `<span class="live-total">O/U ${liveEsc(game.total)}</span>` : ""}${until ? `<span class="find-until live-until" data-kick="${liveEsc(game.kickoff)}">${liveEsc(until)}</span>` : ""}<a class="live-week-game" href="/?${liveEsc(new URLSearchParams({ game: game.match, from: "live" }).toString())}" title="Open this game in Build a bet">Build a bet ›</a></span>`;
   const sides = game.sport === "PGA" ? `<span class="live-side"><b>${liveEsc(game.match || "")}</b></span>` : `${liveSide(like.away, false, `${like.id}|away`)}<span class="live-at-sign">@</span>${liveSide(like.home, false, `${like.id}|home`)}`;
   return `<div class="live-game live-soon${picks.length ? " has-mine" : ""}"><div class="live-head"><span class="live-sport">${liveEsc(game.sport)}</span>${sides}<span class="live-clock live-when">${liveEsc(day)}</span>${tag}${meta}${liveRoot(like, picks)}${liveRecRow(like, picks, open)}</div></div>`;
 }
@@ -297,7 +270,6 @@ async function liveLoad() {
     liveRecs = data.recs || [];
     livePaint(data);
     liveFocus(data);
-    liveEdgeLoad();
   } catch (error) {
     console.log("[live] could not load", error);
     document.getElementById("live-at").textContent = "Could not reach the live feed. Trying again.";

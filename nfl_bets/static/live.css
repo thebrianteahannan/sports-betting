@@ -30,8 +30,6 @@ a { color: #3dff6e; }
 .live-meta { margin-left: auto; display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 12px; }
 .live-total { color: #e7c15a; font-size: 14px; font-weight: 700; white-space: nowrap; }
 .live-until { color: #3dff6e; font-size: 14px; font-weight: 700; white-space: nowrap; }
-.live-edge { padding: 0 8px; border: 1px solid #3dff6e; border-radius: 999px; color: #3dff6e; font-size: 12px; font-weight: 800; white-space: nowrap; }
-.live-edge.lose { border-color: #ff8a2a; color: #ff8a2a; }
 .live-week-game { color: #3dff6e; font-size: 13px; font-weight: 700; text-decoration: none; }
 .live-week-game:hover { text-decoration: underline; }
 .live-leagues button.on { border-color: #3dff6e; background: #3dff6e; color: #04140c; }

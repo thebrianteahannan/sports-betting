@@ -321,8 +321,6 @@
 #share-friends label.share-friend { display: flex; align-items: center; gap: 0.5rem; margin: 0.3rem 0; font-size: 14px; cursor: pointer; }
 #share-friends textarea { display: block; width: 100%; box-sizing: border-box; margin: 0.5rem 0; padding: 0.4rem 0.6rem; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 8px; background: #0b1a14; color: #f4f7fb; font: inherit; font-size: 13px; resize: vertical; }
 .find-games .find-total { float: right; margin-left: 0.75rem; color: #e7c15a; font-weight: 700; white-space: nowrap; }
-.find-games .find-edge { float: right; margin-left: 0.75rem; padding: 0 0.45rem; border: 1px solid #3dff6e; border-radius: 999px; color: #3dff6e; font-size: 0.85em; font-weight: 800; white-space: nowrap; }
-.find-games .find-edge.lose { border-color: #ff8a2a; color: #ff8a2a; }
 .rec-board .find-script { display: block; margin: 0.2rem 0 0.6rem; padding: 0.7rem 0.85rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: rgba(4, 16, 24, 0.55); }
 .rec-board .find-script .find-script-head { display: block; margin-bottom: 0.3rem; color: #3dff6e; font-size: 13px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
 .rec-board .find-script p { margin: 0; color: #d5dde6; font-size: 15px; line-height: 1.45; }
