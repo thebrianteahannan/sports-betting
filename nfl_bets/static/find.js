@@ -522,7 +522,7 @@ function showFind(list, hits, person, roster, people, keep, kind) {
     const leg = document.createElement("button"); leg.type = "button"; leg.className = "find-leg"; leg.dataset.key = parlayKey(bet); leg.textContent = parlayLeg.has(leg.dataset.key) ? "In the parlay" : "Add this leg"; if (parlayLeg.has(leg.dataset.key)) leg.classList.add("on"); leg.addEventListener("click", () => { if (parlayLeg.has(leg.dataset.key) || parlayLeg.size >= 8) return; parlayLeg.set(leg.dataset.key, bet); if (person.kind === "player" && !parlayPick.has(person.key) && parlayPick.size < 8) parlayPick.set(person.key, person); paintParlay(); }); const share = document.createElement("button"); share.type = "button"; share.className = "share-bet"; share.dataset.share = "rec"; const ticket = { title: said, american: price, impliedPct: findPct(price), game: bet.match || "", kickoff: bet.kickoff || "", legs: [{ label: said, odds: price, market: bet.market || "", kickoff: bet.kickoff || "" }] }; share.dataset.shareId = String((window.recTickets = window.recTickets || []).push({ ticket, name: said }) - 1); share.setAttribute("aria-label", "Share this bet"); row.append(head, line, leg, share);
     row.dataset.kind = typeof propKind === "function" ? ((full, seen) => full === "PRA" && seen !== "PRA" ? seen : full)(propKind(`${said} ${market}`), propKind(said)) : ""; row.dataset.odds = String(bet.odds || ""); row.dataset.market = market; list.append(row);
   });
-  if (typeof siftKinds === "function") siftKinds(list, kind); if (person.kind === "player" && !golf) markFind(list, person.name, bets);
+  if (typeof siftKinds === "function" && !golf) siftKinds(list, kind); if (person.kind === "player" && !golf) markFind(list, person.name, bets);
 }
 
 function markFind(list, name, bets) {

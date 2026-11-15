@@ -13,3 +13,4 @@ Figures in the business model are a proposal. The graded record as of October 9,
 - [Marketing overview](marketing/overview.md) — `marketing/overview.pdf`
 - [Social posts](marketing/posts.md) — `marketing/posts.pdf`
 - Membership payments — `payments.pdf`
+- [What one Paste a bet costs](paste-a-bet.md) — `paste-a-bet.pdf`
