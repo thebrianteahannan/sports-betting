@@ -93,6 +93,28 @@ function chatToggle(open = !chat.open) {
   if (chat.view === "room") chatRoomLoad();
 }
 
+function chatFitKeys() {
+  const box = document.getElementById("chat-panel");
+  const view = window.visualViewport;
+  if (!box || !view) return;
+  const covered = Math.max(0, window.innerHeight - view.offsetTop - view.height);
+  const typing = chat.open && covered > 80 && box.contains(document.activeElement);
+  box.style.top = typing ? `${view.offsetTop}px` : "";
+  box.style.height = typing ? `${view.height}px` : "";
+  box.style.bottom = typing ? "auto" : "";
+  box.style.width = typing ? `${view.width}px` : "";
+}
+
+function chatWatchKeys() {
+  if (chatWatchKeys.ready || !window.visualViewport) return;
+  chatWatchKeys.ready = true;
+  const run = () => chatFitKeys();
+  visualViewport.addEventListener("resize", run);
+  visualViewport.addEventListener("scroll", run);
+  window.addEventListener("focusin", run);
+  window.addEventListener("focusout", () => { setTimeout(run, 0); });
+}
+
 function chatPanel() {
   let box = document.getElementById("chat-panel");
   if (!box) {
@@ -100,6 +122,7 @@ function chatPanel() {
     box.id = "chat-panel";
     box.setAttribute("aria-label", "Chats");
     document.body.append(box);
+    chatWatchKeys();
   }
   return box;
 }
@@ -327,6 +350,7 @@ function chatComposer() {
   const form = chatNode("form", "chat-form"), quote = chatNode("p", "chat-quote"), text = chatNode("textarea");
   quote.hidden = true;
   text.rows = 1; text.maxLength = 500; text.placeholder = "Message"; text.setAttribute("aria-label", "Message");
+  text.autocomplete = "off"; text.autocapitalize = "sentences"; text.enterKeyHint = "send";
   const bet = chatButton("Bet", () => { chat.picking = !chat.picking; if (typeof chatPickPaint === "function") chatPickPaint(); }, "chat-btn chat-btn-bet");
   bet.title = "Send a bet or a stack";
   const send = chatNode("button", "chat-btn chat-btn-go", "Send");
