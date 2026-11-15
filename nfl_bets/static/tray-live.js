@@ -32,16 +32,12 @@ function trayLivePaint() {
   });
   const sum = found.size && legs.length > 1 && liveParlaySay(liveParlayCount(legs, games));
   document.querySelectorAll(".find-tray .find-ticket > b").forEach((head) => {
+    const waiting = [];
     head.querySelectorAll("i.gm[data-game]").forEach((chip) => {
       const game = found.get(chip.dataset.game);
       if (!game) {
         const kick = legs.filter((bet) => gameShort(bet.match) === chip.dataset.game).map((bet) => bet.kickoff).filter((at) => Date.parse(at || "") > Date.now()).sort()[0];
-        if (!kick || typeof gameUntilPaint !== "function") return;
-        const soon = document.createElement("i");
-        soon.className = "tray-soon find-until";
-        soon.dataset.kick = kick;
-        gameUntilPaint(soon);
-        chip.after(soon);
+        if (kick) waiting.push({ chip, kick });
         return;
       }
       const live = document.createElement("i");
@@ -52,6 +48,15 @@ function trayLivePaint() {
       live.textContent = game.final ? "Final" : `Live · ${game.clock}`;
       chip.after(live);
     });
+    const next = waiting.map((row) => Date.parse(row.kick)).filter(Number.isFinite).sort((a, b) => a - b)[0];
+    const soonest = waiting.find((row) => Date.parse(row.kick) === next);
+    if (soonest && typeof gameUntilPaint === "function") {
+      const soon = document.createElement("i");
+      soon.className = "tray-soon find-until";
+      soon.dataset.kick = soonest.kick;
+      gameUntilPaint(soon);
+      soonest.chip.after(soon);
+    }
     if (!sum || !sum.parts.length) return;
     const tally = document.createElement("i");
     tally.className = `tray-sum${sum.level ? ` pace-${sum.level}` : ""}`;
