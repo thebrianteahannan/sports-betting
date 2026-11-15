@@ -2,7 +2,17 @@
 
 const tvTick = { at: "menu", timer: 0, pick: null, loading: false, hold: false };
 
-function tvTickPages() { return ["menu", ...(tvTick.pick ? ["pick"] : []), ...(tvTickGateOn() ? [] : ["lazy"]), "steady", "how", "odds", "book", "qr", ...(tvTickLaw() ? ["law"] : []), "risk", "help"]; }
+function tvTickAsks() {
+  if (!window.memberReady || document.body.classList.contains("needs-member")) return [];
+  const pages = [];
+  if (!window.memberState) pages.push("state");
+  const books = window.booksHere ? booksHere() : [];
+  if (window.memberState && books.length && !books.some((book) => book.id === window.memberBook)) pages.push("askbook");
+  if (window.memberTeams === null) pages.push("teams");
+  return pages;
+}
+
+function tvTickPages() { return ["menu", ...tvTickAsks(), ...(tvTick.pick ? ["pick"] : []), ...(tvTickGateOn() ? [] : ["lazy"]), "steady", "how", "odds", "book", "qr", ...(tvTickLaw() ? ["law"] : []), "risk", "help"]; }
 
 function tvTickGateOn() {
   const gate = document.getElementById("gate");
@@ -37,7 +47,7 @@ function tvTickBox() {
   if (!glass) return null;
   box = document.createElement("div");
   box.id = "tv-tick";
-  box.innerHTML = `<div id="tv-tick-pick" hidden></div><div id="tv-tick-lazy" hidden></div><div id="tv-tick-steady" hidden><div class="tv-how"><p class="tv-lazy-head">$20 a day adds up</p><p class="tv-steady-row"><span><b>$140</b>a week</span><span><b>$600</b>a month</span><span><b>$7,300</b>a year</span></p><p class="tv-how-say">No lottery tickets. Short prices that cash, one night at a time, and a real number at the end of the year.</p><button type="button" class="tv-how-go" data-tick-more>Find today's $20 &#8250;</button></div></div><div id="tv-tick-how" hidden><div class="tv-how"><p class="tv-lazy-head">This site does a lot</p><p class="tv-how-say">Game scripts. Player trends. Swaps for a leg you don't like. Saved bets. Bets you send a friend. Every pick graded by morning.</p><p class="tv-how-say">Two minutes in the guide and you'll know where all of it is.</p><a class="tv-how-go" href="/guide">How It Works</a></div></div><div id="tv-tick-odds" hidden><div class="tv-how"><p class="tv-lazy-head">Where the odds come from</p><p class="tv-how-say">Every price on this site comes from <span class="tv-how-strong">FanDuel</span>. We check it every 10 minutes, so the numbers are tonight's.</p><p class="tv-how-say">Other sportsbooks post prices that are usually close to FanDuel's, but they might not be the same. Check the number in your own app before you place the bet.</p></div></div><div id="tv-tick-book" hidden><div class="tv-how"><p class="tv-lazy-head">Not a sportsbook</p><p class="tv-how-say">This is not a sportsbook. No bet is placed on this site.</p><p class="tv-how-say">You read the pick here. If you want it, you place it in your own app.</p></div></div><div id="tv-tick-qr" hidden><div class="tv-how"><p class="tv-lazy-head">Send it to a friend</p><img src="/scene/site-qr.svg?v=1" alt="QR code for parlayoftheday.com"><p class="tv-how-say">Double-click the parrot in the top right any time. Your friend scans this and they're in.</p></div></div><div id="tv-tick-law" hidden></div><div id="tv-tick-risk" hidden><div class="tv-how"><p class="tv-lazy-head">Your call, your risk</p><p class="tv-how-say">Everything on this site is betting advice. You choose the bet, you place it, and the result is yours.</p><p class="tv-how-say">Parlay of the Day is not liable or responsible for any losses, or for any bet you make because of this site. You proceed at your own risk.</p><p class="tv-how-say tv-how-strong">Proceed with caution.</p></div></div><div id="tv-tick-help" hidden><div class="tv-how"><p class="tv-lazy-head">When it stops being fun</p><p class="tv-how-say">Gambling can take a paycheck, a week, and the people around you with it. A loss does not get paid back by the next bet. Chasing it is how a small night turns into a problem.</p><p class="tv-how-say">If you or someone you know has a problem, call the gambling hotline. It's free and confidential, any hour.</p><a class="tv-how-go" href="tel:18004262537">Call 1-800-GAMBLER</a></div></div><div class="tv-tick-nav"><button type="button" class="tv-tick-go" data-step="-1" aria-label="Back">&#8249;</button><p class="tv-tick-dots"></p><button type="button" class="tv-tick-go" data-step="1" aria-label="Next">&#8250;</button></div>`;
+  box.innerHTML = `<div id="tv-tick-state" hidden></div><div id="tv-tick-askbook" hidden></div><div id="tv-tick-teams" hidden></div><div id="tv-tick-pick" hidden></div><div id="tv-tick-lazy" hidden></div><div id="tv-tick-steady" hidden><div class="tv-how"><p class="tv-lazy-head">$20 a day adds up</p><p class="tv-steady-row"><span><b>$140</b>a week</span><span><b>$600</b>a month</span><span><b>$7,300</b>a year</span></p><p class="tv-how-say">No lottery tickets. Short prices that cash, one night at a time, and a real number at the end of the year.</p><button type="button" class="tv-how-go" data-tick-more>Find today's $20 &#8250;</button></div></div><div id="tv-tick-how" hidden><div class="tv-how"><p class="tv-lazy-head">This site does a lot</p><p class="tv-how-say">Game scripts. Player trends. Swaps for a leg you don't like. Saved bets. Bets you send a friend. Every pick graded by morning.</p><p class="tv-how-say">Two minutes in the guide and you'll know where all of it is.</p><a class="tv-how-go" href="/guide">How It Works</a></div></div><div id="tv-tick-odds" hidden><div class="tv-how"><p class="tv-lazy-head">Where the odds come from</p><p class="tv-how-say">Every price on this site comes from <span class="tv-how-strong">FanDuel</span>. We check it every 10 minutes, so the numbers are tonight's.</p><p class="tv-how-say">Other sportsbooks post prices that are usually close to FanDuel's, but they might not be the same. Check the number in your own app before you place the bet.</p></div></div><div id="tv-tick-book" hidden><div class="tv-how"><p class="tv-lazy-head">Not a sportsbook</p><p class="tv-how-say">This is not a sportsbook. No bet is placed on this site.</p><p class="tv-how-say">You read the pick here. If you want it, you place it in your own app.</p></div></div><div id="tv-tick-qr" hidden><div class="tv-how"><p class="tv-lazy-head">Send it to a friend</p><img src="/scene/site-qr.svg?v=1" alt="QR code for parlayoftheday.com"><p class="tv-how-say">Double-click the parrot in the top right any time. Your friend scans this and they're in.</p></div></div><div id="tv-tick-law" hidden></div><div id="tv-tick-risk" hidden><div class="tv-how"><p class="tv-lazy-head">Your call, your risk</p><p class="tv-how-say">Everything on this site is betting advice. You choose the bet, you place it, and the result is yours.</p><p class="tv-how-say">Parlay of the Day is not liable or responsible for any losses, or for any bet you make because of this site. You proceed at your own risk.</p><p class="tv-how-say tv-how-strong">Proceed with caution.</p></div></div><div id="tv-tick-help" hidden><div class="tv-how"><p class="tv-lazy-head">When it stops being fun</p><p class="tv-how-say">Gambling can take a paycheck, a week, and the people around you with it. A loss does not get paid back by the next bet. Chasing it is how a small night turns into a problem.</p><p class="tv-how-say">If you or someone you know has a problem, call the gambling hotline. It's free and confidential, any hour.</p><a class="tv-how-go" href="tel:18004262537">Call 1-800-GAMBLER</a></div></div><div class="tv-tick-nav"><button type="button" class="tv-tick-go" data-step="-1" aria-label="Back">&#8249;</button><p class="tv-tick-dots"></p><button type="button" class="tv-tick-go" data-step="1" aria-label="Next">&#8250;</button></div>`;
   box.hidden = true;
   glass.append(box);
   box.addEventListener("click", (event) => {
@@ -47,7 +57,11 @@ function tvTickBox() {
     if (event.target.closest("[data-tick-login]")) { event.stopPropagation(); tvTickGateGo("login"); return; }
     if (event.target.closest("[data-tick-more]")) { event.stopPropagation(); if (tvTickGateOn()) { tvTickGateGo("login"); return; } if (window.recPageOpen) recPageOpen(); return; }
     const open = event.target.closest("[data-tick-open]");
-    if (open && tvTick.pick) { event.stopPropagation(); tvTickOpen(tvTick.pick); }
+    if (open && tvTick.pick) { event.stopPropagation(); tvTickOpen(tvTick.pick); return; }
+    if (event.target.closest("[data-tick-state]")) { event.stopPropagation(); const code = (document.getElementById("tv-tick-state-pick") || {}).value; if (code && window.saveState) saveState(code); return; }
+    if (event.target.closest("[data-tick-book]")) { event.stopPropagation(); const book = (document.getElementById("tv-tick-book-pick") || {}).value; if (book && window.saveBook) saveBook(book); return; }
+    if (event.target.closest("[data-tick-teams]")) { event.stopPropagation(); if (typeof favTeamsOpen === "function") favTeamsOpen(() => {}); return; }
+    if (event.target.closest("[data-tick-teams-skip]")) { event.stopPropagation(); if (typeof favTeamsSave === "function") favTeamsSave([]); return; }
   });
   return box;
 }
@@ -100,6 +114,21 @@ async function tvTickLoad() {
   } catch (error) { console.log("[tv-ticker] could not load tonight's pick", error); } finally { tvTick.loading = false; }
 }
 
+function tvTickAskPaint(slot, id) {
+  if (!slot || slot.dataset.ready === id) return;
+  slot.dataset.ready = id;
+  if (id === "state") {
+    slot.innerHTML = `<div class="tv-how"><p class="tv-lazy-head">Which state are you in?</p><p class="tv-how-say">We need it so the site only shows bets you are allowed to place there.</p><select id="tv-tick-state-pick"></select><button type="button" class="tv-how-go" data-tick-state>That's my state</button></div>`;
+    if (window.fillStateSelect) fillStateSelect(slot.querySelector("select"));
+  } else if (id === "askbook") {
+    const place = window.stateName ? stateName() : "your state";
+    slot.innerHTML = `<div class="tv-how"><p class="tv-lazy-head">Which sportsbook?</p><p class="tv-how-say">Which sportsbook are you using in ${esc(place)}? These prices are FanDuel's. Another book's number is usually close, and sometimes the same.</p><select id="tv-tick-book-pick"></select><button type="button" class="tv-how-go" data-tick-book>That's my sportsbook</button></div>`;
+    if (window.fillBookSelect) fillBookSelect(slot.querySelector("select"));
+  } else if (id === "teams") {
+    slot.innerHTML = `<div class="tv-how"><p class="tv-lazy-head">Who do you root for?</p><p class="tv-how-say">Pick your teams and I'll keep their picks ready.</p><button type="button" class="tv-how-go" data-tick-teams>Pick my teams</button><button type="button" class="tv-how-skip" data-tick-teams-skip>Skip</button></div>`;
+  }
+}
+
 function tvTickShow(next, dir) {
   if (tvTickGateOn() && next === "menu") {
     const page = tvTickEl(tvTick.at);
@@ -115,6 +144,7 @@ function tvTickShow(next, dir) {
   const ms = 600, ease = "cubic-bezier(0.45, 0, 0.2, 1)";
   if (next === "lazy" && window.tvLazyPaint) tvLazyPaint();
   if (next === "law") tvTickLawPaint(inEl);
+  if (next === "state" || next === "askbook" || next === "teams") tvTickAskPaint(inEl, next);
   if (next !== "menu") inEl.hidden = false;
   inEl.animate([{ transform: `translateX(${dir * 100}%)` }, { transform: "none" }], { duration: ms, easing: ease });
   outEl.animate([{ transform: "none" }, { transform: `translateX(${-dir * 100}%)` }], { duration: ms, easing: ease }).finished.then(() => { if (outEl.id !== "bird-guide" && outEl !== tvTickEl(tvTick.at)) outEl.hidden = true; }).catch(() => {});
@@ -152,10 +182,17 @@ function tvTickWatch() {
   if (on) tvTickLoad();
   if (on && tvTickFormOn()) { if (!tvTick.hold) tvTickStay(); }
   else if (on && tvTick.hold) tvTickRelease();
+  const pages = tvTickPages().join(",");
+  if (pages !== tvTick.pages) {
+    const prev = tvTick.pages;
+    tvTick.pages = pages;
+    if (prev && tvTick.at !== "menu" && !tvTickPages().includes(tvTick.at)) tvTickShow("menu", -1);
+    else tvTickDots();
+  }
   if (on && box.hidden) { box.hidden = false; tvTickDots(); tvTickTime(); }
   if (!on && !box.hidden) {
     box.hidden = true; clearInterval(tvTick.timer);
-    ["tv-tick-pick", "tv-tick-lazy", "tv-tick-steady", "tv-tick-how", "tv-tick-odds", "tv-tick-book", "tv-tick-qr", "tv-tick-law", "tv-tick-risk", "tv-tick-help"].forEach((id) => { const slot = document.getElementById(id); if (slot) slot.hidden = true; });
+    ["tv-tick-state", "tv-tick-askbook", "tv-tick-teams", "tv-tick-pick", "tv-tick-lazy", "tv-tick-steady", "tv-tick-how", "tv-tick-odds", "tv-tick-book", "tv-tick-qr", "tv-tick-law", "tv-tick-risk", "tv-tick-help"].forEach((id) => { const slot = document.getElementById(id); if (slot) slot.hidden = true; });
     tvTick.at = "menu"; tvTick.hold = false; tvTick.typed = false;
     box.classList.remove("tv-tick-quiet");
     tvTickDots();
@@ -169,7 +206,7 @@ function tvTickGateGo(mode) {
 }
 
 function tvTickRest() {
-  ["tv-tick-pick", "tv-tick-lazy", "tv-tick-steady", "tv-tick-how", "tv-tick-odds", "tv-tick-book", "tv-tick-qr", "tv-tick-law", "tv-tick-risk", "tv-tick-help"].forEach((id) => { const slot = document.getElementById(id); if (slot) slot.hidden = true; });
+  ["tv-tick-state", "tv-tick-askbook", "tv-tick-teams", "tv-tick-pick", "tv-tick-lazy", "tv-tick-steady", "tv-tick-how", "tv-tick-odds", "tv-tick-book", "tv-tick-qr", "tv-tick-law", "tv-tick-risk", "tv-tick-help"].forEach((id) => { const slot = document.getElementById(id); if (slot) slot.hidden = true; });
   tvTick.at = "menu";
   tvTickDots();
 }

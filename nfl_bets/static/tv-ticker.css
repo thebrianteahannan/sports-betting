@@ -1,7 +1,7 @@
 #tv-tick { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
 #tv-tick[hidden] { display: none; }
-#tv-tick-pick, #tv-tick-lazy, #tv-tick-steady, #tv-tick-how, #tv-tick-odds, #tv-tick-book, #tv-tick-qr, #tv-tick-law, #tv-tick-risk, #tv-tick-help { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1.2rem 1.2rem 3rem; overflow: auto; background: #07131a; pointer-events: auto; }
-#tv-tick-pick[hidden], #tv-tick-lazy[hidden], #tv-tick-steady[hidden], #tv-tick-how[hidden], #tv-tick-odds[hidden], #tv-tick-book[hidden], #tv-tick-qr[hidden], #tv-tick-law[hidden], #tv-tick-risk[hidden], #tv-tick-help[hidden] { display: none; }
+#tv-tick-state, #tv-tick-askbook, #tv-tick-teams, #tv-tick-pick, #tv-tick-lazy, #tv-tick-steady, #tv-tick-how, #tv-tick-odds, #tv-tick-book, #tv-tick-qr, #tv-tick-law, #tv-tick-risk, #tv-tick-help { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1.2rem 1.2rem 3rem; overflow: auto; background: #07131a; pointer-events: auto; }
+#tv-tick-state[hidden], #tv-tick-askbook[hidden], #tv-tick-teams[hidden], #tv-tick-pick[hidden], #tv-tick-lazy[hidden], #tv-tick-steady[hidden], #tv-tick-how[hidden], #tv-tick-odds[hidden], #tv-tick-book[hidden], #tv-tick-qr[hidden], #tv-tick-law[hidden], #tv-tick-risk[hidden], #tv-tick-help[hidden] { display: none; }
 .tv-how-strong { color: #e7c15a; font-weight: 800; }
 #desk.bird-on:not(.tv-full) #bird-guide:has(button[data-menu]) #greet-legal { flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; align-self: center; gap: 0.2rem 0.45rem; margin: 0.6rem 0 2.6rem; text-align: center; }
 #desk.bird-on:not(.tv-full) #bird-guide:has(button[data-menu]) #greet-legal .age { margin: 0; font-size: 1.5rem; }
@@ -71,9 +71,12 @@
 .tv-steady-row span:last-child b { color: #e7c15a; }
 #desk-glass button.tv-how-go { min-height: 0; border: 0; box-shadow: none; text-transform: none; cursor: pointer; }
 body.needs-member #desk-glass #tv-tick { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
-body.needs-member #desk-glass :is(#tv-tick-pick, #tv-tick-lazy, #tv-tick-steady, #tv-tick-how, #tv-tick-odds, #tv-tick-book, #tv-tick-qr, #tv-tick-law, #tv-tick-risk, #tv-tick-help) { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1.2rem 1.2rem 3rem; overflow: auto; background: #07131a; pointer-events: auto; }
-body.needs-member #desk-glass :is(#tv-tick-pick, #tv-tick-lazy, #tv-tick-steady, #tv-tick-how, #tv-tick-odds, #tv-tick-book, #tv-tick-qr, #tv-tick-law, #tv-tick-risk, #tv-tick-help)[hidden] { display: none; pointer-events: none; }
+body.needs-member #desk-glass :is(#tv-tick-state, #tv-tick-askbook, #tv-tick-teams, #tv-tick-pick, #tv-tick-lazy, #tv-tick-steady, #tv-tick-how, #tv-tick-odds, #tv-tick-book, #tv-tick-qr, #tv-tick-law, #tv-tick-risk, #tv-tick-help) { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1.2rem 1.2rem 3rem; overflow: auto; background: #07131a; pointer-events: auto; }
+body.needs-member #desk-glass :is(#tv-tick-state, #tv-tick-askbook, #tv-tick-teams, #tv-tick-pick, #tv-tick-lazy, #tv-tick-steady, #tv-tick-how, #tv-tick-odds, #tv-tick-book, #tv-tick-qr, #tv-tick-law, #tv-tick-risk, #tv-tick-help)[hidden] { display: none; pointer-events: none; }
 body.needs-member #desk-glass #tv-tick .tv-tick-nav { top: auto; right: auto; bottom: 1.2rem; left: 50%; gap: 0.6rem; transform: translateX(-50%); }
 #tv-tick.tv-tick-quiet .tv-tick-nav { visibility: hidden; }
+#tv-tick-state select, #tv-tick-askbook select { width: min(100%, 28rem); min-height: 0; margin: 0; }
+#desk-glass .tv-how-skip { display: block; width: min(100%, 28rem); box-sizing: border-box; margin-top: 0.5rem; padding: 0.75rem 1rem; border: 1px solid #3dff6e; border-radius: 8px; background: transparent; color: #3dff6e; font-family: "Rajdhani", sans-serif; font-size: 22px; font-weight: 700; letter-spacing: 0.04em; text-transform: none; cursor: pointer; }
+#desk-glass .tv-how-skip:hover { background: rgba(61, 255, 110, 0.12); }
 #tv-tick-qr img { width: min(14rem, 58%); height: auto; padding: 0.4rem; border-radius: 12px; background: #fff; }
 #tv-zoom #tv-tick-qr img { width: min(18rem, 46%); }

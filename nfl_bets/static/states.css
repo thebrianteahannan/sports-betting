@@ -12,7 +12,7 @@
 #laws-key .some { background: #f0a202; }
 #laws-key .lot { background: #e23b3b; }
 #laws-you { font-weight: 700; }
-#bird-picks select, #laws-state, #call-state, #member-state { font: inherit; color: #d8ffe4; background: #07140f; border: 1px solid #3dff6e; border-radius: 8px; padding: 0.35rem 0.4rem; }
+#bird-picks select, #laws-state, #call-state, #member-state, #tv-tick-state select, #tv-tick-askbook select { font: inherit; color: #d8ffe4; background: #07140f; border: 1px solid #3dff6e; border-radius: 8px; padding: 0.35rem 0.4rem; }
 :is(#bird-picks, #call-state-pick) .state-combo { position: relative; display: flex; flex: 0 1 16rem; min-width: 12rem; }
 :is(#bird-picks, #call-state-pick) .state-combo #bird-state { flex: 1; width: auto; min-width: 0; border-radius: 8px 0 0 8px; font-family: "Outfit", sans-serif; }
 :is(#bird-picks, #call-state-pick) .state-combo #bird-state.bad { border-color: #ff4d4d; }
