@@ -26,12 +26,12 @@
 #admin-online-map [data-code] { fill: #12301f; stroke: #1c3d2c; stroke-width: 0.6; cursor: pointer; }
 #admin-online-map [data-count]:not([data-count="0"]) { fill: #3dff6e; }
 #admin-online-map [data-code].on { stroke: #ffffff; stroke-width: 2; }
-#admin-online-map text { fill: #04140c; font-size: 15px; font-weight: 700; text-anchor: middle; pointer-events: none; }
+#admin-online-map text, #bird-map text { fill: #04140c; font-weight: 700; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
 #bird-map { flex: 1 0 100%; max-width: 34rem; } #bird-map[hidden], #desk:not(.tv-full) #bird-map { display: none; }
 #bird-map svg { width: 100%; height: auto; display: block; }
 #bird-map [data-code] { fill: #12301f; stroke: #3dff6e; stroke-width: 0.8; cursor: pointer; }
 #bird-map [data-code]:hover { fill: #1f5a37; }
-#bird-map [data-code].on { fill: #3dff6e; }
+#bird-map [data-code].on, #bird-map [data-count]:not([data-count="0"]), #bird-map [data-count]:not([data-count="0"]):hover { fill: #3dff6e; }
 #desk.tv-full ~ .banner:not([hidden]) { top: 4.2rem; z-index: 14; left: 3.4rem; right: 0.8rem; }
 body.day-board .banner:not([hidden]) { padding-right: 2.4rem; }
 #banner-x { position: fixed; z-index: 16; top: 0.7rem; right: 0.95rem; width: 1.7rem; height: 1.7rem; padding: 0; border: 0; border-radius: 6px; background: transparent; color: #fecdd3; font-size: 1.3rem; line-height: 1; cursor: pointer; }

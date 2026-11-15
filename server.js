@@ -99,7 +99,7 @@ async function archive() {
 
 const { ignoreView, sweepIgnored } = createIgnore(readKey, writeKey, archive);
 const pullLive = createPull(readKey, writeKey, ROOT);
-const { adminList, whoIsHere, setMemberAdmin, saveAsk, noteTaste, saveRated } = createAdmins(readKey, writeKey);
+const { adminList, whoIsHere, setMemberAdmin, dropMember, saveAsk, noteTaste, saveRated } = createAdmins(readKey, writeKey);
 const { list: noteList, save: noteSave } = createNotes(readKey, writeKey); const { cards: shelvedCards, save: shelveSave } = createShelve(readKey, writeKey);
 const researchBet = createResearch(readKey);
 
@@ -593,6 +593,12 @@ const server = http.createServer(async (req, res) => {
         const user = await memberFrom(req);
         if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
         sendJson(res, await setMemberAdmin(body.email, body.admin));
+        return;
+      }
+      if (url.pathname === "/api/admin/drop") {
+        const user = await memberFrom(req);
+        if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
+        sendJson(res, await dropMember(body.email));
         return;
       }
       if (url.pathname === "/api/reports") {

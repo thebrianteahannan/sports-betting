@@ -44,6 +44,82 @@ function adminCard(head, gist, lines, extra) {
   return `<div class="rec-bet"><b>${head}</b>${gist ? `<p class="rec-gist">${gist}</p>` : ""}${more}${extra || ""}</div>`;
 }
 
+function landPoint(node, svg) {
+  const spot = node.getBBox();
+  const cols = 9;
+  const rows = 9;
+  const hits = [];
+  for (let i = 1; i < cols; i += 1) {
+    for (let j = 1; j < rows; j += 1) {
+      const x = spot.x + (spot.width * i) / cols;
+      const y = spot.y + (spot.height * j) / rows;
+      const pt = svg.createSVGPoint();
+      pt.x = x;
+      pt.y = y;
+      if (node.isPointInFill(pt)) hits.push({ x, y, i, j });
+    }
+  }
+  if (!hits.length) return null;
+  let best = hits[0];
+  let score = -1;
+  hits.forEach((hit) => {
+    let near = 0;
+    hits.forEach((other) => {
+      if (Math.abs(other.i - hit.i) <= 1 && Math.abs(other.j - hit.j) <= 1) near += 1;
+    });
+    if (near > score) { score = near; best = hit; }
+  });
+  return best;
+}
+
+function watchMapCount(map) {
+  if (map._countWait) return;
+  const wait = new ResizeObserver(() => {
+    if (labelOnlineMap(map)) { wait.disconnect(); map._countWait = null; }
+  });
+  map._countWait = wait;
+  wait.observe(map);
+}
+
+function labelOnlineMap(map) {
+  const svg = map && map.querySelector("svg");
+  if (!map || !svg) return false;
+  const counts = window.onlineCounts || {};
+  map.querySelectorAll("[data-code]").forEach((node) => {
+    node.dataset.count = String(counts[String(node.dataset.code || "").toUpperCase()] || 0);
+  });
+  const width = svg.getBoundingClientRect().width;
+  if (!width) { watchMapCount(map); return false; }
+  if (map._countWait) { map._countWait.disconnect(); map._countWait = null; }
+  svg.querySelectorAll("text").forEach((node) => node.remove());
+  const view = svg.viewBox.baseVal.width || 959;
+  const scale = width / view;
+  const best = new Map();
+  map.querySelectorAll("[data-code]").forEach((node) => {
+    const count = Number(node.dataset.count) || 0;
+    if (!count) return;
+    const spot = node.getBoundingClientRect();
+    const area = spot.width * spot.height;
+    const prior = best.get(node.dataset.code);
+    if (!prior || area > prior.area) best.set(node.dataset.code, { node, count, spot });
+  });
+  best.forEach((item) => {
+    if (item.spot.width < 14 || item.spot.height < 10) return;
+    const point = landPoint(item.node, svg);
+    if (!point) return;
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    const px = Math.max(11, Math.min(16, item.spot.width * 0.34));
+    text.setAttribute("x", point.x);
+    text.setAttribute("y", point.y);
+    text.style.fontSize = `${px / scale}px`;
+    text.textContent = String(item.count);
+    svg.append(text);
+  });
+  return true;
+}
+
+window.labelOnlineMap = labelOnlineMap;
+
 function paintOnline(online) {
   const box = document.getElementById("admin-online");
   if (!box || !online) return;
@@ -53,8 +129,13 @@ function paintOnline(online) {
   const say = total === 0 ? "Nobody is on the site." : total === 1 ? "1 person on the site." : `${total} people on the site.`;
   const where = rows.map((row) => `${window.stateName ? stateName(row.code) : row.code} ${row.count}`);
   if (none) where.push(none === 1 ? "1 with no state" : `${none} with no state`);
+  window.onlineCounts = Object.fromEntries(rows.map((row) => [String(row.code || "").toUpperCase(), Number(row.count) || 0]));
   const key = `${say}|${where.join(",")}`;
-  if (box.dataset.key === key && box.querySelector("svg")) return;
+  if (box.dataset.key === key && box.querySelector("svg")) {
+    labelOnlineMap(document.getElementById("admin-online-map"));
+    labelOnlineMap(document.getElementById("bird-map"));
+    return;
+  }
   box.dataset.key = key;
   box.innerHTML = `<p class="quiet" id="admin-online-say"></p><div id="admin-online-map"></div><p class="quiet" id="admin-online-where"></p>`;
   document.getElementById("admin-online-say").textContent = say;
@@ -67,52 +148,44 @@ function paintOnline(online) {
       box.querySelectorAll("[data-code]").forEach((node) => node.classList.toggle("on", node.dataset.code === hit.dataset.code));
     });
   }
-  if (box._onlineWait) { box._onlineWait.disconnect(); box._onlineWait = null; }
   if (!window.mountUsMap) return;
-  const counts = Object.fromEntries(rows.map((row) => [row.code, row.count]));
   mountUsMap(document.getElementById("admin-online-map"), () => {
     const map = document.getElementById("admin-online-map");
-    const svg = map && map.querySelector("svg");
-    if (!map || !svg) return;
+    if (!map) return;
     map.querySelectorAll("[data-code]").forEach((node) => {
       const code = node.dataset.code.toUpperCase();
-      const count = counts[code] || 0;
+      const count = (window.onlineCounts || {})[code] || 0;
       const name = window.stateName ? stateName(code) : code;
-      node.dataset.count = String(count);
       node.setAttribute("role", "button");
       node.setAttribute("aria-label", count ? `${name}, ${count}` : name);
     });
-    const place = () => {
-      if (!map.isConnected || !svg.getBoundingClientRect().width) return false;
-      svg.querySelectorAll("text").forEach((node) => node.remove());
-      const best = new Map();
-      map.querySelectorAll("[data-code]").forEach((node) => {
-        const count = Number(node.dataset.count) || 0;
-        if (!count) return;
-        const spot = node.getBBox();
-        const area = spot.width * spot.height;
-        const prior = best.get(node.dataset.code);
-        if (!prior || area > prior.area) best.set(node.dataset.code, { area, spot, count });
-      });
-      best.forEach((item) => {
-        if (item.spot.width < 28 || item.spot.height < 18) return;
-        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        text.setAttribute("x", item.spot.x + item.spot.width / 2);
-        text.setAttribute("y", item.spot.y + item.spot.height / 2 + 5);
-        text.textContent = String(item.count);
-        svg.append(text);
-      });
-      return true;
-    };
-    if (place()) return;
-    const wait = new ResizeObserver(() => { if (place()) { wait.disconnect(); box._onlineWait = null; } });
-    box._onlineWait = wait;
-    wait.observe(map);
+    labelOnlineMap(map);
+    labelOnlineMap(document.getElementById("bird-map"));
   });
 }
 
 let adminHabits = [];
 let showAllHabits = false;
+
+function memberSpan(rows) {
+  const now = Date.now();
+  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
+  const today = day.format(now);
+  const week = now - 7 * 86400000;
+  const month = now - 30 * 86400000;
+  const year = now - 365 * 86400000;
+  let todayN = 0, weekN = 0, monthN = 0, yearN = 0;
+  rows.forEach((row) => {
+    const then = Date.parse(row.lastLogin || "");
+    if (!Number.isFinite(then)) return;
+    if (day.format(then) === today) todayN += 1;
+    if (then >= week) weekN += 1;
+    if (then >= month) monthN += 1;
+    if (then >= year) yearN += 1;
+  });
+  const n = rows.length;
+  return `${n} ${n === 1 ? "member" : "members"}. ${todayN} logged in today. ${weekN} in the last week. ${monthN} in the last month. ${yearN} in the last year.`;
+}
 
 function paintAdmin(payload) {
   paintRefresh();
@@ -130,10 +203,10 @@ function paintAdmin(payload) {
   const line = (row) => {
     const role = row.admin ? "Admin" : "Member";
     const stay = String(row.email || "").toLowerCase() === "bthannan@gmail.com";
-    const action = stay ? "" : `<button type="button" class="ghost" data-admin-email="${esc(row.email || "")}" data-admin-on="${row.admin ? "0" : "1"}">${row.admin ? "Remove" : "Make admin"}</button>`;
+    const action = stay ? "" : `<button type="button" class="ghost" data-admin-email="${esc(row.email || "")}" data-admin-on="${row.admin ? "0" : "1"}">${row.admin ? "Remove" : "Make admin"}</button><button type="button" class="ghost" data-admin-drop="${esc(row.email || "")}" data-admin-name="${esc(row.name || "this member")}">Delete</button>`;
     return { role, action, row };
   };
-  const head = `<label class="admin-habits-all"><input type="checkbox" id="admin-habits-all"${showAllHabits ? " checked" : ""}> Show all habits</label><p class="quiet">Admins: ${esc(admins.join(", ") || "none")}.</p>`;
+  const head = `<p class="quiet">${esc(memberSpan(rows))}</p><label class="admin-habits-all"><input type="checkbox" id="admin-habits-all"${showAllHabits ? " checked" : ""}> Show all habits</label><p class="quiet">Admins: ${esc(admins.join(", ") || "none")}.</p>`;
   list.innerHTML = head + rows.map((row) => {
     const item = line(row);
     const habit = habits.get(String(row.email || "").toLowerCase());
@@ -157,6 +230,22 @@ async function setAdminRole(email, admin) {
   const payload = await response.json();
   if (!response.ok) {
     if (note) note.textContent = payload.error || "Could not change that admin.";
+    return;
+  }
+  paintAdmin(payload);
+}
+
+async function dropMember(email) {
+  const note = document.getElementById("admin-role-note");
+  if (note) note.textContent = "";
+  const response = await fetch("/api/admin/drop", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    if (note) note.textContent = payload.error || "Could not delete that member.";
     return;
   }
   paintAdmin(payload);
@@ -213,6 +302,23 @@ function bindAdmin() {
     });
   });
   if (users) users.addEventListener("click", (event) => {
+    const drop = event.target.closest("[data-admin-drop]");
+    if (drop) {
+      const row = drop.closest(".pick-save");
+      const email = drop.dataset.adminDrop;
+      const name = drop.dataset.adminName || email;
+      if (row) row.innerHTML = `<span>Delete ${esc(name)}? This membership goes away.</span><button type="button" class="ghost" data-admin-drop-yes="${esc(email)}">Yes, delete</button><button type="button" class="ghost" data-admin-drop-no>Cancel</button>`;
+      return;
+    }
+    const yes = event.target.closest("[data-admin-drop-yes]");
+    if (yes) {
+      dropMember(yes.dataset.adminDropYes).catch((error) => {
+        const note = document.getElementById("admin-role-note");
+        if (note) note.textContent = String(error.message || error);
+      });
+      return;
+    }
+    if (event.target.closest("[data-admin-drop-no]")) { loadAdmin().catch(() => {}); return; }
     const button = event.target.closest("[data-admin-email]");
     if (!button) return;
     setAdminRole(button.dataset.adminEmail, button.dataset.adminOn === "1").catch((error) => {

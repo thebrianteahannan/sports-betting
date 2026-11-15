@@ -171,6 +171,7 @@ function paintStatePick(row, save, current) {
       node.dataset.code = code; node.setAttribute("role", "button"); node.setAttribute("aria-label", STATE_LAW[code.toUpperCase()].name);
     });
     mark();
+    if (window.labelOnlineMap) labelOnlineMap(map);
   };
   if (current) choose(current);
   if (lawsMap) draw(lawsMap); else fetch("/us-map.svg").then((response) => response.text()).then((text) => { lawsMap = text; draw(text); }).catch(() => { map.hidden = true; });

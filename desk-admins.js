@@ -404,6 +404,26 @@ function createAdmins(readKey, writeKey) {
       await writeKey("bets/members.json", data);
       return { users: rows(data.users), online: onlineOf(data) };
     },
+    async dropMember(email) {
+      const clean = String(email || "").trim().toLowerCase();
+      if (clean === owner) throw new Error("That admin stays.");
+      const data = await load();
+      const row = data.users.find((item) => item.email === clean);
+      if (!row) throw new Error("That member is not here.");
+      const id = row.id;
+      data.users = data.users.filter((item) => item.id !== id);
+      Object.keys(data.sessions).forEach((token) => { if (data.sessions[token] && data.sessions[token].userId === id) delete data.sessions[token]; });
+      data.activity = data.activity.filter((item) => item.userId !== id);
+      await writeKey("bets/members.json", data);
+      const friends = (await readKey("bets/friends.json")) || {};
+      const links = Array.isArray(friends.links) ? friends.links : [];
+      const left = links.filter((one) => one.a !== id && one.b !== id);
+      if (left.length !== links.length) await writeKey("bets/friends.json", { ...friends, links: left });
+      await writeKey(`bets/parlays/${id}.json`, { parlays: [], at: Date.now() });
+      await writeKey(`bets/parlays/${id}-done.json`, { parlays: [], at: Date.now() });
+      await writeKey(`bets/shared/${id}.json`, { items: [], at: Date.now() });
+      return { users: rows(data.users), online: onlineOf(data) };
+    },
   };
 }
 
