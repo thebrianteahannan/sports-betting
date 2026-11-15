@@ -266,6 +266,7 @@ function friendsPanel() {
     panel.append(head("Friend requests"));
     data.incoming.forEach((one) => { const row = document.createElement("p"); row.className = "find-friends-row"; row.innerHTML = `<span><b>${esc(one.name)}</b>${one.state ? ` · ${esc(one.state)}` : ""}</span>`; row.append(friendsButton("Accept", () => friendsAct({ action: "accept", id: one.id }, note)), friendsButton("Decline", () => friendsAct({ action: "decline", id: one.id }, note), "find-friends-quiet")); panel.append(row); });
   }
+  panel.append(head("Add a friend"), friendsAdd());
   panel.append(head("Sent to you"));
   if (window.sharedItems.length) { const row = document.createElement("div"); row.className = "find-shared-chips"; row.append(...window.sharedItems.map(sharedChip)); panel.append(row); }
   if ((window.sharedSent || []).length) { panel.append(head("You sent")); const row = document.createElement("div"); row.className = "find-shared-chips"; row.append(...window.sharedSent.map(sharedChip)); panel.append(row); }
@@ -273,7 +274,7 @@ function friendsPanel() {
   panel.append(head(`Friends${data.friends.length ? ` (${data.friends.length})` : ""}`));
   data.friends.forEach((one) => { const row = document.createElement("p"); row.className = "find-friends-row"; row.innerHTML = `<span><b>${esc(one.name)}</b>${one.state ? ` · ${esc(one.state)}` : ""}</span>`; row.append(friendsButton("Remove", () => { if (window.confirm(`Remove ${one.name} from your friends?`)) friendsAct({ action: "remove", id: one.id }, note); }, "find-friends-quiet")); panel.append(row); });
   data.outgoing.forEach((one) => { const row = document.createElement("p"); row.className = "find-friends-row"; row.innerHTML = `<span><b>${esc(one.name)}</b> has not accepted yet</span>`; row.append(friendsButton("Cancel", () => friendsAct({ action: "cancel", id: one.id }, note), "find-friends-quiet")); panel.append(row); });
-  panel.append(friendsAdd(), note);
+  panel.append(note);
   return panel;
 }
 

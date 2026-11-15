@@ -106,7 +106,7 @@ function chatPaint() {
   if (chat.view === "room" && box.dataset.view === key) { chatRoomHead(); chatMsgsPaint(); return; }
   box.dataset.view = key;
   chat.sig = "";
-  box.replaceChildren(...(chat.view === "new" || chat.view === "add" ? chatNewView() : chat.view === "room" ? chatRoomView() : chatListView()));
+  box.replaceChildren(...(chat.view === "new" || chat.view === "add" ? chatNewView() : chat.view === "friend" ? chatFriendView() : chat.view === "room" ? chatRoomView() : chatListView()));
   if (chat.view === "room") { chatRoomHead(); chatMsgsPaint(true, true); }
 }
 
@@ -121,7 +121,7 @@ function chatHead(title, back, extra = []) {
 }
 
 function chatListView() {
-  const out = [chatHead("CHATS", null, [chatButton("New chat", () => { chat.view = "new"; chat.friends = null; chatPaint(); }, "chat-btn chat-btn-go")])];
+  const out = [chatHead("CHATS", null, [chatButton("Add a friend", () => { chat.view = "friend"; chatPaint(); }, "chat-btn"), chatButton("New chat", () => { chat.view = "new"; chat.friends = null; chatPaint(); }, "chat-btn chat-btn-go")])];
   if (chat.sharing) {
     const bar = chatNode("div", "chat-sharing");
     bar.append(chatNode("span", "", `Pick a chat for ${chat.sharing.name}.`), chatButton("Cancel", () => { chat.sharing = null; chatPaint(); }, "chat-btn chat-btn-quiet"));
@@ -145,6 +145,14 @@ function chatListView() {
 async function chatFriendsLoad() {
   try { chat.friends = (await chatCall("/api/friends")).friends || []; } catch (error) { chat.friends = []; chat.note = error.message; }
   if (chat.view === "new" || chat.view === "add") { chatPanel().dataset.view = ""; chatPaint(); }
+}
+
+function chatFriendView() {
+  const head = chatHead("Add a friend", () => { chat.view = "list"; chatPaint(); });
+  const body = chatNode("div", "chat-new");
+  if (typeof friendsAdd === "function") body.append(friendsAdd());
+  else body.append(chatNode("p", "chat-empty", "Friend search is not ready."));
+  return [head, body];
 }
 
 function chatNewView() {

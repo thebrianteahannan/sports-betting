@@ -34,6 +34,9 @@
 #chat-panel .chat-row.fresh span { color: #f4f7fb; }
 
 #chat-panel .chat-new { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; padding: 0.75rem 0.9rem; }
+#chat-panel .find-friends-add { margin: 0; }
+#chat-panel .find-friends-add input { min-height: 0; width: 100%; box-sizing: border-box; }
+#chat-panel button.find-friends-go { padding: 0.3rem 0.75rem; border: 1px solid #3dff6e; border-radius: 999px; background: #3dff6e; color: #04110a; font-size: 12.5px; font-weight: 700; }
 #chat-panel .chat-friend { display: flex; align-items: center; gap: 0.55rem; padding: 0.45rem 0.55rem; border: 1px solid #1d2731; border-radius: 10px; font-size: 15px; cursor: pointer; }
 #chat-panel .chat-friend input { width: 1.05rem; height: 1.05rem; accent-color: #3dff6e; }
 #chat-panel .chat-name, #chat-panel .chat-form textarea { box-sizing: border-box; padding: 0.5rem 0.65rem; border: 1px solid #2c3742; border-radius: 10px; background: #0d131a; color: #f4f7fb; font: 15px/1.35 "Outfit", sans-serif; }

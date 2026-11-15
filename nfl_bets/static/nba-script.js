@@ -266,6 +266,54 @@ function scriptClubStyle(game, team) {
   return club ? ` style="border-left-color: ${club.color}; background: linear-gradient(90deg, ${club.color}66, ${club.color}1f 75%)"` : "";
 }
 
+function scriptPickHit(pick, game, people) {
+  const person = (people || []).find((row) => row.kind === "player" && row.name === pick.who);
+  const bet = person && (person.bets || []).find((row) => row.label === pick.label && row.market === pick.market && row.match === game.match);
+  return bet && { bet, person };
+}
+
+function scriptPickPut(hit, fresh) {
+  if (!hit || typeof parlayLeg === "undefined" || typeof parlayKey !== "function") return;
+  if (fresh && parlayLeg.size && typeof saveNew === "function") saveNew();
+  if (parlayLeg.has(parlayKey(hit.bet)) || parlayLeg.size >= 8) return;
+  if (typeof betFromSay === "function") betFromSay("Game script", fresh);
+  if (typeof legSwapAdd === "function") legSwapAdd(hit.person, hit.bet);
+}
+
+function scriptPickAsk(row, hit) {
+  const open = row.querySelector(".desk-rec-ask");
+  document.querySelectorAll(".find-script-pick .desk-rec-ask").forEach((node) => node.remove());
+  if (open) return;
+  if (typeof parlayLeg === "undefined" || !parlayLeg.size) { scriptPickPut(hit, false); return; }
+  const ask = document.createElement("span");
+  ask.className = "desk-rec-ask";
+  ask.innerHTML = `<i>You have a bet open.</i><span role="button" tabindex="0" data-bet-go="add">Add to this bet</span><span role="button" tabindex="0" data-bet-go="new">Start a new bet</span>`;
+  ask.addEventListener("click", (event) => {
+    const go = event.target.closest("[data-bet-go]");
+    if (!go) return;
+    event.preventDefault();
+    event.stopPropagation();
+    ask.remove();
+    scriptPickPut(hit, go.dataset.betGo === "new");
+  });
+  row.append(ask);
+}
+
+function scriptPickPlus(row, pick, game, people) {
+  const go = document.createElement("button");
+  go.type = "button";
+  go.className = "find-script-plus";
+  go.textContent = "+";
+  go.setAttribute("aria-label", `Add ${pick.who} to your bet`);
+  go.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const hit = scriptPickHit(pick, game, people);
+    if (hit) scriptPickAsk(row, hit);
+  });
+  row.append(go);
+}
+
 function scriptBetsBlock(bets, group, game, people, keep = {}) {
   const money = (odds) => (odds > 0 ? `+${odds}` : String(odds));
   const who = (pick) => `<span class="find-script-who" data-who="${esc(pick.who)}" title="Search ${esc(pick.who)}">${esc(pick.who)}</span> (${esc([pick.pos, pick.team].filter(Boolean).join(", "))})`;
@@ -274,6 +322,7 @@ function scriptBetsBlock(bets, group, game, people, keep = {}) {
   const club = group.name !== "Both teams" && scriptClub(game, group.name);
   if (club) { block.classList.add("find-script-club"); block.style.borderLeftColor = club.color; block.style.backgroundImage = `linear-gradient(90deg, ${club.color}4d, ${club.color}12 80%)`; }
   block.innerHTML = `<b${club ? ` style="color: ${club.text}"` : ""}>${esc(group.name)}</b>${mine.map((pick) => `<div class="find-script-pick"${club ? "" : scriptClubStyle(game, pick.team)}><p><strong>${who(pick)} ${esc(pick.text)}, ${money(pick.odds)}.</strong> ${scriptKindTag(pick)}</p><p class="find-script-why"><em>Why:</em> ${esc(pick.how || `Hit in ${pick.hits} of his last ${pick.n}. Needs ${pick.need}.`)}</p></div>`).join("")}`;
+  block.querySelectorAll(".find-script-pick").forEach((row, at) => scriptPickPlus(row, mine[at], game, people));
   const tabs = document.createElement("div"); tabs.className = "find-script-tabs";
   const card = document.createElement("div"); card.className = "find-script-ticket";
   const show = (parlay, edit) => {
@@ -307,16 +356,17 @@ function scriptBetsBlock(bets, group, game, people, keep = {}) {
     });
     card.append(go);
   };
-  const sizes = [...new Set([...(group.name === "Both teams" ? [2, 3, 4] : [1, 2, 3, 4]), ...group.parlays.map((parlay) => parlay.size)])].sort((a, b) => a - b);
+  const multi = group.parlays.filter((parlay) => parlay.size > 1);
+  const sizes = [...new Set([2, 3, 4, ...multi.map((parlay) => parlay.size)])].sort((a, b) => a - b);
   sizes.forEach((size) => {
-    const parlay = group.parlays.find((row) => row.size === size), tab = document.createElement("button"); tab.type = "button"; tab.dataset.size = size; tab.textContent = size === 1 ? "Single" : `${size} legs`;
+    const parlay = multi.find((row) => row.size === size), tab = document.createElement("button"); tab.type = "button"; tab.dataset.size = size; tab.textContent = `${size} legs`;
     if (parlay) { tab.dataset.sig = scriptRecSig(parlay.legs.map((at) => ({ ...bets.picks[at], match: game.match }))); Object.assign(tab.dataset, scriptRecInfo(bets, parlay)); }
     if (parlay) tab.addEventListener("click", (event) => { event.preventDefault(); keep[group.name] = size; show(parlay); }); else { tab.disabled = true; tab.title = "Not enough bets clear their price for this size"; }
     tabs.append(tab);
   });
   block.append(tabs);
-  if (group.parlays.length) { block.append(card); show(group.parlays.find((parlay) => parlay.size === keep[group.name]) || group.parlays[0]); }
-  else { const none = document.createElement("p"); none.className = "find-script-why"; none.textContent = mine.length ? "Nothing here makes the recommended list tonight. The good bets above still clear their price." : "No star here has a prop tonight whose record clears its price."; block.append(none); }
+  if (multi.length) { block.append(card); show(multi.find((parlay) => parlay.size === keep[group.name]) || multi[0]); }
+  else if (!group.parlays.length) { const none = document.createElement("p"); none.className = "find-script-why"; none.textContent = mine.length ? "Nothing here makes the recommended list tonight. The good bets above still clear their price." : "No star here has a prop tonight whose record clears its price."; block.append(none); }
   return block;
 }
 
