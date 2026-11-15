@@ -158,7 +158,55 @@ function propTabs(layout) {
   return slugs;
 }
 
+function pgaKeep(name) {
+  const low = String(name || "").toLowerCase();
+  return low === "win only" || low === "top 5" || low === "top 10" || low === "top 20" || low.startsWith("3 ball") || low.includes("matchbet");
+}
+
+function pgaSay(name, runner) {
+  const low = String(name || "").toLowerCase();
+  if (low === "win only") return `${runner} to win the tournament`;
+  if (low === "top 5" || low === "top 10" || low === "top 20") return `${runner} ${low}`;
+  if (low.startsWith("3 ball")) return `${runner} to win the 3-ball`;
+  return `${runner} to win the match`;
+}
+
+async function pgaOffer(game) {
+  const url = `https://sbapi.nj.sportsbook.fanduel.com/api/content-managed-page?page=SPORT&eventTypeId=3&pbHorizontal=false&_ak=${AK}&timezone=America/New_York`;
+  const response = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36", Accept: "application/json,text/plain,*/*", Referer: "https://sportsbook.fanduel.com/" } });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const data = await response.json();
+  const attachments = data.attachments || {};
+  const title = String(game.match || "").toLowerCase();
+  const ids = new Set([String(game.id || "")]);
+  Object.values(attachments.events || {}).forEach((event) => {
+    if (!event) return;
+    const comp = (attachments.competitions || {})[String(event.competitionId || "")] || {};
+    const name = String(comp.name || event.name || "").toLowerCase();
+    if (name && (name === title || title.includes(name) || name.includes(title))) ids.add(String(event.eventId || ""));
+  });
+  const rows = [];
+  const seen = new Set();
+  Object.values(attachments.markets || {}).forEach((market) => {
+    if (!market || !ids.has(String(market.eventId || ""))) return;
+    if (String(market.marketStatus || "OPEN").toUpperCase() !== "OPEN") return;
+    const name = String(market.marketName || "");
+    if (!pgaKeep(name)) return;
+    (market.runners || []).forEach((runner) => {
+      const odds = Number.parseInt((((runner.winRunnerOdds || {}).americanDisplayOdds || {}).americanOdds), 10);
+      const runnerName = String(runner.runnerName || "").trim();
+      if (String(runner.runnerStatus || "ACTIVE").toUpperCase() !== "ACTIVE" || !runnerName || !Number.isFinite(odds) || odds < -2000 || odds > 5000) return;
+      const key = `${name}|${runnerName}|${odds}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      rows.push({ market: name, runner: runnerName, label: pgaSay(name, runnerName), odds });
+    });
+  });
+  return { rows, live: false };
+}
+
 async function offerLegs(game) {
+  if (game.sport === "PGA") return pgaOffer(game);
   if (Array.isArray(game.props) && game.props.length) return { rows: game.props.filter((leg) => leg && typeof leg === "object"), live: !!game.live };
   const first = await eventPage(game.id, "popular");
   const pages = [first];

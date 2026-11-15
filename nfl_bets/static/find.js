@@ -2,6 +2,18 @@
 
 const parlayPick = new Map(), parlayLeg = new Map(), parlayKey = (bet) => [bet.label, bet.odds, bet.match, bet.kickoff].join("|");
 
+function legLoose(bet) {
+  const raw = String(bet.label || "").split(/\s+—\s+/)[0].trim();
+  const market = String(bet.market || "").replace(/^alt(?:ernate)?\s+/i, "").trim();
+  const game = typeof gameShort === "function" ? gameShort(bet.match) : "";
+  if (/^(over|under)(\s+[\d.]+)?$/i.test(raw)) return { who: game, prop: `${raw} ${market}`.trim() };
+  const cut = raw.match(/^(.*?)\s+(\d+\+.*|(?:over|under)\b.*|anytime\b.*|first\b.*|to\s+(?:win|score|record)\b.*)$/i);
+  const name = cut ? cut[1].trim() : "";
+  const words = name.split(/\s+/).filter(Boolean);
+  if (name && words.length >= 2 && words.length <= 4) return { who: name, prop: cut[2].trim() };
+  return { who: game, prop: raw };
+}
+
 function paintParlay() {
   document.querySelectorAll(".find-roster > button.find-parlay").forEach((node) => { node.hidden = parlayPick.size < 2; node.textContent = parlayPick.size < 2 ? "Build a parlay" : `Build a ${parlayPick.size}-leg parlay`; }); document.querySelectorAll(".find-list > button.find-parlay, .find-profile > button.find-parlay").forEach((node) => { const on = parlayPick.has(node.dataset.key); node.textContent = on ? "In the parlay" : "Add to the parlay"; node.disabled = on; }); document.querySelectorAll("button.find-leg").forEach((node) => { const on = parlayLeg.has(node.dataset.key); node.classList.toggle("on", on); node.textContent = on ? "In the parlay" : "Add this leg"; });
   document.querySelectorAll(".find-tray").forEach((tray) => {
@@ -12,7 +24,7 @@ function paintParlay() {
     const row = document.createElement("div"); row.className = "find-row"; const top = document.createElement("div"); top.className = "find-in"; const name = document.createElement("button"); name.type = "button"; name.className = "find-name"; name.textContent = person.name; name.dataset.key = person.key; const out = document.createElement("button"); out.type = "button"; out.className = "find-out"; const bare = ![...parlayLeg.values()].some((bet) => String(bet.label || "").startsWith(person.name)); out.textContent = bare ? "×" : "Take out"; if (bare) { out.classList.add("find-x"); out.setAttribute("aria-label", `Take out ${person.name}`); } out.addEventListener("click", () => { parlayPick.delete(person.key); [...parlayLeg.entries()].forEach(([key, bet]) => { if (String(bet.label || "").startsWith(person.name)) parlayLeg.delete(key); }); document.querySelectorAll(".find-names button").forEach((node) => { if (node.textContent === person.name) { node.classList.remove("on"); node.setAttribute("aria-pressed", "false"); } }); paintParlay(); }); top.append(name, out); row.append(top); if (bare) { const hint = document.createElement("button"); hint.type = "button"; hint.className = "find-pick-hint"; const want = typeof shotWant !== "undefined" && shotWant.get(person.key); hint.textContent = want ? `${want.charAt(0).toUpperCase()}${want.slice(1)} · tap to pick the line ▸` : `Tap ${person.name} to pick the bet ▸`; hint.addEventListener("click", () => name.click()); row.append(hint); }
     const mine = [...parlayLeg.entries()].filter(([, bet]) => String(bet.label || "").startsWith(person.name)); mine.forEach(([key, bet]) => { const line = document.createElement("div"); line.className = "find-chose"; const said = document.createElement("span"); const price = Number(bet.odds); const rest = String(bet.label || "").replace(person.name, "").split(/\s+—\s+/)[0].trim(); const market = String(bet.market || "").replace(person.name, "").replace(/^\s*-\s*/, "").trim(); const what = typeof legSwapWhat === "function" ? legSwapWhat(person, bet) : /^most\s/i.test(market) && !/\d/.test(rest) ? market : !rest || /^(over|under)(\s+[\d.]+)?$/i.test(rest) ? [rest, market.replace(/^alt\s+/i, "")].filter(Boolean).join(" ") : rest; said.innerHTML = [`<i class="who">${esc(person.name)}</i>`, what && `<i class="prop">${esc(what)}</i>`, `<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`].filter(Boolean).join(""); const change = document.createElement("button"); change.type = "button"; change.className = "find-out"; change.textContent = "×"; change.setAttribute("aria-label", "Remove this leg"); change.addEventListener("click", () => { parlayLeg.delete(key); if (![...parlayLeg.values()].some((bet) => String(bet.label || "").startsWith(person.name))) return out.click(); paintParlay(); }); const hist = document.createElement("button"); hist.type = "button"; hist.className = "find-leg-hist"; hist.dataset.key = key; hist.title = "Show the history"; hist.setAttribute("aria-label", `Show the history for ${person.name}`); line.append(said, hist, change); row.append(line); });
     tray.append(row); });
-  parlayLeg.forEach((bet, key) => { if ([...parlayPick.values()].some((person) => String(bet.label || "").startsWith(person.name))) return; const row = document.createElement("div"); row.className = "find-row find-loose"; const line = document.createElement("div"); line.className = "find-chose"; line.dataset.key = key; const said = document.createElement("span"); const price = Number(bet.odds); const rest = String(bet.label || "").split(/\s+—\s+/)[0]; const what = /^(over|under)(\s+[\d.]+)?$/i.test(rest) ? `${rest} ${String(bet.market || "").replace(/^alternate\s+/i, "").toLowerCase()}`.trim() : rest; const who = typeof gameShort === "function" ? gameShort(bet.match) : ""; said.innerHTML = [who && `<i class="who">${esc(who)}</i>`, `<i class="prop">${esc(what)}</i>`, `<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`].filter(Boolean).join(""); const out = document.createElement("button"); out.type = "button"; out.className = "find-out"; out.textContent = "×"; out.setAttribute("aria-label", "Remove this leg"); out.addEventListener("click", () => { parlayLeg.delete(key); paintParlay(); }); line.append(said, out); row.append(line); tray.append(row); });
+  parlayLeg.forEach((bet, key) => { if ([...parlayPick.values()].some((person) => String(bet.label || "").startsWith(person.name))) return; const row = document.createElement("div"); row.className = "find-row find-loose"; const line = document.createElement("div"); line.className = "find-chose"; line.dataset.key = key; const said = document.createElement("span"); const price = Number(bet.odds); const loose = legLoose(bet); said.innerHTML = [loose.who && `<i class="who">${esc(loose.who)}</i>`, `<i class="prop">${esc(loose.prop)}</i>`, `<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`].filter(Boolean).join(""); const out = document.createElement("button"); out.type = "button"; out.className = "find-out"; out.textContent = "×"; out.setAttribute("aria-label", "Remove this leg"); out.addEventListener("click", () => { parlayLeg.delete(key); paintParlay(); }); line.append(said, out); row.append(line); tray.append(row); });
   if (typeof parlayHint === "function") { const hint = parlayHint([...parlayLeg.values()]); if (hint) { if (hint.nodeType) tray.append(hint); else { const note = document.createElement("p"); note.className = "find-why"; note.textContent = hint; tray.append(note); } } } if (typeof trayStack === "function") trayStack(tray, [...parlayLeg.values()]); if (typeof clubTray === "function") clubTray(tray);
   if (!(parlayPick.size < 2 && parlayLeg.size < 1) && typeof paintTrayBuild === "function") paintTrayBuild(tray);
   if (typeof slimTray === "function") slimTray();
@@ -402,24 +414,46 @@ function paintRosterParlay(list, cards, count) {
   const hold = list.parentElement && list.parentElement.querySelector(".find-teams"); if (hold) { hold.querySelectorAll(".find-body").forEach((node) => { node.hidden = true; }); hold.querySelectorAll(".find-side-go").forEach((node) => node.classList.remove("on")); } heading.scrollIntoView({ block: "start" });
 }
 
+function pgaKind(bet) {
+  const market = String(bet.market || "").toLowerCase();
+  if (market === "win only" || market.includes("tournament")) return "To win the tournament";
+  if (market === "top 5" || market === "top 10" || market === "top 20") return market.replace("t", "T");
+  if (market.startsWith("3 ball")) return "3-ball";
+  if (market.includes("match")) return "Matchup";
+  return bet.market || "Bet";
+}
+
 function paintField(holder, game, people, list, hits) {
   const match = document.createElement("div");
-  match.className = "find-match";
+  match.className = "find-match find-pga";
   const when = document.createElement("p");
   when.className = "find-when";
   when.textContent = [game.match, game.kickoff && window.when ? `${window.when(game.kickoff)} ET` : ""].filter(Boolean).join(", ");
-  match.append(when);
-  const golfers = people.filter((person) => person.kind === "player" && (person.bets || []).some((bet) => bet.match === game.match && bet.kickoff === game.kickoff)).sort((a, b) => a.name.localeCompare(b.name));
-  golfers.forEach((person) => {
-    const n = person.bets.filter((bet) => bet.match === game.match && bet.kickoff === game.kickoff).length;
-    const pick = document.createElement("button");
-    pick.type = "button";
-    pick.className = "find-side-go";
-    pick.textContent = `${person.name}, ${n} ${n === 1 ? "bet" : "bets"}`;
-    pick.addEventListener("click", () => showFind(list, hits, person, null, people));
-    match.append(pick);
+  const note = document.createElement("p");
+  note.className = "quiet";
+  note.textContent = "Shortest price first. That is who the book likes for that bet.";
+  match.append(when, note);
+  const rows = [];
+  people.forEach((person) => { if (person.kind !== "player") return; (person.bets || []).forEach((bet) => { if (bet.match === game.match && bet.kickoff === game.kickoff) rows.push({ person, bet }); }); });
+  const groups = new Map();
+  rows.forEach((row) => { const name = pgaKind(row.bet); groups.set(name, (groups.get(name) || []).concat(row)); });
+  const order = ["To win the tournament", "Top 5", "Top 10", "Top 20", "Matchup", "3-ball"];
+  if (!rows.length) { const none = document.createElement("p"); none.className = "quiet"; none.textContent = "No player bets are posted for this tournament yet."; match.append(none); }
+  [...groups.keys()].sort((a, b) => ((order.indexOf(a) + 1) || 9) - ((order.indexOf(b) + 1) || 9)).forEach((name) => {
+    const head = document.createElement("p");
+    head.className = "find-pga-head";
+    head.textContent = name;
+    match.append(head);
+    groups.get(name).sort((a, b) => findRank(a.bet.odds) - findRank(b.bet.odds)).forEach(({ person, bet }) => {
+      const price = Number(bet.odds), shown = price > 0 ? `+${price}` : String(price);
+      const pick = document.createElement("button");
+      pick.type = "button";
+      pick.className = "find-side-go";
+      pick.textContent = `${person.name}, ${shown}`;
+      pick.addEventListener("click", () => showFind(list, hits, person, null, people));
+      match.append(pick);
+    });
   });
-  if (!golfers.length) { const none = document.createElement("p"); none.className = "quiet"; none.textContent = "No player bets are posted for this tournament yet."; match.append(none); }
   holder.append(match);
 }
 
@@ -451,12 +485,13 @@ function showFind(list, hits, person, roster, people, keep, kind) {
   hits.replaceChildren(); if (typeof clubTheme === "function") clubTheme(list, person);
   if (roster && !keep) fillRoster(roster, person, list, hits, people);
   const bets = (person.bets || []).slice().sort((a, b) => findRank(b.odds) - findRank(a.odds));
+  const golf = bets.some((bet) => bet.sport === "PGA");
   const holder = list.parentElement && list.parentElement.querySelector(".find-teams"); if (holder) { holder.replaceChildren(); holder.dataset.who = person.kind === "player" ? person.name : ""; const span = list.parentElement.querySelector(".find-span"); if (span) { span.classList.add("find-picked"); const go = span.querySelector(".find-games-go"); if (go) go.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); } const seen = new Set(); bets.forEach((bet) => { const key = `${bet.match}|${bet.kickoff}`; if (!bet.match || seen.has(key)) return; seen.add(key); paintMatch(holder, bet, people, list, hits, "shut"); }); }
   list.replaceChildren(); list.classList.remove("find-only-on");
   const heading = document.createElement("h3");
   heading.innerHTML = `${esc(person.name)}${person.kind === "player" && (person.pos || person.team) ? `, ${esc([person.pos, person.team].filter(Boolean).join(", "))}` : ""} <span class="rec-count">${!bets.length && person.kind === "player" ? "No bets posted" : `${bets.length} available bet${bets.length === 1 ? "" : "s"}`}</span>`;
-  if (person.kind === "player" && bets.length) { const add = document.createElement("button"); add.type = "button"; add.className = "find-parlay"; add.dataset.key = person.key; add.textContent = parlayPick.has(person.key) ? "In the parlay" : "Add to the parlay"; add.addEventListener("click", () => { if (parlayPick.has(person.key) || parlayPick.size >= 8) return; parlayPick.set(person.key, person); document.querySelectorAll(".find-names button").forEach((node) => { if (node.textContent === person.name) { const on = parlayPick.has(person.key); node.classList.toggle("on", on); node.setAttribute("aria-pressed", on ? "true" : "false"); } }); paintParlay(); });   list.append(add); add.style.scrollMarginTop = "5.5rem"; if (typeof gameScrollTo === "function") gameScrollTo(typeof gameAddLine === "function" ? gameAddLine(add, bets) : add); else setTimeout(() => { if (add.isConnected) add.scrollIntoView({ behavior: "smooth", block: "start" }); }, 60); }
-  if (person.kind === "player") { const profile = document.createElement("div"); profile.className = "find-profile"; const added = list.querySelector(":scope > button.find-parlay"); profile.append(heading); if (added) profile.append(added); list.append(profile); if (window.paintCard) paintCard(list, heading, person); heading.after = (...nodes) => profile.after(...nodes); } else list.append(heading);
+  if (person.kind === "player" && bets.length && !golf) { const add = document.createElement("button"); add.type = "button"; add.className = "find-parlay"; add.dataset.key = person.key; add.textContent = parlayPick.has(person.key) ? "In the parlay" : "Add to the parlay"; add.addEventListener("click", () => { if (parlayPick.has(person.key) || parlayPick.size >= 8) return; parlayPick.set(person.key, person); document.querySelectorAll(".find-names button").forEach((node) => { if (node.textContent === person.name) { const on = parlayPick.has(person.key); node.classList.toggle("on", on); node.setAttribute("aria-pressed", on ? "true" : "false"); } }); paintParlay(); });   list.append(add); add.style.scrollMarginTop = "5.5rem"; if (typeof gameScrollTo === "function") gameScrollTo(typeof gameAddLine === "function" ? gameAddLine(add, bets) : add); else setTimeout(() => { if (add.isConnected) add.scrollIntoView({ behavior: "smooth", block: "start" }); }, 60); }
+  if (person.kind === "player") { const profile = document.createElement("div"); profile.className = "find-profile"; const added = list.querySelector(":scope > button.find-parlay"); profile.append(heading); if (added) profile.append(added); list.append(profile); if (window.paintCard && !golf) paintCard(list, heading, person); heading.after = (...nodes) => profile.after(...nodes); } else list.append(heading);
   if (!bets.length) {
     if (person.kind === "player") return;
     const note = document.createElement("p");
@@ -464,7 +499,7 @@ function showFind(list, hits, person, roster, people, keep, kind) {
     list.append(note);
     return;
   }
-  if (person.kind === "player") return;
+  if (person.kind === "player" && !golf) return;
   bets.forEach((bet, index) => {
     const price = Number(bet.odds);
     const shown = price > 0 ? `+${price}` : String(price);
@@ -476,13 +511,13 @@ function showFind(list, hits, person, roster, people, keep, kind) {
     const line = document.createElement("p");
     line.className = "rec-gist";
     const when = bet.kickoff && typeof window.when === "function" ? `${window.when(bet.kickoff)} ET` : "";
-    const raw = String(bet.label || "").trim(), rest = raw.replace(person.name, "").trim(), market = String(bet.market || "").replace(person.name, "").replace(/^\s*-\s*/, "").trim(), unit = market.replace(/^(alt|alternate)\s+/i, ""), named = !rest || /^(over|under)$/i.test(rest), hasUnit = /pts|points|rebounds?|\brebs?\b|assists?|\basts?\b|threes?|yards?|goals?|shots?|steals?|blocks?/i.test(rest), said = !hasUnit && unit ? [person.name || raw, rest, unit].filter(Boolean).join(" ") : (named ? [person.name || raw, [rest, market].filter(Boolean).join(" ")].filter(Boolean).join(" ") : raw);
+    const raw = String(bet.label || "").trim(), rest = raw.replace(person.name, "").trim(), market = String(bet.market || "").replace(person.name, "").replace(/^\s*-\s*/, "").trim(), unit = market.replace(/^(alt|alternate)\s+/i, ""), named = !rest || /^(over|under)$/i.test(rest), hasUnit = /pts|points|rebounds?|\brebs?\b|assists?|\basts?\b|threes?|yards?|goals?|shots?|steals?|blocks?/i.test(rest), said = bet.sport === "PGA" ? raw : !hasUnit && unit ? [person.name || raw, rest, unit].filter(Boolean).join(" ") : (named ? [person.name || raw, [rest, market].filter(Boolean).join(" ")].filter(Boolean).join(" ") : raw);
     const prop = person.name && said.toLowerCase().startsWith(person.name.toLowerCase()) ? said.slice(person.name.length).trim() : said; const spot = [bet.match, when].filter(Boolean).join(", ");
     line.innerHTML = `${person.name ? `<i class="who">${esc(person.name)}</i>` : ""}${prop ? ` <i class="prop">${esc(prop)}</i>` : ""}${spot ? `<em>${esc(spot)}</em>` : ""}`;
     const leg = document.createElement("button"); leg.type = "button"; leg.className = "find-leg"; leg.dataset.key = parlayKey(bet); leg.textContent = parlayLeg.has(leg.dataset.key) ? "In the parlay" : "Add this leg"; if (parlayLeg.has(leg.dataset.key)) leg.classList.add("on"); leg.addEventListener("click", () => { if (parlayLeg.has(leg.dataset.key) || parlayLeg.size >= 8) return; parlayLeg.set(leg.dataset.key, bet); if (person.kind === "player" && !parlayPick.has(person.key) && parlayPick.size < 8) parlayPick.set(person.key, person); paintParlay(); }); const share = document.createElement("button"); share.type = "button"; share.className = "share-bet"; share.dataset.share = "rec"; const ticket = { title: said, american: price, impliedPct: findPct(price), game: bet.match || "", kickoff: bet.kickoff || "", legs: [{ label: said, odds: price, market: bet.market || "", kickoff: bet.kickoff || "" }] }; share.dataset.shareId = String((window.recTickets = window.recTickets || []).push({ ticket, name: said }) - 1); share.setAttribute("aria-label", "Share this bet"); row.append(head, line, leg, share);
     row.dataset.kind = typeof propKind === "function" ? ((full, seen) => full === "PRA" && seen !== "PRA" ? seen : full)(propKind(`${said} ${market}`), propKind(said)) : ""; row.dataset.odds = String(bet.odds || ""); row.dataset.market = market; list.append(row);
   });
-  if (typeof siftKinds === "function") siftKinds(list, kind); if (person.kind === "player") markFind(list, person.name, bets);
+  if (typeof siftKinds === "function") siftKinds(list, kind); if (person.kind === "player" && !golf) markFind(list, person.name, bets);
 }
 
 function markFind(list, name, bets) {
