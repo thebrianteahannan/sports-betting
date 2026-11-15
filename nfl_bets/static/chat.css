@@ -10,9 +10,16 @@
 #chat-panel[hidden] { display: none; }
 #chat-panel button { width: auto; min-height: 0; margin: 0; box-shadow: none; font-family: inherit; letter-spacing: 0; text-transform: none; cursor: pointer; }
 #chat-panel button:disabled { opacity: 0.45; cursor: default; }
-#chat-panel .chat-head { display: flex; align-items: center; gap: 0.4rem; padding: 0.7rem 0.75rem; border-bottom: 1px solid #1d2731; }
+#chat-panel .chat-head { position: relative; display: flex; align-items: center; gap: 0.4rem; padding: 0.7rem 0.75rem; border-bottom: 1px solid #1d2731; }
 #chat-panel .chat-title { flex: 1; min-width: 0; margin: 0; overflow: hidden; color: #e7c15a; font: 600 19px/1.2 "Oswald", sans-serif; letter-spacing: 0.03em; text-overflow: ellipsis; white-space: nowrap; }
-#chat-panel .chat-title i { display: block; color: #9aa6b2; font: 600 12px "Outfit", sans-serif; font-style: normal; letter-spacing: 0; }
+#chat-panel .chat-title i, #chat-panel .chat-people { display: block; width: auto; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: #9aa6b2; font: 600 12px "Outfit", sans-serif; font-style: normal; letter-spacing: 0; text-align: left; text-transform: none; }
+#chat-panel .chat-people:hover { color: #3dff6e; filter: none; }
+#chat-panel .chat-menu, #chat-panel .chat-people-list { position: absolute; top: calc(100% - 0.35rem); z-index: 3; padding: 0.3rem; border: 1px solid #2c3742; border-radius: 12px; background: #101820; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45); }
+#chat-panel .chat-menu { right: 3.1rem; display: flex; flex-direction: column; min-width: 8.5rem; }
+#chat-panel .chat-menu-go { width: 100%; padding: 0.55rem 0.75rem; border: 0; border-radius: 8px; background: transparent; color: #f4f7fb; font-size: 14px; font-weight: 700; text-align: left; }
+#chat-panel .chat-menu-go:hover { background: rgba(61, 255, 110, 0.1); color: #3dff6e; filter: none; }
+#chat-panel .chat-people-list { left: 2.7rem; min-width: 12rem; }
+#chat-panel .chat-people-list p { margin: 0; padding: 0.4rem 0.65rem; font-size: 14px; }
 #chat-panel .chat-icon { width: 2rem; height: 2rem; padding: 0; border: 1px solid #2c3742; border-radius: 8px; background: transparent; color: #d5deea; font-size: 1.1rem; line-height: 1; }
 #chat-panel .chat-icon:hover { border-color: #3dff6e; color: #3dff6e; }
 #chat-panel .chat-btn { padding: 0.35rem 0.7rem; border: 1px solid #3dff6e; border-radius: 999px; background: transparent; color: #3dff6e; font-size: 13px; font-weight: 700; }

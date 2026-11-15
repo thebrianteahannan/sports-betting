@@ -2,7 +2,7 @@
 
 const CHAT_REACTS = [["like", "👍", "Like"], ["fire", "🔥", "Fire"], ["fade", "👎", "Fade"]];
 const CHAT_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.6A8 8 0 1 1 21 12z"/></svg>`;
-const chat = { on: false, open: false, me: "", rooms: [], view: "list", room: null, msgs: [], reacts: [], reply: null, last: 0, friends: null, note: "", sharing: null, picking: false, shown: 0, sig: "" };
+const chat = { on: false, open: false, me: "", rooms: [], view: "list", room: null, msgs: [], reacts: [], reply: null, last: 0, friends: null, note: "", sharing: null, picking: false, shown: 0, sig: "", more: false, people: false };
 let chatListBusy = false, chatRoomBusy = false, chatTicks = 0;
 
 function chatNode(tag, className, text) {
@@ -145,7 +145,7 @@ async function chatMarkAll() {
 function chatHead(title, back, extra = []) {
   const head = chatNode("div", "chat-head");
   if (back) { const go = chatButton("←", back, "chat-icon"); go.setAttribute("aria-label", "Back"); head.append(go); }
-  head.append(chatNode("p", "chat-title", title), ...extra);
+  head.append(chatNode("div", "chat-title", title), ...extra);
   const shut = chatButton("×", () => chatToggle(false), "chat-icon");
   shut.setAttribute("aria-label", "Close chats");
   head.append(shut);
@@ -278,25 +278,49 @@ function chatRoomView() {
 function chatRoomHead() {
   const spot = document.querySelector("#chat-panel .chat-room-head"), room = chat.room;
   if (!spot || !room) return;
-  const sig = JSON.stringify([room.name, room.members]);
+  const sig = JSON.stringify([room.name, room.members, chat.more, chat.people]);
   if (spot.dataset.sig === sig) return;
   const extra = [];
   if (room.group) {
-    extra.push(chatButton("Add", () => { chat.view = "add"; chat.friends = null; chatPaint(); }, "chat-btn chat-btn-quiet"));
-    extra.push(chatButton("Rename", async () => {
-      const name = window.prompt("Name this group", room.name);
-      if (name == null) return;
-      try { chat.room = { ...chat.room, ...(await chatCall("/api/chat", { action: "rename", room: room.id, name })).room }; chatPaint(); chatLoad(); } catch (error) { chat.note = error.message; chatMsgsPaint(true); }
-    }, "chat-btn chat-btn-quiet"));
-    extra.push(chatButton("Leave", async () => {
-      if (!window.confirm(`Leave ${room.name}?`)) return;
-      try { await chatCall("/api/chat", { action: "leave", room: room.id }); chat.view = "list"; chat.room = null; chatPaint(); chatLoad(); } catch (error) { chat.note = error.message; chatMsgsPaint(true); }
-    }, "chat-btn chat-btn-quiet"));
+    const more = chatButton("···", (event) => { event.stopPropagation(); chat.more = !chat.more; chat.people = false; chatRoomHead(); }, "chat-icon");
+    more.setAttribute("aria-label", "Chat options");
+    more.setAttribute("aria-expanded", chat.more ? "true" : "false");
+    extra.push(more);
   }
-  const head = chatHead(room.name, () => { chat.view = "list"; chat.room = null; chatPaint(); chatLoad(); }, extra);
-  if (room.group) head.querySelector(".chat-title").append(chatNode("i", "", `${room.members.length} people`));
+  const head = chatHead(room.name, () => { chat.more = false; chat.people = false; chat.view = "list"; chat.room = null; chatPaint(); chatLoad(); }, extra);
+  if (room.group) {
+    const who = chatButton(`${room.members.length} ${room.members.length === 1 ? "person" : "people"}`, (event) => { event.stopPropagation(); chat.people = !chat.people; chat.more = false; chatRoomHead(); }, "chat-people");
+    who.setAttribute("aria-expanded", chat.people ? "true" : "false");
+    head.querySelector(".chat-title").append(who);
+  }
   spot.replaceChildren(...head.childNodes);
+  if (room.group && chat.more) spot.append(chatMoreMenu(room));
+  if (room.group && chat.people) spot.append(chatPeopleList(room));
   spot.dataset.sig = sig;
+}
+
+function chatMoreMenu(room) {
+  const menu = chatNode("div", "chat-menu");
+  menu.append(chatButton("Add", () => { chat.more = false; chat.view = "add"; chat.friends = null; chatPaint(); }, "chat-menu-go"));
+  menu.append(chatButton("Rename", async () => {
+    chat.more = false;
+    const name = window.prompt("Name this group", room.name);
+    if (name == null) { chatRoomHead(); return; }
+    try { chat.room = { ...chat.room, ...(await chatCall("/api/chat", { action: "rename", room: room.id, name })).room }; chatPaint(); chatLoad(); } catch (error) { chat.note = error.message; chatMsgsPaint(true); }
+  }, "chat-menu-go"));
+  menu.append(chatButton("Leave", async () => {
+    chat.more = false;
+    if (!window.confirm(`Leave ${room.name}?`)) { chatRoomHead(); return; }
+    try { await chatCall("/api/chat", { action: "leave", room: room.id }); chat.view = "list"; chat.room = null; chatPaint(); chatLoad(); } catch (error) { chat.note = error.message; chatMsgsPaint(true); }
+  }, "chat-menu-go"));
+  return menu;
+}
+
+function chatPeopleList(room) {
+  const box = chatNode("div", "chat-people-list");
+  const you = room.members.find((one) => one.id === chat.me), rest = room.members.filter((one) => one.id !== chat.me);
+  [you, ...rest].filter(Boolean).forEach((one) => box.append(chatNode("p", "", one.id === chat.me ? `${one.name} (you)` : one.name)));
+  return box;
 }
 
 function chatComposer() {
@@ -411,6 +435,13 @@ function chatMsgsPaint(force, toBottom) {
 }
 
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && chat.open) chatToggle(false); });
+document.addEventListener("click", (event) => {
+  if (!chat.more && !chat.people) return;
+  if (event.target.closest && event.target.closest(".chat-menu, .chat-people-list, .chat-people, [aria-label='Chat options']")) return;
+  chat.more = false;
+  chat.people = false;
+  if (chat.view === "room") chatRoomHead();
+});
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") chatLoad(); });
 setInterval(() => {
   chatTicks += 1;
