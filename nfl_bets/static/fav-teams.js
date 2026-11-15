@@ -1,6 +1,17 @@
 /** Favorite teams, saved on the account as "LEAGUE|Nickname". The parrot asks once; the home Recommended list can show only these teams. */
 
-let favLeague = "";
+let favLeague = "", favLogos = null;
+
+function favLogo(league, nick) {
+  if (!favLogos) return "";
+  const tail = String(nick || "").toLowerCase();
+  const key = Object.keys(favLogos).find((name) => {
+    if (!name.startsWith(`${league}|`)) return false;
+    const team = name.slice(league.length + 1).toLowerCase();
+    return team === tail || team.endsWith(` ${tail}`);
+  });
+  return key ? favLogos[key] : "";
+}
 
 function favTeamsHas(game) {
   const sport = String((game && game.sport) || "").toUpperCase(), sides = String((game && game.match) || "").split(/ @ | v /).map((side) => side.trim());
@@ -44,7 +55,9 @@ function favTeamsOpen(done) {
       team.type = "button";
       team.className = `fav-teams-team${pick.has(key) ? " on" : ""}`;
       team.style.setProperty("--fav", colors[0]);
-      team.textContent = nick;
+      const src = favLogo(favLeague, nick), dark = src.replace("/500/", "/500-dark/");
+      if (src) { const img = document.createElement("img"); img.alt = ""; img.src = dark || src; if (dark && dark !== src) img.addEventListener("error", () => { img.src = src; }, { once: true }); team.append(img); }
+      team.append(document.createTextNode(nick));
       team.setAttribute("aria-pressed", String(pick.has(key)));
       team.addEventListener("click", () => { if (!pick.delete(key)) pick.add(key); paint(); });
       return team;
@@ -57,6 +70,7 @@ function favTeamsOpen(done) {
   save.addEventListener("click", async () => { save.disabled = true; const ok = await favTeamsSave([...pick]); save.disabled = false; if (!ok) return; close(); if (done) done(true); });
   paint();
   document.body.append(box);
+  if (!favLogos) fetch("/api/logos").then((reply) => reply.json()).then((data) => { favLogos = data || {}; if (box.isConnected) paint(); }).catch((error) => { favLogos = {}; console.log("[fav-teams] could not load logos", error); });
 }
 
 function favTeamsProfile() {

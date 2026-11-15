@@ -39,7 +39,8 @@ body.home-games-on #who { top: var(--home-games-top); right: 16px; bottom: auto;
 #fav-teams .fav-teams-league { padding: 0.3rem 0.7rem; border: 1px solid #2a3a48; border-radius: 8px; background: transparent; color: #9fb3c8; font-size: 14px; font-weight: 800; }
 #fav-teams .fav-teams-league.on { border-color: #e7c15a; background: #e7c15a; color: #07090e; }
 #fav-teams .fav-teams-list { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
-#fav-teams .fav-teams-team { padding: 0.35rem 0.75rem 0.35rem 0.6rem; border: 1px solid #2a3a48; border-radius: 999px; background: #041018; box-shadow: inset 4px 0 0 var(--fav) !important; color: #c4cde0; font-size: 14px; font-weight: 700; }
+#fav-teams .fav-teams-team { display: inline-flex; align-items: center; gap: 6px; padding: 0.35rem 0.75rem 0.35rem 0.6rem; border: 1px solid #2a3a48; border-radius: 999px; background: #041018; box-shadow: inset 4px 0 0 var(--fav) !important; color: #c4cde0; font-size: 14px; font-weight: 700; }
+#fav-teams .fav-teams-team img { width: 18px; height: 18px; object-fit: contain; }
 #fav-teams .fav-teams-team.on { border-color: #3dff6e; background: rgba(61, 255, 110, 0.16); color: #f4f7fb; }
 #fav-teams .fav-teams-team.on::before { content: "✓ "; color: #3dff6e; }
 #fav-teams .fav-teams-do { display: flex; justify-content: flex-end; gap: 8px; margin: 0; }

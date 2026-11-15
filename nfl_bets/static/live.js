@@ -138,7 +138,9 @@ function liveHistory(rows, today) {
 }
 
 const liveLeagues = new Set((() => { try { return JSON.parse(localStorage.getItem("liveLeagues") || "[]"); } catch (error) { return []; } })());
-let liveLast = null, liveSpan = "today";
+const liveAsked = new URLSearchParams(location.search).get("span");
+let liveLast = null, liveSpan = liveAsked === "week" || liveAsked === "past" || liveAsked === "today" ? liveAsked : "today";
+if (liveAsked && !new URLSearchParams(location.search).get("game")) history.replaceState(null, "", location.pathname);
 const liveRecOpen = new Set(), liveHistOpen = new Set();
 document.addEventListener("toggle", (event) => { const key = event.target.dataset && event.target.dataset.hk; if (key) { if (event.target.open) liveHistOpen.add(key); else liveHistOpen.delete(key); } }, true);
 

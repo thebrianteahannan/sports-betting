@@ -105,7 +105,13 @@ async function liveWeek(board) {
 
 async function teamLogos() {
   const logos = {};
-  await Promise.all(LEAGUES.map(([sport, path]) => json(`${BASE}/${path}/teams`, 24 * 3600000).then((data) => (((((data.sports || [])[0] || {}).leagues || [])[0] || {}).teams || []).forEach(({ team = {} }) => { const logo = ((team.logos || [])[0] || {}).href; if (team.displayName && logo) logos[team.displayName] = logo; })).catch(() => null)));
+  const paths = [...LEAGUES, ["WNBA", "basketball/wnba"]];
+  await Promise.all(paths.map(([sport, path]) => json(`${BASE}/${path}/teams`, 24 * 3600000).then((data) => (((((data.sports || [])[0] || {}).leagues || [])[0] || {}).teams || []).forEach(({ team = {} }) => { const logo = ((team.logos || [])[0] || {}).href; if (team.displayName && logo) { logos[team.displayName] = logo; logos[`${sport}|${team.displayName}`] = logo; } })).catch(() => null)));
+  if (!Object.keys(logos).some((name) => name.startsWith("WNBA|") && name.endsWith(" Sun"))) {
+    const data = await json(`${BASE}/basketball/wnba/teams/18`, 24 * 3600000).catch(() => null);
+    const team = data && data.team, logo = team && ((team.logos || [])[0] || {}).href;
+    if (team && team.displayName && logo) { logos[team.displayName] = logo; logos[`WNBA|${team.displayName}`] = logo; }
+  }
   return logos;
 }
 
