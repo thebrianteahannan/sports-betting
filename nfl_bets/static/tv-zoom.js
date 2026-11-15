@@ -55,10 +55,16 @@ function hangPick(data) {
 }
 
 function hangOpen(pick) {
-  const box = document.getElementById("hang"), go = document.getElementById("hang-go");
+  const box = document.getElementById("hang"), go = document.getElementById("hang-go"), lazy = document.getElementById("hang-lazy"), die = document.getElementById("hang-die");
   if (!box || !go || !pick) return;
   go.textContent = pick.text;
   go.dataset.span = pick.span;
+  if (lazy) lazy.classList.remove("rolled");
+  const out = lazy && lazy.querySelector(".tv-lazy-out");
+  if (out) out.replaceChildren();
+  if (die) { die.disabled = false; die.innerHTML = tvLazyFace(5); }
+  const chats = box.querySelector('[data-hang="chat"]'), unread = typeof chatUnread === "function" ? chatUnread() : 0;
+  if (chats) chats.textContent = unread ? `Messages (${unread})` : "Messages";
   box.hidden = false;
   document.body.classList.add("hang-on");
   try { sessionStorage.setItem("hang-shut", "1"); } catch (error) {}
@@ -86,10 +92,49 @@ async function hangLook() {
   finally { hangBusy = false; }
 }
 
-document.getElementById("hang-x").addEventListener("click", (event) => { event.stopPropagation(); hangShut(); });
-document.getElementById("hang-go").addEventListener("click", () => {
+function hangGames() {
   const span = document.getElementById("hang-go").dataset.span === "week" ? "week" : "today";
   window.location.href = `/live?span=${span}`;
+}
+
+function hangMine() {
+  window.saveGone = false;
+  window.saveShut = false;
+  let tries = 0;
+  const wait = setInterval(() => {
+    const box = document.querySelector("#desk-glass-in .find-saved");
+    if (!box && ++tries < 40) return;
+    clearInterval(wait);
+    if (!box || typeof paintParlay !== "function") return;
+    paintParlay();
+    const saved = document.querySelector("#desk-glass-in .find-saved");
+    if (saved) saved.scrollIntoView({ block: "start" });
+  }, 150);
+}
+
+function hangAct(kind) {
+  hangShut();
+  if (kind === "games") { hangGames(); return; }
+  if (kind === "chat") { if (typeof chatToggle === "function") chatToggle(true); return; }
+  window.asking = true;
+  if (window.goFull) goFull();
+  if (kind === "mine") { window.saveGone = false; window.saveShut = false; }
+  if (window.birdMenu) birdMenu("find");
+  if (kind === "mine") hangMine();
+}
+
+document.getElementById("hang-x").addEventListener("click", (event) => { event.stopPropagation(); hangShut(); });
+document.getElementById("hang-go").addEventListener("click", hangGames);
+document.getElementById("hang-card").addEventListener("click", (event) => {
+  if (event.target.closest("#hang-die, #hang-lazy .tv-lazy-again")) {
+    const die = document.getElementById("hang-die"), held = tvTick.hold;
+    tvLazyRoll(die).then(() => { tvTick.hold = held; });
+    return;
+  }
+  if (event.target.closest("[data-lazy-open]") && tvLazy.pick) { hangShut(); tvTickOpen(tvLazy.pick); return; }
+  if (event.target.closest("[data-lazy-add]") && tvLazy.pick) { hangShut(); tvLazyAdd(tvLazy.pick); return; }
+  const act = event.target.closest("[data-hang]");
+  if (act) hangAct(act.dataset.hang);
 });
 ["pointerdown", "keydown", "wheel"].forEach((name) => document.addEventListener(name, (event) => {
   if (event.target.closest && event.target.closest("#hang")) return;

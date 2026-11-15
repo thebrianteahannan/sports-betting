@@ -47,6 +47,7 @@ async function chatLoad() {
   try {
     const data = await chatCall("/api/chat");
     chat.on = true; chat.me = data.me; chat.rooms = data.rooms || [];
+    if (chat.room && chat.view === "room" && chat.seen) { const row = chat.rooms.find((room) => room.id === chat.room.id); if (row) row.unread = chat.msgs.filter((msg) => !msg.gone && msg.from !== chat.me && msg.id > chat.seen).length; }
     if (chat.view === "list") chat.note = "";
   } catch (error) {
     if (chat.on) chat.note = error.message;
@@ -251,8 +252,21 @@ async function chatRoomLoad() {
     chat.note = error.message;
     if (/gone/.test(error.message)) { chat.view = "list"; chat.room = null; chatLoad(); }
   } finally { chatRoomBusy = false; }
+  chatMarkOpen();
   if (typeof chatGamesLoad === "function") chatGamesLoad();
   chatPaint();
+}
+
+function chatMarkOpen() {
+  if (!chat.open || chat.view !== "room" || !chat.room || document.visibilityState === "hidden") return;
+  const top = chat.msgs.reduce((n, msg) => msg.gone ? n : Math.max(n, msg.id || 0), 0);
+  if (!top || top <= (chat.seen || 0) || !chat.msgs.some((msg) => !msg.gone && msg.from !== chat.me && msg.id > (chat.seen || 0))) return;
+  const id = chat.room.id;
+  chat.seen = top;
+  const row = chat.rooms.find((room) => room.id === id);
+  if (row) row.unread = 0;
+  chatCall("/api/chat", { action: "seen", room: id }).catch((error) => console.log("[chat] could not mark the chat read", error));
+  chatBubble();
 }
 
 function chatRoomView() {

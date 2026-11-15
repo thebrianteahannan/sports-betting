@@ -514,8 +514,26 @@ body.tv-zoom-on #desk { z-index: 40; }
 #hang { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, 0.72); }
 #hang[hidden] { display: none; }
 body.hang-on #desk { z-index: 40; }
-#hang-card { position: relative; width: min(880px, 100%); min-height: min(320px, 70vh); border: 1px solid rgba(61, 255, 110, 0.55); border-radius: 16px; background: #07131a; box-shadow: 0 0 28px rgba(61, 255, 110, 0.25); overflow: hidden; }
-#hang-go { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 5.2rem 1.6rem 1.6rem; border: 0; border-radius: 16px; background: transparent; box-shadow: none; color: #f4f7fb; font-family: "Oswald", sans-serif; font-size: clamp(1.7rem, 4vw, 2.7rem); font-weight: 600; letter-spacing: 0.01em; line-height: 1.25; text-align: left; text-transform: none; cursor: pointer; }
+#hang-card { position: relative; width: min(720px, 100%); border: 1px solid rgba(61, 255, 110, 0.55); border-radius: 16px; background: #07131a; box-shadow: 0 0 28px rgba(61, 255, 110, 0.25); overflow: hidden; }
+#hang-body { display: flex; flex-direction: column; gap: 1.15rem; padding: 4.6rem 1.35rem 1.35rem; }
+#hang-title { margin: 0; color: #f4f7fb; font-family: "Oswald", sans-serif; font-size: clamp(1.7rem, 4vw, 2.45rem); font-weight: 600; letter-spacing: 0.01em; line-height: 1.15; text-align: left; text-transform: none; }
+#hang-go { width: 100%; margin: -0.35rem 0 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: #d7e2ea; font-family: "Outfit", sans-serif; font-size: 1.15rem; font-weight: 500; letter-spacing: 0; line-height: 1.35; text-align: left; text-transform: none; cursor: pointer; }
+#hang-go:hover { color: #3dff6e; filter: none; }
+#hang .tv-lazy { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.85rem 1rem; width: 100%; max-width: none; margin: 0; text-align: left; }
+#hang .tv-lazy-die { display: block; width: 5.2rem; height: 5.2rem; min-width: 5.2rem; min-height: 0; margin: 0; padding: 0.62rem; border: 0; border-radius: 1rem; background: linear-gradient(145deg, #ffffff, #d9e6de); box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.18), 0 0 24px rgba(61, 255, 110, 0.55), 0 10px 20px rgba(0, 0, 0, 0.55); color: inherit; font-size: 0; letter-spacing: 0; text-transform: none; cursor: pointer; }
+#hang .tv-lazy-die:disabled { opacity: 1; filter: none; cursor: wait; }
+#hang .tv-lazy.rolled .tv-lazy-die { width: 3.3rem; height: 3.3rem; min-width: 3.3rem; padding: 0.38rem; border-radius: 0.7rem; }
+#hang .hang-die-say { flex: 1; min-width: 12rem; margin: 0; color: #d7e2ea; font-family: "Outfit", sans-serif; font-size: 1.05rem; line-height: 1.4; }
+#hang .tv-lazy.rolled .hang-die-say { display: none; }
+#hang .tv-lazy-again { display: none; margin: 0; color: #3dff6e; font-family: "Rajdhani", sans-serif; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; }
+#hang .tv-lazy.rolled .tv-lazy-again { display: block; }
+#hang .tv-lazy-out { flex-basis: 100%; }
+#hang .tv-tick-open { margin-right: 0.4rem; }
+#hang-acts { display: flex; flex-wrap: wrap; gap: 0.55rem; }
+#hang-acts button { margin: 0; padding: 0.72rem 1rem; border: 0; border-radius: 10px; background: #3dff6e; color: #04140c; box-shadow: none; font-family: "Rajdhani", sans-serif; font-size: 1.15rem; font-weight: 700; letter-spacing: 0.03em; text-transform: none; }
+#hang-acts button:hover { background: #6bff92; filter: none; }
+#hang-acts button[data-hang="mine"], #hang-acts button[data-hang="chat"] { background: transparent; color: #3dff6e; border: 1px solid rgba(61, 255, 110, 0.7); }
+#hang-acts button[data-hang="mine"]:hover, #hang-acts button[data-hang="chat"]:hover { background: rgba(61, 255, 110, 0.12); }
 #tv-zoom #desk-glass #gate { padding-left: 4.6rem; }
 #tv-zoom #desk-glass { position: absolute; left: 0; top: 0; right: 0; bottom: 0; width: auto; height: auto; transform: none; overflow-x: hidden; overflow-y: auto; z-index: 1; }
 #tv-zoom #desk-glass #gate h2 { font-size: 40px; padding-left: 0; }
