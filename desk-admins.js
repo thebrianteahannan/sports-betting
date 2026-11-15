@@ -6,6 +6,26 @@ function createAdmins(readKey, writeKey) {
     return email === owner || Boolean(user && user.admin);
   }
 
+  function onlineOf(data) {
+    const now = Date.now() / 1000;
+    const seen = new Set();
+    Object.values(data.sessions || {}).forEach((session) => {
+      if (session && session.userId && Number(session.expires) >= now) seen.add(session.userId);
+    });
+    const by = {};
+    let none = 0;
+    let total = 0;
+    data.users.forEach((user) => {
+      if (!seen.has(user.id)) return;
+      total += 1;
+      const code = String(user.state || "").trim().toUpperCase();
+      if (!code) none += 1;
+      else by[code] = (by[code] || 0) + 1;
+    });
+    const states = Object.entries(by).map(([code, count]) => ({ code, count })).sort((a, b) => b.count - a.count || a.code.localeCompare(b.code));
+    return { total, none, states };
+  }
+
   function rows(users) {
     return (users || []).map((row) => ({
       name: row.name || "",
@@ -41,6 +61,7 @@ function createAdmins(readKey, writeKey) {
       open: Array.isArray(taste.open) ? taste.open : [],
       found: Array.isArray(taste.found) ? taste.found : [],
       search: Array.isArray(taste.search) ? taste.search : [],
+      trail: Array.isArray(taste.trail) ? taste.trail : [],
     };
   }
 
@@ -84,14 +105,49 @@ function createAdmins(readKey, writeKey) {
     return Number.isFinite(time) && time >= HABITS_SINCE;
   }
 
+  function staySay(ms) {
+    const sec = Math.max(1, Math.round((Number(ms) || 0) / 1000));
+    if (sec < 60) return `${sec} sec`;
+    return `${Math.round(sec / 60)} min`;
+  }
+
+  function habitWhen(at) {
+    const time = Date.parse(at || "");
+    if (!Number.isFinite(time)) return "";
+    return new Date(time).toLocaleString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" });
+  }
+
   function describe(user, parlays) {
     const taste = tasteOf(user);
-    const bits = [];
+    const lines = [];
     const built = parlayLine((parlays || []).filter((row) => fresh(/^p\d+$/.test(String(row.id)) ? Number(String(row.id).slice(1)) : Number(row.at))));
-    if (built) bits.push(built);
-    const looked = mode(taste.search.filter((row) => fresh(row.at)), (row) => String(row.q || "").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()));
-    if (looked) bits.push(`Searches ${looked} most.`);
-    return bits.join(" ") || "Nothing tracked yet.";
+    if (built) lines.push(built);
+    const made = mode(taste.found.filter((row) => fresh(row.at)), (row) => row.title || "");
+    if (made) lines.push(`Built ${made}.`);
+    const asked = taste.quiz.filter((row) => fresh(row.at)).slice(0, 2).map(quizLine);
+    if (asked.length) lines.push(`Asked for ${asked.join(", then ")}.`);
+    const looked = [...new Set(taste.search.filter((row) => fresh(row.at)).map((row) => String(row.q || "").replace(/\s+/g, " ").trim()).filter(Boolean))];
+    if (looked.length) lines.push(`Searched ${looked.slice(0, 6).join(", ")}.`);
+    const opened = mode(taste.open.filter((row) => fresh(row.at)), (row) => CARD_SAY[row.card] || "");
+    if (opened) lines.push(`Opens ${opened} most.`);
+    const trail = taste.trail.filter((row) => fresh(row.at));
+    const pages = {};
+    trail.filter((row) => row.kind === "page").forEach((row) => { pages[row.name] = (pages[row.name] || 0) + (Number(row.ms) || 0); });
+    const pageLine = Object.entries(pages).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([name, ms]) => `${name} ${staySay(ms)}`).join(". ");
+    if (pageLine) lines.push(`Pages: ${pageLine}.`);
+    const clicks = mode(trail.filter((row) => row.kind === "click"), (row) => row.name);
+    if (clicks) lines.push(`Clicks ${clicks} most.`);
+    const bets = mode(trail.filter((row) => row.kind === "bet"), (row) => row.name);
+    if (bets) lines.push(`Bets on ${bets}.`);
+    const recent = [];
+    trail.slice(0, 40).forEach((row) => {
+      if (row.kind === "page") return;
+      const when = habitWhen(row.at);
+      const line = `${when} ${row.kind === "bet" ? "bet" : "clicked"} ${row.name}`;
+      if (!recent.length || recent.at(-1) !== line) recent.push(line);
+    });
+    if (recent.length) lines.push(`Recent: ${recent.slice(0, 8).join(". ")}.`);
+    return lines.join("\n") || "Nothing tracked yet.";
   }
 
   async function parlaysOf(user) {
@@ -222,6 +278,27 @@ function createAdmins(readKey, writeKey) {
         await writeKey("bets/members.json", data);
         return { ok: true };
       }
+      if (kind === "trail") {
+        const data = await load();
+        const row = data.users.find((item) => item.id === user.id);
+        if (!row) return { ok: false };
+        const taste = tasteOf(row);
+        const now = Date.now();
+        (Array.isArray(detail.events) ? detail.events : []).slice(0, 20).forEach((event) => {
+          const type = ["page", "click", "bet"].includes(event.kind) ? event.kind : "";
+          const name = String(event.name || "").replace(/\s+/g, " ").trim().slice(0, 80);
+          const ms = Math.max(0, Math.min(30 * 60 * 1000, Number(event.ms) || 0));
+          if (!type || name.length < 2 || (type === "page" && ms < 3000)) return;
+          const prior = taste.trail.find((item) => item.kind === type && item.name === name && now - Date.parse(item.at || "") < 15000);
+          if (prior && type === "page") { prior.ms = Math.min(30 * 60 * 1000, (Number(prior.ms) || 0) + ms); prior.at = new Date().toISOString(); prior.part = event.part ? 1 : 0; return; }
+          if (prior) return;
+          taste.trail.unshift({ at: new Date().toISOString(), kind: type, name, ms: type === "page" ? ms : 0, part: event.part ? 1 : 0 });
+        });
+        taste.trail = taste.trail.slice(0, 160);
+        row.taste = taste;
+        await writeKey("bets/members.json", data);
+        return { ok: true };
+      }
       const slot = ["quiz", "open", "found", "search"].includes(kind) ? kind : "";
       if (!slot) return { ok: false };
       const data = await load();
@@ -250,7 +327,7 @@ function createAdmins(readKey, writeKey) {
       const data = await load();
       const archived = (await readKey("bets/archive.json")) || {};
       const tickets = Array.isArray(archived.tickets) ? archived.tickets : [];
-      return { users: rows(data.users), asks: asksOf(data), habits: await habitsOf(data), built: builtOf(data), strategies: strategiesOf(data), rates: ratesOf(data, tickets) };
+      return { users: rows(data.users), online: onlineOf(data), asks: asksOf(data), habits: await habitsOf(data), built: builtOf(data), strategies: strategiesOf(data), rates: ratesOf(data, tickets) };
     },
     noteTaste(user, kind, detail) {
       const run = tasteChain.then(() => saveTaste(user, kind, detail));
@@ -313,7 +390,7 @@ function createAdmins(readKey, writeKey) {
       if (!row) throw new Error("That member is not here.");
       row.admin = Boolean(admin);
       await writeKey("bets/members.json", data);
-      return { users: rows(data.users) };
+      return { users: rows(data.users), online: onlineOf(data) };
     },
   };
 }

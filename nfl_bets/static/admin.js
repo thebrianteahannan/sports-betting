@@ -9,7 +9,7 @@ function loginWhen(stamp) {
 }
 
 function showAdminTab(name) {
-  ["members", "habits", "notes", "laws", "errors"].forEach((id) => {
+  ["members", "notes", "laws", "errors"].forEach((id) => {
     const pane = document.getElementById(`admin-${id}`);
     if (pane) pane.hidden = id !== name;
     const button = document.querySelector(`[data-admin-tab="${id}"]`);
@@ -44,19 +44,77 @@ function adminCard(head, gist, lines, extra) {
   return `<div class="rec-bet"><b>${head}</b>${gist ? `<p class="rec-gist">${gist}</p>` : ""}${more}${extra || ""}</div>`;
 }
 
-function paintHabits(payload) {
-  const list = document.getElementById("admin-habits");
-  if (!list || !payload || !Array.isArray(payload.habits)) return;
-  const rows = payload.habits;
-  list.innerHTML = rows.length ? rows.map((row) => {
-    const recent = (row.recent || []).length ? [`Recent answers: ${row.recent.join("; ")}.`] : [];
-    return adminCard(esc(row.name || "Member"), `${esc(row.blurb || "")}<em>${esc(row.email || "")}</em>`, recent);
-  }).join("") : "<p>No members yet.</p>";
+function paintOnline(online) {
+  const box = document.getElementById("admin-online");
+  if (!box || !online) return;
+  const rows = online.states || [];
+  const total = Number(online.total) || 0;
+  const none = Number(online.none) || 0;
+  const say = total === 0 ? "Nobody is signed in." : total === 1 ? "1 person signed in." : `${total} people signed in.`;
+  const where = rows.map((row) => `${window.stateName ? stateName(row.code) : row.code} ${row.count}`);
+  if (none) where.push(none === 1 ? "1 with no state" : `${none} with no state`);
+  box.innerHTML = `<p class="quiet" id="admin-online-say"></p><div id="admin-online-map"></div><p class="quiet" id="admin-online-where"></p>`;
+  document.getElementById("admin-online-say").textContent = say;
+  document.getElementById("admin-online-where").textContent = where.length ? `${where.join(". ")}.` : "";
+  if (!box.dataset.bound) {
+    box.dataset.bound = "1";
+    box.addEventListener("click", (event) => {
+      const hit = event.target.closest("[data-code]");
+      if (!hit) return;
+      box.querySelectorAll("[data-code]").forEach((node) => node.classList.toggle("on", node.dataset.code === hit.dataset.code));
+    });
+  }
+  if (box._onlineWait) { box._onlineWait.disconnect(); box._onlineWait = null; }
+  if (!window.mountUsMap) return;
+  const counts = Object.fromEntries(rows.map((row) => [row.code, row.count]));
+  mountUsMap(document.getElementById("admin-online-map"), () => {
+    const map = document.getElementById("admin-online-map");
+    const svg = map && map.querySelector("svg");
+    if (!map || !svg) return;
+    map.querySelectorAll("[data-code]").forEach((node) => {
+      const code = node.dataset.code.toUpperCase();
+      const count = counts[code] || 0;
+      const name = window.stateName ? stateName(code) : code;
+      node.dataset.count = String(count);
+      node.setAttribute("role", "button");
+      node.setAttribute("aria-label", count ? `${name}, ${count}` : name);
+    });
+    const place = () => {
+      if (!map.isConnected || !svg.getBoundingClientRect().width) return false;
+      svg.querySelectorAll("text").forEach((node) => node.remove());
+      const best = new Map();
+      map.querySelectorAll("[data-code]").forEach((node) => {
+        const count = Number(node.dataset.count) || 0;
+        if (!count) return;
+        const spot = node.getBBox();
+        const area = spot.width * spot.height;
+        const prior = best.get(node.dataset.code);
+        if (!prior || area > prior.area) best.set(node.dataset.code, { area, spot, count });
+      });
+      best.forEach((item) => {
+        if (item.spot.width < 28 || item.spot.height < 18) return;
+        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        text.setAttribute("x", item.spot.x + item.spot.width / 2);
+        text.setAttribute("y", item.spot.y + item.spot.height / 2 + 5);
+        text.textContent = String(item.count);
+        svg.append(text);
+      });
+      return true;
+    };
+    if (place()) return;
+    const wait = new ResizeObserver(() => { if (place()) { wait.disconnect(); box._onlineWait = null; } });
+    box._onlineWait = wait;
+    wait.observe(map);
+  });
 }
+
+let adminHabits = [];
+let showAllHabits = false;
 
 function paintAdmin(payload) {
   paintRefresh();
-  paintHabits(payload);
+  paintOnline(payload && payload.online);
+  if (payload && Array.isArray(payload.habits)) adminHabits = payload.habits;
   const list = document.getElementById("admin-users");
   if (!list) return;
   const rows = (payload && payload.users) || [];
@@ -64,6 +122,7 @@ function paintAdmin(payload) {
     list.innerHTML = "<p>No members yet.</p>";
     return;
   }
+  const habits = new Map(adminHabits.map((row) => [String(row.email || "").toLowerCase(), row]));
   const admins = rows.filter((row) => row.admin).map((row) => row.name || row.email);
   const line = (row) => {
     const role = row.admin ? "Admin" : "Member";
@@ -71,12 +130,17 @@ function paintAdmin(payload) {
     const action = stay ? "" : `<button type="button" class="ghost" data-admin-email="${esc(row.email || "")}" data-admin-on="${row.admin ? "0" : "1"}">${row.admin ? "Remove" : "Make admin"}</button>`;
     return { role, action, row };
   };
-  const head = `<p class="quiet">Admins: ${esc(admins.join(", ") || "none")}.</p>`;
+  const head = `<label class="admin-habits-all"><input type="checkbox" id="admin-habits-all"${showAllHabits ? " checked" : ""}> Show all habits</label><p class="quiet">Admins: ${esc(admins.join(", ") || "none")}.</p>`;
   list.innerHTML = head + rows.map((row) => {
     const item = line(row);
+    const habit = habits.get(String(row.email || "").toLowerCase());
+    const lines = [];
+    if (habit && habit.blurb) String(habit.blurb).split("\n").forEach((line) => { const text = line.trim(); if (text) lines.push(text); });
+    if (habit && (habit.recent || []).length) lines.push(`Recent answers: ${habit.recent.join("; ")}.`);
     const gist = `${esc(item.row.email || "")}<em>${esc(planName(item.row.plan))} · ${esc(loginWhen(item.row.lastLogin))}</em>`;
-    return adminCard(`${esc(item.row.name || "Member")} · ${esc(item.role)}`, gist, [], item.action ? `<p class="pick-save">${item.action}</p>` : "");
+    return adminCard(`${esc(item.row.name || "Member")} · ${esc(item.role)}`, gist, lines, item.action ? `<p class="pick-save">${item.action}</p>` : "");
   }).join("");
+  if (showAllHabits) list.querySelectorAll(".rec-bet").forEach((card) => { if (card.querySelector(":scope > span")) card.classList.add("open"); });
 }
 
 async function setAdminRole(email, admin) {
@@ -115,7 +179,6 @@ function bindAdmin() {
     if (button) {
       if (button.dataset.adminTab === "experimental") { if (window.birdMenu) birdMenu("bets"); return; }
       showAdminTab(button.dataset.adminTab);
-      if (button.dataset.adminTab === "habits") loadAdmin();
       if (button.dataset.adminTab === "notes") loadNotes().catch((error) => { const msg = document.getElementById("note-msg"); if (msg) msg.textContent = String(error.message || error); });
       if (button.dataset.adminTab === "laws" && window.paintLaws) window.paintLaws();
     }
@@ -127,6 +190,13 @@ function bindAdmin() {
     if (bet && bet.querySelector(":scope > span")) bet.classList.toggle("open");
   });
   const users = document.getElementById("admin-users");
+  if (users) users.addEventListener("change", (event) => {
+    if (event.target.id !== "admin-habits-all") return;
+    showAllHabits = event.target.checked;
+    users.querySelectorAll(".rec-bet").forEach((card) => {
+      if (card.querySelector(":scope > span")) card.classList.toggle("open", showAllHabits);
+    });
+  });
   if (users) users.addEventListener("click", (event) => {
     const button = event.target.closest("[data-admin-email]");
     if (!button) return;

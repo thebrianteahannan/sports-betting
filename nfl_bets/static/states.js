@@ -195,6 +195,22 @@ document.getElementById("banner-x").addEventListener("click", () => {
   document.getElementById("banner").hidden = true;
   document.getElementById("banner-x").hidden = true;
 });
+function mountUsMap(node, ready) {
+  if (!node) return;
+  const draw = (text) => {
+    node.innerHTML = text;
+    node.querySelectorAll("path, circle").forEach((shape) => {
+      const code = (shape.getAttribute("class") || "").toLowerCase().split(/\s+/).find((bit) => STATE_LAW[bit.toUpperCase()] && !bit.includes("-"));
+      if (!code) return;
+      shape.dataset.code = code;
+    });
+    if (ready) ready();
+  };
+  if (lawsMap) { draw(lawsMap); return; }
+  fetch("/us-map.svg").then((response) => response.text()).then((text) => { lawsMap = text; draw(text); }).catch(() => { node.textContent = "The map did not load."; });
+}
+
+window.mountUsMap = mountUsMap;
 window.paintLaws = paintLaws;
 window.blockCollege = blockCollege;
 window.applyMember = applyMember;

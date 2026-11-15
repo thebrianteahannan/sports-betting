@@ -139,6 +139,8 @@
 #profile-admin .rec-bet b .stars { display: inline-flex; margin-left: 0.35rem; vertical-align: -0.12rem; }
 #profile-admin .rec-bet b .stars button { width: auto; height: auto; min-height: 0; padding: 0 0.05rem; font-size: 16px; line-height: 1; pointer-events: none; }
 #profile-admin .rec-bet .pick-save { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.45rem 0 0; }
+#admin-users .admin-habits-all { display: flex; align-items: center; gap: 0.45rem; margin: 0.15rem 0 0.7rem; color: #f4f7fb; font-size: 14px; font-weight: 700; cursor: pointer; }
+#admin-users .admin-habits-all input { width: 1.05rem; height: 1.05rem; min-height: 0; margin: 0; accent-color: #3dff6e; cursor: pointer; }
 #desk.tv-full #desk-glass #profile-admin .rec-bet button:not(.star),
 #desk.tv-full #desk-glass #profile-admin .rec-bet input { width: auto; height: auto; min-height: 0; margin: 0; padding: 0.28rem 0.6rem; font-size: 14px; }
 @media (min-width: 721px) {

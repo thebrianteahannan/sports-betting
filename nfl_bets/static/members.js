@@ -67,7 +67,7 @@ function showMember(payload) {
   who.innerHTML = `<button type="button" id="member-profile" aria-label="Profile" data-name="${esc(member.name)}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.5-3.1 4-4.6 7-4.6s5.5 1.5 7 4.6"/></svg></button>`;
   const heading = document.querySelector("#activity h2");
   window.memberAdmin = admin;
-  if (heading) heading.innerHTML = `${esc(member.name || "Your membership")}${admin ? `<span class="admin-tag">Admin</span>` : ""}`;
+  if (heading) heading.innerHTML = `${esc(member.name || "Your membership")}${admin ? `<a class="admin-tag" href="#profile-admin">Admin</a>` : ""}`;
   window.memberName = member.name || "";
   window.memberBorn = member.born || "";
   window.memberState = member.state || "";
@@ -172,6 +172,13 @@ window.fetch = async function memberAwareFetch(url, options) {
 
 document.getElementById("who").addEventListener("click", (event) => {
   if (event.target.closest("#member-profile")) { const desk = document.getElementById("desk"); if (desk && desk.classList.contains("tv-full") && document.querySelector("#desk-glass-in > #pane-profile:not([hidden])")) { document.getElementById("desk-back").click(); if (document.querySelector("#desk-glass-in > #pane-profile:not([hidden])")) { showTab("today"); setTimeout(() => document.getElementById("desk-home").click()); } return; } goFull(); showTab("profile"); } else if (event.target.closest("#gate-profile")) { goFull(); showGateMode("login"); if (window.tvTickStay) tvTickStay(); else if (window.tvTickRest) tvTickRest(); }
+});
+document.addEventListener("click", (event) => {
+  if (!event.target.closest("a.admin-tag")) return;
+  const box = document.getElementById("profile-admin");
+  if (!box || box.hidden) return;
+  event.preventDefault();
+  box.scrollIntoView({ block: "start", behavior: "smooth" });
 });
 function calledName() {
   return String(window.memberName || "").trim().split(/\s+/)[0];
@@ -301,7 +308,7 @@ async function saveCalledName(raw) {
   if (!response.ok) return;
   window.memberName = (payload.member && payload.member.name) || "";
   const heading = document.querySelector("#activity h2");
-  if (heading) heading.innerHTML = `${esc(window.memberName || "Your membership")}${window.memberAdmin ? `<span class="admin-tag">Admin</span>` : ""}`;
+  if (heading) heading.innerHTML = `${esc(window.memberName || "Your membership")}${window.memberAdmin ? `<a class="admin-tag" href="#profile-admin">Admin</a>` : ""}`;
   const call = document.getElementById("call-name");
   if (call) call.value = window.memberName;
   const who = document.querySelector("#member-profile");
