@@ -229,7 +229,7 @@ function homeGameRows(games) {
 
 function homeGamesLeft() {
   const now = Date.now();
-  return homeGamesList.some((game) => Date.parse(game.kickoff || "") > now);
+  return homeGamesList.some((game) => { const kick = Date.parse(game.kickoff || ""); return kick > now || (game.sport === "PGA" && kick > now - 5 * 24 * 60 * 60 * 1000); });
 }
 
 function homeGamesTabs(box, games) {
@@ -254,7 +254,7 @@ function homeGamesPaint() {
   let box = document.getElementById("desk-games");
   if (!box) { box = document.createElement("div"); box.id = "desk-games"; box.hidden = true; desk.append(box); homeGamesGrow(box); }
   const guest = document.body.classList.contains("needs-member");
-  const now = Date.now(), left = homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now), fresh = typeof sharedUnopened === "function" ? sharedUnopened() : [];
+  const now = Date.now(), open = (game) => { const kick = Date.parse(game.kickoff || ""); return kick > now || (game.sport === "PGA" && kick > now - 5 * 24 * 60 * 60 * 1000); }, left = homeGamesList.filter(open), fresh = typeof sharedUnopened === "function" ? sharedUnopened() : [];
   if (!left.length && !guest) homeLaterLoad();
   const games = left.length ? left : [...homeLater.live.map((game) => ({ match: `${game.away.name} @ ${game.home.name}`, kickoff: game.when, sport: game.sport })), ...homeLater.tomorrow];
   void bg.offsetWidth;

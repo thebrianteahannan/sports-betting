@@ -47,9 +47,11 @@ function etKey(date) {
   return `${bag.year}-${bag.month}-${bag.day}`;
 }
 
-function inWindow(iso, span) {
+function inWindow(iso, span, sport) {
   const kick = Date.parse(iso || "");
-  if (!Number.isFinite(kick) || kick <= Date.now()) return false;
+  if (!Number.isFinite(kick)) return false;
+  if (sport === "PGA" && kick > Date.now() - 5 * 24 * 60 * 60 * 1000) return true;
+  if (kick <= Date.now()) return false;
   const kickDay = etKey(new Date(kick));
   const nowDay = etKey(new Date());
   if (span !== "week") return kickDay === nowDay;
@@ -234,7 +236,7 @@ function slate(games, sports, ids, span) {
     const sport = String(game.sport || "");
     if (!buckets[sport]) return;
     if (wanted.size && !wanted.has(String(game.id || ""))) return;
-    if (!inWindow(game.kickoff, span)) return;
+    if (!inWindow(game.kickoff, span, sport)) return;
     buckets[sport].push(game);
   });
   Object.values(buckets).forEach((rows) => rows.sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff)));

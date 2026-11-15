@@ -79,7 +79,7 @@ def _run() -> dict[str, Any]:
     games = [
         _decorate(raw, index, articles)
         for raw in raw_games
-        if _still_bettable(str(raw.get("kickoff") or ""), now)
+        if str(raw.get("sport") or "") == "PGA" or _still_bettable(str(raw.get("kickoff") or ""), now)
     ]
     games.sort(key=lambda game: (-int(game.get("lookScore") or 0), game.get("kickoff") or ""))
     weeks = sorted({

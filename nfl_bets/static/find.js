@@ -94,7 +94,7 @@ function loadedGames(people, span) {
   const buckets = { today: new Map(), week: new Map() };
   people.forEach((person) => (person.bets || []).forEach((bet) => {
     const kick = Date.parse(bet.kickoff || "");
-    if (!bet.match || kick !== kick || (kick <= now - 6 * 60 * 60 * 1000 && !(typeof saveSeekGame === "string" && bet.match === saveSeekGame)) || !keep.test(bet.sport || "")) return;
+    if (!bet.match || kick !== kick || (kick <= now - 6 * 60 * 60 * 1000 && bet.sport !== "PGA" && !(typeof saveSeekGame === "string" && bet.match === saveSeekGame)) || (bet.sport === "PGA" && kick <= now - 5 * 24 * 60 * 60 * 1000) || !keep.test(bet.sport || "")) return;
     const day = fmt.format(kick), key = `${bet.match}|${bet.kickoff}`;
     const bucket = day === today || kick <= now ? buckets.today : day > today && day <= end ? buckets.week : null;
     if (bucket && !bucket.has(key)) bucket.set(key, bet);

@@ -177,7 +177,7 @@ function livePaint(data, quiet) {
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => liveSlide.set(node.dataset.slide, node.scrollLeft));
   const was = new Map([...box.querySelectorAll("[data-k]")].map((node) => [node.dataset.k, node.textContent])), games = new Set([...box.querySelectorAll(".live-game[data-id]")].map((node) => node.dataset.id)), first = quiet || !box.querySelector(".live-game, h2");
   const keep = (game) => !liveLeagues.size || liveLeagues.has(game.sport), live = (data.live || []).filter(keep), done = (data.done || []).filter(keep);
-  const board = (data.week || []).filter(keep), today = liveDayKey(Date.now()), week = board.filter((game) => liveDayKey(game.kickoff) > today), soon = board.filter((game) => liveDayKey(game.kickoff) === today && Date.parse(game.kickoff) > Date.now());
+  const board = (data.week || []).filter(keep), today = liveDayKey(Date.now()), pgaOn = (game) => game.sport === "PGA" && Date.parse(game.kickoff) <= Date.now(), week = board.filter((game) => liveDayKey(game.kickoff) > today || pgaOn(game)), soon = board.filter((game) => (liveDayKey(game.kickoff) === today && Date.parse(game.kickoff) > Date.now()) || pgaOn(game));
   const next = (data.week || []).length ? (soon.length ? `<h2>Up next today, ${soon.length} ${soon.length === 1 ? "game" : "games"}</h2>${soon.map(liveSoonCard).join("")}` : "") : liveNext((data.next || []).filter(keep));
   const past = done.filter((game) => liveDayKey(game.when) !== today), ended = done.filter((game) => liveDayKey(game.when) === today);
   const final = (day, list) => list.length ? `<h2>Final ${day}, ${list.length} ${list.length === 1 ? "game" : "games"}</h2>${list.map(liveGame).join("")}` : "";

@@ -44,13 +44,13 @@ function liveSports() {
   return list.filter((sport) => !block || (sport !== "NCAAF" && sport !== "NCAAB"));
 }
 
-function sportOn(name) { const games = (window.state && window.state.board && window.state.board.games) || []; return games.some((game) => (!name || game.sport === name) && Number.isFinite(Date.parse(game.kickoff || "")) && choiceWindow(Date.parse(game.kickoff))); }
+function sportOn(name) { const games = (window.state && window.state.board && window.state.board.games) || []; return games.some((game) => { const kick = Date.parse(game.kickoff || ""); return (!name || game.sport === name) && Number.isFinite(kick) && (game.sport === "PGA" ? kick > Date.now() - 5 * 24 * 60 * 60 * 1000 : choiceWindow(kick)); }); }
 function chosenSports() { const open = liveSports().filter(sportOn); return choice.sports.length ? choice.sports.filter((sport) => open.includes(sport)) : open; }
 
 function gameRows() {
   const board = window.state && window.state.board; if (!board) return [];
   const sports = new Set(choice.sports.length ? chosenSports() : liveSports());
-  return (board.games || []).filter((game) => sports.has(game.sport) && Number.isFinite(Date.parse(game.kickoff || "")) && Date.parse(game.kickoff) > Date.now() && choiceWindow(Date.parse(game.kickoff))).sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
+  return (board.games || []).filter((game) => { const kick = Date.parse(game.kickoff || ""); return sports.has(game.sport) && Number.isFinite(kick) && (game.sport === "PGA" ? kick > Date.now() - 5 * 24 * 60 * 60 * 1000 : kick > Date.now() && choiceWindow(kick)); }).sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
 }
 function gameLabel(game) { const clock = typeof when === "function" ? when(game.kickoff) : ""; return `${choice.sports.length === 1 ? "" : `${game.sport} · `}${game.match}${clock ? `, ${clock}` : ""}`; }
 function paintGames() {

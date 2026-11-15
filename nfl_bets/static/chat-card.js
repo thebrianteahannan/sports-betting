@@ -39,6 +39,17 @@ function chatGamesLoad() {
   }).catch(() => {}).finally(() => { chatGamesJob = null; });
 }
 
+function chatLegSay(leg) {
+  const head = String(leg.label || "").split(/\s+—\s+/)[0].trim();
+  if (/touchdown|\btd\b/i.test(head)) return head;
+  const market = String(leg.market || "").toLowerCase();
+  if (/any ?time touchdown/.test(market)) return `${head} anytime touchdown`;
+  if (/first touchdown/.test(market)) return `${head} first touchdown`;
+  const more = market.match(/to score (\d+)\+ touchdowns/);
+  if (more) return `${head} ${more[1]}+ touchdowns`;
+  return head;
+}
+
 function chatLegMark(leg) {
   if (typeof liveLegState !== "function" || typeof liveMine !== "function" || typeof liveLegRead !== "function") return null;
   const game = chatGames.games.find((one) => liveMine(one, [leg]).length);
@@ -98,7 +109,7 @@ function chatBetCard(msg) {
     const box = chatNode("div", "chat-bet-part"), price = chatPrice(part.legs), marks = part.legs.map(chatLegMark);
     part.legs.forEach((leg, at) => {
       const line = chatNode("p", "chat-bet-leg"), mark = marks[at], odds = Number(leg.odds);
-      line.append(chatNode("span", "", leg.label), chatNode("i", "", odds > 0 ? `+${odds}` : odds ? String(odds) : ""));
+      line.append(chatNode("span", "", chatLegSay(leg)), chatNode("i", "", odds > 0 ? `+${odds}` : odds ? String(odds) : ""));
       if (mark) line.append(chatNode("em", `chat-mark ${mark.state || (mark.level ? `pace-${mark.level}` : "")}`, mark.state === "hit" ? "Hit" : mark.state === "lost" ? "Missed" : mark.say));
       box.append(line);
     });
