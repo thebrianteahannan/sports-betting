@@ -512,7 +512,7 @@ body.tv-zoom-on #desk { z-index: 40; }
 #tv-zoom-card .tv-zoom-bird img { position: absolute; top: 0; left: -66.07%; width: 214.29%; height: auto; max-width: none; }
 #tv-zoom-x { position: absolute; top: 10px; right: 10px; z-index: 2; width: 2.4rem; height: 2.4rem; min-height: 0; margin: 0; padding: 0; border: 1px solid rgba(61, 255, 110, 0.85); border-radius: 8px; background: rgba(4, 16, 12, 0.92); color: #3dff6e; box-shadow: none; font-size: 1.6rem; line-height: 1; letter-spacing: 0; text-transform: none; cursor: pointer; }
 #tv-zoom #desk-glass #gate { padding-left: 4.6rem; }
-#tv-zoom #desk-glass { position: absolute; left: 0; top: 0; right: 0; bottom: 0; width: auto; height: auto; transform: none; overflow: auto; z-index: 1; }
+#tv-zoom #desk-glass { position: absolute; left: 0; top: 0; right: 0; bottom: 0; width: auto; height: auto; transform: none; overflow-x: hidden; overflow-y: auto; z-index: 1; }
 #tv-zoom #desk-glass #gate h2 { font-size: 40px; padding-left: 0; }
 #tv-zoom #desk-glass #gate .aim, #tv-zoom #desk-glass #gate p { font-size: 18px; }
 #tv-zoom .tv-how-say, #tv-zoom .tv-lazy-ask { font-size: 1.25rem; }
