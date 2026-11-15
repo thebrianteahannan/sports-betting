@@ -387,7 +387,9 @@
 #desk-menu .desk-face { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; background: #05080c; transform: scaleX(-1); }
 #desk-menu img { position: absolute; top: 0; left: -66.07%; width: 214.29%; height: auto; max-width: none; pointer-events: none; }
 #bird-line.pow, #desk.tv-full #desk-glass #bird-line.pow { width: fit-content; margin: 0.6rem auto 0; padding: 0.1rem 0.7rem 0.15rem; border: 4px solid #10140c; border-radius: 14px; background: #3dff6e; color: #10140c; font-family: "Oswald", sans-serif; font-size: 58px; font-weight: 600; letter-spacing: 0.04em; line-height: 1; text-transform: none; transform: rotate(-8deg); box-shadow: 6px 6px 0 #10140c, 0 0 22px rgba(61, 255, 110, 0.7); animation: squawk-pow 0.35s ease-out; }
-#bird-line.pow::before { content: none; }
+#bird-pow { position: relative; }
+#bird-pow::before, #bird-line.pow::before { content: "Not a\A sports\A book"; position: absolute; left: -3.7rem; top: -1.85rem; z-index: 2; display: grid; place-items: center; box-sizing: border-box; width: 4.5rem; height: 4.5rem; margin: 0; padding: 0.85rem 0.55rem 0.65rem; border: 0; background: #ff2a2a; color: #fff; font-family: "Oswald", sans-serif; font-size: 12px; font-weight: 600; line-height: 0.86; letter-spacing: 0.02em; text-align: center; text-transform: uppercase; white-space: pre; pointer-events: none; transform: rotate(14deg); clip-path: polygon(50% 0%, 63% 11%, 75% 6%, 82% 20%, 98% 25%, 89% 37%, 100% 50%, 89% 63%, 98% 75%, 82% 80%, 75% 94%, 63% 89%, 50% 100%, 37% 89%, 25% 94%, 18% 80%, 2% 75%, 11% 63%, 0% 50%, 11% 37%, 2% 25%, 18% 20%, 25% 6%, 37% 11%); filter: drop-shadow(1px 2px 0 #3a0000); animation: none; }
+#desk.tv-full #desk-glass #bird-line.pow::before, #desk.tv-full.bird-on #bird-guide:has(button[data-menu]) #bird-pow::before { width: 5.2rem; height: 5.2rem; left: -4.3rem; top: -2.1rem; font-size: 14px; }
 #bird-line.pow::after { display: none; }
 #desk.tv-full #desk-glass #bird-line.pow { font-size: 72px; }
 body.skip-pow #bird-guide:has(#bird-line.pow) { visibility: hidden; }
