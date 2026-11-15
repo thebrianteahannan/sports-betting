@@ -15,11 +15,27 @@ function sharedTabKey() {
   return JSON.stringify([Boolean(window.saveWho), sharedLive(window.sharedItems).map((item) => [item.id, item.viewed, item.saved]), sharedLive(window.sharedSent).map((item) => [item.id, item.to]), ((window.friendsData || {}).incoming || []).map((one) => one.id)]);
 }
 
+function sharedShow() {
+  const board = document.querySelector("#desk-glass-in .find-board");
+  if (!board) return;
+  const input = board.querySelector("label.find input");
+  if (input) input.value = "";
+  const teams = board.querySelector(":scope > .find-teams"), list = board.querySelector(":scope > .find-list"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)");
+  if (teams) teams.replaceChildren();
+  if (list) { list.replaceChildren(); list.classList.remove("find-only-on"); }
+  if (hits) hits.replaceChildren();
+  const span = board.querySelector(":scope > .find-span");
+  if (span) span.classList.remove("find-picked");
+  startBack = null;
+}
+
 function sharedTabGo(flash) {
   startTab = "shared"; sharedSide = "in";
+  sharedShow();
   startPaint(1);
   const box = document.querySelector("#desk-glass-in .find-start");
   if (!box) return;
+  box.hidden = false;
   box.scrollIntoView({ block: "start", behavior: "smooth" });
   if (!flash) return;
   box.querySelectorAll(".find-shared-card[data-shared]").forEach((card) => { if (!flash.has(card.dataset.shared)) return; card.classList.remove("find-flash"); void card.offsetWidth; card.classList.add("find-flash"); setTimeout(() => card.classList.remove("find-flash"), 2400); });

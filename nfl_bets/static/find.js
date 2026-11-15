@@ -433,6 +433,7 @@ function paintField(holder, game, people, list, hits) {
   note.className = "quiet";
   note.textContent = "Shortest price first. That is who the book likes for that bet.";
   match.append(when, note);
+  if (typeof pgaScript === "function") pgaScript(match, game, people);
   const rows = [];
   people.forEach((person) => { if (person.kind !== "player") return; (person.bets || []).forEach((bet) => { if (bet.match === game.match && bet.kickoff === game.kickoff) rows.push({ person, bet }); }); });
   const groups = new Map();
@@ -440,19 +441,23 @@ function paintField(holder, game, people, list, hits) {
   const order = ["To win the tournament", "Top 5", "Top 10", "Top 20", "Matchup", "3-ball"];
   if (!rows.length) { const none = document.createElement("p"); none.className = "quiet"; none.textContent = "No player bets are posted for this tournament yet."; match.append(none); }
   [...groups.keys()].sort((a, b) => ((order.indexOf(a) + 1) || 9) - ((order.indexOf(b) + 1) || 9)).forEach((name) => {
-    const head = document.createElement("p");
+    const group = document.createElement("details");
+    group.className = "find-pga-group";
+    const head = document.createElement("summary");
+    const picks = groups.get(name);
     head.className = "find-pga-head";
-    head.textContent = name;
-    match.append(head);
-    groups.get(name).sort((a, b) => findRank(a.bet.odds) - findRank(b.bet.odds)).forEach(({ person, bet }) => {
+    head.textContent = `${name}, ${picks.length}`;
+    group.append(head);
+    picks.sort((a, b) => findRank(a.bet.odds) - findRank(b.bet.odds)).forEach(({ person, bet }) => {
       const price = Number(bet.odds), shown = price > 0 ? `+${price}` : String(price);
       const pick = document.createElement("button");
       pick.type = "button";
       pick.className = "find-side-go";
       pick.textContent = `${person.name}, ${shown}`;
       pick.addEventListener("click", () => showFind(list, hits, person, null, people));
-      match.append(pick);
+      group.append(pick);
     });
+    match.append(group);
   });
   holder.append(match);
 }
