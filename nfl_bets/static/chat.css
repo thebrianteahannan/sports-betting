@@ -2,6 +2,7 @@
 #chat-go[hidden] { display: none; }
 #who > #chat-go { position: absolute; right: 0; bottom: calc(100% + 0.5rem); }
 #chat-go:hover, #chat-go.on { background: #3dff6e; color: #04140c; }
+#who { overflow: visible; }
 #chat-go b { position: absolute; top: -0.35rem; right: -0.35rem; min-width: 1.2rem; height: 1.2rem; padding: 0 0.3rem; box-sizing: border-box; display: grid; place-items: center; border-radius: 999px; background: #ff5a5a; color: #ffffff; font: 800 11px/1 "Rajdhani", sans-serif; }
 #chat-go b[hidden] { display: none; }
 
@@ -32,6 +33,8 @@
 #chat-panel .chat-row span { grid-column: 1; overflow: hidden; color: #9aa6b2; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 #chat-panel .chat-row em { grid-column: 2; grid-row: 2; justify-self: end; min-width: 1.2rem; padding: 0 0.35rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 12px; font-style: normal; font-weight: 800; text-align: center; }
 #chat-panel .chat-row.fresh span { color: #f4f7fb; }
+#chat-panel .chat-readbar { display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.75rem; border-bottom: 1px solid #1d2731; }
+#chat-panel .chat-readbar span { flex: 1; color: #e7c15a; font-size: 13px; font-weight: 700; }
 
 #chat-panel .chat-new { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; padding: 0.75rem 0.9rem; }
 #chat-panel .find-friends-add { margin: 0; }
@@ -58,6 +61,11 @@
 #chat-panel .chat-react.on { border-color: #3dff6e; color: #3dff6e; }
 #chat-panel .chat-meta { display: flex; align-items: center; gap: 0.2rem; margin: 0.1rem 0.3rem 0; color: #6e7d8a; font-size: 11px; }
 #chat-panel .chat-meta i { font-style: normal; }
+#chat-panel .chat-msg.unread .chat-bubble { box-shadow: inset 3px 0 0 #e7c15a; }
+#chat-panel .chat-msg.mine.unread .chat-bubble { box-shadow: inset -3px 0 0 #8795a2; }
+#chat-panel .chat-state { font-weight: 800; }
+#chat-panel .chat-state.unread { color: #e7c15a; }
+#chat-panel .chat-state.read { color: #3dff6e; }
 #chat-panel .chat-act { padding: 0.05rem 0.35rem; border: 0; border-radius: 6px; background: transparent; color: #9aa6b2; font-size: 12px; font-weight: 700; }
 #chat-panel .chat-act:hover { color: #3dff6e; }
 #chat-panel .chat-meta .chat-act { display: none; }

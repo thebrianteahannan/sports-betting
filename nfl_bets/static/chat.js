@@ -54,6 +54,7 @@ async function chatLoad() {
   } finally { chatListBusy = false; }
   chatBubble();
   if (chat.open && chat.view === "list") chatPaint();
+  else if (chat.open) chatReadBar();
   if (typeof chatTicketButton === "function") chatTicketButton();
 }
 
@@ -71,10 +72,15 @@ function chatBubble() {
   else if (!who && !go.isConnected) document.body.append(go);
   if (who && !who.dataset.chatWatch) { who.dataset.chatWatch = "1"; new MutationObserver(() => { if (!who.contains(document.getElementById("chat-go"))) chatBubble(); }).observe(who, { childList: true }); }
   go.hidden = !chat.on;
-  const inside = chat.open && chat.view === "room" && chat.room, unread = chat.rooms.reduce((n, room) => n + (inside && room.id === chat.room.id ? 0 : room.unread || 0), 0), badge = go.querySelector("b");
+  const unread = chatUnread(), badge = go.querySelector("b");
   badge.hidden = !unread;
   badge.textContent = unread > 99 ? "99+" : String(unread);
+  go.setAttribute("aria-label", unread ? `Chats, ${unread} unread` : "Chats");
   go.classList.toggle("on", chat.open);
+}
+
+function chatUnread() {
+  return chat.rooms.reduce((n, room) => n + (room.unread || 0), 0);
 }
 
 function chatToggle(open = !chat.open) {
@@ -103,11 +109,36 @@ function chatPaint() {
   document.body.classList.toggle("chat-open", chat.open);
   if (!chat.open) return;
   const key = chat.view === "room" && chat.room ? `room:${chat.room.id}` : chat.view;
-  if (chat.view === "room" && box.dataset.view === key) { chatRoomHead(); chatMsgsPaint(); return; }
+  if (chat.view === "room" && box.dataset.view === key) { chatRoomHead(); chatMsgsPaint(); chatReadBar(); return; }
   box.dataset.view = key;
   chat.sig = "";
   box.replaceChildren(...(chat.view === "new" || chat.view === "add" ? chatNewView() : chat.view === "friend" ? chatFriendView() : chat.view === "room" ? chatRoomView() : chatListView()));
   if (chat.view === "room") { chatRoomHead(); chatMsgsPaint(true, true); }
+  chatReadBar();
+}
+
+function chatReadBar() {
+  const box = document.getElementById("chat-panel");
+  if (!box || box.hidden) return;
+  const n = chatUnread();
+  let bar = box.querySelector(".chat-readbar");
+  if (!n) { if (bar) bar.remove(); return; }
+  if (!bar) { bar = chatNode("div", "chat-readbar"); const head = box.querySelector(".chat-head"); if (head) head.after(bar); else box.prepend(bar); }
+  const word = n === 1 ? "1 unread" : `${n} unread`;
+  bar.replaceChildren(chatNode("span", "", word), chatButton("Mark all as read", chatMarkAll, "chat-btn"));
+}
+
+async function chatMarkAll() {
+  const bar = document.querySelector("#chat-panel .chat-readbar button");
+  if (bar) bar.disabled = true;
+  try {
+    await chatCall("/api/chat", { action: "seen" });
+    chat.rooms.forEach((room) => { room.unread = 0; });
+    if (chat.msgs.length) chat.seen = chat.msgs[chat.msgs.length - 1].id;
+    chat.note = "";
+  } catch (error) { chat.note = error.message; }
+  chatBubble();
+  chatPaint();
 }
 
 function chatHead(title, back, extra = []) {
@@ -194,9 +225,7 @@ function chatNewView() {
 function chatEnter(room) {
   const sharing = chat.sharing;
   chat.sharing = null;
-  Object.assign(chat, { view: "room", room, msgs: [], reacts: [], reply: null, last: 0, picking: false, shown: 0, note: "" });
-  const row = chat.rooms.find((one) => one.id === room.id);
-  if (row) row.unread = 0;
+  Object.assign(chat, { view: "room", room, msgs: [], reacts: [], reply: null, last: 0, seen: 0, reads: [], picking: false, shown: 0, note: "" });
   chatPaint();
   chatBubble();
   chatRoomLoad().then(() => { if (sharing) chatSend("", sharing); });
@@ -215,6 +244,8 @@ async function chatRoomLoad() {
     chat.msgs = chat.msgs.concat((data.messages || []).filter((msg) => !have.has(msg.id)));
     chat.msgs.forEach((msg) => { if (gone.has(msg.id)) Object.assign(msg, { gone: true, body: "", bet: null }); });
     chat.reacts = data.reacts || [];
+    chat.seen = Math.max(chat.seen || 0, Number(data.seen) || 0);
+    chat.reads = data.reads || [];
     chat.last = chat.msgs.length ? chat.msgs[chat.msgs.length - 1].id : 0;
   } catch (error) {
     chat.note = error.message;
@@ -308,8 +339,18 @@ async function chatDelete(msg) {
   chatMsgsPaint(true);
 }
 
+function chatStateOf(msg) {
+  if (!msg || msg.gone) return "";
+  if (msg.from === chat.me) {
+    const others = ((chat.room && chat.room.members) || []).filter((one) => one.id !== chat.me);
+    const read = others.length && others.every((one) => (chat.reads || []).some((row) => row.id === one.id && row.last >= msg.id));
+    return read ? "Read" : "Unread";
+  }
+  return msg.id > (chat.seen || 0) ? "Unread" : "Read";
+}
+
 function chatMsgNode(msg, prev) {
-  const mine = msg.from === chat.me, row = chatNode("div", `chat-msg${mine ? " mine" : ""}${chat.shown === msg.id ? " show" : ""}`);
+  const mine = msg.from === chat.me, state = chatStateOf(msg), row = chatNode("div", `chat-msg${mine ? " mine" : ""}${state === "Unread" ? " unread" : ""}${chat.shown === msg.id ? " show" : ""}`);
   if (!mine && chat.room.group && (!prev || prev.from !== msg.from)) row.append(chatNode("p", "chat-who", msg.fromName));
   const bubble = chatNode("div", "chat-bubble");
   if (msg.reply) {
@@ -332,6 +373,7 @@ function chatMsgNode(msg, prev) {
   if (tally.childElementCount) row.append(tally);
   const meta = chatNode("p", "chat-meta");
   meta.append(chatNode("i", "", chatAgo(msg.at)));
+  if (state) meta.append(chatNode("i", `chat-state ${state === "Unread" ? "unread" : "read"}`, state));
   if (!msg.gone) {
     CHAT_REACTS.forEach(([key, icon, label]) => { const go = chatButton(icon, () => chatReact(msg, key), "chat-act"); go.title = label; go.setAttribute("aria-label", label); meta.append(go); });
     meta.append(chatButton("Reply", () => { chat.reply = msg; chatQuotePaint(); const text = document.querySelector("#chat-panel .chat-form textarea"); if (text) text.focus(); }, "chat-act"));
@@ -345,7 +387,7 @@ function chatMsgsPaint(force, toBottom) {
   const box = document.querySelector("#chat-panel .chat-msgs"), note = document.querySelector("#chat-panel .chat-note");
   if (note) { note.textContent = chat.note; note.hidden = !chat.note; }
   if (!box || !chat.room) return;
-  const sig = JSON.stringify([chat.msgs.map((msg) => [msg.id, msg.gone]), chat.reacts, chat.shown, typeof chatCardSig === "function" ? chatCardSig() : 0]);
+  const sig = JSON.stringify([chat.msgs.map((msg) => [msg.id, msg.gone]), chat.reacts, chat.shown, chat.seen, chat.reads, typeof chatCardSig === "function" ? chatCardSig() : 0]);
   if (!force && sig === chat.sig) return;
   chat.sig = sig;
   const near = toBottom || box.scrollHeight - box.scrollTop - box.clientHeight < 90;

@@ -19,7 +19,7 @@ async function keepWarm(board) {
   warming = true;
   try {
     const now = Date.now(), { offerLegs } = require("./choose-api");
-    const soon = ((board && board.games) || []).filter((game) => /^(NFL|NBA|MLB|NHL|WNBA)$/.test(game.sport || "") && Date.parse(game.kickoff) > now && Date.parse(game.kickoff) - now < 2 * 3600000);
+    const soon = ((board && board.games) || []).filter((game) => /^(NFL|NBA|MLB|NHL|WNBA|PGA)$/.test(game.sport || "") && Date.parse(game.kickoff) > now && Date.parse(game.kickoff) - now < 2 * 3600000);
     for (const game of soon) {
       const key = `${game.match}|${game.kickoff}`;
       if (now - (savedAt.get(key) || 0) < 20 * 60000) continue;

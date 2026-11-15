@@ -83,9 +83,9 @@ function createChat(sb, readKey, loadMembers) {
     const [reacts, gone] = Number.isFinite(low)
       ? await Promise.all([call(`chat_reacts?room=eq.${q(id)}&message=gte.${low}&select=message,user_id,emoji`), call(`chat_messages?room=eq.${q(id)}&id=gte.${low}&gone=eq.true&select=id`)])
       : [[], []];
-    const top = messages.length ? messages[messages.length - 1].id : 0;
-    if (top) await call("chat_reads", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { room: id, user_id: user.id, last: top } });
-    return { me: user.id, room: roomView(room, data.users, user.id), messages: messages.map(view), reacts, gone: gone.map((row) => row.id) };
+    const reads = await call(`chat_reads?room=eq.${q(id)}&select=user_id,last`);
+    const mine = reads.find((row) => row.user_id === user.id);
+    return { me: user.id, room: roomView(room, data.users, user.id), messages: messages.map(view), reacts, gone: gone.map((row) => row.id), seen: mine ? Number(mine.last) || 0 : 0, reads: reads.filter((row) => row.user_id !== user.id).map((row) => ({ id: row.user_id, last: Number(row.last) || 0 })) };
   }
 
   async function post(user, body) {
@@ -103,6 +103,16 @@ function createChat(sb, readKey, loadMembers) {
       const had = await find();
       if (had) return { room: roomView(had, data.users, user.id) };
       try { return { room: await make([user.id, them], pair, "") }; } catch (error) { const now = await find(); if (now) return { room: roomView(now, data.users, user.id) }; throw error; }
+    }
+    if (action === "seen") {
+      const wanted = String(body.room || "");
+      const rooms = wanted ? [await roomOf(user, wanted)] : await call(`chat_rooms?members=cs.${q(`{${user.id}}`)}&select=id`);
+      await Promise.all((rooms || []).map(async (room) => {
+        const top = await call(`chat_messages?room=eq.${q(room.id)}&order=id.desc&limit=1&select=id`);
+        if (!top[0]) return;
+        await call("chat_reads", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { room: room.id, user_id: user.id, last: top[0].id } });
+      }));
+      return { ok: true };
     }
     if (action === "group") {
       const ids = [...new Set((Array.isArray(body.ids) ? body.ids : []).map(String))].filter((id) => id && id !== user.id);

@@ -2,7 +2,7 @@
 
 const { addSway } = require("./sway-api"); const { onePick, markPlayer, whyPlayer } = require("./single-find"); const { onesList } = require("./ones-find"); const { playerNames, nameBook, playerClub, teamRoster, outList } = require("./who-api"); const { gameRead } = require("./game-read");
 const AK = "FhMFpcPWXMeyZxOx";
-const SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA"];
+const SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "PGA"];
 function propFamily(leg) {
   const market = String(leg.market || "");
   let source = market.split(" - ").pop();

@@ -90,7 +90,7 @@ function loadedGames(people, span) {
   const saved = people.games;
   if (saved && saved.n === people.length) return saved[span];
   const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
-  const today = fmt.format(Date.now()), end = fmt.format(Date.now() + 14 * 24 * 60 * 60 * 1000), now = Date.now(), keep = /^(NFL|NBA|MLB|NHL|WNBA)$/;
+  const today = fmt.format(Date.now()), end = fmt.format(Date.now() + 14 * 24 * 60 * 60 * 1000), now = Date.now(), keep = /^(NFL|NBA|MLB|NHL|WNBA|PGA)$/;
   const buckets = { today: new Map(), week: new Map() };
   people.forEach((person) => (person.bets || []).forEach((bet) => {
     const kick = Date.parse(bet.kickoff || "");
@@ -136,7 +136,7 @@ function fillFind(board, data) {
     const head = document.createElement("summary");
     head.textContent = `${box.dataset.span === "today" ? "Today" : "This week"}, ${rows.length} ${rows.length === 1 ? "game" : "games"}`;
     box.replaceChildren(head); box.hidden = rows.length === 0;
-    const usa = ["NFL", "NBA", "MLB", "NHL", "WNBA"];
+    const usa = ["NFL", "NBA", "MLB", "NHL", "WNBA", "PGA"];
     [...bySport.entries()].sort((a, b) => ((usa.indexOf(a[0]) + 1) || 99) - ((usa.indexOf(b[0]) + 1) || 99) || a[0].localeCompare(b[0])).forEach(([sport, games]) => {
       const group = document.createElement("details");
       const summary = document.createElement("summary");
@@ -402,7 +402,29 @@ function paintRosterParlay(list, cards, count) {
   const hold = list.parentElement && list.parentElement.querySelector(".find-teams"); if (hold) { hold.querySelectorAll(".find-body").forEach((node) => { node.hidden = true; }); hold.querySelectorAll(".find-side-go").forEach((node) => node.classList.remove("on")); } heading.scrollIntoView({ block: "start" });
 }
 
+function paintField(holder, game, people, list, hits) {
+  const match = document.createElement("div");
+  match.className = "find-match";
+  const when = document.createElement("p");
+  when.className = "find-when";
+  when.textContent = [game.match, game.kickoff && window.when ? `${window.when(game.kickoff)} ET` : ""].filter(Boolean).join(", ");
+  match.append(when);
+  const golfers = people.filter((person) => person.kind === "player" && (person.bets || []).some((bet) => bet.match === game.match && bet.kickoff === game.kickoff)).sort((a, b) => a.name.localeCompare(b.name));
+  golfers.forEach((person) => {
+    const n = person.bets.filter((bet) => bet.match === game.match && bet.kickoff === game.kickoff).length;
+    const pick = document.createElement("button");
+    pick.type = "button";
+    pick.className = "find-side-go";
+    pick.textContent = `${person.name}, ${n} ${n === 1 ? "bet" : "bets"}`;
+    pick.addEventListener("click", () => showFind(list, hits, person, null, people));
+    match.append(pick);
+  });
+  if (!golfers.length) { const none = document.createElement("p"); none.className = "quiet"; none.textContent = "No player bets are posted for this tournament yet."; match.append(none); }
+  holder.append(match);
+}
+
 function paintMatch(holder, game, people, list, hits, noted) {
+  if (game.sport === "PGA") { paintField(holder, game, people, list, hits); return; }
   const match = document.createElement("div"); match.className = "find-match"; const body = document.createElement("div"); body.className = "find-body"; body.hidden = true;
   (game.match.includes(" @ ") ? game.match.split(" @ ") : game.match.split(" v ").reverse()).map((side) => side.replace(/\s*\([^)]*\)/g, "").trim().toLowerCase()).forEach((side) => {
     const person = people.find((item) => item.name.toLowerCase() === side) || people.find((item) => side.includes(item.name.toLowerCase()) && item.name.length > 3);

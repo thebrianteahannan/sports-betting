@@ -162,7 +162,7 @@ function homePickSport(pick) {
 }
 
 function homeLeagueList(games) {
-  const order = ["NFL", "NBA", "NHL", "MLB", "WNBA"];
+  const order = ["NFL", "NBA", "NHL", "MLB", "WNBA", "PGA"];
   return [...new Set([...games.map((game) => game.sport), ...((homeRecs && homeRecs.picks) || []).map(homePickSport)].filter(Boolean))].sort((a, b) => ((order.indexOf(a) + 1) || 99) - ((order.indexOf(b) + 1) || 99) || a.localeCompare(b));
 }
 

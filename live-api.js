@@ -89,7 +89,7 @@ async function liveWeek(board) {
   if (Date.now() - weekMem.at < 5 * 60000) return weekMem.games;
   const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
   const today = fmt.format(Date.now()), end = fmt.format(Date.now() + 14 * 24 * 3600000);
-  const games = ((await board()).games || []).filter((game) => { const kick = Date.parse(game.kickoff || ""); return /^(NFL|NBA|MLB|NHL|WNBA)$/.test(game.sport || "") && kick > Date.now() && fmt.format(kick) <= end; })
+  const games = ((await board()).games || []).filter((game) => { const kick = Date.parse(game.kickoff || ""); return /^(NFL|NBA|MLB|NHL|WNBA|PGA)$/.test(game.sport || "") && kick > Date.now() && fmt.format(kick) <= end; })
     .map((game) => ({ sport: game.sport, match: game.match, kickoff: game.kickoff, awayName: game.awayName || "", homeName: game.homeName || "", total: (game.total && game.total.line) || null })).sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
   const tail = (name) => String(name || "").toLowerCase().trim().split(/\s+/).pop(), slate = [];
   const days = [...new Set(games.map((game) => `${game.sport}|${fmt.format(Date.parse(game.kickoff)).replace(/-/g, "")}`))];
@@ -113,7 +113,7 @@ function homeSlate(games) {
   const now = Date.now();
   const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
   const today = fmt.format(now), next = fmt.format(now + 24 * 60 * 60 * 1000);
-  const rows = (games || []).filter((game) => /^(NFL|NBA|MLB|NHL|WNBA)$/.test(game.sport || "") && Date.parse(game.kickoff || "") > now - 6 * 60 * 60 * 1000);
+  const rows = (games || []).filter((game) => /^(NFL|NBA|MLB|NHL|WNBA|PGA)$/.test(game.sport || "") && Date.parse(game.kickoff || "") > now - 6 * 60 * 60 * 1000);
   const day = (game) => fmt.format(Date.parse(game.kickoff));
   const pick = (game) => ({ sport: game.sport || "", match: game.match || "", kickoff: game.kickoff || "" });
   const sort = (a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff);

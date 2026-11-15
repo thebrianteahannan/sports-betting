@@ -306,7 +306,7 @@ function cleanBorn(value) {
 }
 
 function publicMember(user) {
-  return { id: user.id, name: user.name, email: user.email, plan: "free", admin: isAdmin(user), state: user.state || "", book: user.book || "", hide: user.hide || {}, teams: Array.isArray(user.teams) ? user.teams : null, league: user.league || null, born: user.born || "", fullAt: user.fullAt || "" };
+  return { id: user.id, name: user.name, email: user.email, plan: "free", admin: isAdmin(user), state: user.state || "", book: user.book || "", hide: user.hide || {}, teams: Array.isArray(user.teams) ? user.teams : null, league: user.league || null, born: user.born || "", fullAt: user.fullAt || "", listed: user.listed !== false };
 }
 
 async function loadMembers() {
@@ -497,6 +497,17 @@ const server = http.createServer(async (req, res) => {
         const user = await memberFrom(req);
         if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
         sendJson(res, await pullLive(String(body.card || "")));
+        return;
+      }
+      if (url.pathname === "/api/listed") {
+        const user = await memberFrom(req);
+        if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
+        const data = await loadMembers();
+        const row = data.users.find((item) => item.id === user.id);
+        if (!row) throw new Error("That membership is not here.");
+        row.listed = body.listed !== false;
+        await writeKey("bets/members.json", data);
+        sendJson(res, { member: publicMember(row) });
         return;
       }
       if (url.pathname === "/api/name") {

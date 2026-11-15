@@ -17,7 +17,7 @@ _HOSTS = (
 )
 # Event-type ids FanDuel's sport pages use.
 _PAGES = (
-    6423, 7522, 7511, 7524,
+    6423, 7522, 7511, 7524, 3,
 )
 _KEEP = {"NFL", "NBA", "MLB", "NHL", "WNBA"}
 _SPREADS = ("Spread", "Run Line", "Puck Line", "Spread Betting", "Spread (60 Min)")
@@ -202,7 +202,8 @@ def _golf(
 
 def _pga(event: dict[str, Any], comps: dict[str, Any]) -> bool:
     comp = comps.get(str(event.get("competitionId") or "")) or {}
-    return "pga" in str(comp.get("name") or "").lower()
+    name = str(comp.get("name") or "").lower()
+    return "pga" in name and "lpga" not in name
 
 
 def _pga_tournaments(
@@ -259,7 +260,7 @@ def _pga_tournaments(
             "PGA",
             title,
             title,
-            "Field",
+            "",
             str(event.get("openDate") or ""),
             "",
             None,

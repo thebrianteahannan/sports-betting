@@ -71,7 +71,7 @@ function showMember(payload) {
   window.memberName = member.name || "";
   window.memberBorn = member.born || "";
   window.memberState = member.state || "";
-  window.memberBook = member.book || ""; window.memberHide = member.hide || {}; window.memberTeams = Array.isArray(member.teams) ? member.teams : null; window.memberLeague = member.league || null;
+  window.memberBook = member.book || ""; window.memberHide = member.hide || {}; window.memberTeams = Array.isArray(member.teams) ? member.teams : null; window.memberLeague = member.league || null; window.memberListed = member.listed !== false; paintListed();
   window.fullAt = member.fullAt || "";
   if (window.applyMember) applyMember(window.memberState);
   window.memberReady = true;
@@ -483,10 +483,27 @@ document.getElementById("bird-guide").addEventListener("pointerdown", (event) =>
   const note = window.lawNote ? lawNote() : "";
   if (note && line === note) window.lawShut = window.memberState || "";
 });
+function paintListed() {
+  const pub = document.getElementById("profile-public"), priv = document.getElementById("profile-private"), on = window.memberListed !== false;
+  if (!pub || !priv) return;
+  pub.classList.toggle("on", on); priv.classList.toggle("on", !on);
+  pub.setAttribute("aria-pressed", String(on)); priv.setAttribute("aria-pressed", String(!on));
+}
+
+async function saveListed(on) {
+  const response = await memberFetch("/api/listed", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ listed: on }) });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) return;
+  window.memberListed = !payload.member || payload.member.listed !== false;
+  paintListed();
+}
+
 document.getElementById("pane-profile").addEventListener("click", (event) => {
   if (event.target.closest("#member-out")) signOut();
   if (event.target.closest("#call-save")) saveCalledName(document.getElementById("call-name").value);
   if (event.target.closest("#book-save")) saveBook(document.getElementById("call-book").value);
+  if (event.target.closest("#profile-public")) saveListed(true);
+  if (event.target.closest("#profile-private")) saveListed(false);
 });
 window.birdGreet = birdGreet;
 function noteTaste(kind, detail) {

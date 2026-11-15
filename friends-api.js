@@ -39,7 +39,7 @@ async function friendsPost(user, body, readKey, writeKey, loadMembers) {
     const q = String(body.q || "").replace(/\s+/g, " ").trim().toLowerCase();
     if (q.length < 2) return { people: [] };
     const status = (id) => { const row = links.find((one) => one.key === pairOf(user.id, id)); return !row ? "" : row.status === "friends" ? "friends" : row.from === user.id ? "sent" : "asked"; };
-    const people = data.users.filter((row) => row.id !== user.id && String(row.name || "").toLowerCase().includes(q))
+    const people = data.users.filter((row) => row.id !== user.id && row.listed !== false && String(row.name || "").toLowerCase().includes(q))
       .sort((x, y) => String(x.name).toLowerCase().indexOf(q) - String(y.name).toLowerCase().indexOf(q) || String(x.name).localeCompare(String(y.name)))
       .slice(0, 8).map((row) => ({ id: row.id, name: String(row.name || "").trim(), state: row.state || "", status: status(row.id) }));
     return { people };
@@ -48,6 +48,7 @@ async function friendsPost(user, body, readKey, writeKey, loadMembers) {
     const them = data.users.find((row) => row.id === String(body.id || ""));
     if (!them) throw new Error("Pick a member from the list.");
     if (them.id === user.id) throw new Error("That is you.");
+    if (them.listed === false && !links.some((one) => one.key === pairOf(user.id, them.id))) throw new Error("That member keeps their profile private.");
     const key = pairOf(user.id, them.id), row = links.find((one) => one.key === key);
     if (row && row.status === "friends") throw new Error(`You are already friends with ${who(data.users, them.id).name}.`);
     if (row && row.from !== user.id) { row.status = "friends"; row.at = Date.now(); }
