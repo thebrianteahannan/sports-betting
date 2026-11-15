@@ -94,6 +94,18 @@ if (saveSeekGame) {
       return;
     }
     const match = board.querySelector(".find-match");
+    if (match && bet) {
+      clearInterval(seek);
+      const glass = document.getElementById("desk-glass-in");
+      let stay = true;
+      const stop = () => { stay = false; };
+      ["wheel", "touchstart", "keydown"].forEach((kind) => window.addEventListener(kind, stop, { passive: true, once: true }));
+      const top = () => { if (stay && glass) glass.scrollTop = 0; };
+      top();
+      [400, 900, 1600].forEach((ms) => setTimeout(top, ms));
+      document.querySelectorAll(".find-tray.find-shut").forEach((tray) => { const fold = tray.querySelector(".find-fold"); if (fold) { saveAutoShut.delete(tray); fold.click(); } });
+      return;
+    }
     if (match && leg === "|") { clearInterval(seek); match.style.scrollMarginTop = "5.5rem"; if (typeof gameScrollTo === "function") gameScrollTo(match); else match.scrollIntoView({ block: "start" }); return; }
     const box = board.querySelector(".find-match > .find-bets");
     if (!box) return;
