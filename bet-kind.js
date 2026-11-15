@@ -17,7 +17,7 @@ function betTag(pick) {
   const basis = pick.why ? (strong ? "both" : "script") : "math";
   const stat = String(pick.stat || pick.market || "").toLowerCase();
   let drop = "";
-  if (n < 10) drop = `his record is only ${n} games`;
+  if (n < 8) drop = `his record is only ${n} games`;
   else if (hits / n - need >= 0.3) drop = "the edge over the price is too big to trust";
   else if (odds >= 150 && !strong) drop = "the price is long and ten games do not prove it";
   else if (/goal/.test(stat) && !/shot|against/.test(stat) && Number(pick.reach) === 1 && odds > 0) drop = "one goal at plus money is a coin flip ten games cannot read";

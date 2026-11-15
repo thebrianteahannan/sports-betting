@@ -1,5 +1,6 @@
 /** Recommended bets from each game script, kept from before tip-off so the live tracker can show whether they hit. */
 
+const { betTag } = require("./bet-kind");
 const KEY = "bets/live-recs/";
 const SKIP = /under|quarter|qtr|half|each|most|touchdown|1st|first|minutes|double|triple/i;
 let recs = {};
@@ -89,8 +90,14 @@ async function recRanked(days) {
   const now = Date.now(), day = (when) => new Date(when - 6 * 3600000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
   const tonight = Object.values(recs).filter((row) => Date.parse(row.kickoff) > now && (days ? Date.parse(row.kickoff) - now < days * 86400000 : day(Date.parse(row.kickoff)) === day(now)));
   const picks = tonight.flatMap((row) => (((row.story || {}).bets || {}).picks || []).map((pick) => ({ ...pick, match: row.match, kickoff: row.kickoff })));
+  const cleared = (pick) => {
+    if (pick.tier !== "good" || !/^his record is only \d+ games$/.test(pick.drop || "")) return pick;
+    const need = parseFloat(pick.need);
+    const tag = betTag({ ...pick, need: need > 1 ? need / 100 : need });
+    return tag.tier === "rec" ? { ...pick, tier: "rec", drop: "" } : pick;
+  };
   const edge = (pick) => (pick.n >= 5 ? (pick.hits / pick.n) * 100 - parseFloat(pick.need) : -Infinity);
-  const ranked = picks.filter((pick) => pick.how && pick.tier !== "good" && Number.isFinite(edge(pick))).sort((a, b) => edge(b) - edge(a));
+  const ranked = picks.map(cleared).filter((pick) => pick.how && pick.tier !== "good" && Number.isFinite(edge(pick))).sort((a, b) => edge(b) - edge(a));
   return { all: picks.length, ranked: ranked.map((pick) => ({ who: pick.who, team: pick.team, label: pick.label, market: pick.market, odds: pick.odds, need: pick.need, hits: pick.hits, n: pick.n, how: pick.how, kind: pick.kind || "", basis: pick.basis || "", match: pick.match, kickoff: pick.kickoff })) };
 }
 

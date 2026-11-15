@@ -163,7 +163,7 @@ function homePickSport(pick) {
 
 function homeLeagueList(games) {
   const order = ["NFL", "NBA", "NHL", "MLB", "WNBA", "PGA"];
-  return [...new Set([...games.map((game) => game.sport), ...((homeRecs && homeRecs.picks) || []).map(homePickSport)].filter(Boolean))].sort((a, b) => ((order.indexOf(a) + 1) || 99) - ((order.indexOf(b) + 1) || 99) || a.localeCompare(b));
+  return [...new Set([...games.map((game) => game.sport), ...((homeRecs && homeRecs.picks) || []).map(homePickSport), "PGA"].filter(Boolean))].sort((a, b) => ((order.indexOf(a) + 1) || 99) - ((order.indexOf(b) + 1) || 99) || a.localeCompare(b));
 }
 
 function homeLeagueOn(games) {
@@ -191,7 +191,7 @@ function homeRecRows(games) {
   const note = (text) => { const line = document.createElement("p"); line.className = "desk-games-note"; line.textContent = text; return [line]; };
   if (!homeRecs || (homeRecs.loading && !homeRecs.picks.length)) return note("Looking up the picks.");
   if (!homeRecs.picks.length) return note("No picks are posted yet.");
-  const league = homeLeagueOn(games), rows = homeRecs.picks.map((pick, index) => [pick, index]).filter(([pick]) => !league || homePickSport(pick) === league), span = homeRecs.span || "today";
+  const league = homeLeagueOn(games), span = homeRecs.span || "today", rows = homeRecs.picks.map((pick, index) => [pick, index]).filter(([pick]) => !league || homePickSport(pick) === league).slice(0, 11);
   const head = span === "today" ? [] : [Object.assign(document.createElement("p"), { className: "desk-games-note desk-games-label", textContent: span === "tomorrow" ? "Tomorrow" : "Coming up" })];
   const more = homeRecs.more > 0 ? [homeMoreNote(homeRecs.more)] : [];
   return rows.length ? [...head, ...rows.map(([pick, index]) => homeRecRow(pick, index)), ...more] : note(`No ${league} picks ${span === "today" ? "tonight" : span === "tomorrow" ? "tomorrow" : "coming up"}. Tap All for the rest.`);

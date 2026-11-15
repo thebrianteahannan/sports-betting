@@ -3,7 +3,7 @@
 const MEM = new Map();
 const HOUR = 6 * 60 * 60 * 1000;
 const PATHS = { NFL: "football/nfl", NHL: "hockey/nhl" };
-const LAST = { NFL: 8, NHL: 10 };
+const LAST = { NFL: 10, NHL: 10 };
 
 async function json(url) {
   const hit = MEM.get(url);

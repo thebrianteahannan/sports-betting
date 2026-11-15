@@ -1,6 +1,10 @@
 # What one Paste a bet costs
 
-November 15, 2026. These figures are arithmetic from Google's published Gemini 3.8 Flash rates and from the token limits in the paste code. They are not a bill. This Mac has no Gemini key, so a paste here does not call Google and costs $0. The dollars below are the hosted site, where the computer is not a Mac and the picture goes to `gemini-3.8-flash`.
+November 15, 2026. One average paste costs about a fifth of a cent, around $0.002. The $20,990 figure later in this note is what 1,000 subscribers would pay you in a month. That is money coming in. September and October each cost about $24 for every Gemini call on the account combined, and November 1–15 is $0.55.
+
+A paste on this Mac costs $0. The picture stays on the machine. On the hosted site the picture goes to `gemini-3.8-flash`. The 3.2 cent figure is the most one try can spend, because the code stops at 8,192 output tokens. The $954 and $4,768 rows are only if 1,000 people paste every day and every paste uses that full stop. This account has not done that.
+
+To read a real paste, note the $0.55, paste a few slips on the hosted site, and subtract. The usage page shows the new tokens the same day. The billing page can take up to a day to post the dollars. A paste on this Mac will not change that bill.
 
 ## One paste
 
@@ -54,16 +58,18 @@ The count below is 1,000 people each pasting on the hosted site. Once a week is 
 | Once a day | 30,000 | $55 | $954 |
 | Five times a day | 150,000 | $273 | $4,768 |
 
-The business-model note puts 1,000 paying subscribers at about $20,990 a month before expenses, on a mix of Rookie, Pro, and VIP. A daily paste at the 3.2 cent cap is $954 of that, about $0.95 of a $19.99 Pro month. A short daily paste is about $0.06 of that month. Five pastes a day at the cap is about $4.77, close to a quarter of Pro.
+The $20,990 is what 1,000 subscribers would pay you in a month, on a mix of Rookie, Pro, and VIP, before expenses. It is not a Google bill. A daily paste at the 3.2 cent stop would be $954 of that income, about $0.95 of a $19.99 Pro month. A short daily paste is about $0.06 of that month. Five pastes a day at the stop is about $4.77, close to a quarter of Pro, and only if every paste uses the full stop.
 
 Set aside $1 a member per month and a daily paste is covered even at the cap. Five pastes a day at the cap is the point to limit how often Paste a bet runs, rather than to add that quarter onto every tier. The $200 line for AI, hosting, and data in the 100-subscriber example covers 100 people pasting daily at the cap, which is about $96, and leaves the rest of that $200 for hosting. It does not cover 1,000 people at the cap.
 
 This Tier 1 project allows 10,000 Gemini 3.8 Flash requests a day and 1,000 a minute. One paste from each of 1,000 people is 1,000 requests, a tenth of the day. Ten pastes each is the whole day. They can all paste in the same minute once. A second thousand in that same minute is refused until the minute turns over. The $10 spend limit every 10 minutes still sits under the request cap if a paste runs to the 3.2 cent stop: about 300 of those full-size calls is $10. At the 0.2 cent end, the 1,000-a-minute request cap arrives first. The last 28 days never left the bottom of those charts.
 
-## The parrot is a separate call
+## The parrot question box is gone
 
-Ask Parlay the Parrot, on the hosted site, is another Gemini 3.8 Flash request. That call caps the reply at 640 tokens and can turn on Google Search. Search includes 5,000 requests a month across Gemini 3 models, then $14 per 1,000, with a daily cap of 1,500. The rate-limit page already shows that tool in use, 28 requests on the busiest day of the last 28, against the 1,500. Those dollars are inside the monthly bill above, and they are not in the paste table.
+Ask Parlay the Parrot was a second Gemini 3.8 Flash request. It capped the reply at 640 tokens and could turn on Google Search. That box had no menu. It appeared only when someone clicked the body of a built ticket. It is off the site now. Opening that ticket no longer sends a question, and it no longer turns on search.
+
+Search includes 5,000 requests a month across Gemini 3 models, then $14 per 1,000, with a daily cap of 1,500. The rate-limit page showed 28 of those on the busiest day of the last 28, from before this removal. Those dollars are already inside the monthly bill above. They are not part of a paste, and they do not repeat from that box.
 
 ## Sources
 
-Checked November 15, 2026. Gemini API pricing for `gemini-3.8-flash`. Gemini 3.8 Flash model page, default image resolution 1,120 tokens, default thinking level medium, maximum output 65,536 tokens. The tier, the 1,000 / 2,000,000 / 10,000 limits, the 28-day peaks, and the September, October, and November bills are from the Google AI Studio rate-limit, usage, and billing pages for Default Gemini Project, read the same day. The paste request is `readShot` in `slip-api.js`, called from `howsPost` in `hows-api.js`. The first call sets `maxOutputTokens` to 8,192. The retry does not.
+Checked November 15, 2026. Gemini API pricing for `gemini-3.8-flash`. Gemini 3.8 Flash model page, default image resolution 1,120 tokens, default thinking level medium, maximum output 65,536 tokens. The tier, the 1,000 / 2,000,000 / 10,000 limits, the 28-day peaks, and the September, October, and November bills are from the Google AI Studio rate-limit, usage, and billing pages for Default Gemini Project, read the same day. The paste request is `readShot` in `slip-api.js`, called from `howsPost` in `hows-api.js`. The first call sets `maxOutputTokens` to 8,192. The retry does not. The parrot question box was removed the same day.
