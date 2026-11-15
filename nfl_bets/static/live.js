@@ -61,7 +61,7 @@ function liveRecRow(game, picks, show) {
 
 function liveGroup(group, key, many, mine, recs, known) {
   const head = `<tr><th>${liveEsc(many ? group.name : "Player")}</th>${group.labels.map((label) => `<th>${liveEsc(label)}</th>`).join("")}</tr>`;
-  const rows = group.rows.map((row) => `<tr class="${row.on ? "on" : known ? "" : "all"}${row.starter ? " start" : ""}${mine.has(liveFold(row.name)) ? " mine" : recs.has(liveFold(row.name)) ? " rec" : ""}"><td><span class="live-name">${liveEsc(row.name)}</span>${row.pos ? `<span class="live-pos">${liveEsc(row.pos)}</span>` : ""}</td>${row.stats.map((stat, at) => `<td data-k="${liveEsc(`${key}|${row.name}|${group.labels[at] || at}`)}">${liveEsc(stat)}</td>`).join("")}</tr>`).join("");
+  const rows = group.rows.map((row) => { const bet = mine.has(liveFold(row.name)), star = bet ? `<svg class="live-star" viewBox="0 0 16 16" width="8" height="8" aria-label="In my bets"><path fill="#e7c15a" d="M8 1.2 9.8 4.9l4.1.6-3 2.9.7 4.1L8 10.6 4.4 12.5l.7-4.1-3-2.9 4.1-.6z"/></svg>` : ""; return `<tr class="${row.on ? "on" : known ? "" : "all"}${row.starter ? " start" : ""}${bet ? " mine" : recs.has(liveFold(row.name)) ? " rec" : ""}"><td><button type="button" class="live-name" data-who="${liveEsc(row.name)}">${liveEsc(row.name)}</button>${row.pos ? `<span class="live-pos">${liveEsc(row.pos)}</span>` : ""}${star}</td>${row.stats.map((stat, at) => `<td data-k="${liveEsc(`${key}|${row.name}|${group.labels[at] || at}`)}">${liveEsc(stat)}</td>`).join("")}</tr>`; }).join("");
   return `<div class="live-table" data-slide="${liveEsc(key)}"><table>${head}${rows}</table></div>`;
 }
 
@@ -76,7 +76,9 @@ function liveGame(game) {
   const box = (kind, say) => `<label class="live-court"><input type="checkbox" data-card="${kind}"${liveCard[kind].has(game.id) ? " checked" : ""}/> ${say}</label>`;
   const bar = teams && (known || picks.length) ? `<p class="live-card-bar">${known ? box("court", "In play") : ""}${picks.length ? box("mine", "Only players in my bets") : ""}</p>` : "";
   const body = teams ? `${bar}${teams}` : `<p class="live-note">ESPN has not posted player stats for this game yet.</p>`;
-  return `<details class="live-game${picks.length ? " has-mine" : ""}${game.final ? " live-final" : ""}${known && liveCard.court.has(game.id) ? " live-court-only" : ""}${picks.length && liveCard.mine.has(game.id) ? " live-mine-only" : ""}" data-id="${liveEsc(game.id)}" data-sport="${liveEsc(game.sport)}" data-match="${liveEsc((liveMine(game, liveRecs)[0] || {}).match || `${game.away.name} @ ${game.home.name}`)}"${liveOpen.has(game.id) ? " open" : ""}><summary><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(game.away, away > home, `${game.id}|away`)}<span class="live-at-sign">@</span>${liveSide(game.home, home > away, `${game.id}|home`)}<span class="live-clock">${liveEsc(game.clock)}</span>${game.last ? `<span class="live-last" data-k="${liveEsc(`${game.id}|last`)}">${liveEsc(game.last)}</span>` : ""}${liveHurt(game)}${liveRoot(game, picks)}${liveRecRow(game, picks)}<button type="button" class="live-stats" aria-label="Players and stats"></button></summary>${body}</details>`;
+  const match = (liveMine(game, liveRecs)[0] || {}).match || `${game.away.name} @ ${game.home.name}`;
+  const page = `/?${new URLSearchParams({ game: match, sport: game.sport, from: "live" })}`;
+  return `<details class="live-game${picks.length ? " has-mine" : ""}${game.final ? " live-final" : ""}${known && liveCard.court.has(game.id) ? " live-court-only" : ""}${picks.length && liveCard.mine.has(game.id) ? " live-mine-only" : ""}" data-id="${liveEsc(game.id)}" data-sport="${liveEsc(game.sport)}" data-match="${liveEsc(match)}"${liveOpen.has(game.id) ? " open" : ""}><summary><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(game.away, away > home, `${game.id}|away`)}<span class="live-at-sign">@</span>${liveSide(game.home, home > away, `${game.id}|home`)}<span class="live-clock">${liveEsc(game.clock)}</span>${game.last ? `<span class="live-last" data-k="${liveEsc(`${game.id}|last`)}">${liveEsc(game.last)}</span>` : ""}${liveHurt(game)}${liveRoot(game, picks)}${liveRecRow(game, picks)}<a class="live-open" href="${liveEsc(page)}">Open Game Page</a><button type="button" class="live-stats" aria-label="Live stats"></button></summary>${body}</details>`;
 }
 
 function liveNext(next) {
@@ -100,9 +102,9 @@ function liveScore(data) {
 }
 
 function liveKindCells(kinds, cell) {
-  const box = (key) => kinds[key] || { won: 0, lost: 0, cash: 0 }, cash = (row) => `${row.cash < 0 ? "-" : "+"}$${Math.abs(row.cash).toFixed(2)}`;
-  const safe = box("safe"), even = box("balanced"), pay = box("payout"), good = box("good");
-  return `${cell("Safe", safe.won, safe.won + safe.lost, "Recommended at -150 or shorter, all time. Judged by how often they win.")}${cell("Balanced", even.won, even.won + even.lost, "Recommended from -149 to +100, all time.")}<span class="k-cash" title="Recommended longer than +100, all time. Judged by dollars at $5 a bet."><b>Payout</b> ${cash(pay)} at $5 · ${pay.won} of ${pay.won + pay.lost}</span><span class="k-good" title="Their record clears the price but they miss a rule, so they stay off the recommended record. All time at $5 a bet."><b>Good bets</b> ${good.won} of ${good.won + good.lost} · ${cash(good)}</span>`;
+  const box = (key) => kinds[key] || { won: 0, lost: 0 };
+  const safe = box("safe"), even = box("balanced");
+  return `${cell("Safe", safe.won, safe.won + safe.lost, "Recommended at -150 or shorter, all time. Judged by how often they win.")}${cell("Balanced", even.won, even.won + even.lost, "Recommended from -149 to +100, all time.")}`;
 }
 
 function liveHistLabel(pick) {
@@ -214,6 +216,58 @@ function livePaint(data, quiet) {
   }
   liveScore(data);
   document.getElementById("live-at").textContent = `Updated ${new Date(data.at || Date.now()).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}`;
+  liveWhoPlace();
+}
+
+const liveWhoOpen = new Set();
+const liveWhoCache = new Map();
+
+function liveWhoId(game, name) {
+  return `${game}|${liveFold(name)}`;
+}
+
+function liveWhoHtml(data) {
+  if (!data || (!data.line && !(data.stats || []).length && !data.span)) return `<p class="span">No history for this player yet.</p>`;
+  const stats = (data.stats || []).map((stat) => `<span><b>${liveEsc(stat.label)}</b>${liveEsc(stat.value || "")}</span>`).join("");
+  return `${data.line ? `<p>${liveEsc(data.line)}</p>` : ""}${data.span ? `<p class="span">${liveEsc(data.span)}</p>` : ""}${stats ? `<div class="log">${stats}</div>` : ""}`;
+}
+
+function liveWhoShow(button) {
+  const game = button.closest(".live-game");
+  const row = button.closest("tr");
+  if (!game || !row || row.nextElementSibling && row.nextElementSibling.classList.contains("live-player-row")) return;
+  const key = `${game.dataset.sport}|${liveFold(button.dataset.who)}`;
+  const hold = document.createElement("tr");
+  hold.className = `${row.className} live-player-row`.trim();
+  const cell = document.createElement("td");
+  cell.colSpan = row.children.length;
+  const box = document.createElement("div");
+  box.className = "live-player-hist";
+  box.innerHTML = liveWhoCache.has(key) ? liveWhoHtml(liveWhoCache.get(key)) : `<p class="span">Reading the history.</p>`;
+  cell.append(box);
+  hold.append(cell);
+  row.classList.add("live-open");
+  row.after(hold);
+  if (liveWhoCache.has(key) || liveWhoCache.has(`${key}|wait`)) return;
+  liveWhoCache.set(`${key}|wait`, 1);
+  fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ list: "card", name: button.dataset.who, sport: game.dataset.sport }) }).then((res) => res.json()).then((data) => {
+    liveWhoCache.set(key, data || {});
+    liveWhoCache.delete(`${key}|wait`);
+    document.querySelectorAll("button.live-name").forEach((node) => {
+      const card = node.closest(".live-game");
+      if (!card || `${card.dataset.sport}|${liveFold(node.dataset.who)}` !== key) return;
+      const next = node.closest("tr") && node.closest("tr").nextElementSibling;
+      const hist = next && next.querySelector(".live-player-hist");
+      if (hist) hist.innerHTML = liveWhoHtml(data);
+    });
+  }).catch(() => { liveWhoCache.delete(`${key}|wait`); if (box.isConnected) box.innerHTML = `<p class="span">The history did not load.</p>`; });
+}
+
+function liveWhoPlace() {
+  document.querySelectorAll("button.live-name").forEach((button) => {
+    const game = button.closest(".live-game");
+    if (game && liveWhoOpen.has(liveWhoId(game.dataset.id, button.dataset.who))) liveWhoShow(button);
+  });
 }
 
 let liveFocusId = new URLSearchParams(location.search).get("game") || "";
@@ -263,7 +317,7 @@ document.getElementById("live").addEventListener("change", (event) => {
 });
 
 document.body.classList.toggle("live-recs-on", false);
-document.body.classList.toggle("live-mine-off", true);
+document.body.classList.toggle("live-mine-off", false);
 document.getElementById("live").addEventListener("change", (event) => {
   if (!event.target.matches("input.live-mine-box")) return;
   const on = event.target.checked;
@@ -280,6 +334,15 @@ document.getElementById("live").addEventListener("change", (event) => {
 });
 
 document.getElementById("live").addEventListener("click", (event) => {
+  const who = event.target.closest("button.live-name");
+  if (who) {
+    const game = who.closest(".live-game"), row = who.closest("tr"), id = game && liveWhoId(game.dataset.id, who.dataset.who);
+    const next = row && row.nextElementSibling;
+    if (next && next.classList.contains("live-player-row")) { next.remove(); if (row) row.classList.remove("live-open"); liveWhoOpen.delete(id); return; }
+    if (id) liveWhoOpen.add(id);
+    liveWhoShow(who);
+    return;
+  }
   const recTag = event.target.closest("[data-rec-open]");
   if (recTag) {
     const id = recTag.dataset.recOpen;
@@ -296,10 +359,10 @@ document.getElementById("live").addEventListener("click", (event) => {
   }
   const card = event.target.closest(".live-soon"), go = card && !event.target.closest("a, button") && card.querySelector("a.live-week-game");
   if (go) { window.location.href = go.href; return; }
+  const page = event.target.closest("a.live-open");
+  if (page) { event.preventDefault(); window.location.href = page.href; return; }
   const stats = event.target.closest(".live-game > summary .live-stats");
   if (stats) { event.preventDefault(); stats.closest(".live-game").open = !stats.closest(".live-game").open; return; }
-  const head = event.target.closest(".live-game > summary");
-  if (head && !event.target.closest("a, button")) { event.preventDefault(); window.location.href = `/?${new URLSearchParams({ game: head.parentElement.dataset.match, sport: head.parentElement.dataset.sport, from: "live" })}`; return; }
   const chip = event.target.closest("[data-league]");
   if (!chip) return;
   const sport = chip.dataset.league;
