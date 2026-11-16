@@ -48,8 +48,10 @@
 .rec-board .find-stacks .rec-strategy h3 .rec-count::before { content: none; }
 .rec-board .find-stacks .rec-history { margin: 0.1rem 0 0 1.55rem; }
 .rec-board .find-stacks .rec-history > span { color: #b7c3ce; font-size: 13px; font-weight: 500; line-height: 1.35; }
-.rec-board .find-stacks .rec-strategy:not(.open) .rec-history i.rec-pay { display: none; }
-.rec-board .find-stacks .rec-strategy.open .rec-history i.rec-pay { font-size: 13px; }
+.rec-board .find-stacks .rec-strategy:not(.stack-info) .rec-history i.rec-pay { display: none; }
+.rec-board .find-stacks .rec-strategy.stack-info .rec-history i.rec-pay { font-size: 13px; }
+.rec-board .find-stacks .rec-strategy.open:not(.stack-info) > .rec-history > span { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.rec-board .find-stacks .rec-strategy.open:not(.stack-info) > .rec-history .stack-more-go { display: none; }
 .rec-board .find-stacks .stack-set { margin: 0.45rem 0 0.15rem; padding: 0.45rem 0.55rem 0.1rem; }
 .rec-board .find-stacks .stack-set :is(.stack-set-name, .stack-ticket, .stack-ticket i, .stack-read, .rec-bet b, .rec-bet b i, .rec-gist, .rec-gist i) { font-size: 13px !important; line-height: 1.35 !important; }
 .rec-board .find-stacks .stack-set .stack-set-name { margin-bottom: 0.2rem !important; font-size: 14px !important; }
@@ -503,6 +505,8 @@
 .rec-board .rec-strategy h3 .stack-grade-tag { display: inline-block; margin: 0 0.45rem 0 0.25rem; padding: 0.05rem 0.45rem; border: 1px solid; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; vertical-align: 0.1em; }
 .rec-board .rec-strategy > .stack-close { display: none; flex: 1 1 100%; min-width: 0; margin: 0.6rem 0 0.2rem; cursor: auto; }
 .rec-board .rec-strategy.open > .stack-close { display: block; }
+.rec-board .rec-strategy.open:not(.stack-info) > :is(.stack-grade, .stack-more, .rec-bet) { display: none !important; }
+.rec-board .rec-strategy.open.stack-info > :is(.stack-grade, .rec-bet) { display: block; }
 .rec-board .stack-close > button.stack-close-go, #desk.tv-full #desk-glass .rec-board .stack-close > button.stack-close-go { display: inline-block; width: auto; min-height: 0; margin: 0; padding: 0.3rem 0.7rem; border: 1px dashed #ff8a2a; border-radius: 8px; background: transparent; box-shadow: none; color: #ff8a2a; font-size: 13px !important; font-weight: 800; letter-spacing: 0; text-transform: none; cursor: pointer; }
 .rec-board .stack-close > .stack-set { display: block; position: relative; margin: 0.6rem 0 0.2rem; padding: 0.55rem 0.55rem 0.15rem; border: 1px dashed #ff8a2a; border-radius: 12px; }
 .rec-board .stack-close > .stack-set .rec-bet { display: block; }
@@ -512,7 +516,7 @@
 .rec-board .rec-strategy h3 .stack-score > i > i { display: block; height: 100%; border-radius: 3px; }
 .rec-board .rec-strategy h3 .stack-score b { font-size: 14px; font-weight: 800; }
 .rec-board .rec-strategy > .stack-grade { display: none; flex: 1 1 100%; min-width: 0; margin: 0.45rem 0 0.35rem; padding: 0.45rem 0.65rem; border-left: 3px solid; border-radius: 4px; background: rgba(255, 255, 255, 0.04); color: #d5dde6; cursor: auto; }
-.rec-board .rec-strategy.open > .stack-grade { display: block; }
+.rec-board .rec-strategy.open.stack-info > .stack-grade { display: block; }
 .rec-board .rec-strategy > .stack-grade p { display: block; margin: 0 0 0.4rem; color: #f4f7fb; font-size: 15px !important; font-weight: 700; line-height: 1.4 !important; }
 .rec-board .rec-strategy > .stack-grade b { display: block; margin-top: 0.3rem; color: #9fb3c8; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .rec-board .rec-strategy > .stack-grade ul { margin: 0.15rem 0 0; padding-left: 1.1rem; }

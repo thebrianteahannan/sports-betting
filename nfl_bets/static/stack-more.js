@@ -99,10 +99,15 @@ const STACK_MORE = {
     "Example: $10 on a team at +2000 in March to win $200. They reach the final as -150, and the opponent is +130. $91.30 on the opponent makes both results up $108.70.",
     "You give up $91.30 of the $200 to make sure the season ends up $108.70.",
   ],
+  "Parlay's Way": [
+    "The cash-out pays more than you put in. Take it. Walk. That next leg does not have to hit.",
+    "Example: $5 parlay, two legs already in, one still live. The book offers $8. That is +$3 locked. You take the $8. The last leg can miss and you still leave ahead.",
+    "Past the buy-in is the line. Under it, you are selling the ticket cheap. Above it, that is Parlay's Way.",
+  ],
   "Cash-out": [
     "The book offers to buy your ticket back before it settles. Their offer is a hedge with their juice built in.",
     "Example: $5 parlay to win $100, with the last leg at -300. The book offers a $65 cash-out, which is up $60. Typing the hedge yourself, $30 on the other side at +250, locks up $70 either way.",
-    "Take the cash-out only when it beats the hedge you could place yourself. It usually does not.",
+    "Parlay's Way when the offer beats your stake. Below that, take it only when it beats the hedge you could place yourself.",
   ],
   "Flat stake": [
     "The same dollars on every ticket, win or lose. A $500 bankroll at 1% is $5 a bet, every bet.",

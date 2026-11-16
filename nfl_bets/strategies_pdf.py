@@ -139,9 +139,13 @@ def _groups() -> list[tuple[str, list[tuple[str, str]]]]:
             ("Future hedge",
              "A team you took at +800 in March to win the title is now -150 in the final. "
              "A bet on the other side at the final price locks a profit on the season. The size is the same arithmetic as any hedge: match the payouts, then decide whether the locked number is worth giving up the longshot."),
+            ("Parlay's Way",
+             "The cash-out pays more than you put in. Take the money and walk. "
+             "A $5 ticket offered back at $8 is +$3 locked. The next leg can miss and you still leave ahead. "
+             "That is the line: past the buy-in, take it. Under the buy-in, you are selling the ticket cheap."),
             ("Cash-out",
              "The book offers to buy the ticket back before it ends. The number they offer is a hedge they priced, with their juice still in it. "
-             "Take it when you would have bet the other side at that price anyway. Leave it when the offer is a shorter number than the live hedge you can type yourself."),
+             "Parlay's Way when the offer beats your stake. Below that, take it when you would have bet the other side at that price, and leave it when a hedge you type yourself is better."),
         ]),
         ("How much to put on the ticket", [
             ("Flat stake",

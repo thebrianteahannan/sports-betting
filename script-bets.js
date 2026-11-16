@@ -106,7 +106,8 @@ function starNames(boxes) {
 }
 
 function scriptBets(game, boxes, fives, outs, props) {
-  const all = betsFrom(game, boxes, fives, outs, props);
+  // Same quality bar for everyone. "Only star players" is a who-filter, not a looser bar.
+  const all = betsFrom(game, boxes, fives, outs, props, true);
   if (!all) return null;
   const stars = starNames(boxes), only = props.filter((row) => stars.has(fold(row.who)));
   all.stars = only.length ? betsFrom(game, boxes, fives, outs, only, true) : null;

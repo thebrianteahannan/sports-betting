@@ -1,6 +1,7 @@
 /** The parrot's bubble: asks if you need help, and a tap opens the guide. */
 const BIRD_TIPS = [
   { id: "help", text: "Need help? Tap me and I'll show you around.", go: () => { location.href = "/guide"; } },
+  { id: "way", text: "Cash out when you're past the buy-in. That's Parlay's Way.", go: () => { if (window.paintStack) paintStack(); } },
 ];
 
 function birdUsed() {

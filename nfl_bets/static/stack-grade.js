@@ -35,6 +35,9 @@ const STACK_GRADE = {
   "Parlay hedge": ["risk", "Worth it when the last leg is plus money. Expensive when it is a big favorite.",
     ["Locks a profit on a parlay that is one leg away.", "A plus-money last leg makes the other side cheap."],
     ["A -300 last leg means the hedge eats most of the payout.", "It pays juice to give up the long-shot payout."]],
+  "Parlay's Way": ["risk", "Cash out when the offer pays more than your stake. Take the lock and walk.",
+    ["You leave with more than you put in.", "A live leg that never hits still leaves you ahead."],
+    ["You give up the full ticket if every leg would have hit.", "An offer under your stake is not this — that is selling cheap."]],
   "Future hedge": ["risk", "A sound way to lock a season-long ticket. The hedge price decides if it is worth it.",
     ["Turns a March long shot into a sure profit.", "The future already gained value. The hedge cashes some of it."],
     ["The hedge side pays juice.", "You give up the full future payout."]],
@@ -125,9 +128,9 @@ const STACK_GRADE = {
   "Five touchdowns, one game": ["lose", "The longest ticket on the page. +3984 needs to cash 2.4% of the time.",
     ["$10 pays back $408 when it hits."],
     ["Five anytime prices, five cuts.", "One scorer kept out of the end zone loses it."]],
-  "Cash-out": ["lose", "Known to cost money. The buyback price keeps extra juice for the book.",
-    ["One tap ends the sweat."],
-    ["A hedge you place yourself usually pays more.", "The offer is the book's number, not the market's."]],
+  "Cash-out": ["lose", "Below your buy-in, the book keeps the juice. Above it, that is Parlay's Way.",
+    ["One tap ends the sweat.", "Past the stake, you walk with locked profit."],
+    ["An offer under your stake sells the ticket cheap.", "A hedge you type yourself can still beat a short offer."]],
   "Pleaser": ["lose", "Known to lose. You sell 3 and 7 for a longer price.",
     ["A long price on two favorites."],
     ["Each leg moves 6 points the wrong way, across the margins NFL games land on most.", "It needs two blowouts."]],
@@ -143,7 +146,7 @@ const STACK_GRADE = {
 };
 
 // One score out of 10 per strategy, in the same order as STACK_GRADE.
-const STACK_SCORE = [9.5, 9, 8.5, 8, 7.5, 7, 7, 6, 6, 5.5, 5.5, 5, 5, 4.5, 4.5, 4.5, 4.5, 4, 4, 4, 3.5, 3.5, 3.5, 3.5, 3, 3, 3, 3, 3, 2.5, 2.5, 2.5, 2.5, 2, 2, 1.5, 1.5, 1, 1, 1, 1, 0.5, 0.5];
+const STACK_SCORE = [9.5, 9, 8.5, 8, 7.5, 7, 7, 6, 6, 7, 5.5, 5.5, 5, 5, 4.5, 4.5, 4.5, 4.5, 4, 4, 4, 3.5, 3.5, 3.5, 3.5, 3, 3, 3, 3, 3, 2.5, 2.5, 2.5, 2.5, 2, 2, 1.5, 1.5, 1, 1, 1, 1, 0.5, 0.5, 0.5];
 
 Object.keys(STACK_GRADE).forEach((name, at) => { if (STACK_RANK[name]) STACK_RANK[name][0] = at + 1; STACK_GRADE[name].score = STACK_SCORE[at]; });
 

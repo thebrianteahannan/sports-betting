@@ -24,6 +24,7 @@ _NOTES = {
     "Teaser": "FanDuel prices a teaser as its own ticket. That price is not on the board we read.",
     "Wong teaser": "FanDuel prices a teaser as its own ticket. That price is not on the board we read.",
     "Pleaser": "FanDuel prices a pleaser as its own ticket. That price is not on the board we read.",
+    "Parlay's Way": "FanDuel's cash-out number is not on the board we read. Take it in the book when the offer beats your stake.",
     "Cash-out": "FanDuel's cash-out number is not on the board we read.",
     "Hedge": "This needs a ticket you already hold. The board has prices, not your open bets.",
     "Parlay hedge": "This needs a parlay you already hold. The board has prices, not your open bets.",

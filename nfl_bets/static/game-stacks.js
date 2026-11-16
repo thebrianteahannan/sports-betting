@@ -54,9 +54,10 @@ function paintGameStacks(holder, game, who = "") {
   if (crowd) crowd.before(box); else match.append(box);
   if (game.match && !holder.classList.contains("find-stack-host")) { box.dataset.match = game.match; if (window.saveStacksOpen && typeof saveStacksSync === "function") saveStacksSync(); }
   box.addEventListener("click", (event) => {
-    if (event.target.closest("button, a, input, select, textarea, .stack-grade, .stack-close")) return;
+    if (event.target.closest("button, a, input, select, textarea, .stack-grade, .stack-close, .stack-more, .stack-set")) return;
     const head = event.target.closest(".rec-strategy > h3, .rec-strategy > .rec-history");
-    if (head) head.parentElement.classList.toggle("open");
+    if (head && typeof stackToggle === "function") stackToggle(head.parentElement, event.target.closest(".rec-history"));
+    else if (head) head.parentElement.classList.toggle("open");
   });
   gameStackData().then((data) => {
     if (!box.isConnected) return;

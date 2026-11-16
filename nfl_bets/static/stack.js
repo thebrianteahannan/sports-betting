@@ -71,9 +71,13 @@ const STACKS = [
     ["Single", "The future", "The ticket from the spring."],
     ["Single", "The other side, now", "Sized to lock a profit on the season."],
   ]],
+  ["Parlay's Way", "The cash-out pays more than you put in. Take the money and walk. The next leg does not have to hit.", [
+    ["Single or parlay", "The ticket", "What you hold. One or more legs may still be live."],
+    ["Single", "The buyback", "Take it when the offer is past your stake. $5 in and $8 back is +$3 locked. Leave the sweat on the table."],
+  ]],
   ["Cash-out", "The book offers to buy the ticket back. Their number is a hedge with their juice still in it.", [
     ["Single or parlay", "The ticket", "What you hold."],
-    ["Single", "The buyback", "Take it when you would have bet the other side at that price. Leave it when a live hedge you type yourself is a better number."],
+    ["Single", "The buyback", "Parlay's Way when the offer beats your buy-in. Otherwise take it only when you would have bet the other side at that price, and leave it when a hedge you type yourself is better."],
   ]],
   ["Flat stake", "The same dollars on every ticket. A $500 bankroll is a $5 or $10 bet, after a win and after a loss.", [
     ["Single or parlay", "Tonight's ticket", "One or two percent. A +400 and a -150 get the same dollars."],
@@ -130,21 +134,22 @@ const STACK_RANK = {
   "Side and the total": [13, "A favorite and the under are one script. A dog and the under need two different games."],
   "Player and the total": [14, "A receiver over and the game over need points. A back over and a blowout need a lead. Opposite scripts are a hedge you did not plan."],
   "First touchdown and anytime": [15, "The anytime has to pay for the first-touchdown ticket when he scores later. The first-touchdown price is usually the fat one."],
-  "Parlay hedge": [16, "Hedge a last leg at plus money. A -300 last leg sells the ticket cheap."],
-  "Hedge": [17, "Locks a number you want to keep, and gives up the rest of the ticket."],
-  "Future hedge": [18, "The same lock, on a ticket you have held all season."],
-  "If-bet": [19, "You risk the first ticket only. The price is the same price."],
-  "Paroli": [20, "A loss costs one unit. Three wins, then stop. The price is unchanged."],
-  "1-3-2-6": [21, "Two wins lock a profit even if the third loses. The price is unchanged."],
-  "Dutching": [22, "Every winner pays the same. The set has to be priced under 100%. One book is usually over that."],
-  "Reverse": [23, "Both openers are live, so you risk two units. One if-bet risks one."],
-  "Teaser": [24, "A 6-point teaser that does not cross 3 and 7 gives the juice back."],
-  "Round robin": [25, "Three pairs means three juices. One miss still kills two of the three tickets."],
-  "Oscar's grind": [26, "The series wants one unit. A long losing run is a pile of units you win back one at a time."],
-  "Fibonacci": [27, "1, 1, 2, 3, 5, 8. Slower than doubling. It still climbs until the bankroll stops."],
-  "Pleaser": [28, "You sell 3 and 7 for a longer price. Those are the margins that hit."],
-  "Cash-out": [29, "The book buys the ticket at their number. A hedge you type yourself is the better price."],
-  "Martingale": [30, "$5 becomes $5,120 after ten losses. The book stops the bet before that win arrives."],
+  "Parlay's Way": [16, "Cash out when the offer beats your buy-in. Locked profit. The next leg can miss and you still walk ahead."],
+  "Parlay hedge": [17, "Hedge a last leg at plus money. A -300 last leg sells the ticket cheap."],
+  "Hedge": [18, "Locks a number you want to keep, and gives up the rest of the ticket."],
+  "Future hedge": [19, "The same lock, on a ticket you have held all season."],
+  "If-bet": [20, "You risk the first ticket only. The price is the same price."],
+  "Paroli": [21, "A loss costs one unit. Three wins, then stop. The price is unchanged."],
+  "1-3-2-6": [22, "Two wins lock a profit even if the third loses. The price is unchanged."],
+  "Dutching": [23, "Every winner pays the same. The set has to be priced under 100%. One book is usually over that."],
+  "Reverse": [24, "Both openers are live, so you risk two units. One if-bet risks one."],
+  "Teaser": [25, "A 6-point teaser that does not cross 3 and 7 gives the juice back."],
+  "Round robin": [26, "Three pairs means three juices. One miss still kills two of the three tickets."],
+  "Oscar's grind": [27, "The series wants one unit. A long losing run is a pile of units you win back one at a time."],
+  "Fibonacci": [28, "1, 1, 2, 3, 5, 8. Slower than doubling. It still climbs until the bankroll stops."],
+  "Pleaser": [29, "You sell 3 and 7 for a longer price. Those are the margins that hit."],
+  "Cash-out": [30, "Below the buy-in, the book is selling you a short hedge. Above it, that is Parlay's Way."],
+  "Martingale": [31, "$5 becomes $5,120 after ten losses. The book stops the bet before that win arrives."],
 };
 
 function paintStack() {
@@ -217,9 +222,9 @@ function paintStack() {
     board.append(block);
   });
   board.addEventListener("click", (event) => {
-    if (event.target.closest(".rec-bet, .stack-set")) return;
+    if (event.target.closest(".rec-bet, .stack-set, .stack-grade, .stack-more, .stack-more-go")) return;
     const strategy = event.target.closest(".rec-strategy");
-    if (strategy) strategy.classList.toggle("open");
+    if (strategy) stackToggle(strategy, event.target.closest(".rec-history"));
   });
   const hold = document.getElementById("desk-hold");
   if (hold) [...row.children].forEach((node) => hold.append(node));
@@ -232,6 +237,37 @@ function paintStack() {
   applyStackFit(board);
   fillStacks(board);
 }
+
+function stackSeenList() {
+  try {
+    const rows = JSON.parse(localStorage.getItem("stackSeen") || "[]");
+    return Array.isArray(rows) ? rows.map(String) : [];
+  } catch (error) { return []; }
+}
+
+function stackSeenFirst(name) {
+  const key = String(name || "");
+  if (!key) return true;
+  const rows = stackSeenList();
+  if (rows.includes(key)) return false;
+  rows.push(key);
+  try { localStorage.setItem("stackSeen", JSON.stringify(rows.slice(-100))); } catch (error) { console.log("[stack] could not keep seen strategies", error); }
+  return true;
+}
+
+function stackToggle(block, historyHit) {
+  if (!block) return;
+  if (block.classList.contains("open") && historyHit) {
+    block.classList.toggle("stack-info");
+    return;
+  }
+  const on = !block.classList.contains("open");
+  block.classList.toggle("open", on);
+  if (!on) { block.classList.remove("stack-info"); return; }
+  block.classList.toggle("stack-info", stackSeenFirst(block.dataset.name));
+}
+
+window.stackToggle = stackToggle;
 
 function stackKeep(set, when, leagues, games = [], teams = [], players = []) {
   if (window.stackBeats && set.dataset.beats !== "1") return false;

@@ -150,7 +150,9 @@ function legHedgeLockCard(pick, dec) {
   input.addEventListener("input", fill);
   fill();
   at.className = "leg-steady-at"; at.append(`${legHedgeName(pick.other)} at `, input);
-  return legHedgeCard("Lock it in", [`${pick.hits} legs are in. Only ${legHedgeName(pick.last)} is left.`, at, full, half], ["Save as a stack", (card) => legHedgeSave([pick.other], "Stability", null, { name: "Last-leg hedge", card, stake: legHedgeLock(dec, legHedge.price.get(key) || pick.other.odds).full })]);
+  const lock = legHedgeLock(dec, legHedge.price.get(key) || pick.other.odds);
+  const way = lock.lock > 0 ? " Parlay's Way: that lock is past your buy-in." : "";
+  return legHedgeCard("Lock it in", [`${pick.hits} legs are in. Only ${legHedgeName(pick.last)} is left.${way}`, at, full, half], ["Save as a stack", (card) => legHedgeSave([pick.other], "Stability", null, { name: "Last-leg hedge", card, stake: lock.full })]);
 }
 
 function legHedgeScript(legs) {

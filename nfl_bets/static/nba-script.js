@@ -235,10 +235,28 @@ function scriptBetsBox(bets, game, people) {
   };
   const fill = () => {
     box.querySelectorAll(":scope > .find-script-bets, :scope > .find-script-none").forEach((node) => node.remove());
-    const pick = (name) => (starOn(name) && bets.stars !== undefined ? bets.stars : bets) || { groups: [], picks: [] };
+    const pick = (name) => (starOn(name) && bets.stars ? bets.stars : bets) || { groups: [], picks: [] };
     const names = [...new Set([...(bets.groups || []), ...((bets.stars && bets.stars.groups) || [])].map((group) => group.name))];
-    if (!names.length) { const none = document.createElement("p"); none.className = "find-script-why find-script-none"; none.textContent = "No star has a prop tonight whose record clears its price."; box.append(none); return; }
-    names.forEach((name) => { const set = pick(name); const group = (set.groups || []).find((row) => row.name === name) || { name, parlays: [] }; const block = scriptBetsBlock({ picks: set.picks || [] }, group, game, people, keep); block.dataset.team = name; if (bets.stars !== undefined) block.querySelector(":scope > .find-script-tabs").append(stars(name)); box.append(block); });
+    if (!names.length) {
+      const none = document.createElement("p");
+      none.className = "find-script-why find-script-none";
+      none.textContent = "No prop tonight clears its price.";
+      box.append(none);
+      return;
+    }
+    names.forEach((name) => {
+      let set = pick(name);
+      let group = (set.groups || []).find((row) => row.name === name) || { name, parlays: [] };
+      // Stars-only can only shrink. If that cut leaves no multi-leg, keep the full ticket so the block does not vanish.
+      if (starOn(name) && bets.stars && !(group.parlays || []).some((parlay) => parlay.size > 1)) {
+        const full = (bets.groups || []).find((row) => row.name === name);
+        if (full && (full.parlays || []).some((parlay) => parlay.size > 1)) { group = full; set = bets; }
+      }
+      const block = scriptBetsBlock({ picks: set.picks || [] }, group, game, people, keep, starOn(name));
+      block.dataset.team = name;
+      if (bets.stars !== undefined) block.querySelector(":scope > .find-script-tabs").append(stars(name));
+      box.append(block);
+    });
     const match = box.closest(".find-match"); if (match) scriptBetsSide(match, box);
   };
   fill();
@@ -314,7 +332,7 @@ function scriptPickPlus(row, pick, game, people) {
   row.append(go);
 }
 
-function scriptBetsBlock(bets, group, game, people, keep = {}) {
+function scriptBetsBlock(bets, group, game, people, keep = {}, starsOnly = false) {
   const money = (odds) => (odds > 0 ? `+${odds}` : String(odds));
   const who = (pick) => `<span class="find-script-who" data-who="${esc(pick.who)}" title="Search ${esc(pick.who)}">${esc(pick.who)}</span> (${esc([pick.pos, pick.team].filter(Boolean).join(", "))})`;
   const mine = bets.picks.filter((pick) => pick.team === group.name);
@@ -366,7 +384,16 @@ function scriptBetsBlock(bets, group, game, people, keep = {}) {
   });
   block.append(tabs);
   if (multi.length) { block.append(card); show(multi.find((parlay) => parlay.size === keep[group.name]) || multi[0]); }
-  else if (!group.parlays.length) { const none = document.createElement("p"); none.className = "find-script-why"; none.textContent = mine.length ? "Nothing here makes the recommended list tonight. The good bets above still clear their price." : "No star here has a prop tonight whose record clears its price."; block.append(none); }
+  else {
+    const none = document.createElement("p");
+    none.className = "find-script-why";
+    none.textContent = mine.length
+      ? "No 2+ leg ticket clears every price tonight. The props above still do."
+      : starsOnly
+        ? "No star here has a prop tonight whose record clears its price."
+        : "No player here has a prop tonight whose record clears its price.";
+    block.append(none);
+  }
   return block;
 }
 
