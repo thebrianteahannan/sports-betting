@@ -7,6 +7,15 @@
 .gate-sample-why { margin-top: 0.35rem; color: #d5deea; font-size: 0.86rem; line-height: 1.35; }
 .gate-sample-pay { margin-top: 0.3rem; color: #3dff6e; font-size: 0.9rem; font-weight: 700; }
 .gate-sample-more { margin-top: 0.3rem; color: #e7c15a; font-size: 0.86rem; font-weight: 600; }
+.gate-sample-acts { margin-top: 0.55rem !important; }
+.gate-sample-share, #desk.tv-full #desk-glass .gate-sample-share, #desk-glass .tv-tick-share {
+  display: inline-flex; align-items: center; justify-content: center; width: auto; min-width: 0; min-height: 0; margin: 0; padding: 0.4rem 0.85rem;
+  border: 1px solid rgba(61, 255, 110, 0.75); border-radius: 999px; background: transparent; box-shadow: none;
+  color: #3dff6e; font-family: "Rajdhani", sans-serif; font-size: 0.95rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer;
+}
+.gate-sample-share:hover, #desk-glass .tv-tick-share:hover { background: rgba(61, 255, 110, 0.12); }
+.gate-sample-sheet .gate-sample-share { margin-top: 0.15rem; font-size: 1.05rem; padding: 0.55rem 1rem; }
+#desk-glass .tv-tick-card .tv-tick-share { margin-top: 0.55rem; }
 #desk.tv-full #gate-sample .gate-sample-bet { font-size: 1.35rem; }
 #desk.tv-full #gate-sample .gate-sample-why, #desk.tv-full #gate-sample .gate-sample-more { font-size: 1rem; }
 #desk-glass #gate .gate-guide { text-align: center; }

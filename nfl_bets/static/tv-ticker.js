@@ -104,6 +104,12 @@ function tvTickBox() {
     if (event.target.closest("[data-tick-join]")) { event.stopPropagation(); tvTickGateGo("join"); return; }
     if (event.target.closest("[data-tick-login]")) { event.stopPropagation(); tvTickGateGo("login"); return; }
     if (event.target.closest("[data-tick-more]")) { event.stopPropagation(); if (tvTickGateOn()) { tvTickGateGo("login"); return; } if (window.recPageOpen) recPageOpen(); return; }
+    const share = event.target.closest("[data-tick-share]");
+    if (share && tvTick.pick && window.sampleShare) {
+      event.stopPropagation();
+      sampleShare(tvTick.pick).then((state) => { if (window.sampleShareMark) sampleShareMark(share, state); });
+      return;
+    }
     const open = event.target.closest("[data-tick-open]");
     if (open && tvTick.pick) { event.stopPropagation(); tvTickOpen(tvTick.pick); return; }
     if (event.target.closest("[data-tick-state]")) { event.stopPropagation(); const code = (document.getElementById("tv-tick-state-pick") || {}).value; if (code && window.saveState) saveState(code); return; }
@@ -159,7 +165,7 @@ async function tvTickLoad() {
     const guest = tvTickGateOn();
     const open = guest ? `<p class="gate-sample-more">Sign up or sign in to open the game and the rest of tonight's picks.</p><button type="button" class="tv-tick-open" data-tick-join>Start free for 7 days</button>` : `<button type="button" class="tv-tick-open" data-tick-open>Open the game &#8250;</button>`;
     const more = guest ? `<button type="button" class="tv-tick-more" data-tick-login>Sign in</button>` : `<button type="button" class="tv-tick-more" data-tick-more>View more recommended bets &#8250;</button>`;
-    if (slot) slot.innerHTML = `<div class="tv-tick-stack"><div class="tv-tick-card"><p class="gate-sample-head">Tonight's free pick</p><p class="gate-sample-bet">${esc(pick.label)} <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p><p class="gate-sample-why">${esc(pick.how)}</p><p class="gate-sample-pay">$5 wins $${win}.</p>${open}</div>${more}</div>`;
+    if (slot) slot.innerHTML = `<div class="tv-tick-stack"><div class="tv-tick-card"><p class="gate-sample-head">Tonight's free pick</p><p class="gate-sample-bet">${esc(pick.label)} <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p><p class="gate-sample-why">${esc(pick.how)}</p><p class="gate-sample-pay">$5 wins $${win}.</p><button type="button" class="tv-tick-share" data-tick-share>Share with a friend</button>${open}</div>${more}</div>`;
     tvTickDots();
   } catch (error) { console.log("[tv-ticker] could not load tonight's pick", error); } finally { tvTick.loading = false; }
 }
