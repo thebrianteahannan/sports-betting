@@ -578,17 +578,24 @@
 }
 .rec-board .find-list.find-td-board { padding-bottom: 5.5rem; }
 @media (max-width: 699px) {
+  .rec-board .find-list.find-td-board > .find-td-picks { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .rec-board .find-list.find-td-board > .find-td-tools > button.find-td-select,
+  .rec-board .find-list.find-td-board > .find-td-tools > button.find-td-make,
+  #desk.tv-full #desk-glass .rec-board .find-list.find-td-board > .find-td-tools > button.find-td-select,
+  #desk.tv-full #desk-glass .rec-board .find-list.find-td-board > .find-td-tools > button.find-td-make {
+    padding: 0.45rem 0.9rem !important; font-size: 14px !important;
+  }
   .rec-board .find-list .find-td-page > button.td-row,
   .rec-board .find-list .find-td-page > .td-pick-wrap > button.td-row,
   #desk.tv-full #desk-glass .rec-board .find-list .find-td-page > button.td-row,
   #desk.tv-full #desk-glass .rec-board .find-list .find-td-page > .td-pick-wrap > button.td-row {
-    padding: 0.65rem 0.45rem !important; font-size: 1rem !important;
+    padding: 0.7rem 0.5rem !important; font-size: 1rem !important; row-gap: 0.2rem !important;
   }
   .rec-board .find-list .find-td-page button.td-row .td-name { overflow: visible; text-overflow: clip; white-space: normal; }
-  .rec-board .find-list .find-td-page button.td-row .td-meta { align-items: flex-end; min-width: 5.8rem; }
-  .rec-board .find-list.find-td-board .find-td-few > .rec-bet { padding: 0.65rem 0.45rem; }
-  .rec-board .find-list.find-td-board .find-td-few > .rec-bet > .rec-gist { white-space: normal; }
-  .rec-board .find-list.find-td-board .find-td-few > .rec-bet > .rec-gist .who { white-space: normal; overflow: visible; text-overflow: clip; }
+  .rec-board .find-list .find-td-page button.td-row .td-meta { align-items: flex-end; min-width: 6.2rem; }
+  .rec-board .find-list .find-td-page button.td-row .td-pay { font-size: 0.78rem; }
+  .rec-board .find-list.find-td-board .find-td-few { display: none; }
+  .rec-board .find-list.find-td-board .find-td-all { border-top: 0; }
 }
 .find-board.find-td-on > .find-tips { display: none !important; }
 .rec-board .find-list.find-td-board .find-td-few > .rec-bet,

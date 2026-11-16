@@ -375,7 +375,7 @@ function openTdPage(list, people, hits, game, team) {
   const pickBtn = document.createElement("button");
   pickBtn.type = "button";
   pickBtn.className = "find-td-select";
-  pickBtn.textContent = "Select";
+  pickBtn.textContent = "Select multiple";
   const makeBtn = document.createElement("button");
   makeBtn.type = "button";
   makeBtn.className = "find-td-make";
@@ -385,7 +385,7 @@ function openTdPage(list, people, hits, game, team) {
   const syncPick = () => {
     const n = picked.size;
     list.classList.toggle("find-td-picking", picking);
-    pickBtn.textContent = picking ? "Cancel" : "Select";
+    pickBtn.textContent = picking ? "Cancel" : "Select multiple";
     pickBtn.classList.toggle("on", picking);
     makeBtn.hidden = !picking;
     makeBtn.disabled = n < 2;
@@ -500,11 +500,13 @@ function openTdPage(list, people, hits, game, team) {
   };
   const filterRows = () => {
     const only = recOnly.checked;
+    const fold = (text) => typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase().trim();
     // Few cards are the researched TD shortlist — keep them visible under Recommended only.
     [...few.querySelectorAll(".rec-bet")].forEach((card) => {
-      const who = (card.querySelector(".rec-gist .who") || {}).textContent || "";
-      const live = [...allBox.querySelectorAll("button")].find((node) => node.dataset.who === who);
-      if (live) live.dataset.rec = "1";
+      const who = card.dataset.who || (card.querySelector(".rec-gist .who") || {}).textContent || "";
+      const live = [...allBox.querySelectorAll("button")].find((node) => fold(node.dataset.who) === fold(who));
+      if (live) { live.dataset.rec = "1"; live.classList.add("find-td-rec"); }
+      card.dataset.who = who;
       card.classList.add("find-td-rec");
       if (!card.querySelector(".find-td-rec-tag")) {
         const tag = document.createElement("i");
@@ -516,10 +518,10 @@ function openTdPage(list, people, hits, game, team) {
       card.hidden = false;
     });
     const inFew = new Set(
-      [...few.querySelectorAll(".rec-bet")].map((card) => (card.querySelector(".rec-gist .who") || {}).textContent || "").filter(Boolean)
+      [...few.querySelectorAll(".rec-bet")].map((card) => fold(card.dataset.who || (card.querySelector(".rec-gist .who") || {}).textContent || "")).filter(Boolean)
     );
     [...allBox.querySelectorAll("button")].forEach((button) => {
-      const hide = (only && button.dataset.rec !== "1") || inFew.has(button.dataset.who);
+      const hide = (only && button.dataset.rec !== "1") || inFew.has(fold(button.dataset.who));
       button.hidden = hide;
       const wrap = button.closest(".td-pick-wrap");
       if (wrap) wrap.hidden = hide;
@@ -547,22 +549,39 @@ function openTdPage(list, people, hits, game, team) {
   few.className = "find-td-all find-td-page find-td-few";
   let fewKey = "";
   const showFew = (kind) => {
-    if (kind !== "Anytime TD") { few.replaceChildren(); fewKey = ""; return; }
+    if (kind !== "Anytime TD") { few.replaceChildren(); fewKey = ""; filterRows(); return; }
     const rows = [...allBox.querySelectorAll("button")].filter((button) => button.dataset.three === "1").map((button) => ({ name: button.dataset.who, odds: Number(button.dataset.odds), match: button.dataset.match || "" }));
     const key = rows.map((row) => `${row.name}|${row.odds}`).join(",");
     if (!rows.length || key === fewKey) { filterRows(); return; }
     fewKey = key;
     few.replaceChildren();
     fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "few", rows }) }).then((res) => res.json()).then((data) => {
-      if (!few.isConnected || fewKey !== key || !data || !Array.isArray(data.picks) || !data.picks.length) return;
-      data.picks.forEach((pick) => {
+      if (!few.isConnected || fewKey !== key) return;
+      const picks = data && Array.isArray(data.picks) ? data.picks : [];
+      // One list on phones — mark researched names Rec, skip the second card style.
+      if (window.matchMedia("(max-width: 699px)").matches) {
+        picks.forEach((pick) => {
+          const live = [...allBox.querySelectorAll("button")].find((node) => node.dataset.who === pick.name);
+          if (!live) return;
+          live.dataset.rec = "1";
+          live.classList.add("find-td-rec");
+          delete live.dataset.dressed;
+          if (typeof dressTdRow === "function") dressTdRow(live);
+        });
+        filterRows();
+        syncPick();
+        return;
+      }
+      if (!picks.length) { filterRows(); return; }
+      picks.forEach((pick) => {
         const live = [...allBox.querySelectorAll("button")].find((node) => node.dataset.who === pick.name);
         const price = Number((live && live.dataset.odds) || pick.odds), shown = price > 0 ? `+${price}` : String(price), chance = (live && live.dataset.chance) || "";
         const card = document.createElement("div");
         card.className = "rec-bet log-on";
-        const rec = live && live.dataset.rec === "1";
-        if (rec) card.classList.add("find-td-rec");
-        if (live) card.dataset.odds = String(live.dataset.odds || price || "");
+        card.dataset.who = pick.name;
+        const rec = true;
+        card.classList.add("find-td-rec");
+        if (live) { live.dataset.rec = "1"; live.classList.add("find-td-rec"); card.dataset.odds = String(live.dataset.odds || price || ""); }
         const head = document.createElement("b");
         const pay = typeof tdPayHtml === "function" ? tdPayHtml(price) : (typeof findCash === "function" && findCash(price) ? `<span class="td-pay">$5 profits ${esc(findCash(price))}</span>` : "");
         head.innerHTML = [`<i class="px">${esc(shown)}</i>`, chance && `<i class="pct">${esc(chance)}%</i>`, pay].filter(Boolean).join("");
@@ -639,7 +658,7 @@ function openTdPage(list, people, hits, game, team) {
       });
       filterRows();
       syncPick();
-    }).catch(() => {});
+    }).catch(() => { filterRows(); });
   };
   recOnly.addEventListener("change", filterRows);
   list.append(head, picks, filter, tools, few, allBox); syncPick();
