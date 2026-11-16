@@ -142,6 +142,7 @@ body:not(.needs-member) #gate { display: none; }
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 0.45rem 0.6rem;
+  font-size: 16px;
 }
 #gate input:-webkit-autofill {
   -webkit-text-fill-color: var(--ink);

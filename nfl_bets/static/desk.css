@@ -147,6 +147,7 @@ body.needs-member .hot { display: none; }
   color: #f4f7fb;
   border: 1px solid rgba(61, 255, 110, 0.45);
   border-radius: 8px;
+  font-size: 16px;
 }
 #desk-glass #gate .pick-save { gap: 0.45rem; }
 #desk-glass #gate button {
