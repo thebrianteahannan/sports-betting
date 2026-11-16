@@ -254,21 +254,39 @@ function paintScores(holder, game, people, list, hits) {
     else match.append(box);
     paintTdRec(match);
   } else holder.append(box);
+  let chipBusy = false;
   const showChips = () => {
-    const team = (((match && match.querySelector(".find-side-go.on")) || {}).textContent || "").split(",")[0].trim();
-    paintNote(team);
-    const rows = [...names.querySelectorAll(".find-td-chip")];
-    const panel = match && [...match.querySelectorAll(".find-side")].find((node) => !node.hidden);
-    const have = panel && [...panel.querySelectorAll(".find-roster .find-names button, .find-roster .find-names span")].map((node) => (typeof plainName === "function" ? plainName(node.textContent.replace(/, out$/, "")) : ""));
-    const mine = rows.filter((button) => {
-      const who = typeof plainName === "function" ? plainName(button.dataset.who) : button.dataset.who;
-      return !team || !have || !have.length || have.some((name) => name === who || name.startsWith(`${who} `) || who.startsWith(`${name} `));
-    });
-    rows.forEach((button) => { button.hidden = true; });
-    mine.slice(0, 5).forEach((button) => { button.hidden = false; });
-    paintTdRec(match);
+    if (chipBusy) return;
+    chipBusy = true;
+    try {
+      const team = (((match && match.querySelector(".find-side-go.on")) || {}).textContent || "").split(",")[0].trim();
+      paintNote(team);
+      const rows = [...names.querySelectorAll(".find-td-chip")];
+      const panel = match && [...match.querySelectorAll(".find-side")].find((node) => !node.hidden);
+      const everyone = match && match.querySelector(":scope > .find-everyone");
+      const rosterRoot = (panel && !panel.hidden && panel) || everyone || null;
+      const have = rosterRoot && [...rosterRoot.querySelectorAll(".find-roster .find-names button, .find-roster .find-names span, .find-roster .find-chip")].map((node) => (typeof plainName === "function" ? plainName((node.firstElementChild || node).textContent.replace(/, out$/, "")) : ""));
+      const mine = rows.filter((button) => {
+        const who = typeof plainName === "function" ? plainName(button.dataset.who) : button.dataset.who;
+        if (!team) return true;
+        if (have && have.length) return have.some((name) => name === who || name.startsWith(`${who} `) || who.startsWith(`${name} `));
+        const person = picked.find((row) => (typeof plainName === "function" ? plainName(row.person.name) : row.person.name) === who);
+        const club = person && (person.person.team || "");
+        return club && (typeof plainName === "function" ? plainName(team) === plainName(club) || plainName(team).endsWith(` ${plainName(club)}`) || plainName(club).endsWith(plainName(team).split(/\s+/).pop()) : String(team).endsWith(club));
+      });
+      rows.forEach((button) => { button.hidden = true; });
+      mine.slice(0, 5).forEach((button) => { button.hidden = false; });
+      paintTdRec(match);
+    } finally {
+      chipBusy = false;
+    }
   };
-  if (match) { match.addEventListener("click", (event) => { if (event.target.closest(".find-side-go")) showChips(); }); new MutationObserver(() => { if (match.querySelector(".find-side-go.on")) showChips(); }).observe(match, { childList: true, subtree: true }); }
+  if (match) {
+    match.addEventListener("click", (event) => { if (event.target.closest(".find-side-go")) showChips(); });
+    // Only watch roster fills — observing the whole match re-entered on our own chip updates and froze the page.
+    const watch = match.querySelector(":scope > .find-everyone, :scope > .find-body") || match;
+    new MutationObserver(() => { if (match.querySelector(".find-side-go.on")) showChips(); }).observe(watch, { childList: true, subtree: true });
+  }
 }
 window.paintTdRec = paintTdRec;
 function openTdPage(list, people, hits, game, team) {
