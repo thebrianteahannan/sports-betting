@@ -114,6 +114,7 @@ function showMember(payload) {
   }
   if (window.render) window.render();
   if (admin && window.loadAdmin) window.loadAdmin();
+  if (window.tvTickPaintCards) tvTickPaintCards(true);
   if (window.tvTickMeetFirst) tvTickMeetFirst();
   if (window.trialWarnMaybe) trialWarnMaybe(member);
 }

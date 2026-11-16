@@ -241,14 +241,23 @@ function tvTickOpen(pick) {
   }, 150);
 }
 
-function tvTickPaintCards() {
+function tvTickIsGuest() {
+  // Signed-in members with board access never get the gate CTAs, even if the
+  // sample cards loaded while body still had needs-member.
+  if (document.getElementById("member-profile") && !document.body.classList.contains("needs-member")) return false;
+  return document.body.classList.contains("needs-member") || tvTickGateOn();
+}
+
+function tvTickPaintCards(force) {
   if (!tvTick.parlay && !tvTick.pick) return;
-  const guest = tvTickGateOn() || document.body.classList.contains("needs-member");
-  if (tvTick.guest === guest && tvTick.cardsOn) return;
-  tvTick.guest = guest;
-  tvTick.cardsOn = true;
   const day = document.getElementById("tv-tick-day");
   const slot = document.getElementById("tv-tick-pick");
+  if (!day && !slot) return;
+  const guest = tvTickIsGuest();
+  const stale = !guest && !!(document.querySelector("#tv-tick-day [data-tick-join], #tv-tick-pick [data-tick-join]"));
+  if (!force && !stale && tvTick.guest === guest && tvTick.cardsOn) return;
+  tvTick.guest = guest;
+  tvTick.cardsOn = true;
   if (day) day.innerHTML = tvTick.parlay ? tvTickCardHtml(tvTick.parlay, guest) : "";
   if (slot) slot.innerHTML = tvTick.pick ? tvTickCardHtml(tvTick.pick, guest) : "";
   tvTickDots();
@@ -266,7 +275,7 @@ async function tvTickLoad() {
     tvTick.pick = single && Number.isFinite(Number(single.odds)) ? single : null;
     if (!tvTick.parlay && !tvTick.pick) return;
     tvTick.cardsOn = false;
-    tvTickPaintCards();
+    tvTickPaintCards(true);
   } catch (error) { console.log("[tv-ticker] could not load tonight's pick", error); } finally { tvTick.loading = false; }
 }
 
@@ -398,6 +407,7 @@ function tvTickShow(next, dir) {
   if (next === "lazy" && window.tvLazyPaint) tvLazyPaint();
   if (next === "law") tvTickLawPaint(inEl);
   if (next === "state" || next === "askbook" || next === "teams") tvTickAskPaint(inEl, next);
+  if (next === "day" || next === "pick") tvTickPaintCards(true);
   if (next === "meet") tvTickTalk(inEl);
   if (next !== "menu") inEl.hidden = false;
   inEl.animate([{ transform: `translateX(${dir * 100}%)` }, { transform: "none" }], { duration: ms, easing: ease });
@@ -442,11 +452,9 @@ function tvTickWatch() {
   const box = tvTickBox();
   if (!box) return;
   const on = tvTickOn();
-  if (on) {
-    tvTickLoad();
-    // Cards can load while the gate is up; redraw once the member is in.
-    tvTickPaintCards();
-  }
+  if (on) tvTickLoad();
+  // Always heal stale guest CTAs once the member profile is up, even between slides.
+  tvTickPaintCards();
   if (on && tvTickFormOn()) { if (!tvTick.hold) tvTickStay(); }
   else if (on && tvTick.hold) tvTickRelease();
   const pages = tvTickPages().join(",");
@@ -528,6 +536,7 @@ window.tvTickRest = tvTickRest;
 window.tvTickStay = tvTickStay;
 window.tvTickRelease = tvTickRelease;
 window.tvTickMeetFirst = tvTickMeetFirst;
+window.tvTickPaintCards = tvTickPaintCards;
 
 document.addEventListener("input", (event) => {
   const field = event.target.closest && event.target.closest("#login-form input, #member-form input, #member-form select");

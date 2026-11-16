@@ -385,6 +385,77 @@ function packedTeamBets(game, legs, logs, sport, share, floor) {
   return out.sort((a, b) => Number(!!a[2].soft) - Number(!!b[2].soft) || (rate(b[2]) - implied(b[1].odds)) - (rate(a[2]) - implied(a[1].odds)));
 }
 
+function packedClosest(game, legs, logs, sport) {
+  const match = String(game.match || "");
+  const clubs = packedClubs(game, legs);
+  const cache = logCache();
+  const last = byLast(cache, sport);
+  const players = [];
+  legs.forEach((leg) => {
+    const row = readPackedPlayer(leg, sport);
+    if (!row || !Number.isFinite(row.odds)) return;
+    if (row.odds < -5000 || row.odds > 800) return;
+    const p = implied(row.odds);
+    const read = count(row.label, sport, cache, last) || softTeamRead(row.who, row.juice ? "priced as juice" : "priced short", row.odds);
+    players.push({ ...row, read, club: clubs.get(foldWho(row.who)) || "", chance: p });
+  });
+  if (players.length < 3) return null;
+  const teamBets = packedTeamBets(game, legs, logs, sport, 0.4, 0);
+  if (!teamBets.length) return null;
+  const byKey = new Map();
+  players.forEach((row) => {
+    const key = `${row.rung}\u0000${row.who}`;
+    const prev = byKey.get(key);
+    if (!prev || row.chance > prev.chance) byKey.set(key, row);
+  });
+  const pool = [...byKey.values()].sort((a, b) => b.chance - a.chance || a.odds - b.odds);
+  const anchors = pool.filter((row) => !row.juice).slice(0, 24);
+  const juices = pool.filter((row) => row.juice || row.chance < 0.6).sort((a, b) => a.chance - b.chance || b.odds - a.odds).slice(0, 16);
+  if (anchors.length < 2 || !juices.length) return null;
+  let best = null;
+  for (let i = 0; i < anchors.length; i += 1) {
+    for (let j = i + 1; j < Math.min(anchors.length, i + 8); j += 1) {
+      const a = anchors[i], b = anchors[j];
+      if (a.who === b.who && a.rung === b.rung) continue;
+      if (a.club && b.club && a.club !== b.club) continue;
+      const club = a.club || b.club || "";
+      juices.forEach((juice) => {
+        if ((juice.who === a.who && juice.rung === a.rung) || (juice.who === b.who && juice.rung === b.rung)) return;
+        if (club && juice.club && juice.club !== club) return;
+        teamBets.forEach((teamBet) => {
+          const teamLabel = String(teamBet[1].label || "");
+          if (/^(The spread|The win)$/i.test(String(teamBet[0] || "")) && club) {
+            const nick = club.split(/\s+/).pop();
+            if (!teamLabel.includes(club) && !(nick && teamLabel.includes(nick))) return;
+          }
+          const rows = [
+            [a.rung, a.leg, a.read],
+            [b.rung, b.leg, b.read],
+            teamBet,
+            [juice.rung, juice.leg, juice.read],
+          ];
+          const hold = rows.reduce((sum, row) => sum + implied(row[1].odds), 0);
+          const edge = rows.reduce((sum, row) => sum + rate(row[2]) - implied(row[1].odds), 0);
+          const score = hold + edge;
+          if (best && score <= best.score) return;
+          best = {
+            score,
+            stack: {
+              game: match,
+              bets: rows.map(([rung, leg]) => ({ kind: "Same-game parlay", rung, label: String(leg.label || ""), odds: leg.odds, stake: 5, job: JOBS[rung] || "Closest hold on the board.", game: match })),
+              kickoff: game.kickoff || "",
+              sport,
+              club: club || juice.club || "",
+              closest: true,
+            },
+          };
+        });
+      });
+    }
+  }
+  return best && best.stack;
+}
+
 function packed(games, loaded, logs, { share = SHARE, floor = 0.85 } = {}) {
   const cache = logCache();
   const picked = [];
@@ -520,6 +591,17 @@ function packed(games, loaded, logs, { share = SHARE, floor = 0.85 } = {}) {
       add(qb);
       kept.push(...out);
     });
+  });
+  // Every game with props gets at least one closest 4-leg when the hard cut finds none.
+  const covered = new Set(kept.map((stack) => String(stack.game || "")));
+  loaded.forEach(([game, legs]) => {
+    const sport = String(game.sport || "");
+    const match = String(game.match || "");
+    if (!OPEN.has(sport) || !match || covered.has(match) || !(legs || []).length) return;
+    const closest = packedClosest(game, legs, logs, sport);
+    if (!closest) return;
+    kept.push(closest);
+    covered.add(match);
   });
   return kept;
 }

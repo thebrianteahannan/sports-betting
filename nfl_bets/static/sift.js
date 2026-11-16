@@ -195,6 +195,8 @@ function paintTdRec(match) {
       if (top) top.append(tag); else chip.prepend(tag);
     } else if (!on && tag) tag.remove();
   });
+  const box = match.querySelector(":scope > .find-td");
+  if (box && typeof box._showTdChips === "function" && !box._tdChipBusy) box._showTdChips();
 }
 
 function paintScores(holder, game, people, list, hits) {
@@ -202,8 +204,8 @@ function paintScores(holder, game, people, list, hits) {
   (people || []).forEach((person) => { if (!person || person.kind !== "player") return; (person.bets || []).forEach((bet) => { if (bet.match !== game.match || bet.kickoff !== game.kickoff || !isTd(bet)) return; const price = Number(bet.odds); if (!price) return; const chance = shot(price); const had = best.get(person.name); if (!had || chance > had.chance) best.set(person.name, { person, chance, odds: price }); }); });
   const picked = [...best.values()].sort((a, b) => b.chance - a.chance);
   if (!picked.length) return;
-  const box = document.createElement("details"); box.className = "find-score find-td find-team-bets"; box.open = true; box.style.gridColumn = "1 / -1";
-  const title = document.createElement("summary"); title.innerHTML = `<b class="find-script-head">Most likely to score a touchdown</b>`;
+  const box = document.createElement("details"); box.className = "find-score find-td find-team-bets"; box.open = false; box.style.gridColumn = "1 / -1";
+  const title = document.createElement("summary"); title.innerHTML = `<b class="find-script-head">Touchdowns</b>`;
   const note = document.createElement("div"); note.className = "find-td-note";
   const paintNote = (team) => {
     const lines = new Map();
@@ -216,12 +218,18 @@ function paintScores(holder, game, people, list, hits) {
     const rows = [...lines.values()].filter((line) => { const nick = line.split(" ")[0]; return !team || String(team).endsWith(nick); });
     note.replaceChildren(...rows.map((text) => Object.assign(document.createElement("p"), { textContent: text })));
   };
+  const filter = document.createElement("label");
+  filter.className = "find-td-filter";
+  filter.innerHTML = `<input type="checkbox" checked> Recommended only`;
+  filter.addEventListener("click", (event) => event.stopPropagation());
+  const recOnly = filter.querySelector("input");
   const names = document.createElement("div"); names.className = "find-td-list";
+  const empty = Object.assign(document.createElement("p"), { className: "find-td-empty quiet", hidden: true, textContent: "No recommended touchdowns in this game yet." });
   paintNote(); loadZone(people, names);
   const match = [...holder.querySelectorAll(".find-match")].pop();
   if (people && people.zoneJob) people.zoneJob.then(() => { if (note.isConnected) paintNote((((match && match.querySelector(".find-side-go.on")) || {}).textContent || "").split(",")[0].trim()); });
   const openPlayer = (person, from) => { if (typeof showCardInGame === "function" && showCardInGame(from || names, person)) return; const board = holder.closest(".find-board"); const roster = board && board.querySelector(":scope > .find-roster"); showFind(list, hits, person, roster, people || (board && board.people) || [], false, "Touchdowns"); };
-  picked.forEach((row, index) => {
+  picked.forEach((row) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "find-td-chip";
@@ -229,7 +237,7 @@ function paintScores(holder, game, people, list, hits) {
     const price = Number(row.odds) > 0 ? `+${row.odds}` : String(row.odds);
     const pay = findCash(row.odds);
     button.innerHTML = `<span class="find-td-chip-top"><b>${esc(row.person.name)}</b></span><span class="find-td-chip-meta"><i class="px">${esc(price)}</i><i class="pct">${Math.round(row.chance * 100)}%</i>${pay ? `<i class="pay">$5 wins $${esc(pay)}</i>` : ""}</span>`;
-    if (index >= 5) button.hidden = true;
+    button.hidden = true;
     button.addEventListener("click", () => openPlayer(row.person, button));
     names.append(button);
   });
@@ -242,7 +250,7 @@ function paintScores(holder, game, people, list, hits) {
     if (typeof startTdGo === "function") startTdGo(board, people);
     else openTdPage(list, people || (board && board.people) || [], hits);
   });
-  box.append(title, note, names);
+  box.append(title, filter, note, names, empty);
   if (String(game.sport || "").toUpperCase() === "NFL") box.append(link);
   if (match) {
     const bets = match.querySelector(":scope > .find-bets");
@@ -258,9 +266,11 @@ function paintScores(holder, game, people, list, hits) {
   const showChips = () => {
     if (chipBusy) return;
     chipBusy = true;
+    box._tdChipBusy = true;
     try {
       const team = (((match && match.querySelector(".find-side-go.on")) || {}).textContent || "").split(",")[0].trim();
       paintNote(team);
+      paintTdRec(match);
       const rows = [...names.querySelectorAll(".find-td-chip")];
       const panel = match && [...match.querySelectorAll(".find-side")].find((node) => !node.hidden);
       const everyone = match && match.querySelector(":scope > .find-everyone");
@@ -268,6 +278,7 @@ function paintScores(holder, game, people, list, hits) {
       const have = rosterRoot && [...rosterRoot.querySelectorAll(".find-roster .find-names button, .find-roster .find-names span, .find-roster .find-chip")].map((node) => (typeof plainName === "function" ? plainName((node.firstElementChild || node).textContent.replace(/, out$/, "")) : ""));
       const mine = rows.filter((button) => {
         const who = typeof plainName === "function" ? plainName(button.dataset.who) : button.dataset.who;
+        if (recOnly.checked && !button.classList.contains("find-td-rec")) return false;
         if (!team) return true;
         if (have && have.length) return have.some((name) => name === who || name.startsWith(`${who} `) || who.startsWith(`${name} `));
         const person = picked.find((row) => (typeof plainName === "function" ? plainName(row.person.name) : row.person.name) === who);
@@ -275,12 +286,17 @@ function paintScores(holder, game, people, list, hits) {
         return club && (typeof plainName === "function" ? plainName(team) === plainName(club) || plainName(team).endsWith(` ${plainName(club)}`) || plainName(club).endsWith(plainName(team).split(/\s+/).pop()) : String(team).endsWith(club));
       });
       rows.forEach((button) => { button.hidden = true; });
-      mine.slice(0, 5).forEach((button) => { button.hidden = false; });
-      paintTdRec(match);
+      const show = recOnly.checked ? mine : mine.slice(0, 5);
+      show.forEach((button) => { button.hidden = false; });
+      empty.hidden = show.length > 0;
     } finally {
+      box._tdChipBusy = false;
       chipBusy = false;
     }
   };
+  recOnly.addEventListener("change", showChips);
+  box._showTdChips = showChips;
+  showChips();
   if (match) {
     match.addEventListener("click", (event) => { if (event.target.closest(".find-side-go")) showChips(); });
     // Only watch roster fills — observing the whole match re-entered on our own chip updates and froze the page.

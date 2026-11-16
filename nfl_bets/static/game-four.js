@@ -149,11 +149,12 @@ function gameFourFill(box, stacks, at, recCount) {
 }
 
 function gameFourMount(match, betsNode, stacksNode, recommended = true) {
-  const box = document.createElement("div");
+  const box = document.createElement("details");
   box.className = "find-four find-team-bets";
+  box.open = false;
   box.style.gridColumn = "1 / -1";
   const word = recommended ? "Recommended" : "Generated";
-  box.innerHTML = `<p class="find-script-head">${word} 4-leg parlay <i class="find-four-tag${recommended ? "" : " find-four-tag-gen"}">${word}</i></p><p class="find-four-shape">Anchors and juice · 3 players + 1 game bet</p>`;
+  box.innerHTML = `<summary><b class="find-script-head">${word} 4-leg parlay <i class="find-four-tag${recommended ? "" : " find-four-tag-gen"}">${word}</i></b></summary><p class="find-four-shape">Anchors and juice · 3 players + 1 game bet</p>`;
   if (betsNode) betsNode.before(box);
   else if (stacksNode) stacksNode.before(box);
   else match.append(box);
@@ -163,25 +164,47 @@ function gameFourMount(match, betsNode, stacksNode, recommended = true) {
 function gameFourShow(match, game, found, near) {
   if (!match || !match.isConnected) return;
   const side = gameFourSelected(match);
-  const uniq = (rows) => {
+  const uniq = (rows, teamOnly) => {
     const seen = new Set();
     return rows.filter((row) => {
       const sig = gameFourSig(row);
-      if (!sig || seen.has(sig) || !gameFourFits(row) || !gameFourForTeam(row, side)) return false;
+      if (!sig || seen.has(sig) || !gameFourFits(row)) return false;
+      if (teamOnly && !gameFourForTeam(row, side)) return false;
       seen.add(sig);
       return true;
     });
   };
-  const rec = uniq(found);
-  const gen = uniq(near).filter((row) => !rec.some((hit) => gameFourSig(hit) === gameFourSig(row)));
+  const take = (teamOnly) => {
+    const hard = uniq(found, teamOnly).filter((row) => !row.closest);
+    const soft = [...uniq(found, teamOnly).filter((row) => row.closest), ...uniq(near, teamOnly)]
+      .filter((row) => !hard.some((hit) => gameFourSig(hit) === gameFourSig(row)));
+    return { hard, soft };
+  };
+  let { hard: rec, soft: gen } = take(true);
+  // Team filter can wipe the slate — fall back to the closest whole-game ticket.
+  if (!(rec.length || gen.length) && side) ({ hard: rec, soft: gen } = take(false));
   const list = [...rec, ...gen];
   match.querySelectorAll(":scope > .find-four").forEach((node) => node.remove());
   const betsNode = match.querySelector(":scope > .find-bets");
   const stacksNode = match.querySelector(":scope > .find-stacks");
   if (!list.length) {
     const empty = gameFourMount(match, betsNode, stacksNode, false);
-    const who = side ? side.nick || side.team : "this game";
-    empty.append(Object.assign(document.createElement("p"), { className: "quiet", textContent: side ? `No Anchors and juice ticket fits the ${who} right now.` : "No Anchors and juice ticket fits this game right now." }));
+    empty.append(Object.assign(document.createElement("p"), { className: "quiet", textContent: "Looking for the closest Anchors and juice ticket…" }));
+    if (!match._gameFourRetry) {
+      match._gameFourRetry = 1;
+      if (typeof gameStackData === "function") {
+        gameStackData(true).then((data) => {
+          if (!match.isConnected) return;
+          const fits = (row) => row.game === game.match || (row.bets || []).some((bet) => bet.game === game.match);
+          const againFound = (((data && data.found) || {})["Anchors and juice"] || []).filter(fits);
+          const againNear = (((data && data.near) || {})["Anchors and juice"] || []).filter(fits);
+          match._gameFour = { game, found: againFound, near: againNear };
+          gameFourShow(match, game, againFound, againNear);
+        }).catch(() => {});
+      }
+    } else {
+      empty.querySelector(".quiet").textContent = "Still waiting on a close Anchors and juice ticket for this game.";
+    }
     return;
   }
   const box = gameFourMount(match, betsNode, stacksNode, rec.length > 0);
@@ -193,6 +216,7 @@ function paintGameFour(holder, game) {
   const match = holder.classList.contains("find-match") ? holder : [...holder.querySelectorAll(".find-match")].pop();
   if (!match || typeof gameStackData !== "function") return;
   match.querySelectorAll(":scope > .find-four").forEach((node) => node.remove());
+  match._gameFourRetry = 0;
   gameStackData().then((data) => {
     if (!match.isConnected) return;
     const fits = (row) => row.game === game.match || (row.bets || []).some((bet) => bet.game === game.match);

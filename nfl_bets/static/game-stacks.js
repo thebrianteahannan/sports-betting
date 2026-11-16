@@ -1,12 +1,21 @@
 /** Parlay strategies that fit one game, shown on that game's search card. */
 
-function gameStackData() {
+function gameStackData(fresh) {
   const job = window.gameStackJob;
-  if (job && Date.now() - job.at < 600000) return job.promise;
+  if (!fresh && job && Date.now() - job.at < 600000 && !job.bad) return job.promise;
   const promise = fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "stack" }) })
-    .then((res) => res.json())
-    .catch(() => ({}));
-  window.gameStackJob = { at: Date.now(), promise };
+    .then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error === "Sign in." || (data.error && !data.found)) {
+        if (window.gameStackJob && window.gameStackJob.promise === promise) window.gameStackJob.bad = true;
+      }
+      return data;
+    })
+    .catch(() => {
+      if (window.gameStackJob && window.gameStackJob.promise === promise) window.gameStackJob.bad = true;
+      return {};
+    });
+  window.gameStackJob = { at: Date.now(), promise, bad: false };
   return promise;
 }
 

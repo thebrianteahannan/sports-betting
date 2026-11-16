@@ -23,8 +23,13 @@
 .find-why .find-exp, #desk.tv-full #desk-glass .find-why .find-exp { color: #7d8894; font-size: 0.8rem; font-weight: 400; }
 .find-why .find-exp button.find-near, #desk.tv-full #desk-glass .find-why .find-exp button.find-near, #desk.tv-full #desk-glass .rec-board .find-why .find-exp button.find-near { color: inherit !important; font-size: inherit !important; font-weight: 500 !important; }
 .find-tray .find-st + .find-why:has(> .find-exp:first-child) { margin-top: -0.2rem; }
-.rec-board .find-four { margin: 0.35rem 0 0.7rem; padding: 0.75rem 0.85rem 0.8rem; border: 1px solid rgba(61, 255, 110, 0.45); border-radius: 12px; background: rgba(4, 16, 24, 0.72); }
-.rec-board .find-four > .find-script-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.55rem; margin: 0 0 0.2rem; color: #3dff6e; font-size: 13px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.rec-board .find-four { display: block; margin: 0.35rem 0 0.7rem; padding: 0.75rem 0.85rem 0.8rem; border: 1px solid rgba(61, 255, 110, 0.45); border-radius: 12px; background: rgba(4, 16, 24, 0.72); }
+.rec-board .find-four > summary { display: block; margin: 0; list-style: none; cursor: pointer; }
+.rec-board .find-four > summary::-webkit-details-marker { display: none; }
+.rec-board .find-four[open] > summary { margin-bottom: 0.45rem; }
+.rec-board .find-four > summary .find-script-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.55rem; margin: 0; color: #3dff6e; font-size: 13px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.rec-board .find-four > summary .find-script-head::after { content: " ▸"; }
+.rec-board .find-four[open] > summary .find-script-head::after { content: " ▾"; }
 .rec-board .find-four .find-four-tag { display: inline-flex; align-items: center; padding: 0.12rem 0.45rem; border-radius: 999px; background: #e7c15a; color: #07090e; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
 .rec-board .find-four .find-four-tag-gen { background: #9fb3c8; color: #071018; }
 .rec-board .find-four .find-four-shape { margin: 0 0 0.45rem; color: #9fb3c8; font-size: 13px; font-weight: 700; }
@@ -441,6 +446,9 @@
 .rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief, .find-td) > summary { display: block; margin: 0; list-style: none; }
 .rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief, .find-td) > summary::-webkit-details-marker { display: none; }
 .rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief, .find-td)[open] > summary { margin-bottom: 0.45rem; }
+.rec-board .find-td .find-td-filter { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0 0 0.55rem; color: #d5dde6; font-size: 13px; font-weight: 700; cursor: pointer; user-select: none; }
+.rec-board .find-td .find-td-filter input { width: 1rem; height: 1rem; accent-color: #e7c15a; cursor: pointer; }
+.rec-board .find-td .find-td-empty { margin: 0 0 0.35rem; }
 .rec-board .find-td .find-td-note { display: grid; gap: 0.25rem; margin: 0 0 0.55rem; }
 .rec-board .find-td .find-td-note > p { margin: 0; color: #9fb3c8; font-size: 13px; line-height: 1.4; }
 .rec-board .find-td .find-td-list { display: grid; gap: 0.4rem; margin: 0; }
