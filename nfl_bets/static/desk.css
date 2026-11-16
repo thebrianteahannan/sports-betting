@@ -48,6 +48,52 @@ body.needs-member .hot { display: none; }
   margin: 0.55rem 0;
   color: #d5deea;
 }
+#desk-glass #gate .pass-check {
+  list-style: none;
+  margin: -0.15rem 0 0.55rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(61, 255, 110, 0.28);
+  border-radius: 8px;
+  background: rgba(4, 16, 24, 0.85);
+}
+#desk-glass #gate .pass-check[hidden] { display: none; }
+#desk-glass #gate .pass-check li {
+  position: relative;
+  margin: 0.2rem 0;
+  padding-left: 1.35rem;
+  color: #8ea0b3;
+  font-size: 13px;
+  line-height: 1.35;
+}
+#desk-glass #gate .pass-check li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.2rem;
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 1px solid rgba(142, 160, 179, 0.7);
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+#desk-glass #gate .pass-check li.ok { color: #3dff6e; }
+#desk-glass #gate .pass-check li.ok::before {
+  border-color: #3dff6e;
+  background: #3dff6e;
+  box-shadow: 0 0 8px rgba(61, 255, 110, 0.45);
+}
+#desk-glass #gate .pass-check li.ok::after {
+  content: "";
+  position: absolute;
+  left: 0.22rem;
+  top: 0.35rem;
+  width: 0.35rem;
+  height: 0.2rem;
+  border-left: 2px solid #04140c;
+  border-bottom: 2px solid #04140c;
+  transform: rotate(-45deg);
+}
+#desk-glass #gate .pass-check li[hidden] { display: none; }
 #desk-glass #gate input {
   width: 100%;
   min-width: 0;

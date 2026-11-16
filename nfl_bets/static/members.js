@@ -553,8 +553,59 @@ if (trialPay) trialPay.addEventListener("click", () => {
 });
 const trialOut = document.getElementById("gate-trial-out");
 if (trialOut) trialOut.addEventListener("click", () => signOut());
+function joinPassState() {
+  const pass = document.getElementById("member-pass");
+  const again = document.getElementById("member-pass2");
+  const a = pass ? pass.value : "";
+  const b = again ? again.value : "";
+  return { a, b, len: a.length >= 8, match: a.length > 0 && a === b };
+}
+
+function paintJoinPass() {
+  const box = document.getElementById("member-pass-check");
+  const pass = document.getElementById("member-pass");
+  const again = document.getElementById("member-pass2");
+  if (!box || !pass || !again) return;
+  const { a, b, len, match } = joinPassState();
+  const on = document.activeElement === pass || document.activeElement === again || a.length > 0 || b.length > 0;
+  box.hidden = !on;
+  const lenRow = box.querySelector('[data-rule="len"]');
+  const matchRow = box.querySelector('[data-rule="match"]');
+  if (lenRow) lenRow.classList.toggle("ok", len);
+  if (matchRow) {
+    matchRow.hidden = !(b.length > 0 || len);
+    matchRow.classList.toggle("ok", match);
+  }
+}
+
+document.getElementById("member-form").addEventListener("input", (event) => {
+  if (!event.target.closest("#member-pass, #member-pass2")) return;
+  paintJoinPass();
+});
+document.getElementById("member-form").addEventListener("focusin", (event) => {
+  if (!event.target.closest("#member-pass, #member-pass2")) return;
+  paintJoinPass();
+});
+document.getElementById("member-form").addEventListener("focusout", (event) => {
+  if (!event.target.closest("#member-pass, #member-pass2")) return;
+  setTimeout(paintJoinPass, 0);
+});
 document.getElementById("member-form").addEventListener("submit", (event) => {
   event.preventDefault();
+  paintJoinPass();
+  const { len, match } = joinPassState();
+  const error = document.getElementById("member-error");
+  if (!len) {
+    if (error) error.textContent = "Use at least 8 characters.";
+    document.getElementById("member-pass").focus();
+    return;
+  }
+  if (!match) {
+    if (error) error.textContent = "Passwords must match.";
+    document.getElementById("member-pass2").focus();
+    return;
+  }
+  if (error) error.textContent = "";
   sendMember("/api/join", {
     name: "member-name",
     email: "member-email",
