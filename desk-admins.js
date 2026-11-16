@@ -1,9 +1,9 @@
 function createAdmins(readKey, writeKey) {
-  const owner = "bthannan@gmail.com";
+  const owners = new Set(["bthannan@gmail.com", "parlayoftheday11@gmail.com"]);
 
   function marked(user) {
     const email = String(user && user.email || "").trim().toLowerCase();
-    return email === owner || Boolean(user && user.admin);
+    return owners.has(email) || Boolean(user && user.admin);
   }
 
   function onlineOf(data) {
@@ -28,14 +28,22 @@ function createAdmins(readKey, writeKey) {
   }
 
   function rows(users) {
-    return (users || []).map((row) => ({
-      name: row.name || "",
-      email: row.email || "",
-      plan: row.plan || "free",
-      admin: marked(row),
-      lastLogin: row.lastLogin || "",
-      createdAt: row.createdAt || "",
-    })).sort((a, b) => String(b.lastLogin).localeCompare(String(a.lastLogin)));
+    return (users || []).map((row) => {
+      const end = Date.parse(row.trialEndsAt || "");
+      const trial = Number.isFinite(end) && end > Date.now();
+      const paid = (row.plan || "free") === "pro" && ["active", "trialing", "past_due"].includes(row.subStatus || "");
+      return {
+        name: row.name || "",
+        email: row.email || "",
+        plan: paid ? "pro" : "free",
+        admin: marked(row),
+        beta: Boolean(row.beta),
+        trial,
+        trialEndsAt: row.trialEndsAt || "",
+        lastLogin: row.lastLogin || "",
+        createdAt: row.createdAt || "",
+      };
+    }).sort((a, b) => String(b.lastLogin).localeCompare(String(a.lastLogin)));
   }
 
   async function load() {
@@ -396,7 +404,7 @@ function createAdmins(readKey, writeKey) {
     },
     async setMemberAdmin(email, admin) {
       const clean = String(email || "").trim().toLowerCase();
-      if (clean === owner && !admin) throw new Error("That admin stays.");
+      if (owners.has(clean) && !admin) throw new Error("That admin stays.");
       const data = await load();
       const row = data.users.find((item) => item.email === clean);
       if (!row) throw new Error("That member is not here.");
@@ -406,7 +414,7 @@ function createAdmins(readKey, writeKey) {
     },
     async dropMember(email) {
       const clean = String(email || "").trim().toLowerCase();
-      if (clean === owner) throw new Error("That admin stays.");
+      if (owners.has(clean)) throw new Error("That admin stays.");
       const data = await load();
       const row = data.users.find((item) => item.email === clean);
       if (!row) throw new Error("That member is not here.");

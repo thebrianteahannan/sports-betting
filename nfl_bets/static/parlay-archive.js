@@ -123,7 +123,7 @@ function archivePaint() {
     const go = document.createElement("button");
     go.type = "button";
     go.className = "find-saved-st find-saved-done";
-    go.textContent = window.archiveOpen ? "Hide finished" : `Finished (${window.archiveRows.length})`;
+    go.textContent = window.archiveOpen ? "Hide finished" : `Bet History (${window.archiveRows.length})`;
     go.setAttribute("aria-expanded", String(window.archiveOpen));
     go.addEventListener("click", () => { window.archiveOpen = !window.archiveOpen; if (window.archiveOpen && window.saveShut) { window.saveShut = false; paintParlay(); } else archivePaint(); });
     const fresh = box.querySelector(":scope > p.find-say > .find-saved-new");

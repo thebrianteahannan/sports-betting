@@ -9,7 +9,7 @@ Figures in the business model are a proposal. The graded record as of October 9,
 - [What the desk does](product.md) — `product.pdf`
 - [Risks and mitigations](risks.md) — `risks.pdf`
 - [Business model](business-model.md) — `business-model.pdf`
-- [Draft agreement: payback, then 50/50](agreement.md) — `agreement.pdf`
+- [Draft agreement: Florida LLC, payback, then 50/50](agreement.md) — `agreement.pdf`
 - [Marketing overview](marketing/overview.md) — `marketing/overview.pdf`
 - [Social posts](marketing/posts.md) — `marketing/posts.pdf`
 - Membership payments — `payments.pdf`

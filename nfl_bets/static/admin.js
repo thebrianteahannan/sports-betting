@@ -1,5 +1,9 @@
-function planName(plan) {
-  return plan === "pro" ? "Paid" : "Free";
+function planName(row) {
+  if (!row || typeof row === "string") return row === "pro" ? "Paid" : "Free";
+  if (row.admin) return "Admin";
+  if (row.plan === "pro") return "Paid";
+  if (row.trial) return row.beta ? "Beta trial" : "Free trial";
+  return "Trial over";
 }
 
 function loginWhen(stamp) {
@@ -201,7 +205,7 @@ function paintAdmin(payload) {
   const admins = rows.filter((row) => row.admin).map((row) => row.name || row.email);
   const line = (row) => {
     const role = row.admin ? "Admin" : "Member";
-    const stay = String(row.email || "").toLowerCase() === "bthannan@gmail.com";
+    const stay = ["bthannan@gmail.com", "parlayoftheday11@gmail.com"].includes(String(row.email || "").toLowerCase());
     const action = stay ? "" : `<button type="button" class="ghost" data-admin-email="${esc(row.email || "")}" data-admin-on="${row.admin ? "0" : "1"}">${row.admin ? "Remove" : "Make admin"}</button><button type="button" class="ghost" data-admin-drop="${esc(row.email || "")}" data-admin-name="${esc(row.name || "this member")}">Delete</button>`;
     return { role, action, row };
   };
@@ -212,7 +216,7 @@ function paintAdmin(payload) {
     const lines = [];
     if (habit && habit.blurb) String(habit.blurb).split("\n").forEach((line) => { const text = line.trim(); if (text) lines.push(text); });
     if (habit && (habit.recent || []).length) lines.push(`Recent answers: ${habit.recent.join("; ")}.`);
-    const gist = `${esc(item.row.email || "")}<em>${esc(planName(item.row.plan))} · ${esc(loginWhen(item.row.lastLogin))}</em>`;
+    const gist = `${esc(item.row.email || "")}<em>${esc(planName(item.row))} · ${esc(loginWhen(item.row.lastLogin))}</em>`;
     return adminCard(`${esc(item.row.name || "Member")} · ${esc(item.role)}`, gist, lines, item.action ? `<p class="pick-save">${item.action}</p>` : "");
   }).join("");
   if (showAllHabits) list.querySelectorAll(".rec-bet").forEach((card) => { if (card.querySelector(":scope > span")) card.classList.add("open"); });

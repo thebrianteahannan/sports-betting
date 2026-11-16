@@ -27,9 +27,12 @@ function paintBilling(member) {
   const box = document.getElementById("billing-plans");
   if (!line || !box) return;
   const key = billingKey(member);
-  if (!key) line.textContent = "Free membership. The board is open.";
-  else if (member.subStatus === "past_due") line.textContent = "Your card didn't go through. Update it and the VIP Pass stays on.";
-  else line.textContent = billingWhen(member.periodEnd) ? "You're on the VIP Pass. It runs through " + billingWhen(member.periodEnd) + "." : "You're on the VIP Pass.";
+  if (key && member.subStatus === "past_due") line.textContent = "Your card didn't go through. Update it and the VIP Pass stays on.";
+  else if (key) line.textContent = billingWhen(member.periodEnd) ? "You're on the VIP Pass. It runs through " + billingWhen(member.periodEnd) + "." : "You're on the VIP Pass.";
+  else if (member.admin) line.textContent = "Admin. The board stays open.";
+  else if (member.trial && billingWhen(member.trialEndsAt)) line.textContent = (member.beta ? "Beta trial" : "Free trial") + " through " + billingWhen(member.trialEndsAt) + ". Then $19.99 a month.";
+  else if (member.board === false) line.textContent = "Your free trial is over. Get the VIP Pass to keep the board.";
+  else line.textContent = "Free membership. The board is open.";
   const manage = member.billing ? `<button type="button" id="billing-manage">Manage billing</button>` : "";
   const offer = `<div class="vip-offer"><p>${esc(VIP_LINE)}</p><ul>${VIP_OFFER.map((item) => `<li>${esc(item)}</li>`).join("")}</ul></div>`;
   box.innerHTML = BILLING_PLANS.map((plan) => {
@@ -66,6 +69,7 @@ function billingBack() {
 }
 
 window.paintBilling = paintBilling;
+window.openBilling = openBilling;
 document.getElementById("pane-profile").addEventListener("click", (event) => {
   const plan = event.target.closest("[data-plan]");
   const manage = event.target.closest("#billing-manage");

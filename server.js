@@ -274,9 +274,34 @@ function passHash(password, salt) {
   return crypto.pbkdf2Sync(password, Buffer.from(salt, "hex"), 120000, 32, "sha256").toString("hex");
 }
 
+const TRIAL_MS = 7 * 24 * 60 * 60 * 1000;
+
 function isAdmin(user) {
   const email = String(user && user.email || "").trim().toLowerCase();
-  return email === "bthannan@gmail.com" || Boolean(user && user.admin);
+  return email === "bthannan@gmail.com" || email === "parlayoftheday11@gmail.com" || Boolean(user && user.admin);
+}
+
+function trialEndsAt(from) {
+  return new Date((Number.isFinite(from) ? from : Date.now()) + TRIAL_MS).toISOString();
+}
+
+function trialActive(user) {
+  const end = Date.parse(user && user.trialEndsAt || "");
+  return Number.isFinite(end) && end > Date.now();
+}
+
+function boardOpen(user) {
+  if (!user) return false;
+  if (isAdmin(user)) return true;
+  if (paidPlan(user) === "pro") return true;
+  return trialActive(user);
+}
+
+function ensureTrial(user) {
+  if (!user || isAdmin(user) || paidPlan(user) === "pro" || user.trialEndsAt) return false;
+  user.trialEndsAt = trialEndsAt();
+  user.beta = true;
+  return true;
 }
 
 function cleanState(value) {
@@ -316,16 +341,52 @@ function paidPlan(user) {
 }
 
 function publicMember(user) {
-  return { id: user.id, name: user.name, email: user.email, plan: paidPlan(user), planInterval: user.planInterval || "", subStatus: user.subStatus || "", periodEnd: user.periodEnd || "", billing: Boolean(user.stripeCustomerId), admin: isAdmin(user), state: user.state || "", book: user.book || "", hide: user.hide || {}, teams: Array.isArray(user.teams) ? user.teams : null, league: user.league || null, born: user.born || "", fullAt: user.fullAt || "", listed: user.listed !== false };
+  const plan = paidPlan(user);
+  const trial = trialActive(user);
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    plan,
+    planInterval: user.planInterval || "",
+    subStatus: user.subStatus || "",
+    periodEnd: user.periodEnd || "",
+    billing: Boolean(user.stripeCustomerId),
+    admin: isAdmin(user),
+    beta: Boolean(user.beta),
+    trial,
+    trialEndsAt: user.trialEndsAt || "",
+    board: boardOpen(user),
+    state: user.state || "",
+    book: user.book || "",
+    hide: user.hide || {},
+    teams: Array.isArray(user.teams) ? user.teams : null,
+    league: user.league || null,
+    born: user.born || "",
+    fullAt: user.fullAt || "",
+    listed: user.listed !== false,
+  };
 }
 
 async function loadMembers() {
   const data = (await readKey("bets/members.json")) || {};
-  return {
-    users: Array.isArray(data.users) ? data.users : [],
+  const users = Array.isArray(data.users) ? data.users : [];
+  let dirty = false;
+  users.forEach((user) => { if (ensureTrial(user)) dirty = true; });
+  const next = {
+    users,
     sessions: data.sessions && typeof data.sessions === "object" ? data.sessions : {},
     activity: Array.isArray(data.activity) ? data.activity : [],
   };
+  if (dirty) await writeKey("bets/members.json", next);
+  return next;
+}
+
+function refuseBoard(res, user) {
+  if (!user) { sendJson(res, { error: "Sign in." }, 401); return true; }
+  if (boardOpen(user)) return false;
+  sendJson(res, { error: "Your free trial is over. Sign up for a membership to continue.", code: "trial_over" }, 402);
+  return true;
 }
 
 async function memberFrom(req) {
@@ -454,7 +515,7 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, await adminList());
       return;
     }
-    if (req.method === "GET" && (url.pathname === "/api/chat" || url.pathname === "/api/chat/room")) { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } try { sendJson(res, url.pathname === "/api/chat" ? await chatApi.list(user) : await chatApi.read(user, url.searchParams.get("id") || "", url.searchParams.get("after"), url.searchParams.get("from"))); } catch (error) { sendJson(res, { error: String((error && error.message) || error) }, 400); } return; } if (req.method === "GET" && (url.pathname === "/api/friends" || url.pathname === "/api/shared")) { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, url.pathname === "/api/friends" ? await friendsApi.friendsView(user, readKey, loadMembers) : await friendsApi.sharedList(user, readKey)); return; } if (req.method === "GET" && url.pathname === "/api/parlays/archive") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await parlayArchive(user, readKey, writeKey)); return; } if (req.method === "GET" && url.pathname === "/api/parlays") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await parlayList(user, readKey)); return; } if (req.method === "GET" && (url.pathname === "/api/notes" || url.pathname === "/api/slip")) { if (url.pathname === "/api/slip") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await slipList(user, readKey, writeKey)); return; } sendJson(res, await noteList()); return; }
+    if (req.method === "GET" && (url.pathname === "/api/chat" || url.pathname === "/api/chat/room")) { const user = await memberFrom(req); if (refuseBoard(res, user)) return; try { sendJson(res, url.pathname === "/api/chat" ? await chatApi.list(user) : await chatApi.read(user, url.searchParams.get("id") || "", url.searchParams.get("after"), url.searchParams.get("from"))); } catch (error) { sendJson(res, { error: String((error && error.message) || error) }, 400); } return; } if (req.method === "GET" && (url.pathname === "/api/friends" || url.pathname === "/api/shared")) { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, url.pathname === "/api/friends" ? await friendsApi.friendsView(user, readKey, loadMembers) : await friendsApi.sharedList(user, readKey)); return; } if (req.method === "GET" && url.pathname === "/api/parlays/archive") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, await parlayArchive(user, readKey, writeKey)); return; } if (req.method === "GET" && url.pathname === "/api/parlays") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await parlayList(user, readKey)); return; } if (req.method === "GET" && (url.pathname === "/api/notes" || url.pathname === "/api/slip")) { if (url.pathname === "/api/slip") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await slipList(user, readKey, writeKey)); return; } sendJson(res, await noteList()); return; }
     if (req.method === "GET" && url.pathname === "/api/admin/ignore") {
       const user = await memberFrom(req);
       if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
@@ -494,9 +555,9 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, { won, lost, pct: decided ? ((won / decided) * 100).toFixed(1) : null });
       return;
     }
-    if (req.method === "GET" && url.pathname === "/api/recs") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to see the picks." }, 401); return; } const now = Date.now(); sendJson(res, { recs: (await require("./live-recs").recsList().catch(() => [])).filter((pick) => Date.parse(pick.kickoff) > now) }); return; }
-    if (req.method === "GET" && url.pathname === "/api/top-picks") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to see the picks." }, 401); return; } sendJson(res, await require("./live-recs").recTop(120).catch(() => ({ picks: [] }))); return; }
-    if (req.method === "GET" && url.pathname === "/api/lazy-pick") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to roll." }, 401); return; } sendJson(res, await require("./live-recs").recLazy().catch(() => ({ span: "today", picks: [] }))); return; }
+    if (req.method === "GET" && url.pathname === "/api/recs") { const who = await memberFrom(req); if (refuseBoard(res, who)) return; const now = Date.now(); sendJson(res, { recs: (await require("./live-recs").recsList().catch(() => [])).filter((pick) => Date.parse(pick.kickoff) > now) }); return; }
+    if (req.method === "GET" && url.pathname === "/api/top-picks") { const who = await memberFrom(req); if (refuseBoard(res, who)) return; sendJson(res, await require("./live-recs").recTop(120).catch(() => ({ picks: [] }))); return; }
+    if (req.method === "GET" && url.pathname === "/api/lazy-pick") { const who = await memberFrom(req); if (refuseBoard(res, who)) return; sendJson(res, await require("./live-recs").recLazy().catch(() => ({ span: "today", picks: [] }))); return; }
     if (req.method === "GET" && url.pathname === "/api/sample") { sendJson(res, await require("./live-recs").recSample().catch(() => ({ pick: null, more: 0 }))); return; }
     if (req.method === "GET" && url.pathname === "/api/slate") { sendJson(res, require("./live-api").homeSlate(((await board().catch(() => ({}))) || {}).games)); return; }
     if (req.method === "GET" && url.pathname === "/live") { serveStatic(res, "live.html"); return; }
@@ -505,9 +566,10 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/why") { serveStatic(res, "why.html"); return; }
     if (req.method === "GET" && url.pathname.startsWith("/guide/") && !url.pathname.includes("..")) { serveStatic(res, url.pathname.slice(1), keepFor(url)); return; }
     if (req.method === "GET" && url.pathname === "/api/logos") { sendJson(res, await require("./live-api").teamLogos()); return; }
-    if (req.method === "GET" && url.pathname === "/api/live") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to see live games." }, 401); return; } const recs = require("./live-recs"); board().then((now) => recs.recWarm(now)).catch((error) => console.error("live recs warm failed:", error)); sendJson(res, { ...(await require("./live-api").liveBoard(url.searchParams.get("all") === "1")), recs: await recs.recsList(), week: await require("./live-api").liveWeek(board).catch(() => []), tally: await require("./live-grade").gradeTally() }); require("./live-grade").gradeTick().catch((error) => console.error("live recs grade failed:", error)); return; }
+    if (req.method === "GET" && url.pathname === "/api/live") { const who = await memberFrom(req); if (refuseBoard(res, who)) return; const recs = require("./live-recs"); board().then((now) => recs.recWarm(now)).catch((error) => console.error("live recs warm failed:", error)); sendJson(res, { ...(await require("./live-api").liveBoard(url.searchParams.get("all") === "1")), recs: await recs.recsList(), week: await require("./live-api").liveWeek(board).catch(() => []), tally: await require("./live-grade").gradeTally() }); require("./live-grade").gradeTick().catch((error) => console.error("live recs grade failed:", error)); return; }
     if (req.method === "GET" && url.pathname === "/api/board") {
-      if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in to open the board." }, 401); return; }
+      const who = await memberFrom(req);
+      if (refuseBoard(res, who)) return;
       const { archive: rows, ...rest } = await publicBoard();
       rest.archiveTag = crypto.createHash("sha1").update(JSON.stringify(rows)).digest("hex").slice(0, 12);
       sendJson(res, url.searchParams.get("have") === rest.archiveTag ? rest : { ...rest, archive: rows });
@@ -534,8 +596,8 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, url.pathname.endsWith("/portal") ? await billing.portal(user, req) : await billing.checkout(user, body.plan, req, loadMembers, writeKey));
         return;
       }
-      if (url.pathname === "/api/chat") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } try { sendJson(res, await chatApi.post(user, body)); } catch (error) { sendJson(res, { error: String((error && error.message) || error) }, 400); } return; } if (["/api/friends", "/api/share", "/api/shared"].includes(url.pathname)) { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } try { sendJson(res, url.pathname === "/api/friends" ? await friendsApi.friendsPost(user, body, readKey, writeKey, loadMembers) : url.pathname === "/api/share" ? await friendsApi.shareSend(user, body, readKey, writeKey) : await friendsApi.sharedPost(user, body, readKey, writeKey)); } catch (error) { sendJson(res, { error: String((error && error.message) || error) }, 400); } return; } if (url.pathname === "/api/parlays") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await parlayPut(user, body, readKey, writeKey)); return; } if (url.pathname === "/api/how") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await howsPost(body)); return; } if (url.pathname === "/api/slip") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await slipPost(user, body, readKey, writeKey)); return; } if (url.pathname === "/api/choose") { const chooser = await memberFrom(req); if (!chooser) { sendJson(res, { error: "Sign in." }, 401); return; } const chosen = await chooseBet(body, await require("./game-keep").withKept(await board(), body.game || (["game", "nba"].includes(body.list) ? body.match : ""), body.gameSport || body.sport)); if (chosen && chosen.found && chosen.error && !isAdmin(chooser)) delete chosen.error; sendJson(res, chosen); return; }
-      if (url.pathname === "/api/bet-ask") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await researchBet(body)); return; } if (url.pathname === "/api/prop-log") { if (!(await memberFrom(req))) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await propLog(body)); return; }
+      if (url.pathname === "/api/chat") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; try { sendJson(res, await chatApi.post(user, body)); } catch (error) { sendJson(res, { error: String((error && error.message) || error) }, 400); } return; } if (["/api/friends", "/api/share", "/api/shared"].includes(url.pathname)) { const user = await memberFrom(req); if (refuseBoard(res, user)) return; try { sendJson(res, url.pathname === "/api/friends" ? await friendsApi.friendsPost(user, body, readKey, writeKey, loadMembers) : url.pathname === "/api/share" ? await friendsApi.shareSend(user, body, readKey, writeKey) : await friendsApi.sharedPost(user, body, readKey, writeKey)); } catch (error) { sendJson(res, { error: String((error && error.message) || error) }, 400); } return; } if (url.pathname === "/api/parlays") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, await parlayPut(user, body, readKey, writeKey)); return; } if (url.pathname === "/api/how") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, await howsPost(body)); return; } if (url.pathname === "/api/slip") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, await slipPost(user, body, readKey, writeKey)); return; } if (url.pathname === "/api/choose") { const chooser = await memberFrom(req); if (refuseBoard(res, chooser)) return; const chosen = await chooseBet(body, await require("./game-keep").withKept(await board(), body.game || (["game", "nba"].includes(body.list) ? body.match : ""), body.gameSport || body.sport)); if (chosen && chosen.found && chosen.error && !isAdmin(chooser)) delete chosen.error; sendJson(res, chosen); return; }
+      if (url.pathname === "/api/bet-ask") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, await researchBet(body)); return; } if (url.pathname === "/api/prop-log") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, await propLog(body)); return; }
       if (url.pathname === "/api/admin/pull") {
         const user = await memberFrom(req);
         if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
@@ -619,7 +681,7 @@ const server = http.createServer(async (req, res) => {
           if (name.length < 2) throw new Error("Enter your name.");
           if (user) throw new Error("That email already has a membership.");
           const salt = crypto.randomBytes(16).toString("hex");
-          user = { id: crypto.randomBytes(8).toString("hex"), name, email, state, born, salt, hash: passHash(password, salt), plan: "free", createdAt: new Date().toISOString(), lastLogin: new Date().toISOString() };
+          user = { id: crypto.randomBytes(8).toString("hex"), name, email, state, born, salt, hash: passHash(password, salt), plan: "free", trialEndsAt: trialEndsAt(), beta: false, createdAt: new Date().toISOString(), lastLogin: new Date().toISOString() };
           data.users.push(user);
         } else {
           const digest = user ? passHash(password, user.salt) : "";

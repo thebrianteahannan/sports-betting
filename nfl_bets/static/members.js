@@ -2,9 +2,13 @@ const memberFetch = window.fetch.bind(window);
 
 function showGateMode(mode) {
   const wait = document.getElementById("gate-wait"); if (wait) wait.hidden = true;
-  document.getElementById("gate-pick").hidden = mode !== "pick"; document.getElementById("member-form").hidden = mode !== "join"; document.getElementById("login-form").hidden = mode !== "login";
+  const trial = document.getElementById("gate-trial");
+  document.getElementById("gate-pick").hidden = mode !== "pick";
+  document.getElementById("member-form").hidden = mode !== "join";
+  document.getElementById("login-form").hidden = mode !== "login";
+  if (trial) trial.hidden = mode !== "trial";
   if (mode === "join") bornRange(document.getElementById("member-born"));
-  if (mode === "join" || mode === "login") { goFull(); if (window.tvTickStay) tvTickStay(); }
+  if (mode === "join" || mode === "login" || mode === "trial") { goFull(); if (window.tvTickStay) tvTickStay(); }
   else if (window.tvTickRelease) tvTickRelease();
 }
 
@@ -57,13 +61,15 @@ function showGate() {
 window.birdBrag = birdBrag; window.birdBragGo = birdBragGo; window.recBlurb = recBlurb;
 
 function showMember(payload) {
-  document.body.classList.remove("needs-member");
-  if (window.tvZoomShut) tvZoomShut();
   const member = payload.member || {};
+  const admin = !!member.admin;
+  const board = member.board !== false;
+  if (board) document.body.classList.remove("needs-member");
+  else document.body.classList.add("needs-member");
+  if (window.tvZoomShut) tvZoomShut();
   const who = document.getElementById("who");
   who.hidden = false;
   if (who.parentElement !== document.body) document.body.append(who);
-  const admin = !!member.admin;
   who.innerHTML = `<button type="button" id="member-profile" aria-label="Profile" data-name="${esc(member.name)}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.5-3.1 4-4.6 7-4.6s5.5 1.5 7 4.6"/></svg></button>`;
   const heading = document.querySelector("#activity h2");
   window.memberAdmin = admin;
@@ -97,8 +103,14 @@ function showMember(payload) {
     window.state.admin = admin;
     window.state.showLive = false;
   }
+  if (!board) {
+    showGateMode("trial");
+    if (window.deskGate) window.deskGate();
+    return;
+  }
   if (window.render) window.render();
   if (admin && window.loadAdmin) window.loadAdmin();
+  if (window.tvTickMeetFirst) tvTickMeetFirst();
 }
 
 const CARD_NAMES = window.CARD_NAMES = {
@@ -158,7 +170,12 @@ async function bootMember() {
     showGate(); document.documentElement.classList.remove("desk-going");
     return;
   }
-  showMember(await response.json());
+  const payload = await response.json();
+  showMember(payload);
+  if (payload.member && payload.member.board === false) {
+    document.documentElement.classList.remove("desk-going");
+    return;
+  }
   if (window.startDesk) window.startDesk();
   if (new URLSearchParams(location.search).get("go") === "profile") { history.replaceState(null, "", "/"); setTimeout(() => { const me = document.getElementById("member-profile"); if (me) me.click(); requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove("desk-going"))); }, 600); }
 }
@@ -167,6 +184,7 @@ window.fetch = async function memberAwareFetch(url, options) {
   const response = await memberFetch(url, options);
   const target = String(url);
   if (response.status === 401 && target.startsWith("/api/") && !target.startsWith("/api/me")) showGate();
+  if (response.status === 402 && target.startsWith("/api/") && window.memberCard) showMember({ member: Object.assign({}, window.memberCard, { board: false, trial: false }), activity: [] });
   if (response.ok && (target === "/api/archive/good" || target === "/api/picks")) refreshActivity();
   return response;
 };
@@ -515,6 +533,17 @@ document.getElementById("gate-join").addEventListener("click", () => showGateMod
 document.getElementById("gate-have").addEventListener("click", () => showGateMode("login"));
 document.getElementById("join-signin").addEventListener("click", () => showGateMode("login"));
 document.getElementById("login-join").addEventListener("click", (event) => { event.preventDefault(); showGateMode("join"); });
+const trialPay = document.getElementById("gate-trial-pay");
+if (trialPay) trialPay.addEventListener("click", () => {
+  if (window.openBilling) openBilling("/api/billing/checkout", { plan: "pro" }).catch((error) => {
+    const note = document.getElementById("billing-note");
+    if (note) note.textContent = error.message;
+    else alert(error.message || "Billing could not open.");
+  });
+  else { goFull(); showTab("profile"); }
+});
+const trialOut = document.getElementById("gate-trial-out");
+if (trialOut) trialOut.addEventListener("click", () => signOut());
 document.getElementById("member-form").addEventListener("submit", (event) => {
   event.preventDefault();
   sendMember("/api/join", {

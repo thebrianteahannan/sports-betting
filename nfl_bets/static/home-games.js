@@ -114,7 +114,8 @@ function homeRecsLoad() {
   const guest = document.body.classList.contains("needs-member");
   homeRecs = { loading: true, at: Date.now(), picks: (homeRecs && homeRecs.picks) || [] };
   fetch(guest ? "/api/sample" : "/api/top-picks", { credentials: "same-origin", cache: "no-store" }).then((reply) => (reply.ok ? reply.json() : { picks: [] })).then((data) => {
-    homeRecs = guest ? { at: Date.now(), span: "today", picks: data && data.pick ? [data.pick] : [], more: Number(data && data.more) || 0 } : { at: Date.now(), span: (data && data.span) || "today", picks: (data && data.picks) || [] };
+    const sample = (data && data.picks && data.picks.length) ? data.picks : (data && data.pick ? [data.pick] : []);
+    homeRecs = guest ? { at: Date.now(), span: (data && data.span) || "today", picks: sample, more: Number(data && data.more) || 0 } : { at: Date.now(), span: (data && data.span) || "today", picks: (data && data.picks) || [] };
     homeGamesPaint();
   }).catch((error) => { console.log("[home-games] could not load top picks", error); homeRecs = { at: Date.now(), picks: [] }; homeGamesPaint(); });
 }
@@ -125,9 +126,11 @@ function homeRecRow(pick, index) {
   card.className = "desk-game desk-rec";
   const odds = Number(pick.odds), price = odds > 0 ? `+${odds}` : String(odds), win = (odds > 0 ? (5 * odds) / 100 : (5 * 100) / Math.abs(odds)).toFixed(2);
   const span = (homeRecs && homeRecs.span) || "today";
+  const guest = document.body.classList.contains("needs-member");
+  const lead = guest ? `${homePickSport(pick) || "Top"} pick` : index ? `#${index + 1}` : span === "today" ? "Today's free pick" : span === "tomorrow" ? "Tomorrow's top pick" : "Top pick";
   const when = pick.kickoff ? `${span === "week" ? `${new Date(pick.kickoff).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short" })} ` : ""}${new Date(pick.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET` : "";
   const side = String(pick.match || "").split(" @ ").find((name) => pick.team && (name === pick.team || name.endsWith(` ${pick.team}`))) || "", logo = (side && homeLogos && homeLogos[side]) || "", dark = logo.replace("/500/", "/500-dark/");
-  card.innerHTML = `<span class="desk-rec-name">${homeTeamStar(homeGamesList.find((game) => game.match === pick.match))}${logo ? `<img class="desk-team-logo desk-rec-logo" src="${esc(dark)}" alt="${esc(side)}" loading="lazy"${dark !== logo ? ` onerror="this.onerror=null;this.src='${esc(logo)}'"` : ""}>` : ""}${esc(pick.label)} ${esc(price)}</span><span class="desk-rec-how">${index ? `#${index + 1}` : span === "today" ? "Today's free pick" : span === "tomorrow" ? "Tomorrow's top pick" : "Top pick"}${typeof scriptKindTag === "function" ? scriptKindTag(pick) : ""}</span><span class="desk-rec-legs">${esc(when)}</span><span class="desk-rec-read">${esc(`${pick.match}. Hit in ${pick.hits} of his last ${pick.n}, the price needs ${pick.need}. $5 wins $${win}.`)}</span>`;
+  card.innerHTML = `<span class="desk-rec-name">${homeTeamStar(homeGamesList.find((game) => game.match === pick.match))}${logo ? `<img class="desk-team-logo desk-rec-logo" src="${esc(dark)}" alt="${esc(side)}" loading="lazy"${dark !== logo ? ` onerror="this.onerror=null;this.src='${esc(logo)}'"` : ""}>` : ""}${esc(pick.label)} ${esc(price)}</span><span class="desk-rec-how">${lead}${typeof scriptKindTag === "function" ? scriptKindTag(pick) : ""}</span><span class="desk-rec-legs">${esc(when)}</span><span class="desk-rec-read">${esc(`${pick.match}. Hit in ${pick.hits} of his last ${pick.n}, the price needs ${pick.need}. $5 wins $${win}.`)}</span>`;
   card.addEventListener("click", () => { if (document.body.classList.contains("needs-member")) { const join = document.getElementById("gate-join"); if (join) join.click(); return; } window.location.href = `/?${new URLSearchParams({ game: pick.match, label: pick.label, market: pick.market || "" })}`; });
   return card;
 }
@@ -157,6 +160,7 @@ function homeLeagueSave(box) {
 }
 
 function homePickSport(pick) {
+  if (pick && pick.sport) return pick.sport;
   const game = homeGamesList.find((row) => row.match === pick.match) || ((window.state && state.board && state.board.games) || []).find((row) => row.match === pick.match);
   return (game && game.sport) || "";
 }
@@ -193,11 +197,11 @@ function homeRecRows(games) {
   if (!homeRecs.picks.length) return note("No picks are posted yet.");
   const league = homeLeagueOn(games), span = homeRecs.span || "today", rows = homeRecs.picks.map((pick, index) => [pick, index]).filter(([pick]) => !league || homePickSport(pick) === league).slice(0, 11);
   const head = span === "today" ? [] : [Object.assign(document.createElement("p"), { className: "desk-games-note desk-games-label", textContent: span === "tomorrow" ? "Tomorrow" : "Coming up" })];
-  const more = homeRecs.more > 0 ? [homeMoreNote(homeRecs.more)] : [];
-  return rows.length ? [...head, ...rows.map(([pick, index]) => homeRecRow(pick, index)), ...more] : note(`No ${league} picks ${span === "today" ? "tonight" : span === "tomorrow" ? "tomorrow" : "coming up"}. Tap All for the rest.`);
+  const more = homeRecs.more > 0 ? [homeMoreNote()] : [];
+  return rows.length ? [...head, ...rows.map(([pick, index]) => homeRecRow(pick, index)), ...more] : [...note(`No ${league} picks ${span === "today" ? "tonight" : span === "tomorrow" ? "tomorrow" : "coming up"}. Tap All for the rest.`), ...more];
 }
 
-function homeMoreNote(count) {
+function homeMoreNote() {
   const line = document.createElement("p");
   line.className = "desk-games-note";
   const link = (label, mode) => {
@@ -212,7 +216,7 @@ function homeMoreNote(count) {
     });
     return button;
   };
-  line.append(`${count} more recommended picks tonight. `, link("Sign up", "join"), " or ", link("Sign in", "login"), " to see them.");
+  line.append(link("Sign up", "join"), " or ", link("Sign in", "login"), " to see the rest.");
   return line;
 }
 

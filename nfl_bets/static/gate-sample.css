@@ -1,4 +1,4 @@
-#gate-sample { margin: 0 auto 0.9rem; padding: 0.6rem 0.8rem 0.55rem 1.6rem; max-width: 30rem; border: 1px solid #3dff6e; border-radius: 12px; background: rgba(4, 16, 10, 0.9); box-shadow: 0 0 16px rgba(61, 255, 110, 0.22); font-family: "Outfit", sans-serif; text-align: left; cursor: pointer; }
+#gate-sample { margin: 0 auto 0.55rem; padding: 0.5rem 0.75rem 0.45rem 1.35rem; max-width: 30rem; border: 1px solid #3dff6e; border-radius: 12px; background: rgba(4, 16, 10, 0.9); box-shadow: 0 0 16px rgba(61, 255, 110, 0.22); font-family: "Outfit", sans-serif; text-align: left; cursor: pointer; }
 #gate-sample p, .gate-sample-sheet p { margin: 0; }
 .gate-sample-head { color: #e7c15a; font-family: "Oswald", sans-serif; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 .gate-sample-bet { margin-top: 0.15rem; color: #f4f7fb; font-size: 1.1rem; font-weight: 700; line-height: 1.25; }

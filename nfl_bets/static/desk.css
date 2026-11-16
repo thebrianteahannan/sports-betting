@@ -37,8 +37,9 @@ body.needs-member .hot { display: none; }
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
-#desk:not(.tv-full) #desk-glass #gate #gate-pick > h2 { padding-left: 3.2rem; }
-#desk-glass #gate .aim { display: block; color: #d5deea; font-size: 15px; max-width: none; margin: 0 0 0.7rem; } #desk-glass #gate .aim b { color: #3dff6e; font-size: 2.35em; font-weight: 800; line-height: 1; letter-spacing: -0.02em; text-shadow: 0 0 18px rgba(61, 255, 110, 0.75); } #desk-glass #gate #gate-record { margin-bottom: 0.15rem; line-height: 1.15; } #desk-glass #gate #gate-record .fine { display: block; margin-top: 0.12rem; color: #8ea0b3; font-size: 11px; font-weight: 400; line-height: 1.3; }
+#desk:not(.tv-full) #desk-glass #gate #gate-pick > h2 { padding-left: 3.2rem; font-size: 22px; letter-spacing: 0.03em; white-space: nowrap; }
+#desk-glass #gate #gate-pick > h2 { white-space: nowrap; }
+#desk-glass #gate .aim { display: block; color: #d5deea; font-size: 15px; max-width: none; margin: 0 0 0.45rem; } #desk-glass #gate .aim b { color: #3dff6e; font-size: 2.35em; font-weight: 800; line-height: 1; letter-spacing: -0.02em; text-shadow: 0 0 18px rgba(61, 255, 110, 0.75); } #desk-glass #gate #gate-record { margin-bottom: 0.15rem; line-height: 1.15; } #desk-glass #gate #gate-record .fine { display: block; margin-top: 0.12rem; color: #8ea0b3; font-size: 11px; font-weight: 400; line-height: 1.3; }
 #desk-glass #gate .choice-line {
   display: flex;
   flex-direction: column;
@@ -70,6 +71,7 @@ body.needs-member .hot { display: none; }
 } #desk-glass #gate a#login-join { color: #d8ffe4; font-size: 15px; text-decoration: underline; text-underline-offset: 3px; }
 #desk-glass #gate-wait:not([hidden]) ~ .gate-legal, #desk-glass #gate-wait:not([hidden]) ~ #gate-record { display: none; }
 #desk-glass #gate .gate-legal {
+  flex-shrink: 0;
   margin: 0.4rem 0 0;
   color: #8ea0b3;
   font-size: 12px;
@@ -407,7 +409,7 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
 #desk-glass .chalk > .pick-save button.on svg, #desk-glass .chalk > .pick-save button:disabled svg { fill: currentColor; }
 #desk-glass .chalk > .pick-save .star, #desk.tv-full #desk-glass .chalk > .pick-save .star { min-height: 0; width: auto; height: auto; padding: 0 0.05rem; font-size: 16px; }
 #desk-glass #choice-again[hidden] { display: none; }
-#desk.tv-full #desk-glass #gate h2 { font-size: 40px; }
+#desk.tv-full #desk-glass #gate h2 { font-size: 34px; letter-spacing: 0.03em; white-space: nowrap; }
 #desk.tv-full #desk-glass #gate .aim { font-size: 18px; }
 #desk.tv-full #desk-glass #gate .squawk p { font-size: 36px; }
 #desk-dock {
@@ -502,6 +504,7 @@ body.day-board .banner:not([hidden]) {
 #desk-head.bird-talk { animation: desk-talk 0.42s ease-in-out 3, desk-talk 1.15s ease-in-out 1.26s infinite; }
 #tv-zoom-open { display: none; }
 body:not(.tv-zoom-on) #desk:not(.tv-full) #tv-zoom-open { position: absolute; right: 0.7rem; bottom: 1.05rem; z-index: 12; display: grid; place-items: center; width: 2.4rem; height: 2.4rem; min-height: 0; margin: 0; padding: 0; border: 1px solid rgba(61, 255, 110, 0.85); border-radius: 8px; background: rgba(4, 16, 12, 0.92); color: #3dff6e; box-shadow: 0 0 14px rgba(61, 255, 110, 0.35); cursor: pointer; pointer-events: auto; }
+body.needs-member #desk-glass #gate { padding-bottom: 3.2rem; overflow: hidden; }
 body.needs-member:not(.tv-zoom-on) #desk-glass #gate .gate-age { margin-right: 2.8rem; }
 #tv-zoom { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, 0.72); }
 body.tv-zoom-on #desk { z-index: 40; }

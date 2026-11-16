@@ -101,9 +101,36 @@ async function recRanked(days) {
   return { all: picks.length, ranked: ranked.map((pick) => ({ who: pick.who, team: pick.team, label: pick.label, market: pick.market, odds: pick.odds, need: pick.need, hits: pick.hits, n: pick.n, how: pick.how, kind: pick.kind || "", basis: pick.basis || "", match: pick.match, kickoff: pick.kickoff })) };
 }
 
+async function sportMap() {
+  const rows = await kv(`?k=eq.${encodeURIComponent("bets/board.json")}&select=v`);
+  const games = (rows && rows[0] && rows[0].v && rows[0].v.games) || [];
+  const map = new Map();
+  games.forEach((game) => { if (!game || !game.match) return; map.set(`${game.match}|${game.kickoff}`, game.sport || ""); if (!map.has(game.match)) map.set(game.match, game.sport || ""); });
+  return map;
+}
+
+function oneEach(ranked, sports) {
+  const order = ["NFL", "NBA", "NHL", "MLB", "WNBA", "PGA"], seen = new Set(), picks = [];
+  ranked.forEach((pick) => {
+    const sport = (sports && (sports.get(`${pick.match}|${pick.kickoff}`) || sports.get(pick.match))) || "";
+    if (!sport || seen.has(sport)) return;
+    seen.add(sport);
+    picks.push({ ...pick, sport });
+  });
+  return picks.sort((a, b) => ((order.indexOf(a.sport) + 1) || 99) - ((order.indexOf(b.sport) + 1) || 99));
+}
+
 async function recSample() {
-  const { all, ranked } = await recRanked();
-  return ranked.length ? { pick: ranked[0], more: all - 1 } : { pick: null, more: 0 };
+  const today = await recRanked();
+  let span = "today", ranked = today.ranked;
+  if (!ranked.length) {
+    const day = (when) => new Date(when - 6 * 3600000).toLocaleDateString("en-CA", { timeZone: "America/New_York" }), next = day(Date.now() + 86400000);
+    const ahead = await recRanked(14), tomorrow = ahead.ranked.filter((pick) => day(Date.parse(pick.kickoff)) === next);
+    span = tomorrow.length ? "tomorrow" : "week";
+    ranked = tomorrow.length ? tomorrow : ahead.ranked;
+  }
+  const picks = oneEach(ranked, await sportMap().catch(() => new Map()));
+  return { span, pick: picks[0] || null, picks, more: Math.max(0, ranked.length - picks.length) };
 }
 
 async function recTop(count) {
