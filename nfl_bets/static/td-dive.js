@@ -28,17 +28,19 @@ const TD_KIND = { "Anytime TD": "Anytime touchdown", "2 Anytime TDs": "2+ touchd
 const TD_ROW = /^(.*?), (?:(.+?), )?([+-]?\d+), (\d+%)(?:, (\$5 profits \S+))?([\s\S]*)$/;
 
 function dressTdRow(button) {
-  const text = button.textContent;
-  if (button.dataset.dressed === text) return;
-  const found = text.match(TD_ROW);
-  if (!found) return;
-  const [, name, team, price, pct, pay, rest] = found;
   const tab = button.closest(".find-list") && button.closest(".find-list").querySelector(".find-td-picks button.on");
+  const sig = `${button.dataset.who || ""}|${button.dataset.odds || ""}|${button.dataset.rec || ""}|${(tab && tab.textContent) || ""}|${button.dataset.tds || ""}|${button.dataset.match || ""}`;
+  if (button.dataset.dressed === sig && button.classList.contains("td-row")) return;
+  const found = button.textContent.match(TD_ROW);
+  if (!found) return;
+  let [, name, team, price, pct, pay, rest] = found;
+  name = String(name || "").replace(/\s*Recommended$/i, "").trim();
+  rest = String(rest || "").replace(/^\s*Recommended\b/i, "").trim();
   const sep = '<span class="td-sep">, </span>';
-  button.innerHTML = [`<span class="td-name">${esc(name)}</span><span class="td-kind" data-kind="${esc(TD_KIND[tab ? tab.textContent : ""] || "")}"></span>`, button.dataset.rec === "1" && `<span class="td-rec">Recommended</span>`, team && `${sep}<span class="td-team">${esc(team)}</span>`, `${sep}<span class="td-px">${esc(price)}</span>`, `${sep}<span class="td-pct">${esc(pct)}</span>`, pay && `${sep}<span class="td-pay">${esc(pay)}</span>`, '<span class="td-break"></span>', button.dataset.match && `<span class="td-game" data-game="${esc(button.dataset.match)}"></span>`, rest && `<span class="td-line">${esc(rest)}</span>`].filter(Boolean).join("");
+  button.innerHTML = [`<span class="td-name">${esc(name)}</span><span class="td-kind" data-kind="${esc(TD_KIND[tab ? tab.textContent : ""] || "")}"></span>`, button.dataset.rec === "1" && `<span class="td-rec" aria-label="Recommended"></span>`, team && `${sep}<span class="td-team">${esc(team)}</span>`, `${sep}<span class="td-px">${esc(price)}</span>`, `${sep}<span class="td-pct">${esc(pct)}</span>`, pay && `${sep}<span class="td-pay">${esc(pay)}</span>`, '<span class="td-break"></span>', button.dataset.match && `<span class="td-game" data-game="${esc(button.dataset.match)}"></span>`, rest && `<span class="td-line">${esc(rest)}</span>`].filter(Boolean).join("");
   button.classList.add("td-row");
   if (button.dataset.rec === "1") button.classList.add("find-td-rec");
-  button.dataset.dressed = button.textContent;
+  button.dataset.dressed = sig;
 }
 
 function watchTdRows() {
@@ -58,6 +60,7 @@ ${row} .td-break { order: 2; flex-basis: 100%; height: 0; }
 ${row} .td-name { order: 3; color: #fff; font-weight: 800; }
 ${row} .td-kind { order: 3; color: #3dff6e; }
 ${row} .td-kind::before { content: attr(data-kind); }
+${row} .td-rec::before { content: "Recommended"; }
 ${row} .td-team { order: 3; color: #9aa8b5; font-weight: 600; }
 ${row} .td-game { order: 4; flex-basis: 100%; color: #d5deea; font-weight: 700; }
 ${row} .td-game::before { content: attr(data-game); }

@@ -33,12 +33,21 @@
 .rec-board .find-four .find-four-tag { display: inline-flex; align-items: center; padding: 0.12rem 0.45rem; border-radius: 999px; background: #e7c15a; color: #07090e; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
 .rec-board .find-four .find-four-tag-gen { background: #9fb3c8; color: #071018; }
 .rec-board .find-four .find-four-shape { margin: 0 0 0.45rem; color: #9fb3c8; font-size: 13px; font-weight: 700; }
-.rec-board .find-four .find-four-price { margin: 0 0 0.25rem; color: #3dff6e; font-size: 16px; font-weight: 800; }
+.rec-board .find-four .find-four-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.55rem; margin: 0 0 0.25rem; color: #3dff6e; font-size: 16px; font-weight: 800; }
+.rec-board .find-four .find-four-price > .px { color: #3dff6e; font-style: normal; }
+.rec-board .find-four .find-four-price > .pct { color: #e7c15a; font-style: normal; }
+.rec-board .find-four .find-four-price > .pay { color: #3dff6e; font-style: normal; }
+.rec-board .find-four .find-four-price .pay button.stake,
+#desk.tv-full #desk-glass .find-four .find-four-price .pay button.stake { display: inline; width: auto; height: auto; min-height: 0; margin: 0; padding: 0 0.05rem; border: 0; border-bottom: 1px dashed #3dff6e; border-radius: 0; background: transparent; box-shadow: none; color: #3dff6e; font: inherit; font-weight: 800; letter-spacing: 0; line-height: inherit; text-transform: none; cursor: pointer; }
+.rec-board .find-four .find-four-price .pay input.stake,
+#desk.tv-full #desk-glass .find-four .find-four-price .pay input.stake { width: 4.6rem; height: auto; min-height: 0; margin: 0; padding: 0 0.25rem; border: 1px solid #3dff6e; border-radius: 6px; background: #07140f; color: #fff; font: inherit; font-size: inherit; }
 .rec-board .find-four .find-four-why { margin: 0 0 0.55rem; color: #d5dde6; font-size: 14px; line-height: 1.4; }
 .rec-board .find-four .find-four-leg { display: grid; grid-template-columns: auto 1fr auto; gap: 0.25rem 0.55rem; align-items: baseline; margin: 0 0 0.4rem; padding: 0.45rem 0.55rem; border: 1px solid rgba(61, 255, 110, 0.28); border-radius: 10px; background: #041018; }
 .rec-board .find-four .find-four-leg > i { color: #e7c15a; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .rec-board .find-four .find-four-leg > b { color: #f4f7fb; font-size: 14px; font-weight: 700; line-height: 1.3; }
-.rec-board .find-four .find-four-leg > span { color: #3dff6e; font-size: 14px; font-weight: 800; }
+.rec-board .find-four .find-four-leg > span { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.25rem 0.45rem; color: #3dff6e; font-size: 14px; font-weight: 800; }
+.rec-board .find-four .find-four-leg > span > .px { color: #3dff6e; font-style: normal; }
+.rec-board .find-four .find-four-leg > span > .pct { color: #e7c15a; font-style: normal; }
 .rec-board .find-four .find-four-acts { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0.55rem 0 0; }
 :is(.rec-board, #choice-result) .find-four .find-four-acts > button { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.45rem 0.9rem !important; border-radius: 999px !important; box-shadow: none !important; font-size: 13px !important; font-weight: 800 !important; letter-spacing: normal !important; text-transform: none !important; cursor: pointer; }
 :is(.rec-board, #choice-result) .find-four .find-four-again { border: 1px solid rgba(61, 255, 110, 0.7) !important; background: transparent !important; color: #3dff6e !important; }

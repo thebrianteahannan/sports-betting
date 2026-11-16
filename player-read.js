@@ -184,16 +184,22 @@ function kindOf(sport, names) {
 }
 
 async function playerCard(name, sport) {
+  const who = String(name || "").trim() || "him";
   const league = String(sport || "").trim();
-  let pack = league ? await savedPack(league, name) : null;
+  if (!league) return { line: "", stats: [], miss: `No league on ${who}'s props, so the season log could not load.` };
+  let pack = await savedPack(league, name);
   if (!(pack && pack.rows && pack.rows.length)) { try { pack = await careerPack(league, name); } catch (err) { pack = null; } }
-  if (!(pack && pack.rows && pack.rows.length)) return { line: "", stats: [] };
+  if (!(pack && pack.rows && pack.rows.length)) return { line: "", stats: [], miss: `No season log for ${who} yet.` };
   const names = pack.names || [];
   const kind = kindOf(league, names);
-  if (!kind) return { line: "", stats: [] };
+  if (!kind) return { line: "", stats: [], miss: `Found games for ${who}, but not in a form we can read yet.` };
   const window = windowOf(pack, league, names);
-  if (window.rows.length < 3) return { line: "", stats: [] };
+  if (window.rows.length < 3) {
+    const n = window.rows.length;
+    return { line: "", stats: [], miss: n ? `Only ${n} game${n === 1 ? "" : "s"} so far for ${who}. Need a few more before the card fills in.` : `No recent games for ${who} yet.` };
+  }
   const built = kind === "hoop" ? hoop(window.rows, names, window.before) : kind === "ball" ? ball(window.rows, names) : kind === "ice" ? ice(window.rows, names) : bat(window.rows, names);
+  if (!built.line && !(built.stats || []).length) return { line: "", stats: [], miss: `His games are there, but the numbers did not add up for a card.` };
   const swing = swingTags(kind, built.stats, (key) => pull(window.rows, names, key));
   const blowout = league === "NBA" ? await blowTags(name, built.stats, (rows, cols) => (key) => pull(rows, cols, key)) : null;
   return { line: built.line, span: window.span, stats: built.stats, swing, blowout };

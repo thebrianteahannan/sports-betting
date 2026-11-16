@@ -673,8 +673,17 @@ function showFind(list, hits, person, roster, people, keep, kind) {
     openPlayerPop(person, list, bets);
     return;
   }
+  // Team / game search: THE GAME above already has team bets and player bets.
+  if (person.kind !== "player") {
+    if (!bets.length) {
+      const note = document.createElement("p");
+      note.textContent = "Nothing posted for that name.";
+      list.append(note);
+    }
+    return;
+  }
   const heading = document.createElement("h3");
-  heading.innerHTML = `${esc(person.name)}${person.kind === "player" && (person.pos || person.team) ? `, ${esc([person.pos, person.team].filter(Boolean).join(", "))}` : ""} <span class="rec-count">${!bets.length && person.kind === "player" ? "No bets posted" : `${bets.length} available bet${bets.length === 1 ? "" : "s"}`}</span>`;
+  heading.innerHTML = `${esc(person.name)}${person.pos || person.team ? `, ${esc([person.pos, person.team].filter(Boolean).join(", "))}` : ""} <span class="rec-count">${!bets.length ? "No bets posted" : `${bets.length} available bet${bets.length === 1 ? "" : "s"}`}</span>`;
   list.append(heading);
   if (!bets.length) {
     const note = document.createElement("p");

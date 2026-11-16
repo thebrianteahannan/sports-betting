@@ -76,7 +76,7 @@ function paintGameStacks(holder, game, who = "") {
       .sort((a, b) => a.rank[0] - b.rank[0]);
     const where = who ? `with ${who}` : game.match ? "for this game" : "on FanDuel now";
     const count = (row) => (row.stacks.length ? `${row.stacks.length} ${where}` : row.close.length ? `${row.close.length} close` : "");
-    const live = rows.filter((row) => row.stacks.length || row.close.length);
+    const live = rows.filter((row) => row.stacks.length || (!game.match && row.close.length));
     const hits = rows.filter((row) => row.stacks.length).length;
     const wait = box.querySelector(".quiet");
     if (!hits) wait.textContent = data && data.error && window.state && state.admin ? data.error : who ? `None of the current FanDuel prices fit a stack with ${who}.` : game.match ? "None of the current FanDuel prices fit a stack in this game." : "None of the current FanDuel prices fit a stack.";
@@ -86,6 +86,7 @@ function paintGameStacks(holder, game, who = "") {
     live.forEach((row) => board.append(gameStackBlock(row, count(row), notes[row.name])));
     box.append(board);
     if (window.closeCalls) closeCalls(board, Object.fromEntries(live.map((row) => [row.name, row.close])));
+    if (game.match) return;
     const rest = rows.filter((row) => !live.includes(row));
     if (!rest.length) return;
     const more = document.createElement("button");

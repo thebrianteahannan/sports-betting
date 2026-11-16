@@ -108,6 +108,53 @@ function gameFourHead(box, recommended) {
     : `Generated 4-leg parlay <i class="find-four-tag find-four-tag-gen">Generated</i>`;
 }
 
+function gameFourStakeOf(box) {
+  const n = Number(box && box.dataset.stake);
+  if (n > 0) return n;
+  return typeof parlayStakeOf === "function" ? parlayStakeOf() : 5;
+}
+
+function gameFourCashLine(box, price) {
+  const american = Number(String(price || "").replace("+", ""));
+  const stake = gameFourStakeOf(box);
+  const shown = Number.isInteger(stake) ? String(stake) : stake.toFixed(2);
+  const pct = typeof findPct === "function" ? findPct(american) : "";
+  const cash = typeof findCash === "function" ? findCash(american, stake) : "";
+  const bits = [
+    price && `<i class="px">${esc(price)}</i>`,
+    pct && `<i class="pct">${esc(pct)}</i>`,
+    cash && `<i class="pay"><button type="button" class="stake" aria-label="Change the bet size">$${esc(shown)}</button> profits ${esc(cash)}</i>`,
+  ].filter(Boolean);
+  return bits.length ? `4-leg · ${bits.join("")}` : "4-leg parlay";
+}
+
+function gameFourEditStake(button, box, stacks, at, recCount) {
+  const pay = button.closest("i.pay");
+  if (!pay) return;
+  const input = document.createElement("input");
+  input.type = "number";
+  input.className = "stake";
+  input.min = "1";
+  input.max = "100000";
+  input.step = "1";
+  input.setAttribute("aria-label", "Bet size");
+  input.value = button.textContent.replace(/[^0-9.]/g, "") || "5";
+  button.replaceWith(input);
+  input.focus();
+  input.select();
+  const finish = () => {
+    if (!input.isConnected) return;
+    const amount = Number(input.value);
+    box.dataset.stake = String(Number.isFinite(amount) && amount > 0 ? Math.round(Math.min(amount, 100000) * 100) / 100 : 5);
+    gameFourFill(box, stacks, at, recCount);
+  };
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") { event.preventDefault(); input.blur(); }
+    if (event.key === "Escape") { input.value = button.textContent; input.blur(); }
+  });
+  input.addEventListener("blur", finish);
+}
+
 function gameFourFill(box, stacks, at, recCount) {
   const stack = stacks[at];
   if (!stack) return;
@@ -122,11 +169,21 @@ function gameFourFill(box, stacks, at, recCount) {
     row.className = "find-four-leg";
     const odds = Number(bet.odds);
     const shown = odds > 0 ? `+${odds}` : String(odds);
-    row.innerHTML = `<i>${esc(gameFourRole(bet, juiceKey))}</i><b>${esc(bet.label || "")}</b><span>${esc(shown)}</span>`;
+    const pct = typeof findPct === "function" ? findPct(odds) : "";
+    row.innerHTML = `<i>${esc(gameFourRole(bet, juiceKey))}</i><b>${esc(bet.label || "")}</b><span><i class="px">${esc(shown)}</i>${pct ? `<i class="pct">${esc(pct)}</i>` : ""}</span>`;
     return row;
   });
+  const top = document.createElement("p");
+  top.className = "find-four-price";
+  top.innerHTML = gameFourCashLine(box, price);
+  const stakeBtn = top.querySelector("button.stake");
+  if (stakeBtn) stakeBtn.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    gameFourEditStake(stakeBtn, box, stacks, at, recCount);
+  });
   body.replaceChildren(
-    Object.assign(document.createElement("p"), { className: "find-four-price", textContent: price ? `4-leg · ${price}` : "4-leg parlay" }),
+    top,
     Object.assign(document.createElement("p"), { className: "find-four-why", textContent: "Three short legs hold it. The juice pays." }),
     ...legs,
   );

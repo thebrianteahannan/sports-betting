@@ -11,7 +11,12 @@ function paintCard(list, heading, person) {
   heading.after(box);
   if (window.paintLive) paintLive(list, heading, person);
   fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "card", name: person.name, sport }) }).then((res) => res.json()).then((data) => {
-    if (!box.isConnected || !data || (!data.line && !(data.stats || []).length)) { box.remove(); return; }
+    if (!box.isConnected) return;
+    if (!data || (!data.line && !(data.stats || []).length)) {
+      wait.className = "find-why";
+      wait.textContent = (data && data.miss) || `No season log for ${person.name || "him"} yet.`;
+      return;
+    }
     box.replaceChildren();
     const kinds = box.parentElement && box.parentElement.querySelector(":scope > .find-kinds");
     if (kinds && box.compareDocumentPosition(kinds) & Node.DOCUMENT_POSITION_PRECEDING) kinds.before(box);
@@ -23,7 +28,11 @@ function paintCard(list, heading, person) {
     (data.stats || []).forEach((stat) => { const item = document.createElement("span"); const title = document.createElement("b"); title.textContent = stat.label; item.append(title, document.createTextNode(stat.value || "")); if (stat.tag) item.append(" ", swing(stat.tag, stat.tip)); if (stat.blowTag) { const pill = swing(stat.blowTag, stat.blowTip); pill.className = `find-swing find-blow ${stat.blow}`; item.append(" ", pill); } grid.append(item); });
     if (grid.childNodes.length) box.append(grid);
     if (data.blowout && window.proofTake) proofTake(person.name, data.blowout);
-  }).catch(() => { if (box.isConnected) box.remove(); });
+  }).catch(() => {
+    if (!box.isConnected) return;
+    wait.className = "find-why";
+    wait.textContent = `Could not load the card for ${person.name || "him"}.`;
+  });
 }
 
 window.paintCard = paintCard;
