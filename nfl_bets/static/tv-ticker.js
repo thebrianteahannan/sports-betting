@@ -156,7 +156,9 @@ async function tvTickLoad() {
   try {
     const res = await fetch("/api/sample", { cache: "no-store" });
     const data = res.ok ? await res.json() : null;
-    const pick = data && data.pick, odds = Number(pick && pick.odds);
+    const parlay = data && data.parlay, single = data && data.pick;
+    const pick = parlay && Array.isArray(parlay.bets) && parlay.bets.length && Number.isFinite(Number(parlay.odds)) ? parlay : single;
+    const odds = Number(pick && pick.odds);
     if (!pick || !Number.isFinite(odds)) return;
     tvTick.pick = pick;
     const price = odds > 0 ? `+${odds}` : String(odds), win = (odds > 0 ? (5 * odds) / 100 : (5 * 100) / Math.abs(odds)).toFixed(2);
@@ -165,7 +167,10 @@ async function tvTickLoad() {
     const guest = tvTickGateOn();
     const open = guest ? `<p class="gate-sample-more">Sign up or sign in to open the game and the rest of tonight's picks.</p><button type="button" class="tv-tick-open" data-tick-join>Start free for 7 days</button>` : `<button type="button" class="tv-tick-open" data-tick-open>Open the game &#8250;</button>`;
     const more = guest ? `<button type="button" class="tv-tick-more" data-tick-login>Sign in</button>` : `<button type="button" class="tv-tick-more" data-tick-more>View more recommended bets &#8250;</button>`;
-    if (slot) slot.innerHTML = `<div class="tv-tick-stack"><div class="tv-tick-card"><p class="gate-sample-head">Tonight's free pick</p><p class="gate-sample-bet">${esc(pick.label)} <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p><p class="gate-sample-why">${esc(pick.how)}</p><p class="gate-sample-pay">$5 wins $${win}.</p><button type="button" class="tv-tick-share" data-tick-share>Share with a friend</button>${open}</div>${more}</div>`;
+    const legs = pick.bets ? `<ul class="gate-sample-legs">${pick.bets.map((bet) => `<li><span class="gate-sample-role">${/touchdown/i.test(`${bet.rung || ""} ${bet.label || ""}`) ? "Juice" : "Anchor"}</span><span class="gate-sample-leg">${esc(bet.label)}</span><b>${esc(Number(bet.odds) > 0 ? `+${bet.odds}` : String(bet.odds))}</b></li>`).join("")}</ul>` : "";
+    const head = pick.bets ? "Parlay of the Day" : "Tonight's free pick";
+    const bet = pick.bets ? `4-leg · 3 anchors + juice <b>${esc(price)}</b>` : `${esc(pick.label)} <b>${esc(price)}</b>`;
+    if (slot) slot.innerHTML = `<div class="tv-tick-stack"><div class="tv-tick-card"><p class="gate-sample-head">${head}</p><p class="gate-sample-bet">${bet}</p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p>${legs}<p class="gate-sample-why">${esc(pick.how || "")}</p><p class="gate-sample-pay">$5 wins $${win}.</p><button type="button" class="tv-tick-share" data-tick-share>Share with a friend</button>${open}</div>${more}</div>`;
     tvTickDots();
   } catch (error) { console.log("[tv-ticker] could not load tonight's pick", error); } finally { tvTick.loading = false; }
 }

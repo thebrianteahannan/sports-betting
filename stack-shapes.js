@@ -360,7 +360,7 @@ async function findStacks(board) {
     "Side and the total": sideTotal(games),
     "Player and the total": playerTotal(loaded),
     "First touchdown and anytime": score(loaded),
-    "Anchors and juice": packed(games, loaded, logs),
+    "Anchors and juice": packed(games, loaded, logs, { team: false, share: 0.6, floor: 0.8 }),
     "Same-game yardage parlay": yardage({}),
     "Yardage and the spread": yardage({ end: "spread" }),
     "Yardage parlay, 85% legs": yardage({ floor: 0.85 }),

@@ -77,7 +77,7 @@ const STACK_GRADE = {
   "Catches, yards, and a touchdown": ["pick", "Three different players, so the same-game cut is small. The touchdown is the payout.",
     ["Players who move together less get a price close to the multiplied one.", "A catches line asks for targets, not a big play."],
     ["Any one miss loses it.", "The touchdown leg is the long shot."]],
-  "Anchors and juice": ["pick", "Three short player lines hold it. The touchdown pays. The team bet is another short price.",
+  "Anchors and juice": ["pick", "Three short player lines hold it. The touchdown pays.",
     ["Player legs cleared in 8 of the last 10 at about 85% or higher.", "The scorer usually already has a short line on the ticket."],
     ["Five legs give the book five cuts.", "FanDuel's same-game price is shorter than the card's."]],
   "Same-game yardage parlay": ["pick", "Every leg is a line he clears most weeks. The same-game price shrinks the payout.",

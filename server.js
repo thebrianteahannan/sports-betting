@@ -570,7 +570,16 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/recs") { const who = await memberFrom(req); if (refuseBoard(res, who)) return; const now = Date.now(); sendJson(res, { recs: (await require("./live-recs").recsList().catch(() => [])).filter((pick) => Date.parse(pick.kickoff) > now) }); return; }
     if (req.method === "GET" && url.pathname === "/api/top-picks") { const who = await memberFrom(req); if (refuseBoard(res, who)) return; sendJson(res, await require("./live-recs").recTop(120).catch(() => ({ picks: [] }))); return; }
     if (req.method === "GET" && url.pathname === "/api/lazy-pick") { const who = await memberFrom(req); if (refuseBoard(res, who)) return; sendJson(res, await require("./live-recs").recLazy().catch(() => ({ span: "today", picks: [] }))); return; }
-    if (req.method === "GET" && url.pathname === "/api/sample") { sendJson(res, await require("./live-recs").recSample().catch(() => ({ pick: null, more: 0 }))); return; }
+    if (req.method === "GET" && url.pathname === "/api/sample") {
+      const sample = await require("./live-recs").recSample().catch(() => ({ pick: null, more: 0 }));
+      const day = await require("./day-parlay").dayParlay(await board().catch(() => ({}))).catch(() => ({ parlay: null }));
+      sendJson(res, { ...sample, parlay: day.parlay || null, parlaySpan: day.span || sample.span });
+      return;
+    }
+    if (req.method === "GET" && url.pathname === "/api/day-parlay") {
+      sendJson(res, await require("./day-parlay").dayParlay(await board().catch(() => ({}))).catch(() => ({ parlay: null })));
+      return;
+    }
     if (req.method === "GET" && url.pathname === "/api/slate") { sendJson(res, require("./live-api").homeSlate(((await board().catch(() => ({}))) || {}).games)); return; }
     if (req.method === "GET" && url.pathname === "/live") { serveStatic(res, "live.html"); return; }
     if (req.method === "GET" && url.pathname === "/guide") { serveStatic(res, "guide.html"); return; }
