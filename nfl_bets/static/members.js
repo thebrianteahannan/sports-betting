@@ -46,6 +46,10 @@ function birdBragGo(text) {
   return true;
 }
 function showGate() {
+  const already = document.body.classList.contains("needs-member");
+  const login = document.getElementById("login-form"), join = document.getElementById("member-form");
+  const form = (join && !join.hidden && join) || (login && !login.hidden && login) || null;
+  const typing = already && form && form.contains(document.activeElement);
   document.body.classList.add("needs-member");
   const desk = document.getElementById("desk");
   if (desk) desk.classList.remove("bird-on");
@@ -53,8 +57,8 @@ function showGate() {
   if (window.state) window.state.showLive = false;
   const who = document.getElementById("who");
   if (who) { who.hidden = false; if (who.parentElement !== document.body) document.body.append(who); who.innerHTML = `<button type="button" id="gate-profile" aria-label="Sign in" title="Sign in"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.5-3.1 4-4.6 7-4.6s5.5 1.5 7 4.6"/></svg></button>`; }
-  const login = document.getElementById("login-form"), join = document.getElementById("member-form");
   if (!((login && !login.hidden) || (join && !join.hidden))) showGateMode("pick");
+  if (typing) return;
   if (window.deskGate) window.deskGate();
 }
 
@@ -192,7 +196,7 @@ async function bootMember() {
 window.fetch = async function memberAwareFetch(url, options) {
   const response = await memberFetch(url, options);
   const target = String(url);
-  if (response.status === 401 && target.startsWith("/api/") && !target.startsWith("/api/me")) showGate();
+  if (response.status === 401 && target.startsWith("/api/") && !target.startsWith("/api/me") && !document.body.classList.contains("needs-member")) showGate();
   if (response.status === 402 && target.startsWith("/api/") && window.memberCard) showMember({ member: Object.assign({}, window.memberCard, { board: false, trial: false }), activity: [] });
   if (response.ok && (target === "/api/archive/good" || target === "/api/picks")) refreshActivity();
   return response;
@@ -592,19 +596,31 @@ document.getElementById("member-form").addEventListener("focusout", (event) => {
 });
 document.getElementById("member-form").addEventListener("submit", (event) => {
   event.preventDefault();
+  const form = event.currentTarget;
   paintJoinPass();
-  const { len, match } = joinPassState();
+  const { a, b, len, match } = joinPassState();
   const error = document.getElementById("member-error");
+  const name = document.getElementById("member-name");
+  const born = document.getElementById("member-born");
+  const state = document.getElementById("member-state");
+  const email = document.getElementById("member-email");
+  if (name && !String(name.value || "").trim()) { if (error) error.textContent = "Enter your name."; name.focus(); return; }
+  if (born && !born.value) { if (error) error.textContent = "Enter your date of birth."; born.focus(); return; }
+  if (state && !state.value) { if (error) error.textContent = "Choose your state."; state.focus(); return; }
+  if (email && !String(email.value || "").trim()) { if (error) error.textContent = "Enter your email."; email.focus(); return; }
+  if (!a) { if (error) error.textContent = "Enter a password."; document.getElementById("member-pass").focus(); return; }
   if (!len) {
     if (error) error.textContent = "Use at least 8 characters.";
     document.getElementById("member-pass").focus();
     return;
   }
+  if (!b) { if (error) error.textContent = "Confirm your password."; document.getElementById("member-pass2").focus(); return; }
   if (!match) {
     if (error) error.textContent = "Passwords must match.";
     document.getElementById("member-pass2").focus();
     return;
   }
+  if (typeof form.reportValidity === "function" && !form.reportValidity()) return;
   if (error) error.textContent = "";
   sendMember("/api/join", {
     name: "member-name",

@@ -267,6 +267,8 @@ function showGateScene() {
   const gate = document.getElementById("gate");
   const hold = document.getElementById("desk-hold");
   if (!glass || !gate) return;
+  const ready = gate.parentElement === glass && shown === "gate" && ![...glass.children].some((node) => node !== gate);
+  if (ready) return;
   warp();
   [...glass.children].forEach((node) => {
     if (node !== gate) hold.append(node);
