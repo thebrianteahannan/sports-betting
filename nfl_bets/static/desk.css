@@ -46,6 +46,12 @@ body.needs-member .hot { display: none; }
   margin: 0 0 8px;
 }
 #desk-glass #gate .gate-head h2 { margin: 0; margin-right: auto; flex: 1 1 auto; }
+#desk-glass #gate .gate-head .gate-head-marks {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  white-space: nowrap;
+}
 #desk-glass #gate .gate-head .gate-head-age {
   display: inline;
   font-family: "Oswald", sans-serif;
@@ -56,6 +62,15 @@ body.needs-member .hot { display: none; }
   color: #ff4d4d;
   text-shadow: 0 0 16px rgba(255, 60, 60, 0.7);
 }
+#desk-glass #gate .gate-head .gate-head-book {
+  margin: 0;
+  font-family: "Oswald", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #f4f7fb;
+}
 #desk-glass #gate .gate-head #join-signin {
   width: auto;
   min-width: 0;
@@ -65,7 +80,8 @@ body.needs-member .hot { display: none; }
   white-space: nowrap;
 }
 #desk.tv-full #desk-glass #gate .gate-head .gate-head-age { font-size: 2rem; }
-#desk-glass #gate:has(#member-form:not([hidden])) > .gate-age .age { display: none; }
+#desk.tv-full #desk-glass #gate .gate-head .gate-head-book { font-size: 1.1rem; }
+#desk-glass #gate:has(#member-form:not([hidden])) > .gate-age .gate-foot { display: none; }
 #desk:not(.tv-full) #desk-glass #gate #gate-pick > h2 { padding-left: 3.2rem; font-size: 22px; letter-spacing: 0.03em; white-space: nowrap; }
 #desk-glass #gate #gate-pick > h2 { white-space: nowrap; }
 #desk-glass #gate .aim { display: block; color: #d5deea; font-size: 15px; max-width: none; margin: 0 0 0.45rem; } #desk-glass #gate .aim b { color: #3dff6e; font-size: 2.35em; font-weight: 800; line-height: 1; letter-spacing: -0.02em; text-shadow: 0 0 18px rgba(61, 255, 110, 0.75); } #desk-glass #gate #gate-record { margin-bottom: 0.15rem; line-height: 1.15; } #desk-glass #gate #gate-record .fine { display: block; margin-top: 0.12rem; color: #8ea0b3; font-size: 11px; font-weight: 400; line-height: 1.3; }
@@ -593,6 +609,26 @@ body.tv-zoom-on #desk { z-index: 40; }
 #tv-zoom-card .tv-zoom-bird, #hang-card .tv-zoom-bird { position: absolute; top: 10px; left: 10px; z-index: 2; width: 3.4rem; height: 3.4rem; border: 1px solid rgba(61, 255, 110, 0.85); border-radius: 10px; box-shadow: 0 0 14px rgba(61, 255, 110, 0.35); pointer-events: none; }
 #tv-zoom-card .tv-zoom-bird span, #hang-card .tv-zoom-bird span { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; background: #05080c; transform: scaleX(-1); }
 #tv-zoom-card .tv-zoom-bird img, #hang-card .tv-zoom-bird img { position: absolute; top: 0; left: -66.07%; width: 214.29%; height: auto; max-width: none; }
+#tv-zoom-card .tv-zoom-brand {
+  display: none;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  align-items: center;
+  gap: 0.55rem;
+  max-width: calc(100% - 4.2rem);
+  padding: 0.35rem 0.65rem 0.35rem 0.35rem;
+  border: 1px solid rgba(61, 255, 110, 0.85);
+  border-radius: 12px;
+  background: rgba(4, 16, 12, 0.94);
+  box-shadow: 0 0 16px rgba(61, 255, 110, 0.35);
+  text-decoration: none;
+}
+#tv-zoom-card .tv-zoom-brand .tv-zoom-logo { width: 2.7rem; height: 2.7rem; object-fit: contain; flex: 0 0 auto; }
+#tv-zoom-card .tv-zoom-brand .tv-zoom-word { height: 1.55rem; width: auto; max-width: min(14rem, 46vw); object-fit: contain; }
+body.needs-member #tv-zoom-card .tv-zoom-bird { display: none; }
+body.needs-member #tv-zoom-card .tv-zoom-brand { display: inline-flex; }
 #tv-zoom-x, #hang-x { position: absolute; top: 10px; right: 10px; z-index: 2; width: 2.4rem; height: 2.4rem; min-height: 0; margin: 0; padding: 0; border: 1px solid rgba(61, 255, 110, 0.85); border-radius: 8px; background: rgba(4, 16, 12, 0.92); color: #3dff6e; box-shadow: none; font-size: 1.6rem; line-height: 1; letter-spacing: 0; text-transform: none; cursor: pointer; }
 #hang { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, 0.72); }
 #hang[hidden] { display: none; }
@@ -618,8 +654,11 @@ body.hang-on #desk { z-index: 40; }
 #hang-acts button[data-hang="mine"], #hang-acts button[data-hang="chat"] { background: transparent; color: #3dff6e; border: 1px solid rgba(61, 255, 110, 0.7); }
 #hang-acts button[data-hang="mine"]:hover, #hang-acts button[data-hang="chat"]:hover { background: rgba(61, 255, 110, 0.12); }
 #tv-zoom #desk-glass #gate { padding-left: 4.6rem; }
+body.needs-member #tv-zoom #desk-glass #gate { padding-top: 4.4rem; padding-left: 1rem; padding-right: 1rem; }
 #tv-zoom #desk-glass { position: absolute; left: 0; top: 0; right: 0; bottom: 0; width: auto; height: auto; transform: none; overflow-x: hidden; overflow-y: auto; z-index: 1; }
 #tv-zoom #desk-glass #gate h2 { font-size: 40px; padding-left: 0; }
+body.needs-member #tv-zoom #desk-glass #gate h2,
+body.needs-member #tv-zoom #desk-glass #gate .gate-head h2 { font-size: clamp(1.35rem, 4.2vw, 2rem); }
 #tv-zoom #desk-glass #gate .aim, #tv-zoom #desk-glass #gate p { font-size: 18px; }
 #tv-zoom .tv-how-say, #tv-zoom .tv-lazy-ask { font-size: 1.25rem; }
 #tv-zoom .tv-lazy-head { font-size: 2.4rem; }
