@@ -59,18 +59,20 @@ function sharedSeen() {
 }
 
 function sharedGo() {
-  const fresh = new Set(sharedUnopened().map((item) => String(item.id)));
-  window.sharedOpen = true;
   sharedSeen();
+  if (typeof chatToggle === "function") {
+    if (window.goFull) goFull();
+    chatToggle(true);
+    return;
+  }
+  window.sharedOpen = true;
   if (!document.querySelector("#desk-glass-in .find-board") && window.birdMenu) birdMenu("find");
   let tries = 0;
   const wait = setInterval(() => {
     const board = document.querySelector("#desk-glass-in .find-board");
     if (!board && ++tries < 40) return;
     clearInterval(wait);
-    window.sharedOpen = false;
     if (typeof paintParlay === "function") paintParlay();
-    sharedTabGo(fresh);
   }, 150);
 }
 window.sharedGo = sharedGo;

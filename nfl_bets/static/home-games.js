@@ -154,8 +154,9 @@ function homeLeagueSync() {
 function homeLeagueSave(box) {
   const next = { pick: homeLeague, open: homeLeagueOpen };
   window.memberLeague = homeLeagueFrom = next;
-  box.dataset.sig = "";
+  if (box) box.dataset.sig = "";
   homeGamesPaint();
+  if (typeof startPaint === "function" && document.querySelector(".find-start")) startPaint(1);
   fetch("/api/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ league: next }) }).catch((error) => console.log("[home-games] could not save the league", error));
 }
 
@@ -167,7 +168,24 @@ function homePickSport(pick) {
 
 function homeLeagueList(games) {
   const order = ["NFL", "NBA", "NHL", "MLB", "WNBA", "PGA"];
-  return [...new Set([...games.map((game) => game.sport), ...((homeRecs && homeRecs.picks) || []).map(homePickSport), "PGA"].filter(Boolean))].sort((a, b) => ((order.indexOf(a) + 1) || 99) - ((order.indexOf(b) + 1) || 99) || a.localeCompare(b));
+  return [...new Set([...games.map((game) => game.sport), ...((homeRecs && homeRecs.picks) || []).map(homePickSport)].filter(Boolean))].sort((a, b) => ((order.indexOf(a) + 1) || 99) - ((order.indexOf(b) + 1) || 99) || a.localeCompare(b));
+}
+
+function homeLeagueClearNote(box, text) {
+  const line = document.createElement("p");
+  line.className = "desk-games-note";
+  line.append(document.createTextNode(`${text} `));
+  const go = document.createElement("button");
+  go.type = "button";
+  go.className = "desk-games-link";
+  go.textContent = "Show all sports";
+  go.addEventListener("click", () => {
+    homeLeague = "";
+    if (box) box.scrollTop = 0;
+    homeLeagueSave(box || document.getElementById("desk-games") || document.querySelector(".find-start"));
+  });
+  line.append(go);
+  return line;
 }
 
 function homeLeagueOn(games) {
@@ -191,14 +209,16 @@ function homeLeagues(box, games) {
   return [row];
 }
 
-function homeRecRows(games) {
+function homeRecRows(games, box) {
   const note = (text) => { const line = document.createElement("p"); line.className = "desk-games-note"; line.textContent = text; return [line]; };
   if (!homeRecs || (homeRecs.loading && !homeRecs.picks.length)) return note("Looking up the picks.");
   if (!homeRecs.picks.length) return note("No picks are posted yet.");
   const league = homeLeagueOn(games), span = homeRecs.span || "today", rows = homeRecs.picks.map((pick, index) => [pick, index]).filter(([pick]) => !league || homePickSport(pick) === league).slice(0, 11);
   const head = span === "today" ? [] : [Object.assign(document.createElement("p"), { className: "desk-games-note desk-games-label", textContent: span === "tomorrow" ? "Tomorrow" : "Coming up" })];
   const more = homeRecs.more > 0 ? [homeMoreNote()] : [];
-  return rows.length ? [...head, ...rows.map(([pick, index]) => homeRecRow(pick, index)), ...more] : [...note(`No ${league} picks ${span === "today" ? "tonight" : span === "tomorrow" ? "tomorrow" : "coming up"}. Tap All for the rest.`), ...more];
+  if (rows.length) return [...head, ...rows.map(([pick, index]) => homeRecRow(pick, index)), ...more];
+  const when = span === "today" ? "tonight" : span === "tomorrow" ? "tomorrow" : "coming up";
+  return [...(league ? [homeLeagueClearNote(box, `No ${league} picks ${when}.`)] : note(`No picks ${when}.`)), ...more];
 }
 
 function homeMoreNote() {
@@ -220,7 +240,7 @@ function homeMoreNote() {
   return line;
 }
 
-function homeGameRows(games) {
+function homeGameRows(games, box) {
   const league = homeLeagueOn(games), rows = games.filter((game) => !league || game.sport === league);
   if (!homeGamesLeft()) {
     const live = homeLater.live.filter((game) => !league || game.sport === league), next = homeLater.tomorrow.filter((game) => !league || game.sport === league);
@@ -228,7 +248,8 @@ function homeGameRows(games) {
     const list = [...(live.length ? [label("Live now"), ...live.map(homeLiveRow)] : []), ...(next.length ? [label("Tomorrow"), ...next.map(homeGamesRow)] : [])];
     if (list.length) return list;
   }
-  return rows.length ? rows.map(homeGamesRow) : [Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: `No ${league} games left today. Tap All for the rest.` })];
+  if (rows.length) return rows.map(homeGamesRow);
+  return [league ? homeLeagueClearNote(box, `No ${league} games left today.`) : Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: "No games left today." })];
 }
 
 function homeGamesLeft() {
@@ -285,7 +306,7 @@ function homeGamesPaint() {
   said.className = "desk-games-said";
   said.textContent = `${names.length === 1 ? names[0] : "Your friends"} sent you ${fresh.length === 1 ? "a bet" : `${fresh.length} bets`}`;
   head.append(fresh.length ? said : homeGamesTabs(box, games), ...(fresh.length ? [] : homeLeagues(box, games)));
-  box.replaceChildren(head, ...(fresh.length ? fresh.map(homeSharedRow) : homeGamesTab === "rec" ? homeRecRows(games) : homeGameRows(games)));
+  box.replaceChildren(head, ...(fresh.length ? fresh.map(homeSharedRow) : homeGamesTab === "rec" ? homeRecRows(games, box) : homeGameRows(games, box)));
   homeGamesWake(box);
 }
 

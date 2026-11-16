@@ -29,16 +29,14 @@ function sharedShow() {
   startBack = null;
 }
 
-function sharedTabGo(flash) {
-  startTab = "shared"; sharedSide = "in";
-  sharedShow();
+function sharedTabGo() {
+  if (typeof chatToggle === "function") {
+    if (window.goFull) goFull();
+    chatToggle(true);
+    return;
+  }
+  startTab = "rec";
   startPaint(1);
-  const box = document.querySelector("#desk-glass-in .find-start");
-  if (!box) return;
-  box.hidden = false;
-  box.scrollIntoView({ block: "start", behavior: "smooth" });
-  if (!flash) return;
-  box.querySelectorAll(".find-shared-card[data-shared]").forEach((card) => { if (!flash.has(card.dataset.shared)) return; card.classList.remove("find-flash"); void card.offsetWidth; card.classList.add("find-flash"); setTimeout(() => card.classList.remove("find-flash"), 2400); });
 }
 
 function sharedLegs(item) {

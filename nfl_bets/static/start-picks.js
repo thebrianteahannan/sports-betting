@@ -175,9 +175,9 @@ function startFavBox() {
   return box;
 }
 
-function startRecs(board) {
+function startRecs(board, box) {
   const now = Date.now(), left = homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now), picks = [], all = [];
-  const recs = homeRecRows(left).filter((node) => { if (node.startPick) all.push(node.startPick); return !node.startPick || (startKindOk(node.startPick) && (!startFavOnly || startFavGame(node.startPick.match))); }).map((node) => {
+  const recs = homeRecRows(left, box).filter((node) => { if (node.startPick) all.push(node.startPick); return !node.startPick || (startKindOk(node.startPick) && (!startFavOnly || startFavGame(node.startPick.match))); }).map((node) => {
     if (node.startPick) picks.push(node.startPick);
     if (!node.classList.contains("desk-rec")) return node;
     const copy = node.cloneNode(true), pick = node.startPick;
@@ -194,7 +194,7 @@ function startRecs(board) {
     }
     return copy;
   });
-  const games = homeGameRows(left).filter((node) => !startFavOnly || !node.startGame || startFavGame(node.startGame.match)).map((node) => {
+  const games = homeGameRows(left, box).filter((node) => !startFavOnly || !node.startGame || startFavGame(node.startGame.match)).map((node) => {
     if (!node.classList.contains("desk-game") || node.classList.contains("desk-game-live")) return node;
     const copy = node.cloneNode(true), game = node.startGame;
     if (game) copy.addEventListener("click", () => startGameOpen(board, game));
@@ -251,23 +251,28 @@ function startPaint(again) {
   homeRecsLoad(); homeLogosLoad(); homeLeagueSync();
   const box = document.createElement("div"), tabs = document.createElement("span");
   box.className = "find-start"; tabs.className = "desk-games-tabs";
-  const { recs, games, picks, all } = startRecs(board), shared = Boolean(window.saveWho && typeof sharedTabBody === "function");
-  if (startTab === "shared" && !shared) startTab = "rec";
-  [["rec", "Recommended"], ["games", `Games ${games.filter((node) => node.classList.contains("desk-game")).length}`], ["stacks", "Strategies"], ...(shared ? [["shared", sharedTabLabel()]] : [])].forEach(([id, label]) => {
+  if (startTab === "shared") startTab = "rec";
+  const { recs, games, picks, all } = startRecs(board, box);
+  [["rec", "Recommended"], ["games", `Games ${games.filter((node) => node.classList.contains("desk-game")).length}`], ["stacks", "Strategies"]].forEach(([id, label]) => {
     const tab = Object.assign(document.createElement("button"), { type: "button", className: `desk-games-tab${startTab === id ? " on" : ""}`, textContent: label });
     tab.setAttribute("aria-pressed", String(startTab === id));
     tab.addEventListener("click", () => { startTab = id; startPaint(1); });
     tabs.append(tab);
   });
   box.dataset.stacks = startStackKey();
-  if (typeof sharedTabKey === "function") box.dataset.shared = sharedTabKey();
   const row = document.createElement("div");
   row.className = "find-start-row";
-  row.append(tabs, ...(startTab === "rec" ? [startRandomBar(board, picks)] : []), ...(startTab !== "shared" && ((window.memberTeams || []).length || startFavOnly) ? [startFavBox()] : []));
-  box.append(row, ...(startTab === "rec" ? [...(all.length ? [startKindBar(all)] : []), ...recs] : startTab === "stacks" ? startStacks() : startTab === "shared" && shared ? [sharedTabBody(board)] : games));
+  const leagues = typeof homeLeagues === "function" ? homeLeagues(box, leftGames()) : [];
+  row.append(tabs, ...leagues, ...(startTab === "rec" ? [startRandomBar(board, picks)] : []), ...(((window.memberTeams || []).length || startFavOnly) ? [startFavBox()] : []));
+  box.append(row, ...(startTab === "rec" ? [...(all.length ? [startKindBar(all)] : []), ...recs] : startTab === "stacks" ? startStacks() : games));
   box.hidden = Boolean(input && input.value.trim());
   spot.after(box);
   if ((!homeRecs || homeRecs.loading) && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
+}
+
+function leftGames() {
+  const now = Date.now();
+  return homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now);
 }
 
 if (typeof homeRecRow === "function") {
@@ -288,7 +293,7 @@ if (typeof paintParlay === "function") {
     if (window.saveStacksOpen) { window.saveStacksOpen = false; startTab = "stacks"; document.querySelectorAll(".find-start").forEach((node) => node.remove()); }
     paintParlayStart.apply(this, arguments); startPlace();
     const box = document.querySelector("#desk-glass-in .find-start");
-    if (box && ((startTab === "stacks" && box.dataset.stacks !== startStackKey()) || (typeof sharedTabKey === "function" && box.dataset.shared !== sharedTabKey()))) startPaint(1);
+    if (box && startTab === "stacks" && box.dataset.stacks !== startStackKey()) startPaint(1);
   };
 }
 document.addEventListener("input", (event) => { if (event.target.closest && event.target.closest("label.find")) { startBack = startUndo = null; document.querySelectorAll(".find-start").forEach((node) => { node.hidden = Boolean(event.target.value.trim()); }); } });
