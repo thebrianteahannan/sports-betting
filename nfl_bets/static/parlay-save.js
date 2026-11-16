@@ -68,6 +68,20 @@ if (saveSeek.get("go") === "find") {
   history.replaceState(null, "", "/");
   const wait = setInterval(() => { if (!window.memberReady || typeof window.birdMenu !== "function") return; clearInterval(wait); birdMenu("find"); }, 250);
 }
+if (saveSeek.get("td") === "1") {
+  window.deskGoing = true;
+  history.replaceState(null, "", "/");
+  let tdTries = 0, tdAsked = false;
+  const waitTd = setInterval(() => {
+    if (++tdTries > 160) { clearInterval(waitTd); console.log("[parlay-save] could not open anytime TDs"); return; }
+    if (!window.memberReady || typeof window.birdMenu !== "function") return;
+    const board = document.querySelector(".find-board");
+    if (!board) { if (!tdAsked) { tdAsked = true; birdMenu("find"); } return; }
+    if (typeof startTdGo !== "function") return;
+    clearInterval(waitTd);
+    startTdGo(board);
+  }, 250);
+}
 if (saveSeek.get("from") === "live") document.addEventListener("click", (event) => {
   const desk = document.getElementById("desk");
   if (!event.target.closest || !event.target.closest("#desk-back") || !desk || desk.classList.contains("bird-on") || !document.querySelector("#desk-glass-in .find-board")) return;
@@ -438,6 +452,7 @@ const SAVE_TIPS = ["Search a player, team or game in <b data-tip=\"search\">the 
 
 function saveTips() {
   clearTimeout(saveTipTimer); document.querySelectorAll(".find-tips").forEach((node) => node.remove());
+  if (document.querySelector("#desk-glass-in .find-board.find-td-on, #desk-glass-in .find-list.find-td-board")) return;
   const tray = document.querySelector("#desk-glass-in .find-board > .find-tray");
   if (!tray) return;
   const tips = document.createElement("div"); tips.className = "find-tips done";

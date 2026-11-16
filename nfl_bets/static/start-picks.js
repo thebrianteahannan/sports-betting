@@ -35,7 +35,8 @@ function startOpen(board, bet) {
   const teams = board.querySelector(":scope > .find-teams"), list = board.querySelector(":scope > .find-list"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)"), span = board.querySelector(":scope > .find-span"), more = board.querySelector(".find-games-go");
   if (!teams || !list || typeof paintMatch !== "function") return;
   if (hits) hits.replaceChildren();
-  teams.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on");
+  board.classList.remove("find-td-on");
+  teams.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on", "find-td-board");
   if (span) { span.classList.add("find-picked"); span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); }
   startBack = { board, picked: span ? span.classList.contains("find-picked") : false, more: more ? more.hidden : true };
   if (more) more.hidden = false;

@@ -145,9 +145,16 @@ function ball(rows, names) {
   else if (catches >= 3) line = "He catches the ball. The receptions are the prop.";
   const stats = [];
   const add = (value, label) => { if (value > 0) stats.push({ label, value: shown(value) }); };
+  const qb = pass >= 150;
   add(pass, "Pass Yds/Game"); add(passTd, "Pass TD/Game"); add(rush, "Rush Yds/Game"); add(carries, "Carries/Game");
-  add(rec, "Rec Yds/Game"); add(catches, "Receptions/Game"); add(targets, "Targets/Game");
-  if ((rushTd || 0) + (recTd || 0) > 0) stats.push({ label: "TD/Game", value: shown((rushTd || 0) + (recTd || 0)) });
+  if (qb) {
+    // Anytime TD pays on a QB rushing score, not a throw. Show rush TDs even at 0.
+    const rushScore = rushTd != null ? rushTd : (indexOf(names, "rushingTouchdowns") >= 0 ? 0 : null);
+    if (rushScore != null) stats.push({ label: "Rush TD/Game", value: shown(rushScore), n: rushScore });
+  } else {
+    add(rec, "Rec Yds/Game"); add(catches, "Receptions/Game"); add(targets, "Targets/Game");
+    if ((rushTd || 0) + (recTd || 0) > 0) stats.push({ label: "TD/Game", value: shown((rushTd || 0) + (recTd || 0)) });
+  }
   return { line, stats };
 }
 

@@ -306,14 +306,192 @@ function paintScores(holder, game, people, list, hits) {
 }
 window.paintTdRec = paintTdRec;
 function openTdPage(list, people, hits, game, team) {
-  const board = list && list.closest(".find-board"); if (!board) return; const span = board.querySelector(".find-span"); if (span) { span.classList.add("find-picked"); const go = span.querySelector(".find-games-go"); if (go) go.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); } const holder = board.querySelector(".find-teams"); if (holder) holder.replaceChildren(); if (hits) hits.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on"); list.classList.add("find-td-board"); const slateOn = !game && board.querySelector(".find-games.find-on"), slateKeys = slateOn && typeof loadedGames === "function" ? new Set(loadedGames(people, slateOn.dataset.span || "today").map((row) => `${row.match}|${row.kickoff}`)) : null;
+  const board = list && list.closest(".find-board"); if (!board) return; board.classList.add("find-td-on"); document.querySelectorAll(".find-tips").forEach((node) => node.remove()); const span = board.querySelector(".find-span"); if (span) { span.classList.add("find-picked"); const go = span.querySelector(".find-games-go"); if (go) go.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); } const holder = board.querySelector(".find-teams"); if (holder) holder.replaceChildren(); if (hits) hits.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on"); list.classList.add("find-td-board"); const slateOn = !game && board.querySelector(".find-games.find-on"), slateKeys = slateOn && typeof loadedGames === "function" ? new Set(loadedGames(people, slateOn.dataset.span || "today").map((row) => `${row.match}|${row.kickoff}`)) : null;
   const skip = /half|quarter|\b1st\b|first|last|either|\b[23]\+|each quarter|each half/, shot = (price) => price < 0 ? Math.abs(price) / (Math.abs(price) + 100) : 100 / (price + 100), kindOf = (bet) => { const text = `${bet.label || ""} ${bet.market || ""}`.toLowerCase().replace(/\btds\b/g, "touchdowns").replace(/\btd\b/g, "touchdown"); const market = String(bet.market || "").toLowerCase(); if (market === "to score 2+ touchdowns") return "2 Anytime TDs"; if (market === "to score 3+ touchdowns") return "3 Anytime TDs"; if (skip.test(text)) return ""; if (/anytime touchdown scorer|any time touchdown scorer/.test(text)) return "Anytime TD"; return ""; }, books = new Map();
   (people || []).forEach((person) => { if (!person || person.kind !== "player") return; (person.bets || []).forEach((bet) => { if (String(bet.sport || "").toUpperCase() !== "NFL" || (slateKeys && !slateKeys.has(`${bet.match}|${bet.kickoff}`))) return; const kind = kindOf(bet), price = Number(bet.odds); if (!kind || !price) return; const chance = shot(price), here = !!(game && bet.match === game.match && bet.kickoff === game.kickoff), book = books.get(kind) || new Map(); books.set(kind, book); const had = book.get(person.name); if (here) { if (!had || !had.here || chance > had.chance) book.set(person.name, { person, chance, odds: price, match: bet.match, kickoff: bet.kickoff, here: true }); } else if (!had) book.set(person.name, { person, chance, odds: price, match: bet.match, kickoff: bet.kickoff, here: false }); else if (!had.here && chance > had.chance) { had.chance = chance; had.odds = price; had.match = bet.match; had.kickoff = bet.kickoff; } }); });
-  const head = document.createElement("h3"); const picks = document.createElement("div"); picks.className = "find-hits find-td-picks"; const allBox = document.createElement("div"); allBox.className = "find-td-all find-td-page"; let clubs = new Map(); const tagTeams = () => { if (!clubs.size) return; allBox.querySelectorAll("button").forEach((button) => { const who = typeof plainName === "function" ? plainName(button.dataset.who) : ""; const club = clubs.get(who) || ([...clubs].find(([name]) => name.startsWith(`${who} `) || who.startsWith(`${name} `)) || [])[1]; const mine = club ? (!team || (typeof plainName === "function" && plainName(team) === plainName(club))) : (!team && button.dataset.here === "1"); if (club) { const price = Number(button.dataset.odds); const cash = findCash(price); button.textContent = `${button.dataset.who}, ${club.split(/\s+/).pop()}, ${price > 0 ? `+${price}` : price}, ${button.dataset.chance}%${cash ? `, $5 profits ${cash}` : ""}${button.dataset.tds || ""}`; } button.classList.toggle("on", mine); }); }; const paint = (kind) => { head.textContent = kind === "Anytime TD" ? "Most likely to score an anytime touchdown" : kind === "2 Anytime TDs" ? "Most likely to score 2 anytime touchdowns" : "Most likely to score 3 anytime touchdowns"; allBox.replaceChildren(); const three = books.get("3 Anytime TDs") || new Map(); const rows = [...((books.get(kind) || new Map()).values())].sort((a, b) => b.chance - a.chance); if (!rows.length) { const empty = document.createElement("p"); empty.className = "find-empty"; empty.textContent = `FanDuel has no ${kind.toLowerCase()} touchdown prices up.`; allBox.append(empty); return; } rows.forEach((row) => { const button = document.createElement("button"); button.type = "button"; button.dataset.who = row.person.name; button.dataset.match = row.match || ""; button.dataset.kickoff = row.kickoff || ""; button.dataset.odds = String(row.odds); button.dataset.chance = String(Math.round(row.chance * 100)); if (row.here) button.dataset.here = "1"; button.dataset.tds = teamTd(people, row.person.name, row.match, row.kickoff); if (tdRecWho(row.person.name, null)) { button.dataset.rec = "1"; button.classList.add("find-td-rec"); } button.textContent = `${row.person.name}, ${Number(row.odds) > 0 ? `+${row.odds}` : row.odds}, ${Math.round(row.chance * 100)}%${findCash(row.odds) ? `, $5 profits ${findCash(row.odds)}` : ""}${button.dataset.tds}`; if (row.here && !team) button.classList.add("on"); if (kind === "Anytime TD" && three.has(row.person.name)) button.dataset.three = "1"; button.addEventListener("click", () => { showFind(list, hits, row.person, board.querySelector(":scope > .find-roster"), people || board.people || [], false, kind, { match: row.match, kickoff: row.kickoff, odds: row.odds }); }); allBox.append(button); }); markTd(allBox); tagTeams(); fillTeam(people, allBox); loadZone(people, allBox); filterRows(); showFew(kind); };
+  const head = document.createElement("h3"); const picks = document.createElement("div"); picks.className = "find-hits find-td-picks"; const allBox = document.createElement("div"); allBox.className = "find-td-all find-td-page"; let clubs = new Map(); let few;
+  const tagTeams = () => { if (!clubs.size) return; allBox.querySelectorAll("button").forEach((button) => { const who = typeof plainName === "function" ? plainName(button.dataset.who) : ""; const club = clubs.get(who) || ([...clubs].find(([name]) => name.startsWith(`${who} `) || who.startsWith(`${name} `)) || [])[1]; const mine = club ? (!team || (typeof plainName === "function" && plainName(team) === plainName(club))) : (!team && button.dataset.here === "1"); if (club) { const price = Number(button.dataset.odds); const cash = findCash(price); button.textContent = `${button.dataset.who}, ${club.split(/\s+/).pop()}, ${price > 0 ? `+${price}` : price}, ${button.dataset.chance}%${cash ? `, $5 profits ${cash}` : ""}`; delete button.dataset.dressed; } button.classList.toggle("on", mine); }); };
+  const tdShutMore = () => {
+    allBox.querySelectorAll("button.td-open").forEach((node) => node.classList.remove("td-open"));
+    allBox.querySelectorAll(".td-more").forEach((node) => node.remove());
+    if (few) few.querySelectorAll(".rec-bet.open").forEach((card) => card.classList.remove("open"));
+  };
+  const tdToggleMore = (button, row, kind) => {
+    const open = button.classList.contains("td-open");
+    tdShutMore();
+    if (open) return;
+    button.classList.add("td-open");
+    const more = document.createElement("div");
+    more.className = "td-more";
+    const tds = String(button.dataset.tds || "").replace(/^\n/, "").trim();
+    const gameLine = [row.match || button.dataset.match || "", tds].filter(Boolean).join(" · ");
+    if (gameLine) {
+      const tip = document.createElement("p");
+      tip.className = "td-more-game";
+      tip.textContent = gameLine;
+      more.append(tip);
+    }
+    const mark = document.createElement("span");
+    mark.hidden = true;
+    more.append(mark);
+    if (typeof paintCard === "function") paintCard(more, mark, row.person);
+    const hit = typeof profileTdBet === "function" ? profileTdBet(row.person, kind, { match: row.match, kickoff: row.kickoff, odds: row.odds }) : null;
+    if (hit) {
+      const acts = document.createElement("span");
+      acts.className = "td-more-acts";
+      const betIt = document.createElement("button");
+      betIt.type = "button";
+      betIt.className = "find-profile-bet";
+      const on = typeof parlayKey === "function" && typeof parlayLeg !== "undefined" && parlayLeg.has(parlayKey(hit.bet));
+      betIt.textContent = on ? "In the parlay" : "Bet it";
+      betIt.disabled = on;
+      betIt.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (betIt.disabled) return;
+        if (typeof profileAskPut === "function") profileAskPut(acts, hit);
+        else if (typeof profileBetPut === "function") profileBetPut(hit, false);
+      });
+      acts.append(betIt);
+      more.append(acts);
+    }
+    (button.closest(".td-pick-wrap") || button).after(more);
+  };
+  const paint = (kind) => { head.textContent = kind === "Anytime TD" ? "Most likely to score an anytime touchdown" : kind === "2 Anytime TDs" ? "Most likely to score 2 anytime touchdowns" : "Most likely to score 3 anytime touchdowns"; allBox.replaceChildren(); const three = books.get("3 Anytime TDs") || new Map(); const rows = [...((books.get(kind) || new Map()).values())].sort((a, b) => b.chance - a.chance); if (!rows.length) { const empty = document.createElement("p"); empty.className = "find-empty"; empty.textContent = `FanDuel has no ${kind.toLowerCase()} touchdown prices up.`; allBox.append(empty); return; } rows.forEach((row) => { const button = document.createElement("button"); button.type = "button"; button.dataset.who = row.person.name; button.dataset.match = row.match || ""; button.dataset.kickoff = row.kickoff || ""; button.dataset.odds = String(row.odds); button.dataset.chance = String(Math.round(row.chance * 100)); if (row.here) button.dataset.here = "1"; button.dataset.tds = teamTd(people, row.person.name, row.match, row.kickoff); if (tdRecWho(row.person.name, null)) { button.dataset.rec = "1"; button.classList.add("find-td-rec"); } button.textContent = `${row.person.name}, ${Number(row.odds) > 0 ? `+${row.odds}` : row.odds}, ${Math.round(row.chance * 100)}%${findCash(row.odds) ? `, $5 profits ${findCash(row.odds)}` : ""}`; if (row.here && !team) button.classList.add("on"); if (kind === "Anytime TD" && three.has(row.person.name)) button.dataset.three = "1"; allBox.append(wrapRow(button, row, kind)); }); markTd(allBox); tagTeams(); fillTeam(people, allBox); loadZone(people, allBox); filterRows(); showFew(kind); syncPick(); };
   const filter = document.createElement("label");
   filter.className = "find-td-filter find-td-page-filter";
   filter.innerHTML = `<input type="checkbox" checked> Recommended only`;
   const recOnly = filter.querySelector("input");
+  let picking = false;
+  const picked = new Map();
+  const tools = document.createElement("div");
+  tools.className = "find-td-tools";
+  const pickBtn = document.createElement("button");
+  pickBtn.type = "button";
+  pickBtn.className = "find-td-select";
+  pickBtn.textContent = "Select";
+  const makeBtn = document.createElement("button");
+  makeBtn.type = "button";
+  makeBtn.className = "find-td-make";
+  makeBtn.hidden = true;
+  makeBtn.disabled = true;
+  makeBtn.textContent = "Make a parlay";
+  const syncPick = () => {
+    const n = picked.size;
+    list.classList.toggle("find-td-picking", picking);
+    pickBtn.textContent = picking ? "Cancel" : "Select";
+    pickBtn.classList.toggle("on", picking);
+    makeBtn.hidden = !picking;
+    makeBtn.disabled = n < 2;
+    makeBtn.textContent = n < 2 ? "Make a parlay" : `Make a ${n}-leg parlay`;
+    [...allBox.querySelectorAll(".td-pick"), ...(few ? few.querySelectorAll(".td-pick") : [])].forEach((box) => {
+      const key = box.dataset.key || "";
+      box.checked = !!(key && picked.has(key));
+    });
+  };
+  const clearPicks = () => { picked.clear(); [...allBox.querySelectorAll(".td-pick"), ...(few ? few.querySelectorAll(".td-pick") : [])].forEach((box) => { box.checked = false; }); syncPick(); };
+  const armPick = (box, hit) => {
+    if (!box || !hit || typeof parlayKey !== "function") return;
+    const key = parlayKey(hit.bet);
+    box.dataset.key = key;
+    box.checked = picked.has(key);
+    box.addEventListener("click", (event) => event.stopPropagation());
+    box.addEventListener("change", () => {
+      if (box.checked) {
+        if (picked.size >= 8) { box.checked = false; return; }
+        const person = hit.person && hit.person.key ? hit.person : { ...hit.person, key: String((hit.person && hit.person.name) || "").toLowerCase() };
+        picked.set(key, { person, bet: hit.bet });
+      } else picked.delete(key);
+      syncPick();
+    });
+  };
+  const wrapRow = (button, row, kind) => {
+    const wrap = document.createElement("div");
+    wrap.className = "td-pick-wrap";
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.className = "td-pick";
+    check.setAttribute("aria-label", `Select ${row.person.name}`);
+    const hit = typeof profileTdBet === "function" ? profileTdBet(row.person, kind, { match: row.match, kickoff: row.kickoff, odds: row.odds }) : null;
+    armPick(check, hit);
+    button.addEventListener("click", (event) => {
+      if (picking) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!hit) return;
+        check.checked = !check.checked;
+        check.dispatchEvent(new Event("change"));
+        return;
+      }
+      tdToggleMore(button, row, kind);
+    });
+    wrap.append(check, button);
+    return wrap;
+  };
+  pickBtn.addEventListener("click", () => {
+    picking = !picking;
+    if (!picking) clearPicks();
+    else { tdShutMore(); syncPick(); }
+  });
+  makeBtn.addEventListener("click", () => {
+    if (picked.size < 2) return;
+    if (typeof parlayLeg !== "undefined" && parlayLeg.size && typeof saveNew === "function") saveNew();
+    if (typeof betFromSay === "function") betFromSay("Anytime TDs", true);
+    [...picked.values()].forEach(({ person, bet }) => {
+      if (typeof parlayLeg === "undefined" || parlayLeg.size >= 8) return;
+      if (typeof parlayKey === "function" && parlayLeg.has(parlayKey(bet))) return;
+      if (typeof legSwapAdd === "function") legSwapAdd(person, bet);
+      else {
+        parlayLeg.set(parlayKey(bet), bet);
+        if (person && !parlayPick.has(person.key) && parlayPick.size < 8) parlayPick.set(person.key, person);
+        if (typeof paintParlay === "function") paintParlay();
+      }
+    });
+    picking = false;
+    clearPicks();
+    document.querySelectorAll(".find-tray.find-shut").forEach((tray) => {
+      const fold = tray.querySelector(".find-fold");
+      if (fold) fold.click();
+    });
+  });
+  tools.append(pickBtn, makeBtn);
+  const markBest = () => {
+    const rows = [];
+    [...few.querySelectorAll(".rec-bet")].forEach((card) => {
+      card.classList.remove("find-td-best");
+      card.querySelectorAll(".find-td-best-tag").forEach((node) => node.remove());
+      if (card.hidden) return;
+      const who = (card.querySelector(".rec-gist .who") || {}).textContent || "";
+      const live = [...allBox.querySelectorAll("button")].find((node) => node.dataset.who === who);
+      rows.push({ kind: "few", node: card, chance: Number((live && live.dataset.chance) || 0) });
+    });
+    [...allBox.querySelectorAll("button")].forEach((button) => {
+      const was = button.dataset.best === "1";
+      button.classList.remove("find-td-best");
+      delete button.dataset.best;
+      if (was) delete button.dataset.dressed;
+      if (button.hidden) return;
+      rows.push({ kind: "btn", node: button, chance: Number(button.dataset.chance || 0) });
+    });
+    if (!rows.length) return;
+    rows.sort((a, b) => b.chance - a.chance);
+    const top = rows[0];
+    top.node.classList.add("find-td-best");
+    if (top.kind === "btn") {
+      top.node.dataset.best = "1";
+      delete top.node.dataset.dressed;
+      if (typeof dressTdRow === "function") dressTdRow(top.node);
+    } else {
+      const gist = top.node.querySelector(".rec-gist");
+      const who = gist && gist.querySelector(".who");
+      if (gist && who && !gist.querySelector(".find-td-best-tag")) {
+        const tag = document.createElement("i");
+        tag.className = "find-td-best-tag";
+        tag.textContent = "Best";
+        who.after(tag);
+      }
+    }
+  };
   const filterRows = () => {
     const only = recOnly.checked;
     [...few.querySelectorAll(".rec-bet")].forEach((card) => {
@@ -325,7 +503,10 @@ function openTdPage(list, people, hits, game, team) {
       [...few.querySelectorAll(".rec-bet")].filter((card) => !card.hidden).map((card) => (card.querySelector(".rec-gist .who") || {}).textContent || "").filter(Boolean)
     );
     [...allBox.querySelectorAll("button")].forEach((button) => {
-      button.hidden = (only && button.dataset.rec !== "1") || inFew.has(button.dataset.who);
+      const hide = (only && button.dataset.rec !== "1") || inFew.has(button.dataset.who);
+      button.hidden = hide;
+      const wrap = button.closest(".td-pick-wrap");
+      if (wrap) wrap.hidden = hide;
     });
     const empty = allBox.querySelector(".find-td-empty");
     if (empty) empty.remove();
@@ -333,6 +514,7 @@ function openTdPage(list, people, hits, game, team) {
     if (only && !shown) {
       allBox.append(Object.assign(document.createElement("p"), { className: "find-td-empty find-empty", textContent: "No recommended touchdowns on this slate." }));
     }
+    markBest();
   };
   ["Anytime TD", "2 Anytime TDs", "3 Anytime TDs"].forEach((kind) => {
     const button = document.createElement("button");
@@ -345,7 +527,7 @@ function openTdPage(list, people, hits, game, team) {
     });
     picks.append(button);
   });
-  const few = document.createElement("div");
+  few = document.createElement("div");
   few.className = "find-td-all find-td-page find-td-few";
   let fewKey = "";
   const showFew = (kind) => {
@@ -364,22 +546,38 @@ function openTdPage(list, people, hits, game, team) {
         card.className = "rec-bet log-on";
         const rec = live && live.dataset.rec === "1";
         if (rec) card.classList.add("find-td-rec");
+        if (live) card.dataset.odds = String(live.dataset.odds || price || "");
         const head = document.createElement("b");
-        head.innerHTML = [`<i class="px">${esc(shown)}</i>`, chance && `<i class="pct">${esc(chance)}%</i>`, typeof findCash === "function" && findCash(price) && `<i class="pay">${esc(`$5 profits ${findCash(price)}`)}</i>`].filter(Boolean).join("");
+        const pay = typeof tdPayHtml === "function" ? tdPayHtml(price) : (typeof findCash === "function" && findCash(price) ? `<span class="td-pay">$5 profits ${esc(findCash(price))}</span>` : "");
+        head.innerHTML = [`<i class="px">${esc(shown)}</i>`, chance && `<i class="pct">${esc(chance)}%</i>`, pay].filter(Boolean).join("");
         const gist = document.createElement("p");
         gist.className = "rec-gist";
         const spot = (live && live.dataset.match) || "";
-        gist.innerHTML = `<i class="who">${esc(pick.name)}</i> <i class="prop">Anytime touchdown</i>${rec ? `<i class="find-td-rec-tag">Recommended</i>` : ""}${spot ? `<em>${esc(spot)}</em>` : ""}`;
+        const short = typeof gameShort === "function" && spot ? gameShort(spot) : spot;
+        gist.innerHTML = `<i class="who">${esc(pick.name)}</i>${rec ? `<i class="find-td-rec-tag">Recommended</i>` : ""}${short ? `<em>${esc(short)}</em>` : ""}<i class="prop">Anytime touchdown</i>${spot && spot !== short ? `<em class="td-few-full">${esc(spot)}</em>` : ""}`;
+        const fewHit = typeof profileTdBet === "function" ? profileTdBet(
+          (people || board.people || []).find((person) => person.name === pick.name) || { kind: "player", name: pick.name, bets: [] },
+          "Anytime TD",
+          { match: live && live.dataset.match, kickoff: live && live.dataset.kickoff, odds: price }
+        ) : null;
+        const fewCheck = document.createElement("input");
+        fewCheck.type = "checkbox";
+        fewCheck.className = "td-pick";
+        fewCheck.setAttribute("aria-label", `Select ${pick.name}`);
+        armPick(fewCheck, fewHit);
         card.addEventListener("click", (event) => {
-          if (event.target.closest(".td-part, .td-proof")) return;
-          if (event.target.closest(".who")) {
-            const again = [...allBox.querySelectorAll("button")].find((node) => node.dataset.who === pick.name);
-            if (again) again.click();
+          if (event.target.closest(".td-part, .td-proof, .td-more-acts, .desk-rec-ask, .find-profile-bet, .td-pay, .stake, .td-pick")) return;
+          if (picking) {
+            if (!fewHit) return;
+            fewCheck.checked = !fewCheck.checked;
+            fewCheck.dispatchEvent(new Event("change"));
             return;
           }
-          card.classList.toggle("open");
+          const open = card.classList.contains("open");
+          tdShutMore();
+          if (!open) card.classList.add("open");
         });
-        card.append(head, gist);
+        card.append(fewCheck, gist, head);
         if (window.paintDive) paintDive(card, pick);
         else {
           const why = document.createElement("p");
@@ -387,13 +585,48 @@ function openTdPage(list, people, hits, game, team) {
           why.textContent = String(pick.summary || pick.line || "");
           card.append(why);
         }
+        const liveBtn = live;
+        if (liveBtn && typeof paintCard === "function") {
+          const wrap = document.createElement("div");
+          wrap.className = "td-few-card";
+          const mark = document.createElement("span");
+          mark.hidden = true;
+          wrap.append(mark);
+          card.append(wrap);
+          paintCard(wrap, mark, (people || []).find((person) => person.name === pick.name) || { kind: "player", name: pick.name, bets: [] });
+          const hit = typeof profileTdBet === "function" ? profileTdBet(
+            (people || board.people || []).find((person) => person.name === pick.name) || { kind: "player", name: pick.name, bets: [] },
+            "Anytime TD",
+            { match: liveBtn.dataset.match, kickoff: liveBtn.dataset.kickoff, odds: Number(liveBtn.dataset.odds) }
+          ) : null;
+          if (hit) {
+            const acts = document.createElement("span");
+            acts.className = "td-more-acts";
+            const betIt = document.createElement("button");
+            betIt.type = "button";
+            betIt.className = "find-profile-bet";
+            const on = typeof parlayKey === "function" && typeof parlayLeg !== "undefined" && parlayLeg.has(parlayKey(hit.bet));
+            betIt.textContent = on ? "In the parlay" : "Bet it";
+            betIt.disabled = on;
+            betIt.addEventListener("click", (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              if (betIt.disabled) return;
+              if (typeof profileAskPut === "function") profileAskPut(acts, hit);
+              else if (typeof profileBetPut === "function") profileBetPut(hit, false);
+            });
+            acts.append(betIt);
+            card.append(acts);
+          }
+        }
         few.append(card);
       });
       filterRows();
+      syncPick();
     }).catch(() => {});
   };
   recOnly.addEventListener("change", filterRows);
-  list.append(head, picks, filter, few, allBox);
+  list.append(head, picks, filter, tools, few, allBox); syncPick();
   paint("Anytime TD");
   const glass = document.getElementById("desk-glass-in");
   if (glass) glass.scrollTop += head.getBoundingClientRect().top - glass.getBoundingClientRect().top - 8;
@@ -403,7 +636,7 @@ function openTdPage(list, people, hits, game, team) {
 }
 
 function teamTd(people, name, match, kickoff) { const fold = (text) => typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase(); if (people && !people.tdBook) { const who = new Map(), line = new Map(); (people || []).forEach((person) => { if (!person || person.kind !== "team") return; (person.bets || []).forEach((bet) => { const market = String(bet.market || ""), spot = `${bet.match}|${bet.kickoff}`; if (/td scorer$|to score a td$/i.test(market)) { const player = fold(bet.label); if (player.split(" ").length > 1 && !/defense|special/.test(player)) who.set(`${player}|${spot}`, person.name); } if (/total points$/i.test(market) && /\bover\s+\d/i.test(bet.label)) { const num = Number((String(bet.label).match(/\bover\s+(\d+(?:\.\d+)?)/i) || [])[1]); if (num) line.set(`${fold(person.name)}|${spot}`, num); } }); }); people.tdBook = { who, line }; } const book = people && people.tdBook; if (!book) return ""; const want = fold(name), spot = `${match}|${kickoff}`; let club = book.who.get(`${want}|${spot}`); if (!club) { for (const [key, value] of book.who) { if (!key.endsWith(`|${spot}`)) continue; const player = key.slice(0, key.length - spot.length - 1); if (player.startsWith(`${want} `) || want.startsWith(`${player} `)) { club = value; break; } } } const num = club && book.line.get(`${fold(club)}|${spot}`); if (!club) return ""; const zoneRow = people.zone && people.zone[fold(club)]; const isBack = zoneRow && Array.isArray(people.backs) && people.backs.some((name) => name === want || name.startsWith(`${want} `) || want.startsWith(`${name} `)); const back = isBack && zoneRow.back != null ? `, ${zoneRow.back}% of those passes go to an RB` : ""; const zone = zoneRow ? `, ${zoneRow.plays} red zone plays a game, ${zoneRow.pass}% pass, ${zoneRow.run}% run${back}` : ""; if (!num) return zone; const tds = Math.round((num / 7) * 10) / 10; return `\n${club.split(/\s+/).pop()} projected ${Number.isInteger(tds) ? tds : tds.toFixed(1)} TDs${zone}`; }
-function markTd(box) { if (!box) return; box.querySelectorAll("button").forEach((button) => button.classList.toggle("find-better", button.dataset.three === "1")); } function fillTeam(people, box) { const fold = (text) => typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase(); if (people && !people.tdClub) people.tdClub = new Map(); const apply = (button, team) => { if (!team || !people || !people.tdBook || !button.isConnected) return; people.tdBook.who.set(`${fold(button.dataset.who)}|${button.dataset.match}|${button.dataset.kickoff}`, team); const suffix = teamTd(people, button.dataset.who, button.dataset.match, button.dataset.kickoff); if (!suffix) return; const old = button.dataset.tds || ""; button.dataset.tds = suffix; if (old && old !== suffix && button.textContent.includes(old)) button.textContent = button.textContent.replace(old, suffix); else if (!/projected|red zone plays/.test(button.textContent)) button.textContent += suffix; }; const jobs = []; [...box.querySelectorAll("button")].forEach((button) => { if (button.dataset.tds || !button.dataset.match || /defense/.test(fold(button.dataset.who))) return; const saved = people.tdClub.get(fold(button.dataset.who)); if (saved) { apply(button, saved); return; } jobs.push(fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "club", name: button.dataset.who }) }).then((res) => res.json()).then((data) => { const sides = String(button.dataset.match || "").split(/\s@\s|\sv\s/i).map((side) => fold(side.trim())); const team = ((data && data.clubs) || []).map((club) => club.team).find((team) => sides.some((side) => { const got = fold(team); return got === side || side.endsWith(` ${got}`) || got.endsWith(` ${side}`); })); if (team) people.tdClub.set(fold(button.dataset.who), team); apply(button, team); }).catch(() => {})); }); Promise.all(jobs).then(() => { if (!box.isConnected) return; box.querySelectorAll("button").forEach((button) => button.classList.remove("find-better")); markTd(box); }); } function paintZone(people, box) { if (!people || !people.zone || !box) return; box.querySelectorAll("button").forEach((button) => { if (!button.dataset.who || !button.dataset.match || /red zone plays/.test(button.textContent)) return; const suffix = teamTd(people, button.dataset.who, button.dataset.match, button.dataset.kickoff); if (!suffix || !/red zone plays/.test(suffix)) return; const old = button.dataset.tds || ""; button.dataset.tds = suffix; if (old && button.textContent.includes(old)) button.textContent = button.textContent.replace(old, suffix); else button.textContent += suffix; }); } function loadZone(people, box) { if (!people) return; const done = () => { if (box.isConnected) paintZone(people, box); }; if (people.zone) { done(); return; } if (!people.zoneJob) people.zoneJob = fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "zone" }) }).then((res) => res.json()).then((data) => { const fold = (text) => typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase(); const zone = {}; Object.entries((data && data.teams) || {}).forEach(([name, row]) => { zone[fold(name)] = row; }); people.zone = zone; people.backs = ((data && data.backs) || []).map((name) => fold(name)); }).catch(() => { people.zone = {}; }); people.zoneJob.then(done); }
+function markTd(box) { if (!box) return; box.querySelectorAll("button").forEach((button) => button.classList.toggle("find-better", button.dataset.three === "1")); } function fillTeam(people, box) { const fold = (text) => typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase(); if (people && !people.tdClub) people.tdClub = new Map(); const apply = (button, team) => { if (!team || !people || !people.tdBook || !button.isConnected) return; people.tdBook.who.set(`${fold(button.dataset.who)}|${button.dataset.match}|${button.dataset.kickoff}`, team); const suffix = teamTd(people, button.dataset.who, button.dataset.match, button.dataset.kickoff); if (!suffix) return; button.dataset.tds = suffix; }; const jobs = []; [...box.querySelectorAll("button")].forEach((button) => { if (button.dataset.tds || !button.dataset.match || /defense/.test(fold(button.dataset.who))) return; const saved = people.tdClub.get(fold(button.dataset.who)); if (saved) { apply(button, saved); return; } jobs.push(fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "club", name: button.dataset.who }) }).then((res) => res.json()).then((data) => { const sides = String(button.dataset.match || "").split(/\s@\s|\sv\s/i).map((side) => fold(side.trim())); const team = ((data && data.clubs) || []).map((club) => club.team).find((team) => sides.some((side) => { const got = fold(team); return got === side || side.endsWith(` ${got}`) || got.endsWith(` ${side}`); })); if (team) people.tdClub.set(fold(button.dataset.who), team); apply(button, team); }).catch(() => {})); }); Promise.all(jobs).then(() => { if (!box.isConnected) return; box.querySelectorAll("button").forEach((button) => button.classList.remove("find-better")); markTd(box); }); } function paintZone(people, box) { if (!people || !people.zone || !box) return; box.querySelectorAll("button").forEach((button) => { if (!button.dataset.who || !button.dataset.match) return; const suffix = teamTd(people, button.dataset.who, button.dataset.match, button.dataset.kickoff); if (!suffix || !/red zone plays/.test(suffix)) return; button.dataset.tds = suffix; }); } function loadZone(people, box) { if (!people) return; const done = () => { if (box.isConnected) paintZone(people, box); }; if (people.zone) { done(); return; } if (!people.zoneJob) people.zoneJob = fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "zone" }) }).then((res) => res.json()).then((data) => { const fold = (text) => typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase(); const zone = {}; Object.entries((data && data.teams) || {}).forEach(([name, row]) => { zone[fold(name)] = row; }); people.zone = zone; people.backs = ((data && data.backs) || []).map((name) => fold(name)); }).catch(() => { people.zone = {}; }); people.zoneJob.then(done); }
 function paintLeagueTd(group, people, list, hits) { const link = document.createElement("button"); link.type = "button"; link.className = "find-all-td"; link.textContent = "Most likely to score a touchdown"; link.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); openTdPage(list, people, hits); }); group.append(link); }
 function paintTotal(holder, game, people) {
   const take = (market) => { const rows = []; (people || []).forEach((person) => { if (!person || person.kind !== "team") return; (person.bets || []).forEach((bet) => { if (bet.match !== game.match || bet.kickoff !== game.kickoff || String(bet.market || "").toLowerCase() !== market || rows.some((row) => String(row.label).replace(/\s+spread$/i, "") === String(bet.label).replace(/\s+spread$/i, "") && row.odds === bet.odds)) return; rows.push(bet); }); }); return rows; };

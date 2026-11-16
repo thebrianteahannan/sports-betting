@@ -34,6 +34,8 @@ a { color: #3dff6e; }
 .live-week-game:hover { text-decoration: underline; }
 .live-leagues button.on { border-color: #3dff6e; background: #3dff6e; color: #04140c; }
 .live-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 10px; padding: 0.45rem 0; }
+.live-filters .live-td-go { display: inline-flex; align-items: center; padding: 5px 14px; border: 1px solid #3dff6e; border-radius: 999px; background: rgba(61, 255, 110, 0.1); color: #3dff6e; font: 800 13px Outfit, system-ui, sans-serif; letter-spacing: 0.02em; text-decoration: none; white-space: nowrap; }
+.live-filters .live-td-go:hover { background: rgba(61, 255, 110, 0.2); color: #f4f7fb; }
 .live-filters .live-court { margin-left: 0; }
 .live-court { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; color: #c4cde0; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .live-court input { accent-color: #3dff6e; width: 15px; height: 15px; margin: 0; cursor: pointer; }

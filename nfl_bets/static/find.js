@@ -718,7 +718,8 @@ function showFind(list, hits, person, roster, people, keep, kind, tip) {
   const bets = (person.bets || []).slice().sort((a, b) => findRank(b.odds) - findRank(a.odds));
   const golf = bets.some((bet) => bet.sport === "PGA");
   const holder = list.parentElement && list.parentElement.querySelector(".find-teams"); if (holder) { holder.replaceChildren(); holder.dataset.who = person.kind === "player" ? person.name : ""; const span = list.parentElement.querySelector(".find-span"); if (span) { span.classList.add("find-picked"); const go = span.querySelector(".find-games-go"); if (go) go.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); } const seen = new Set(); bets.forEach((bet) => { const key = `${bet.match}|${bet.kickoff}`; if (!bet.match || seen.has(key)) return; seen.add(key); paintMatch(holder, bet, people, list, hits, "shut"); }); }
-  list.replaceChildren(); list.classList.remove("find-only-on");
+  const board = list && list.closest(".find-board"); if (board) board.classList.remove("find-td-on");
+  list.replaceChildren(); list.classList.remove("find-only-on", "find-td-board");
   if (person.kind === "player" && !golf) {
     openPlayerPop(person, list, bets, profileTdBet(person, kind, tip));
     return;

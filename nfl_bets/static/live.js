@@ -157,7 +157,10 @@ function liveFilters() {
   const mine = document.body.classList.contains("live-mine-off") ? "" : " checked";
   const games = document.body.classList.contains("live-mine-games") ? " checked" : "";
   const recs = document.body.classList.contains("live-recs-on") ? " checked" : "";
-  return `<p class="live-filters"><label class="live-court"><input type="checkbox" class="live-mine-box"${mine}/> My bets</label><label class="live-court live-court-next"><input type="checkbox" class="live-mine-games-box"${games}/> Only my games</label><label class="live-court live-court-next"><input type="checkbox" class="live-recs-box"${recs}/> Recommended bets</label></p>`;
+  const td = (!liveLeagues.size || liveLeagues.has("NFL"))
+    ? `<a class="live-td-go" href="/?${liveEsc(new URLSearchParams({ td: "1", from: "live" }).toString())}" title="See who is most likely to score a touchdown">Anytime TDs ›</a>`
+    : "";
+  return `<p class="live-filters">${td}<label class="live-court"><input type="checkbox" class="live-mine-box"${mine}/> My bets</label><label class="live-court live-court-next"><input type="checkbox" class="live-mine-games-box"${games}/> Only my games</label><label class="live-court live-court-next"><input type="checkbox" class="live-recs-box"${recs}/> Recommended bets</label></p>`;
 }
 
 const liveDayKey = (when) => new Date(when).toLocaleDateString("en-CA", { timeZone: "America/New_York" });

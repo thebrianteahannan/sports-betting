@@ -4,6 +4,7 @@ const SERIES = {
   "Pts/Game": ["points"], "Assists/Game": ["assists"], "Rebounds/Game": ["reb"], "3pters/Game": ["threes"], "Minutes/Game": ["minutes"],
   "Steals/Game": ["steals"], "Blocks/Game": ["blocks"], "PRA/Game": ["points", "reb", "assists"],
   "Pass Yds/Game": ["passingYards"], "Pass TD/Game": ["passingTouchdowns"], "Rush Yds/Game": ["rushingYards"], "Carries/Game": ["rushingAttempts"],
+  "Rush TD/Game": ["rushingTouchdowns"],
   "Rec Yds/Game": ["receivingYards"], "Receptions/Game": ["receptions"], "Targets/Game": ["receivingTargets"], "TD/Game": ["rushingTouchdowns", "receivingTouchdowns"],
   "Goals/Game": ["goals"], "Points/Game": ["points"], "Shots/Game": ["shots"],
   "Strikeouts/Game": ["strikeouts"], "Hits/Game": ["hits"], "Earned Runs/Game": ["earnedRuns"], "Walks/Game": ["walks"], "Innings/Game": ["inningsPitched"],
@@ -12,7 +13,7 @@ const SERIES = {
 
 const CUT = {
   "hoop|Pts/Game": 0.42, "hoop|Assists/Game": 0.58, "hoop|Rebounds/Game": 0.49, "hoop|3pters/Game": 0.74, "hoop|Minutes/Game": 0.21, "hoop|Steals/Game": 0.96, "hoop|Blocks/Game": 1.32, "hoop|PRA/Game": 0.34,
-  "ball|Pass Yds/Game": 0.31, "ball|Pass TD/Game": 0.77, "ball|Rush Yds/Game": 0.89, "ball|Carries/Game": 0.7, "ball|Rec Yds/Game": 0.75, "ball|Receptions/Game": 0.6, "ball|Targets/Game": 0.57, "ball|TD/Game": 1.72,
+  "ball|Pass Yds/Game": 0.31, "ball|Pass TD/Game": 0.77, "ball|Rush Yds/Game": 0.89, "ball|Carries/Game": 0.7, "ball|Rush TD/Game": 1.72, "ball|Rec Yds/Game": 0.75, "ball|Receptions/Game": 0.6, "ball|Targets/Game": 0.57, "ball|TD/Game": 1.72,
   "ice|Goals/Game": 1.72, "ice|Assists/Game": 1.39, "ice|Points/Game": 1.14, "ice|Shots/Game": 0.69, "ice|Minutes/Game": 0.13,
 };
 
