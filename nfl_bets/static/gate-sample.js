@@ -1,4 +1,4 @@
-/** Free Parlay of the Day (3 anchors + juice) and tonight's free single pick on the sign-up screen. */
+/** Free Parlay of the Day (3 anchors + juice) and today's free single pick on the sign-up screen. */
 
 function samplePrice(odds) {
   const value = Number(odds);
@@ -19,7 +19,7 @@ function sampleWhen(kickoff) {
 function sampleShareText(pick, price, win, when) {
   const game = [pick.match, when].filter(Boolean).join(" · ");
   const lines = [
-    "Tonight's free pick from Parlay of the Day",
+    "Today's free pick from Parlay of the Day",
     `${pick.label} ${price}`,
     game,
     pick.how || "",
@@ -55,7 +55,7 @@ async function sampleShare(pick) {
   const url = `${location.origin}/`;
   try {
     if (navigator.share) {
-      await navigator.share({ title: pick.bets ? "Parlay of the Day" : "Tonight's free pick — Parlay of the Day", text, url });
+      await navigator.share({ title: pick.bets ? "Parlay of the Day" : "Today's free pick — Parlay of the Day", text, url });
       return "shared";
     }
   } catch (error) {
@@ -86,7 +86,7 @@ window.sampleShareMark = sampleShareMark;
 
 function samplePickHtml(pick, more) {
   const odds = Number(pick.odds), price = samplePrice(odds), win = sampleWin(odds), when = sampleWhen(pick.kickoff);
-  return `<p class="gate-sample-head">Tonight's free pick</p><p class="gate-sample-bet">${esc(pick.label)} <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p><p class="gate-sample-why">${esc(pick.how || "")}</p><p class="gate-sample-pay">$5 wins $${esc(win)}.</p>${more > 0 ? `<p class="gate-sample-more">${more} more recommended picks tonight. Sign up or sign in to see them.</p>` : ""}<p class="gate-sample-acts"><button type="button" class="gate-sample-share" data-sample-share>Share with a friend</button></p>`;
+  return `<p class="gate-sample-head">Today's free pick</p><p class="gate-sample-bet">${esc(pick.label)} <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p><p class="gate-sample-why">${esc(pick.how || "")}</p><p class="gate-sample-pay">$5 wins $${esc(win)}.</p>${more > 0 ? `<p class="gate-sample-more">${more} more recommended picks tonight. Sign up or sign in to see them.</p>` : ""}<p class="gate-sample-acts"><button type="button" class="gate-sample-share" data-sample-share>Share with a friend</button></p>`;
 }
 
 function sampleParlayHtml(parlay) {
@@ -138,7 +138,7 @@ function gateSampleOpen(card) {
   const pick = card._samplePick;
   const pop = document.createElement("div");
   pop.id = "gate-sample-pop";
-  const title = pick && pick.bets ? "Parlay of the Day" : "Tonight's free pick";
+  const title = pick && pick.bets ? "Parlay of the Day" : "Today's free pick";
   pop.innerHTML = `<div class="gate-sample-sheet" role="dialog" aria-label="${title}"><button type="button" class="gate-sample-x" aria-label="Close">&times;</button>${card.innerHTML}<p class="gate-sample-go"><button type="button" data-go="gate-join">Start free for 7 days</button><button type="button" class="ghost" data-go="gate-have">Sign in</button></p></div>`;
   const shut = () => { pop.remove(); document.removeEventListener("keydown", onKey); };
   const onKey = (event) => { if (event.key === "Escape") shut(); };

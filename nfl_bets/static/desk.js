@@ -17,13 +17,15 @@ let tweenId = 0;
 
 function viewSize() {
   const desk = document.getElementById("desk");
-  if (desk && desk.clientWidth > 0 && desk.clientHeight > 0) {
-    return { w: desk.clientWidth, h: desk.clientHeight };
-  }
   const view = window.visualViewport;
+  const vw = view ? view.width : window.innerWidth;
+  const vh = view ? view.height : window.innerHeight;
+  const dw = desk && desk.clientWidth > 0 ? desk.clientWidth : 0;
+  const dh = desk && desk.clientHeight > 0 ? desk.clientHeight : 0;
+  // Prefer the visible viewport on mobile so browser chrome can't leave a stale letterbox.
   return {
-    w: view ? view.width : window.innerWidth,
-    h: view ? view.height : window.innerHeight,
+    w: dw > 0 ? Math.min(dw, vw) : vw,
+    h: dh > 0 ? Math.min(dh, vh) : vh,
   };
 }
 
@@ -96,7 +98,9 @@ function place(x, y, scale, box) {
 function shot() {
   const { w, h } = viewSize();
   if (document.getElementById("desk")?.classList.contains("tv-full")) return place(0, 0, Math.max(w / 959, h / 1024) * (w / h > 959 / 1024 ? 1.2 : 1));
-  return place(480, 512, Math.min(w / 959, h / 1024));
+  // Keep a strip under the poster for today's games on short phone screens.
+  const strip = h < 760 ? Math.min(220, Math.max(120, Math.round(h * 0.32))) : 0;
+  return place(480, 512, Math.min(w / 959, Math.max(280, h - strip) / 1024));
 }
 
 function setMenu(on) {
@@ -310,9 +314,15 @@ function bootDesk() {
     const name = shown || (document.body.classList.contains("needs-member") ? "gate" : "today");
     cam = shot(name);
     apply();
+    if (window.homeGamesPaint) homeGamesPaint();
   };
+  window.deskRefit = refit;
   window.addEventListener("resize", refit);
-  if (window.visualViewport) window.visualViewport.addEventListener("resize", refit);
+  window.addEventListener("pageshow", refit);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", refit);
+    window.visualViewport.addEventListener("scroll", refit);
+  }
   const full = document.getElementById("desk-full");
   if (full) full.addEventListener("click", toggleTv);
   const menu = document.getElementById("desk-menu");

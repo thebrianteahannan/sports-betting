@@ -284,7 +284,7 @@ function homeGamesPaint() {
   const games = left.length ? left : [...homeLater.live.map((game) => ({ match: `${game.away.name} @ ${game.home.name}`, kickoff: game.when, sport: game.sport })), ...homeLater.tomorrow];
   void bg.offsetWidth;
   const top = Math.ceil(bg.getBoundingClientRect().bottom - desk.getBoundingClientRect().top);
-  const show = (fresh.length > 0 || games.length > 0 || (guest && homeRecs && homeRecs.picks && homeRecs.picks.length)) && !desk.classList.contains("tv-full") && (guest || Boolean(guide && !guide.hidden)) && desk.clientHeight - top >= 160;
+  const show = (fresh.length > 0 || games.length > 0 || (guest && homeRecs && homeRecs.picks && homeRecs.picks.length)) && !desk.classList.contains("tv-full") && (guest || Boolean(guide && !guide.hidden)) && desk.clientHeight - top >= 100;
   if (guest && homeGamesTab === "rec") homeRecsLoad();
   const wasHidden = box.hidden;
   box.hidden = !show;

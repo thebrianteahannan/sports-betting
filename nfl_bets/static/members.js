@@ -161,6 +161,8 @@ async function sendMember(path, fields, errorId) {
   if (typeof showTab === "function") showTab("today");
   const home = document.getElementById("desk-home");
   if (home) home.click();
+  const settle = () => { if (window.deskRefit) deskRefit(); else if (window.homeGamesPaint) homeGamesPaint(); };
+  requestAnimationFrame(() => { settle(); setTimeout(settle, 120); setTimeout(settle, 450); });
 }
 
 async function signOut() {
