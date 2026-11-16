@@ -90,7 +90,7 @@ function dressTdRow(button) {
   const short = typeof gameShort === "function" && button.dataset.match ? gameShort(button.dataset.match) : "";
   const best = button.dataset.best === "1";
   const stake = tdStakeShown(tdStakeOf());
-  const sig = `v2|${button.dataset.who || ""}|${button.dataset.odds || ""}|${button.dataset.rec || ""}|${best ? "1" : ""}|${stake}|${(tab && tab.textContent) || ""}|${short}|${button.dataset.match || ""}`;
+  const sig = `v3|${button.dataset.who || ""}|${button.dataset.odds || ""}|${button.dataset.rec || ""}|${best ? "1" : ""}|${stake}|${(tab && tab.textContent) || ""}|${short}|${button.dataset.match || ""}`;
   if (button.dataset.dressed === sig && button.classList.contains("td-row")) return;
   const found = button.textContent.match(TD_ROW);
   if (!found && !button.classList.contains("td-row")) return;
@@ -109,7 +109,7 @@ function dressTdRow(button) {
   const pay = tdPayHtml(button.dataset.odds || price);
   const tags = [
     best && `<span class="td-best" aria-label="Best">Best</span>`,
-    button.dataset.rec === "1" && `<span class="td-rec" aria-label="Recommended">Rec</span>`,
+    button.dataset.rec === "1" && `<span class="td-rec">Recommended</span>`,
   ].filter(Boolean).join("");
   const game = short || (!short && team) || "";
   button.innerHTML = `<span class="td-line"><span class="td-main"><span class="td-top"><span class="td-name">${esc(name)}</span>${tags ? `<span class="td-tags">${tags}</span>` : ""}</span>${game ? `<span class="td-game">${esc(game)}</span>` : ""}${kind ? `<span class="td-kind">${esc(kind)}</span>` : ""}</span><span class="td-meta"><span class="td-price"><span class="td-px">${esc(price)}</span><span class="td-pct">${esc(pct)}</span></span>${pay || ""}</span></span>`;

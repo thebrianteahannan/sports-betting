@@ -511,7 +511,7 @@ function openTdPage(list, people, hits, game, team) {
       if (!card.querySelector(".find-td-rec-tag")) {
         const tag = document.createElement("i");
         tag.className = "find-td-rec-tag";
-        tag.textContent = "Rec";
+        tag.textContent = "Recommended";
         const whoNode = card.querySelector(".rec-gist .who");
         if (whoNode) whoNode.after(tag);
       }
@@ -520,7 +520,7 @@ function openTdPage(list, people, hits, game, team) {
     const inFew = new Set(
       [...few.querySelectorAll(".rec-bet")].map((card) => fold(card.dataset.who || (card.querySelector(".rec-gist .who") || {}).textContent || "")).filter(Boolean)
     );
-    [...allBox.querySelectorAll("button")].forEach((button) => {
+    [...allBox.querySelectorAll("button.td-row")].forEach((button) => {
       const hide = (only && button.dataset.rec !== "1") || inFew.has(fold(button.dataset.who));
       button.hidden = hide;
       const wrap = button.closest(".td-pick-wrap");
@@ -528,7 +528,7 @@ function openTdPage(list, people, hits, game, team) {
     });
     const empty = allBox.querySelector(".find-td-empty");
     if (empty) empty.remove();
-    const shown = [...few.querySelectorAll(".rec-bet")].some((card) => !card.hidden) || [...allBox.querySelectorAll("button")].some((button) => !button.hidden);
+    const shown = [...few.querySelectorAll(".rec-bet")].some((card) => !card.hidden) || [...allBox.querySelectorAll("button.td-row")].some((button) => !button.hidden);
     if (only && !shown) {
       allBox.append(Object.assign(document.createElement("p"), { className: "find-td-empty find-empty", textContent: "No recommended touchdowns on this slate." }));
     }
