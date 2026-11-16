@@ -122,16 +122,20 @@ function chatBubble() {
   else if (!who && !go.isConnected) document.body.append(go);
   if (who && !who.dataset.chatWatch) { who.dataset.chatWatch = "1"; new MutationObserver(() => { if (!who.contains(document.getElementById("chat-go"))) chatBubble(); }).observe(who, { childList: true }); }
   go.hidden = !chat.on;
-  const unread = chatUnread(), badge = go.querySelector("b");
+  let badge = go.querySelector(":scope > b");
+  if (!badge) { badge = document.createElement("b"); badge.hidden = true; go.append(badge); }
+  const unread = chatUnread();
   badge.hidden = !unread;
   badge.textContent = unread > 99 ? "99+" : String(unread);
   go.setAttribute("aria-label", unread ? `Chats, ${unread} unread` : "Chats");
+  go.title = unread ? `${unread} unread` : "Chats";
   go.classList.toggle("on", chat.open);
 }
 
 function chatUnread() {
-  return chat.rooms.reduce((n, room) => n + (room.unread || 0), 0);
+  return chat.rooms.reduce((n, room) => n + (Number(room.unread) || 0), 0);
 }
+window.chatUnread = chatUnread;
 
 function chatToggle(open = !chat.open) {
   chat.open = open;
@@ -597,7 +601,7 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
 setInterval(() => {
   chatTicks += 1;
   if (chat.open && chat.view === "room" && document.visibilityState === "visible") chatRoomLoad();
-  const every = chat.open ? 2 : (chatNotifyWatch() ? 3 : 5);
+  const every = chat.open ? 2 : 3;
   if (chatTicks % every === 0) chatLoad();
 }, 4000);
 setTimeout(chatLoad, 1500);
