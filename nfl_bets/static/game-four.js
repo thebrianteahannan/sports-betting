@@ -103,8 +103,9 @@ function gameFourForTeam(stack, side) {
 function gameFourHead(box, recommended) {
   const head = box.querySelector(".find-script-head");
   if (!head) return;
-  const word = recommended ? "Recommended" : "Generated";
-  head.innerHTML = `${word} 4-leg parlay <i class="find-four-tag${recommended ? "" : " find-four-tag-gen"}">${word}</i>`;
+  head.innerHTML = recommended
+    ? `Parlay's 4-Legged Friend <i class="find-four-tag">Recommended</i>`
+    : `Generated 4-leg parlay <i class="find-four-tag find-four-tag-gen">Generated</i>`;
 }
 
 function gameFourFill(box, stacks, at, recCount) {
@@ -153,8 +154,9 @@ function gameFourMount(match, betsNode, stacksNode, recommended = true) {
   box.className = "find-four find-team-bets";
   box.open = false;
   box.style.gridColumn = "1 / -1";
-  const word = recommended ? "Recommended" : "Generated";
-  box.innerHTML = `<summary><b class="find-script-head">${word} 4-leg parlay <i class="find-four-tag${recommended ? "" : " find-four-tag-gen"}">${word}</i></b></summary><p class="find-four-shape">Anchors and juice · 3 players + 1 game bet</p>`;
+  box.innerHTML = recommended
+    ? `<summary><b class="find-script-head">Parlay's 4-Legged Friend <i class="find-four-tag">Recommended</i></b></summary><p class="find-four-shape">Anchors and juice · 3 players + 1 game bet</p>`
+    : `<summary><b class="find-script-head">Generated 4-leg parlay <i class="find-four-tag find-four-tag-gen">Generated</i></b></summary><p class="find-four-shape">Anchors and juice · 3 players + 1 game bet</p>`;
   if (betsNode) betsNode.before(box);
   else if (stacksNode) stacksNode.before(box);
   else match.append(box);

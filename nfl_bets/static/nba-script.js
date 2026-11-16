@@ -85,11 +85,11 @@ function scriptRecMark(match, bets) {
   match.querySelectorAll(".find-everyone .find-chip").forEach((chip) => { const name = fold(chip.firstElementChild ? chip.firstElementChild.textContent.replace(/, out$/, "") : ""); mark(chip, rec.names.has(name), (info) => String(info.who || "").split("|").some((who) => fold(who) === name)); });
   match.querySelectorAll(".find-line-chip").forEach((chip) => { const key = `${chip.dataset.label}|${chip.dataset.market}`; mark(chip, rec.bets.has(key), (info) => String(info.legs || "").split("||").includes(key)); });
   if (typeof paintTdRec === "function") paintTdRec(match);
-  const board = match.closest(".find-board"), head = board && board.querySelector(".find-list > .find-profile > h3");
+  const board = match.closest(".find-board"), head = (document.querySelector("#find-profile-pop .find-profile > h3") || (board && board.querySelector(".find-list > .find-profile > h3")));
   if (!head) return;
   const name = fold(((head.firstChild && head.firstChild.textContent) || "").split(",")[0]), on = rec.names.has(name);
   const tag = head.querySelector(":scope > i.find-rec-tag");
-  if (on && !tag) { const pill = document.createElement("i"); pill.className = "find-rec-tag"; pill.textContent = "Recommended"; pill.title = "See Parlay's recommendation with him"; pill.addEventListener("click", (event) => { event.stopPropagation(); scriptRecJump(match, (info) => String(info.who || "").split("|").some((who) => fold(who) === name)); }); head.append(pill); }
+  if (on && !tag) { const pill = document.createElement("i"); pill.className = "find-rec-tag"; pill.textContent = "Recommended"; pill.title = "See Parlay's recommendation with him"; pill.addEventListener("click", (event) => { event.stopPropagation(); if (typeof closePlayerPop === "function") closePlayerPop(); scriptRecJump(match, (info) => String(info.who || "").split("|").some((who) => fold(who) === name)); }); head.append(pill); }
   if (!on && tag) tag.remove();
 }
 
@@ -217,7 +217,7 @@ function scriptFitLine(legs, game) {
 
 function scriptBetsBox(bets, game, people) {
   const box = document.createElement("details"); box.className = "find-score find-script find-bets"; box.style.gridColumn = "1 / -1";
-  box.innerHTML = `<summary><b class="find-script-head">Parlay's Recommended Bets</b></summary>`;
+  box.innerHTML = `<summary><b class="find-script-head">Recommended Bets</b></summary>`;
   box.scriptBets = bets; box.scriptGame = game;
   const keep = {};
   const starOn = (name) => (localStorage.getItem(`scriptStars:${name}`) ?? localStorage.getItem("scriptStars")) === "1";
