@@ -2,7 +2,7 @@
 
 const CHAT_REACTS = [["like", "👍", "Like"], ["fire", "🔥", "Fire"], ["fade", "👎", "Fade"]];
 const CHAT_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.6A8 8 0 1 1 21 12z"/></svg>`;
-const chat = { on: false, open: false, me: "", rooms: [], view: "list", room: null, msgs: [], reacts: [], reply: null, last: 0, friends: null, note: "", sharing: null, picking: false, shown: 0, sig: "", more: false, people: false };
+const chat = { on: false, open: false, me: "", rooms: [], view: "list", room: null, msgs: [], reacts: [], reply: null, last: 0, friends: null, note: "", sharing: null, picking: false, shown: 0, sig: "", more: false, people: false, notifyReady: false, notifySnap: null };
 let chatListBusy = false, chatRoomBusy = false, chatTicks = 0;
 
 function chatNode(tag, className, text) {
@@ -41,9 +41,55 @@ function chatNameOf(id) {
   return id === chat.me ? "You" : one ? one.name : "";
 }
 
+function chatNotifyWatch() {
+  return typeof notifyOn === "function" && notifyOn() && typeof Notification !== "undefined" && Notification.permission === "granted";
+}
+
+function chatNotifySnap() {
+  const out = {};
+  chat.rooms.forEach((room) => {
+    out[room.id] = { last: room.last && room.last.id, from: room.last && room.last.from, unread: room.unread || 0 };
+  });
+  return out;
+}
+
+function chatNotifyArm() {
+  chat.notifySnap = chatNotifySnap();
+  chat.notifyReady = true;
+}
+
+function chatNotifyCheck(prev) {
+  if (!chat.notifyReady || !prev || !chatNotifyWatch()) return;
+  if (document.visibilityState !== "hidden") return;
+  if (typeof notifyShow !== "function") return;
+  chat.rooms.forEach((room) => {
+    const last = room.last;
+    if (!last || last.gone || last.from === chat.me) return;
+    const before = prev[room.id];
+    if (before && before.last && Number(last.id) <= Number(before.last)) return;
+    const who = room.group && last.fromName ? String(last.fromName).split(" ")[0] + ": " : "";
+    const body = last.bet ? `${who}sent ${last.bet}` : `${who}${last.body || "New message"}`;
+    notifyShow({
+      title: room.name || "New message",
+      body,
+      tag: `chat-${room.id}`,
+      data: { room: room.id },
+      click: () => {
+        chatToggle(true);
+        const hit = chat.rooms.find((row) => row.id === room.id);
+        if (hit) chatEnter(hit);
+      },
+    });
+  });
+}
+
+window.chatNotifyArm = chatNotifyArm;
+
 async function chatLoad() {
-  if (chatListBusy || document.visibilityState === "hidden") return;
+  const watch = chatNotifyWatch();
+  if (chatListBusy || (document.visibilityState === "hidden" && !watch)) return;
   chatListBusy = true;
+  const prev = chat.notifySnap;
   try {
     const data = await chatCall("/api/chat");
     chat.on = true; chat.me = data.me; chat.rooms = data.rooms || [];
@@ -53,6 +99,9 @@ async function chatLoad() {
     if (chat.on) chat.note = error.message;
     console.log("[chat] list", error.message);
   } finally { chatListBusy = false; }
+  chatNotifyCheck(prev);
+  chat.notifySnap = chatNotifySnap();
+  chat.notifyReady = true;
   chatBubble();
   if (chat.open && chat.view === "list") chatPaint();
   else if (chat.open) chatReadBar();
@@ -470,6 +519,7 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
 setInterval(() => {
   chatTicks += 1;
   if (chat.open && chat.view === "room" && document.visibilityState === "visible") chatRoomLoad();
-  if (chatTicks % (chat.open ? 2 : 5) === 0) chatLoad();
+  const every = chat.open ? 2 : (chatNotifyWatch() ? 3 : 5);
+  if (chatTicks % every === 0) chatLoad();
 }, 4000);
 setTimeout(chatLoad, 1500);
