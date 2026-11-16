@@ -71,8 +71,16 @@ function place(game) {
   return `${away.trim()} at ${home.trim()}`;
 }
 
+function comboSay(text) {
+  const low = String(text || "").toLowerCase().replace(/\byds\b/g, "yards");
+  if (low.includes("passing + rushing")) return "passing + rushing yards";
+  if (low.includes("rushing + receiving")) return "rushing + receiving yards";
+  return "";
+}
+
 function kindOf(market) {
   const text = market.toLowerCase();
+  if (comboSay(text)) return "";
   if (text.includes("reception")) return "receptions";
   if (text.includes("rush")) return "rushing";
   if (text.includes("pass")) return "passing";
@@ -81,7 +89,7 @@ function kindOf(market) {
 }
 
 function unitOf(text) {
-  return UNITS.find((word) => new RegExp(`\\b${word}\\b`).test(text)) || "";
+  return comboSay(text) || UNITS.find((word) => new RegExp(`\\b${word}\\b`).test(text)) || "";
 }
 
 function legLabel(market, runner) {
@@ -99,10 +107,11 @@ function legLabel(market, runner) {
   const unit = unitOf(low);
   if (/^\d+(?:\.\d+)?\+$/.test(text)) {
     let whoName = (scope ? norm.slice(scope.length) : norm).replace(/\b(alt|alternate)\b/ig, " ");
-    if (unit) whoName = whoName.replace(new RegExp(`\\b${unit}\\b`, "i"), " ");
+    if (unit) whoName = whoName.replace(new RegExp(`\\b${unit.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i"), " ");
     whoName = whoName.replace(/[-:]/g, " ").split(/\s+/).filter(Boolean).join(" ");
     text = [whoName, text, unit].filter(Boolean).join(" ");
   } else if (unit && !text.toLowerCase().includes(unit)) {
+    if (comboSay(unit)) text = text.replace(/\s+y(?:ar)?ds?\b/ig, " ").replace(/\s+/g, " ").trim();
     const count = !/\d/.test(text) ? ((norm.match(/\d+(?:\.\d+)?\+/) || [])[0] || "") : "";
     text = [text, count, unit].filter(Boolean).join(" ");
   }
@@ -225,7 +234,64 @@ async function offerLegs(game) {
       rows.push(row);
     });
   });
+  if (String(game.sport || "").toUpperCase() === "NFL") {
+    const extra = await comboLegs(game.id).catch(() => []);
+    extra.forEach((row) => {
+      const key = `${row.market}|${row.runner}|${row.odds}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      rows.push(row);
+    });
+  }
   return { rows, live };
+}
+
+const FD_HEAD = {
+  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+  Accept: "application/json",
+  "Content-Type": "application/json",
+  Referer: "https://sportsbook.fanduel.com/",
+  Origin: "https://sportsbook.fanduel.com",
+  "x-sportsbook-region": "NJ",
+  "x-application": AK,
+};
+
+async function comboLegs(id) {
+  const types = ["PLAYER_X_PASSING_+_RUSHING_YARDS", "PLAYER_X_ALT_PASSING_+_RUSHING_YARDS"];
+  const found = await fetch("https://scan.nj.sportsbook.fanduel.com/api/sports/navigation/facet/v1.0/search", {
+    method: "POST",
+    headers: FD_HEAD,
+    body: JSON.stringify({
+      filter: { marketTypes: types, eventIds: [Number(id)], productTypes: ["SPORTSBOOK"], contentGroup: { language: "en", regionCode: "NAMERICA" }, attachments: ["MARKET"] },
+      facets: [{ type: "MARKET" }],
+      currencyCode: "USD",
+    }),
+  }).then((response) => (response.ok ? response.json() : null));
+  const markets = Object.values((found && found.attachments && found.attachments.sportsBookMarkets) || {}).filter((market) => types.includes(market.marketType) && String(market.marketStatus || "OPEN").toUpperCase() === "OPEN");
+  if (!markets.length) return [];
+  const prices = await fetch("https://smp.nj.sportsbook.fanduel.com/api/sports/fixedodds/readonly/v1/getMarketPrices", {
+    method: "POST",
+    headers: FD_HEAD,
+    body: JSON.stringify({ marketIds: markets.map((market) => market.marketId) }),
+  }).then((response) => (response.ok ? response.json() : []));
+  const byId = new Map((Array.isArray(prices) ? prices : []).map((row) => [String(row.marketId), row]));
+  const rows = [];
+  markets.forEach((market) => {
+    const priced = byId.get(String(market.marketId));
+    const oddsOf = new Map(((priced && priced.runnerDetails) || []).map((row) => [String(row.selectionId), row]));
+    (market.runners || []).forEach((runner) => {
+      const detail = oddsOf.get(String(runner.selectionId));
+      const odds = Number.parseInt(detail && detail.winRunnerOdds && detail.winRunnerOdds.americanDisplayOdds && detail.winRunnerOdds.americanDisplayOdds.americanOdds, 10);
+      if (String((detail && detail.runnerStatus) || runner.runnerStatus || "ACTIVE").toUpperCase() !== "ACTIVE" || !Number.isFinite(odds) || odds < -2000 || odds > 5000) return;
+      const runnerName = String(runner.runnerName || "").trim();
+      const mark = Number((detail && detail.handicap) || runner.handicap);
+      const bare = Number.isFinite(mark) && mark !== 0 && !/\d/.test(runnerName);
+      const shown = bare && /(?:^|\s)(over|under)$/i.test(runnerName) ? `${runnerName} ${Math.abs(mark)}` : runnerName;
+      const name = String(market.marketName || "");
+      rows.push({ market: name, runner: shown, label: legLabel(name, shown), odds });
+    });
+  });
+  return rows;
 }
 
 function teamLeg(leg, game) {

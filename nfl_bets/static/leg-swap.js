@@ -146,6 +146,28 @@ function legSwapClose(key) {
   legSwapPaint();
 }
 
+function legIsRec(bet) {
+  return typeof scriptRecAll !== "undefined" && scriptRecAll.has(`${bet.label}|${bet.market}`);
+}
+
+function legRecFind(key, mode) {
+  const person = legSwapPerson(key, mode);
+  if (!person) return [];
+  const old = mode === "who" ? null : parlayLeg.get(key);
+  const wantMatch = old ? old.match : "", wantKick = old ? old.kickoff : "";
+  const best = new Map();
+  (person.bets || []).forEach((bet) => {
+    if (!Number(bet.odds)) return;
+    if (old && (bet.match !== wantMatch || bet.kickoff !== wantKick)) return;
+    const same = !!(old && bet.label === old.label && bet.market === old.market);
+    if (!legIsRec(bet) && !same) return;
+    if (!same && parlayLeg.has(parlayKey(bet))) return;
+    const cat = legSwapCatKey(person, bet), had = best.get(cat);
+    if (!had || same) best.set(cat, { person, bet, now: same, cat });
+  });
+  return [...best.values()].sort((a, b) => Number(b.now) - Number(a.now) || legSwapCatSay(a.person, a.bet).localeCompare(legSwapCatSay(b.person, b.bet)));
+}
+
 function legSwapCatKey(person, bet) {
   return `${legSwapStat(person, bet)}|${/\bunder\b/i.test(bet.label || "") ? 1 : 0}`;
 }
@@ -268,16 +290,13 @@ function legSwapBox(key, mode) {
     box.append(back);
   }
   let rows, listMode = mode;
-  if (cats && !legSwapRec && drill) { rows = legCatLines(key, mode, drill); listMode = "line"; }
-  else if (cats && !legSwapRec) { rows = legCatFind(key, mode); listMode = "cat"; }
-  else rows = mode === "who" ? legWhoFind(key) : mode === "line" ? legLineFind(key) : mode === "kind" ? legKindFind(key) : legSwapFind(key);
-  if (mode === "kind" && legSwapRec) {
-    const person = legSwapPerson(key, mode), old = parlayLeg.get(key);
-    if (person && old && !rows.some((row) => row.now)) rows = [{ person, bet: old, now: true }, ...rows];
-  }
+  if (cats && legSwapRec) { rows = legRecFind(key, mode); listMode = mode; }
+  else if (cats && drill) { rows = legCatLines(key, mode, drill); listMode = "line"; }
+  else if (cats) { rows = legCatFind(key, mode); listMode = "cat"; }
+  else rows = mode === "line" ? legLineFind(key) : legSwapFind(key);
   if (!rows.length || (mode === "swap" && !rows.some((row) => !row.now))) {
     const none = document.createElement("p");
-    none.textContent = mode === "who" ? "FanDuel has no props posted for this player." : mode === "line" || listMode === "line" ? "FanDuel has no other numbers on this prop." : mode === "kind" || listMode === "cat" ? "FanDuel has no other props for this player in this game." : "Nothing else in this game sits at this price.";
+    none.textContent = cats && legSwapRec ? "No recommended props for this player in this game." : mode === "who" ? "FanDuel has no props posted for this player." : mode === "line" || listMode === "line" ? "FanDuel has no other numbers on this prop." : mode === "kind" || listMode === "cat" ? "FanDuel has no other props for this player in this game." : "Nothing else in this game sits at this price.";
     box.append(none);
     return box;
   }

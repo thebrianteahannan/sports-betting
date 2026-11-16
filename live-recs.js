@@ -98,7 +98,7 @@ async function recRanked(days) {
   };
   const edge = (pick) => (pick.n >= 5 ? (pick.hits / pick.n) * 100 - parseFloat(pick.need) : -Infinity);
   const ranked = picks.map(cleared).filter((pick) => pick.how && pick.tier !== "good" && Number.isFinite(edge(pick))).sort((a, b) => edge(b) - edge(a));
-  return { all: picks.length, ranked: ranked.map((pick) => ({ who: pick.who, team: pick.team, label: pick.label, market: pick.market, odds: pick.odds, need: pick.need, hits: pick.hits, n: pick.n, how: pick.how, kind: pick.kind || "", basis: pick.basis || "", match: pick.match, kickoff: pick.kickoff })) };
+  return { all: picks.length, ranked: ranked.map((pick) => ({ who: pick.who, team: pick.team, label: pick.label, market: pick.market, text: pick.text || "", odds: pick.odds, need: pick.need, hits: pick.hits, n: pick.n, how: pick.how, kind: pick.kind || "", basis: pick.basis || "", match: pick.match, kickoff: pick.kickoff })) };
 }
 
 async function sportMap() {
