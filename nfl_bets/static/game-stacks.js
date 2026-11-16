@@ -80,7 +80,12 @@ function paintGameStacks(holder, game, who = "") {
     const hits = rows.filter((row) => row.stacks.length).length;
     const wait = box.querySelector(".quiet");
     if (!hits) wait.textContent = data && data.error && window.state && state.admin ? data.error : who ? `None of the current FanDuel prices fit a stack with ${who}.` : game.match ? "None of the current FanDuel prices fit a stack in this game." : "None of the current FanDuel prices fit a stack.";
-    else { wait.remove(); if (!card) box.querySelector("summary b").append(`, ${hits}`); }
+    else {
+      wait.remove();
+      const head = box.querySelector(".find-script-head");
+      if (card && head) head.innerHTML = `Strategies${hits ? `<i class="find-script-count">${hits}</i>` : ""}`;
+      else if (!card) box.querySelector("summary b").append(`, ${hits}`);
+    }
     const board = document.createElement("div");
     board.className = "find-stack-list";
     live.forEach((row) => board.append(gameStackBlock(row, count(row), notes[row.name])));

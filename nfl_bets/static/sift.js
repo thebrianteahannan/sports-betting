@@ -196,6 +196,11 @@ function paintTdRec(match) {
     } else if (!on && tag) tag.remove();
   });
   const box = match.querySelector(":scope > .find-td");
+  if (box) {
+    const head = box.querySelector(".find-script-head");
+    const n = box.querySelectorAll(".find-td-chip.find-td-rec").length;
+    if (head) head.innerHTML = `Touchdowns${n > 0 ? `<i class="find-script-count">${n}</i>` : ""}`;
+  }
   if (box && typeof box._showTdChips === "function" && !box._tdChipBusy) box._showTdChips();
 }
 

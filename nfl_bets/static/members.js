@@ -486,6 +486,7 @@ function goFull() {
   const desk = document.getElementById("desk");
   const full = document.getElementById("desk-full");
   if (document.body.classList.contains("needs-member") && window.tvZoomOpen) { tvZoomOpen(); return; }
+  if (document.body.classList.contains("tv-zoom-on") && typeof tvZoomShut === "function") tvZoomShut();
   if (full && desk && !desk.classList.contains("tv-full")) { if (window.tvPush) tvPush(); full.click(); }
 }
 window.goFull = goFull;

@@ -120,7 +120,14 @@ function toggleTv() {
   const btn = document.getElementById("desk-full");
   if (!desk || !glass || !glow) return;
   const on = desk.classList.toggle("tv-full");
-  if (on) desk.insertBefore(glass, document.getElementById("desk-dock"));
+  if (on) {
+    if (document.body.classList.contains("tv-zoom-on") && typeof tvZoomShut === "function") {
+      const zoom = document.getElementById("tv-zoom");
+      if (zoom) zoom.hidden = true;
+      document.body.classList.remove("tv-zoom-on");
+    }
+    desk.insertBefore(glass, document.getElementById("desk-dock"));
+  }
   else { glow.after(glass); if (document.querySelector(".rec-board") && window.birdGreet) birdGreet(); }
   tweenId += 1; cam = shot();
   apply();

@@ -117,6 +117,7 @@ function hangAct(kind) {
   if (kind === "games") { hangGames(); return; }
   if (kind === "chat") { if (typeof chatToggle === "function") chatToggle(true); return; }
   window.asking = true;
+  if (document.body.classList.contains("tv-zoom-on")) tvZoomShut();
   if (window.goFull) goFull();
   if (kind === "mine") { window.saveGone = false; window.saveShut = false; }
   if (window.birdMenu) birdMenu("find");

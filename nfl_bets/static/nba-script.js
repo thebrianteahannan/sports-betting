@@ -215,6 +215,16 @@ function scriptFitLine(legs, game) {
   return lines.length ? lines.join(" ") : "It does not fit any of the site's strategies.";
 }
 
+function scriptBetsCount(box) {
+  return [...box.querySelectorAll(":scope > .find-script-bets")].filter((block) => !block.hidden).reduce((sum, block) => sum + block.querySelectorAll(".find-script-pick").length, 0);
+}
+
+function scriptBetsHead(box, n = scriptBetsCount(box)) {
+  const head = box.querySelector(".find-script-head");
+  if (!head) return;
+  head.innerHTML = `Recommended Bets${n > 0 ? `<i class="find-script-count">${n}</i>` : ""}`;
+}
+
 function scriptBetsBox(bets, game, people) {
   const box = document.createElement("details"); box.className = "find-score find-script find-bets"; box.style.gridColumn = "1 / -1";
   box.innerHTML = `<summary><b class="find-script-head">Recommended Bets</b></summary>`;
@@ -243,6 +253,7 @@ function scriptBetsBox(bets, game, people) {
       none.className = "find-script-why find-script-none";
       none.textContent = "No prop tonight clears its price.";
       box.append(none);
+      scriptBetsHead(box, 0);
       return;
     }
     names.forEach((name) => {
@@ -259,6 +270,7 @@ function scriptBetsBox(bets, game, people) {
       box.append(block);
     });
     const match = box.closest(".find-match"); if (match) scriptBetsSide(match, box);
+    else scriptBetsHead(box);
   };
   fill();
   return box;
@@ -269,6 +281,7 @@ function scriptBetsSide(match, box) {
   const blocks = [...box.querySelectorAll(":scope > .find-script-bets")];
   const mine = team ? blocks.filter((block) => block.dataset.team !== "Both teams" && team.endsWith(block.dataset.team.toLowerCase())) : [];
   blocks.forEach((block) => { block.hidden = mine.length ? !mine.includes(block) : false; });
+  scriptBetsHead(box);
 }
 
 function scriptClub(game, team) {
