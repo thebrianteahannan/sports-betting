@@ -83,7 +83,7 @@ function liveGame(game) {
 
 function liveNext(next) {
   if (!next.length) return "";
-  return `<h2>Up next today</h2><ul class="live-next">${next.map((game) => `<li><span class="live-sport">${liveEsc(game.sport)}</span><b>${liveEsc(game.away.short)} @ ${liveEsc(game.home.short)}</b><i>${liveEsc(liveTime(game.when))}</i>${liveRoot(game, liveMine(game))}${liveRecRow(game, liveMine(game))}</li>`).join("")}</ul>`;
+  return `<h2>Up next today</h2><ul class="live-next">${next.map((game) => `<li class="${liveHasMine(game) ? "has-mine" : ""}"><span class="live-sport">${liveEsc(game.sport)}</span><b>${liveEsc(game.away.short)} @ ${liveEsc(game.home.short)}</b><i>${liveEsc(liveTime(game.when))}</i>${liveRoot(game, liveMine(game))}${liveRecRow(game, liveMine(game))}</li>`).join("")}</ul>`;
 }
 
 function liveScore(data) {
@@ -170,13 +170,25 @@ function liveWeekList(week) {
   return `<h2>This week, ${week.length} ${week.length === 1 ? "game" : "games"}</h2>${week.map(liveSoonCard).join("")}`;
 }
 
+function liveHasMine(game) {
+  const like = {
+    id: game.id || `${game.match || ""}|${game.kickoff || game.when || ""}`,
+    away: game.away || { name: game.awayName },
+    home: game.home || { name: game.homeName },
+    when: game.when || game.kickoff,
+  };
+  return liveMine(like).length > 0;
+}
+
 function livePaint(data, quiet) {
   liveLast = data;
   liveParlayTally([...(data.live || []), ...(data.done || [])]);
   const box = document.getElementById("live");
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => liveSlide.set(node.dataset.slide, node.scrollLeft));
   const was = new Map([...box.querySelectorAll("[data-k]")].map((node) => [node.dataset.k, node.textContent])), games = new Set([...box.querySelectorAll(".live-game[data-id]")].map((node) => node.dataset.id)), first = quiet || !box.querySelector(".live-game, h2");
-  const keep = (game) => !liveLeagues.size || liveLeagues.has(game.sport), live = (data.live || []).filter(keep), done = (data.done || []).filter(keep);
+  const mineOnly = document.body.classList.contains("live-mine-games");
+  const keep = (game) => (!liveLeagues.size || liveLeagues.has(game.sport)) && (!mineOnly || liveHasMine(game));
+  const live = (data.live || []).filter(keep), done = (data.done || []).filter(keep);
   const board = (data.week || []).filter(keep), today = liveDayKey(Date.now()), pgaOn = (game) => game.sport === "PGA" && Date.parse(game.kickoff) <= Date.now(), week = board.filter((game) => liveDayKey(game.kickoff) > today || pgaOn(game)), soon = board.filter((game) => (liveDayKey(game.kickoff) === today && Date.parse(game.kickoff) > Date.now()) || pgaOn(game));
   const next = (data.week || []).length ? (soon.length ? `<h2>Up next today, ${soon.length} ${soon.length === 1 ? "game" : "games"}</h2>${soon.map(liveSoonCard).join("")}` : "") : liveNext((data.next || []).filter(keep));
   const past = done.filter((game) => liveDayKey(game.when) !== today), ended = done.filter((game) => liveDayKey(game.when) === today);
@@ -185,7 +197,7 @@ function livePaint(data, quiet) {
   const bar = liveLeagueBar(data, { past: past.filter((game) => !histIds.has(String(game.id))).length + hist.length, today: live.length + ended.length + ((data.week || []).length ? soon.length : (data.next || []).filter(keep).length), week: week.length });
   box.innerHTML = liveSpan === "week" && week.length ? `${bar}${liveWeekList(week)}` : liveSpan === "past" ? `${bar}${(final("yesterday", past) + liveHistory(hist)) || `<p class="live-note">No past games to show.</p>`}` : `${bar}${live.length ? `<h2>Live now, ${live.length} ${live.length === 1 ? "game" : "games"}</h2>${live.map(liveGame).join("")}` : `<p class="live-note">No games are live right now.</p>`}${next}<div class="live-today-recap">${liveHistory(hist.filter((row) => liveDayKey(row.kickoff) === today), true)}</div>${final("today", ended)}`;
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => { const left = liveSlide.get(node.dataset.slide); if (left) node.scrollLeft = left; });
-  box.querySelectorAll("h2").forEach((head) => head.insertAdjacentHTML("beforeend", `<label class="live-court"><input type="checkbox" class="live-mine-box"${document.body.classList.contains("live-mine-off") ? "" : " checked"}/> My bets</label><label class="live-court live-court-next"><input type="checkbox" class="live-recs-box"${document.body.classList.contains("live-recs-on") ? " checked" : ""}/> Recommended bets</label>`));
+  box.querySelectorAll("h2").forEach((head) => head.insertAdjacentHTML("beforeend", `<label class="live-court"><input type="checkbox" class="live-mine-box"${document.body.classList.contains("live-mine-off") ? "" : " checked"}/> My bets</label><label class="live-court live-court-next"><input type="checkbox" class="live-mine-games-box"${document.body.classList.contains("live-mine-games") ? " checked" : ""}/> Only my games</label><label class="live-court live-court-next"><input type="checkbox" class="live-recs-box"${document.body.classList.contains("live-recs-on") ? " checked" : ""}/> Recommended bets</label>`));
   if (!first) {
     box.querySelectorAll("[data-k]").forEach((node) => { if (was.has(node.dataset.k) && was.get(node.dataset.k) !== node.textContent) node.classList.add("live-flash"); });
     box.querySelectorAll(".live-game[data-id]:not(.live-final)").forEach((node) => { if (!games.has(node.dataset.id)) node.classList.add("live-flash"); });
@@ -293,12 +305,21 @@ document.getElementById("live").addEventListener("change", (event) => {
 
 document.body.classList.toggle("live-recs-on", false);
 document.body.classList.toggle("live-mine-off", false);
+try { document.body.classList.toggle("live-mine-games", localStorage.getItem("liveMineGames") === "1"); } catch (error) { document.body.classList.toggle("live-mine-games", false); }
 document.getElementById("live").addEventListener("change", (event) => {
   if (!event.target.matches("input.live-mine-box")) return;
   const on = event.target.checked;
   document.body.classList.toggle("live-mine-off", !on);
   document.querySelectorAll("input.live-mine-box").forEach((box) => { box.checked = on; });
   try { localStorage.setItem("liveMine", on ? "1" : "0"); } catch (error) { console.log("[live] could not keep the My bets checkbox", error); }
+});
+document.getElementById("live").addEventListener("change", (event) => {
+  if (!event.target.matches("input.live-mine-games-box")) return;
+  const on = event.target.checked;
+  document.body.classList.toggle("live-mine-games", on);
+  document.querySelectorAll("input.live-mine-games-box").forEach((box) => { box.checked = on; });
+  try { localStorage.setItem("liveMineGames", on ? "1" : "0"); } catch (error) { console.log("[live] could not keep the Only my games checkbox", error); }
+  if (liveLast) livePaint(liveLast, true);
 });
 document.getElementById("live").addEventListener("change", (event) => {
   if (!event.target.matches("input.live-recs-box")) return;
