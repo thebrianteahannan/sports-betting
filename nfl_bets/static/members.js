@@ -115,6 +115,7 @@ function showMember(payload) {
   if (window.render) window.render();
   if (admin && window.loadAdmin) window.loadAdmin();
   if (window.tvTickMeetFirst) tvTickMeetFirst();
+  if (window.trialWarnMaybe) trialWarnMaybe(member);
 }
 
 const CARD_NAMES = window.CARD_NAMES = {
