@@ -195,20 +195,42 @@ function homeLeagueOn(games) {
   return homeLeagueList(games).includes(homeLeague) ? homeLeague : "";
 }
 
+function homeTdChip(games) {
+  if (homeGamesTab !== "rec") return null;
+  const league = homeLeagueOn(games);
+  if (league && league !== "NFL") return null;
+  const hasNfl = games.some((game) => String(game.sport || "") === "NFL")
+    || ((homeRecs && homeRecs.picks) || []).some((pick) => homePickSport(pick) === "NFL");
+  if (!hasNfl) return null;
+  const go = document.createElement("button");
+  go.type = "button";
+  go.className = "desk-games-td";
+  go.textContent = "Anytime TDs ›";
+  go.title = "See who is most likely to score a touchdown";
+  go.addEventListener("click", () => {
+    window.location.href = `/?${new URLSearchParams({ td: "1" })}`;
+  });
+  return go;
+}
+
 function homeLeagues(box, games) {
   const leagues = homeLeagueList(games), on = homeLeagueOn(games);
-  if (leagues.length < 2) return [];
+  const td = homeTdChip(games);
+  if (leagues.length < 2 && !td) return [];
   const row = document.createElement("span");
   row.className = "desk-games-leagues";
-  ["", ...leagues].forEach((league) => {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.className = `desk-games-league${league === on ? " on" : ""}`;
-    chip.textContent = league || "All";
-    chip.setAttribute("aria-pressed", String(league === on));
-    chip.addEventListener("click", () => { homeLeague = league; box.scrollTop = 0; homeLeagueSave(box); });
-    row.append(chip);
-  });
+  if (leagues.length >= 2) {
+    ["", ...leagues].forEach((league) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = `desk-games-league${league === on ? " on" : ""}`;
+      chip.textContent = league || "All";
+      chip.setAttribute("aria-pressed", String(league === on));
+      chip.addEventListener("click", () => { homeLeague = league; box.scrollTop = 0; homeLeagueSave(box); });
+      row.append(chip);
+    });
+  }
+  if (td) row.append(td);
   return [row];
 }
 
