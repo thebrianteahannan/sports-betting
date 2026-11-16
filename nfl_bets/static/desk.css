@@ -123,6 +123,9 @@ body.needs-member .hot { display: none; }
   font-size: 12px;
   line-height: 1.35; cursor: pointer;
 }
+#desk-glass #gate .gate-legal.gate-age {
+  margin-top: auto;
+}
 #desk-glass #gate .squawk {
   flex: 1;
   display: flex; align-items: center;
