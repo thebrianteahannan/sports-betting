@@ -511,7 +511,10 @@
   display: flex; align-items: center; gap: 0.45rem; width: 100%;
   border-bottom: 1px solid rgba(61, 255, 110, 0.16);
 }
-.rec-board .find-list .find-td-page > .td-pick-wrap[hidden] { display: none !important; }
+.rec-board .find-list .find-td-page > .td-pick-wrap[hidden],
+.rec-board .find-list .find-td-page > .td-pick-wrap > button[hidden],
+#desk.tv-full #desk-glass .rec-board .find-list .find-td-page > .td-pick-wrap[hidden],
+#desk.tv-full #desk-glass .rec-board .find-list .find-td-page > .td-pick-wrap > button[hidden] { display: none !important; }
 .rec-board .find-list .find-td-page > .td-pick-wrap > button.td-row { border-bottom: 0 !important; flex: 1 1 auto; min-width: 0; }
 .rec-board .find-list .find-td-page .td-pick,
 .rec-board .find-list.find-td-board .find-td-few .td-pick,
@@ -559,8 +562,9 @@
 .rec-board .find-list .find-td-page button.td-row .td-pay,
 .rec-board .find-list.find-td-board .find-td-few .td-pay { color: #3dff6e; font-size: 0.82rem; font-weight: 700; white-space: nowrap; }
 @media (min-width: 700px) {
-  .rec-board .find-list .find-td-page button.td-row .td-main { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.65rem; }
-  .rec-board .find-list .find-td-page button.td-row .td-meta { flex-direction: row; align-items: baseline; gap: 0.85rem; }
+  .rec-board .find-list .find-td-page button.td-row .td-line { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; column-gap: 1.1rem; row-gap: 0.2rem; width: auto; }
+  .rec-board .find-list .find-td-page button.td-row .td-main { flex: 0 1 auto; flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.55rem; }
+  .rec-board .find-list .find-td-page button.td-row .td-meta { flex: 0 0 auto; flex-direction: row; align-items: baseline; gap: 0.7rem; margin-left: 0.15rem; }
 }
 .rec-board .find-list .find-td-page button.td-row .td-pay button.stake,
 .rec-board .find-list.find-td-board .find-td-few .td-pay button.stake,
