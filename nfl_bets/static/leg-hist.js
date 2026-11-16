@@ -94,7 +94,26 @@ function legHistPaint() {
   });
 }
 
+function legSeekPerson(name) {
+  const want = typeof plainName === "function" ? plainName(name) : String(name || "").toLowerCase();
+  if (!want) return null;
+  const fromPick = typeof parlayPick !== "undefined" && [...parlayPick.values()].find((one) => plainName(one.name) === want);
+  if (fromPick) return fromPick;
+  const board = document.querySelector(".find-board");
+  return ((board && board.people) || []).find((one) => one.kind === "player" && plainName(one.name) === want) || null;
+}
+
+function legSeekPop(name) {
+  const person = legSeekPerson(name);
+  if (!person || typeof openPlayerPop !== "function") return false;
+  const board = document.querySelector(".find-board");
+  const list = board && board.querySelector(".find-list");
+  openPlayerPop(person, list);
+  return true;
+}
+
 function legSeek(name) {
+  if (legSeekPop(name)) return;
   const run = () => {
     const input = document.querySelector(".find-board label.find input");
     if (!input) return false;
@@ -123,7 +142,10 @@ function legSeek(name) {
 
 document.addEventListener("click", (event) => {
   const seek = event.target.closest && event.target.closest(".find-tray button.find-leg-seek");
-  if (seek) legSeek(seek.dataset.who);
+  if (!seek) return;
+  const hist = seek.parentElement && seek.parentElement.querySelector("button.find-leg-hist");
+  if (hist && hist.dataset.key) legToolsSolo(hist.dataset.key, "seek");
+  if (!legSeekPop(seek.dataset.who)) legSeek(seek.dataset.who);
 });
 
 document.addEventListener("click", (event) => {
@@ -165,12 +187,27 @@ function legMenuPaint() {
   if (!to) return;
   const others = saveList().filter((row) => row.id !== window.parlayOpenId);
   const menu = document.createElement("div"); menu.className = "find-leg-menu"; menu.dataset.key = legMenuKey;
-  menu.innerHTML = others.length ? `<b>Add this leg to</b>${others.map((row) => `<button type="button" data-id="${esc(row.id)}">${esc(legToName(row))}</button>`).join("")}` : `<p>No other saved parlays yet.</p>`;
+  menu.innerHTML = others.length
+    ? `<b>Add this leg to</b>${others.map((row) => `<button type="button" data-id="${esc(row.id)}">${esc(legToName(row))}</button>`).join("")}<button type="button" class="find-leg-menu-close" aria-label="Close">Close</button>`
+    : `<p>No other saved parlays yet.</p><button type="button" class="find-leg-menu-close" aria-label="Close">Close</button>`;
   to.closest(".find-chose").after(menu);
+}
+
+function legMenuClose() {
+  if (!legMenuKey) return;
+  legMenuKey = "";
+  legMenuPaint();
 }
 
 document.addEventListener("click", (event) => {
   if (!event.target.closest) return;
+  const shut = event.target.closest(".find-leg-menu button.find-leg-menu-close");
+  if (shut) {
+    event.preventDefault();
+    event.stopPropagation();
+    legMenuClose();
+    return;
+  }
   const pick = event.target.closest(".find-leg-menu button[data-id]");
   if (pick) { const key = legMenuKey; legMenuKey = ""; legTo(key, pick.dataset.id); legMenuPaint(); return; }
   if (event.target.closest(".find-leg-menu")) return;
