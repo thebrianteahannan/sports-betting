@@ -1,6 +1,42 @@
 // The chart icon on a parlay leg opens that bet's history under the leg, inside the parlay.
 const legHistOpen = new Set(), legHistBox = new Map();
 
+function legHistClose(key) {
+  legHistOpen.delete(key);
+  const box = legHistBox.get(key);
+  if (box) box.remove();
+  legHistPaint();
+}
+
+/** One toolbar panel open per leg: hist, swap, add-to menu, or more. */
+function legToolsSolo(key, keep) {
+  if (!key) return;
+  let hist = false, swap = false, menu = false, more = false;
+  if (keep !== "hist" && legHistOpen.has(key)) {
+    legHistOpen.delete(key);
+    const box = legHistBox.get(key);
+    if (box) box.remove();
+    hist = true;
+  }
+  if (keep !== "swap" && typeof legSwapOpen !== "undefined" && legSwapOpen.has(key)) {
+    legSwapOpen.delete(key);
+    if (typeof legSwapDrill !== "undefined") legSwapDrill.delete(key);
+    swap = true;
+  }
+  if (keep !== "menu" && legMenuKey === key) {
+    legMenuKey = "";
+    menu = true;
+  }
+  if (keep !== "more" && typeof legMoreOpen !== "undefined" && legMoreOpen.has(key)) {
+    legMoreOpen.delete(key);
+    more = true;
+  }
+  if (hist) legHistPaint();
+  if ((swap || more) && typeof legSwapPaint === "function") legSwapPaint();
+  if (menu) legMenuPaint();
+}
+window.legToolsSolo = legToolsSolo;
+
 function legHistFor(key) {
   if (legHistBox.has(key)) return legHistBox.get(key);
   const bet = parlayLeg.get(key) || {};
@@ -8,10 +44,23 @@ function legHistFor(key) {
   const block = document.createElement("div");
   block.className = "find-tray-read log-on";
   Object.assign(block.dataset, { who: person ? person.name : "", raw: String(bet.label || "").split(/\s+—\s+/)[0].trim(), market: bet.market || "", odds: String(bet.odds || ""), sport: bet.sport || "" });
+  const bar = document.createElement("div");
+  bar.className = "find-hist-bar";
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "find-hist-close";
+  close.textContent = "Close history";
+  close.setAttribute("aria-label", "Close history");
+  close.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    legHistClose(key);
+  });
+  bar.append(close);
   const wait = document.createElement("p");
   wait.className = "find-leg-wait";
   wait.textContent = "Reading the history.";
-  block.append(wait);
+  block.append(bar, wait);
   legHistBox.set(key, block);
   if (typeof fillLeg === "function") fillLeg(block);
   return block;
@@ -81,8 +130,8 @@ document.addEventListener("click", (event) => {
   const button = event.target.closest && event.target.closest(".find-tray button.find-leg-hist");
   if (!button) return;
   const key = button.dataset.key;
-  if (legHistOpen.has(key)) { legHistOpen.delete(key); const box = legHistBox.get(key); if (box) box.remove(); } else legHistOpen.add(key);
-  legHistPaint();
+  if (legHistOpen.has(key)) legHistClose(key);
+  else { legToolsSolo(key, "hist"); legHistOpen.add(key); legHistPaint(); }
 });
 
 function legToName(row) {
@@ -107,6 +156,11 @@ let legMenuKey = "";
 
 function legMenuPaint() {
   document.querySelectorAll(".find-leg-menu").forEach((node) => node.remove());
+  document.querySelectorAll(".find-tray button.find-leg-to").forEach((node) => {
+    const on = node.dataset.key === legMenuKey;
+    node.classList.toggle("on", on);
+    node.setAttribute("aria-expanded", String(on));
+  });
   const to = legMenuKey && [...document.querySelectorAll(".find-tray button.find-leg-to")].find((node) => node.dataset.key === legMenuKey);
   if (!to) return;
   const others = saveList().filter((row) => row.id !== window.parlayOpenId);
@@ -122,7 +176,10 @@ document.addEventListener("click", (event) => {
   if (event.target.closest(".find-leg-menu")) return;
   const to = event.target.closest(".find-tray button.find-leg-to");
   legMenuKey = to && to.dataset.key !== legMenuKey ? to.dataset.key : "";
+  if (legMenuKey) legToolsSolo(legMenuKey, "menu");
   legMenuPaint();
+  if (typeof legSwapPaint === "function") legSwapPaint();
+  legHistPaint();
 });
 
 if (typeof paintParlay === "function") {

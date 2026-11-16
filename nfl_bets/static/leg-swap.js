@@ -380,7 +380,11 @@ const legMoreOpen = new Set();
 document.addEventListener("click", (event) => {
   const more = event.target.closest && event.target.closest(".find-tray button.find-leg-more");
   if (!more) return;
-  if (legMoreOpen.has(more.dataset.key)) legMoreOpen.delete(more.dataset.key); else legMoreOpen.add(more.dataset.key);
+  if (legMoreOpen.has(more.dataset.key)) legMoreOpen.delete(more.dataset.key);
+  else {
+    legMoreOpen.add(more.dataset.key);
+    if (typeof legToolsSolo === "function") legToolsSolo(more.dataset.key, "more");
+  }
   legSwapPaint();
 });
 
@@ -389,9 +393,20 @@ document.addEventListener("click", (event) => {
   if (!hit) return;
   const name = hit.matches("button.find-name");
   const key = name ? `who:${hit.dataset.key}` : hit.dataset.key, mode = name ? "who" : hit.matches("i.prop") ? "line" : hit.matches("i.who") ? "kind" : "swap";
+  const open = legSwapOpen.get(key) !== mode;
   if (legSwapOpen.get(key) === mode) { legSwapOpen.delete(key); legSwapDrill.delete(key); }
-  else { legSwapOpen.set(key, mode); legSwapDrill.delete(key); }
+  else {
+    legSwapOpen.set(key, mode);
+    legSwapDrill.delete(key);
+    if (!name && typeof legToolsSolo === "function") legToolsSolo(key, "swap");
+  }
+  if (open && name) {
+    const glass = document.getElementById("desk-glass-in");
+    if (glass) glass.scrollTo({ top: 0, behavior: "smooth" });
+  }
   legSwapPaint();
+  if (typeof legHistPaint === "function") legHistPaint();
+  if (typeof legMenuPaint === "function") legMenuPaint();
 });
 
 if (typeof paintParlay === "function") {
