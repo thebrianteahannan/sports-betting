@@ -446,8 +446,12 @@
 .rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief, .find-td) > summary { display: block; margin: 0; list-style: none; }
 .rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief, .find-td) > summary::-webkit-details-marker { display: none; }
 .rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief, .find-td)[open] > summary { margin-bottom: 0.45rem; }
-.rec-board .find-td .find-td-filter { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0 0 0.55rem; color: #d5dde6; font-size: 13px; font-weight: 700; cursor: pointer; user-select: none; }
-.rec-board .find-td .find-td-filter input { width: 1rem; height: 1rem; accent-color: #e7c15a; cursor: pointer; }
+.rec-board .find-td .find-td-filter,
+.rec-board .find-list.find-td-board > .find-td-page-filter { display: inline-flex !important; flex-direction: row !important; align-items: center !important; gap: 0.45rem; margin: 0 0 0.55rem; color: #d5dde6; font-size: 13px; font-weight: 700; line-height: 1; cursor: pointer; user-select: none; white-space: nowrap; }
+.rec-board .find-td .find-td-filter input,
+.rec-board .find-list.find-td-board > .find-td-page-filter input,
+#desk.tv-full #desk-glass .rec-board .find-td .find-td-filter input,
+#desk.tv-full #desk-glass .rec-board .find-list.find-td-board > .find-td-page-filter input { width: 1rem !important; height: 1rem !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; flex: 0 0 auto !important; border: 0 !important; border-radius: 0.2rem !important; background: transparent !important; box-shadow: none !important; accent-color: #e7c15a; cursor: pointer; }
 .rec-board .find-td .find-td-empty { margin: 0 0 0.35rem; }
 .rec-board .find-td .find-td-note { display: grid; gap: 0.25rem; margin: 0 0 0.55rem; }
 .rec-board .find-td .find-td-note > p { margin: 0; color: #9fb3c8; font-size: 13px; line-height: 1.4; }
@@ -466,7 +470,7 @@
 :is(.rec-board, #choice-result) .find-td > button.find-all-td:hover { background: rgba(61, 255, 110, 0.12) !important; }
 .rec-board .find-list.find-td-board > h3 { margin: 0 0 0.55rem; color: #3dff6e; font-size: 1.15rem; font-weight: 800; }
 .rec-board .find-list.find-td-board > .find-td-picks { margin: 0 0 0.7rem; }
-.rec-board .find-list.find-td-board > .find-td-page-filter { display: inline-flex; margin: 0 0 0.75rem; }
+.rec-board .find-list.find-td-board > .find-td-page-filter { margin: 0 0 0.75rem; }
 .rec-board .find-list.find-td-board .find-td-few > .rec-bet > b::after { content: " +"; color: #3dff6e; }
 .rec-board .find-list.find-td-board .find-td-few > .rec-bet.open > b::after { content: " –"; }
 .rec-board .find-list.find-td-board .find-td-few > .rec-bet:not(.open) > :is(.find-why, .td-part) { display: none; }
@@ -484,11 +488,24 @@
 @media (max-width: 699px) { .find-match .find-card-inline .find-card .find-log { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .find-match .find-score .find-card-inline { margin-top: 0.45rem; }
 .rec-board .find-list > .find-profile { position: relative; margin: 0.4rem 0 0.7rem; padding: 0.7rem 0.85rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: rgba(4, 16, 24, 0.55); }
-.rec-board .find-list > .find-profile > h3 { margin-top: 0; padding-right: 7.5rem; }
+.rec-board .find-list > .find-profile > h3 { margin-top: 0; padding-right: 12.5rem; }
 .rec-board .find-profile > h3 i.find-rec-tag { display: inline-flex; align-items: center; gap: 0.3rem; margin-left: 0.55rem; padding: 0.1rem 0.55rem 0.1rem 0.3rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-family: inherit; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0.04em; line-height: 1.5; text-transform: uppercase; vertical-align: middle; cursor: pointer; }
 .rec-board .find-profile > h3 i.find-rec-tag::before { content: ""; width: 1.4em; height: 1.4em; background: url("/scene/parrot-head.webp?v=1") center / contain no-repeat; }
-.rec-board .find-profile > button.find-parlay, #desk.tv-full #desk-glass .rec-board .find-profile > button.find-parlay { position: absolute; top: 0.6rem; right: 0.7rem; width: auto; min-height: 0; height: auto; margin: 0; padding: 0.25rem 0.65rem; border: 0; border-radius: 999px; background: #e7c15a; color: #1a1208; box-shadow: none; font-size: 12px; font-weight: 700; line-height: 1.2; letter-spacing: 0; text-transform: none; }
-.rec-board .find-profile > button.find-parlay:disabled, #desk.tv-full #desk-glass .rec-board .find-profile > button.find-parlay:disabled { background: transparent; color: #e7c15a; border: 1px solid #e7c15a; cursor: default; }
+.rec-board .find-profile > .find-profile-acts { position: absolute; top: 0.55rem; right: 0.65rem; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.35rem; max-width: min(14rem, 52%); }
+.rec-board .find-profile > .find-profile-acts > button.find-parlay,
+.rec-board .find-profile > .find-profile-acts > button.find-game-script-go,
+#desk.tv-full #desk-glass .rec-board .find-profile > .find-profile-acts > button.find-parlay,
+#desk.tv-full #desk-glass .rec-board .find-profile > .find-profile-acts > button.find-game-script-go { position: static; width: auto; min-height: 0; height: auto; margin: 0; padding: 0.25rem 0.65rem; border-radius: 999px; box-shadow: none; font-size: 12px; font-weight: 700; line-height: 1.2; letter-spacing: 0; text-transform: none; cursor: pointer; }
+.rec-board .find-profile > .find-profile-acts > button.find-parlay,
+#desk.tv-full #desk-glass .rec-board .find-profile > .find-profile-acts > button.find-parlay { border: 0; background: #e7c15a; color: #1a1208; }
+.rec-board .find-profile > .find-profile-acts > button.find-parlay:disabled,
+#desk.tv-full #desk-glass .rec-board .find-profile > .find-profile-acts > button.find-parlay:disabled { background: transparent; color: #e7c15a; border: 1px solid #e7c15a; cursor: default; }
+.rec-board .find-profile > .find-profile-acts > button.find-game-script-go,
+#desk.tv-full #desk-glass .rec-board .find-profile > .find-profile-acts > button.find-game-script-go { border: 1px solid #3dff6e; background: transparent; color: #3dff6e; }
+@media (max-width: 699px) {
+  .rec-board .find-list > .find-profile > h3 { padding-right: 0; padding-bottom: 2.4rem; }
+  .rec-board .find-profile > .find-profile-acts { max-width: calc(100% - 1.3rem); }
+}
 .rec-board .find-team-bets .find-script-head { display: block; color: #3dff6e; font-size: 13px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
 .rec-board .find-team-bets > summary .find-script-head::after { content: " ▸"; }
 .rec-board .find-team-bets[open] > summary .find-script-head::after { content: " ▾"; }

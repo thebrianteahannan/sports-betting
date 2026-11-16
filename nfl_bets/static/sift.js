@@ -353,10 +353,6 @@ function openTdPage(list, people, hits, game, team) {
     few.replaceChildren();
     fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "few", rows }) }).then((res) => res.json()).then((data) => {
       if (!few.isConnected || fewKey !== key || !data || !Array.isArray(data.picks) || !data.picks.length) return;
-      const title = document.createElement("p");
-      title.className = "find-why few-head";
-      title.textContent = "What the price is charging for.";
-      few.append(title);
       data.picks.forEach((pick) => {
         const live = [...allBox.querySelectorAll("button")].find((node) => node.dataset.who === pick.name);
         const price = Number((live && live.dataset.odds) || pick.odds), shown = price > 0 ? `+${price}` : String(price), chance = (live && live.dataset.chance) || "";

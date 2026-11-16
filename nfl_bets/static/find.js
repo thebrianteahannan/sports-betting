@@ -15,7 +15,7 @@ function legLoose(bet) {
 }
 
 function paintParlay() {
-  document.querySelectorAll(".find-roster > button.find-parlay").forEach((node) => { node.hidden = parlayPick.size < 2; node.textContent = parlayPick.size < 2 ? "Build a parlay" : `Build a ${parlayPick.size}-leg parlay`; }); document.querySelectorAll(".find-list > button.find-parlay, .find-profile > button.find-parlay").forEach((node) => { const on = parlayPick.has(node.dataset.key); node.textContent = on ? "In the parlay" : "Add to the parlay"; node.disabled = on; }); document.querySelectorAll("button.find-leg").forEach((node) => { const on = parlayLeg.has(node.dataset.key); node.classList.toggle("on", on); node.textContent = on ? "In the parlay" : "Add this leg"; });
+  document.querySelectorAll(".find-roster > button.find-parlay").forEach((node) => { node.hidden = parlayPick.size < 2; node.textContent = parlayPick.size < 2 ? "Build a parlay" : `Build a ${parlayPick.size}-leg parlay`; }); document.querySelectorAll(".find-list button.find-parlay, .find-profile button.find-parlay").forEach((node) => { const on = parlayPick.has(node.dataset.key); node.textContent = on ? "In the parlay" : "Add to the parlay"; node.disabled = on; }); document.querySelectorAll("button.find-leg").forEach((node) => { const on = parlayLeg.has(node.dataset.key); node.classList.toggle("on", on); node.textContent = on ? "In the parlay" : "Add this leg"; });
   document.querySelectorAll(".find-tray").forEach((tray) => {
   tray.replaceChildren();
   tray.hidden = !parlayPick.size && !parlayLeg.size;
@@ -520,8 +520,58 @@ function showFind(list, hits, person, roster, people, keep, kind) {
   list.replaceChildren(); list.classList.remove("find-only-on");
   const heading = document.createElement("h3");
   heading.innerHTML = `${esc(person.name)}${person.kind === "player" && (person.pos || person.team) ? `, ${esc([person.pos, person.team].filter(Boolean).join(", "))}` : ""} <span class="rec-count">${!bets.length && person.kind === "player" ? "No bets posted" : `${bets.length} available bet${bets.length === 1 ? "" : "s"}`}</span>`;
-  if (person.kind === "player" && bets.length && !golf) { const add = document.createElement("button"); add.type = "button"; add.className = "find-parlay"; add.dataset.key = person.key; add.textContent = parlayPick.has(person.key) ? "In the parlay" : "Add to the parlay"; add.addEventListener("click", () => { if (parlayPick.has(person.key) || parlayPick.size >= 8) return; parlayPick.set(person.key, person); document.querySelectorAll(".find-names button").forEach((node) => { if (node.textContent === person.name) { const on = parlayPick.has(person.key); node.classList.toggle("on", on); node.setAttribute("aria-pressed", on ? "true" : "false"); } }); paintParlay(); });   list.append(add); add.style.scrollMarginTop = "5.5rem"; if (typeof gameScrollTo === "function") gameScrollTo(typeof gameAddLine === "function" ? gameAddLine(add, bets) : add); else setTimeout(() => { if (add.isConnected) add.scrollIntoView({ behavior: "smooth", block: "start" }); }, 60); }
-  if (person.kind === "player") { const profile = document.createElement("div"); profile.className = "find-profile"; const added = list.querySelector(":scope > button.find-parlay"); profile.append(heading); if (added) profile.append(added); list.append(profile); if (window.paintCard && !golf) paintCard(list, heading, person); heading.after = (...nodes) => profile.after(...nodes); } else list.append(heading);
+  if (person.kind === "player" && bets.length && !golf) {
+    const acts = document.createElement("span");
+    acts.className = "find-profile-acts";
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "find-parlay";
+    add.dataset.key = person.key;
+    add.textContent = parlayPick.has(person.key) ? "In the parlay" : "Add to the parlay";
+    add.addEventListener("click", () => {
+      if (parlayPick.has(person.key) || parlayPick.size >= 8) return;
+      parlayPick.set(person.key, person);
+      document.querySelectorAll(".find-names button").forEach((node) => {
+        if (node.textContent === person.name) {
+          const on = parlayPick.has(person.key);
+          node.classList.toggle("on", on);
+          node.setAttribute("aria-pressed", on ? "true" : "false");
+        }
+      });
+      paintParlay();
+    });
+    const scriptGo = document.createElement("button");
+    scriptGo.type = "button";
+    scriptGo.className = "find-game-script-go";
+    scriptGo.textContent = "View game script";
+    scriptGo.addEventListener("click", () => {
+      const board = list.closest(".find-board");
+      const matches = board ? [...board.querySelectorAll(".find-teams .find-match")] : [];
+      const want = String((bets[0] && bets[0].match) || "");
+      const match = matches.find((node) => {
+        const sides = [...node.querySelectorAll(":scope > .find-side-go")].map((side) => side.textContent.split(",")[0].trim());
+        return sides.length >= 2 && sides.every((side) => want.includes(side));
+      }) || matches[0];
+      if (!match) return;
+      if (match.classList.contains("find-game-shut")) {
+        const fold = match.querySelector(":scope > .find-when .find-game-fold");
+        if (fold) fold.click();
+        else match.classList.remove("find-game-shut");
+      }
+      const script = match.querySelector(":scope > .find-script");
+      if (script) script.open = true;
+      const target = script || match;
+      target.style.scrollMarginTop = "5.5rem";
+      if (typeof gameScrollTo === "function") gameScrollTo(target);
+      else target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    acts.append(scriptGo, add);
+    list.append(acts);
+    acts.style.scrollMarginTop = "5.5rem";
+    if (typeof gameScrollTo === "function") gameScrollTo(typeof gameAddLine === "function" ? gameAddLine(acts, bets) : acts);
+    else setTimeout(() => { if (acts.isConnected) acts.scrollIntoView({ behavior: "smooth", block: "start" }); }, 60);
+  }
+  if (person.kind === "player") { const profile = document.createElement("div"); profile.className = "find-profile"; const added = list.querySelector(":scope > .find-profile-acts"); profile.append(heading); if (added) profile.append(added); list.append(profile); if (window.paintCard && !golf) paintCard(list, heading, person); heading.after = (...nodes) => profile.after(...nodes); } else list.append(heading);
   if (!bets.length) {
     if (person.kind === "player") return;
     const note = document.createElement("p");
