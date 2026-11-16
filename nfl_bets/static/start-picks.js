@@ -115,19 +115,55 @@ function startRandomPool(board, picks) {
   return picks.map((pick) => index.get(`${pick.label}|${pick.market}|${pick.match}`) || [...index.values()].find((row) => row.bet.label === pick.label && row.bet.match === pick.match)).filter((hit) => hit && !seen.has(hit.person.key) && seen.add(hit.person.key));
 }
 
-function startRandom(board, picks, n) {
+function startRandomSig(legs) {
+  return legs.map(({ bet }) => parlayKey(bet)).sort().join("~");
+}
+
+function startRandomDraw(board, picks, n, skip) {
   const pool = startRandomPool(board, picks);
-  for (let at = pool.length - 1; at > 0; at--) { const swap = Math.floor(Math.random() * (at + 1)); [pool[at], pool[swap]] = [pool[swap], pool[at]]; }
-  const legs = pool.slice(0, n);
-  if (!legs.length) return;
-  const again = startRandomAt && window.parlayOpenId === startRandomAt.id && saveSig([...parlayLeg.values()]) === startRandomAt.sig;
-  if (again) { parlayLeg.clear(); parlayPick.clear(); }
-  else {
-    const had = parlayLeg.size > 0;
-    if (had && saveSig([...parlayLeg.values()]) !== saveHeld) saveNow();
-    startRandomAt = { prior: had ? window.parlayOpenId || "" : "", ids: new Set(saveList().map((row) => row.id)) };
-    saveNew();
+  let legs = [], sig = "";
+  for (let tryAt = 0; tryAt < 12; tryAt++) {
+    for (let at = pool.length - 1; at > 0; at--) { const swap = Math.floor(Math.random() * (at + 1)); [pool[at], pool[swap]] = [pool[swap], pool[at]]; }
+    legs = pool.slice(0, n);
+    sig = startRandomSig(legs);
+    if (!legs.length || !skip || sig !== skip) break;
   }
+  return legs;
+}
+
+function startRandomClose() {
+  const box = document.getElementById("start-random");
+  if (box) box.remove();
+  startRandomAt = null;
+}
+
+function startRandomLine({ person, bet }) {
+  const who = person.name || "", raw = String(bet.label || "").split(/\s+—\s+/)[0].trim();
+  const prop = who && raw.toLowerCase().startsWith(who.toLowerCase()) ? raw.slice(who.length).trim() : raw;
+  const odds = Number(bet.odds);
+  return { who, prop: prop || bet.market || "", shown: odds > 0 ? `+${odds}` : String(odds), match: bet.match || "" };
+}
+
+function startRandomFill(box, legs) {
+  const list = box.querySelector(".start-random-legs"), price = box.querySelector(".start-random-price");
+  if (!list || !price) return;
+  list.replaceChildren(...legs.map((hit) => {
+    const line = startRandomLine(hit), row = document.createElement("div");
+    row.className = "start-random-leg";
+    row.innerHTML = `<b>${esc(line.who)}</b><span>${esc(line.prop)}</span><i>${esc(line.shown)}</i><em>${esc(line.match)}</em>`;
+    return row;
+  }));
+  const px = typeof savePrice === "function" ? savePrice(legs.map(({ bet }) => bet)) : "";
+  price.textContent = px ? `${legs.length}-leg · ${px}` : `${legs.length}-leg parlay`;
+  if (startRandomAt) Object.assign(startRandomAt, { legs, sig: startRandomSig(legs) });
+}
+
+function startRandomAdd(board, legs) {
+  if (!legs.length) return;
+  const had = parlayLeg.size > 0;
+  if (had && saveSig([...parlayLeg.values()]) !== saveHeld) saveNow();
+  const prior = had ? window.parlayOpenId || "" : "", ids = new Set(saveList().map((row) => row.id));
+  saveNew();
   if (typeof betFromSay === "function") betFromSay("Random Recommended", true);
   legs.forEach(({ person, bet }) => { parlayLeg.set(parlayKey(bet), bet); if (!parlayPick.has(person.key)) parlayPick.set(person.key, person); });
   if (typeof trayRoster === "function") trayRoster();
@@ -135,14 +171,40 @@ function startRandom(board, picks, n) {
   window.saveShut = false;
   try { localStorage.setItem("savedShut", "0"); } catch (error) {}
   saveNow(); paintParlay();
-  Object.assign(startRandomAt, { id: window.parlayOpenId, sig: saveSig([...parlayLeg.values()]) });
-  startUndo = { board, keys: [...parlayLeg.keys()], ids: startRandomAt.ids, prior: startRandomAt.prior };
-  document.querySelectorAll(".find-tray.find-shut").forEach((tray) => {
-    const fold = tray.querySelector(".find-fold");
-    if (fold) fold.click();
-  });
-  const show = document.querySelector(`#desk-glass-in .find-saved-chip.on`) || document.querySelector("#desk-glass-in .find-saved") || document.querySelector("#desk-glass-in .find-tray");
+  startUndo = { board, keys: [...parlayLeg.keys()], ids, prior };
+  startRandomClose();
+  document.querySelectorAll(".find-tray.find-shut").forEach((tray) => { const fold = tray.querySelector(".find-fold"); if (fold) fold.click(); });
+  const show = document.querySelector("#desk-glass-in .find-saved-chip.on") || document.querySelector("#desk-glass-in .find-saved") || document.querySelector("#desk-glass-in .find-tray");
   if (show) show.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
+function startRandomShow(board, picks, n, legs) {
+  startRandomClose();
+  if (!legs.length) return;
+  startRandomAt = { board, picks, n, legs, sig: startRandomSig(legs) };
+  const box = document.createElement("div");
+  box.id = "start-random";
+  box.innerHTML = `<div class="start-random-card" role="dialog" aria-modal="true" aria-labelledby="start-random-title"><button type="button" class="start-random-x" aria-label="Close">&times;</button><p id="start-random-title" class="start-random-head">Random parlay</p><p class="start-random-price"></p><div class="start-random-legs"></div><p class="start-random-do"><button type="button" class="start-random-again">Regenerate</button><button type="button" class="start-random-add">Add to My Bets</button></p></div>`;
+  const close = () => startRandomClose();
+  box.addEventListener("click", (event) => { if (event.target === box) close(); });
+  box.querySelector(".start-random-x").addEventListener("click", close);
+  box.querySelector(".start-random-again").addEventListener("click", () => {
+    if (!startRandomAt) return;
+    const next = startRandomDraw(startRandomAt.board, startRandomAt.picks, startRandomAt.n, startRandomAt.sig);
+    if (next.length) startRandomFill(box, next);
+  });
+  box.querySelector(".start-random-add").addEventListener("click", () => {
+    if (!startRandomAt || !startRandomAt.legs.length) return;
+    startRandomAdd(startRandomAt.board, startRandomAt.legs);
+  });
+  startRandomFill(box, legs);
+  document.body.append(box);
+}
+
+function startRandom(board, picks, n) {
+  const legs = startRandomDraw(board, picks, n);
+  if (!legs.length) return;
+  startRandomShow(board, picks, n, legs);
 }
 
 function startRandomBar(board, picks) {
