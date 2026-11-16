@@ -131,11 +131,18 @@ function startRandom(board, picks, n) {
   if (typeof betFromSay === "function") betFromSay("Random Recommended", true);
   legs.forEach(({ person, bet }) => { parlayLeg.set(parlayKey(bet), bet); if (!parlayPick.has(person.key)) parlayPick.set(person.key, person); });
   if (typeof trayRoster === "function") trayRoster();
+  window.saveGone = false;
+  window.saveShut = false;
+  try { localStorage.setItem("savedShut", "0"); } catch (error) {}
   saveNow(); paintParlay();
   Object.assign(startRandomAt, { id: window.parlayOpenId, sig: saveSig([...parlayLeg.values()]) });
   startUndo = { board, keys: [...parlayLeg.keys()], ids: startRandomAt.ids, prior: startRandomAt.prior };
-  const glass = document.getElementById("desk-glass-in");
-  if (glass) glass.scrollTo({ top: 0, behavior: "smooth" });
+  document.querySelectorAll(".find-tray.find-shut").forEach((tray) => {
+    const fold = tray.querySelector(".find-fold");
+    if (fold) fold.click();
+  });
+  const show = document.querySelector(`#desk-glass-in .find-saved-chip.on`) || document.querySelector("#desk-glass-in .find-saved") || document.querySelector("#desk-glass-in .find-tray");
+  if (show) show.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
 function startRandomBar(board, picks) {
