@@ -241,8 +241,22 @@ function tvTickOpen(pick) {
   }, 150);
 }
 
+function tvTickPaintCards() {
+  if (!tvTick.parlay && !tvTick.pick) return;
+  const guest = tvTickGateOn() || document.body.classList.contains("needs-member");
+  if (tvTick.guest === guest && tvTick.cardsOn) return;
+  tvTick.guest = guest;
+  tvTick.cardsOn = true;
+  const day = document.getElementById("tv-tick-day");
+  const slot = document.getElementById("tv-tick-pick");
+  if (day) day.innerHTML = tvTick.parlay ? tvTickCardHtml(tvTick.parlay, guest) : "";
+  if (slot) slot.innerHTML = tvTick.pick ? tvTickCardHtml(tvTick.pick, guest) : "";
+  tvTickDots();
+}
+
 async function tvTickLoad() {
-  if (tvTick.pick || tvTick.parlay || tvTick.loading) return;
+  if (tvTick.loading) return;
+  if (tvTick.pick || tvTick.parlay) { tvTickPaintCards(); return; }
   tvTick.loading = true;
   try {
     const res = await fetch("/api/sample", { cache: "no-store" });
@@ -251,12 +265,8 @@ async function tvTickLoad() {
     tvTick.parlay = parlay && Array.isArray(parlay.bets) && parlay.bets.length && Number.isFinite(Number(parlay.odds)) ? parlay : null;
     tvTick.pick = single && Number.isFinite(Number(single.odds)) ? single : null;
     if (!tvTick.parlay && !tvTick.pick) return;
-    const guest = tvTickGateOn();
-    const day = document.getElementById("tv-tick-day");
-    const slot = document.getElementById("tv-tick-pick");
-    if (day) day.innerHTML = tvTick.parlay ? tvTickCardHtml(tvTick.parlay, guest) : "";
-    if (slot) slot.innerHTML = tvTick.pick ? tvTickCardHtml(tvTick.pick, guest) : "";
-    tvTickDots();
+    tvTick.cardsOn = false;
+    tvTickPaintCards();
   } catch (error) { console.log("[tv-ticker] could not load tonight's pick", error); } finally { tvTick.loading = false; }
 }
 
@@ -432,7 +442,11 @@ function tvTickWatch() {
   const box = tvTickBox();
   if (!box) return;
   const on = tvTickOn();
-  if (on) tvTickLoad();
+  if (on) {
+    tvTickLoad();
+    // Cards can load while the gate is up; redraw once the member is in.
+    tvTickPaintCards();
+  }
   if (on && tvTickFormOn()) { if (!tvTick.hold) tvTickStay(); }
   else if (on && tvTick.hold) tvTickRelease();
   const pages = tvTickPages().join(",");
