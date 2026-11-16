@@ -20,7 +20,7 @@
   line-height: 1.1;
   text-align: center;
   text-decoration: none;
-  text-transform: uppercase;
+  text-transform: none;
 }
 #desk-glass .tv-meet-guide:hover { background: #3dff6e; color: #04140c; }
 #desk.tv-full #desk-glass .tv-meet-guide { width: min(100%, 28rem); padding: 1.2rem 1.2rem; font-size: 1.7rem; }
