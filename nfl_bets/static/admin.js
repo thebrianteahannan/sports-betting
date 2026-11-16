@@ -1,6 +1,5 @@
 function planName(plan) {
-  if (!plan || plan === "free") return "Free";
-  return plan;
+  return plan === "pro" ? "Paid" : "Free";
 }
 
 function loginWhen(stamp) {

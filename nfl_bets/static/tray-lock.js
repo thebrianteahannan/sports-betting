@@ -1,4 +1,5 @@
-// Once any game in a bet has started, the bet is locked. Its legs cannot be removed, swapped, renumbered or added to.
+// Once any game in a bet has started, the bet is locked. Legs cannot be removed, swapped for another player, or added.
+// The prop on a leg can still change: the number, or another prop for the same player. A wrong line can be corrected after kickoff.
 // A leg picked while a locked bet is open starts a new bet instead.
 
 function trayLockStarted(legs) {
@@ -6,11 +7,53 @@ function trayLockStarted(legs) {
   return (legs || []).some((bet) => Date.parse(bet.kickoff || "") <= now);
 }
 
+function trayLockWho(bet) {
+  const board = document.querySelector(".find-board");
+  const label = String(bet.label || "");
+  const named = ((board && board.people) || []).filter((one) => one.kind === "player" && one.name && label.startsWith(one.name)).sort((a, b) => b.name.length - a.name.length)[0];
+  if (named) return named.name;
+  if (typeof legLoose !== "function") return "";
+  const loose = legLoose(bet);
+  const game = typeof gameShort === "function" ? gameShort(bet.match) : "";
+  return loose.who && loose.who !== game ? loose.who : "";
+}
+
+function trayLockFam(bet) {
+  const market = String(bet.market || "");
+  if (/^(total|alternate total)/i.test(market)) return "total";
+  if (/^(spread|alternate spread)/i.test(market)) return "spread";
+  if (/^moneyline$/i.test(market)) return "money";
+  return "";
+}
+
+function trayLockSameLeg(oldBet, next) {
+  if (!oldBet || !next || oldBet.match !== next.match || String(oldBet.kickoff || "") !== String(next.kickoff || "")) return false;
+  const oldWho = trayLockWho(oldBet), nextWho = trayLockWho(next);
+  if (oldWho && oldWho === nextWho) return true;
+  const oldFam = trayLockFam(oldBet), nextFam = trayLockFam(next);
+  return Boolean(oldFam && oldFam === nextFam && (oldFam === "total" || String(oldBet.label || "").replace(/\s[+-]?\d.*$/, "").trim() === String(next.label || "").replace(/\s[+-]?\d.*$/, "").trim()));
+}
+
+function trayLockPropEdit(open) {
+  const was = new Map(open.legs.map((bet) => [parlayKey(bet), bet]));
+  const removed = [...was.entries()].filter(([key]) => !parlayLeg.has(key));
+  const added = [...parlayLeg.entries()].filter(([key]) => !was.has(key));
+  if (!removed.length || removed.length !== added.length) return false;
+  const pool = added.map(([, bet]) => ({ bet, used: false }));
+  return removed.every(([, oldBet]) => {
+    const hit = pool.find((row) => !row.used && trayLockSameLeg(oldBet, row.bet));
+    if (!hit) return false;
+    hit.used = true;
+    return true;
+  });
+}
+
 function trayLockGuard() {
   const open = typeof saveList === "function" && saveList().find((row) => row.id === window.parlayOpenId);
   if (!open || !parlayLeg.size || !trayLockStarted(open.legs)) return;
   const was = new Set(open.legs.map((bet) => parlayKey(bet))), now = [...parlayLeg.keys()];
   if (now.length === was.size && now.every((key) => was.has(key))) return;
+  if (trayLockPropEdit(open)) return;
   const added = [...parlayLeg.entries()].filter(([key]) => !was.has(key)), kept = [...was].every((key) => parlayLeg.has(key));
   const named = (person, legs) => legs.some((bet) => person.name && String(bet.label || "").startsWith(person.name));
   if (kept && added.length) {
@@ -31,9 +74,9 @@ function trayLockPaint() {
   const locked = trayLockStarted([...parlayLeg.values()]);
   document.querySelectorAll(".find-tray").forEach((tray) => {
     tray.classList.toggle("find-locked", locked);
-    tray.title = locked ? "A game in this bet has started, so the bet is locked." : "";
+    tray.title = locked ? "The game has started. Tap a prop to change it." : "";
   });
-  if (locked && typeof legSwapOpen !== "undefined") legSwapOpen.clear();
+  if (locked && typeof legSwapOpen !== "undefined") [...legSwapOpen.entries()].forEach(([key, mode]) => { if (mode !== "line" && mode !== "kind") legSwapOpen.delete(key); });
 }
 
 if (typeof paintParlay === "function") {
@@ -60,7 +103,7 @@ if (typeof legMenuPaint === "function") {
 }
 
 document.addEventListener("click", (event) => {
-  const hit = event.target.closest && event.target.closest(".find-tray.find-locked :is(.find-chose button.find-out, button.find-leg-swap, button.find-leg-to, .find-chose i.prop[data-key], .find-chose i.who[data-key], .find-in button.find-name, .find-in button.find-out, .find-new-add, .find-undo button)");
+  const hit = event.target.closest && event.target.closest(".find-tray.find-locked :is(.find-chose button.find-out, button.find-leg-swap, button.find-leg-to, .find-in button.find-name, .find-in button.find-out, .find-new-add, .find-undo button, .find-swap-add)");
   if (!hit) return;
   event.stopImmediatePropagation(); event.preventDefault();
 }, true);

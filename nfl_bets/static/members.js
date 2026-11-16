@@ -83,9 +83,10 @@ function showMember(payload) {
   if (desk && desk.classList.contains("bird-on") && ((said === "Aight, bet!" && Date.now() > (window.squawkUntil || 0)) || said.startsWith("Hey. What") || said.startsWith("What should I call you") || said.startsWith("When were you born") || said.startsWith("Which state") || said.startsWith("Which sportsbook"))) birdGreet();
   const adminBox = document.getElementById("profile-admin");
   if (adminBox) adminBox.hidden = !admin;
+  window.memberCard = member;
   const plan = document.getElementById("activity-plan");
-  plan.hidden = admin;
-  plan.textContent = admin ? "" : "Free membership. Payments are not turned on.";
+  if (plan) plan.hidden = false;
+  if (window.paintBilling) paintBilling(member);
   const rows = payload.activity || [];
   window.ratedBuilt = rows.filter((row) => row.kind === "rate" && row.detail && row.detail.built && Number(row.detail.stars) > 0).map((row) => ({
     id: row.id, built: true, title: row.detail.title || "Built bet", american: row.detail.american,
