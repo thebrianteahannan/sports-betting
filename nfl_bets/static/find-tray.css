@@ -531,36 +531,37 @@
 .rec-board .find-list .find-td-page > .td-pick-wrap > button.td-row,
 #desk.tv-full #desk-glass .rec-board .find-list .find-td-page > button.td-row,
 #desk.tv-full #desk-glass .rec-board .find-list .find-td-page > .td-pick-wrap > button.td-row {
-  display: grid !important; grid-template-columns: minmax(0, 1fr) auto !important; grid-template-areas: "who meta" "sub meta" !important;
-  align-items: center !important; column-gap: 0.55rem !important; row-gap: 0.12rem !important;
-  flex: 0 0 auto !important; width: 100% !important; min-height: 0 !important; height: auto !important;
-  margin: 0 !important; padding: 0.55rem 0.35rem !important; border: 0 !important; border-bottom: 1px solid rgba(61, 255, 110, 0.16) !important; border-radius: 0 !important;
+  display: block !important; width: 100% !important; min-height: 0 !important; height: auto !important;
+  margin: 0 !important; padding: 0.7rem 0.55rem !important; border: 0 !important; border-bottom: 1px solid rgba(61, 255, 110, 0.16) !important; border-radius: 0 !important;
   background: transparent !important; box-shadow: none !important; color: #f4f7fb !important;
-  font-size: 0.95rem !important; font-weight: 700 !important; line-height: 1.25 !important; letter-spacing: 0 !important;
+  font-size: 1rem !important; font-weight: 700 !important; line-height: 1.25 !important; letter-spacing: 0 !important;
   text-align: left !important; text-transform: none !important; white-space: normal !important;
 }
 .rec-board .find-list .find-td-page > button.td-row.find-td-best,
 .rec-board .find-list .find-td-page > .td-pick-wrap > button.td-row.find-td-best,
 #desk.tv-full #desk-glass .rec-board .find-list .find-td-page > button.td-row.find-td-best,
 #desk.tv-full #desk-glass .rec-board .find-list .find-td-page > .td-pick-wrap > button.td-row.find-td-best { box-shadow: inset 3px 0 0 #e7c15a !important; }
-.rec-board .find-list .find-td-page button.td-row .td-who { grid-area: who; display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.4rem; min-width: 0; }
-.rec-board .find-list .find-td-page button.td-row .td-name { min-width: 0; overflow: hidden; color: #fff; font-weight: 800; overflow-wrap: anywhere; }
-.rec-board .find-list .find-td-page button.td-row .td-sub { grid-area: sub; display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.45rem; min-width: 0; color: #8b97a3; font-size: 0.8rem; font-weight: 600; }
-.rec-board .find-list .find-td-page button.td-row .td-team,
-.rec-board .find-list .find-td-page button.td-row .td-game { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec-board .find-list .find-td-page button.td-row .td-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 0.85rem; width: 100%; }
+.rec-board .find-list .find-td-page button.td-row .td-main { display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem; min-width: 0; }
+.rec-board .find-list .find-td-page button.td-row .td-top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.4rem; min-width: 0; }
+.rec-board .find-list .find-td-page button.td-row .td-tags { display: inline-flex; align-items: center; gap: 0.3rem; }
+.rec-board .find-list .find-td-page button.td-row .td-name { color: #fff; font-weight: 800; }
+.rec-board .find-list .find-td-page button.td-row .td-game { color: #8b97a3; font-size: 0.82rem; font-weight: 600; }
 .rec-board .find-list .find-td-page button.td-row .td-kind { display: none; }
 .rec-board .find-list .find-td-page button.td-row .td-best,
-.rec-board .find-list .find-td-page button.td-row .td-rec { flex: none; padding: 0.08rem 0.35rem; border-radius: 999px; font-size: 9px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
+.rec-board .find-list .find-td-page button.td-row .td-rec { display: inline-flex; align-items: center; padding: 0.08rem 0.4rem; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; line-height: 1.3; text-transform: uppercase; }
 .rec-board .find-list .find-td-page button.td-row .td-best { background: #e7c15a; color: #07090e; }
 .rec-board .find-list .find-td-page button.td-row .td-rec { background: transparent; color: #e7c15a; box-shadow: inset 0 0 0 1px #e7c15a; }
-.rec-board .find-list .find-td-page button.td-row .td-meta { grid-area: meta; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 0.12rem; margin: 0; white-space: nowrap; }
-.rec-board .find-list .find-td-page button.td-row .td-px { color: #3dff6e; font-weight: 800; }
+.rec-board .find-list .find-td-page button.td-row .td-meta { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 0.15rem; }
+.rec-board .find-list .find-td-page button.td-row .td-price { display: flex; align-items: baseline; gap: 0.45rem; white-space: nowrap; }
+.rec-board .find-list .find-td-page button.td-row .td-px { color: #3dff6e; font-weight: 800; font-size: 1.05rem; }
 .rec-board .find-list .find-td-page button.td-row .td-pct { color: #e7c15a; font-weight: 700; }
-.rec-board .find-list .find-td-page button.td-row .td-meta .td-px,
-.rec-board .find-list .find-td-page button.td-row .td-meta .td-pct { display: inline; }
-.rec-board .find-list .find-td-page button.td-row .td-meta .td-pct::before { content: " · "; color: #5d6b78; font-weight: 600; }
 .rec-board .find-list .find-td-page button.td-row .td-pay,
 .rec-board .find-list.find-td-board .find-td-few .td-pay { color: #3dff6e; font-size: 0.82rem; font-weight: 700; white-space: nowrap; }
+@media (min-width: 700px) {
+  .rec-board .find-list .find-td-page button.td-row .td-main { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.65rem; }
+  .rec-board .find-list .find-td-page button.td-row .td-meta { flex-direction: row; align-items: baseline; gap: 0.85rem; }
+}
 .rec-board .find-list .find-td-page button.td-row .td-pay button.stake,
 .rec-board .find-list.find-td-board .find-td-few .td-pay button.stake,
 #desk.tv-full #desk-glass .rec-board .find-list .find-td-page button.td-row .td-pay button.stake,
@@ -585,15 +586,6 @@
   #desk.tv-full #desk-glass .rec-board .find-list.find-td-board > .find-td-tools > button.find-td-make {
     padding: 0.45rem 0.9rem !important; font-size: 14px !important;
   }
-  .rec-board .find-list .find-td-page > button.td-row,
-  .rec-board .find-list .find-td-page > .td-pick-wrap > button.td-row,
-  #desk.tv-full #desk-glass .rec-board .find-list .find-td-page > button.td-row,
-  #desk.tv-full #desk-glass .rec-board .find-list .find-td-page > .td-pick-wrap > button.td-row {
-    padding: 0.7rem 0.5rem !important; font-size: 1rem !important; row-gap: 0.2rem !important;
-  }
-  .rec-board .find-list .find-td-page button.td-row .td-name { overflow: visible; text-overflow: clip; white-space: normal; }
-  .rec-board .find-list .find-td-page button.td-row .td-meta { align-items: flex-end; min-width: 6.2rem; }
-  .rec-board .find-list .find-td-page button.td-row .td-pay { font-size: 0.78rem; }
   .rec-board .find-list.find-td-board .find-td-few { display: none; }
   .rec-board .find-list.find-td-board .find-td-all { border-top: 0; }
 }

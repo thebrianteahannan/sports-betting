@@ -558,103 +558,13 @@ function openTdPage(list, people, hits, game, team) {
     fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "few", rows }) }).then((res) => res.json()).then((data) => {
       if (!few.isConnected || fewKey !== key) return;
       const picks = data && Array.isArray(data.picks) ? data.picks : [];
-      // One list on phones — mark researched names Rec, skip the second card style.
-      if (window.matchMedia("(max-width: 699px)").matches) {
-        picks.forEach((pick) => {
-          const live = [...allBox.querySelectorAll("button")].find((node) => node.dataset.who === pick.name);
-          if (!live) return;
-          live.dataset.rec = "1";
-          live.classList.add("find-td-rec");
-          delete live.dataset.dressed;
-          if (typeof dressTdRow === "function") dressTdRow(live);
-        });
-        filterRows();
-        syncPick();
-        return;
-      }
-      if (!picks.length) { filterRows(); return; }
       picks.forEach((pick) => {
         const live = [...allBox.querySelectorAll("button")].find((node) => node.dataset.who === pick.name);
-        const price = Number((live && live.dataset.odds) || pick.odds), shown = price > 0 ? `+${price}` : String(price), chance = (live && live.dataset.chance) || "";
-        const card = document.createElement("div");
-        card.className = "rec-bet log-on";
-        card.dataset.who = pick.name;
-        const rec = true;
-        card.classList.add("find-td-rec");
-        if (live) { live.dataset.rec = "1"; live.classList.add("find-td-rec"); card.dataset.odds = String(live.dataset.odds || price || ""); }
-        const head = document.createElement("b");
-        const pay = typeof tdPayHtml === "function" ? tdPayHtml(price) : (typeof findCash === "function" && findCash(price) ? `<span class="td-pay">$5 profits ${esc(findCash(price))}</span>` : "");
-        head.innerHTML = [`<i class="px">${esc(shown)}</i>`, chance && `<i class="pct">${esc(chance)}%</i>`, pay].filter(Boolean).join("");
-        const gist = document.createElement("p");
-        gist.className = "rec-gist";
-        const spot = (live && live.dataset.match) || "";
-        const short = typeof gameShort === "function" && spot ? gameShort(spot) : spot;
-        gist.innerHTML = `<i class="who">${esc(pick.name)}</i>${rec ? `<i class="find-td-rec-tag">Rec</i>` : ""}${short ? `<em>${esc(short)}</em>` : ""}<i class="prop">Anytime touchdown</i>${spot && spot !== short ? `<em class="td-few-full">${esc(spot)}</em>` : ""}`;
-        const fewHit = typeof profileTdBet === "function" ? profileTdBet(
-          (people || board.people || []).find((person) => person.name === pick.name) || { kind: "player", name: pick.name, bets: [] },
-          "Anytime TD",
-          { match: live && live.dataset.match, kickoff: live && live.dataset.kickoff, odds: price }
-        ) : null;
-        const fewCheck = document.createElement("input");
-        fewCheck.type = "checkbox";
-        fewCheck.className = "td-pick";
-        fewCheck.setAttribute("aria-label", `Select ${pick.name}`);
-        armPick(fewCheck, fewHit);
-        card.addEventListener("click", (event) => {
-          if (event.target.closest(".td-part, .td-proof, .td-more-acts, .desk-rec-ask, .find-profile-bet, .td-pay, .stake, .td-pick")) return;
-          if (picking) {
-            if (!fewHit) return;
-            fewCheck.checked = !fewCheck.checked;
-            fewCheck.dispatchEvent(new Event("change"));
-            return;
-          }
-          const open = card.classList.contains("open");
-          tdShutMore();
-          if (!open) card.classList.add("open");
-        });
-        card.append(fewCheck, gist, head);
-        if (window.paintDive) paintDive(card, pick);
-        else {
-          const why = document.createElement("p");
-          why.className = "find-why";
-          why.textContent = String(pick.summary || pick.line || "");
-          card.append(why);
-        }
-        const liveBtn = live;
-        if (liveBtn && typeof paintCard === "function") {
-          const wrap = document.createElement("div");
-          wrap.className = "td-few-card";
-          const mark = document.createElement("span");
-          mark.hidden = true;
-          wrap.append(mark);
-          card.append(wrap);
-          paintCard(wrap, mark, (people || []).find((person) => person.name === pick.name) || { kind: "player", name: pick.name, bets: [] });
-          const hit = typeof profileTdBet === "function" ? profileTdBet(
-            (people || board.people || []).find((person) => person.name === pick.name) || { kind: "player", name: pick.name, bets: [] },
-            "Anytime TD",
-            { match: liveBtn.dataset.match, kickoff: liveBtn.dataset.kickoff, odds: Number(liveBtn.dataset.odds) }
-          ) : null;
-          if (hit) {
-            const acts = document.createElement("span");
-            acts.className = "td-more-acts";
-            const betIt = document.createElement("button");
-            betIt.type = "button";
-            betIt.className = "find-profile-bet";
-            const on = typeof parlayKey === "function" && typeof parlayLeg !== "undefined" && parlayLeg.has(parlayKey(hit.bet));
-            betIt.textContent = on ? "In the parlay" : "Bet it";
-            betIt.disabled = on;
-            betIt.addEventListener("click", (event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              if (betIt.disabled) return;
-              if (typeof profileAskPut === "function") profileAskPut(acts, hit);
-              else if (typeof profileBetPut === "function") profileBetPut(hit, false);
-            });
-            acts.append(betIt);
-            card.append(acts);
-          }
-        }
-        few.append(card);
+        if (!live) return;
+        live.dataset.rec = "1";
+        live.classList.add("find-td-rec");
+        delete live.dataset.dressed;
+        if (typeof dressTdRow === "function") dressTdRow(live);
       });
       filterRows();
       syncPick();

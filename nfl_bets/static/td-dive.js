@@ -90,7 +90,7 @@ function dressTdRow(button) {
   const short = typeof gameShort === "function" && button.dataset.match ? gameShort(button.dataset.match) : "";
   const best = button.dataset.best === "1";
   const stake = tdStakeShown(tdStakeOf());
-  const sig = `${button.dataset.who || ""}|${button.dataset.odds || ""}|${button.dataset.rec || ""}|${best ? "1" : ""}|${stake}|${(tab && tab.textContent) || ""}|${short}|${button.dataset.match || ""}`;
+  const sig = `v2|${button.dataset.who || ""}|${button.dataset.odds || ""}|${button.dataset.rec || ""}|${best ? "1" : ""}|${stake}|${(tab && tab.textContent) || ""}|${short}|${button.dataset.match || ""}`;
   if (button.dataset.dressed === sig && button.classList.contains("td-row")) return;
   const found = button.textContent.match(TD_ROW);
   if (!found && !button.classList.contains("td-row")) return;
@@ -111,21 +111,13 @@ function dressTdRow(button) {
     best && `<span class="td-best" aria-label="Best">Best</span>`,
     button.dataset.rec === "1" && `<span class="td-rec" aria-label="Recommended">Rec</span>`,
   ].filter(Boolean).join("");
-  const sub = [
-    short && `<span class="td-game">${esc(short)}</span>`,
-    team && !short && `<span class="td-team">${esc(team)}</span>`,
-    kind && `<span class="td-kind">${esc(kind)}</span>`,
-  ].filter(Boolean).join("");
-  button.innerHTML = [
-    `<span class="td-who"><span class="td-name">${esc(name)}</span>${tags}</span>`,
-    sub ? `<span class="td-sub">${sub}</span>` : "",
-    `<span class="td-meta"><span class="td-px">${esc(price)}</span><span class="td-pct">${esc(pct)}</span>${pay || ""}</span>`,
-  ].filter(Boolean).join("");
+  const game = short || (!short && team) || "";
+  button.innerHTML = `<span class="td-line"><span class="td-main"><span class="td-top"><span class="td-name">${esc(name)}</span>${tags ? `<span class="td-tags">${tags}</span>` : ""}</span>${game ? `<span class="td-game">${esc(game)}</span>` : ""}${kind ? `<span class="td-kind">${esc(kind)}</span>` : ""}</span><span class="td-meta"><span class="td-price"><span class="td-px">${esc(price)}</span><span class="td-pct">${esc(pct)}</span></span>${pay || ""}</span></span>`;
   button.classList.add("td-row");
   button.classList.toggle("find-td-rec", button.dataset.rec === "1");
   button.classList.toggle("find-td-best", best);
   button.dataset.dressed = sig;
-  button.title = [name, best && "Best", kind, short || button.dataset.match, price, pct].filter(Boolean).join(" · ");
+  button.removeAttribute("title");
 }
 
 function watchTdRows() {
