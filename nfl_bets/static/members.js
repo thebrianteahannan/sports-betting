@@ -580,6 +580,8 @@ function paintJoinPass() {
     matchRow.hidden = !(b.length > 0 || len);
     matchRow.classList.toggle("ok", match);
   }
+  box.classList.toggle("pass-ok", len && match);
+  if (len && match) box.hidden = true;
 }
 
 document.getElementById("member-form").addEventListener("input", (event) => {
