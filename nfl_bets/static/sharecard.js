@@ -31,11 +31,15 @@ function shareSigned(value) {
 
 function splitLeg(label) {
   const clean = String(label || "").split(" — ")[0].trim();
-  const told = clean.match(/^(.*?)\s+((?:to|race to)\s+.+)$/i);
-  if (told && told[1] && /\d/.test(told[2])) return { name: told[1].trim(), prop: told[2].trim() };
+  const told = clean.match(/^(.*?)\s+((?:any\s*time|anytime)\s+touchdowns?(?:\s+scorer)?|(?:first|last)\s+touchdown(?:\s+scorer)?|to\s+score(?:\s+a)?\s+touchdown|(?:to|race to)\s+.+)$/i);
+  if (told && told[1] && told[2]) return { name: told[1].trim(), prop: shareProp(told[2].trim()) };
   const at = clean.search(/\d/);
   if (at > 1) return { name: clean.slice(0, at).trim(), prop: clean.slice(at).trim() };
   return { name: clean, prop: "" };
+}
+
+function shareProp(prop) {
+  return String(prop || "").replace(/^(?:any\s*time|anytime)\s+touchdowns?(?:\s+scorer)?$/i, "Anytime TD").replace(/^(?:first|last)\s+touchdown(?:\s+scorer)?$/i, (hit) => hit.replace(/\s+scorer$/i, ""));
 }
 
 function shareLabel(leg) {
@@ -253,16 +257,19 @@ function drawBoard(ctx, bet) {
     ctx.lineTo(right, cursor);
     ctx.stroke();
     const parts = splitLeg(leg.label);
+    const name = parts.name.toUpperCase();
+    const prop = parts.prop.toUpperCase();
     ctx.fillStyle = "#ffffff";
-    const nameSize = fitText(ctx, parts.name.toUpperCase(), right - left - 108, 20, SHARE_FONT);
-    ctx.fillText(parts.name.toUpperCase(), left, cursor + 6);
-    let under = cursor + 8 + nameSize;
-    if (parts.prop) {
-      ctx.fillStyle = "#d5deea";
-      const propSize = fitText(ctx, parts.prop.toUpperCase(), right - left - 108, 15, SHARE_TEXT);
+    const nameSize = fitText(ctx, name, right - left - 96, 26, SHARE_FONT);
+    ctx.font = `600 ${nameSize}px ${SHARE_FONT}`;
+    ctx.fillText(name, left, cursor + 8);
+    let under = cursor + 12 + nameSize;
+    if (prop) {
+      ctx.fillStyle = "#f4f7fb";
+      const propSize = fitText(ctx, prop, right - left - 96, 18, SHARE_TEXT);
       ctx.font = `600 ${propSize}px ${SHARE_TEXT}`;
-      ctx.fillText(parts.prop.toUpperCase(), left, under);
-      under += propSize + 3;
+      ctx.fillText(prop, left, under);
+      under += propSize + 4;
     }
     if (leg.form) {
       const note = leg.form.toUpperCase();
@@ -272,8 +279,8 @@ function drawBoard(ctx, bet) {
       ctx.fillText(note, left, under);
     }
     ctx.textAlign = "right";
-    if (leg.odds) { ctx.fillStyle = "#3dff6e"; ctx.font = `600 22px ${SHARE_FONT}`; ctx.fillText(String(leg.odds), right, cursor + 6); }
-    if (leg.pct) { ctx.fillStyle = "#e7c15a"; ctx.font = `600 16px ${SHARE_FONT}`; ctx.fillText(`${leg.pct}%`, right, cursor + (leg.odds ? 30 : 10)); }
+    if (leg.odds) { ctx.fillStyle = "#3dff6e"; ctx.font = `600 24px ${SHARE_FONT}`; ctx.fillText(String(leg.odds), right, cursor + 8); }
+    if (leg.pct) { ctx.fillStyle = "#e7c15a"; ctx.font = `600 18px ${SHARE_FONT}`; ctx.fillText(`${leg.pct}%`, right, cursor + (leg.odds ? 34 : 12)); }
     ctx.textAlign = "left";
     cursor += rowH;
   });
@@ -348,10 +355,12 @@ async function drawShare(bet) {
     if (note) note.textContent = "The share template did not load.";
     return;
   }
+  const sharp = 2;
   const board = document.createElement("canvas");
-  board.width = 959;
-  board.height = 1024;
+  board.width = 959 * sharp;
+  board.height = 1024 * sharp;
   const ctx = board.getContext("2d");
+  ctx.setTransform(sharp, 0, 0, sharp, 0, 0);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   ctx.drawImage(image, 0, 0, 959, 1024);
@@ -360,7 +369,7 @@ async function drawShare(bet) {
   drawFound(ctx, bet);
   shareBits = board;
   shareBet = bet;
-  photo.src = board.toDataURL("image/jpeg", 0.9);
+  photo.src = board.toDataURL("image/jpeg", 0.95);
   photo.hidden = false;
   const copy = document.getElementById("share-card-download");
   if (copy) { copy.hidden = false; copy.textContent = "Copy"; }
