@@ -35,8 +35,9 @@ function dressTdRow(button) {
   const [, name, team, price, pct, pay, rest] = found;
   const tab = button.closest(".find-list") && button.closest(".find-list").querySelector(".find-td-picks button.on");
   const sep = '<span class="td-sep">, </span>';
-  button.innerHTML = [`<span class="td-name">${esc(name)}</span><span class="td-kind" data-kind="${esc(TD_KIND[tab ? tab.textContent : ""] || "")}"></span>`, team && `${sep}<span class="td-team">${esc(team)}</span>`, `${sep}<span class="td-px">${esc(price)}</span>`, `${sep}<span class="td-pct">${esc(pct)}</span>`, pay && `${sep}<span class="td-pay">${esc(pay)}</span>`, '<span class="td-break"></span>', button.dataset.match && `<span class="td-game" data-game="${esc(button.dataset.match)}"></span>`, rest && `<span class="td-line">${esc(rest)}</span>`].filter(Boolean).join("");
+  button.innerHTML = [`<span class="td-name">${esc(name)}</span><span class="td-kind" data-kind="${esc(TD_KIND[tab ? tab.textContent : ""] || "")}"></span>`, button.dataset.rec === "1" && `<span class="td-rec">Recommended</span>`, team && `${sep}<span class="td-team">${esc(team)}</span>`, `${sep}<span class="td-px">${esc(price)}</span>`, `${sep}<span class="td-pct">${esc(pct)}</span>`, pay && `${sep}<span class="td-pay">${esc(pay)}</span>`, '<span class="td-break"></span>', button.dataset.match && `<span class="td-game" data-game="${esc(button.dataset.match)}"></span>`, rest && `<span class="td-line">${esc(rest)}</span>`].filter(Boolean).join("");
   button.classList.add("td-row");
+  if (button.dataset.rec === "1") button.classList.add("find-td-rec");
   button.dataset.dressed = button.textContent;
 }
 

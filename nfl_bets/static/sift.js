@@ -160,25 +160,90 @@ function propKind(text) {
   return hit ? hit[1] : "Other";
 }
 function kindOn(list) { const on = list && list.querySelector(".find-kinds button.on"); return !!(on && on.dataset.kind); }
+function tdRecWho(name, match) {
+  const fold = (text) => typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase();
+  const who = fold(name);
+  if (!who) return false;
+  if (match && match.scriptRec) {
+    if (match.scriptRec.names && match.scriptRec.names.has(who)) return true;
+    for (const key of match.scriptRec.bets || []) {
+      if (fold(key).startsWith(who) && /touchdown/i.test(key)) return true;
+    }
+  }
+  if (typeof scriptRecAll !== "undefined") {
+    for (const key of scriptRecAll.keys()) {
+      if (fold(key).startsWith(who) && /touchdown|anytime/i.test(key)) return true;
+    }
+  }
+  if (typeof homeRecs !== "undefined" && homeRecs && Array.isArray(homeRecs.picks)) {
+    if (homeRecs.picks.some((pick) => fold(pick.who || "") === who || fold(pick.label || "").startsWith(who))) return true;
+  }
+  return false;
+}
+
+function paintTdRec(match) {
+  if (!match) return;
+  match.querySelectorAll(":scope > .find-td .find-td-chip").forEach((chip) => {
+    const on = tdRecWho(chip.dataset.who, match);
+    chip.classList.toggle("find-td-rec", on);
+    let tag = chip.querySelector(".find-td-rec-tag");
+    if (on && !tag) {
+      tag = document.createElement("i");
+      tag.className = "find-td-rec-tag";
+      tag.textContent = "Recommended";
+      const top = chip.querySelector(".find-td-chip-top");
+      if (top) top.append(tag); else chip.prepend(tag);
+    } else if (!on && tag) tag.remove();
+  });
+}
+
 function paintScores(holder, game, people, list, hits) {
   const isTd = (bet) => { const text = `${bet.label || ""} ${bet.market || ""}`.toLowerCase(); return /anytime touchdown scorer|any time touchdown scorer/.test(text) && !/half|quarter|\b1st\b|first|last|either|\b[23]\+/.test(text); }, shot = (price) => price < 0 ? Math.abs(price) / (Math.abs(price) + 100) : 100 / (price + 100), best = new Map();
   (people || []).forEach((person) => { if (!person || person.kind !== "player") return; (person.bets || []).forEach((bet) => { if (bet.match !== game.match || bet.kickoff !== game.kickoff || !isTd(bet)) return; const price = Number(bet.odds); if (!price) return; const chance = shot(price); const had = best.get(person.name); if (!had || chance > had.chance) best.set(person.name, { person, chance, odds: price }); }); });
   const picked = [...best.values()].sort((a, b) => b.chance - a.chance);
   if (!picked.length) return;
-  const box = document.createElement("details"); box.className = "find-score find-td find-team-bets"; box.style.gridColumn = "1 / -1";
+  const box = document.createElement("details"); box.className = "find-score find-td find-team-bets"; box.open = true; box.style.gridColumn = "1 / -1";
   const title = document.createElement("summary"); title.innerHTML = `<b class="find-script-head">Most likely to score a touchdown</b>`;
-  const note = document.createElement("p"); note.className = "find-td-note";
-  const paintNote = (team) => { const lines = new Map(); picked.forEach((row) => { const extra = teamTd(people, row.person.name, game.match, game.kickoff).replace(/^\n/, ""); if (!extra) return; const key = extra.replace(/, \d+% of those passes go to an RB$/, ""); if (!lines.has(key) || /go to an RB/.test(extra)) lines.set(key, extra); }); const text = [...lines.values()].filter((line) => { const nick = line.split(" ")[0]; return !team || String(team).endsWith(nick); }).join("\n"); if (note.textContent !== text) note.textContent = text; };
-  const names = document.createElement("div"); names.className = "find-hits";
+  const note = document.createElement("div"); note.className = "find-td-note";
+  const paintNote = (team) => {
+    const lines = new Map();
+    picked.forEach((row) => {
+      const extra = teamTd(people, row.person.name, game.match, game.kickoff).replace(/^\n/, "");
+      if (!extra) return;
+      const key = extra.replace(/, \d+% of those passes go to an RB$/, "");
+      if (!lines.has(key) || /go to an RB/.test(extra)) lines.set(key, extra);
+    });
+    const rows = [...lines.values()].filter((line) => { const nick = line.split(" ")[0]; return !team || String(team).endsWith(nick); });
+    note.replaceChildren(...rows.map((text) => Object.assign(document.createElement("p"), { textContent: text })));
+  };
+  const names = document.createElement("div"); names.className = "find-td-list";
   paintNote(); loadZone(people, names);
   const match = [...holder.querySelectorAll(".find-match")].pop();
   if (people && people.zoneJob) people.zoneJob.then(() => { if (note.isConnected) paintNote((((match && match.querySelector(".find-side-go.on")) || {}).textContent || "").split(",")[0].trim()); });
-  const link = document.createElement("button"); link.type = "button"; link.className = "find-all-td"; link.textContent = "See every NFL player most likely to score a touchdown";
   const openPlayer = (person, from) => { if (typeof showCardInGame === "function" && showCardInGame(from || names, person)) return; const board = holder.closest(".find-board"); const roster = board && board.querySelector(":scope > .find-roster"); showFind(list, hits, person, roster, people || (board && board.people) || [], false, "Touchdowns"); };
-  picked.forEach((row, index) => { const button = document.createElement("button"); button.type = "button"; button.dataset.who = row.person.name; button.textContent = `${row.person.name}, ${Number(row.odds) > 0 ? `+${row.odds}` : row.odds}, ${Math.round(row.chance * 100)}%${findCash(row.odds) ? `, $5 profits ${findCash(row.odds)}` : ""}`; if (index >= 5) button.hidden = true; button.addEventListener("click", () => openPlayer(row.person, button)); names.append(button); });
-  link.addEventListener("click", () => { const team = (((match && match.querySelector(".find-side-go.on")) || {}).textContent || "").split(",")[0].trim(); openTdPage(list, people, hits, game, team); });
-  if (String(game.sport || "").toUpperCase() === "NFL") names.append(link);
+  picked.forEach((row, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "find-td-chip";
+    button.dataset.who = row.person.name;
+    const price = Number(row.odds) > 0 ? `+${row.odds}` : String(row.odds);
+    const pay = findCash(row.odds);
+    button.innerHTML = `<span class="find-td-chip-top"><b>${esc(row.person.name)}</b></span><span class="find-td-chip-meta"><i class="px">${esc(price)}</i><i class="pct">${Math.round(row.chance * 100)}%</i>${pay ? `<i class="pay">$5 wins $${esc(pay)}</i>` : ""}</span>`;
+    if (index >= 5) button.hidden = true;
+    button.addEventListener("click", () => openPlayer(row.person, button));
+    names.append(button);
+  });
+  const link = document.createElement("button");
+  link.type = "button";
+  link.className = "find-all-td";
+  link.textContent = "See every NFL player most likely to score a touchdown";
+  link.addEventListener("click", () => {
+    const board = holder.closest(".find-board") || (list && list.closest(".find-board"));
+    if (typeof startTdGo === "function") startTdGo(board, people);
+    else openTdPage(list, people || (board && board.people) || [], hits);
+  });
   box.append(title, note, names);
+  if (String(game.sport || "").toUpperCase() === "NFL") box.append(link);
   if (match) {
     const bets = match.querySelector(":scope > .find-bets");
     const four = match.querySelector(":scope > .find-four");
@@ -187,15 +252,30 @@ function paintScores(holder, game, people, list, hits) {
     else if (four) four.after(box);
     else if (script) script.after(box);
     else match.append(box);
+    paintTdRec(match);
   } else holder.append(box);
-  const showChips = () => { const team = (((match && match.querySelector(".find-side-go.on")) || {}).textContent || "").split(",")[0].trim(); paintNote(team); const rows = [...names.querySelectorAll("button:not(.find-all-td)")]; const panel = match && [...match.querySelectorAll(".find-side")].find((node) => !node.hidden); const have = panel && [...panel.querySelectorAll(".find-roster .find-names button, .find-roster .find-names span")].map((node) => (typeof plainName === "function" ? plainName(node.textContent.replace(/, out$/, "")) : "")); const mine = rows.filter((button) => { const who = typeof plainName === "function" ? plainName(button.dataset.who) : button.dataset.who; return !team || !have || !have.length || have.some((name) => name === who || name.startsWith(`${who} `) || who.startsWith(`${name} `)); }); rows.forEach((button) => { button.hidden = true; }); mine.slice(0, 5).forEach((button) => { button.hidden = false; }); };
+  const showChips = () => {
+    const team = (((match && match.querySelector(".find-side-go.on")) || {}).textContent || "").split(",")[0].trim();
+    paintNote(team);
+    const rows = [...names.querySelectorAll(".find-td-chip")];
+    const panel = match && [...match.querySelectorAll(".find-side")].find((node) => !node.hidden);
+    const have = panel && [...panel.querySelectorAll(".find-roster .find-names button, .find-roster .find-names span")].map((node) => (typeof plainName === "function" ? plainName(node.textContent.replace(/, out$/, "")) : ""));
+    const mine = rows.filter((button) => {
+      const who = typeof plainName === "function" ? plainName(button.dataset.who) : button.dataset.who;
+      return !team || !have || !have.length || have.some((name) => name === who || name.startsWith(`${who} `) || who.startsWith(`${name} `));
+    });
+    rows.forEach((button) => { button.hidden = true; });
+    mine.slice(0, 5).forEach((button) => { button.hidden = false; });
+    paintTdRec(match);
+  };
   if (match) { match.addEventListener("click", (event) => { if (event.target.closest(".find-side-go")) showChips(); }); new MutationObserver(() => { if (match.querySelector(".find-side-go.on")) showChips(); }).observe(match, { childList: true, subtree: true }); }
 }
+window.paintTdRec = paintTdRec;
 function openTdPage(list, people, hits, game, team) {
-  const board = list && list.closest(".find-board"); if (!board) return; const span = board.querySelector(".find-span"); if (span) { span.classList.add("find-picked"); const go = span.querySelector(".find-games-go"); if (go) go.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); } const holder = board.querySelector(".find-teams"); if (holder) holder.replaceChildren(); if (hits) hits.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on"); const slateOn = !game && board.querySelector(".find-games.find-on"), slateKeys = slateOn && typeof loadedGames === "function" ? new Set(loadedGames(people, slateOn.dataset.span || "today").map((row) => `${row.match}|${row.kickoff}`)) : null;
+  const board = list && list.closest(".find-board"); if (!board) return; const span = board.querySelector(".find-span"); if (span) { span.classList.add("find-picked"); const go = span.querySelector(".find-games-go"); if (go) go.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); } const holder = board.querySelector(".find-teams"); if (holder) holder.replaceChildren(); if (hits) hits.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on"); list.classList.add("find-td-board"); const slateOn = !game && board.querySelector(".find-games.find-on"), slateKeys = slateOn && typeof loadedGames === "function" ? new Set(loadedGames(people, slateOn.dataset.span || "today").map((row) => `${row.match}|${row.kickoff}`)) : null;
   const skip = /half|quarter|\b1st\b|first|last|either|\b[23]\+|each quarter|each half/, shot = (price) => price < 0 ? Math.abs(price) / (Math.abs(price) + 100) : 100 / (price + 100), kindOf = (bet) => { const text = `${bet.label || ""} ${bet.market || ""}`.toLowerCase().replace(/\btds\b/g, "touchdowns").replace(/\btd\b/g, "touchdown"); const market = String(bet.market || "").toLowerCase(); if (market === "to score 2+ touchdowns") return "2 Anytime TDs"; if (market === "to score 3+ touchdowns") return "3 Anytime TDs"; if (skip.test(text)) return ""; if (/anytime touchdown scorer|any time touchdown scorer/.test(text)) return "Anytime TD"; const one = /1\+/.test(text) || /over 0\.5/.test(text); if (one && /passing touchdowns?/.test(text)) return "Throwing"; return ""; }, books = new Map();
   (people || []).forEach((person) => { if (!person || person.kind !== "player") return; (person.bets || []).forEach((bet) => { if (String(bet.sport || "").toUpperCase() !== "NFL" || (slateKeys && !slateKeys.has(`${bet.match}|${bet.kickoff}`))) return; const kind = kindOf(bet), price = Number(bet.odds); if (!kind || !price) return; const chance = shot(price), here = !!(game && bet.match === game.match && bet.kickoff === game.kickoff), book = books.get(kind) || new Map(); books.set(kind, book); const had = book.get(person.name); if (here) { if (!had || !had.here || chance > had.chance) book.set(person.name, { person, chance, odds: price, match: bet.match, kickoff: bet.kickoff, here: true }); } else if (!had) book.set(person.name, { person, chance, odds: price, match: bet.match, kickoff: bet.kickoff, here: false }); else if (!had.here && chance > had.chance) { had.chance = chance; had.odds = price; had.match = bet.match; had.kickoff = bet.kickoff; } }); });
-  const head = document.createElement("h3"); const picks = document.createElement("div"); picks.className = "find-hits find-td-picks"; const allBox = document.createElement("div"); allBox.className = "find-td-all find-td-page"; let clubs = new Map(); const tagTeams = () => { if (!clubs.size) return; allBox.querySelectorAll("button").forEach((button) => { const who = typeof plainName === "function" ? plainName(button.dataset.who) : ""; const club = clubs.get(who) || ([...clubs].find(([name]) => name.startsWith(`${who} `) || who.startsWith(`${name} `)) || [])[1]; const mine = club ? (!team || (typeof plainName === "function" && plainName(team) === plainName(club))) : (!team && button.dataset.here === "1"); if (club) { const price = Number(button.dataset.odds); const cash = findCash(price); button.textContent = `${button.dataset.who}, ${club.split(/\s+/).pop()}, ${price > 0 ? `+${price}` : price}, ${button.dataset.chance}%${cash ? `, $5 profits ${cash}` : ""}${button.dataset.tds || ""}`; } button.classList.toggle("on", mine); }); }; const paint = (kind) => { head.textContent = kind === "Anytime TD" ? "Most likely to score an anytime touchdown" : kind === "2 Anytime TDs" ? "Most likely to score 2 anytime touchdowns" : kind === "3 Anytime TDs" ? "Most likely to score 3 anytime touchdowns" : "Most likely to throw a touchdown"; allBox.replaceChildren(); const three = books.get("3 Anytime TDs") || new Map(); const rows = [...((books.get(kind) || new Map()).values())].sort((a, b) => b.chance - a.chance); if (!rows.length) { const empty = document.createElement("p"); empty.className = "find-empty"; empty.textContent = `FanDuel has no ${kind.toLowerCase()} touchdown prices up.`; allBox.append(empty); return; } rows.forEach((row) => { const button = document.createElement("button"); button.type = "button"; button.dataset.who = row.person.name; button.dataset.match = row.match || ""; button.dataset.kickoff = row.kickoff || ""; button.dataset.odds = String(row.odds); button.dataset.chance = String(Math.round(row.chance * 100)); if (row.here) button.dataset.here = "1"; button.dataset.tds = teamTd(people, row.person.name, row.match, row.kickoff); button.textContent = `${row.person.name}, ${Number(row.odds) > 0 ? `+${row.odds}` : row.odds}, ${Math.round(row.chance * 100)}%${findCash(row.odds) ? `, $5 profits ${findCash(row.odds)}` : ""}${button.dataset.tds}`; if (row.here && !team) button.classList.add("on"); if (kind === "Anytime TD" && three.has(row.person.name)) button.dataset.three = "1"; button.addEventListener("click", () => { const preset = kind === "Throwing" ? "Passing touchdowns" : "Touchdowns"; showFind(list, hits, row.person, board.querySelector(":scope > .find-roster"), people || board.people || [], false, preset); }); allBox.append(button); }); markTd(allBox); tagTeams(); fillTeam(people, allBox); loadZone(people, allBox); showFew(kind); };
+  const head = document.createElement("h3"); const picks = document.createElement("div"); picks.className = "find-hits find-td-picks"; const allBox = document.createElement("div"); allBox.className = "find-td-all find-td-page"; let clubs = new Map(); const tagTeams = () => { if (!clubs.size) return; allBox.querySelectorAll("button").forEach((button) => { const who = typeof plainName === "function" ? plainName(button.dataset.who) : ""; const club = clubs.get(who) || ([...clubs].find(([name]) => name.startsWith(`${who} `) || who.startsWith(`${name} `)) || [])[1]; const mine = club ? (!team || (typeof plainName === "function" && plainName(team) === plainName(club))) : (!team && button.dataset.here === "1"); if (club) { const price = Number(button.dataset.odds); const cash = findCash(price); button.textContent = `${button.dataset.who}, ${club.split(/\s+/).pop()}, ${price > 0 ? `+${price}` : price}, ${button.dataset.chance}%${cash ? `, $5 profits ${cash}` : ""}${button.dataset.tds || ""}`; } button.classList.toggle("on", mine); }); }; const paint = (kind) => { head.textContent = kind === "Anytime TD" ? "Most likely to score an anytime touchdown" : kind === "2 Anytime TDs" ? "Most likely to score 2 anytime touchdowns" : kind === "3 Anytime TDs" ? "Most likely to score 3 anytime touchdowns" : "Most likely to throw a touchdown"; allBox.replaceChildren(); const three = books.get("3 Anytime TDs") || new Map(); const rows = [...((books.get(kind) || new Map()).values())].sort((a, b) => b.chance - a.chance); if (!rows.length) { const empty = document.createElement("p"); empty.className = "find-empty"; empty.textContent = `FanDuel has no ${kind.toLowerCase()} touchdown prices up.`; allBox.append(empty); return; } rows.forEach((row) => { const button = document.createElement("button"); button.type = "button"; button.dataset.who = row.person.name; button.dataset.match = row.match || ""; button.dataset.kickoff = row.kickoff || ""; button.dataset.odds = String(row.odds); button.dataset.chance = String(Math.round(row.chance * 100)); if (row.here) button.dataset.here = "1"; button.dataset.tds = teamTd(people, row.person.name, row.match, row.kickoff); if (tdRecWho(row.person.name, null)) { button.dataset.rec = "1"; button.classList.add("find-td-rec"); } button.textContent = `${row.person.name}, ${Number(row.odds) > 0 ? `+${row.odds}` : row.odds}, ${Math.round(row.chance * 100)}%${findCash(row.odds) ? `, $5 profits ${findCash(row.odds)}` : ""}${button.dataset.tds}`; if (row.here && !team) button.classList.add("on"); if (kind === "Anytime TD" && three.has(row.person.name)) button.dataset.three = "1"; button.addEventListener("click", () => { const preset = kind === "Throwing" ? "Passing touchdowns" : "Touchdowns"; showFind(list, hits, row.person, board.querySelector(":scope > .find-roster"), people || board.people || [], false, preset); }); allBox.append(button); }); markTd(allBox); tagTeams(); fillTeam(people, allBox); loadZone(people, allBox); showFew(kind); };
   ["Anytime TD", "2 Anytime TDs", "3 Anytime TDs", "Throwing"].forEach((kind) => { const button = document.createElement("button"); button.type = "button"; button.textContent = kind; if (kind === "Anytime TD") button.classList.add("on"); button.addEventListener("click", () => { picks.querySelectorAll("button").forEach((node) => node.classList.toggle("on", node === button)); paint(kind); }); picks.append(button); }); const few = document.createElement("div"); few.className = "find-td-all find-td-page"; let fewKey = ""; const showFew = (kind) => { if (kind !== "Anytime TD") { few.replaceChildren(); fewKey = ""; return; } const rows = [...allBox.querySelectorAll("button")].filter((button) => button.dataset.three === "1").map((button) => ({ name: button.dataset.who, odds: Number(button.dataset.odds), match: button.dataset.match || "" })); const key = rows.map((row) => `${row.name}|${row.odds}`).join(","); if (!rows.length || key === fewKey) return; fewKey = key; few.replaceChildren(); fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "few", rows }) }).then((res) => res.json()).then((data) => { if (!few.isConnected || fewKey !== key || !data || !Array.isArray(data.picks) || !data.picks.length) return; const title = document.createElement("p"); title.className = "find-why few-head"; title.textContent = "What the price is charging for."; few.append(title); data.picks.forEach((pick) => { const live = [...allBox.querySelectorAll("button")].find((node) => node.dataset.who === pick.name); const price = Number((live && live.dataset.odds) || pick.odds), shown = price > 0 ? `+${price}` : String(price), chance = (live && live.dataset.chance) || ""; const card = document.createElement("div"); card.className = "rec-bet open log-on"; const head = document.createElement("b"); head.innerHTML = [`<i class="px">${esc(shown)}</i>`, chance && `<i class="pct">${esc(chance)}%</i>`, typeof findCash === "function" && findCash(price) && `<i class="pay">${esc(`$5 profits ${findCash(price)}`)}</i>`].filter(Boolean).join(""); const gist = document.createElement("p"); gist.className = "rec-gist"; const spot = (live && live.dataset.match) || ""; gist.innerHTML = `<i class="who">${esc(pick.name)}</i> <i class="prop">Anytime touchdown</i>${spot ? `<em>${esc(spot)}</em>` : ""}`; card.addEventListener("click", () => { const again = [...allBox.querySelectorAll("button")].find((node) => node.dataset.who === pick.name); if (again) again.click(); }); card.append(head, gist); if (window.paintDive) paintDive(card, pick); else { const why = document.createElement("p"); why.className = "find-why"; why.textContent = String(pick.summary || pick.line || ""); card.append(why); } few.append(card); }); }).catch(() => {}); }; list.append(head, picks, few, allBox); paint("Anytime TD"); const glass = document.getElementById("desk-glass-in"); if (glass) glass.scrollTop += head.getBoundingClientRect().top - glass.getBoundingClientRect().top - 8; if (!game) return; const sides = (String(game.match || "").includes(" @ ") ? String(game.match).split(" @ ") : String(game.match || "").split(" v ").reverse()).map((side) => side.replace(/\s*\([^)]*\)/g, "").trim()).filter(Boolean); Promise.all(sides.map((name) => fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "roster", name, sport: game.sport || "NFL" }) }).then((res) => res.json()).then((data) => (data.players || []).forEach((row) => { if (typeof plainName === "function") clubs.set(plainName(row && row.name || row), name); })).catch(() => {}))).then(() => { if (allBox.isConnected) tagTeams(); });
 }
 function teamTd(people, name, match, kickoff) { const fold = (text) => typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase(); if (people && !people.tdBook) { const who = new Map(), line = new Map(); (people || []).forEach((person) => { if (!person || person.kind !== "team") return; (person.bets || []).forEach((bet) => { const market = String(bet.market || ""), spot = `${bet.match}|${bet.kickoff}`; if (/td scorer$|to score a td$/i.test(market)) { const player = fold(bet.label); if (player.split(" ").length > 1 && !/defense|special/.test(player)) who.set(`${player}|${spot}`, person.name); } if (/total points$/i.test(market) && /\bover\s+\d/i.test(bet.label)) { const num = Number((String(bet.label).match(/\bover\s+(\d+(?:\.\d+)?)/i) || [])[1]); if (num) line.set(`${fold(person.name)}|${spot}`, num); } }); }); people.tdBook = { who, line }; } const book = people && people.tdBook; if (!book) return ""; const want = fold(name), spot = `${match}|${kickoff}`; let club = book.who.get(`${want}|${spot}`); if (!club) { for (const [key, value] of book.who) { if (!key.endsWith(`|${spot}`)) continue; const player = key.slice(0, key.length - spot.length - 1); if (player.startsWith(`${want} `) || want.startsWith(`${player} `)) { club = value; break; } } } const num = club && book.line.get(`${fold(club)}|${spot}`); if (!club) return ""; const zoneRow = people.zone && people.zone[fold(club)]; const isBack = zoneRow && Array.isArray(people.backs) && people.backs.some((name) => name === want || name.startsWith(`${want} `) || want.startsWith(`${name} `)); const back = isBack && zoneRow.back != null ? `, ${zoneRow.back}% of those passes go to an RB` : ""; const zone = zoneRow ? `, ${zoneRow.plays} red zone plays a game, ${zoneRow.pass}% pass, ${zoneRow.run}% run${back}` : ""; if (!num) return zone; const tds = Math.round((num / 7) * 10) / 10; return `\n${club.split(/\s+/).pop()} projected ${Number.isInteger(tds) ? tds : tds.toFixed(1)} TDs${zone}`; }

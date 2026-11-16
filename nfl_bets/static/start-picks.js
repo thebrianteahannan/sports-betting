@@ -256,6 +256,33 @@ function startFavBox() {
   return box;
 }
 
+function startTdGo(board, people) {
+  if (!board || typeof openTdPage !== "function") return;
+  const list = board.querySelector(".find-list");
+  const hits = board.querySelector(":scope > .find-hits:not(.find-tray)");
+  const span = board.querySelector(":scope > .find-span");
+  const more = board.querySelector(".find-games-go");
+  if (!list) return;
+  startBack = { board, picked: span ? span.classList.contains("find-picked") : false, more: more ? more.hidden : true };
+  if (span) { span.classList.add("find-picked"); span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); }
+  if (more) more.hidden = false;
+  document.querySelectorAll(".find-start").forEach((node) => node.remove());
+  openTdPage(list, people || board.people || [], hits);
+}
+window.startTdGo = startTdGo;
+
+function startTdButton(board) {
+  const games = leftGames();
+  const league = typeof homeLeagueOn === "function" ? homeLeagueOn(games) : "";
+  if (league && league !== "NFL") return null;
+  const hasNfl = games.some((game) => String(game.sport || "") === "NFL") || ((homeRecs && homeRecs.picks) || []).some((pick) => (typeof homePickSport === "function" ? homePickSport(pick) : pick.sport) === "NFL");
+  if (!hasNfl || typeof openTdPage !== "function") return null;
+  const go = Object.assign(document.createElement("button"), { type: "button", className: "find-start-td", textContent: "Anytime TDs" });
+  go.title = "See who is most likely to score a touchdown";
+  go.addEventListener("click", () => startTdGo(board));
+  return go;
+}
+
 function startRecs(board, box) {
   const now = Date.now(), left = homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now), picks = [], all = [];
   const recs = homeRecRows(left, box).filter((node) => { if (node.startPick) all.push(node.startPick); return !node.startPick || (startKindOk(node.startPick) && (!startFavOnly || startFavGame(node.startPick.match))); }).map((node) => {
@@ -351,7 +378,8 @@ function startPaint(again) {
   const row = document.createElement("div");
   row.className = "find-start-row";
   const leagues = typeof homeLeagues === "function" ? homeLeagues(box, leftGames()) : [];
-  row.append(tabs, ...leagues, ...(startTab === "rec" ? [startRandomBar(board, picks)] : []), ...(((window.memberTeams || []).length || startFavOnly) ? [startFavBox()] : []));
+  const td = startTab === "rec" ? startTdButton(board) : null;
+  row.append(tabs, ...leagues, ...(startTab === "rec" ? [startRandomBar(board, picks)] : []), ...(((window.memberTeams || []).length || startFavOnly) ? [startFavBox()] : []), ...(td ? [td] : []));
   box.append(row, ...(startTab === "rec" ? [...(all.length ? [startKindBar(all)] : []), ...recs] : startTab === "stacks" ? startStacks() : games));
   box.hidden = Boolean(input && input.value.trim());
   spot.after(box);

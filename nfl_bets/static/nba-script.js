@@ -84,6 +84,7 @@ function scriptRecMark(match, bets) {
   };
   match.querySelectorAll(".find-everyone .find-chip").forEach((chip) => { const name = fold(chip.firstElementChild ? chip.firstElementChild.textContent.replace(/, out$/, "") : ""); mark(chip, rec.names.has(name), (info) => String(info.who || "").split("|").some((who) => fold(who) === name)); });
   match.querySelectorAll(".find-line-chip").forEach((chip) => { const key = `${chip.dataset.label}|${chip.dataset.market}`; mark(chip, rec.bets.has(key), (info) => String(info.legs || "").split("||").includes(key)); });
+  if (typeof paintTdRec === "function") paintTdRec(match);
   const board = match.closest(".find-board"), head = board && board.querySelector(".find-list > .find-profile > h3");
   if (!head) return;
   const name = fold(((head.firstChild && head.firstChild.textContent) || "").split(",")[0]), on = rec.names.has(name);
