@@ -26,6 +26,7 @@
 .rec-board .find-four { margin: 0.35rem 0 0.7rem; padding: 0.75rem 0.85rem 0.8rem; border: 1px solid rgba(61, 255, 110, 0.45); border-radius: 12px; background: rgba(4, 16, 24, 0.72); }
 .rec-board .find-four > .find-script-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.55rem; margin: 0 0 0.2rem; color: #3dff6e; font-size: 13px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
 .rec-board .find-four .find-four-tag { display: inline-flex; align-items: center; padding: 0.12rem 0.45rem; border-radius: 999px; background: #e7c15a; color: #07090e; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
+.rec-board .find-four .find-four-tag-gen { background: #9fb3c8; color: #071018; }
 .rec-board .find-four .find-four-shape { margin: 0 0 0.45rem; color: #9fb3c8; font-size: 13px; font-weight: 700; }
 .rec-board .find-four .find-four-price { margin: 0 0 0.25rem; color: #3dff6e; font-size: 16px; font-weight: 800; }
 .rec-board .find-four .find-four-why { margin: 0 0 0.55rem; color: #d5dde6; font-size: 14px; line-height: 1.4; }
@@ -436,10 +437,10 @@
 .rec-board .find-script .find-script-ticket button.find-script-add, #desk.tv-full #desk-glass .rec-board .find-script .find-script-ticket button.find-script-add { position: absolute; top: 0.5rem; right: 0.6rem; margin: 0; padding: 0.25rem 0.65rem; font-size: 12px; line-height: 1.2; }
 .rec-board .find-script .find-script-ticket button.find-script-add.on { background: transparent; color: #3dff6e; border: 1px solid #3dff6e; }
 .rec-board .find-script > summary { display: block; cursor: pointer; list-style: none; }
-.rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief) { display: block; margin: 0.2rem 0 0.6rem; padding: 0.7rem 0.85rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: rgba(4, 16, 24, 0.55); }
-.rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief) > summary { display: block; margin: 0; list-style: none; }
-.rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief) > summary::-webkit-details-marker { display: none; }
-.rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief)[open] > summary { margin-bottom: 0.45rem; }
+.rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief, .find-td) { display: block; margin: 0.2rem 0 0.6rem; padding: 0.7rem 0.85rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: rgba(4, 16, 24, 0.55); }
+.rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief, .find-td) > summary { display: block; margin: 0; list-style: none; }
+.rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief, .find-td) > summary::-webkit-details-marker { display: none; }
+.rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief, .find-td)[open] > summary { margin-bottom: 0.45rem; }
 .find-match .find-card-inline { grid-column: 1 / -1; width: 100%; max-width: 100%; margin: 0.45rem 0 0.35rem; padding: 0.7rem 0.85rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: rgba(4, 16, 24, 0.72); box-sizing: border-box; overflow: hidden; }
 .find-match .find-card-inline > .find-card-who { display: block; margin: 0 0 0.35rem; color: #f4f7fb; font-size: 15px; font-weight: 800; }
 .find-match .find-card-inline .find-card { margin: 0; max-width: 100%; overflow: hidden; }

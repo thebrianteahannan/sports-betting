@@ -5,7 +5,7 @@ const { count, findPack, teamCount } = require("./stack-read");
 
 const STATS = { "Alt Passing Yds": "Passing yards", "Alt Receiving Yds": "Receiving yards", "Alt Receptions": "Receptions", "Alt Rushing Yds": "Rushing yards" };
 const JOBS = {
-  "Passing yards": "The throws his receiver needs.",
+  "Passing yards": "A safe bar on his throws — lower than he usually clears.",
   "Receiving yards": "Catches on those throws.",
   Receptions: "The catches those throws find.",
   "Rushing yards": "The yards on the ground.",
@@ -24,7 +24,7 @@ const JOBS = {
   "The under": "The game stays under that number.",
   "The win": "The side that wins the game.",
 };
-const FLOOR = { "Passing yards": 150, "Receiving yards": 20, Receptions: 3, "Rushing yards": 20 };
+const FLOOR = { "Passing yards": 125, "Receiving yards": 20, Receptions: 3, "Rushing yards": 20 };
 const SHARE = 0.8;
 const ATD = "Any Time Touchdown Scorer";
 const OPEN = new Set(["NFL", "NBA", "WNBA", "NHL", "MLB"]);
@@ -259,7 +259,7 @@ function readPackedPlayer(leg, sport) {
   const odds = Number(leg.odds);
   if (!Number.isFinite(odds) || /period|quarter|half|minute|first basket|method|correct score|parlay|team total|alt total pts|alt total goals/i.test(market)) return null;
   if (sport === "NFL" && market === ATD) {
-    if (!runner || odds > 200 || odds < -250) return null;
+    if (!runner || odds > 400 || odds < -250) return null;
     const label = `${runner} anytime touchdown`;
     return { who: runner, rung: "Anytime touchdown", bar: 1, label, odds, juice: true, leg: { ...leg, label } };
   }
@@ -288,6 +288,34 @@ function readPackedPlayer(leg, sport) {
 function softTeamRead(who, verb, odds) {
   const p = implied(odds);
   return { who, verb, hits: Math.round(p * 10), games: 10, soft: true };
+}
+
+function foldWho(name) {
+  return String(name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z\s]/g, "").replace(/\s+/g, " ").trim();
+}
+
+function packedClubs(game, legs) {
+  const map = new Map();
+  const sides = [
+    { team: String(game.awayName || ""), nick: String(game.awayNick || "").toLowerCase() },
+    { team: String(game.homeName || ""), nick: String(game.homeNick || "").toLowerCase() },
+  ].filter((row) => row.team);
+  sides.forEach((row) => {
+    if (!row.nick) row.nick = row.team.toLowerCase().split(/\s+/).pop();
+  });
+  legs.forEach((leg) => {
+    const hit = /^1st\s+(.+?)\s+TD Scorer$/i.exec(String(leg.market || ""));
+    if (!hit) return;
+    const side = hit[1].toLowerCase();
+    const team = sides.find((row) => {
+      const full = row.team.toLowerCase();
+      return side === full || side.endsWith(` ${row.nick}`) || side.endsWith(row.nick) || full.includes(side);
+    });
+    if (!team) return;
+    const who = foldWho(leg.runner);
+    if (who && !/defense/.test(who)) map.set(who, team.team);
+  });
+  return map;
 }
 
 function packedTeamBets(game, legs, logs, sport, share, floor) {
@@ -371,18 +399,19 @@ function packed(games, loaded, logs, { share = SHARE, floor = 0.85 } = {}) {
     const last = byLast(cache, sport);
     rows.forEach(([game, legs]) => {
       const match = String(game.match || "");
+      const clubs = packedClubs(game, legs);
       const players = new Map();
       legs.forEach((leg) => {
         const row = readPackedPlayer(leg, sport);
         if (!row) return;
         const odds = row.odds;
-        if (!((odds >= -500 && odds <= -150) || (odds >= -2500 && implied(odds) >= floor) || (row.juice && odds >= -250 && odds <= 300))) return;
+        if (!((odds >= -500 && odds <= -150) || (odds >= -2500 && implied(odds) >= floor) || (row.juice && odds >= -250 && odds <= 400))) return;
         let read = count(row.label, sport, cache, last);
         if (!read && !row.juice && implied(odds) >= floor) {
           const p = implied(odds);
           read = { who: row.who, verb: "priced short", hits: Math.round(p * 10), games: 10, soft: true };
         }
-        if (!read && row.juice && odds >= -140 && odds <= 250) {
+        if (!read && row.juice && odds >= -140 && odds <= 400) {
           const p = implied(odds);
           read = { who: row.who, verb: "priced as juice", hits: Math.max(1, Math.round(p * 10)), games: 10, soft: true };
         }
@@ -391,52 +420,106 @@ function packed(games, loaded, logs, { share = SHARE, floor = 0.85 } = {}) {
         if (read.soft && row.juice && odds > -150 && odds < 100 && read.hits < share * read.games) return;
         if (!row.juice && implied(odds) < floor && odds > -500 && !read.soft) return;
         if (row.juice && !read.soft && rate(read) <= implied(odds)) return;
+        const club = clubs.get(foldWho(row.who)) || "";
         const key = `${row.rung}\u0000${row.who}`;
         const prev = players.get(key);
-        if (!prev || (prev.read.soft && !read.soft) || ((!!prev.read.soft === !!read.soft) && odds > prev.odds)) players.set(key, { ...row, read });
+        const next = { ...row, read, club };
+        if (!prev || (prev.read.soft && !read.soft)) players.set(key, next);
+        else if (!!prev.read.soft === !!read.soft) {
+          if (sport === "NFL" && row.rung === "Passing yards") {
+            if (row.bar < prev.bar || (row.bar === prev.bar && odds < prev.odds)) players.set(key, next);
+          } else if (odds > prev.odds) players.set(key, next);
+        }
       });
-      const teamBets = packedTeamBets(game, legs, logs, sport, share, floor).slice(0, 4);
+      const teamBets = packedTeamBets(game, legs, logs, sport, share, floor).slice(0, 6);
       if (!teamBets.length) return;
       const pool = [...players.values()];
       const hold = Math.min(floor, 0.65);
-      const anchors = pool.filter((row) => !row.juice && (implied(row.odds) >= floor || (row.read.soft && implied(row.odds) >= hold))).sort((a, b) => (rate(b.read) - implied(b.odds)) - (rate(a.read) - implied(a.odds))).slice(0, 10);
+      const anchors = pool.filter((row) => !row.juice && (implied(row.odds) >= floor || (row.read.soft && implied(row.odds) >= hold))).sort((a, b) => (rate(b.read) - implied(b.odds)) - (rate(a.read) - implied(a.odds))).slice(0, 16);
       const juices = pool.filter((row) => row.juice || (implied(row.odds) < floor && row.odds <= 300 && rate(row.read) > implied(row.odds)))
-        .sort((a, b) => (rate(b.read) - implied(b.odds)) - (rate(a.read) - implied(a.odds))).slice(0, 8);
+        .sort((a, b) => (rate(b.read) - implied(b.odds)) - (rate(a.read) - implied(a.odds))).slice(0, 12);
       if (anchors.length < 2 || !juices.length) return;
+      const passAnchors = sport === "NFL" ? anchors.filter((row) => row.rung === "Passing yards") : [];
+      const pairs = [];
+      if (passAnchors.length) {
+        passAnchors.forEach((pass) => anchors.forEach((other) => {
+          if (other === pass || (other.who === pass.who && other.rung === pass.rung)) return;
+          if (pass.club && other.club && pass.club !== other.club) return;
+          pairs.push([pass, other]);
+        }));
+      }
       for (let i = 0; i < anchors.length; i += 1) {
         for (let j = i + 1; j < anchors.length; j += 1) {
-          const a = anchors[i], b = anchors[j];
-          if (a.who === b.who && a.rung === b.rung) continue;
-          juices.forEach((juice) => {
-            if ((juice.who === a.who && juice.rung === a.rung) || (juice.who === b.who && juice.rung === b.rung)) return;
-            teamBets.forEach((teamBet) => {
-              const rows = [
-                [a.rung, a.leg, a.read, a.who],
-                [b.rung, b.leg, b.read, b.who],
-                teamBet,
-                [juice.rung, juice.leg, juice.read, juice.who],
-              ];
-              if (rows.filter((row) => implied(row[1].odds) >= hold || row[2].soft).length < 3) return;
-              const names = new Set([a.who, b.who, juice.who].filter(Boolean));
-              const juiceIn = names.has(juice.who) && (juice.who === a.who || juice.who === b.who);
-              const edge = rows.reduce((sum, row) => sum + rate(row[2]) - implied(row[1].odds), 0);
-              const bets = rows.map(([rung, leg]) => ({ kind: "Same-game parlay", rung, label: String(leg.label || ""), odds: leg.odds, stake: 5, job: JOBS[rung] || "Holds the bet up.", game: match }));
-              picked.push([names.size - (juiceIn ? 0.5 : 0), -edge, { game: match, bets, kickoff: game.kickoff || "", sport }]);
-            });
-          });
+          if (anchors[i].club && anchors[j].club && anchors[i].club !== anchors[j].club) continue;
+          pairs.push([anchors[i], anchors[j]]);
         }
       }
+      const usedPair = new Set();
+      pairs.forEach(([a, b]) => {
+        const pairKey = [[a.who, a.rung, a.bar].join("~"), [b.who, b.rung, b.bar].join("~")].sort().join("|");
+        if (usedPair.has(pairKey)) return;
+        usedPair.add(pairKey);
+        if (a.who === b.who && a.rung === b.rung) return;
+        const club = a.club || b.club || "";
+        juices.forEach((juice) => {
+          if ((juice.who === a.who && juice.rung === a.rung) || (juice.who === b.who && juice.rung === b.rung)) return;
+          if (club && juice.club && juice.club !== club) return;
+          if (!club && a.club && b.club && a.club !== b.club) return;
+          teamBets.forEach((teamBet) => {
+            const teamLabel = String(teamBet[1].label || "");
+            if (/^(The spread|The win)$/i.test(String(teamBet[0] || "")) && club) {
+              const nick = club.split(/\s+/).pop();
+              if (!teamLabel.includes(club) && !(nick && teamLabel.includes(nick))) return;
+            }
+            const rows = [
+              [a.rung, a.leg, a.read, a.who],
+              [b.rung, b.leg, b.read, b.who],
+              teamBet,
+              [juice.rung, juice.leg, juice.read, juice.who],
+            ];
+            if (rows.filter((row) => implied(row[1].odds) >= hold || row[2].soft).length < 3) return;
+            const names = new Set([a.who, b.who, juice.who].filter(Boolean));
+            const juiceIn = names.has(juice.who) && (juice.who === a.who || juice.who === b.who);
+            const hasPass = a.rung === "Passing yards" || b.rung === "Passing yards";
+            const edge = rows.reduce((sum, row) => sum + rate(row[2]) - implied(row[1].odds), 0);
+            const bets = rows.map(([rung, leg]) => ({ kind: "Same-game parlay", rung, label: String(leg.label || ""), odds: leg.odds, stake: 5, job: JOBS[rung] || "Holds the bet up.", game: match }));
+            picked.push([hasPass ? 0 : 1, names.size - (juiceIn ? 0.5 : 0), -edge, { game: match, bets, kickoff: game.kickoff || "", sport, club: club || juice.club || "" }]);
+          });
+        });
+      });
     });
   });
-  const ranked = picked.sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((item) => item[2]);
-  const kept = [];
-  const seen = new Map();
+  const ranked = picked.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]).map((item) => item[3]);
+  const sigOf = (stack) => (stack.bets || []).map((bet) => `${bet.label}|${bet.odds}`).sort().join("~");
+  const byGame = new Map();
   ranked.forEach((stack) => {
-    const key = String(stack.game || "");
-    const n = seen.get(key) || 0;
-    if (n >= 8) return;
-    seen.set(key, n + 1);
-    kept.push(stack);
+    const game = String(stack.game || "");
+    const club = String(stack.club || "");
+    if (!byGame.has(game)) byGame.set(game, new Map());
+    const byClub = byGame.get(game);
+    if (!byClub.has(club)) byClub.set(club, { qb: [], rest: [] });
+    const bucket = byClub.get(club);
+    const hasPass = (stack.bets || []).some((bet) => bet.rung === "Passing yards");
+    (hasPass ? bucket.qb : bucket.rest).push(stack);
+  });
+  const kept = [];
+  byGame.forEach((byClub) => {
+    byClub.forEach(({ qb, rest }) => {
+      const out = [], used = new Set();
+      const add = (list) => {
+        list.forEach((stack) => {
+          if (out.length >= 8) return;
+          const sig = sigOf(stack);
+          if (used.has(sig)) return;
+          used.add(sig);
+          out.push(stack);
+        });
+      };
+      add(qb.slice(0, 5));
+      add(rest);
+      add(qb);
+      kept.push(...out);
+    });
   });
   return kept;
 }

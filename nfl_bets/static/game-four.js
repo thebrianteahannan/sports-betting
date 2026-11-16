@@ -1,4 +1,4 @@
-/** Recommended 4-leg Anchors and juice on each game page. Best first; regenerate cycles the rest. */
+/** Recommended / generated 4-leg Anchors and juice on each game page. Best first; regenerate cycles the rest. */
 
 function gameFourSig(stack) {
   return (stack.bets || []).map((bet) => `${bet.label}|${bet.odds}`).sort().join("~");
@@ -45,9 +45,73 @@ function gameFourJuiceKey(stack) {
   return `${best.label}|${best.odds}`;
 }
 
-function gameFourFill(box, stacks, at) {
+function gameFourFold(text) {
+  const raw = String(text || "").replace(/, out$/i, "");
+  return typeof plainName === "function" ? plainName(raw) : raw.toLowerCase().replace(/[^a-z\s]/g, "").replace(/\s+/g, " ").trim();
+}
+
+function gameFourSelected(match) {
+  const on = match.querySelector(":scope > .find-side-go.on");
+  if (!on) return null;
+  const team = on.textContent.replace(/, \d+ bets?.*$/i, "").trim();
+  const nick = typeof whereNick === "function" ? whereNick(on.textContent) : team.split(/\s+/).pop();
+  const sides = [...match.querySelectorAll(":scope > .find-side-go")];
+  const at = sides.indexOf(on);
+  const names = new Set();
+  const take = (root) => {
+    if (!root) return;
+    root.querySelectorAll(".find-roster .find-names button, .find-roster .find-names span").forEach((node) => {
+      const name = gameFourFold(node.textContent);
+      if (name) names.add(name);
+    });
+  };
+  take([...match.querySelectorAll(":scope > .find-body > .find-side")][at]);
+  const everyone = match.querySelector(":scope > .find-everyone .find-sides");
+  if (everyone) take([...everyone.querySelectorAll(":scope > .find-roster")][at]);
+  return { team, nick, names };
+}
+
+function gameFourForTeam(stack, side) {
+  if (!side) return true;
+  const club = String(stack.club || "");
+  if (club) {
+    const team = side.team.toLowerCase();
+    const nick = String(side.nick || side.team.split(/\s+/).pop() || "").toLowerCase();
+    const mine = club.toLowerCase();
+    return mine === team || Boolean(nick && (mine.endsWith(` ${nick}`) || mine.endsWith(nick)));
+  }
+  const team = side.team.toLowerCase();
+  const nick = String(side.nick || side.team.split(/\s+/).pop() || "").toLowerCase();
+  const players = (stack.bets || []).filter((bet) => !gameFourTeam(bet));
+  if (!players.length) return false;
+  if (side.names && side.names.size) {
+    const hit = (label) => {
+      const fold = gameFourFold(label);
+      const raw = String(label || "").toLowerCase();
+      return [...side.names].some((name) => fold.startsWith(name) || raw.startsWith(name));
+    };
+    if (!players.every((bet) => hit(bet.label))) return false;
+  }
+  const teamBet = (stack.bets || []).find(gameFourTeam);
+  if (teamBet && /^(The spread|The win)$/i.test(String(teamBet.rung || ""))) {
+    const label = String(teamBet.label || "").toLowerCase();
+    if (!(label.includes(team) || (nick && label.includes(nick)))) return false;
+  }
+  return true;
+}
+
+function gameFourHead(box, recommended) {
+  const head = box.querySelector(".find-script-head");
+  if (!head) return;
+  const word = recommended ? "Recommended" : "Generated";
+  head.innerHTML = `${word} 4-leg parlay <i class="find-four-tag${recommended ? "" : " find-four-tag-gen"}">${word}</i>`;
+}
+
+function gameFourFill(box, stacks, at, recCount) {
   const stack = stacks[at];
   if (!stack) return;
+  const recommended = at < recCount;
+  gameFourHead(box, recommended);
   const price = gameFourOdds(stack);
   const juiceKey = gameFourJuiceKey(stack);
   const body = box.querySelector(".find-four-body") || document.createElement("div");
@@ -71,7 +135,7 @@ function gameFourFill(box, stacks, at) {
   const again = Object.assign(document.createElement("button"), { type: "button", className: "find-four-again", textContent: stacks.length > 1 ? `Regenerate (${at + 1} of ${stacks.length})` : "Regenerate" });
   again.disabled = stacks.length < 2;
   again.title = stacks.length < 2 ? "Only one Anchors and juice ticket fits this game right now" : "Show another 4-leg from this template";
-  again.addEventListener("click", () => gameFourFill(box, stacks, (at + 1) % stacks.length));
+  again.addEventListener("click", () => gameFourFill(box, stacks, (at + 1) % stacks.length, recCount));
   const build = Object.assign(document.createElement("button"), { type: "button", className: "find-four-build", textContent: "Add to My Bets" });
   build.addEventListener("click", () => {
     if (typeof stackBuild === "function") stackBuild(stack, 0, "Anchors and juice");
@@ -81,17 +145,47 @@ function gameFourFill(box, stacks, at) {
   if (!acts.isConnected) box.append(acts);
   box.dataset.sig = gameFourSig(stack);
   box.dataset.at = String(at);
+  box.dataset.grade = recommended ? "recommended" : "generated";
 }
 
-function gameFourMount(match, betsNode, stacksNode) {
+function gameFourMount(match, betsNode, stacksNode, recommended = true) {
   const box = document.createElement("div");
   box.className = "find-four find-team-bets";
   box.style.gridColumn = "1 / -1";
-  box.innerHTML = `<p class="find-script-head">Recommended 4-leg parlay <i class="find-four-tag">Recommended</i></p><p class="find-four-shape">Anchors and juice · 3 players + 1 game bet</p>`;
+  const word = recommended ? "Recommended" : "Generated";
+  box.innerHTML = `<p class="find-script-head">${word} 4-leg parlay <i class="find-four-tag${recommended ? "" : " find-four-tag-gen"}">${word}</i></p><p class="find-four-shape">Anchors and juice · 3 players + 1 game bet</p>`;
   if (betsNode) betsNode.before(box);
   else if (stacksNode) stacksNode.before(box);
   else match.append(box);
   return box;
+}
+
+function gameFourShow(match, game, found, near) {
+  if (!match || !match.isConnected) return;
+  const side = gameFourSelected(match);
+  const uniq = (rows) => {
+    const seen = new Set();
+    return rows.filter((row) => {
+      const sig = gameFourSig(row);
+      if (!sig || seen.has(sig) || !gameFourFits(row) || !gameFourForTeam(row, side)) return false;
+      seen.add(sig);
+      return true;
+    });
+  };
+  const rec = uniq(found);
+  const gen = uniq(near).filter((row) => !rec.some((hit) => gameFourSig(hit) === gameFourSig(row)));
+  const list = [...rec, ...gen];
+  match.querySelectorAll(":scope > .find-four").forEach((node) => node.remove());
+  const betsNode = match.querySelector(":scope > .find-bets");
+  const stacksNode = match.querySelector(":scope > .find-stacks");
+  if (!list.length) {
+    const empty = gameFourMount(match, betsNode, stacksNode, false);
+    const who = side ? side.nick || side.team : "this game";
+    empty.append(Object.assign(document.createElement("p"), { className: "quiet", textContent: side ? `No Anchors and juice ticket fits the ${who} right now.` : "No Anchors and juice ticket fits this game right now." }));
+    return;
+  }
+  const box = gameFourMount(match, betsNode, stacksNode, rec.length > 0);
+  gameFourFill(box, list, 0, rec.length);
 }
 
 function paintGameFour(holder, game) {
@@ -99,32 +193,27 @@ function paintGameFour(holder, game) {
   const match = holder.classList.contains("find-match") ? holder : [...holder.querySelectorAll(".find-match")].pop();
   if (!match || typeof gameStackData !== "function") return;
   match.querySelectorAll(":scope > .find-four").forEach((node) => node.remove());
-  const stacksNode = match.querySelector(":scope > .find-stacks");
-  const betsNode = match.querySelector(":scope > .find-bets");
   gameStackData().then((data) => {
     if (!match.isConnected) return;
     const fits = (row) => row.game === game.match || (row.bets || []).some((bet) => bet.game === game.match);
     const found = (((data && data.found) || {})["Anchors and juice"] || []).filter(fits);
     const near = (((data && data.near) || {})["Anchors and juice"] || []).filter(fits);
-    const seen = new Set();
-    const list = [...found, ...near].filter((row) => {
-      const sig = gameFourSig(row);
-      if (!sig || seen.has(sig) || !gameFourFits(row)) return false;
-      seen.add(sig);
-      return true;
-    });
-    match.querySelectorAll(":scope > .find-four").forEach((node) => node.remove());
-    if (!list.length) {
-      const empty = gameFourMount(match, match.querySelector(":scope > .find-bets"), match.querySelector(":scope > .find-stacks"));
-      empty.append(Object.assign(document.createElement("p"), { className: "quiet", textContent: "No Anchors and juice ticket fits this game right now." }));
-      return;
+    match._gameFour = { game, found, near };
+    gameFourShow(match, game, found, near);
+    if (!match.dataset.fourBound) {
+      match.dataset.fourBound = "1";
+      match.addEventListener("click", (event) => {
+        if (!event.target.closest(".find-side-go") || event.target.closest(".find-side-go").parentElement !== match) return;
+        const job = match._gameFour;
+        if (!job) return;
+        setTimeout(() => gameFourShow(match, job.game, job.found, job.near), 0);
+        setTimeout(() => gameFourShow(match, job.game, job.found, job.near), 400);
+      });
     }
-    const box = gameFourMount(match, match.querySelector(":scope > .find-bets"), match.querySelector(":scope > .find-stacks"));
-    gameFourFill(box, list, 0);
   }).catch(() => {
     if (!match.isConnected) return;
     match.querySelectorAll(":scope > .find-four").forEach((node) => node.remove());
-    const box = gameFourMount(match, match.querySelector(":scope > .find-bets"), match.querySelector(":scope > .find-stacks"));
+    const box = gameFourMount(match, match.querySelector(":scope > .find-bets"), match.querySelector(":scope > .find-stacks"), false);
     box.append(Object.assign(document.createElement("p"), { className: "quiet", textContent: "Could not load Anchors and juice." }));
   });
 }

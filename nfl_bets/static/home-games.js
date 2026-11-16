@@ -112,12 +112,15 @@ let homeGamesTab = "rec", homeRecs = null;
 function homeRecsLoad() {
   if (homeRecs && (homeRecs.loading || Date.now() - homeRecs.at < 10 * 60 * 1000)) return;
   const guest = document.body.classList.contains("needs-member");
-  homeRecs = { loading: true, at: Date.now(), picks: (homeRecs && homeRecs.picks) || [] };
+  homeRecs = { loading: true, at: Date.now(), picks: (homeRecs && homeRecs.picks) || [], guest };
   fetch(guest ? "/api/sample" : "/api/top-picks", { credentials: "same-origin", cache: "no-store" }).then((reply) => (reply.ok ? reply.json() : { picks: [] })).then((data) => {
+    const stillGuest = document.body.classList.contains("needs-member");
+    if (stillGuest !== guest) { homeRecs = null; homeRecsLoad(); return; }
     const sample = (data && data.picks && data.picks.length) ? data.picks : (data && data.pick ? [data.pick] : []);
-    homeRecs = guest ? { at: Date.now(), span: (data && data.span) || "today", picks: sample, more: Number(data && data.more) || 0 } : { at: Date.now(), span: (data && data.span) || "today", picks: (data && data.picks) || [] };
+    homeRecs = stillGuest ? { at: Date.now(), span: (data && data.span) || "today", picks: sample, more: Number(data && data.more) || 0, guest: true } : { at: Date.now(), span: (data && data.span) || "today", picks: (data && data.picks) || [], guest: false };
     homeGamesPaint();
-  }).catch((error) => { console.log("[home-games] could not load top picks", error); homeRecs = { at: Date.now(), picks: [] }; homeGamesPaint(); });
+    if (typeof startPaint === "function" && document.querySelector("#desk-glass-in .find-start")) startPaint(1);
+  }).catch((error) => { console.log("[home-games] could not load top picks", error); homeRecs = { at: Date.now(), picks: [], guest: document.body.classList.contains("needs-member") }; homeGamesPaint(); });
 }
 
 function homeRecRow(pick, index) {
@@ -215,13 +218,14 @@ function homeRecRows(games, box) {
   if (!homeRecs.picks.length) return note("No picks are posted yet.");
   const league = homeLeagueOn(games), span = homeRecs.span || "today", rows = homeRecs.picks.map((pick, index) => [pick, index]).filter(([pick]) => !league || homePickSport(pick) === league).slice(0, 11);
   const head = span === "today" ? [] : [Object.assign(document.createElement("p"), { className: "desk-games-note desk-games-label", textContent: span === "tomorrow" ? "Tomorrow" : "Coming up" })];
-  const more = homeRecs.more > 0 ? [homeMoreNote()] : [];
+  const more = document.body.classList.contains("needs-member") && homeRecs.more > 0 ? [homeMoreNote()] : [];
   if (rows.length) return [...head, ...rows.map(([pick, index]) => homeRecRow(pick, index)), ...more];
   const when = span === "today" ? "tonight" : span === "tomorrow" ? "tomorrow" : "coming up";
   return [...(league ? [homeLeagueClearNote(box, `No ${league} picks ${when}.`)] : note(`No picks ${when}.`)), ...more];
 }
 
 function homeMoreNote() {
+  if (!document.body.classList.contains("needs-member")) return Object.assign(document.createElement("p"), { className: "desk-games-note", hidden: true });
   const line = document.createElement("p");
   line.className = "desk-games-note";
   const link = (label, mode) => {

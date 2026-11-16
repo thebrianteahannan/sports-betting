@@ -203,7 +203,7 @@ function priceMiss(stack) {
 async function closeCalls(games, loaded, logs, found) {
   const loose = (options) => build(games, loaded, logs, { ...options, share: 0.6 });
   const hits = {
-    "Anchors and juice": packed(games, loaded, logs, { share: 0.6, floor: 0.8 }),
+    "Anchors and juice": packed(games, loaded, logs, { share: 0.5, floor: 0.55 }),
     "Same-game yardage parlay": loose({}),
     "Yardage and the spread": loose({ end: "spread" }),
     "Yardage parlay, 85% legs": loose({ floor: 0.85 }),
@@ -238,6 +238,26 @@ async function closeCalls(games, loaded, logs, found) {
   Object.entries({ ...shapes, ...hits, ...prices }).forEach(([name, stacks]) => {
     const taken = new Set((found[name] || []).map(key));
     const seen = new Set();
+    if (name === "Anchors and juice") {
+      const byGame = new Map();
+      const keep = [];
+      stacks.forEach((stack) => {
+        const sig = key(stack);
+        if (taken.has(sig) || seen.has(sig)) return;
+        seen.add(sig);
+        const game = String(stack.game || "");
+        const n = byGame.get(game) || 0;
+        if (n >= 8) return;
+        byGame.set(game, n + 1);
+        if (!stack.miss) {
+          stack.off = stack.off || 0.25;
+          stack.miss = "Generated from the board. Looser cut than the recommended desk.";
+        }
+        keep.push(stack);
+      });
+      if (keep.length) out[name] = keep;
+      return;
+    }
     const keep = stacks.filter((stack) => stack.miss && !taken.has(key(stack)) && !seen.has(key(stack)) && seen.add(key(stack))).sort((a, b) => a.off - b.off).slice(0, KEEP);
     if (keep.length) out[name] = keep;
   });
