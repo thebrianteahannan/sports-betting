@@ -245,7 +245,10 @@ function profileBetHit(person, board) {
 function profileBetPut(hit, fresh) {
   if (!hit || typeof parlayLeg === "undefined" || typeof parlayKey !== "function") return;
   if (fresh && parlayLeg.size && typeof saveNew === "function") saveNew();
-  if (parlayLeg.has(parlayKey(hit.bet)) || parlayLeg.size >= 8) return;
+  if (parlayLeg.has(parlayKey(hit.bet)) || parlayLeg.size >= 8) {
+    closePlayerPop();
+    return;
+  }
   if (typeof betFromSay === "function") betFromSay("Recommended", fresh);
   if (typeof legSwapAdd === "function") legSwapAdd(hit.person, hit.bet);
   else {
@@ -331,15 +334,25 @@ function openPlayerPop(person, list, bets, prefer) {
   if (rows.length && !golf) {
     const acts = document.createElement("span");
     acts.className = "find-profile-acts";
+    const preferHit = prefer && prefer.bet ? { person: prefer.person || person, bet: prefer.bet } : null;
+    const already = preferHit && typeof parlayKey === "function" && typeof parlayLeg !== "undefined" && parlayLeg.has(parlayKey(preferHit.bet));
     const betIt = document.createElement("button");
     betIt.type = "button";
     betIt.className = "find-profile-bet";
-    betIt.textContent = "Bet it";
+    betIt.textContent = already ? "In the parlay" : "Bet it";
+    betIt.disabled = !!already;
     betIt.addEventListener("click", () => {
-      const hit = (prefer && prefer.bet && { person: prefer.person || person, bet: prefer.bet }) || profileBetHit(person, board);
+      if (betIt.disabled) return;
+      const hit = preferHit || profileBetHit(person, board);
       if (!hit) {
         const go = profile.querySelector(".find-game-script-go");
         if (go) go.click();
+        return;
+      }
+      if (typeof parlayKey === "function" && typeof parlayLeg !== "undefined" && parlayLeg.has(parlayKey(hit.bet))) {
+        betIt.textContent = "In the parlay";
+        betIt.disabled = true;
+        closePlayerPop();
         return;
       }
       profileAskPut(acts, hit);
@@ -350,51 +363,48 @@ function openPlayerPop(person, list, bets, prefer) {
     scriptGo.textContent = "View game script";
     scriptGo.addEventListener("click", () => {
       closePlayerPop();
-      const matches = board ? [...board.querySelectorAll(".find-teams .find-match")] : [];
-      const want = String((prefer && prefer.bet && prefer.bet.match) || (rows[0] && rows[0].match) || "");
-      const match = matches.find((node) => {
+      if (!board) return;
+      const bet = (preferHit && preferHit.bet) || rows[0];
+      if (!bet || !bet.match) return;
+      const want = String(bet.match);
+      const findMatch = () => [...board.querySelectorAll(".find-teams .find-match")].find((node) => {
         const sides = [...node.querySelectorAll(":scope > .find-side-go")].map((side) => side.textContent.split(",")[0].trim());
         return sides.length >= 2 && sides.every((side) => want.includes(side));
-      }) || matches[0];
+      });
+      let match = findMatch();
+      if (!match) {
+        if (typeof startOpen === "function") startOpen(board, bet);
+        else {
+          const teams = board.querySelector(":scope > .find-teams");
+          const listNode = board.querySelector(":scope > .find-list");
+          const hits = board.querySelector(":scope > .find-hits:not(.find-tray)");
+          const span = board.querySelector(":scope > .find-span");
+          const more = board.querySelector(".find-games-go");
+          if (!teams || !listNode) return;
+          if (hits) hits.replaceChildren();
+          teams.replaceChildren();
+          listNode.replaceChildren();
+          listNode.classList.remove("find-only-on");
+          if (span) { span.classList.add("find-picked"); span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); }
+          if (more) more.hidden = false;
+          paintMatch(teams, bet, board.people || [], listNode, hits, true);
+        }
+        match = findMatch() || board.querySelector(".find-teams .find-match");
+      }
       if (!match) return;
       if (match.classList.contains("find-game-shut")) {
         const fold = match.querySelector(":scope > .find-when .find-game-fold");
         if (fold) fold.click();
         else match.classList.remove("find-game-shut");
       }
-      const script = match.querySelector(":scope > .find-script");
+      const script = match.querySelector(":scope > .find-script:not(.find-bets)") || match.querySelector(":scope > .find-script");
       if (script) script.open = true;
       const target = script || match;
       target.style.scrollMarginTop = "5.5rem";
       if (typeof gameScrollTo === "function") gameScrollTo(target);
       else target.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-    const add = document.createElement("button");
-    add.type = "button";
-    add.className = "find-parlay";
-    add.dataset.key = person.key;
-    if (prefer && prefer.bet) {
-      const hit = { person: prefer.person || person, bet: prefer.bet };
-      const on = typeof parlayKey === "function" && typeof parlayLeg !== "undefined" && parlayLeg.has(parlayKey(prefer.bet));
-      add.textContent = on ? "In the parlay" : (prefer.label || "Add anytime TD");
-      add.disabled = on;
-      add.addEventListener("click", () => { if (!add.disabled) profileAskPut(acts, hit); });
-    } else {
-      add.textContent = parlayPick.has(person.key) ? "In the parlay" : "Add to the parlay";
-      add.addEventListener("click", () => {
-        if (parlayPick.has(person.key) || parlayPick.size >= 8) return;
-        parlayPick.set(person.key, person);
-        document.querySelectorAll(".find-names button").forEach((node) => {
-          if (node.textContent === person.name) {
-            const on = parlayPick.has(person.key);
-            node.classList.toggle("on", on);
-            node.setAttribute("aria-pressed", on ? "true" : "false");
-          }
-        });
-        paintParlay();
-      });
-    }
-    acts.append(betIt, scriptGo, add);
+    acts.append(betIt, scriptGo);
     profile.append(acts);
   }
   pop.append(profile);
