@@ -37,10 +37,21 @@ footer { max-width: 860px; margin: 0 auto; padding: 0 18px 40px; color: var(--mu
 </head>
 <body>
 <header>
-  <a href="/"><img src="/logo.png?v=5" alt="Parlay of the Day"></a>
+  <a id="legal-home" href="/"><img src="/logo.png?v=5" alt="Parlay of the Day"></a>
   <h1>Terms and Privacy</h1>
-  <div class="side"><a class="pill" href="/guide">How it works</a><a class="pill solid" href="/">Back to the site</a></div>
+  <div class="side"><a class="pill" href="/guide">How it works</a><a id="legal-back" class="pill solid" href="/">Back to the site</a></div>
 </header>
+<script>
+(function () {
+  const from = new URLSearchParams(location.search).get("from");
+  if (from !== "join" && from !== "login") return;
+  const href = "/?gate=" + encodeURIComponent(from);
+  const home = document.getElementById("legal-home");
+  const back = document.getElementById("legal-back");
+  if (home) home.setAttribute("href", href);
+  if (back) back.setAttribute("href", href);
+})();
+</script>
 <main>
 <p class="lead">The rules for using Parlay of the Day (parlayoftheday.com), what we collect, and where to get help. Effective November 15, 2026.</p>
 

@@ -164,10 +164,19 @@ async function signOut() {
   location.replace("/");
 }
 
+function gateFromUrl() {
+  const gate = new URLSearchParams(location.search).get("gate");
+  if (gate !== "join" && gate !== "login") return;
+  history.replaceState(null, "", "/");
+  showGateMode(gate);
+}
+
 async function bootMember() {
   const response = await memberFetch("/api/me", { cache: "no-store" });
   if (!response.ok) {
-    showGate(); document.documentElement.classList.remove("desk-going");
+    showGate();
+    gateFromUrl();
+    document.documentElement.classList.remove("desk-going");
     return;
   }
   const payload = await response.json();
