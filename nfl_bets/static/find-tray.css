@@ -127,6 +127,30 @@
 #desk.tv-full #desk-glass .find-board.club-on .find-roster .find-names button.find-plus, .find-board.club-on .find-roster .find-names button.find-plus { background: var(--club-chip) right / 2000% 100% !important; color: #ffffff !important; }
 #desk.tv-full #desk-glass .find-board.club-on .find-roster .find-names .find-chip:has(> button.on) > button.find-plus, .find-board.club-on .find-roster .find-names .find-chip:has(> button.on) > button.find-plus { background: var(--club-pick) right / 2000% 100% !important; color: var(--club-pick-ink) !important; }
 .find-board.club-on :is(.find-everyone, .find-team-bets) .find-roster.find-all[style] { padding: 0.45rem 0.7rem 0.55rem; border-radius: 10px; background: var(--club-card); box-shadow: inset 3px 0 0 var(--club-pick); }
+@media (max-width: 699px) {
+  .rec-board :is(.find-everyone, .find-team-bets) > .find-sides { gap: 0 0.35rem; }
+  .rec-board .find-sides > .find-roster.find-all { min-width: 0; overflow: hidden; }
+  .find-board.club-on :is(.find-everyone, .find-team-bets) .find-roster.find-all[style] { padding: 0.35rem 0.4rem 0.4rem; }
+  .rec-board .find-sides .find-names > .find-group { gap: 0.28rem; max-width: 100%; }
+  .rec-board .find-roster .find-names span.find-chip { max-width: 100%; min-width: 0; }
+  .find-roster .find-names .find-chip > button:not(.find-plus):not(.find-rec-go),
+  #desk.tv-full #desk-glass .find-board .find-roster .find-names .find-chip > button:not(.find-plus):not(.find-rec-go) {
+    flex: 1 1 auto;
+    max-width: 100%;
+    min-width: 0;
+    padding: 0.22rem 0.4rem;
+    font-size: 12px;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .find-roster .find-names button[data-pos]::after { margin-left: 0.3em; font-size: 0.65em; }
+  .find-roster .find-names button.find-plus,
+  #desk.tv-full #desk-glass .find-board .find-roster .find-names button.find-plus { width: 1.45rem; min-width: 1.45rem; font-size: 14px; }
+  .find-roster .find-names button.find-rec-go,
+  #desk.tv-full #desk-glass .find-board .find-roster .find-names button.find-rec-go { width: 1.8rem; min-width: 1.8rem; }
+}
 .find-game-line { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.5rem; }
 .find-board .find-game-line > button, #desk.tv-full #desk-glass .find-board .find-game-line > button { width: auto; min-height: 0; margin: 0; padding: 0.35rem 0.85rem; border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 999px; background: rgba(0, 0, 0, 0.28); color: #ffffff; box-shadow: none; text-transform: none; letter-spacing: normal; font-size: 14px; font-weight: 700; cursor: pointer; }
 .find-game-line > button::after { content: " \203A"; }
