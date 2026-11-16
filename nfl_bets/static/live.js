@@ -153,16 +153,24 @@ function liveLeagueBar(data, count) {
   return chips || go ? `<div class="live-leagues">${chips}${go}</div>` : "";
 }
 
+function liveFilters() {
+  const mine = document.body.classList.contains("live-mine-off") ? "" : " checked";
+  const games = document.body.classList.contains("live-mine-games") ? " checked" : "";
+  const recs = document.body.classList.contains("live-recs-on") ? " checked" : "";
+  return `<p class="live-filters"><label class="live-court"><input type="checkbox" class="live-mine-box"${mine}/> My bets</label><label class="live-court live-court-next"><input type="checkbox" class="live-mine-games-box"${games}/> Only my games</label><label class="live-court live-court-next"><input type="checkbox" class="live-recs-box"${recs}/> Recommended bets</label></p>`;
+}
+
 const liveDayKey = (when) => new Date(when).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 
 function liveSoonCard(game) {
-  const day = `${new Date(Date.parse(game.kickoff)).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} ET`;
+  const kick = Date.parse(game.kickoff), liveNow = game.sport === "PGA" && Number.isFinite(kick) && kick <= Date.now();
+  const day = liveNow ? "Live" : `${new Date(kick).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} ET`;
   const like = { id: `${game.match}|${game.kickoff}`, away: game.away || { name: game.awayName }, home: game.home || { name: game.homeName }, when: game.kickoff }, picks = liveMine(like), recs = liveRecPicks(like, picks).length, open = liveRecOpen.has(like.id);
   const tag = recs ? `<button type="button" class="live-rec-tag${open ? " on" : ""}" data-rec-open="${liveEsc(like.id)}">Recommended<b>${recs}</b></button>` : "";
-  const until = typeof gameUntilText === "function" ? gameUntilText(game.kickoff) : "";
+  const until = liveNow ? "" : (typeof gameUntilText === "function" ? gameUntilText(game.kickoff) : "");
   const meta = `<span class="live-meta">${game.total ? `<span class="live-total">O/U ${liveEsc(game.total)}</span>` : ""}${until ? `<span class="find-until live-until" data-kick="${liveEsc(game.kickoff)}">${liveEsc(until)}</span>` : ""}<a class="live-week-game" href="/?${liveEsc(new URLSearchParams({ game: game.match, from: "live" }).toString())}" title="Open this game in Build a bet">Build a bet ›</a></span>`;
   const sides = game.sport === "PGA" ? `<span class="live-side"><b>${liveEsc(game.match || "")}</b></span>` : `${liveSide(like.away, false, `${like.id}|away`)}<span class="live-at-sign">@</span>${liveSide(like.home, false, `${like.id}|home`)}`;
-  return `<div class="live-game live-soon${picks.length ? " has-mine" : ""}"><div class="live-head"><span class="live-sport">${liveEsc(game.sport)}</span>${sides}<span class="live-clock live-when">${liveEsc(day)}</span>${tag}${meta}${liveRoot(like, picks)}${liveRecRow(like, picks, open)}</div></div>`;
+  return `<div class="live-game live-soon${liveNow ? " live-pga-on" : ""}${picks.length ? " has-mine" : ""}"><div class="live-head"><span class="live-sport">${liveEsc(game.sport)}</span>${sides}<span class="live-clock live-when">${liveEsc(day)}</span>${tag}${meta}${liveRoot(like, picks)}${liveRecRow(like, picks, open)}</div></div>`;
 }
 
 function liveWeekList(week) {
@@ -189,15 +197,25 @@ function livePaint(data, quiet) {
   const mineOnly = document.body.classList.contains("live-mine-games");
   const keep = (game) => (!liveLeagues.size || liveLeagues.has(game.sport)) && (!mineOnly || liveHasMine(game));
   const live = (data.live || []).filter(keep), done = (data.done || []).filter(keep);
-  const board = (data.week || []).filter(keep), today = liveDayKey(Date.now()), pgaOn = (game) => game.sport === "PGA" && Date.parse(game.kickoff) <= Date.now(), week = board.filter((game) => liveDayKey(game.kickoff) > today || pgaOn(game)), soon = board.filter((game) => (liveDayKey(game.kickoff) === today && Date.parse(game.kickoff) > Date.now()) || pgaOn(game));
+  const board = (data.week || []).filter(keep), today = liveDayKey(Date.now());
+  const pgaOn = (game) => game.sport === "PGA" && Date.parse(game.kickoff) <= Date.now();
+  const pgaLive = board.filter(pgaOn);
+  const week = board.filter((game) => liveDayKey(game.kickoff) > today || pgaOn(game));
+  const soon = board.filter((game) => liveDayKey(game.kickoff) === today && Date.parse(game.kickoff) > Date.now());
   const next = (data.week || []).length ? (soon.length ? `<h2>Up next today, ${soon.length} ${soon.length === 1 ? "game" : "games"}</h2>${soon.map(liveSoonCard).join("")}` : "") : liveNext((data.next || []).filter(keep));
   const past = done.filter((game) => liveDayKey(game.when) !== today), ended = done.filter((game) => liveDayKey(game.when) === today);
   const final = (day, list) => list.length ? `<h2>Final ${day}, ${list.length} ${list.length === 1 ? "game" : "games"}</h2>${list.map(liveGame).join("")}` : "";
   const hist = ((data.tally || {}).history || []), histIds = new Set(hist.map((row) => String(row.id)));
-  const bar = liveLeagueBar(data, { past: past.filter((game) => !histIds.has(String(game.id))).length + hist.length, today: live.length + ended.length + ((data.week || []).length ? soon.length : (data.next || []).filter(keep).length), week: week.length });
-  box.innerHTML = liveSpan === "week" && week.length ? `${bar}${liveWeekList(week)}` : liveSpan === "past" ? `${bar}${(final("yesterday", past) + liveHistory(hist)) || `<p class="live-note">No past games to show.</p>`}` : `${bar}${live.length ? `<h2>Live now, ${live.length} ${live.length === 1 ? "game" : "games"}</h2>${live.map(liveGame).join("")}` : `<p class="live-note">No games are live right now.</p>`}${next}<div class="live-today-recap">${liveHistory(hist.filter((row) => liveDayKey(row.kickoff) === today), true)}</div>${final("today", ended)}`;
+  const liveCount = live.length + pgaLive.length;
+  const bar = liveLeagueBar(data, { past: past.filter((game) => !histIds.has(String(game.id))).length + hist.length, today: liveCount + ended.length + ((data.week || []).length ? soon.length : (data.next || []).filter(keep).length), week: week.length });
+  const filters = liveFilters();
+  const emptyMine = mineOnly ? "No games with your bets right now. Uncheck Only my games to see the rest." : "";
+  const emptyLive = emptyMine || "No games are live right now.";
+  const emptyPast = emptyMine || "No past games to show.";
+  const emptyWeek = emptyMine || "No games this week.";
+  const liveBlock = liveCount ? `<h2>Live now, ${liveCount} ${liveCount === 1 ? "game" : "games"}</h2>${live.map(liveGame).join("")}${pgaLive.map(liveSoonCard).join("")}` : `<p class="live-note">${emptyLive}</p>`;
+  box.innerHTML = liveSpan === "week" ? `${bar}${filters}${week.length ? liveWeekList(week) : `<p class="live-note">${emptyWeek}</p>`}` : liveSpan === "past" ? `${bar}${filters}${(final("yesterday", past) + liveHistory(hist)) || `<p class="live-note">${emptyPast}</p>`}` : `${bar}${filters}${liveBlock}${next}<div class="live-today-recap">${liveHistory(hist.filter((row) => liveDayKey(row.kickoff) === today), true)}</div>${final("today", ended)}`;
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => { const left = liveSlide.get(node.dataset.slide); if (left) node.scrollLeft = left; });
-  box.querySelectorAll("h2").forEach((head) => head.insertAdjacentHTML("beforeend", `<label class="live-court"><input type="checkbox" class="live-mine-box"${document.body.classList.contains("live-mine-off") ? "" : " checked"}/> My bets</label><label class="live-court live-court-next"><input type="checkbox" class="live-mine-games-box"${document.body.classList.contains("live-mine-games") ? " checked" : ""}/> Only my games</label><label class="live-court live-court-next"><input type="checkbox" class="live-recs-box"${document.body.classList.contains("live-recs-on") ? " checked" : ""}/> Recommended bets</label>`));
   if (!first) {
     box.querySelectorAll("[data-k]").forEach((node) => { if (was.has(node.dataset.k) && was.get(node.dataset.k) !== node.textContent) node.classList.add("live-flash"); });
     box.querySelectorAll(".live-game[data-id]:not(.live-final)").forEach((node) => { if (!games.has(node.dataset.id)) node.classList.add("live-flash"); });

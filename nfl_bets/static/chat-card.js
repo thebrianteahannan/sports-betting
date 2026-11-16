@@ -32,7 +32,7 @@ function chatGamesLoad() {
   if (typeof trayLive !== "undefined" && trayLive.at > chatGames.at) chatGames = { at: trayLive.at, games: trayLive.games };
   if (chatGamesJob || Date.now() - chatGames.at < 25000) return;
   const now = Date.now(), legs = chat.msgs.flatMap((msg) => (msg.bet ? msg.bet.parts : []).flatMap((part) => part.legs));
-  if (!legs.some((leg) => { const at = Date.parse(leg.kickoff || ""); return at < now + 300000 && at > now - 8 * 3600000; })) return;
+  if (!legs.some((leg) => { const at = Date.parse(leg.kickoff || ""); return Number.isFinite(at) && at < now + 300000 && at > now - 24 * 3600000; })) return;
   chatGamesJob = fetch("/api/live?all=1").then((res) => res.json()).then((data) => {
     chatGames = { at: Date.now(), games: [...(data.live || []), ...(data.done || [])] };
     chatMsgsPaint(true);

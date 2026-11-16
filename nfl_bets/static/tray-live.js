@@ -5,7 +5,7 @@ let trayLive = { at: 0, games: [] }, trayLiveJob = null;
 function trayLiveLoad() {
   if (trayLiveJob || typeof parlayLeg === "undefined" || Date.now() - trayLive.at < 20000) return;
   const saved = typeof saveList === "function" ? saveList().flatMap((row) => row.legs || []) : [];
-  const now = Date.now(), on = [...parlayLeg.values(), ...saved].some((bet) => { const at = Date.parse(bet.kickoff || ""); return Number.isFinite(at) && at < now + 300000 && at > now - 8 * 3600000; });
+  const now = Date.now(), on = [...parlayLeg.values(), ...saved].some((bet) => { const at = Date.parse(bet.kickoff || ""); return Number.isFinite(at) && at < now + 300000 && at > now - 24 * 3600000; });
   if (!on) return;
   trayLiveJob = fetch("/api/live?all=1").then((res) => res.json()).then((data) => {
     trayLive = { at: Date.now(), games: [...(data.live || []), ...(data.done || [])] };
