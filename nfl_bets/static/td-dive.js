@@ -24,7 +24,7 @@ function paintDive(card, pick) {
 }
 window.paintDive = paintDive;
 
-const TD_KIND = { "Anytime TD": "Anytime touchdown", "2 Anytime TDs": "2+ touchdowns", "3 Anytime TDs": "3+ touchdowns", "Throwing": "Passing touchdown" };
+const TD_KIND = { "Anytime TD": "Anytime touchdown", "2 Anytime TDs": "2+ touchdowns", "3 Anytime TDs": "3+ touchdowns" };
 const TD_ROW = /^(.*?), (?:(.+?), )?([+-]?\d+), (\d+%)(?:, (\$5 profits \S+))?([\s\S]*)$/;
 
 function dressTdRow(button) {

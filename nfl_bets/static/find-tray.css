@@ -466,8 +466,14 @@
 :is(.rec-board, #choice-result) .find-td > button.find-all-td:hover { background: rgba(61, 255, 110, 0.12) !important; }
 .rec-board .find-list.find-td-board > h3 { margin: 0 0 0.55rem; color: #3dff6e; font-size: 1.15rem; font-weight: 800; }
 .rec-board .find-list.find-td-board > .find-td-picks { margin: 0 0 0.7rem; }
+.rec-board .find-list.find-td-board > .find-td-page-filter { display: inline-flex; margin: 0 0 0.75rem; }
+.rec-board .find-list.find-td-board .find-td-few > .rec-bet > b::after { content: " +"; color: #3dff6e; }
+.rec-board .find-list.find-td-board .find-td-few > .rec-bet.open > b::after { content: " –"; }
+.rec-board .find-list.find-td-board .find-td-few > .rec-bet:not(.open) > :is(.find-why, .td-part) { display: none; }
+.rec-board .find-list.find-td-board .find-td-few > .rec-bet.find-td-rec { border-color: #e7c15a; }
 .rec-board .find-list .find-td-page > button.td-row.find-td-rec { border-color: #e7c15a; }
 .rec-board .find-list .find-td-page > button.td-row .td-rec { order: 3; display: inline-flex; align-items: center; padding: 0.08rem 0.4rem; border-radius: 999px; background: #e7c15a; color: #07090e; font-size: 10px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
+.rec-board .find-list .find-td-page > button[hidden] { display: none !important; }
 .find-match .find-card-inline { grid-column: 1 / -1; width: 100%; max-width: 100%; margin: 0.45rem 0 0.35rem; padding: 0.7rem 0.85rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: rgba(4, 16, 24, 0.72); box-sizing: border-box; overflow: hidden; }
 .find-match .find-card-inline > .find-card-who { display: block; margin: 0 0 0.35rem; color: #f4f7fb; font-size: 15px; font-weight: 800; }
 .find-match .find-card-inline .find-card { margin: 0; max-width: 100%; overflow: hidden; }
