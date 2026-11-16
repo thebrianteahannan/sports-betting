@@ -2,7 +2,7 @@
 
 const { implied, g } = require("./stack-base");
 const { tally } = require("./stack-read");
-const { build, mixed, scorers } = require("./stack-sgp");
+const { build, mixed, scorers, packed } = require("./stack-sgp");
 const { kit } = require("./stack-shapes");
 
 const { bet, say, lineOf, grouped, cover, coverProfit, signedPair, num, int, totalWord, runner } = kit;
@@ -203,6 +203,7 @@ function priceMiss(stack) {
 async function closeCalls(games, loaded, logs, found) {
   const loose = (options) => build(games, loaded, logs, { ...options, share: 0.6 });
   const hits = {
+    "Anchors and juice": packed(games, loaded, logs, { share: 0.6, floor: 0.8 }),
     "Same-game yardage parlay": loose({}),
     "Yardage and the spread": loose({ end: "spread" }),
     "Yardage parlay, 85% legs": loose({ floor: 0.85 }),

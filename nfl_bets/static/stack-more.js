@@ -160,6 +160,13 @@ const STACK_MORE = {
     "He scores first: up $30.38. He scores later: up $0.38. No touchdown: down $12.",
     "The first-touchdown price is where the payout is. The anytime ticket keeps a later score from being a loss.",
   ],
+  "Anchors and juice": [
+    "One ticket from one game. Three player lines priced about 85% or higher, a touchdown that pays the ticket, and a team bet that holds with them. The touchdown player usually carries one of the short lines too.",
+    "Example: three short yardage legs, a back's anytime touchdown, and the over. $10 at +180 pays back $28. Every leg has to clear.",
+    "+180 needs to cash 35.7% of the time. Three 85% legs land together about 61% of the time if they were unrelated. The touchdown is where most of the payout comes from.",
+    "Two players is the usual shape: the scorer already has a short yardage or catches line on the ticket. The team bet is always a short price, over, under, spread, or a heavy favorite.",
+    "The site builds it from tonight's FanDuel alt lines. Player legs cleared in at least 8 of the last 10. The touchdown beats FanDuel's price lately. The team bet cleared 8 of 10 too. FanDuel's same-game price is the one to take.",
+  ],
   "Same-game yardage parlay": [
     "One ticket from one game. A quarterback's passing yards, one of his receivers, a running back, and the over or the back's touchdown. Every yardage line is low, a number that player cleared in at least 8 of his last 10 games.",
     "Example: $10 at +126 pays back $22.60. Every leg has to clear. One short leg and the $10 is gone.",
@@ -359,6 +366,14 @@ function stackBuild(stack, tries = 0, title = "") {
   (box && box !== document.body ? box : window).scrollTo({ top: 0, behavior: "smooth" });
 }
 
+STACKS.push(["Anchors and juice", "One ticket. Three high-percent player lines, a touchdown that pays, and a team bet that holds.", [
+  ["Same-game parlay", "Anchor", "A short player line he clears most weeks, priced about 85% or higher."],
+  ["Same-game parlay", "Anchor", "A second short player line. Often the same player as the touchdown."],
+  ["Same-game parlay", "Anchor", "A third short player line."],
+  ["Same-game parlay", "Juice", "Usually a touchdown. Pays for the ticket."],
+  ["Same-game parlay", "Team anchor", "Over, under, spread, or a heavy favorite. Always a short price."],
+]]);
+STACK_RANK["Anchors and juice"] = [30, "Three short player lines hold it up. The touchdown pays. The team bet is another short price."];
 STACKS.push(["Same-game yardage parlay", "One ticket. A quarterback, his receiver, and a back, each on a line he clears most weeks, plus the over or a touchdown.", [
   ["Same-game parlay", "Passing yards", "The quarterback's alt line he cleared in 8 of his last 10."],
   ["Same-game parlay", "Receiving yards", "One of his receivers, on a line he clears most weeks."],
@@ -399,7 +414,7 @@ STACKS.push(["Five touchdowns, one game", "One ticket. Five players in the same 
   ["Same-game parlay", "Anytime touchdown", "The fifth scorer. All five have to score."],
 ]]);
 STACK_RANK["Five touchdowns, one game"] = [36, "Each player has scored more often lately than FanDuel's price says. Five scorers need at least five touchdowns in the game."];
-window.STACK_BUILD.push("Same-game yardage parlay", "Yardage and the spread", "Two touchdowns, one game", "Three touchdowns, one game", "Four touchdowns, one game", "Five touchdowns, one game");
+window.STACK_BUILD.push("Anchors and juice", "Same-game yardage parlay", "Yardage and the spread", "Two touchdowns, one game", "Three touchdowns, one game", "Four touchdowns, one game", "Five touchdowns, one game");
 
 [[85, 37, "+59", "$15.88", "63.0%", "-600", "72%"], [90, 38, "+37", "$13.72", "72.9%", "-900", "81%"], [75, 39, "+137", "$23.70", "42.2%", "-300", "56%"]].forEach(([pct, rank, price, back, need, odds, both]) => {
   const name = `Yardage parlay, ${pct}% legs`;

@@ -12,6 +12,8 @@ const JOBS = {
   "The over": "The points those yards turn into.",
   "Anytime touchdown": "The carries that end in the end zone.",
   "The spread": "The result those yards build.",
+  "The under": "The game stays under that number.",
+  "The win": "The side that wins the game.",
 };
 const FLOOR = { "Passing yards": 150, "Receiving yards": 20, Receptions: 3, "Rushing yards": 20 };
 const SHARE = 0.8;
@@ -202,4 +204,112 @@ function scorers(loaded, size = 2, slack = 0) {
   return picked.sort((a, b) => a[0] - b[0]).map((item) => item[1]);
 }
 
-module.exports = { build, mixed, scorers };
+function packed(games, loaded, logs, { share = SHARE, floor = 0.85 } = {}) {
+  const nfl = loaded.filter(([game]) => String(game.sport || "") === "NFL");
+  if (!nfl.length) return [];
+  const cache = logCache();
+  const last = byLast(cache, "NFL");
+  const picked = [];
+  nfl.forEach(([game, legs]) => {
+    const match = String(game.match || "");
+    const best = new Map();
+    legs.forEach((leg) => {
+      const [who, tail] = split(leg.market);
+      const stat = STATS[tail];
+      const odds = leg.odds;
+      const line = /(\d+)\+/.exec(String(leg.runner || ""));
+      if (!stat || !line || Number(line[1]) < FLOOR[stat] || !((odds >= -500 && odds <= -150) || (odds >= -2500 && implied(odds) >= floor))) return;
+      const read = count(String(leg.label || ""), "NFL", cache, last);
+      if (!read || read.hits < share * read.games) return;
+      if (implied(odds) < floor && odds > -500) return;
+      const key = `${stat}\u0000${who}`;
+      const prev = best.get(key);
+      if (!prev || odds > prev[0].odds) best.set(key, [leg, read, stat, who]);
+    });
+    const teamOf = (who) => String((findPack(who, "NFL", cache, last) || {}).team || "");
+    const side = (stat, team) => [...best.values()]
+      .filter(([leg, , kind, who]) => kind === stat && (!team || teamOf(who) === team) && implied(leg.odds) >= floor)
+      .map(([leg, read, kind, who]) => [kind, leg, read, who])
+      .sort((a, b) => (rate(b[2]) - implied(b[1].odds)) - (rate(a[2]) - implied(a[1].odds)));
+    const whoOf = (row) => row[3] || split(row[1].market)[0];
+    const scoreOf = (who) => {
+      if (!who) return null;
+      const leg = legs.find((item) => item.market === ATD && String(item.runner || "").trim() === who);
+      if (!leg || leg.odds > 200 || leg.odds < -250) return null;
+      const text = `${who} anytime touchdown`;
+      const read = count(text, "NFL", cache, last);
+      if (!read || rate(read) <= implied(leg.odds)) return null;
+      return ["Anytime touchdown", { ...leg, label: text }, read, who];
+    };
+    const cover = (team) => {
+      let found = null;
+      legs.forEach((leg) => {
+        const parsed = /^(.+?)\s+\(([+-]?\d+(?:\.\d+)?)\)$/.exec(String(leg.runner || "").trim());
+        const odds = leg.odds;
+        if (String(leg.market || "") !== "Alternate Spread" || !parsed || parsed[1] !== team || odds < -500 || odds > -150) return;
+        if (implied(odds) < floor) return;
+        const text = `${team} ${signed(parsed[2])} spread`;
+        const read = teamCount(text, game, logs);
+        if (read && read.hits >= share * read.games && (!found || odds > found[1].odds)) found = ["The spread", { ...leg, label: text }, read];
+      });
+      return found;
+    };
+    const total = (word) => {
+      let found = null;
+      legs.forEach((leg) => {
+        const line = new RegExp(`${word} \\((\\d+(?:\\.\\d+)?)\\)`, "i").exec(String(leg.runner || ""));
+        const odds = leg.odds;
+        if (String(leg.market || "") !== "Alternate Total Points" || !line || odds < -500 || odds > -150) return;
+        if (implied(odds) < floor) return;
+        const text = `${word} ${g(line[1])} total points`;
+        const read = teamCount(text, game, logs);
+        if (read && read.hits >= share * read.games && (!found || odds > found[1].odds)) found = [word === "Under" ? "The under" : "The over", { ...leg, label: text }, read];
+      });
+      return found;
+    };
+    const money = (team) => {
+      let found = null;
+      const rows = (logs[`NFL|${team}`] || []).slice(0, 10);
+      if (rows.length < 5) return null;
+      const hits = rows.filter((row) => row.for > row.against).length;
+      if (hits < share * rows.length) return null;
+      legs.forEach((leg) => {
+        const odds = leg.odds;
+        if (String(leg.market || "") !== "Moneyline" || String(leg.runner || "").trim() !== team || odds < -500 || odds > -150) return;
+        if (implied(odds) < floor) return;
+        const text = `${team} to win`;
+        const read = { who: team, verb: "won", hits, games: rows.length };
+        if (!found || odds > found[1].odds) found = ["The win", { ...leg, label: text }, read];
+      });
+      return found;
+    };
+    const teamPick = (team) => [cover(team), total("Over"), total("Under"), money(team)]
+      .filter(Boolean)
+      .sort((a, b) => (rate(b[2]) - implied(b[1].odds)) - (rate(a[2]) - implied(a[1].odds)))[0] || null;
+    const pair = [String(game.homeName || ""), String(game.awayName || "")];
+    pair.forEach((team) => {
+      const other = pair.find((name) => name !== team) || "";
+      const arms = side("Passing yards", team).slice(0, 1);
+      if (!arms.length) return;
+      const teamBet = teamPick(team) || teamPick(other);
+      if (!teamBet) return;
+      const runs = side("Rushing yards", team).slice(0, 1).concat(side("Rushing yards", other).slice(0, 1)).slice(0, 2);
+      const catches = side("Receiving yards", team).slice(0, 2).concat(side("Receptions", team).slice(0, 1));
+      catches.forEach((catchRow) => runs.forEach((run) => {
+        if (whoOf(catchRow) === whoOf(run) && catchRow[0] === run[0]) return;
+        const juice = scoreOf(whoOf(run)) || scoreOf(whoOf(catchRow)) || scoreOf(whoOf(arms[0]));
+        if (!juice) return;
+        const rows = arms.concat([catchRow, run], [juice, teamBet]);
+        if (rows.filter((row) => implied(row[1].odds) >= floor).length < 3) return;
+        const names = new Set(rows.filter((row) => row[0] !== "The over" && row[0] !== "The under" && row[0] !== "The spread" && row[0] !== "The win").map(whoOf));
+        const juiceIn = names.has(whoOf(juice));
+        const edge = rows.reduce((sum, row) => sum + rate(row[2]) - implied(row[1].odds), 0);
+        const bets = rows.map(([stat, leg]) => ({ kind: "Same-game parlay", rung: stat, label: String(leg.label || ""), odds: leg.odds, stake: 5, job: JOBS[stat] || "Holds the bet up.", game: match }));
+        picked.push([names.size - (juiceIn ? 0.5 : 0), -edge, { game: match, bets }]);
+      }));
+    });
+  });
+  return picked.sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((item) => item[2]);
+}
+
+module.exports = { build, mixed, scorers, packed };

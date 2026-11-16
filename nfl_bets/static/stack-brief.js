@@ -1,6 +1,6 @@
 /** Strategy bets show as one line per leg, like THE BET. A Breakdown checkbox on each one brings back the full read. Each strategy is tagged Team, Player, or both. */
 
-const STACK_KIND_NAME = { player: /prop ladder|overlapping under|touchdown|yardage|receptions|catches/i, team: /middle|teaser|pleaser|hook|side and the total/i };
+const STACK_KIND_NAME = { player: /prop ladder|overlapping under|touchdown|yardage|receptions|catches/i, team: /middle|teaser|pleaser|hook|side and the total/i, "player team": /anchors and juice/i };
 const STACK_KIND_SAY = { team: "Team", player: "Player", "player team": "Team + player" };
 
 function stackLegKind(label, game) {

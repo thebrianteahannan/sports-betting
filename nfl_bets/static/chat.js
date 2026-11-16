@@ -228,7 +228,7 @@ function chatHead(title, back, extra = []) {
 function chatSettingsGear() {
   const go = chatButton("", () => { chat.view = "settings"; chatPaint(); }, "chat-icon");
   go.setAttribute("aria-label", "Chat settings");
-  go.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>`;
+  go.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
   return go;
 }
 
@@ -400,12 +400,19 @@ function chatRoomHead() {
 
 function chatMoreMenu(room) {
   const menu = chatNode("div", "chat-menu");
+  const alertsOn = typeof notifyOn === "function" && notifyOn();
   menu.append(chatButton("Add", () => { chat.more = false; chat.view = "add"; chat.friends = null; chatPaint(); }, "chat-menu-go"));
   menu.append(chatButton("Rename", async () => {
     chat.more = false;
     const name = window.prompt("Name this group", room.name);
     if (name == null) { chatRoomHead(); return; }
     try { chat.room = { ...chat.room, ...(await chatCall("/api/chat", { action: "rename", room: room.id, name })).room }; chatPaint(); chatLoad(); } catch (error) { chat.note = error.message; chatMsgsPaint(true); }
+  }, "chat-menu-go"));
+  menu.append(chatButton(alertsOn ? "Alerts on" : "Notify me", async () => {
+    chat.more = false;
+    if (alertsOn) { if (window.notifyDisable) notifyDisable(); }
+    else if (window.notifyEnable) await notifyEnable();
+    chatRoomHead();
   }, "chat-menu-go"));
   menu.append(chatButton("Leave", async () => {
     chat.more = false;

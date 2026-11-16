@@ -2,7 +2,7 @@
 
 const { implied, decimal, pyRound, g, pool, gameLegs, seedLogs } = require("./stack-base");
 const { teamLoad, tally } = require("./stack-read");
-const { build, mixed, scorers } = require("./stack-sgp");
+const { build, mixed, scorers, packed } = require("./stack-sgp");
 
 const SKIP = "We only look at FanDuel, so this one is not covered.";
 const NOTES = {
@@ -360,6 +360,7 @@ async function findStacks(board) {
     "Side and the total": sideTotal(games),
     "Player and the total": playerTotal(loaded),
     "First touchdown and anytime": score(loaded),
+    "Anchors and juice": packed(games, loaded, logs),
     "Same-game yardage parlay": yardage({}),
     "Yardage and the spread": yardage({ end: "spread" }),
     "Yardage parlay, 85% legs": yardage({ floor: 0.85 }),
