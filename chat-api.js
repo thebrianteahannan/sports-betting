@@ -25,13 +25,53 @@ function slow(id) {
   recent.set(id, list);
 }
 
-function view(row) {
-  return { id: row.id, from: row.from_id, fromName: row.from_name, at: row.at, body: row.gone ? "" : row.body, bet: row.gone ? null : row.bet, reply: row.reply || null, gone: Boolean(row.gone) };
+function view(row, shots) {
+  const id = String(row.id);
+  const shot = row.gone ? null : (row.shot || (shots && shots[id] ? { id } : null));
+  return { id: row.id, from: row.from_id, fromName: row.from_name, at: row.at, body: row.gone ? "" : row.body, bet: row.gone ? null : row.bet, shot, reply: row.reply || null, gone: Boolean(row.gone) };
 }
 
-function createChat(sb, readKey, loadMembers) {
+function cleanShot(raw) {
+  const image = String(raw || "").split(",").pop();
+  if (!image || image.length < 32) return null;
+  let blob;
+  try { blob = Buffer.from(image, "base64"); } catch (error) { return null; }
+  if (blob.length < 32 || blob.length > 1500000) return null;
+  const mime = blob[0] === 0x89 ? "image/png" : blob[0] === 0xff ? "image/jpeg" : blob[0] === 0x52 && blob[1] === 0x49 ? "image/webp" : "";
+  if (!mime) return null;
+  return { image, mime };
+}
+
+function createChat(sb, readKey, writeKey, loadMembers) {
   const q = encodeURIComponent;
   const nameOf = (users, id) => { const user = users.find((row) => row.id === id); return user ? String(user.name || "").trim() || String(user.email || "").split("@")[0] : "Former member"; };
+
+  async function shotIndex() {
+    return (await readKey("bets/chat-shots/_index")) || { ids: {} };
+  }
+
+  async function shotMark(id, on) {
+    if (!writeKey) return;
+    const index = await shotIndex();
+    if (on) index.ids[String(id)] = 1;
+    else delete index.ids[String(id)];
+    await writeKey("bets/chat-shots/_index", index);
+  }
+
+  async function shotSave(id, room, user, data) {
+    if (!data) return null;
+    if (!writeKey) throw new Error("Screenshots are not set up yet.");
+    await writeKey(`bets/chat-shots/${id}`, { image: data.image, mime: data.mime, room, by: user.id, at: new Date().toISOString() });
+    await shotMark(id, true);
+    return { id: String(id) };
+  }
+
+  async function shotGet(user, id) {
+    const row = await readKey(`bets/chat-shots/${id}`);
+    if (!row || !row.image) throw new Error("That screenshot is not here.");
+    await roomOf(user, row.room);
+    return row;
+  }
 
   async function call(pathname, options) {
     try { return await sb(pathname, options); } catch (error) {
@@ -52,7 +92,7 @@ function createChat(sb, readKey, loadMembers) {
   }
 
   async function list(user) {
-    const [rooms, data] = await Promise.all([call(`chat_rooms?members=cs.${q(`{${user.id}}`)}&order=last_at.desc&limit=60&select=*`), loadMembers()]);
+    const [rooms, data, shots] = await Promise.all([call(`chat_rooms?members=cs.${q(`{${user.id}}`)}&order=last_at.desc&limit=60&select=*`), loadMembers(), shotIndex()]);
     if (!rooms.length) return { me: user.id, rooms: [] };
     const ids = rooms.map((room) => room.id).join(",");
     const [msgs, reads] = await Promise.all([
@@ -64,9 +104,10 @@ function createChat(sb, readKey, loadMembers) {
       me: user.id,
       rooms: rooms.map((room) => {
         const mine = msgs.filter((row) => row.room === room.id), last = mine[0];
+        const hasShot = last && !last.gone && shots.ids && shots.ids[String(last.id)];
         return {
           ...roomView(room, data.users, user.id),
-          last: last ? { id: last.id, from: last.from_id, fromName: last.from_name, body: last.gone ? "" : last.body, bet: last.gone ? "" : last.bet_name || "", gone: Boolean(last.gone), at: last.at } : null,
+          last: last ? { id: last.id, from: last.from_id, fromName: last.from_name, body: last.gone ? "" : last.body, bet: last.gone ? "" : last.bet_name || "", shot: Boolean(hasShot), gone: Boolean(last.gone), at: last.at } : null,
           unread: mine.filter((row) => row.id > (seen.get(room.id) || 0) && row.from_id !== user.id && !row.gone).length,
         };
       }),
@@ -74,7 +115,7 @@ function createChat(sb, readKey, loadMembers) {
   }
 
   async function read(user, id, after, from) {
-    const [room, data] = await Promise.all([roomOf(user, id), loadMembers()]);
+    const [room, data, shots] = await Promise.all([roomOf(user, id), loadMembers(), shotIndex()]);
     const n = Math.max(0, Number(after) || 0);
     const messages = n
       ? await call(`chat_messages?room=eq.${q(id)}&id=gt.${n}&order=id.asc&limit=200&select=*`)
@@ -85,7 +126,7 @@ function createChat(sb, readKey, loadMembers) {
       : [[], []];
     const reads = await call(`chat_reads?room=eq.${q(id)}&select=user_id,last`);
     const mine = reads.find((row) => row.user_id === user.id);
-    return { me: user.id, room: roomView(room, data.users, user.id), messages: messages.map(view), reacts, gone: gone.map((row) => row.id), seen: mine ? Number(mine.last) || 0 : 0, reads: reads.filter((row) => row.user_id !== user.id).map((row) => ({ id: row.user_id, last: Number(row.last) || 0 })) };
+    return { me: user.id, room: roomView(room, data.users, user.id), messages: messages.map((row) => view(row, shots.ids)), reacts, gone: gone.map((row) => row.id), seen: mine ? Number(mine.last) || 0 : 0, reads: reads.filter((row) => row.user_id !== user.id).map((row) => ({ id: row.user_id, last: Number(row.last) || 0 })) };
   }
 
   async function post(user, body) {
@@ -125,11 +166,15 @@ function createChat(sb, readKey, loadMembers) {
     const touch = () => call(`chat_rooms?id=eq.${q(room.id)}`, { method: "PATCH", prefer: "return=minimal", body: { last_at: new Date().toISOString() } });
     if (action === "send") {
       const text = String(body.body || "").trim().slice(0, 500), bet = cleanBet(body.bet);
-      if (!text && !bet) throw new Error("Type a message.");
+      const wantedShot = body.shot != null && String(body.shot) !== "", shot = cleanShot(body.shot);
+      if (wantedShot && !shot) throw new Error("That screenshot could not be used.");
+      if (!text && !bet && !shot) throw new Error("Type a message.");
       slow(user.id);
       const made = await call("chat_messages", { method: "POST", body: { room: room.id, from_id: user.id, from_name: nameOf(data.users, user.id), body: text, bet, reply: Number(body.reply) || null } });
+      const row = made[0];
+      if (shot && row) await shotSave(row.id, room.id, user, shot);
       await touch();
-      return { message: view(made[0]) };
+      return { message: view(row, shot && row ? { [String(row.id)]: 1 } : null) };
     }
     if (action === "react") {
       const id = Number(body.message), emoji = String(body.emoji || "");
@@ -141,7 +186,9 @@ function createChat(sb, readKey, loadMembers) {
       return { reacts: await call(`chat_reacts?message=eq.${id}&select=message,user_id,emoji`) };
     }
     if (action === "delete") {
-      await call(`chat_messages?id=eq.${Number(body.message) || 0}&room=eq.${q(room.id)}&from_id=eq.${q(user.id)}`, { method: "PATCH", prefer: "return=minimal", body: { gone: true, body: "", bet: null } });
+      const id = Number(body.message) || 0;
+      await call(`chat_messages?id=eq.${id}&room=eq.${q(room.id)}&from_id=eq.${q(user.id)}`, { method: "PATCH", prefer: "return=minimal", body: { gone: true, body: "", bet: null } });
+      await shotMark(id, false);
       return { ok: true };
     }
     if (room.pair) throw new Error("That only works in a group.");
@@ -166,7 +213,7 @@ function createChat(sb, readKey, loadMembers) {
     throw new Error("Unknown action.");
   }
 
-  return { list, read, post };
+  return { list, read, post, shotGet };
 }
 
 module.exports = { createChat };

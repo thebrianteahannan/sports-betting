@@ -2,7 +2,7 @@
 
 const CHAT_REACTS = [["like", "👍", "Like"], ["fire", "🔥", "Fire"], ["fade", "👎", "Fade"]];
 const CHAT_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.6A8 8 0 1 1 21 12z"/></svg>`;
-const chat = { on: false, open: false, me: "", rooms: [], view: "list", room: null, msgs: [], reacts: [], reply: null, last: 0, friends: null, note: "", sharing: null, picking: false, shown: 0, sig: "", more: false, people: false, notifyReady: false, notifySnap: null };
+const chat = { on: false, open: false, me: "", rooms: [], view: "list", room: null, msgs: [], reacts: [], reply: null, last: 0, friends: null, note: "", sharing: null, picking: false, shown: 0, sig: "", more: false, people: false, notifyReady: false, notifySnap: null, shot: "" };
 let chatListBusy = false, chatRoomBusy = false, chatTicks = 0;
 
 function chatNode(tag, className, text) {
@@ -68,7 +68,7 @@ function chatNotifyCheck(prev) {
     const before = prev[room.id];
     if (before && before.last && Number(last.id) <= Number(before.last)) return;
     const who = room.group && last.fromName ? String(last.fromName).split(" ")[0] + ": " : "";
-    const body = last.bet ? `${who}sent ${last.bet}` : `${who}${last.body || "New message"}`;
+    const body = last.bet ? `${who}sent ${last.bet}` : last.shot && !last.body ? `${who}sent a screenshot` : `${who}${last.body || "New message"}`;
     notifyShow({
       title: room.name || "New message",
       body,
@@ -263,7 +263,7 @@ function chatListView() {
   if (!chat.rooms.length) list.append(chatNode("p", "chat-empty", "Start a chat with a friend and send them tonight's bet."));
   chat.rooms.forEach((room) => {
     const last = room.last, who = !last ? "" : last.from === chat.me ? "You: " : room.group ? `${String(last.fromName || "").split(" ")[0]}: ` : "";
-    const text = !last ? "No messages yet" : last.gone ? "Message deleted" : last.bet ? `${who}sent ${last.bet}` : `${who}${last.body}`;
+    const text = !last ? "No messages yet" : last.gone ? "Message deleted" : last.bet ? `${who}sent ${last.bet}` : last.shot && !last.body ? `${who}sent a screenshot` : `${who}${last.body}`;
     const row = chatButton("", () => chatEnter(room), `chat-row${room.unread ? " fresh" : ""}`);
     row.append(chatNode("b", "", room.name), chatNode("i", "", last ? chatAgo(last.at) : ""), chatNode("span", "", text));
     if (room.unread) row.append(chatNode("em", "", String(room.unread)));
@@ -422,18 +422,54 @@ function chatPeopleList(room) {
   return box;
 }
 
+function chatShotPaint() {
+  const form = document.querySelector("#chat-panel .chat-form"), hold = form && form.querySelector(".chat-shot");
+  if (!hold) return;
+  hold.replaceChildren();
+  hold.hidden = !chat.shot;
+  if (!chat.shot) return;
+  const img = chatNode("img", "chat-shot-img");
+  img.src = chat.shot;
+  img.alt = "Screenshot ready to send";
+  hold.append(img, chatButton("×", () => { chat.shot = ""; chatShotPaint(); }, "chat-icon"));
+}
+
+async function chatShotTake(file) {
+  if (!file || typeof howsFit !== "function") return;
+  try {
+    chat.shot = await howsFit(file);
+    chat.note = "";
+    chatShotPaint();
+  } catch (error) { chat.note = error.message; chatMsgsPaint(true); }
+}
+
 function chatComposer() {
-  const form = chatNode("form", "chat-form"), quote = chatNode("p", "chat-quote"), text = chatNode("textarea");
+  const form = chatNode("form", "chat-form"), quote = chatNode("p", "chat-quote"), shot = chatNode("div", "chat-shot"), text = chatNode("textarea");
   quote.hidden = true;
-  text.rows = 1; text.maxLength = 500; text.placeholder = "Message"; text.setAttribute("aria-label", "Message");
+  shot.hidden = true;
+  text.rows = 1; text.maxLength = 500; text.placeholder = "Message or paste a screenshot"; text.setAttribute("aria-label", "Message");
   text.autocomplete = "off"; text.autocapitalize = "sentences"; text.enterKeyHint = "send";
   const bet = chatButton("Bet", () => { chat.picking = !chat.picking; if (typeof chatPickPaint === "function") chatPickPaint(); }, "chat-btn chat-btn-bet");
   bet.title = "Send a bet or a stack";
   const send = chatNode("button", "chat-btn chat-btn-go", "Send");
   send.type = "submit";
   text.addEventListener("keydown", (event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); form.requestSubmit(); } });
-  form.addEventListener("submit", (event) => { event.preventDefault(); const body = text.value.trim(); if (!body) return; text.value = ""; chatSend(body, null); });
-  form.append(quote, text, bet, send);
+  text.addEventListener("paste", (event) => {
+    const files = typeof howsFiles === "function" ? howsFiles(event.clipboardData) : [];
+    if (!files.length) return;
+    event.preventDefault();
+    chatShotTake(files[0]);
+  });
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const body = text.value.trim(), image = chat.shot;
+    if (!body && !image) return;
+    text.value = "";
+    chat.shot = "";
+    chatShotPaint();
+    chatSend(body, null, image);
+  });
+  form.append(quote, shot, text, bet, send);
   return form;
 }
 
@@ -443,16 +479,16 @@ function chatQuotePaint() {
   quote.hidden = !msg;
   quote.replaceChildren();
   if (!msg) return;
-  quote.append(chatNode("span", "", `Replying to ${chatNameOf(msg.from) || msg.fromName}: ${msg.bet ? msg.bet.name : msg.body}`.slice(0, 120)), chatButton("×", () => { chat.reply = null; chatQuotePaint(); }, "chat-icon"));
+  quote.append(chatNode("span", "", `Replying to ${chatNameOf(msg.from) || msg.fromName}: ${msg.bet ? msg.bet.name : msg.body || (msg.shot ? "Screenshot" : "")}`.slice(0, 120)), chatButton("×", () => { chat.reply = null; chatQuotePaint(); }, "chat-icon"));
 }
 
-async function chatSend(body, bet) {
+async function chatSend(body, bet, shot) {
   const room = chat.room, reply = chat.reply;
   if (!room) return;
   chat.reply = null;
   chatQuotePaint();
   try {
-    await chatCall("/api/chat", { action: "send", room: room.id, body, bet, reply: reply ? reply.id : null });
+    await chatCall("/api/chat", { action: "send", room: room.id, body, bet, shot: shot || undefined, reply: reply ? reply.id : null });
     chat.note = "";
   } catch (error) { chat.note = error.message; }
   await chatRoomLoad();
@@ -472,7 +508,7 @@ async function chatDelete(msg) {
   if (!window.confirm("Delete this message?")) return;
   try {
     await chatCall("/api/chat", { action: "delete", room: chat.room.id, message: msg.id });
-    Object.assign(msg, { gone: true, body: "", bet: null });
+    Object.assign(msg, { gone: true, body: "", bet: null, shot: null });
   } catch (error) { chat.note = error.message; }
   chatMsgsPaint(true);
 }
@@ -493,12 +529,20 @@ function chatMsgNode(msg, prev) {
   const bubble = chatNode("div", "chat-bubble");
   if (msg.reply) {
     const to = chat.msgs.find((one) => one.id === msg.reply);
-    bubble.append(chatNode("p", "chat-replied", to ? `${chatNameOf(to.from) || to.fromName}: ${to.gone ? "Message deleted" : to.bet ? to.bet.name : to.body}`.slice(0, 120) : "Earlier message"));
+    bubble.append(chatNode("p", "chat-replied", to ? `${chatNameOf(to.from) || to.fromName}: ${to.gone ? "Message deleted" : to.bet ? to.bet.name : to.body || (to.shot ? "Screenshot" : "")}`.slice(0, 120) : "Earlier message"));
   }
   if (msg.gone) bubble.append(chatNode("p", "chat-gone", "Message deleted"));
   if (msg.bet && typeof chatBetCard === "function") bubble.append(chatBetCard(msg));
+  if (msg.shot && msg.shot.id) {
+    const img = chatNode("img", "chat-photo");
+    img.src = `/api/chat/shot?id=${encodeURIComponent(msg.shot.id)}`;
+    img.alt = "Screenshot";
+    img.loading = "lazy";
+    img.addEventListener("click", (event) => { event.stopPropagation(); window.open(img.src, "_blank", "noopener"); });
+    bubble.append(img);
+  }
   if (msg.body) bubble.append(chatNode("p", "chat-text", msg.body));
-  bubble.addEventListener("click", (event) => { if (event.target.closest("button, a, input")) return; chat.shown = chat.shown === msg.id ? 0 : msg.id; chatMsgsPaint(true); });
+  bubble.addEventListener("click", (event) => { if (event.target.closest("button, a, input, img")) return; chat.shown = chat.shown === msg.id ? 0 : msg.id; chatMsgsPaint(true); });
   row.append(bubble);
   const mineReacts = chat.reacts.filter((one) => one.message === msg.id), tally = chatNode("p", "chat-reacts");
   CHAT_REACTS.forEach(([key, icon, label]) => {
@@ -525,7 +569,7 @@ function chatMsgsPaint(force, toBottom) {
   const box = document.querySelector("#chat-panel .chat-msgs"), note = document.querySelector("#chat-panel .chat-note");
   if (note) { note.textContent = chat.note; note.hidden = !chat.note; }
   if (!box || !chat.room) return;
-  const sig = JSON.stringify([chat.msgs.map((msg) => [msg.id, msg.gone]), chat.reacts, chat.shown, chat.seen, chat.reads, typeof chatCardSig === "function" ? chatCardSig() : 0]);
+  const sig = JSON.stringify([chat.msgs.map((msg) => [msg.id, msg.gone, msg.shot && msg.shot.id]), chat.reacts, chat.shown, chat.seen, chat.reads, typeof chatCardSig === "function" ? chatCardSig() : 0]);
   if (!force && sig === chat.sig) return;
   chat.sig = sig;
   const near = toBottom || box.scrollHeight - box.scrollTop - box.clientHeight < 90;

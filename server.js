@@ -24,7 +24,7 @@ const { createAdmins } = require("./desk-admins");
 const { createDocs } = require("./desk-docs"); const { chooseBet } = require("./choose-api");
 const { createPull } = require("./desk-pull");
 const { createNotes } = require("./desk-notes"); const { createShelve } = require("./desk-shelve");
-const { createResearch } = require("./desk-research"); const { propLog } = require("./prop-log"); const { slipList, slipPost } = require("./slip-api"); const { howsPost } = require("./hows-api"); const { parlayList, parlayPut, parlayArchive } = require("./parlay-api"); const friendsApi = require("./friends-api"); const chatApi = require("./chat-api").createChat(sb, readKey, loadMembers);
+const { createResearch } = require("./desk-research"); const { propLog } = require("./prop-log"); const { slipList, slipPost } = require("./slip-api"); const { howsPost } = require("./hows-api"); const { parlayList, parlayPut, parlayArchive } = require("./parlay-api"); const friendsApi = require("./friends-api"); const chatApi = require("./chat-api").createChat(sb, readKey, writeKey, loadMembers);
 const billing = require("./billing-api");
 const ROOT = __dirname;
 loadEnv(path.join(ROOT, ".env"));
@@ -515,7 +515,19 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, await adminList());
       return;
     }
-    if (req.method === "GET" && (url.pathname === "/api/chat" || url.pathname === "/api/chat/room")) { const user = await memberFrom(req); if (refuseBoard(res, user)) return; try { sendJson(res, url.pathname === "/api/chat" ? await chatApi.list(user) : await chatApi.read(user, url.searchParams.get("id") || "", url.searchParams.get("after"), url.searchParams.get("from"))); } catch (error) { sendJson(res, { error: String((error && error.message) || error) }, 400); } return; } if (req.method === "GET" && (url.pathname === "/api/friends" || url.pathname === "/api/shared")) { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, url.pathname === "/api/friends" ? await friendsApi.friendsView(user, readKey, loadMembers) : await friendsApi.sharedList(user, readKey)); return; } if (req.method === "GET" && url.pathname === "/api/parlays/archive") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, await parlayArchive(user, readKey, writeKey)); return; } if (req.method === "GET" && url.pathname === "/api/parlays") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await parlayList(user, readKey)); return; } if (req.method === "GET" && (url.pathname === "/api/notes" || url.pathname === "/api/slip")) { if (url.pathname === "/api/slip") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await slipList(user, readKey, writeKey)); return; } sendJson(res, await noteList()); return; }
+    if (req.method === "GET" && (url.pathname === "/api/chat" || url.pathname === "/api/chat/room")) { const user = await memberFrom(req); if (refuseBoard(res, user)) return; try { sendJson(res, url.pathname === "/api/chat" ? await chatApi.list(user) : await chatApi.read(user, url.searchParams.get("id") || "", url.searchParams.get("after"), url.searchParams.get("from"))); } catch (error) { sendJson(res, { error: String((error && error.message) || error) }, 400); } return; }
+    if (req.method === "GET" && url.pathname === "/api/chat/shot") {
+      const user = await memberFrom(req);
+      if (refuseBoard(res, user)) return;
+      try {
+        const row = await chatApi.shotGet(user, url.searchParams.get("id") || "");
+        const blob = Buffer.from(row.image, "base64");
+        res.writeHead(200, { "Content-Type": row.mime || "image/jpeg", "Cache-Control": "private, max-age=86400", "Content-Length": blob.length });
+        res.end(blob);
+      } catch (error) { sendJson(res, { error: String((error && error.message) || error) }, 404); }
+      return;
+    }
+    if (req.method === "GET" && (url.pathname === "/api/friends" || url.pathname === "/api/shared")) { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, url.pathname === "/api/friends" ? await friendsApi.friendsView(user, readKey, loadMembers) : await friendsApi.sharedList(user, readKey)); return; } if (req.method === "GET" && url.pathname === "/api/parlays/archive") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, await parlayArchive(user, readKey, writeKey)); return; } if (req.method === "GET" && url.pathname === "/api/parlays") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await parlayList(user, readKey)); return; } if (req.method === "GET" && (url.pathname === "/api/notes" || url.pathname === "/api/slip")) { if (url.pathname === "/api/slip") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await slipList(user, readKey, writeKey)); return; } sendJson(res, await noteList()); return; }
     if (req.method === "GET" && url.pathname === "/api/admin/ignore") {
       const user = await memberFrom(req);
       if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }

@@ -3,6 +3,58 @@
 window.archiveRows = window.archiveRows || [];
 window.archiveOpen = window.archiveOpen || false;
 let archiveBusy = false;
+const ARCHIVE_TOLD_KEY = "pod-archive-told";
+const ARCHIVE_SEED_KEY = "pod-archive-seed";
+
+function archiveToldLoad() {
+  try { return JSON.parse(localStorage.getItem(ARCHIVE_TOLD_KEY) || "{}") || {}; } catch (error) { return {}; }
+}
+
+function archiveToldSave(map) {
+  try { localStorage.setItem(ARCHIVE_TOLD_KEY, JSON.stringify(map)); } catch (error) {}
+}
+
+function archiveNotifyLabel(row) {
+  const games = typeof gameShortList === "function" ? gameShortList(row.legs) : "";
+  const sum = (row.legs || []).map((leg) => leg.text || leg.label || "").filter(Boolean).slice(0, 3).join(" · ");
+  return String(games || sum || "Your bet").slice(0, 120);
+}
+
+function archiveNotify(rows) {
+  const told = archiveToldLoad();
+  const seeded = localStorage.getItem(ARCHIVE_SEED_KEY) === "1";
+  const fresh = [];
+  (rows || []).forEach((row) => {
+    const result = row && row.done && row.done.result;
+    if (result !== "won" && result !== "lost") return;
+    if (told[row.id] === result) return;
+    if (seeded) fresh.push(row);
+    told[row.id] = result;
+  });
+  archiveToldSave(told);
+  if (!seeded) {
+    try { localStorage.setItem(ARCHIVE_SEED_KEY, "1"); } catch (error) {}
+    return;
+  }
+  if (!fresh.length) return;
+  if (typeof notifyOn !== "function" || !notifyOn()) return;
+  if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  if (typeof notifyShow !== "function") return;
+  fresh.forEach((row) => {
+    notifyShow({
+      title: row.done.result === "won" ? "Bet hit" : "Bet missed",
+      body: archiveNotifyLabel(row),
+      tag: `bet-${row.id}`,
+      data: { bet: row.id },
+      click: () => {
+        window.archiveOpen = true;
+        if (typeof birdMenu === "function") birdMenu("find");
+        if (typeof paintParlay === "function") paintParlay();
+        else if (typeof archivePaint === "function") archivePaint();
+      },
+    });
+  });
+}
 
 async function archiveCheck() {
   if (!window.saveWho || archiveBusy) return;
@@ -13,6 +65,7 @@ async function archiveCheck() {
     const { archive, reviews } = await res.json();
     window.archiveRows = Array.isArray(archive) ? archive : [];
     window.archiveReviews = reviews || {};
+    archiveNotify(window.archiveRows);
     const gone = new Set(window.archiveRows.map((row) => row.id)), local = saveList();
     if (local.some((row) => gone.has(row.id))) {
       localStorage.setItem(SAVE_KEY, JSON.stringify(local.filter((row) => !gone.has(row.id))));

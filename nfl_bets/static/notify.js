@@ -1,4 +1,4 @@
-/** Browser alerts the member opted into. Chat uses these first; more kinds can plug in later. */
+/** Browser alerts the member opted into. Chat and settled bets use these. */
 const NOTIFY_KEY = "pod-notify";
 
 function notifyOn() {
