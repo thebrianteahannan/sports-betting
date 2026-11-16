@@ -208,29 +208,35 @@ function homeTdChip(games) {
   go.textContent = "Anytime TDs ›";
   go.title = "See who is most likely to score a touchdown";
   go.addEventListener("click", () => {
-    window.location.href = `/?${new URLSearchParams({ td: "1" })}`;
+    const open = () => {
+      const board = document.querySelector("#desk-glass-in .find-board") || document.querySelector(".find-board");
+      if (!board || typeof startTdGo !== "function") return false;
+      startTdGo(board);
+      return true;
+    };
+    if (typeof goFull === "function") goFull();
+    if (open()) return;
+    if (typeof birdMenu === "function") birdMenu("find");
+    let tries = 0;
+    const wait = setInterval(() => { if (open() || ++tries > 80) clearInterval(wait); }, 100);
   });
   return go;
 }
 
 function homeLeagues(box, games) {
   const leagues = homeLeagueList(games), on = homeLeagueOn(games);
-  const td = homeTdChip(games);
-  if (leagues.length < 2 && !td) return [];
+  if (leagues.length < 2) return [];
   const row = document.createElement("span");
   row.className = "desk-games-leagues";
-  if (leagues.length >= 2) {
-    ["", ...leagues].forEach((league) => {
-      const chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = `desk-games-league${league === on ? " on" : ""}`;
-      chip.textContent = league || "All";
-      chip.setAttribute("aria-pressed", String(league === on));
-      chip.addEventListener("click", () => { homeLeague = league; box.scrollTop = 0; homeLeagueSave(box); });
-      row.append(chip);
-    });
-  }
-  if (td) row.append(td);
+  ["", ...leagues].forEach((league) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = `desk-games-league${league === on ? " on" : ""}`;
+    chip.textContent = league || "All";
+    chip.setAttribute("aria-pressed", String(league === on));
+    chip.addEventListener("click", () => { homeLeague = league; box.scrollTop = 0; homeLeagueSave(box); });
+    row.append(chip);
+  });
   return [row];
 }
 
@@ -331,7 +337,16 @@ function homeGamesPaint() {
   const said = document.createElement("span");
   said.className = "desk-games-said";
   said.textContent = `${names.length === 1 ? names[0] : "Your friends"} sent you ${fresh.length === 1 ? "a bet" : `${fresh.length} bets`}`;
-  head.append(fresh.length ? said : homeGamesTabs(box, games), ...(fresh.length ? [] : homeLeagues(box, games)));
+  const leagues = fresh.length ? [] : homeLeagues(box, games);
+  const td = !fresh.length && homeTdChip(games);
+  if (td && leagues[0]) leagues[0].append(td);
+  else if (td) {
+    const row = document.createElement("span");
+    row.className = "desk-games-leagues";
+    row.append(td);
+    leagues.push(row);
+  }
+  head.append(fresh.length ? said : homeGamesTabs(box, games), ...leagues);
   box.replaceChildren(head, ...(fresh.length ? fresh.map(homeSharedRow) : homeGamesTab === "rec" ? homeRecRows(games, box) : homeGameRows(games, box)));
   homeGamesWake(box);
 }

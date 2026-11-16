@@ -365,7 +365,8 @@ function openTdPage(list, people, hits, game, team) {
   const paint = (kind) => { head.textContent = kind === "Anytime TD" ? "Most likely to score an anytime touchdown" : kind === "2 Anytime TDs" ? "Most likely to score 2 anytime touchdowns" : "Most likely to score 3 anytime touchdowns"; allBox.replaceChildren(); const three = books.get("3 Anytime TDs") || new Map(); const rows = [...((books.get(kind) || new Map()).values())].sort((a, b) => b.chance - a.chance); if (!rows.length) { const empty = document.createElement("p"); empty.className = "find-empty"; empty.textContent = `FanDuel has no ${kind.toLowerCase()} touchdown prices up.`; allBox.append(empty); return; } rows.forEach((row) => { const button = document.createElement("button"); button.type = "button"; button.dataset.who = row.person.name; button.dataset.match = row.match || ""; button.dataset.kickoff = row.kickoff || ""; button.dataset.odds = String(row.odds); button.dataset.chance = String(Math.round(row.chance * 100)); if (row.here) button.dataset.here = "1"; button.dataset.tds = teamTd(people, row.person.name, row.match, row.kickoff); if (tdRecWho(row.person.name, null)) { button.dataset.rec = "1"; button.classList.add("find-td-rec"); } button.textContent = `${row.person.name}, ${Number(row.odds) > 0 ? `+${row.odds}` : row.odds}, ${Math.round(row.chance * 100)}%${findCash(row.odds) ? `, $5 profits ${findCash(row.odds)}` : ""}`; if (row.here && !team) button.classList.add("on"); if (kind === "Anytime TD" && three.has(row.person.name)) button.dataset.three = "1"; allBox.append(wrapRow(button, row, kind)); }); markTd(allBox); tagTeams(); fillTeam(people, allBox); loadZone(people, allBox); filterRows(); showFew(kind); syncPick(); };
   const filter = document.createElement("label");
   filter.className = "find-td-filter find-td-page-filter";
-  filter.innerHTML = `<input type="checkbox" checked> Recommended only`;
+  // Full slate opens with everyone ranked. A single game keeps Recommended only on.
+  filter.innerHTML = `<input type="checkbox"${game ? " checked" : ""}> Recommended only`;
   const recOnly = filter.querySelector("input");
   let picking = false;
   const picked = new Map();
@@ -499,13 +500,23 @@ function openTdPage(list, people, hits, game, team) {
   };
   const filterRows = () => {
     const only = recOnly.checked;
+    // Few cards are the researched TD shortlist — keep them visible under Recommended only.
     [...few.querySelectorAll(".rec-bet")].forEach((card) => {
       const who = (card.querySelector(".rec-gist .who") || {}).textContent || "";
       const live = [...allBox.querySelectorAll("button")].find((node) => node.dataset.who === who);
-      card.hidden = only && !(live && live.dataset.rec === "1");
+      if (live) live.dataset.rec = "1";
+      card.classList.add("find-td-rec");
+      if (!card.querySelector(".find-td-rec-tag")) {
+        const tag = document.createElement("i");
+        tag.className = "find-td-rec-tag";
+        tag.textContent = "Rec";
+        const whoNode = card.querySelector(".rec-gist .who");
+        if (whoNode) whoNode.after(tag);
+      }
+      card.hidden = false;
     });
     const inFew = new Set(
-      [...few.querySelectorAll(".rec-bet")].filter((card) => !card.hidden).map((card) => (card.querySelector(".rec-gist .who") || {}).textContent || "").filter(Boolean)
+      [...few.querySelectorAll(".rec-bet")].map((card) => (card.querySelector(".rec-gist .who") || {}).textContent || "").filter(Boolean)
     );
     [...allBox.querySelectorAll("button")].forEach((button) => {
       const hide = (only && button.dataset.rec !== "1") || inFew.has(button.dataset.who);
@@ -559,7 +570,7 @@ function openTdPage(list, people, hits, game, team) {
         gist.className = "rec-gist";
         const spot = (live && live.dataset.match) || "";
         const short = typeof gameShort === "function" && spot ? gameShort(spot) : spot;
-        gist.innerHTML = `<i class="who">${esc(pick.name)}</i>${rec ? `<i class="find-td-rec-tag">Recommended</i>` : ""}${short ? `<em>${esc(short)}</em>` : ""}<i class="prop">Anytime touchdown</i>${spot && spot !== short ? `<em class="td-few-full">${esc(spot)}</em>` : ""}`;
+        gist.innerHTML = `<i class="who">${esc(pick.name)}</i>${rec ? `<i class="find-td-rec-tag">Rec</i>` : ""}${short ? `<em>${esc(short)}</em>` : ""}<i class="prop">Anytime touchdown</i>${spot && spot !== short ? `<em class="td-few-full">${esc(spot)}</em>` : ""}`;
         const fewHit = typeof profileTdBet === "function" ? profileTdBet(
           (people || board.people || []).find((person) => person.name === pick.name) || { kind: "player", name: pick.name, bets: [] },
           "Anytime TD",

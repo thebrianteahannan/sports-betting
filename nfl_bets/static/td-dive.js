@@ -107,13 +107,18 @@ function dressTdRow(button) {
   if (!name || !price) return;
   const kind = TD_KIND[tab ? tab.textContent : ""] || "";
   const pay = tdPayHtml(button.dataset.odds || price);
-  button.innerHTML = [
-    `<span class="td-name">${esc(name)}</span>`,
+  const tags = [
     best && `<span class="td-best" aria-label="Best">Best</span>`,
-    team && `<span class="td-team">${esc(team)}</span>`,
+    button.dataset.rec === "1" && `<span class="td-rec" aria-label="Recommended">Rec</span>`,
+  ].filter(Boolean).join("");
+  const sub = [
     short && `<span class="td-game">${esc(short)}</span>`,
+    team && !short && `<span class="td-team">${esc(team)}</span>`,
     kind && `<span class="td-kind">${esc(kind)}</span>`,
-    button.dataset.rec === "1" && `<span class="td-rec" aria-label="Recommended">Recommended</span>`,
+  ].filter(Boolean).join("");
+  button.innerHTML = [
+    `<span class="td-who"><span class="td-name">${esc(name)}</span>${tags}</span>`,
+    sub ? `<span class="td-sub">${sub}</span>` : "",
     `<span class="td-meta"><span class="td-px">${esc(price)}</span><span class="td-pct">${esc(pct)}</span>${pay || ""}</span>`,
   ].filter(Boolean).join("");
   button.classList.add("td-row");

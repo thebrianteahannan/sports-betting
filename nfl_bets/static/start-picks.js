@@ -353,13 +353,19 @@ function startSpot() {
   return tray && (tray.parentElement.querySelector(":scope > .find-tips") || tray);
 }
 
+function startTdOpen() {
+  return Boolean(document.querySelector("#desk-glass-in .find-board.find-td-on, #desk-glass-in .find-list.find-td-board"));
+}
+
 function startPlace() {
+  if (startTdOpen()) return;
   const spot = startSpot(), box = document.querySelector("#desk-glass-in .find-start");
   if (!spot) return;
   if (!box) startPaint(); else if (spot.nextElementSibling !== box) spot.after(box);
 }
 
 function startPaint(again) {
+  if (startTdOpen()) return;
   document.querySelectorAll(".find-start").forEach((node) => node.remove());
   const spot = startSpot(), board = spot && spot.closest(".find-board");
   if (!spot || !board || typeof homeRecRows !== "function") return;
