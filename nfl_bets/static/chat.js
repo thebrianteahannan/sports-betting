@@ -185,8 +185,9 @@ function chatPaint() {
   if (chat.view === "room" && box.dataset.view === key) { chatRoomHead(); chatMsgsPaint(); chatReadBar(); return; }
   box.dataset.view = key;
   chat.sig = "";
-  box.replaceChildren(...(chat.view === "new" || chat.view === "add" ? chatNewView() : chat.view === "friend" ? chatFriendView() : chat.view === "room" ? chatRoomView() : chatListView()));
+  box.replaceChildren(...(chat.view === "new" || chat.view === "add" ? chatNewView() : chat.view === "friend" ? chatFriendView() : chat.view === "settings" ? chatSettingsView() : chat.view === "room" ? chatRoomView() : chatListView()));
   if (chat.view === "room") { chatRoomHead(); chatMsgsPaint(true, true); }
+  if (chat.view === "settings" && window.paintNotify) paintNotify();
   chatReadBar();
 }
 
@@ -224,8 +225,34 @@ function chatHead(title, back, extra = []) {
   return head;
 }
 
+function chatSettingsGear() {
+  const go = chatButton("", () => { chat.view = "settings"; chatPaint(); }, "chat-icon");
+  go.setAttribute("aria-label", "Chat settings");
+  go.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>`;
+  return go;
+}
+
+function chatSettingsView() {
+  const head = chatHead("Settings", () => { chat.view = "list"; chatPaint(); });
+  const body = chatNode("div", "chat-settings");
+  const say = chatNode("p", "chat-settings-say", "Get a browser alert when someone messages you. Keep this site open in a tab — even in the background is enough.");
+  const acts = chatNode("p", "chat-settings-acts");
+  const onBtn = chatButton("Notify me", () => { if (window.notifyEnable) notifyEnable(); }, "chat-btn");
+  onBtn.id = "chat-notify-on";
+  onBtn.setAttribute("aria-pressed", "false");
+  const offBtn = chatButton("Off", () => { if (window.notifyDisable) notifyDisable(); }, "chat-btn");
+  offBtn.id = "chat-notify-off";
+  offBtn.setAttribute("aria-pressed", "true");
+  acts.append(onBtn, offBtn);
+  const note = chatNode("p", "chat-note");
+  note.id = "chat-notify-note";
+  note.hidden = true;
+  body.append(say, acts, note);
+  return [head, body];
+}
+
 function chatListView() {
-  const out = [chatHead("CHATS", null, [chatButton("Add a friend", () => { chat.view = "friend"; chatPaint(); }, "chat-btn"), chatButton("New chat", () => { chat.view = "new"; chat.friends = null; chatPaint(); }, "chat-btn chat-btn-go")])];
+  const out = [chatHead("CHATS", null, [chatButton("Add a friend", () => { chat.view = "friend"; chatPaint(); }, "chat-btn"), chatButton("New chat", () => { chat.view = "new"; chat.friends = null; chatPaint(); }, "chat-btn chat-btn-go"), chatSettingsGear()])];
   if (chat.sharing) {
     const bar = chatNode("div", "chat-sharing");
     bar.append(chatNode("span", "", `Pick a chat for ${chat.sharing.name}.`), chatButton("Cancel", () => { chat.sharing = null; chatPaint(); }, "chat-btn chat-btn-quiet"));

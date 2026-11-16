@@ -24,6 +24,11 @@
 #chat-panel .chat-icon:hover { border-color: #3dff6e; color: #3dff6e; }
 #chat-panel .chat-btn { padding: 0.35rem 0.7rem; border: 1px solid #3dff6e; border-radius: 999px; background: transparent; color: #3dff6e; font-size: 13px; font-weight: 700; }
 #chat-panel .chat-btn-go { background: #3dff6e; color: #04140c; }
+#chat-panel .chat-btn.on { background: #3dff6e; color: #04140c; border-color: #3dff6e; }
+#chat-panel .chat-settings { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding: 0.9rem 0.9rem 1.2rem; }
+#chat-panel .chat-settings-say { margin: 0; color: #c9d4dd; font-size: 14px; line-height: 1.4; }
+#chat-panel .chat-settings-acts { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0; }
+#chat-panel .chat-icon svg { display: block; margin: auto; }
 #chat-panel .chat-btn-quiet { border-color: #2c3742; color: #c9d4dd; font-size: 12px; padding: 0.25rem 0.55rem; }
 #chat-panel .chat-btn-bet { border-color: #e7c15a; color: #e7c15a; }
 #chat-panel .chat-note { margin: 0.5rem 0.75rem 0; color: #ffcf6e; font-size: 13px; }

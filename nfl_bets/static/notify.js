@@ -45,10 +45,10 @@ function notifyShow(opts) {
   }
 }
 
-function paintNotify() {
-  const onBtn = document.getElementById("profile-notify-on");
-  const offBtn = document.getElementById("profile-notify-off");
-  const note = document.getElementById("profile-notify-note");
+function paintNotifyPair(onId, offId, noteId) {
+  const onBtn = document.getElementById(onId);
+  const offBtn = document.getElementById(offId);
+  const note = document.getElementById(noteId);
   if (!onBtn || !offBtn) return;
   const on = notifyOn();
   onBtn.classList.toggle("on", on);
@@ -69,6 +69,11 @@ function paintNotify() {
     note.hidden = true;
     note.textContent = "";
   }
+}
+
+function paintNotify() {
+  paintNotifyPair("profile-notify-on", "profile-notify-off", "profile-notify-note");
+  paintNotifyPair("chat-notify-on", "chat-notify-off", "chat-notify-note");
 }
 
 async function notifyEnable() {
