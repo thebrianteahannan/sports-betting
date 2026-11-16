@@ -13,7 +13,42 @@ function shotOdds(text) {
   return Number.isFinite(n) && n ? n : null;
 }
 
+function shotTdKind(text) {
+  const low = String(text || "").toLowerCase().replace(/\btds\b/g, "touchdowns").replace(/\btd\b/g, "touchdown");
+  if (!/touchdown/.test(low) || /rush|receiv|pass/.test(low)) return "";
+  if (/\bfirst\b/.test(low)) return "first";
+  const plus = low.match(/(?:to score\s*)?(\d+)\+\s*touchdown/) || low.match(/to score\s*(\d+)\+/);
+  if (plus) return `${Number(plus[1])}+`;
+  if (/any\s*time|anytime|touchdown scorer/.test(low)) return "anytime";
+  return "td";
+}
+
+function shotTdWant(leg) {
+  const market = String(leg.market || "");
+  const kind = shotTdKind(market);
+  if (kind === "anytime" || kind === "first") return kind;
+  if (kind === "td") {
+    const line = leg.line == null || leg.line === "" ? null : Number(leg.line);
+    if (line != null && Number.isFinite(line) && line >= 2) return `${Math.round(line)}+`;
+    return "anytime";
+  }
+  if (/^\d+\+$/.test(kind)) return kind;
+  return "";
+}
+
+function shotNorm(leg) {
+  if (!leg) return leg;
+  const want = shotTdWant(leg);
+  if (want === "anytime") return { ...leg, market: "anytime touchdown", side: "", line: null };
+  if (want === "first") return { ...leg, market: "first touchdown", side: "", line: null };
+  const more = want && want.match(/^(\d+)\+$/);
+  if (more) return { ...leg, market: `to score ${more[1]}+ touchdowns`, side: "over", line: Number(more[1]) };
+  return leg;
+}
+
 function shotFits(bet, leg, rest) {
+  const wantTd = shotTdWant(leg), haveTd = shotTdKind(`${rest} ${bet.market || ""}`);
+  if (wantTd || haveTd) return wantTd === haveTd || (wantTd === "anytime" && haveTd === "anytime");
   const line = leg.line;
   const plus = rest.match(/(\d+(?:\.\d+)?)\+/);
   if (plus) { const n = Number(plus[1]); return line != null && leg.side !== "under" && (n === line || n === line + 0.5); }
@@ -28,6 +63,7 @@ function shotBest(rows, leg) {
 }
 
 function shotPlayer(people, leg) {
+  leg = shotNorm(leg);
   const name = plainName(leg.player);
   const person = name && people.find((who) => who.kind === "player" && plainName(who.name) === name);
   if (!person) return null;
@@ -106,13 +142,20 @@ function shotLine(bet) {
 }
 
 function shotNear(people, leg, game) {
+  leg = shotNorm(leg);
   const name = plainName(leg.player), market = String(leg.market || "").toLowerCase(), side = String(leg.side || "").toLowerCase();
+  const wantTd = shotTdWant(leg);
   const plain = (bet) => !SHOT_PART.test(`${bet.label} ${bet.market}`.toLowerCase());
   const person = name && people.find((who) => who.kind === "player" && plainName(who.name) === name);
   let pool = [];
   if (person) {
     const sig = shotSig(leg.market);
-    pool = (person.bets || []).filter((bet) => plain(bet) && shotSig(`${String(bet.label || "").replace(person.name, "")} ${String(bet.market || "").replace(person.name, "")}`) === sig).map((bet) => ({ person, bet }));
+    pool = (person.bets || []).filter((bet) => {
+      const rest = `${String(bet.label || "").replace(person.name, "")} ${String(bet.market || "").replace(person.name, "")}`;
+      if (!plain(bet) || shotSig(rest) !== sig) return false;
+      if (wantTd && shotTdKind(rest) !== wantTd) return false;
+      return true;
+    }).map((bet) => ({ person, bet }));
   } else {
     const team = name && shotTeamOf(people, leg);
     const kind = /spread/.test(market) ? /spread/i : /total/.test(market) ? /total/i : null;
@@ -209,7 +252,7 @@ async function shotRead(board, file) {
     if (!response.ok) { console.log("[bet-shot] read failed", response.status, data); throw new Error(data.error || `I could not read a bet on that screenshot. The server answered ${response.status}.`); }
     const split = Array.isArray(data.bets) && data.bets.length > 1 && new Set(data.bets.map((bet) => ((bet.legs || [])[0] || {}).stake).filter(Boolean)).size > 1;
     const bets = split ? data.bets : [{ legs: data.legs || [] }];
-    const legs = (bets[0].legs || []).filter((leg) => leg && (leg.player || leg.market)).slice(0, 8);
+    const legs = (bets[0].legs || []).filter((leg) => leg && (leg.player || leg.market)).map(shotNorm).slice(0, 8);
     if (!legs.length) { console.log("[bet-shot] no legs in reply", data); throw new Error("I read that screenshot but found no player or team legs on it."); }
     wait.step(`Found ${legs.length} ${legs.length === 1 ? "leg" : "legs"}. Building your parlay`);
     await new Promise((done) => setTimeout(done, 350));

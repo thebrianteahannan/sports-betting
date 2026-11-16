@@ -7,6 +7,8 @@ Each card gets its own ticket number, starting at 1. Do not stop after the first
 A team to win: player is the team, market is "to win", side is "win", line is null.
 A spread: market is "spread", line is the points with the sign, side is "spread".
 A total: market is "total", side is over or under, line is the number.
+Anytime touchdown / any time touchdown scorer: market is "anytime touchdown", side is "", line is null. Never turn that into 2+ or 3+ touchdowns.
+To score 2+ or 3+ touchdowns only when the slip says that many: market is "to score 2+ touchdowns" or "to score 3+ touchdowns", side is "over", line is 2 or 3.
 A player prop: player is the person, market is only the stat, side is over or under, line is the number. odds is that card's price. stake is that card's wager. Use "" when a number is not printed.
 kind is single when there is one card. kind is stack when there is more than one card.
 {"book":"","kind":"stack","odds":"","stake":"","payout":"","legs":[{"ticket":1,"player":"Stephen Curry","market":"threes made","side":"over","line":4.5,"odds":"+150","stake":"$5.00","match":"Suns @ Warriors","sport":"NBA"},{"ticket":2,"player":"Stephen Curry","market":"threes made","side":"over","line":3.5,"odds":"-145","stake":"$2.96","match":"Suns @ Warriors","sport":"NBA"}]}`;
@@ -78,6 +80,21 @@ function yard(leg) {
 
 function td(leg) {
   return /anytime|any time/.test(stat(leg)) && /td|touchdown/.test(stat(leg));
+}
+
+function normTd(leg) {
+  if (!leg) return leg;
+  const market = stat(leg);
+  if (/any\s*time|anytime/.test(market) && /td|touchdown/.test(market)) return { ...leg, market: "anytime touchdown", side: "", line: null };
+  if (/\bfirst\b/.test(market) && /td|touchdown/.test(market) && !/rush|receiv|pass/.test(market)) return { ...leg, market: "first touchdown", side: "", line: null };
+  const plus = market.match(/(?:to score\s*)?(\d+)\+\s*(?:td|touchdown)/) || market.match(/to score\s*(\d+)\+/);
+  if (plus) return { ...leg, market: `to score ${plus[1]}+ touchdowns`, side: "over", line: Number(plus[1]) };
+  if (/^(?:td|touchdowns?)$/.test(market) && !/rush|receiv|pass/.test(market)) {
+    const line = lineOf(leg);
+    if (line != null && line >= 2) return { ...leg, market: `to score ${Math.round(line)}+ touchdowns`, side: "over", line: Math.round(line) };
+    return { ...leg, market: "anytime touchdown", side: "", line: null };
+  }
+  return leg;
 }
 
 function splitCards(legs) {
@@ -344,7 +361,7 @@ function plain(read, tickets, price) {
 }
 
 function judge(read) {
-  const legs = splitCards((Array.isArray(read && read.legs) ? read.legs : []).filter((leg) => leg && (leg.player || leg.market)));
+  const legs = splitCards((Array.isArray(read && read.legs) ? read.legs : []).filter((leg) => leg && (leg.player || leg.market)).map(normTd));
   const tickets = buckets(legs);
   const quoted = american(read && read.odds);
   const one = tickets.length === 1 ? tickets[0] : [];
