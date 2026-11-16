@@ -23,6 +23,21 @@
 .find-why .find-exp, #desk.tv-full #desk-glass .find-why .find-exp { color: #7d8894; font-size: 0.8rem; font-weight: 400; }
 .find-why .find-exp button.find-near, #desk.tv-full #desk-glass .find-why .find-exp button.find-near, #desk.tv-full #desk-glass .rec-board .find-why .find-exp button.find-near { color: inherit !important; font-size: inherit !important; font-weight: 500 !important; }
 .find-tray .find-st + .find-why:has(> .find-exp:first-child) { margin-top: -0.2rem; }
+.rec-board .find-four { margin: 0.35rem 0 0.7rem; padding: 0.75rem 0.85rem 0.8rem; border: 1px solid rgba(61, 255, 110, 0.45); border-radius: 12px; background: rgba(4, 16, 24, 0.72); }
+.rec-board .find-four > .find-script-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.55rem; margin: 0 0 0.2rem; color: #3dff6e; font-size: 13px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.rec-board .find-four .find-four-tag { display: inline-flex; align-items: center; padding: 0.12rem 0.45rem; border-radius: 999px; background: #e7c15a; color: #07090e; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
+.rec-board .find-four .find-four-shape { margin: 0 0 0.45rem; color: #9fb3c8; font-size: 13px; font-weight: 700; }
+.rec-board .find-four .find-four-price { margin: 0 0 0.25rem; color: #3dff6e; font-size: 16px; font-weight: 800; }
+.rec-board .find-four .find-four-why { margin: 0 0 0.55rem; color: #d5dde6; font-size: 14px; line-height: 1.4; }
+.rec-board .find-four .find-four-leg { display: grid; grid-template-columns: auto 1fr auto; gap: 0.25rem 0.55rem; align-items: baseline; margin: 0 0 0.4rem; padding: 0.45rem 0.55rem; border: 1px solid rgba(61, 255, 110, 0.28); border-radius: 10px; background: #041018; }
+.rec-board .find-four .find-four-leg > i { color: #e7c15a; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.rec-board .find-four .find-four-leg > b { color: #f4f7fb; font-size: 14px; font-weight: 700; line-height: 1.3; }
+.rec-board .find-four .find-four-leg > span { color: #3dff6e; font-size: 14px; font-weight: 800; }
+.rec-board .find-four .find-four-acts { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0.55rem 0 0; }
+:is(.rec-board, #choice-result) .find-four .find-four-acts > button { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.45rem 0.9rem !important; border-radius: 999px !important; box-shadow: none !important; font-size: 13px !important; font-weight: 800 !important; letter-spacing: normal !important; text-transform: none !important; cursor: pointer; }
+:is(.rec-board, #choice-result) .find-four .find-four-again { border: 1px solid rgba(61, 255, 110, 0.7) !important; background: transparent !important; color: #3dff6e !important; }
+:is(.rec-board, #choice-result) .find-four .find-four-again:disabled { opacity: 0.45; cursor: default; }
+:is(.rec-board, #choice-result) .find-four .find-four-build { border: 0 !important; background: #3dff6e !important; color: #04140c !important; }
 .rec-board .find-stacks > summary, .rec-board .find-odds > summary, .rec-board .find-td > summary { margin: 0 0 0.35rem; cursor: pointer; color: #3dff6e; font-weight: 700; }
 .find-board.club-on :is(.find-stacks, .find-odds, .find-td) > summary { color: #ffffff; }
 .rec-board .find-stacks .find-stack-list { display: grid; gap: 0.3rem; }
