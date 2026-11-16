@@ -203,7 +203,7 @@ function priceMiss(stack) {
 async function closeCalls(games, loaded, logs, found) {
   const loose = (options) => build(games, loaded, logs, { ...options, share: 0.6 });
   const hits = {
-    "Anchors and juice": packed(games, loaded, logs, { share: 0.6, floor: 0.8, team: false }),
+    "Anchors and juice": packed(games, loaded, logs, { share: 0.6, floor: 0.8 }),
     "Same-game yardage parlay": loose({}),
     "Yardage and the spread": loose({ end: "spread" }),
     "Yardage parlay, 85% legs": loose({ floor: 0.85 }),

@@ -161,11 +161,11 @@ const STACK_MORE = {
     "The first-touchdown price is where the payout is. The anytime ticket keeps a later score from being a loss.",
   ],
   "Anchors and juice": [
-    "One ticket from one game. Three short player lines hold it up, and a touchdown pays for the ticket. The touchdown player usually already carries one of the short lines.",
-    "Example: three short yardage legs and a back's anytime touchdown. $10 at +180 pays back $28. Every leg has to clear.",
-    "+180 needs to cash 35.7% of the time. Three short legs land together often. The touchdown is where most of the payout comes from.",
-    "Two players is the usual shape: the scorer already has a short yardage or catches line on the ticket.",
-    "The site builds it from tonight's FanDuel alt lines. Player legs cleared most of their last 10. The touchdown beats FanDuel's price lately. FanDuel's same-game price is the one to take. The free Parlay of the Day is this shape.",
+    "One ticket from one game. Three player lines and one game bet. Three short legs hold it up, and the juice pays for the ticket. The juice player often already carries one of the short lines.",
+    "Example: two short player lines, a game bet, and a scorer or longer player line. $10 at +180 pays back $28. Every leg has to clear.",
+    "+180 needs to cash 35.7% of the time. Three short legs land together often. The juice is where most of the payout comes from.",
+    "Same player on two props is fine when the stats are different. The game bet is the fourth leg.",
+    "The site builds it from tonight's FanDuel alt lines across NFL, NBA, NHL, MLB, and WNBA. Player legs cleared most of their last 10. The juice beats FanDuel's price lately. FanDuel's same-game price is the one to take. The free Parlay of the Day is this shape.",
   ],
   "Same-game yardage parlay": [
     "One ticket from one game. A quarterback's passing yards, one of his receivers, a running back, and the over or the back's touchdown. Every yardage line is low, a number that player cleared in at least 8 of his last 10 games.",
@@ -366,13 +366,13 @@ function stackBuild(stack, tries = 0, title = "") {
   (box && box !== document.body ? box : window).scrollTo({ top: 0, behavior: "smooth" });
 }
 
-STACKS.push(["Anchors and juice", "One ticket. Three high-percent player lines and a touchdown that pays.", [
+STACKS.push(["Anchors and juice", "One ticket. Three player lines and one game bet. Three short legs hold it, and the juice pays.", [
   ["Same-game parlay", "Anchor", "A short player line he clears most weeks."],
-  ["Same-game parlay", "Anchor", "A second short player line. Often the same player as the touchdown."],
-  ["Same-game parlay", "Anchor", "A third short player line."],
-  ["Same-game parlay", "Juice", "Usually a touchdown. Pays for the ticket."],
+  ["Same-game parlay", "Anchor", "A second short player line. Same player is fine on a different prop."],
+  ["Same-game parlay", "Anchor", "A short game bet: spread, total, or moneyline."],
+  ["Same-game parlay", "Juice", "A longer player line or a score. Pays for the ticket."],
 ]]);
-STACK_RANK["Anchors and juice"] = [30, "Three short player lines hold it up. The touchdown pays."];
+STACK_RANK["Anchors and juice"] = [30, "Three short legs hold it up. The juice pays."];
 STACKS.push(["Same-game yardage parlay", "One ticket. A quarterback, his receiver, and a back, each on a line he clears most weeks, plus the over or a touchdown.", [
   ["Same-game parlay", "Passing yards", "The quarterback's alt line he cleared in 8 of his last 10."],
   ["Same-game parlay", "Receiving yards", "One of his receivers, on a line he clears most weeks."],

@@ -19,11 +19,12 @@ function ticketOdds(bets) {
 
 function pickGames(board) {
   const now = Date.now(), today = dayKey(now);
-  const nfl = ((board && board.games) || []).filter((game) => String(game.sport || "") === "NFL" && Date.parse(game.kickoff || "") > now);
-  const tonight = nfl.filter((game) => dayKey(Date.parse(game.kickoff)) === today);
+  const open = new Set(["NFL", "NBA", "WNBA", "NHL", "MLB"]);
+  const live = ((board && board.games) || []).filter((game) => open.has(String(game.sport || "")) && Date.parse(game.kickoff || "") > now);
+  const tonight = live.filter((game) => dayKey(Date.parse(game.kickoff)) === today);
   if (tonight.length) return tonight;
-  const soon = nfl.filter((game) => Date.parse(game.kickoff) - now < 3 * 86400000);
-  return (soon.length ? soon : nfl).slice(0, 10);
+  const soon = live.filter((game) => Date.parse(game.kickoff) - now < 3 * 86400000);
+  return (soon.length ? soon : live).slice(0, 12);
 }
 
 async function buildDay(board) {
@@ -36,7 +37,7 @@ async function buildDay(board) {
   if (!loaded.length) return { parlay: null, span: "week" };
   await seedLogs(loaded);
   const logs = await teamLoad(games);
-  const stacks = packed(games, loaded, logs, { team: false, share: 0.6, floor: 0.8 });
+  const stacks = packed(games, loaded, logs, { share: 0.6, floor: 0.8 });
   const best = stacks[0];
   if (!best || !(best.bets || []).length) return { parlay: null, span: dayKey(Date.now()) === dayKey(Date.parse(games[0].kickoff)) ? "today" : "week" };
   const odds = ticketOdds(best.bets);
@@ -49,7 +50,7 @@ async function buildDay(board) {
       match: best.game,
       kickoff,
       odds,
-      how: "Three short player lines hold it. The touchdown pays.",
+      how: "Three short player lines and a game bet hold it. The juice pays.",
       shape: "Anchors and juice",
       bets: best.bets.map((bet) => ({ label: bet.label, odds: bet.odds, rung: bet.rung, job: bet.job, game: bet.game || best.game })),
     },
