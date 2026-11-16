@@ -260,7 +260,49 @@ function profileBetPut(hit, fresh) {
   });
 }
 
-function openPlayerPop(person, list, bets) {
+function profileAskPut(acts, hit) {
+  if (!acts || !hit) return;
+  const ask = acts.querySelector(".desk-rec-ask");
+  if (ask) { ask.remove(); return; }
+  if (typeof parlayLeg === "undefined" || !parlayLeg.size) { profileBetPut(hit, false); return; }
+  const row = document.createElement("span");
+  row.className = "desk-rec-ask";
+  row.innerHTML = `<i>You have a bet open.</i><span role="button" tabindex="0" data-bet-go="add">Add to this bet</span><span role="button" tabindex="0" data-bet-go="new">Start a new bet</span>`;
+  row.addEventListener("click", (event) => {
+    const go = event.target.closest("[data-bet-go]");
+    if (!go) return;
+    event.preventDefault();
+    event.stopPropagation();
+    row.remove();
+    profileBetPut(hit, go.dataset.betGo === "new");
+  });
+  acts.after(row);
+}
+
+function profileTdBet(person, kind, tip) {
+  const tab = String(kind || "");
+  if (!/anytime td|touchdowns/i.test(tab)) return null;
+  const want2 = /2 anytime/i.test(tab), want3 = /3 anytime/i.test(tab);
+  const skip = /half|quarter|\b1st\b|first|last|either|each quarter|each half/;
+  const match = tip && tip.match, kickoff = tip && tip.kickoff, odds = tip && Number(tip.odds);
+  const rows = (person.bets || []).filter((bet) => {
+    if (String(bet.sport || "").toUpperCase() !== "NFL") return false;
+    if (match && bet.match !== match) return false;
+    if (kickoff && bet.kickoff !== kickoff) return false;
+    const market = String(bet.market || "").toLowerCase();
+    const text = `${bet.label || ""} ${bet.market || ""}`.toLowerCase().replace(/\btds\b/g, "touchdowns").replace(/\btd\b/g, "touchdown");
+    if (want2) return market === "to score 2+ touchdowns";
+    if (want3) return market === "to score 3+ touchdowns";
+    if (skip.test(text) || /\b[23]\+/.test(text)) return false;
+    return /anytime touchdown scorer|any time touchdown scorer/.test(text);
+  });
+  if (!rows.length) return null;
+  const bet = (odds && rows.find((row) => Number(row.odds) === odds)) || rows[0];
+  const label = want3 ? "Add 3+ TDs" : want2 ? "Add 2+ TDs" : "Add anytime TD";
+  return { person, bet, label };
+}
+
+function openPlayerPop(person, list, bets, prefer) {
   if (!person || person.kind !== "player") return null;
   const rows = (bets || person.bets || []).slice().sort((a, b) => findRank(b.odds) - findRank(a.odds));
   const golf = rows.some((bet) => bet.sport === "PGA");
@@ -294,27 +336,13 @@ function openPlayerPop(person, list, bets) {
     betIt.className = "find-profile-bet";
     betIt.textContent = "Bet it";
     betIt.addEventListener("click", () => {
-      const hit = profileBetHit(person, board);
+      const hit = (prefer && prefer.bet && { person: prefer.person || person, bet: prefer.bet }) || profileBetHit(person, board);
       if (!hit) {
         const go = profile.querySelector(".find-game-script-go");
         if (go) go.click();
         return;
       }
-      const ask = acts.querySelector(".desk-rec-ask");
-      if (ask) { ask.remove(); return; }
-      if (typeof parlayLeg === "undefined" || !parlayLeg.size) { profileBetPut(hit, false); return; }
-      const row = document.createElement("span");
-      row.className = "desk-rec-ask";
-      row.innerHTML = `<i>You have a bet open.</i><span role="button" tabindex="0" data-bet-go="add">Add to this bet</span><span role="button" tabindex="0" data-bet-go="new">Start a new bet</span>`;
-      row.addEventListener("click", (event) => {
-        const go = event.target.closest("[data-bet-go]");
-        if (!go) return;
-        event.preventDefault();
-        event.stopPropagation();
-        row.remove();
-        profileBetPut(hit, go.dataset.betGo === "new");
-      });
-      acts.after(row);
+      profileAskPut(acts, hit);
     });
     const scriptGo = document.createElement("button");
     scriptGo.type = "button";
@@ -323,7 +351,7 @@ function openPlayerPop(person, list, bets) {
     scriptGo.addEventListener("click", () => {
       closePlayerPop();
       const matches = board ? [...board.querySelectorAll(".find-teams .find-match")] : [];
-      const want = String((rows[0] && rows[0].match) || "");
+      const want = String((prefer && prefer.bet && prefer.bet.match) || (rows[0] && rows[0].match) || "");
       const match = matches.find((node) => {
         const sides = [...node.querySelectorAll(":scope > .find-side-go")].map((side) => side.textContent.split(",")[0].trim());
         return sides.length >= 2 && sides.every((side) => want.includes(side));
@@ -345,19 +373,27 @@ function openPlayerPop(person, list, bets) {
     add.type = "button";
     add.className = "find-parlay";
     add.dataset.key = person.key;
-    add.textContent = parlayPick.has(person.key) ? "In the parlay" : "Add to the parlay";
-    add.addEventListener("click", () => {
-      if (parlayPick.has(person.key) || parlayPick.size >= 8) return;
-      parlayPick.set(person.key, person);
-      document.querySelectorAll(".find-names button").forEach((node) => {
-        if (node.textContent === person.name) {
-          const on = parlayPick.has(person.key);
-          node.classList.toggle("on", on);
-          node.setAttribute("aria-pressed", on ? "true" : "false");
-        }
+    if (prefer && prefer.bet) {
+      const hit = { person: prefer.person || person, bet: prefer.bet };
+      const on = typeof parlayKey === "function" && typeof parlayLeg !== "undefined" && parlayLeg.has(parlayKey(prefer.bet));
+      add.textContent = on ? "In the parlay" : (prefer.label || "Add anytime TD");
+      add.disabled = on;
+      add.addEventListener("click", () => { if (!add.disabled) profileAskPut(acts, hit); });
+    } else {
+      add.textContent = parlayPick.has(person.key) ? "In the parlay" : "Add to the parlay";
+      add.addEventListener("click", () => {
+        if (parlayPick.has(person.key) || parlayPick.size >= 8) return;
+        parlayPick.set(person.key, person);
+        document.querySelectorAll(".find-names button").forEach((node) => {
+          if (node.textContent === person.name) {
+            const on = parlayPick.has(person.key);
+            node.classList.toggle("on", on);
+            node.setAttribute("aria-pressed", on ? "true" : "false");
+          }
+        });
+        paintParlay();
       });
-      paintParlay();
-    });
+    }
     acts.append(betIt, scriptGo, add);
     profile.append(acts);
   }
@@ -663,7 +699,7 @@ function loadGame(holder, game, open) {
   fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "game", match: game.match, sport: game.sport, kickoff: game.kickoff, espnId: game.espnId || "" }) }).then((res) => res.json()).then((data) => { if (paint(data)) box.dataset.server = "1"; else if (!box.querySelector("b") && wait.isConnected) wait.textContent = "The game notes did not load."; }).catch(() => { if (!box.querySelector("b") && wait.isConnected) wait.textContent = "The game notes did not load."; });
 }
 
-function showFind(list, hits, person, roster, people, keep, kind) {
+function showFind(list, hits, person, roster, people, keep, kind, tip) {
   if (person.kind !== "player" || (person.bets || []).some((bet) => bet.sport === "PGA")) closePlayerPop();
   const games = list.parentElement && list.parentElement.querySelector(".find-games");
   if (games) games.open = false;
@@ -674,7 +710,7 @@ function showFind(list, hits, person, roster, people, keep, kind) {
   const holder = list.parentElement && list.parentElement.querySelector(".find-teams"); if (holder) { holder.replaceChildren(); holder.dataset.who = person.kind === "player" ? person.name : ""; const span = list.parentElement.querySelector(".find-span"); if (span) { span.classList.add("find-picked"); const go = span.querySelector(".find-games-go"); if (go) go.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); } const seen = new Set(); bets.forEach((bet) => { const key = `${bet.match}|${bet.kickoff}`; if (!bet.match || seen.has(key)) return; seen.add(key); paintMatch(holder, bet, people, list, hits, "shut"); }); }
   list.replaceChildren(); list.classList.remove("find-only-on");
   if (person.kind === "player" && !golf) {
-    openPlayerPop(person, list, bets);
+    openPlayerPop(person, list, bets, profileTdBet(person, kind, tip));
     return;
   }
   // Team / game search: THE GAME above already has team bets and player bets.

@@ -484,6 +484,7 @@
 .rec-board .find-list.find-td-board .find-td-few > .rec-bet.open > b::after { content: " –"; }
 .rec-board .find-list.find-td-board .find-td-few > .rec-bet:not(.open) > :is(.find-why, .td-part) { display: none; }
 .rec-board .find-list.find-td-board .find-td-few > .rec-bet.find-td-rec { border-color: #e7c15a; }
+.rec-board .find-list.find-td-board .find-td-few > .rec-bet .find-td-rec-tag { display: inline-flex; align-items: center; margin-left: 0.35rem; padding: 0.1rem 0.4rem; border-radius: 999px; background: #e7c15a; color: #07090e; font-size: 10px; font-style: normal; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; vertical-align: 0.1em; }
 .rec-board .find-list .find-td-page > button.td-row.find-td-rec { border-color: #e7c15a; }
 .rec-board .find-list .find-td-page > button.td-row .td-rec { order: 3; display: inline-flex; align-items: center; padding: 0.08rem 0.4rem; border-radius: 999px; background: #e7c15a; color: #07090e; font-size: 10px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
 .rec-board .find-list .find-td-page > button[hidden] { display: none !important; }
