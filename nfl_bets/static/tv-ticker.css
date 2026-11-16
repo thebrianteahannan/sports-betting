@@ -96,8 +96,11 @@
 #desk.tv-full .tv-lazy-ask { font-size: 1.25rem; }
 #desk.tv-full #desk-glass .tv-lazy-die { width: 9rem; height: 9rem; padding: 1rem; }
 #desk.tv-full #desk-glass .tv-lazy.rolled .tv-lazy-die { width: 4.4rem; height: 4.4rem; padding: 0.5rem; }
-.tv-tick-card { width: 100%; max-width: 34rem; padding: 0.9rem 1rem 0.9rem 1.2rem; border: 1px solid #3dff6e; border-radius: 14px; background: rgba(4, 16, 10, 0.92); box-shadow: 0 0 18px rgba(61, 255, 110, 0.25); font-family: "Outfit", sans-serif; text-align: left; }
+.tv-tick-card { position: relative; width: 100%; max-width: 34rem; padding: 0.9rem 1rem 0.9rem 1.2rem; border: 1px solid #3dff6e; border-radius: 14px; background: rgba(4, 16, 10, 0.92); box-shadow: 0 0 18px rgba(61, 255, 110, 0.25); font-family: "Outfit", sans-serif; text-align: left; }
 .tv-tick-card p { margin: 0; }
+.tv-tick-card:has(.tv-tick-bet) .gate-sample-head { padding-right: 4.6rem; }
+.tv-tick-bet, #desk.tv-full #desk-glass .tv-tick-bet { position: absolute; top: 0.7rem; right: 0.75rem; width: auto; min-height: 0; margin: 0; padding: 0.25rem 0.8rem; border: 1px solid #3dff6e; border-radius: 999px; box-shadow: none; background: #3dff6e; color: #04140c; font-family: "Rajdhani", sans-serif; font-size: 0.9rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
+.tv-tick-bet:hover, #desk.tv-full #desk-glass .tv-tick-bet:hover { background: #6bff92; }
 .tv-tick-stack { display: flex; flex-direction: column; align-items: center; gap: 0.8rem; width: 100%; max-width: 34rem; margin: auto 0; }
 #desk-glass .tv-tick-more { display: block; width: 100%; min-height: 0; margin: 0; padding: 0.75rem 1rem; border: 1px solid #3dff6e; border-radius: 10px; box-shadow: none; background: transparent; color: #3dff6e; font-family: "Rajdhani", sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
 #desk-glass .tv-tick-more:hover { background: rgba(61, 255, 110, 0.12); }

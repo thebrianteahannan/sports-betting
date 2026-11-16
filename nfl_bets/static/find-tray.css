@@ -78,7 +78,12 @@
 :is(.rec-board, #choice-result) .find-band .band-pick button { flex: none !important; width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.35rem 0.65rem !important; border: 0 !important; border-radius: 999px !important; background: rgba(255, 255, 255, 0.05) !important; box-shadow: inset 0 0 0 1px #3a4652 !important; color: #f4f7fb !important; font-size: 0.88rem !important; font-weight: 700 !important; text-align: left !important; text-transform: none !important; letter-spacing: 0 !important; cursor: pointer; }
 :is(.rec-board, #choice-result) .find-band .band-pick.band-pick-list button { border-radius: 8px !important; }
 :is(.rec-board, #choice-result) .find-band .band-pick button:hover, :is(.rec-board, #choice-result) .find-band .band-pick button.on { box-shadow: inset 0 0 0 1px #3dff6e !important; color: #3dff6e !important; }
-@media (max-width: 699px) { .rec-board .find-kinds .find-band label.find, #desk.tv-full #desk-glass .rec-board .find-kinds .find-band label.find { flex: 1 1 5rem; } .rec-board .find-kinds .find-band label.find.find-seek, #desk.tv-full #desk-glass .rec-board .find-kinds .find-band label.find.find-seek { flex: 2 1 8.5rem; } }
+@media (max-width: 699px) {
+  .rec-board .find-kinds .find-band { gap: 0.4rem; }
+  .rec-board .find-kinds .find-band label.find, #desk.tv-full #desk-glass .rec-board .find-kinds .find-band label.find { flex: 1 1 calc(50% - 0.4rem); min-width: 0; }
+  .rec-board .find-kinds .find-band label.find.find-seek, #desk.tv-full #desk-glass .rec-board .find-kinds .find-band label.find.find-seek { flex: 1 1 100%; }
+  .rec-board .find-kinds .find-band button.find-clear, #desk.tv-full #desk-glass .rec-board .find-kinds .find-band button.find-clear { flex: 1 1 100%; }
+}
 .find-board .find-looking { display: flex; align-items: center; gap: 0.55rem; margin: 0.3rem 0 0.6rem; }
 .find-board .find-looking img { width: 2.2rem; height: 2.2rem; object-fit: contain; animation: bet-look 0.9s ease-in-out infinite; transform-origin: 68% 26%; }
 .find-board .find-looking p { margin: 0; color: #c9d4dd; font-weight: 600; }
@@ -255,6 +260,14 @@
 :is(.rec-board, #choice-result) .find-tray .find-chose button.find-leg-swap.on, :is(.rec-board, #choice-result) .find-tray .find-chose button.find-leg-swap:hover { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233dff6e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 8h15l-4-4'/%3E%3Cpath d='M20 16H5l4 4'/%3E%3C/svg%3E") !important; box-shadow: inset 0 0 0 1px #3dff6e !important; }
 .find-tray .find-tray-swap { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.1rem 0 0.55rem 1rem; }
 .find-tray .find-tray-swap p { margin: 0; color: #8b97a3; font-size: 0.85rem; }
+.find-tray .find-tray-swap .find-swap-top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem 0.7rem; margin: 0 0 0.25rem; }
+.find-tray .find-tray-swap .find-swap-held { color: #3dff6e; font-size: 0.78rem; font-weight: 800; }
+.find-tray .find-tray-swap .find-swap-rec { display: inline-flex; align-items: center; gap: 0.4rem; color: #c9d4dd; font-size: 0.78rem; font-weight: 700; cursor: pointer; user-select: none; }
+#desk.tv-full #desk-glass .find-tray .find-tray-swap .find-swap-rec input, .find-tray .find-tray-swap .find-swap-rec input { width: 0.95rem !important; height: 0.95rem !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; accent-color: #3dff6e; cursor: pointer; }
+#desk.tv-full #desk-glass .find-tray .find-tray-swap button.find-swap-x, .find-tray .find-tray-swap button.find-swap-x { width: auto !important; min-height: 0 !important; margin: 0 0 0 auto !important; padding: 0.15rem 0.65rem !important; border: 1px solid #3a4652 !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #c9d4dd !important; font-size: 12px !important; font-weight: 700 !important; text-transform: none !important; letter-spacing: normal !important; cursor: pointer; }
+#desk.tv-full #desk-glass .find-tray .find-tray-swap button.find-swap-x:hover, .find-tray .find-tray-swap button.find-swap-x:hover { border-color: #3dff6e !important; color: #3dff6e !important; }
+#desk.tv-full #desk-glass .find-tray .find-tray-swap button.find-swap-back, .find-tray .find-tray-swap button.find-swap-back { width: auto !important; align-self: flex-start; min-height: 0 !important; margin: 0 0 0.1rem !important; padding: 0.15rem 0.55rem !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; color: #e7c15a !important; font-size: 12px !important; font-weight: 700 !important; text-transform: none !important; letter-spacing: normal !important; cursor: pointer; }
+.find-tray .find-tray-swap button.find-swap-go i.held { margin-left: auto; color: #3dff6e; font-size: 0.72em; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
 .find-tray .find-new { margin: 0.4rem 0 0.3rem; }
 .find-tray .find-new.on { padding: 0.55rem 0.6rem 0.2rem; border: 1px dashed #3dff6e; border-radius: 10px; background: rgba(61, 255, 110, 0.04); }
 :is(.rec-board, #choice-result) .find-tray .find-new button.find-new-add { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.35rem 0.8rem !important; border: 1px dashed #3dff6e !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #3dff6e !important; font-size: 13px !important; font-weight: 700 !important; text-transform: none !important; letter-spacing: normal !important; cursor: pointer; }
@@ -425,6 +438,15 @@
 .rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief) > summary { display: block; margin: 0; list-style: none; }
 .rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief) > summary::-webkit-details-marker { display: none; }
 .rec-board .find-team-bets:is(.find-odds, .find-stacks, .find-everyone, .find-brief)[open] > summary { margin-bottom: 0.45rem; }
+.find-match .find-card-inline { grid-column: 1 / -1; width: 100%; max-width: 100%; margin: 0.45rem 0 0.35rem; padding: 0.7rem 0.85rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: rgba(4, 16, 24, 0.72); box-sizing: border-box; overflow: hidden; }
+.find-match .find-card-inline > .find-card-who { display: block; margin: 0 0 0.35rem; color: #f4f7fb; font-size: 15px; font-weight: 800; }
+.find-match .find-card-inline .find-card { margin: 0; max-width: 100%; overflow: hidden; }
+.find-match .find-card-inline .find-card .find-log { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem 0.55rem; margin: 0.4rem 0 0; }
+.find-match .find-card-inline .find-card .find-log span { display: block; min-width: 0; overflow-wrap: anywhere; color: #d5dde6; font-size: 0.78rem; line-height: 1.25; }
+.find-match .find-card-inline .find-card .find-log b { display: block; color: #f4f7fb; font-size: 0.82rem; font-weight: 700; line-height: 1.2; }
+.find-match .find-card-inline .find-card .find-log .find-swing { display: inline-block; max-width: 100%; margin: 0.15rem 0 0; white-space: normal; }
+@media (max-width: 699px) { .find-match .find-card-inline .find-card .find-log { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.find-match .find-score .find-card-inline { margin-top: 0.45rem; }
 .rec-board .find-list > .find-profile { position: relative; margin: 0.4rem 0 0.7rem; padding: 0.7rem 0.85rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: rgba(4, 16, 24, 0.55); }
 .rec-board .find-list > .find-profile > h3 { margin-top: 0; padding-right: 7.5rem; }
 .rec-board .find-profile > h3 i.find-rec-tag { display: inline-flex; align-items: center; gap: 0.3rem; margin-left: 0.55rem; padding: 0.1rem 0.55rem 0.1rem 0.3rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-family: inherit; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0.04em; line-height: 1.5; text-transform: uppercase; vertical-align: middle; cursor: pointer; }
@@ -508,6 +530,8 @@
 :is(.rec-board, #choice-result) .find-tray .find-chose button.find-out:hover { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff6b6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16'/%3E%3Cpath d='M9 7V4h6v3'/%3E%3Cpath d='M6 7l1 13h10l1-13'/%3E%3Cpath d='M10 11v6M14 11v6'/%3E%3C/svg%3E") !important; box-shadow: inset 0 0 0 1px #ff6b6b !important; }
 :is(.rec-board, #choice-result) .find-tray .find-chose i.spot { margin-left: -0.15rem; color: #7f8c99; font-size: 0.72em; font-weight: 500; letter-spacing: 0.02em; white-space: nowrap; }
 :is(.rec-board, #choice-result) .find-tray.find-edit .find-chose i.spot { display: none; }
+#desk.tv-full #desk-glass .find-tray .find-chose i.spot button.club-go, .find-tray .find-chose i.spot button.club-go { display: inline; width: auto; height: auto; min-height: 0; margin: 0; padding: 0; border: 0; border-bottom: 1px dashed currentColor; border-radius: 0; background: transparent; box-shadow: none; color: inherit; font: inherit; font-weight: inherit; letter-spacing: inherit; line-height: inherit; text-transform: none; cursor: pointer; }
+#desk.tv-full #desk-glass .find-tray .find-chose i.spot button.club-go:hover, .find-tray .find-chose i.spot button.club-go:hover { color: #3dff6e; }
 .rec-bet > b i.find-proof, .find-tray .find-chose i.find-proof, .find-tray .find-swap-go i.find-proof, .find-script-leg i.find-proof { display: inline-block; align-self: center; margin: 0 0.3rem; padding: 0 0.4rem; border: 1px solid #49d3ff; border-radius: 999px; color: #49d3ff; font-size: 0.66rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.45; text-transform: uppercase; white-space: nowrap; cursor: help; }
 .find-tray .find-tray-swap button.find-swap-go i.prop:has(+ i.find-proof), :is(.rec-board, #choice-result) .find-tray .find-chose i.prop:has(+ i.find-proof) { flex: 0 1 auto !important; margin-right: 0 !important; }
 .find-tray .find-swap-go i.find-proof, .find-tray .find-chose i.find-proof { margin: 0 auto 0 0.15rem !important; }
@@ -522,6 +546,8 @@
 #desk-glass #gate .gate-age .gate-book { margin: 0; font-family: "Oswald", sans-serif; font-size: 1.05rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #f4f7fb; white-space: nowrap; }
 #desk.tv-full #desk-glass #gate .gate-age { font-size: 15px; } #desk.tv-full #desk-glass #gate .gate-age .age { font-size: 2.4rem; } #desk.tv-full #desk-glass #gate .gate-age .gate-book { font-size: 1.2rem; }
 .find-ticket > b i.rc { cursor: pointer; font-style: normal; color: #04140c; background: #3dff6e; border-radius: 999px; padding: 0.05rem 0.45rem; font-size: 11px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
+#desk.tv-full #desk-glass .find-tray .find-ticket .pay button.stake, .find-tray .find-ticket .pay button.stake { display: inline; width: auto; height: auto; min-height: 0; margin: 0; padding: 0 0.05rem; border: 0; border-bottom: 1px dashed #3dff6e; border-radius: 0; background: transparent; box-shadow: none; color: #3dff6e; font: inherit; font-weight: 800; letter-spacing: 0; line-height: inherit; text-transform: none; cursor: pointer; }
+#desk.tv-full #desk-glass .find-tray .find-ticket .pay input.stake, .find-tray .find-ticket .pay input.stake { width: 4.6rem; height: auto; min-height: 0; margin: 0; padding: 0 0.25rem; border: 1px solid #3dff6e; border-radius: 6px; background: #07140f; color: #fff; font: inherit; font-size: inherit; }
 :is(.rec-board, #choice-result) .find-tray .find-chose button.find-leg-more { display: none; flex: none; width: 1.6rem !important; height: 1.6rem !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 999px !important; background: transparent !important; color: #8b97a3 !important; box-shadow: inset 0 0 0 1px #3a4652 !important; font-size: 1rem !important; font-weight: 800 !important; line-height: 1 !important; cursor: pointer; }
 :is(.rec-board, #choice-result) .find-tray .find-chose button.find-leg-more.on { color: #3dff6e !important; box-shadow: inset 0 0 0 1px #3dff6e !important; }
 @media (max-width: 700px) {

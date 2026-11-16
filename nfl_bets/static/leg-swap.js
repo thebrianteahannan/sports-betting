@@ -2,7 +2,8 @@
 // Tapping the prop itself lists the other numbers FanDuel has for that player and stat.
 // Tapping the player's name lists that player's other stats in the game, each at the line closest to this price.
 // Tapping a player's name on his tray row lists one line per stat, and one tap adds it.
-const legSwapOpen = new Map();
+const legSwapOpen = new Map(), legSwapDrill = new Map();
+let legSwapRec = localStorage.getItem("legSwapRec") !== "0";
 
 function legSwapChance(odds) {
   const price = Number(odds);
@@ -125,6 +126,7 @@ function legSwapTrade(key, person, bet) {
   const old = parlayLeg.get(key);
   if (!old) return;
   legSwapOpen.delete(key);
+  legSwapDrill.delete(key);
   parlayLeg.delete(key);
   parlayLeg.set(parlayKey(bet), bet);
   if (person && !parlayPick.has(person.key)) parlayPick.set(person.key, person);
@@ -138,36 +140,183 @@ function legSwapAdd(person, bet) {
   paintParlay();
 }
 
+function legSwapClose(key) {
+  legSwapOpen.delete(key);
+  legSwapDrill.delete(key);
+  legSwapPaint();
+}
+
+function legSwapCatKey(person, bet) {
+  return `${legSwapStat(person, bet)}|${/\bunder\b/i.test(bet.label || "") ? 1 : 0}`;
+}
+
+function legSwapCatSay(person, bet) {
+  const under = /\bunder\b/i.test(bet.label || "");
+  const raw = String(legSwapStat(person, bet) || "").replace(/\bn\+\b/g, "").trim();
+  const name = raw.replace(/\b\w/g, (c) => c.toUpperCase()) || "Prop";
+  return under ? `Under ${name}` : name;
+}
+
+function legSwapPerson(key, mode) {
+  if (mode === "who") return parlayPick.get(key.replace(/^who:/, "")) || null;
+  const old = parlayLeg.get(key);
+  const board = document.querySelector(".find-board");
+  if (!old || !board) return null;
+  return (board.people || []).find((one) => one.kind === "player" && String(old.label || "").startsWith(one.name)) || null;
+}
+
+function legSwapSaid(key, mode) {
+  if (mode === "who") {
+    const person = legSwapPerson(key, mode);
+    return person ? person.name : "Props";
+  }
+  const old = parlayLeg.get(key);
+  if (!old) return "";
+  const person = legSwapPerson(key, mode);
+  return person ? legSwapWhat(person, old) : legGameWhat(old);
+}
+
+function legCatFind(key, mode) {
+  const person = legSwapPerson(key, mode);
+  if (!person) return [];
+  const old = mode === "who" ? null : parlayLeg.get(key);
+  const wantMatch = old ? old.match : "", wantKick = old ? old.kickoff : "";
+  const nowCat = old ? legSwapCatKey(person, old) : "";
+  const best = new Map();
+  (person.bets || []).forEach((bet) => {
+    if (!Number(bet.odds)) return;
+    if (old && (bet.match !== wantMatch || bet.kickoff !== wantKick)) return;
+    if (!old && parlayLeg.has(parlayKey(bet))) return;
+    const cat = legSwapCatKey(person, bet), same = !!(old && bet.label === old.label && bet.market === old.market);
+    const had = best.get(cat), rec = typeof scriptRecAll !== "undefined" && scriptRecAll.has(`${bet.label}|${bet.market}`);
+    if (!had) best.set(cat, { person, bet, cat, now: cat === nowCat, count: 1, rec: !!rec, same });
+    else {
+      had.count += 1;
+      if (same) { had.bet = bet; had.same = true; had.now = true; }
+      else if (!had.same && rec && !had.rec) { had.bet = bet; had.rec = true; }
+    }
+  });
+  return [...best.values()].sort((a, b) => Number(b.now) - Number(a.now) || Number(b.rec) - Number(a.rec) || legSwapCatSay(a.person, a.bet).localeCompare(legSwapCatSay(b.person, b.bet)));
+}
+
+function legCatLines(key, mode, cat) {
+  const person = legSwapPerson(key, mode);
+  if (!person || !cat) return [];
+  const old = mode === "who" ? null : parlayLeg.get(key);
+  const wantMatch = old ? old.match : "", wantKick = old ? old.kickoff : "";
+  const under = cat.endsWith("|1"), stat = cat.slice(0, cat.lastIndexOf("|"));
+  const num = (bet) => Number((String(bet.label || "").replace(person.name, "").match(/\d+(?:\.\d+)?/) || String(bet.market || "").match(/\d+(?:\.\d+)?/) || [])[0]) || (stat === "touchdowns" ? 1 : 0);
+  const seen = new Set(), rows = [];
+  (person.bets || []).forEach((bet) => {
+    const id = `${bet.label}|${bet.market}`;
+    if (!Number(bet.odds) || seen.has(id)) return;
+    if (old && (bet.match !== wantMatch || bet.kickoff !== wantKick)) return;
+    if (legSwapStat(person, bet) !== stat || /\bunder\b/i.test(bet.label || "") !== under) return;
+    const same = !!(old && bet.label === old.label && bet.market === old.market);
+    if (!same && parlayLeg.has(parlayKey(bet))) return;
+    seen.add(id);
+    rows.push({ person, bet, now: same });
+  });
+  return rows.sort((a, b) => num(a.bet) - num(b.bet));
+}
+
 function legSwapBox(key, mode) {
   const box = document.createElement("div");
   box.className = "find-tray-swap";
-  const rows = mode === "who" ? legWhoFind(key) : mode === "line" ? legLineFind(key) : mode === "kind" ? legKindFind(key) : legSwapFind(key);
-  if (!rows.some((row) => !row.now)) { const none = document.createElement("p"); none.textContent = mode === "who" ? "FanDuel has no props posted for this player." : mode === "line" ? "FanDuel has no other numbers on this prop." : mode === "kind" ? "FanDuel has no other props for this player in this game." : "Nothing else in this game sits at this price."; box.append(none); return box; }
-  rows.forEach(({ person, bet, now }) => {
+  box.dataset.key = key;
+  const cats = mode === "who" || mode === "kind";
+  const drill = cats && !legSwapRec ? legSwapDrill.get(key) || "" : "";
+  const top = document.createElement("div");
+  top.className = "find-swap-top";
+  const said = legSwapSaid(key, mode);
+  if (said && mode !== "swap") {
+    const hold = document.createElement("span");
+    hold.className = "find-swap-held";
+    hold.textContent = mode === "who" ? said : `Selected · ${said}`;
+    top.append(hold);
+  }
+  if (cats) {
+    const label = document.createElement("label");
+    label.className = "find-swap-rec";
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.checked = legSwapRec;
+    check.addEventListener("change", () => {
+      legSwapRec = check.checked;
+      try { localStorage.setItem("legSwapRec", legSwapRec ? "1" : "0"); } catch (error) {}
+      if (legSwapRec) legSwapDrill.delete(key);
+      legSwapPaint();
+    });
+    label.append(check, document.createTextNode("Show Recommended"));
+    top.append(label);
+  }
+  const shut = document.createElement("button");
+  shut.type = "button";
+  shut.className = "find-swap-x";
+  shut.textContent = "Close";
+  shut.setAttribute("aria-label", "Close");
+  shut.addEventListener("click", () => legSwapClose(key));
+  top.append(shut);
+  box.append(top);
+  if (drill) {
+    const back = document.createElement("button");
+    back.type = "button";
+    back.className = "find-swap-back";
+    const person = legSwapPerson(key, mode), sample = person && (person.bets || []).find((bet) => legSwapCatKey(person, bet) === drill);
+    back.textContent = `◂ ${sample ? legSwapCatSay(person, sample) : "Props"}`;
+    back.addEventListener("click", () => { legSwapDrill.delete(key); legSwapPaint(); });
+    box.append(back);
+  }
+  let rows, listMode = mode;
+  if (cats && !legSwapRec && drill) { rows = legCatLines(key, mode, drill); listMode = "line"; }
+  else if (cats && !legSwapRec) { rows = legCatFind(key, mode); listMode = "cat"; }
+  else rows = mode === "who" ? legWhoFind(key) : mode === "line" ? legLineFind(key) : mode === "kind" ? legKindFind(key) : legSwapFind(key);
+  if (mode === "kind" && legSwapRec) {
+    const person = legSwapPerson(key, mode), old = parlayLeg.get(key);
+    if (person && old && !rows.some((row) => row.now)) rows = [{ person, bet: old, now: true }, ...rows];
+  }
+  if (!rows.length || (mode === "swap" && !rows.some((row) => !row.now))) {
+    const none = document.createElement("p");
+    none.textContent = mode === "who" ? "FanDuel has no props posted for this player." : mode === "line" || listMode === "line" ? "FanDuel has no other numbers on this prop." : mode === "kind" || listMode === "cat" ? "FanDuel has no other props for this player in this game." : "Nothing else in this game sits at this price.";
+    box.append(none);
+    return box;
+  }
+  rows.forEach((row) => {
+    const { person, bet, now, cat, count } = row;
     const price = Number(bet.odds);
     const go = document.createElement("button");
     go.type = "button";
     go.className = now ? "find-swap-go now" : "find-swap-go";
-    go.title = now ? "In the parlay" : mode === "who" ? "Add to the parlay" : mode === "line" ? "Change to this number" : mode === "kind" ? "Change to this prop" : `Trade this leg for ${person.name}`;
-    go.innerHTML = [`<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, typeof findPct === "function" && findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`, mode === "swap" && `<i class="who">${esc(person.name)}</i>`, `<i class="prop">${esc(person ? legSwapWhat(person, bet) : legGameWhat(bet))}</i>`].filter(Boolean).join("");
-    const proof = person && bet.sport === "NBA" && typeof proofOf === "function" && proofOf(person.name, bet.market, bet.label, bet.odds);
-    const rec = typeof scriptRecPill === "function" && scriptRecPill(bet);
-    if (rec) go.append(rec);
-    if (proof) go.append(proofPill(proof));
-    go.addEventListener("click", () => { if (mode === "who") { legSwapOpen.delete(key); legSwapAdd(person, bet); } else if (now) { legSwapOpen.delete(key); legSwapPaint(); } else legSwapTrade(key, person, bet); });
-    const row = document.createElement("div");
-    row.className = "find-swap-row";
-    row.append(go);
-    if (!now && mode !== "who") {
+    if (listMode === "cat") {
+      go.title = now ? "Selected prop" : "Pick a number";
+      go.innerHTML = [`<i class="prop">${esc(legSwapCatSay(person, bet))}</i>`, count > 1 && `<i class="pct">${esc(`${count} lines`)}</i>`, now && `<i class="held">Selected</i>`].filter(Boolean).join("");
+      go.addEventListener("click", () => { legSwapDrill.set(key, cat); legSwapPaint(); });
+    } else {
+      go.title = now ? "Selected · in the parlay" : mode === "who" || (cats && !legSwapRec) ? "Add to the parlay" : mode === "line" || listMode === "line" ? "Change to this number" : mode === "kind" ? "Change to this prop" : `Trade this leg for ${person.name}`;
+      go.innerHTML = [`<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, typeof findPct === "function" && findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`, mode === "swap" && `<i class="who">${esc(person.name)}</i>`, `<i class="prop">${esc(person ? legSwapWhat(person, bet) : legGameWhat(bet))}</i>`, now && `<i class="held">Selected</i>`].filter(Boolean).join("");
+      const proof = person && bet.sport === "NBA" && typeof proofOf === "function" && proofOf(person.name, bet.market, bet.label, bet.odds);
+      const rec = typeof scriptRecPill === "function" && scriptRecPill(bet);
+      if (rec) go.append(rec);
+      if (proof) go.append(proofPill(proof));
+      go.addEventListener("click", () => {
+        if (now) { legSwapClose(key); return; }
+        if (mode === "who") { legSwapOpen.delete(key); legSwapDrill.delete(key); legSwapAdd(person, bet); return; }
+        legSwapTrade(key, person, bet);
+      });
+    }
+    const line = document.createElement("div");
+    line.className = "find-swap-row";
+    line.append(go);
+    if (!now && listMode !== "cat" && mode !== "who") {
       const add = document.createElement("button");
       add.type = "button";
       add.className = "find-swap-add";
       add.title = "Add to the parlay";
       add.setAttribute("aria-label", "Add to the parlay");
       add.addEventListener("click", () => legSwapAdd(person, bet));
-      row.append(add);
+      line.append(add);
     }
-    box.append(row);
+    box.append(line);
   });
   return box;
 }
@@ -240,7 +389,8 @@ document.addEventListener("click", (event) => {
   if (!hit) return;
   const name = hit.matches("button.find-name");
   const key = name ? `who:${hit.dataset.key}` : hit.dataset.key, mode = name ? "who" : hit.matches("i.prop") ? "line" : hit.matches("i.who") ? "kind" : "swap";
-  if (legSwapOpen.get(key) === mode) legSwapOpen.delete(key); else legSwapOpen.set(key, mode);
+  if (legSwapOpen.get(key) === mode) { legSwapOpen.delete(key); legSwapDrill.delete(key); }
+  else { legSwapOpen.set(key, mode); legSwapDrill.delete(key); }
   legSwapPaint();
 });
 

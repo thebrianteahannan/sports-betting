@@ -37,10 +37,10 @@ function findRank(odds) {
   return n > 0 ? n / 100 : 100 / Math.abs(n);
 }
 
-function findCash(odds) {
-  const n = Number(odds);
+function findCash(odds, stake) {
+  const n = Number(odds), bet = Number(stake) > 0 ? Number(stake) : 5;
   if (!n) return "";
-  const won = Math.round((n < 0 ? 500 / -n : n / 20) * 100) / 100;
+  const won = Math.round(bet * (n < 0 ? 100 / -n : n / 100) * 100) / 100;
   return `$${Math.abs(won - Math.round(won)) < 0.005 ? Math.round(won) : won.toFixed(2)}`;
 }
 
@@ -205,6 +205,31 @@ function plainName(name) {
   return String(name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z\s]/g, "").replace(/\s+/g, " ").trim();
 }
 
+function showCardInGame(anchor, person) {
+  if (!anchor || !person || typeof paintCard !== "function") return false;
+  const match = anchor.closest(".find-match");
+  if (!match) return false;
+  const key = String(person.key || person.name || "");
+  const open = match.querySelector(".find-card-inline");
+  if (open && open.dataset.key === key) { open.remove(); return true; }
+  if (open) open.remove();
+  const more = document.createElement("div");
+  more.className = "find-card-inline";
+  more.dataset.key = key;
+  const mark = document.createElement("span");
+  mark.hidden = true;
+  const who = document.createElement("b");
+  who.className = "find-card-who";
+  who.textContent = [person.name, person.pos].filter(Boolean).join(" · ");
+  more.append(who, mark);
+  const host = match.querySelector(":scope > .find-everyone") || match.querySelector(":scope > .find-sides") || anchor.closest(".find-score") || match;
+  if (host === match) match.append(more);
+  else host.after(more);
+  paintCard(more, mark, person);
+  more.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  return true;
+}
+
 function fillRoster(roster, team, list, hits, people) {
   const stamp = (roster.stamp = (roster.stamp || 0) + 1);
   roster.hidden = true;
@@ -237,7 +262,7 @@ function fillRoster(roster, team, list, hits, people) {
       button.type = "button";
       button.textContent = absent.has(plainName(hit.name)) ? `${hit.name}, out` : hit.name;
       if (parlayPick.has(hit.key)) { button.classList.add("on"); button.setAttribute("aria-pressed", "true"); }
-      button.addEventListener("click", () => { const field = document.querySelector(".find-board label.find input"); const boardRoster = list.parentElement && list.parentElement.querySelector(":scope > .find-roster"); if (field) { field.value = hit.name; field.dispatchEvent(new Event("input", { bubbles: true })); } showFind(list, hits, hit, boardRoster || roster, people); });
+      button.addEventListener("click", () => { if (showCardInGame(button, hit)) return; const field = document.querySelector(".find-board label.find input"); const boardRoster = list.parentElement && list.parentElement.querySelector(":scope > .find-roster"); if (field) { field.value = hit.name; field.dispatchEvent(new Event("input", { bubbles: true })); } showFind(list, hits, hit, boardRoster || roster, people); });
       names.append(button);
     });
     quiet.forEach((name) => { const span = document.createElement("span"); const gone = absent.has(plainName(name)); span.textContent = gone ? `${name}, out` : name; if (gone) span.className = "find-absent"; names.append(span); });

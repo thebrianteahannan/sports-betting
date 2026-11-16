@@ -389,7 +389,7 @@ function packed(games, loaded, logs, { share = SHARE, floor = 0.85 } = {}) {
         if (!read) return;
         if (!read.soft && read.hits < share * read.games) return;
         if (read.soft && row.juice && odds > -150 && odds < 100 && read.hits < share * read.games) return;
-        if (!row.juice && implied(odds) < floor && odds > -500) return;
+        if (!row.juice && implied(odds) < floor && odds > -500 && !read.soft) return;
         if (row.juice && !read.soft && rate(read) <= implied(odds)) return;
         const key = `${row.rung}\u0000${row.who}`;
         const prev = players.get(key);
@@ -398,7 +398,8 @@ function packed(games, loaded, logs, { share = SHARE, floor = 0.85 } = {}) {
       const teamBets = packedTeamBets(game, legs, logs, sport, share, floor).slice(0, 4);
       if (!teamBets.length) return;
       const pool = [...players.values()];
-      const anchors = pool.filter((row) => !row.juice && implied(row.odds) >= floor).sort((a, b) => (rate(b.read) - implied(b.odds)) - (rate(a.read) - implied(a.odds))).slice(0, 10);
+      const hold = Math.min(floor, 0.65);
+      const anchors = pool.filter((row) => !row.juice && (implied(row.odds) >= floor || (row.read.soft && implied(row.odds) >= hold))).sort((a, b) => (rate(b.read) - implied(b.odds)) - (rate(a.read) - implied(a.odds))).slice(0, 10);
       const juices = pool.filter((row) => row.juice || (implied(row.odds) < floor && row.odds <= 300 && rate(row.read) > implied(row.odds)))
         .sort((a, b) => (rate(b.read) - implied(b.odds)) - (rate(a.read) - implied(a.odds))).slice(0, 8);
       if (anchors.length < 2 || !juices.length) return;
@@ -415,7 +416,7 @@ function packed(games, loaded, logs, { share = SHARE, floor = 0.85 } = {}) {
                 teamBet,
                 [juice.rung, juice.leg, juice.read, juice.who],
               ];
-              if (rows.filter((row) => implied(row[1].odds) >= floor).length < 3) return;
+              if (rows.filter((row) => implied(row[1].odds) >= hold || row[2].soft).length < 3) return;
               const names = new Set([a.who, b.who, juice.who].filter(Boolean));
               const juiceIn = names.has(juice.who) && (juice.who === a.who || juice.who === b.who);
               const edge = rows.reduce((sum, row) => sum + rate(row[2]) - implied(row[1].odds), 0);

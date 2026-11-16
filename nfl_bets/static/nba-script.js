@@ -422,6 +422,7 @@ document.addEventListener("click", (event) => {
   const list = board.querySelector(".find-list"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)"), roster = board.querySelector(":scope > .find-roster"), field = board.querySelector("label.find input");
   if (!person || !list || !hits) return;
   event.stopPropagation();
+  if (typeof showCardInGame === "function" && showCardInGame(hit, person)) return;
   if (field) { field.value = person.name; field.dispatchEvent(new Event("input", { bubbles: true })); }
   showFind(list, hits, person, roster, board.people);
 });

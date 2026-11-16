@@ -68,6 +68,18 @@ function startSeek(board, pick) {
   if (name && typeof legSeek === "function") legSeek(name);
 }
 
+function startTeam(board, pick) {
+  const hit = startHit(board, pick), nick = String((hit && hit.person && hit.person.team) || pick.team || "").trim();
+  const sides = String(pick.match || "").includes(" @ ") ? String(pick.match).split(" @ ") : String(pick.match || "").split(/\sv\s/i);
+  const side = sides.map((name) => name.replace(/\s*\([^)]*\)/g, "").trim()).find((name) => nick && (name === nick || name.endsWith(` ${nick}`))) || nick;
+  const fold = (text) => typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase();
+  const want = fold(side), nickFold = fold(nick);
+  const team = (board.people || []).find((person) => person.kind === "team" && (fold(person.name) === want || (nickFold && fold(person.name).endsWith(` ${nickFold}`))));
+  const list = board.querySelector(".find-list"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)"), roster = board.querySelector(":scope > .find-roster");
+  if (team && list && hits && typeof showFind === "function") { showFind(list, hits, team, roster, board.people); return; }
+  if (side && typeof legSeek === "function") legSeek(side);
+}
+
 function startCard(board, pick, card) {
   const open = card.querySelector(":scope > .desk-rec-more"), hit = startHit(board, pick);
   if (open) { open.remove(); return; }
@@ -252,12 +264,19 @@ function startRecs(board, box) {
     const copy = node.cloneNode(true), pick = node.startPick;
     if (pick) {
       copy.title = "Show the player";
-      copy.append(Object.assign(document.createElement("span"), { className: "desk-rec-bet", textContent: "Bet it", title: "Bet it" }));
+      const actions = document.createElement("span");
+      actions.className = "desk-rec-go";
+      actions.append(
+        Object.assign(document.createElement("span"), { className: "desk-rec-bet", textContent: "Bet it", title: "Bet it" }),
+        Object.assign(document.createElement("span"), { className: "desk-rec-team", textContent: "Team", title: "Team page" })
+      );
+      copy.append(actions);
       copy.addEventListener("click", (event) => {
         const go = event.target.closest("[data-bet-go]");
         if (go) { copy.querySelectorAll(".desk-rec-ask").forEach((node) => node.remove()); startBetGo(board, pick, go.dataset.betGo); return; }
+        if (event.target.closest(".desk-rec-team")) { startTeam(board, pick); return; }
         if (event.target.closest(".desk-rec-bet")) { startBetAsk(board, pick, copy); return; }
-        if (event.target.closest(".desk-rec-ask, .desk-rec-more")) return;
+        if (event.target.closest(".desk-rec-ask, .desk-rec-more, .desk-rec-go")) return;
         startCard(board, pick, copy);
       });
     }

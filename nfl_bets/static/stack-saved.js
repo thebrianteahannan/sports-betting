@@ -46,10 +46,13 @@ function stackSavedStake(row) {
 }
 
 function stackSavedTicket(list) {
-  const row = window.parlayOpenId && list.find((one) => one.id === window.parlayOpenId), stake = row && row.group ? stackSavedStake(row) : 0;
+  const row = window.parlayOpenId && list.find((one) => one.id === window.parlayOpenId);
+  if (!row || Number(row.stake) > 0) return;
+  const stake = row.group ? stackSavedStake(row) : 0;
   if (!stake || stake === 5 || typeof legBoostDec !== "function" || typeof legHedgeCash !== "function") return;
   const dec = [...parlayLeg.values()].reduce((product, bet) => product * legBoostDec(bet.odds), 1);
-  document.querySelectorAll(".find-tray .find-ticket > b i.pay").forEach((pill) => { pill.textContent = `${legHedgeCash(stake)} profits ${legHedgeCash(stake * (dec - 1))}`; });
+  const bet = legHedgeCash(stake), profit = legHedgeCash(stake * (dec - 1));
+  document.querySelectorAll(".find-tray .find-ticket > b i.pay").forEach((pill) => { pill.innerHTML = `<button type="button" class="stake" aria-label="Change the bet size">${bet}</button> profits ${profit}`; });
 }
 
 function stackSavedPaint() {

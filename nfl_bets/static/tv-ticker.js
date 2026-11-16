@@ -29,6 +29,7 @@ function tvTickCardHtml(pick, guest) {
   const when = pick.kickoff ? new Date(pick.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }) + " ET" : "";
   const open = guest ? `<p class="gate-sample-more">Sign up or sign in to open the game and the rest of tonight's picks.</p><button type="button" class="tv-tick-open" data-tick-join>Start free for 7 days</button>` : `<button type="button" class="tv-tick-open" data-tick-open>Open the game &#8250;</button>`;
   const more = guest ? `<button type="button" class="tv-tick-more" data-tick-login>Sign in</button>` : `<button type="button" class="tv-tick-more" data-tick-more>View more recommended bets &#8250;</button>`;
+  const betIt = guest ? "" : `<button type="button" class="tv-tick-bet" data-tick-bet>Bet it</button>`;
   const isParlay = Array.isArray(pick.bets) && pick.bets.length;
   const juiceAt = (() => {
     const rows = Array.isArray(pick.bets) ? pick.bets : [];
@@ -47,7 +48,62 @@ function tvTickCardHtml(pick, guest) {
   const legs = isParlay ? `<ul class="gate-sample-legs">${pick.bets.map((bet, at) => `<li><span class="gate-sample-role">${at === juiceAt || /anytime|touchdown|goal/i.test(`${bet.rung || ""} ${bet.label || ""}`) ? "Juice" : "Anchor"}</span><span class="gate-sample-leg">${esc(bet.label)}</span><b>${esc(Number(bet.odds) > 0 ? `+${bet.odds}` : String(bet.odds))}</b></li>`).join("")}</ul>` : "";
   const head = isParlay ? "Parlay of the Day" : "Today's free pick";
   const bet = isParlay ? `4-leg · 3 players + game bet <b>${esc(price)}</b>` : `${esc(pick.label)} <b>${esc(price)}</b>`;
-  return `<div class="tv-tick-stack"><div class="tv-tick-card"><p class="gate-sample-head">${head}</p><p class="gate-sample-bet">${bet}</p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p>${legs}<p class="gate-sample-why">${esc(pick.how || "")}</p><p class="gate-sample-pay">$5 wins $${win}.</p><button type="button" class="tv-tick-share" data-tick-share>Share with a friend</button>${open}</div>${more}</div>`;
+  return `<div class="tv-tick-stack"><div class="tv-tick-card">${betIt}<p class="gate-sample-head">${head}</p><p class="gate-sample-bet">${bet}</p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p>${legs}<p class="gate-sample-why">${esc(pick.how || "")}</p><p class="gate-sample-pay">$5 wins $${win}.</p><button type="button" class="tv-tick-share" data-tick-share>Share with a friend</button>${open}</div>${more}</div>`;
+}
+
+function tvTickHit(board, pick) {
+  const match = pick.match || pick.game || "";
+  const people = (board && board.people) || [];
+  const index = typeof legBoostFind === "function" ? legBoostFind(people) : new Map();
+  const keyed = index.get(`${pick.label}|${pick.market || ""}|${match}`);
+  if (keyed) return keyed;
+  const soft = [...index.values()].find((row) => row.bet.label === pick.label && row.bet.match === match);
+  if (soft) return soft;
+  let found = null;
+  people.some((person) => (person.bets || []).some((bet) => {
+    if (bet.label !== pick.label || (match && bet.match !== match)) return false;
+    if (pick.market && bet.market !== pick.market) return false;
+    found = { person, bet };
+    return true;
+  }));
+  return found;
+}
+
+function tvTickBet(pick) {
+  if (!pick) return;
+  const rows = Array.isArray(pick.bets) && pick.bets.length
+    ? pick.bets.map((bet) => ({ ...bet, match: bet.match || bet.game || pick.match, market: bet.market || "" }))
+    : [pick];
+  window.asking = true;
+  if (window.goFull) goFull();
+  if (window.birdMenu) birdMenu("find");
+  let tries = 0;
+  const wait = setInterval(() => {
+    const board = document.querySelector("#desk-glass-in .find-board"), give = ++tries > 80;
+    if (!give && (!board || !(board.people || []).length)) return;
+    const hits = rows.map((row) => tvTickHit(board, row)).filter(Boolean);
+    if (hits.length < rows.length && !give) return;
+    clearInterval(wait);
+    if (!hits.length) { tvTickOpen(pick); return; }
+    if (parlayLeg.size && typeof saveNew === "function") saveNew();
+    if (typeof betFromSay === "function") betFromSay(Array.isArray(pick.bets) && pick.bets.length ? "Parlay of the Day" : "Today's free pick", true);
+    hits.forEach(({ person, bet }) => {
+      if (typeof legSwapAdd === "function") legSwapAdd(person && person.kind === "player" ? person : null, bet);
+      else {
+        parlayLeg.set(parlayKey(bet), bet);
+        if (person && person.kind === "player" && !parlayPick.has(person.key)) parlayPick.set(person.key, person);
+      }
+    });
+    if (typeof trayRoster === "function") trayRoster();
+    window.saveGone = false;
+    window.saveShut = false;
+    try { localStorage.setItem("savedShut", "0"); } catch (error) {}
+    if (typeof saveNow === "function") saveNow();
+    if (typeof paintParlay === "function") paintParlay();
+    document.querySelectorAll(".find-tray.find-shut").forEach((tray) => { const fold = tray.querySelector(".find-fold"); if (fold) fold.click(); });
+    const glass = document.getElementById("desk-glass-in");
+    if (glass) glass.scrollTop = 0;
+  }, 150);
 }
 
 function tvTickMetKey() {
@@ -144,6 +200,7 @@ function tvTickBox() {
       sampleShare(payload).then((state) => { if (window.sampleShareMark) sampleShareMark(share, state); });
       return;
     }
+    if (event.target.closest("[data-tick-bet]") && payload) { event.stopPropagation(); tvTickBet(payload); return; }
     const open = event.target.closest("[data-tick-open]");
     if (open && payload) { event.stopPropagation(); tvTickOpen(payload); return; }
     if (event.target.closest("[data-tick-state]")) { event.stopPropagation(); const code = (document.getElementById("tv-tick-state-pick") || {}).value; if (code && window.saveState) saveState(code); return; }

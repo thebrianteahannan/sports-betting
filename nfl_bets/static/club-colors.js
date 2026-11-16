@@ -50,12 +50,62 @@ function clubTray(tray) {
     const sport = person.sport || ((person.bets || []).find((bet) => bet.sport) || {}).sport || "";
     const team = person.team || (typeof clubOf !== "undefined" && clubOf.get(bare)) || "", pos = person.pos || clubSpot.get(bare) || "";
     if (!team || !pos) clubAsk(person, sport);
-    const text = [clubNick(sport, team), pos].filter(Boolean).join(" · ");
+    const nick = clubNick(sport, team);
     let spot = who.nextElementSibling && who.nextElementSibling.matches("i.spot") ? who.nextElementSibling : null;
-    if (!text) { if (spot) spot.remove(); return; }
+    if (!pos && !nick) { if (spot) spot.remove(); return; }
     if (!spot) { spot = document.createElement("i"); spot.className = "spot"; who.after(spot); }
-    spot.textContent = text;
+    spot.replaceChildren();
+    if (pos) spot.append(document.createTextNode(pos));
+    if (pos && nick) spot.append(document.createTextNode(" · "));
+    if (nick) {
+      const go = document.createElement("button");
+      go.type = "button";
+      go.className = "club-go";
+      go.textContent = nick;
+      go.title = `Open ${nick}`;
+      go.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const bet = [...parlayLeg.values()].find((row) => String(row.label || "").startsWith(person.name));
+        clubOpen(team, sport, bet && bet.match);
+      });
+      spot.append(go);
+    }
   });
+}
+
+function clubOpen(teamName, sport, match) {
+  const board = document.querySelector(".find-board");
+  const nick = String(teamName || "").trim();
+  if (!board || !nick) return;
+  const fold = (text) => typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase();
+  const short = fold(clubNick(sport, nick) || nick.split(/\s+/).pop() || nick);
+  const open = board.querySelector(".find-teams .find-match:not(.find-game-shut)");
+  if (open) {
+    const go = [...open.querySelectorAll(".find-side-go")].find((btn) => {
+      const text = fold(String(btn.textContent || "").split(",")[0]);
+      return text === fold(nick) || text.endsWith(` ${short}`) || short && text.endsWith(short);
+    });
+    if (go) {
+      if (!go.classList.contains("on")) go.click();
+      const roster = [...open.querySelectorAll(".find-roster.find-all")].find((node) => !node.hidden && !node.classList.contains("find-off") && fold(node.dataset.team || "").endsWith(short)) || open.querySelector(".find-everyone");
+      (roster || go).scrollIntoView({ block: "nearest", behavior: "smooth" });
+      return;
+    }
+  }
+  const sides = String(match || "").includes(" @ ") ? String(match).split(" @ ") : String(match || "").split(/\sv\s/i);
+  const side = sides.map((name) => name.replace(/\s*\([^)]*\)/g, "").trim()).find((name) => name === nick || name.endsWith(` ${nick}`)) || nick;
+  const want = fold(side), nickFold = fold(clubNick(sport, nick) || nick);
+  let full = side;
+  if (typeof clubOf !== "undefined") {
+    for (const value of clubOf.values()) {
+      if (fold(value) === want || (nickFold && fold(value).endsWith(` ${nickFold}`))) { full = value; break; }
+    }
+  }
+  const team = (board.people || []).find((person) => person.kind === "team" && (fold(person.name) === fold(full) || fold(person.name) === want || (nickFold && fold(person.name).endsWith(` ${nickFold}`))));
+  const list = board.querySelector(".find-list"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)"), roster = board.querySelector(":scope > .find-roster");
+  if (team && list && hits && typeof showFind === "function") { showFind(list, hits, team, roster, board.people); return; }
+  if ((full || side) && typeof legSeek === "function") legSeek(full || side);
 }
 
 function clubNick(sport, team) {

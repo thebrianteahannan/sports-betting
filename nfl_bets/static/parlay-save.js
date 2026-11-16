@@ -123,13 +123,28 @@ function saveSig(legs) {
   return legs.map((bet) => parlayKey(bet)).sort().join("~");
 }
 
+function parlayStakeOf() {
+  const n = Number(window.parlayStake);
+  if (n > 0) return n;
+  const row = window.parlayOpenId && saveList().find((one) => one.id === window.parlayOpenId);
+  return Number(row && row.stake) > 0 ? Number(row.stake) : 5;
+}
+
+function parlayStakeSet(amount) {
+  window.parlayStake = Number.isFinite(amount) && amount > 0 ? Math.round(Math.min(amount, 100000) * 100) / 100 : 5;
+  if (parlayLeg.size) saveNow();
+  return window.parlayStake;
+}
+
 function saveNow() {
   if (!parlayLeg.size) return null;
   const list = saveList();
   const entry = { id: window.parlayOpenId || `p${Date.now()}`, at: Date.now(), legs: [...parlayLeg.values()], picks: [...parlayPick.values()].map(({ bets, ...rest }) => rest) };
   const at = list.findIndex((row) => row.id === entry.id);
   if (at >= 0 && list[at].group) entry.group = list[at].group;
-  if (at >= 0 && list[at].stake) entry.stake = list[at].stake;
+  const stake = Number(window.parlayStake) > 0 ? Number(window.parlayStake) : (at >= 0 && Number(list[at].stake)) || 5;
+  entry.stake = stake;
+  window.parlayStake = stake;
   if (at >= 0) list[at] = entry; else list.unshift(entry);
   saveStore(list);
   window.parlayOpenId = entry.id;
@@ -159,6 +174,7 @@ function saveOpen(id) {
   (entry.legs || []).forEach((bet) => { const label = String(bet.label || ""); if ([...parlayPick.values()].some((one) => one.name && label.startsWith(one.name))) return; const lite = known.find((one) => one.name && label.startsWith(one.name)); if (lite) parlayPick.set(lite.key, people.find((who) => who.key === lite.key) || { ...lite, bets: [] }); });
   (entry.legs || []).forEach((bet) => { const live = people.flatMap((who) => who.bets || []).find((row) => row.label === bet.label && row.market === bet.market && row.match === bet.match) || bet; parlayLeg.set(parlayKey(live), live); });
   window.parlayOpenId = id;
+  window.parlayStake = Number(entry.stake) > 0 ? Number(entry.stake) : 5;
   if (typeof trayRoster === "function") trayRoster();
   paintParlay();
 }
@@ -169,13 +185,14 @@ function saveDrop(id) {
   if (Date.now() - saveDropAt > 5 * 60 * 1000 && !window.confirm("Delete this saved parlay?")) return;
   saveDropAt = Date.now();
   saveStore(saveList().filter((row) => row.id !== id));
-  if (window.parlayOpenId === id) { window.parlayOpenId = ""; parlayPick.clear(); parlayLeg.clear(); if (typeof trayRoster === "function") trayRoster(); }
+  if (window.parlayOpenId === id) { window.parlayOpenId = ""; window.parlayStake = 5; parlayPick.clear(); parlayLeg.clear(); if (typeof trayRoster === "function") trayRoster(); }
   paintParlay();
 }
 
 function saveNew() {
   saveLeave();
   parlayPick.clear(); parlayLeg.clear();
+  window.parlayStake = 5;
   if (typeof trayRoster === "function") trayRoster();
   paintParlay();
 }
