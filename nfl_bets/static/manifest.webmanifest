@@ -1,0 +1,18 @@
+{
+  "name": "Parlay of the Day",
+  "short_name": "Parlay",
+  "description": "Tonight is handled.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#07090e",
+  "theme_color": "#04140c",
+  "icons": [
+    {
+      "src": "/logo.png?v=5",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

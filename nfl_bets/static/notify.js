@@ -13,8 +13,30 @@ function notifySet(on) {
   paintNotify();
 }
 
+function notifyIos() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function notifyHome() {
+  return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+}
+
 function notifyCan() {
   return typeof Notification !== "undefined";
+}
+
+function notifyHow() {
+  if (notifyCan()) return "Get a browser alert when someone messages you. Keep this site open — even in the background is enough.";
+  if (notifyIos() && !notifyHome()) return "iPhone only allows alerts from the Home Screen app. In Chrome or Safari, add Parlay of the Day to your Home Screen, open it from that icon, then tap Notify me.";
+  if (notifyIos()) return "Update iPhone to iOS 16.4 or later, then open Parlay of the Day from your Home Screen and tap Notify me.";
+  return "This browser does not support alerts.";
+}
+
+function notifyNeed() {
+  if (notifyCan()) return "";
+  if (notifyIos() && !notifyHome()) return "Add this site to your Home Screen, open it from that icon, then tap Notify me. Chrome and Safari on iPhone both need that step.";
+  if (notifyIos()) return "This iPhone build does not allow alerts yet. Update to iOS 16.4 or later.";
+  return "This browser does not support alerts.";
 }
 
 async function notifyAsk() {
@@ -58,7 +80,7 @@ function paintNotifyPair(onId, offId, noteId) {
   if (!note) return;
   if (!notifyCan()) {
     note.hidden = false;
-    note.textContent = "This browser does not support alerts.";
+    note.textContent = notifyNeed();
   } else if (on && Notification.permission === "denied") {
     note.hidden = false;
     note.textContent = "Alerts are blocked for this site. Turn them on in your browser settings.";
@@ -71,7 +93,15 @@ function paintNotifyPair(onId, offId, noteId) {
   }
 }
 
+function paintNotifySay() {
+  const how = notifyHow();
+  const profile = document.querySelector("#profile-notify > p.quiet:not(#profile-notify-note)");
+  if (profile) profile.textContent = how;
+  document.querySelectorAll(".chat-settings-say").forEach((node) => { node.textContent = how; });
+}
+
 function paintNotify() {
+  paintNotifySay();
   paintNotifyPair("profile-notify-on", "profile-notify-off", "profile-notify-note");
   paintNotifyPair("chat-notify-on", "chat-notify-off", "chat-notify-note");
 }
