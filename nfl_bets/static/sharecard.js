@@ -75,15 +75,22 @@ function foundLine(card) {
 }
 function shareFrom(card, kicker, label) {
   const pack = !!(card && card.pack);
-  const legs = (card.legs || []).filter((leg) => leg && leg.label).map((leg) => { const n = Number(leg.odds); const implied = n < 0 ? Math.abs(n) / (Math.abs(n) + 100) * 100 : n > 0 ? 10000 / (n + 100) : ""; return { label: pack ? String(leg.label || "") : shareLabel(leg), odds: shareSigned(n), pct: pack ? "" : (sharePct(leg.pct) || sharePct(implied)), form: String(leg.form || "").replace(/^In form:\s*/i, "") }; });
+  const legs = (card.legs || []).filter((leg) => leg && leg.label).map((leg) => {
+    const n = Number(leg.odds);
+    const implied = n < 0 ? Math.abs(n) / (Math.abs(n) + 100) * 100 : n > 0 ? 10000 / (n + 100) : "";
+    const stake = Number(leg.stake) > 0 ? Number(leg.stake) : 5;
+    const cash = leg.cash || (Number.isFinite(n) && n && typeof findCash === "function" ? findCash(n, stake) : "") || (typeof winOn === "function" && winOn(n) != null ? `$${Number(winOn(n)).toFixed(2)}` : "");
+    return { label: pack ? String(leg.label || "") : shareLabel(leg), odds: shareSigned(n), pct: sharePct(leg.pct) || sharePct(implied), cash: pack ? cash : "", form: String(leg.form || "").replace(/^In form:\s*/i, "") };
+  });
   const price = shareSigned(card.american);
   const strategy = pack ? `${legs.length} open` : (price ? `Near ${price}` : (card.strategy || label || ""));
-  const profit = pack ? null : (card.profit != null ? card.profit : (typeof winOn === "function" ? winOn(card.american) : null));
+  const profit = pack ? (card.profit != null ? card.profit : null) : (card.profit != null ? card.profit : (typeof winOn === "function" ? winOn(card.american) : null));
+  const stake = pack && Number(card.stake) > 0 ? Number(card.stake) : null;
   let game = pack ? "My bets" : gameLine(card);
   if (game === "Across the slate" && kicker === "BET OF THE WEEK") game = "This week";
   if (game === "Across the slate" && kicker === "BET OF THE DAY") game = "Today";
   return {
-    kicker, title: card.title || label || "Parlay", strategy, game, pack,
+    kicker, title: card.title || label || "Parlay", strategy, game, pack, stake,
     when: whenLine(card), found: foundLine(card), why: whyLines(card, kicker), legs, pct: sharePct(card.impliedPct), profit, serial: pack ? "" : (typeof betSerial === "function" ? betSerial(card) : ""), strategyNo: pack ? "" : (typeof strategyNo === "function" ? strategyNo(card.card, card.card === "hits" && typeof hitsPart === "function" ? hitsPart(card) : "") : ""),
   };
 }
@@ -237,9 +244,9 @@ function drawBoard(ctx, bet) {
   const shown = bet.legs.length > maxShow ? bet.legs.slice(0, maxShow - 1) : bet.legs;
   const extra = bet.legs.length - shown.length;
   const bottom = y + h - 118;
-  const noted = shown.some((leg) => leg.form);
+  const noted = shown.some((leg) => leg.form || (pack && (leg.pct || leg.cash)));
   const slots = Math.max(shown.length + (extra ? 1 : 0), 1);
-  const rowH = Math.min(pack ? (noted ? 52 : 40) : (noted ? 98 : 76), Math.max(pack ? 28 : (noted ? 72 : 40), (bottom - cursor) / slots));
+  const rowH = Math.min(pack ? (noted ? 64 : 40) : (noted ? 98 : 76), Math.max(pack ? 28 : (noted ? 72 : 40), (bottom - cursor) / slots));
   shown.forEach((leg) => {
     ctx.strokeStyle = "rgba(61,255,110,0.35)";
     ctx.lineWidth = 1;
@@ -265,13 +272,21 @@ function drawBoard(ctx, bet) {
     if (leg.form) {
       const note = leg.form.toUpperCase();
       ctx.fillStyle = "#b7ffc9";
-      const noteSize = fitText(ctx, note, right - left, pack ? 12 : 15, SHARE_TEXT);
+      const noteSize = fitText(ctx, note, right - left - (pack ? 96 : 0), pack ? 12 : 15, SHARE_TEXT);
       ctx.font = `600 ${noteSize}px ${SHARE_TEXT}`;
       ctx.fillText(note, left, under);
+      under += noteSize + 2;
+    }
+    if (pack && leg.cash) {
+      const pay = `$5 PROFITS ${String(leg.cash).toUpperCase()}`;
+      ctx.fillStyle = "#3dff6e";
+      const paySize = fitText(ctx, pay, right - left - 96, 13, SHARE_TEXT);
+      ctx.font = `600 ${paySize}px ${SHARE_TEXT}`;
+      ctx.fillText(pay, left, under);
     }
     ctx.textAlign = "right";
     if (leg.odds) { ctx.fillStyle = "#3dff6e"; ctx.font = `600 ${pack ? 18 : 24}px ${SHARE_FONT}`; ctx.fillText(String(leg.odds), right, cursor + (pack ? 4 : 8)); }
-    if (leg.pct) { ctx.fillStyle = "#e7c15a"; ctx.font = `600 18px ${SHARE_FONT}`; ctx.fillText(`${leg.pct}%`, right, cursor + (leg.odds ? 34 : 12)); }
+    if (leg.pct) { ctx.fillStyle = "#e7c15a"; ctx.font = `600 ${pack ? 16 : 18}px ${SHARE_FONT}`; ctx.fillText(`${leg.pct}%`, right, cursor + (leg.odds ? (pack ? 26 : 34) : 12)); }
     ctx.textAlign = "left";
     cursor += rowH;
   });
@@ -291,8 +306,10 @@ function drawBoard(ctx, bet) {
   if (bet.pct) ctx.fillText(`${bet.pct}%`, right, barY + 8);
   ctx.textAlign = "left";
   ctx.fillStyle = "#3dff6e";
-  ctx.font = `600 18px ${SHARE_FONT}`;
-  const win = pack ? "ALL MY BETS" : (bet.profit != null ? `$5 BET WOULD WIN $${Number(bet.profit).toFixed(2)}` : "21+");
+  const packStake = pack && bet.stake != null ? (Math.abs(Number(bet.stake) - Math.round(Number(bet.stake))) < 0.005 ? String(Math.round(Number(bet.stake))) : Number(bet.stake).toFixed(2)) : "";
+  const packProfit = pack && bet.profit != null ? (Math.abs(Number(bet.profit) - Math.round(Number(bet.profit))) < 0.005 ? String(Math.round(Number(bet.profit))) : Number(bet.profit).toFixed(2)) : "";
+  const win = pack ? (packStake && packProfit ? `$${packStake} · PROFITS $${packProfit} IF ALL HIT` : "ALL MY BETS") : (bet.profit != null ? `$5 BET WOULD WIN $${Number(bet.profit).toFixed(2)}` : "21+");
+  ctx.font = `600 ${fitText(ctx, win, right - left, pack ? 15 : 18, SHARE_FONT)}px ${SHARE_FONT}`;
   ctx.fillText(win, left, barY + 50);
   ctx.font = `600 13px ${SHARE_TEXT}`;
   ctx.fillStyle = "#d5deea";

@@ -241,6 +241,9 @@
 .find-saved > p { flex-basis: 100%; margin: 0; color: #e7c15a; font-weight: 700; }
 .rec-board > .find-saved, .rec-board .find-tray { padding: 0.45rem 0.7rem 0.55rem; border: 1px solid rgba(61, 255, 110, 0.18); border-radius: 12px; }
 .find-saved > p.find-say { display: flex; align-items: center; gap: 0.6rem; }
+.find-saved > p.find-say > .find-saved-pay { color: #d5deea; font-size: 0.85rem; font-weight: 600; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+.find-saved > p.find-say > .find-saved-pay .pay { color: #3dff6e; font-style: normal; font-weight: 800; }
+.find-board.club-on .find-saved > p.find-say > .find-saved-pay .pay { color: #3dff6e !important; }
 .rec-board .find-saved > p.find-say button.find-fold, .rec-board .find-saved > p.find-say button.find-close { width: auto !important; margin: 0 !important; padding: 0.15rem 0.6rem !important; min-height: 0 !important; border: 0 !important; border-radius: 999px !important; background: transparent !important; color: #c9d4dd !important; box-shadow: inset 0 0 0 1px #3a4652 !important; font-size: 0.8rem !important; font-weight: 700 !important; line-height: inherit !important; text-transform: none !important; }
 .rec-board .find-saved > p.find-say button.find-fold { margin-left: auto !important; }
 .rec-board .find-saved > p.find-say button.find-close:hover { color: #ff6b6b !important; }
@@ -249,6 +252,9 @@
   position: static !important; top: auto !important; right: auto !important; z-index: auto;
   flex: none; display: inline-grid; place-items: center; width: 1.7rem !important; height: 1.7rem !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important;
   border: 1px solid #3dff6e !important; border-radius: 8px !important; background-color: #07140f !important; color: #3dff6e !important; box-shadow: none !important; cursor: pointer;
+}
+.rec-board .find-saved > p.find-say > button.chat-send, #desk.tv-full #desk-glass .rec-board .find-saved > p.find-say > button.chat-send {
+  background: #07140f !important; background-image: none !important;
 }
 .rec-board .find-saved > p.find-say > button.share-bet[hidden], .rec-board .find-saved > p.find-say > button.chat-send[hidden] { display: none !important; }
 .rec-board .find-saved > p.find-say > button.chat-send svg { width: 15px; height: 15px; }

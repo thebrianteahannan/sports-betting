@@ -166,6 +166,7 @@
 #share-view img { display: block; width: 959px; height: 1024px; max-width: none; border-radius: 0; }
 #desk.tv-full #desk-glass #share-back, #share-back { position: absolute; top: 8px; left: 8px; z-index: 3; width: 2rem; height: 2rem; min-height: 0; margin: 0; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #3dff6e; border-radius: 8px; background: #07140f; color: #3dff6e; box-shadow: none; }
 #share-view .pick-save { position: absolute; z-index: 6; left: 0; right: 0; bottom: 0; margin: 0; padding: 2.4rem 0.7rem 2.15rem; justify-content: center; gap: 0.55rem; background: linear-gradient(transparent, #07090e 42%); }
+#share-view .pick-save button, #desk.tv-full #share-view .pick-save button { width: auto; min-height: 0; margin: 0; padding: 0.45rem 1rem; border: 1px solid #3dff6e; border-radius: 999px; background: #3dff6e; color: #04110a; box-shadow: none; font-size: 14px; font-weight: 700; letter-spacing: 0.04em; }
 #share-view .quiet { position: absolute; z-index: 6; left: 0; right: 0; bottom: 0.55rem; margin: 0; text-align: center; color: #d5deea; }
 #desk.tv-full #desk-glass #choice-result > h2, #choice-result > h2 { margin: 0 0 0.55rem; color: #f4fff6; font-size: 16px; letter-spacing: 0.02em; text-transform: uppercase; }
 .rec-board .rec-history { margin: 0.15rem 0 0; color: #3dff6e; font-size: 14px; font-weight: 700; line-height: 1.3; }

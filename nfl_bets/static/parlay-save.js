@@ -228,13 +228,44 @@ function saveChipSaid(row) {
   return `${row.legs.length} ${row.legs.length === 1 ? "leg" : "legs"}`;
 }
 
+function saveMoneySaid(n) {
+  const v = Math.round(Number(n) * 100) / 100;
+  if (!Number.isFinite(v)) return "";
+  return Math.abs(v - Math.round(v)) < 0.005 ? String(Math.round(v)) : v.toFixed(2);
+}
+
+function saveRowStake(row) {
+  return Number(row && row.stake) > 0 ? Number(row.stake) : 5;
+}
+
+function saveRowWin(row) {
+  const price = savePrice(row.legs || []);
+  const n = Number(String(price).replace("+", ""));
+  const stake = saveRowStake(row);
+  if (!Number.isFinite(n) || !n || !(stake > 0)) return 0;
+  return Math.round(stake * (n < 0 ? 100 / -n : n / 100) * 100) / 100;
+}
+
+function savePackTally(list) {
+  const rows = (list || []).filter((row) => (row.legs || []).length);
+  return {
+    n: rows.length,
+    stake: Math.round(rows.reduce((sum, row) => sum + saveRowStake(row), 0) * 100) / 100,
+    profit: Math.round(rows.reduce((sum, row) => sum + saveRowWin(row), 0) * 100) / 100,
+  };
+}
+
 function saveAllShareTicket(rows) {
   const legs = (rows || []).filter((row) => (row.legs || []).length).map((row) => {
     const games = typeof gameShortList === "function" ? gameShortList(row.legs) : "";
     const price = savePrice(row.legs), n = Number(String(price).replace("+", ""));
-    return { label: saveChipSaid(row), odds: Number.isFinite(n) ? n : 0, form: games || (row.legs.length > 1 ? `${row.legs.length}-leg` : ""), kickoff: (row.legs[0] || {}).kickoff || "" };
+    const stake = saveRowStake(row);
+    const pct = Number.isFinite(n) && typeof findPct === "function" ? findPct(n) : "";
+    const cash = Number.isFinite(n) && n && typeof findCash === "function" ? findCash(n, stake) : "";
+    return { label: saveChipSaid(row), odds: Number.isFinite(n) ? n : 0, pct, cash, stake, form: games || (row.legs.length > 1 ? `${row.legs.length}-leg` : ""), kickoff: (row.legs[0] || {}).kickoff || "" };
   });
-  return { title: "My bets", american: "", impliedPct: "", legs, card: "mine", pack: true };
+  const tally = savePackTally(rows);
+  return { title: "My bets", american: "", impliedPct: "", legs, card: "mine", pack: true, stake: tally.stake, profit: tally.profit };
 }
 
 function savePaint() {
@@ -302,7 +333,14 @@ function savePaint() {
     back.addEventListener("click", () => { window.saveGone = false; paintParlay(); }); box.append(back);
     if (window.saveShut === undefined) window.saveShut = localStorage.getItem("savedShut") === "1";
     box.classList.toggle("find-saved-shut", window.saveShut);
-    const head = document.createElement("p"); head.className = "find-say"; head.textContent = "MY BETS";
+    const head = document.createElement("p"); head.className = "find-say"; head.append("MY BETS");
+    const tally = savePackTally(list);
+    if (tally.n) {
+      const pay = document.createElement("span");
+      pay.className = "find-saved-pay";
+      pay.innerHTML = `<i class="pay">$${esc(saveMoneySaid(tally.stake))}</i> · profits <i class="pay">$${esc(saveMoneySaid(tally.profit))}</i> if all hit`;
+      head.append(pay);
+    }
     const fold = document.createElement("button"); fold.type = "button"; fold.className = "find-fold"; fold.textContent = window.saveShut ? `Show ${list.length} parlay${list.length === 1 ? "" : "s"} ▾` : "Hide ▴";
     fold.addEventListener("click", () => { window.saveShut = !window.saveShut; try { localStorage.setItem("savedShut", window.saveShut ? "1" : "0"); } catch (error) { console.log("[parlay-save] could not keep fold", error); } paintParlay(); });
     const share = document.createElement("button");
