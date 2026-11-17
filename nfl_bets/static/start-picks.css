@@ -32,7 +32,7 @@
 :is(.rec-board, #choice-result) .find-start .quick-add-go.new { border: 1px solid #3dff6e !important; background: transparent !important; color: #3dff6e !important; }
 :is(.rec-board, #choice-result) .find-start .quick-add-go:hover { background: #6bff92 !important; }
 :is(.rec-board, #choice-result) .find-start .quick-add-go.new:hover { background: rgba(61, 255, 110, 0.12) !important; }
-.find-board:has(.find-guide, .find-match) .find-start { display: none; }
+.find-board:has(.find-guide, .find-match:not([data-parlay-match])) .find-start { display: none; }
 .find-board .find-start .find-start-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; margin: 0 0 0.6rem; position: sticky; top: 0.4rem; z-index: 6; background: #07090e; box-shadow: 0 0 0 8px #07090e, 0 14px 12px -2px rgba(7, 9, 14, 0.85); }
 .find-board .find-start .desk-games-tabs { display: flex; width: fit-content; margin: 0; }
 .find-start-random { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
