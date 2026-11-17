@@ -310,8 +310,26 @@ function paintScores(holder, game, people, list, hits) {
   }
 }
 window.paintTdRec = paintTdRec;
+
+function openTdFocus(board) {
+  board.querySelectorAll(".find-tray:not([hidden])").forEach((tray) => {
+    if (tray.classList.contains("find-shut")) return;
+    tray.classList.add("find-shut");
+    tray.classList.remove("find-edit");
+    const edit = tray.querySelector("button.find-edit");
+    if (edit) { edit.textContent = "Edit props"; edit.classList.remove("on"); }
+    const fold = tray.querySelector("button.find-fold");
+    if (fold && typeof parlayLeg !== "undefined") {
+      const n = parlayLeg.size || parlayPick.size, word = parlayLeg.size || !parlayPick.size ? "leg" : "player";
+      fold.textContent = `Show ${n} ${word}${n === 1 ? "" : "s"} ▾`;
+    }
+  });
+  window.saveGone = true;
+  document.querySelectorAll(".find-saved").forEach((box) => box.classList.add("find-saved-gone"));
+}
+
 function openTdPage(list, people, hits, game, team) {
-  const board = list && list.closest(".find-board"); if (!board) return; board.classList.add("find-td-on"); document.querySelectorAll(".find-tips").forEach((node) => node.remove()); const span = board.querySelector(".find-span"); if (span) { span.classList.add("find-picked"); const go = span.querySelector(".find-games-go"); if (go) go.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); } const holder = board.querySelector(".find-teams"); if (holder) holder.replaceChildren(); if (hits) hits.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on"); list.classList.add("find-td-board"); const slateOn = !game && board.querySelector(".find-games.find-on"), slateKeys = slateOn && typeof loadedGames === "function" ? new Set(loadedGames(people, slateOn.dataset.span || "today").map((row) => `${row.match}|${row.kickoff}`)) : null;
+  const board = list && list.closest(".find-board"); if (!board) return; openTdFocus(board); board.classList.add("find-td-on"); document.querySelectorAll(".find-tips").forEach((node) => node.remove()); const span = board.querySelector(".find-span"); if (span) { span.classList.add("find-picked"); const go = span.querySelector(".find-games-go"); if (go) go.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); } const holder = board.querySelector(".find-teams"); if (holder) holder.replaceChildren(); if (hits) hits.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on"); list.classList.add("find-td-board"); const slateOn = !game && board.querySelector(".find-games.find-on"), slateKeys = slateOn && typeof loadedGames === "function" ? new Set(loadedGames(people, slateOn.dataset.span || "today").map((row) => `${row.match}|${row.kickoff}`)) : null;
   const skip = /half|quarter|\b1st\b|first|last|either|\b[23]\+|each quarter|each half/, shot = (price) => price < 0 ? Math.abs(price) / (Math.abs(price) + 100) : 100 / (price + 100), kindOf = (bet) => { const text = `${bet.label || ""} ${bet.market || ""}`.toLowerCase().replace(/\btds\b/g, "touchdowns").replace(/\btd\b/g, "touchdown"); const market = String(bet.market || "").toLowerCase(); if (market === "to score 2+ touchdowns") return "2 Anytime TDs"; if (market === "to score 3+ touchdowns") return "3 Anytime TDs"; if (skip.test(text)) return ""; if (/anytime touchdown scorer|any time touchdown scorer/.test(text)) return "Anytime TD"; return ""; }, books = new Map();
   (people || []).forEach((person) => { if (!person || person.kind !== "player") return; (person.bets || []).forEach((bet) => { if (String(bet.sport || "").toUpperCase() !== "NFL" || (slateKeys && !slateKeys.has(`${bet.match}|${bet.kickoff}`))) return; const kind = kindOf(bet), price = Number(bet.odds); if (!kind || !price) return; const chance = shot(price), here = !!(game && bet.match === game.match && bet.kickoff === game.kickoff), book = books.get(kind) || new Map(); books.set(kind, book); const had = book.get(person.name); if (here) { if (!had || !had.here || chance > had.chance) book.set(person.name, { person, chance, odds: price, match: bet.match, kickoff: bet.kickoff, here: true }); } else if (!had) book.set(person.name, { person, chance, odds: price, match: bet.match, kickoff: bet.kickoff, here: false }); else if (!had.here && chance > had.chance) { had.chance = chance; had.odds = price; had.match = bet.match; had.kickoff = bet.kickoff; } }); });
   const head = document.createElement("h3"); const picks = document.createElement("div"); picks.className = "find-hits find-td-picks"; const allBox = document.createElement("div"); allBox.className = "find-td-all find-td-page"; let clubs = new Map(); let few;

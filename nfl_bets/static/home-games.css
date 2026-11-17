@@ -51,6 +51,10 @@ body.home-games-on #who { top: var(--home-games-top); right: 16px; bottom: auto;
 :is(#desk-games, #rec-page, .find-start) .desk-rec-game { margin: 14px 0 6px; color: #9fb3c8; font-size: 13px; font-weight: 700; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec { grid-template-columns: 1fr auto; grid-template-areas: "name name" "how legs" "read read"; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec-name { grid-area: name; overflow: hidden; font-size: 15px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+:is(#desk-games, #rec-page, .find-start) .desk-rec-name i { font-style: normal; }
+:is(#desk-games, #rec-page, .find-start) .desk-rec-name i.px { color: #3dff6e; font-weight: 800; }
+:is(#desk-games, #rec-page, .find-start) .desk-rec-name i.pct { color: #e7c15a; font-weight: 700; }
+:is(#desk-games, #rec-page, .find-start) .desk-rec-name i.pay { color: #3dff6e; font-weight: 700; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec-how { grid-area: how; font-size: 13px; font-weight: 700; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec-legs { grid-area: legs; color: #9fb3c8; font-size: 13px; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec-read { grid-area: read; display: -webkit-box; overflow: hidden; color: #c4cde0; font-size: 13px; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }

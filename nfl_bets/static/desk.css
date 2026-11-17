@@ -485,7 +485,7 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
 }
 #desk.tv-full #desk-glass button,
 #desk.tv-full #desk-glass select,
-#desk.tv-full #desk-glass input:not(.leg-check):not(#bird-name) {
+#desk.tv-full #desk-glass input:not(.leg-check):not(#bird-name):not([type="checkbox"]) {
   font-size: 18px;
   min-height: 2.7rem;
 }

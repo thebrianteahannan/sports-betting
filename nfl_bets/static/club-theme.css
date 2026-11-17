@@ -12,13 +12,17 @@
 .find-board.club-on :is(i.pct, .pct, b.find-at) { color: var(--club-hot) !important; }
 .find-board.club-on i.prop { color: var(--club-cool) !important; }
 .find-board.club-on :is(b.leg-league, button.share-bet, button.find-games-go, button.find-clear, button.find-edit, button.find-fold) { color: #ffffff !important; background-color: rgba(0, 0, 0, 0.3) !important; border-color: var(--club-edge) !important; }
-.find-board.club-on .find-tray { background: var(--club-page) !important; }
+.find-board.club-on .find-tray { background: #07090e !important; }
 .find-board.club-on .find-tray .find-why { color: #e3e8f2 !important; }
+.find-board.club-on .find-tray i.prop { color: #e7c15a !important; }
+.find-board.club-on .find-tray :is(i.pct, .pct) { color: #c9d4dd !important; }
+.find-board.club-on .find-tray :is(i.pay, i.px, .px, .pay) { color: #3dff6e !important; }
 .find-board.club-on i.sg { color: var(--club-pick-ink) !important; background: var(--club-pick) !important; text-shadow: var(--club-pick-shadow); }
 .find-board.club-on span.find-absent { color: var(--club-hot) !important; background: rgba(0, 0, 0, 0.35) !important; box-shadow: inset 0 0 0 1px var(--club-hot) !important; }
 
 .find-board.club-on :is(.rec-bet, .rec-bet.open) { background: var(--club-card) !important; border-color: var(--club-edge) !important; }
-.find-board.club-on :is(.find-match, .find-when, section.rec-strategy, .find-ticket) { background: var(--club-panel) !important; border-color: var(--club-line) !important; }
+.find-board.club-on :is(.find-match, .find-when, section.rec-strategy) { background: var(--club-panel) !important; border-color: var(--club-line) !important; }
+.find-board.club-on .find-ticket { background: #0b1210 !important; border-color: #1c2a22 !important; }
 .find-board.club-on label.find input { background: var(--club-input) !important; border-color: var(--club-edge) !important; }
 .find-board.club-on :is(.find-group + .find-group, .find-tray .find-row) { border-color: var(--club-line) !important; }
 .find-board.club-on .find-match .find-side-go.on, #desk.tv-full #desk-glass .find-board.club-on .find-match .find-side-go.on { background: var(--club-pick) !important; color: var(--club-pick-ink) !important; border-color: var(--club-pick) !important; text-shadow: var(--club-pick-shadow); }

@@ -5,6 +5,10 @@
 const legSwapOpen = new Map(), legSwapDrill = new Map();
 let legSwapRec = localStorage.getItem("legSwapRec") !== "0";
 
+function legSwapBoard() {
+  return document.querySelector("#desk-glass-in .find-board") || document.querySelector(".find-board");
+}
+
 function legSwapChance(odds) {
   const price = Number(odds);
   return price > 0 ? 100 / (price + 100) : price < 0 ? -price / (-price + 100) : 0;
@@ -21,7 +25,7 @@ function legSwapWhat(person, bet) {
 
 function legSwapFind(key) {
   const old = parlayLeg.get(key);
-  const board = document.querySelector(".find-board");
+  const board = legSwapBoard();
   if (!old || !board) return [];
   const want = legSwapChance(old.odds), owner = String(old.label || "");
   const best = new Map();
@@ -46,7 +50,7 @@ function legSwapStat(person, bet) {
 
 function legLineFind(key) {
   const old = parlayLeg.get(key);
-  const board = document.querySelector(".find-board");
+  const board = legSwapBoard();
   if (!old || !board) return [];
   const person = legSwapPerson(key, "line");
   if (!person) return legGameFind(key);
@@ -70,7 +74,7 @@ function legGameWhat(bet) {
 
 function legGameFind(key) {
   const old = parlayLeg.get(key);
-  const board = document.querySelector(".find-board");
+  const board = legSwapBoard();
   if (!old || !board) return [];
   const fam = (bet) => { const market = String(bet.market || ""); return /^(total|alternate total points?)$/i.test(market) ? "total" : /^(spread|alternate spread)$/i.test(market) ? "spread" : /^moneyline$/i.test(market) ? "money" : ""; };
   const kind = fam(old);
@@ -90,7 +94,7 @@ function legGameFind(key) {
 
 function legKindFind(key) {
   const old = parlayLeg.get(key);
-  const board = document.querySelector(".find-board");
+  const board = legSwapBoard();
   if (!old || !board) return [];
   const person = legSwapPerson(key, "kind");
   if (!person) return [];
@@ -125,15 +129,28 @@ function legWhoFind(key) {
 function legSwapTrade(key, person, bet) {
   const old = parlayLeg.get(key);
   if (!old) return;
+  const next = parlayKey(bet);
+  const keepHist = typeof legHistOpen !== "undefined" && legHistOpen.has(key);
   legSwapOpen.delete(key);
   legSwapDrill.delete(key);
   const owned = typeof legOwner !== "undefined" ? legOwner.get(key) : "";
   parlayLeg.delete(key);
   if (typeof legOwner !== "undefined") legOwner.delete(key);
-  parlayLeg.set(parlayKey(bet), bet);
-  if (person && person.name && typeof legOwner !== "undefined") legOwner.set(parlayKey(bet), person.name);
+  parlayLeg.set(next, bet);
+  if (person && person.name && typeof legOwner !== "undefined") legOwner.set(next, person.name);
   if (person && !parlayPick.has(person.key)) parlayPick.set(person.key, person);
   [...parlayPick.entries()].forEach(([pick, who]) => { const was = String(old.label || "").startsWith(who.name) || owned === who.name; const left = [...parlayLeg.values()].some((row) => typeof legOwns === "function" ? legOwns(who, row) : String(row.label || "").startsWith(who.name)); if (was && !left) parlayPick.delete(pick); });
+  if (keepHist) {
+    legHistOpen.delete(key);
+    legHistOpen.add(next);
+    if (typeof legHistBox !== "undefined") {
+      const box = legHistBox.get(key);
+      if (box) box.remove();
+      legHistBox.delete(key);
+    }
+  }
+  if (typeof legMoreOpen !== "undefined" && legMoreOpen.has(key)) { legMoreOpen.delete(key); legMoreOpen.add(next); }
+  if (typeof legMenuKey !== "undefined" && legMenuKey === key) legMenuKey = next;
   paintParlay();
 }
 
@@ -184,17 +201,27 @@ function legSwapCatSay(person, bet) {
 }
 
 function legSwapPerson(key, mode) {
-  if (mode === "who") return parlayPick.get(key.replace(/^who:/, "")) || null;
+  if (mode === "who") {
+    const pick = parlayPick.get(key.replace(/^who:/, "")) || null;
+    if (!pick) return null;
+    const board = legSwapBoard();
+    const full = ((board && board.people) || []).find((one) => one.kind === "player" && one.name === pick.name);
+    return full || pick;
+  }
   const old = parlayLeg.get(key);
-  const board = document.querySelector(".find-board");
-  if (!old || !board) return null;
+  const board = legSwapBoard();
+  if (!old) return null;
+  const people = (board && board.people) || [];
   const owned = typeof legOwner !== "undefined" ? legOwner.get(key) : "";
   if (owned) {
-    const hit = (board.people || []).find((one) => one.kind === "player" && one.name === owned)
+    const hit = people.find((one) => one.kind === "player" && one.name === owned)
       || [...parlayPick.values()].find((one) => one.name === owned);
-    if (hit) return hit;
+    if (hit) {
+      const full = people.find((one) => one.kind === "player" && one.name === hit.name);
+      return full || hit;
+    }
   }
-  return (board.people || []).find((one) => one.kind === "player" && String(old.label || "").startsWith(one.name)) || null;
+  return people.find((one) => one.kind === "player" && String(old.label || "").startsWith(one.name)) || null;
 }
 
 function legSwapSaid(key, mode) {
@@ -257,7 +284,9 @@ function legSwapBox(key, mode) {
   box.className = "find-tray-swap";
   box.dataset.key = key;
   const cats = mode === "who" || mode === "kind";
-  const drill = cats && !legSwapRec ? legSwapDrill.get(key) || "" : "";
+  const recRows = cats && legSwapRec ? legRecFind(key, mode) : null;
+  const usedRec = !!(recRows && recRows.some((row) => legIsRec(row.bet)));
+  const drill = cats && !usedRec ? legSwapDrill.get(key) || "" : "";
   const top = document.createElement("div");
   top.className = "find-swap-top";
   const said = legSwapSaid(key, mode);
@@ -300,13 +329,13 @@ function legSwapBox(key, mode) {
     box.append(back);
   }
   let rows, listMode = mode;
-  if (cats && legSwapRec) { rows = legRecFind(key, mode); listMode = mode; }
+  if (usedRec) { rows = recRows; listMode = mode; }
   else if (cats && drill) { rows = legCatLines(key, mode, drill); listMode = "line"; }
   else if (cats) { rows = legCatFind(key, mode); listMode = "cat"; }
   else rows = mode === "line" ? legLineFind(key) : legSwapFind(key);
   if (!rows.length || (mode === "swap" && !rows.some((row) => !row.now))) {
     const none = document.createElement("p");
-    none.textContent = cats && legSwapRec ? "No recommended props for this player in this game." : mode === "who" ? "FanDuel has no props posted for this player." : mode === "line" || listMode === "line" ? "FanDuel has no other numbers on this prop." : mode === "kind" || listMode === "cat" ? "FanDuel has no other props for this player in this game." : "Nothing else in this game sits at this price.";
+    none.textContent = cats && usedRec ? "No recommended props for this player in this game." : mode === "who" ? "FanDuel has no props posted for this player." : mode === "line" || listMode === "line" ? "FanDuel has no other numbers on this prop." : mode === "kind" || listMode === "cat" ? "FanDuel has no other props for this player in this game." : "Nothing else in this game sits at this price.";
     box.append(none);
     return box;
   }
@@ -427,7 +456,7 @@ document.addEventListener("click", (event) => {
   else {
     legSwapOpen.set(key, mode);
     legSwapDrill.delete(key);
-    if (!name && typeof legToolsSolo === "function") legToolsSolo(key, "swap");
+    if (!name && typeof legToolsSolo === "function") legToolsSolo(key, mode === "line" ? "line" : "swap");
   }
   if (open && name) {
     const glass = document.getElementById("desk-glass-in");

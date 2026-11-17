@@ -134,13 +134,17 @@ function homeRecRow(pick, index) {
   const card = document.createElement("button");
   card.type = "button";
   card.className = "desk-game desk-rec";
-  const odds = Number(pick.odds), price = odds > 0 ? `+${odds}` : String(odds), win = (odds > 0 ? (5 * odds) / 100 : (5 * 100) / Math.abs(odds)).toFixed(2);
+  const odds = Number(pick.odds), price = odds > 0 ? `+${odds}` : String(odds);
+  const pct = typeof findPct === "function" ? findPct(odds) : String(pick.need || "");
+  const cash = typeof findCash === "function" ? findCash(odds) : (Number.isFinite(odds) && odds ? `$${((odds > 0 ? (5 * odds) / 100 : (5 * 100) / Math.abs(odds))).toFixed(2)}` : "");
+  const star = homeTeamStar(homeGamesList.find((game) => game.match === pick.match)).trim();
   const span = (homeRecs && homeRecs.span) || "today";
   const guest = document.body.classList.contains("needs-member");
   const lead = guest ? `${homePickSport(pick) || "Top"} pick` : index ? `#${index + 1}` : span === "today" ? "Today's free pick" : span === "tomorrow" ? "Tomorrow's top pick" : "Top pick";
   const when = pick.kickoff ? `${span === "week" ? `${new Date(pick.kickoff).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short" })} ` : ""}${new Date(pick.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET` : "";
   const side = String(pick.match || "").split(" @ ").find((name) => pick.team && (name === pick.team || name.endsWith(` ${pick.team}`))) || "", logo = (side && homeLogos && homeLogos[side]) || "", dark = logo.replace("/500/", "/500-dark/");
-  card.innerHTML = `<span class="desk-rec-name">${homeTeamStar(homeGamesList.find((game) => game.match === pick.match))}${logo ? `<img class="desk-team-logo desk-rec-logo" src="${esc(dark)}" alt="${esc(side)}" loading="lazy"${dark !== logo ? ` onerror="this.onerror=null;this.src='${esc(logo)}'"` : ""}>` : ""}${esc(homeRecTitle(pick))} ${esc(price)}</span><span class="desk-rec-how">${lead}${typeof scriptKindTag === "function" ? scriptKindTag(pick) : ""}</span><span class="desk-rec-legs">${esc(when)}</span><span class="desk-rec-read">${esc(`${pick.match}. Hit in ${pick.hits} of his last ${pick.n}, the price needs ${pick.need}. $5 wins $${win}.`)}</span>`;
+  const pay = [`<i class="px">${esc(price)}</i>`, pct && `<i class="pct">${esc(pct)}</i>`, cash && `<i class="pay">${esc(`$5 profits ${cash}`)}</i>`, star].filter(Boolean).join(" ");
+  card.innerHTML = `<span class="desk-rec-name">${logo ? `<img class="desk-team-logo desk-rec-logo" src="${esc(dark)}" alt="${esc(side)}" loading="lazy"${dark !== logo ? ` onerror="this.onerror=null;this.src='${esc(logo)}'"` : ""}>` : ""}${esc(homeRecTitle(pick))} ${pay}</span><span class="desk-rec-how">${lead}${typeof scriptKindTag === "function" ? scriptKindTag(pick) : ""}</span><span class="desk-rec-legs">${esc(when)}</span><span class="desk-rec-read">${esc(`${pick.match}. Hit in ${pick.hits} of his last ${pick.n}.`)}</span>`;
   card.addEventListener("click", () => { if (document.body.classList.contains("needs-member")) { const join = document.getElementById("gate-join"); if (join) join.click(); return; } window.location.href = `/?${new URLSearchParams({ game: pick.match, label: pick.label, market: pick.market || "" })}`; });
   return card;
 }

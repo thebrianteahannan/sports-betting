@@ -12,13 +12,13 @@ function legHistClose(key) {
 function legToolsSolo(key, keep) {
   if (!key) return;
   let hist = false, swap = false, menu = false, more = false;
-  if (keep !== "hist" && legHistOpen.has(key)) {
+  if (keep !== "hist" && keep !== "line" && legHistOpen.has(key)) {
     legHistOpen.delete(key);
     const box = legHistBox.get(key);
     if (box) box.remove();
     hist = true;
   }
-  if (keep !== "swap" && typeof legSwapOpen !== "undefined" && legSwapOpen.has(key)) {
+  if (keep !== "swap" && keep !== "line" && typeof legSwapOpen !== "undefined" && legSwapOpen.has(key)) {
     legSwapOpen.delete(key);
     if (typeof legSwapDrill !== "undefined") legSwapDrill.delete(key);
     swap = true;
