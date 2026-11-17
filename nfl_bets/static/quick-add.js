@@ -283,7 +283,8 @@ function quickAddBox(board) {
     const price = Number(row.bet.odds);
     const what = typeof legSwapWhat === "function" ? legSwapWhat(person, row.bet) : row.bet.label;
     const key = typeof parlayKey === "function" ? parlayKey(row.bet) : "";
-    const label = `${what} · ${price > 0 ? `+${price}` : price}${typeof findPct === "function" && findPct(price) ? ` · ${findPct(price)}` : ""}`;
+    const cash = typeof findCash === "function" ? findCash(price) : "";
+    const label = [`${what}`, price > 0 ? `+${price}` : String(price), typeof findPct === "function" && findPct(price), cash && `$5 profits ${cash}`].filter(Boolean).join(" · ");
     return quickAddChip(label, quickAdd.value === key, () => { quickAdd.value = key; paint(); });
   }) : [Object.assign(document.createElement("p"), { className: "quick-add-none", textContent: "No lines left for that prop." })]));
 
