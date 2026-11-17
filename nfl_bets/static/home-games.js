@@ -4,7 +4,12 @@ let homeGamesList = [], homeGamesAt = 0, homeGamesGuest = null;
 
 function homeGamesLoad() {
   const guest = document.body.classList.contains("needs-member");
-  if (guest !== homeGamesGuest) { homeGamesGuest = guest; homeGamesAt = 0; homeRecs = null; }
+  if (guest !== homeGamesGuest) {
+    homeGamesGuest = guest;
+    homeGamesAt = 0;
+    // Keep the last picks on screen while the member feed reloads so the mobile strip is not blank.
+    if (homeRecs) homeRecs = { ...homeRecs, at: 0, loading: false };
+  }
   if (Date.now() - homeGamesAt < 5 * 60 * 1000) return;
   if (guest) {
     homeGamesAt = Date.now();
@@ -110,8 +115,8 @@ function homeSharedRow(item) {
 let homeGamesTab = "rec", homeRecs = null;
 
 function homeRecsLoad() {
-  if (homeRecs && (homeRecs.loading || Date.now() - homeRecs.at < 10 * 60 * 1000)) return;
   const guest = document.body.classList.contains("needs-member");
+  if (homeRecs && homeRecs.guest === guest && (homeRecs.loading || Date.now() - homeRecs.at < 10 * 60 * 1000)) return;
   homeRecs = { loading: true, at: Date.now(), picks: (homeRecs && homeRecs.picks) || [], guest };
   fetch(guest ? "/api/sample" : "/api/top-picks", { credentials: "same-origin", cache: "no-store" }).then((reply) => (reply.ok ? reply.json() : { picks: [] })).then((data) => {
     const stillGuest = document.body.classList.contains("needs-member");
@@ -343,10 +348,11 @@ function homeGamesPaint() {
   const now = Date.now(), open = (game) => { const kick = Date.parse(game.kickoff || ""); return kick > now || (game.sport === "PGA" && kick > now - 5 * 24 * 60 * 60 * 1000); }, left = homeGamesList.filter(open), fresh = typeof sharedUnopened === "function" ? sharedUnopened() : [];
   if (!left.length && !guest) homeLaterLoad();
   const games = left.length ? left : [...homeLater.live.map((game) => ({ match: `${game.away.name} @ ${game.home.name}`, kickoff: game.when, sport: game.sport })), ...homeLater.tomorrow];
+  if (homeGamesTab === "rec" && (!homeRecs || homeRecs.guest !== guest)) homeRecsLoad();
   void bg.offsetWidth;
   const top = Math.ceil(bg.getBoundingClientRect().bottom - desk.getBoundingClientRect().top);
-  const show = (fresh.length > 0 || games.length > 0 || (guest && homeRecs && homeRecs.picks && homeRecs.picks.length)) && !desk.classList.contains("tv-full") && (guest || Boolean(guide && !guide.hidden)) && desk.clientHeight - top >= 100;
-  if (guest && homeGamesTab === "rec") homeRecsLoad();
+  const hasRec = homeGamesTab === "rec" && homeRecs && (homeRecs.picks.length || homeRecs.loading);
+  const show = (fresh.length > 0 || games.length > 0 || hasRec) && !desk.classList.contains("tv-full") && (guest || Boolean(guide && !guide.hidden)) && desk.clientHeight - top >= 100;
   const wasHidden = box.hidden;
   box.hidden = !show;
   document.body.classList.toggle("home-games-on", show);
@@ -354,7 +360,7 @@ function homeGamesPaint() {
   const menu = document.getElementById("desk-menu"), at = box.classList.contains("desk-games-tall") && menu ? Math.ceil(menu.getBoundingClientRect().bottom - desk.getBoundingClientRect().top) + 8 : top;
   box.style.top = `${at}px`;
   document.body.style.setProperty("--home-games-top", `${at + 12}px`);
-  if ((guest || !fresh.length) && homeGamesTab === "rec") homeRecsLoad();
+  if (!fresh.length && homeGamesTab === "rec") homeRecsLoad();
   homeLogosLoad();
   homeLeagueSync();
   const sig = `${homeLeagueOpen}|` + `${homeLeagueOn(games)}|${homeGamesTab}|${(window.memberTeams || []).join(",")}|${homeRecs ? `${homeRecs.at}${homeRecs.loading ? "…" : ""}` : ""}|${fresh.length ? `shared:${fresh.map((item) => item.id).join(";")}` : games.map((game) => `${game.match}|${game.kickoff}`).join(";")}${left.length ? "" : `|${homeLater.at}`}`;

@@ -98,8 +98,9 @@ function place(x, y, scale, box) {
 function shot() {
   const { w, h } = viewSize();
   if (document.getElementById("desk")?.classList.contains("tv-full")) return place(0, 0, Math.max(w / 959, h / 1024) * (w / h > 959 / 1024 ? 1.2 : 1));
-  // Keep a strip under the poster for today's games on short phone screens.
-  const strip = h < 760 ? Math.min(220, Math.max(120, Math.round(h * 0.32))) : 0;
+  // Keep a strip under the poster for today's games on short phone screens — only while that panel is on.
+  const stripOn = document.body.classList.contains("home-games-on") || document.body.classList.contains("needs-member");
+  const strip = stripOn && h < 760 ? Math.min(220, Math.max(120, Math.round(h * 0.32))) : 0;
   return place(480, 512, Math.min(w / 959, Math.max(280, h - strip) / 1024));
 }
 
