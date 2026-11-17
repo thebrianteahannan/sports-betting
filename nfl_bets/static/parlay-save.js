@@ -270,7 +270,14 @@ function saveAllShareTicket(rows) {
 
 function savePaint() {
   if (parlayLeg.size || parlayPick.size) document.querySelectorAll(".find-tips").forEach((node) => node.remove());
-  else { const board = document.querySelector("#desk-glass-in .find-board"), input = board && board.querySelector("label.find input"); if (board && !board.tipsSeen && board.querySelector(":scope > .find-tray") && !(input && input.value.trim())) { board.tipsSeen = true; setTimeout(saveTips); } }
+  else {
+    const board = document.querySelector("#desk-glass-in .find-board"), input = board && board.querySelector("label.find input");
+    if (board && !board.tipsSeen && board.querySelector(":scope > .find-tray")) {
+      board.tipsSeen = true;
+      if (input && input.value.trim()) saveTipDone("search");
+      setTimeout(saveTips);
+    }
+  }
   const list = saveList();
   const open = list.find((row) => row.id === window.parlayOpenId);
   const same = open && saveSig(open.legs) === saveSig([...parlayLeg.values()]);
@@ -398,7 +405,7 @@ function savePaint() {
     fresh.type = "button";
     fresh.className = "find-saved-new";
     fresh.textContent = "+ New bet";
-    fresh.addEventListener("click", () => { const input = document.querySelector("label.find input"); saveNew(); if (input) input.focus(); if (!parlayLeg.size && !parlayPick.size && !(input && input.value.trim())) saveTips(); });
+    fresh.addEventListener("click", () => { const input = document.querySelector("label.find input"); saveNew(); if (input) input.focus(); if (!parlayLeg.size && !parlayPick.size) saveTips(); });
     head.insertBefore(fresh, acts);
     if (!groups.size) return;
     const top = document.createElement("p");
@@ -516,15 +523,36 @@ document.addEventListener("click", (event) => {
 document.addEventListener("click", (event) => { const fold = event.target.closest && event.target.closest(".find-fold"); if (!fold) return; if (event.isTrusted) saveAutoShut.delete(fold.closest(".find-tray")); for (let node = fold; node; node = node.parentElement) saveScrollTop.delete(node); }, true);
 
 let saveTipTimer = 0;
-const SAVE_TIPS = ["Search a player, team or game in <b data-tip=\"search\">the box up top</b>.", "Want a game? Tap <b data-tip=\"games\">The Games</b> and pick one.", "Got a bet already? Tap <b data-tip=\"paste\">Paste a bet</b> and drop in a screenshot from your betting app or from a friend."];
+const SAVE_TIPS = [
+  { id: "search", html: "Search a player, team or game in <b data-tip=\"search\">the box up top</b>." },
+  { id: "games", html: "Want a game? Tap <b data-tip=\"games\">The Games</b> and pick one." },
+  { id: "paste", html: "Got a bet already? Tap <b data-tip=\"paste\">Paste a bet</b> and drop in a screenshot from your betting app or from a friend." },
+];
+
+function saveTipDoneSet() {
+  try {
+    const raw = JSON.parse(localStorage.getItem("findTipsDone") || "[]");
+    return new Set(Array.isArray(raw) ? raw.filter((id) => SAVE_TIPS.some((tip) => tip.id === id)) : []);
+  } catch (error) { return new Set(); }
+}
+
+function saveTipDone(kind) {
+  const done = saveTipDoneSet();
+  if (done.has(kind)) return;
+  done.add(kind);
+  try { localStorage.setItem("findTipsDone", JSON.stringify([...done])); } catch (error) {}
+  if (document.querySelector(".find-tips")) saveTips();
+}
 
 function saveTips() {
   clearTimeout(saveTipTimer); document.querySelectorAll(".find-tips").forEach((node) => node.remove());
   if (document.querySelector("#desk-glass-in .find-board.find-td-on, #desk-glass-in .find-list.find-td-board")) return;
   const tray = document.querySelector("#desk-glass-in .find-board > .find-tray");
   if (!tray) return;
+  const left = SAVE_TIPS.filter((tip) => !saveTipDoneSet().has(tip.id));
+  if (!left.length) return;
   const tips = document.createElement("div"); tips.className = "find-tips done";
-  tips.innerHTML = `<img src="/scene/parrot-head-tight.webp?v=1" alt=""><div>${SAVE_TIPS.map((html) => `<p>${html}</p>`).join("")}</div>`;
+  tips.innerHTML = `<img src="/scene/parrot-head-tight.webp?v=1" alt=""><div>${left.map((tip) => `<p>${tip.html}</p>`).join("")}</div>`;
   tray.after(tips);
 }
 
@@ -534,4 +562,12 @@ document.addEventListener("click", (event) => {
   const want = tip.dataset.tip, go = document.querySelector(want === "games" ? "#desk-glass-in .find-games-go" : want === "paste" ? "#desk-glass-in .find-shot" : "#desk-glass-in label.find input");
   if (go && want === "search") go.focus(); else if (go) go.click();
 });
-document.addEventListener("input", (event) => { if (event.target.closest && event.target.closest("label.find")) document.querySelectorAll(".find-tips").forEach((node) => node.remove()); });
+document.addEventListener("click", (event) => {
+  if (event.target.closest && event.target.closest(".find-games-go")) saveTipDone("games");
+  if (event.target.closest && event.target.closest(".find-shot")) saveTipDone("paste");
+}, true);
+document.addEventListener("input", (event) => {
+  if (!(event.target.closest && event.target.closest("label.find"))) return;
+  if (!String(event.target.value || "").trim()) return;
+  saveTipDone("search");
+});
