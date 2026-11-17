@@ -185,14 +185,20 @@ function quickAddReveal(box) {
       tip.scrollIntoView({ block: "nearest", behavior: "smooth" });
       return;
     }
-    const tray = glass.querySelector(":scope > .find-tray:not([hidden]), .find-tray:not([hidden])");
-    const sticky = box.closest(".find-start") && box.closest(".find-start").querySelector(".find-start-row");
-    const top = Math.max(
-      glass.getBoundingClientRect().top,
-      tray && tray.getClientRects().length ? tray.getBoundingClientRect().bottom : 0,
-      sticky && sticky.getClientRects().length ? sticky.getBoundingClientRect().bottom : 0
-    );
-    glass.scrollTo({ top: glass.scrollTop + tip.getBoundingClientRect().top - top - 12, behavior: "smooth" });
+    const tray = document.querySelector("#desk-glass-in .find-board > .find-tray:not([hidden])");
+    const shown = tray && tray.getClientRects().length;
+    const cover = (shown ? tray.getBoundingClientRect().bottom : glass.getBoundingClientRect().top) + 8;
+    const tipRect = tip.getBoundingClientRect();
+    const room = glass.getBoundingClientRect().bottom - 16;
+    let delta = 0;
+    if (tipRect.bottom > room) {
+      const clear = room - cover;
+      delta = tipRect.height > clear ? tipRect.top - cover : tipRect.bottom - room;
+    } else if (tipRect.top < cover) {
+      delta = tipRect.top - cover;
+    }
+    if (Math.abs(delta) < 4) return;
+    glass.scrollTo({ top: glass.scrollTop + delta, behavior: "smooth" });
   };
   requestAnimationFrame(() => requestAnimationFrame(go));
 }
