@@ -36,31 +36,40 @@ function quickAddOnSport(bet, sport) {
   return !sport || bet.sport === sport;
 }
 
-function quickAddOnTeam(person, teamName, sport) {
-  if (!teamName) return true;
-  const full = String(teamName || "").toLowerCase(), nick = full.split(/\s+/).pop();
+function quickAddGames(people, sport, when) {
+  const rows = typeof loadedGames === "function" ? loadedGames(people, when || quickAdd.when || "today") : [];
+  return (rows || []).filter((game) => quickAddOnSport(game, sport) && String(game.match || "").trim())
+    .sort((a, b) => Date.parse(a.kickoff || "") - Date.parse(b.kickoff || "") || String(a.match).localeCompare(String(b.match)));
+}
+
+function quickAddGameKey(game) {
+  return `${game.match}|${game.kickoff || ""}`;
+}
+
+function quickAddGameSay(game) {
+  if (typeof gameShort === "function") return gameShort(game.match) || game.match;
+  return String(game.match || "");
+}
+
+function quickAddOnGame(person, gameKey, sport) {
+  if (!gameKey) return true;
+  const [match, kickoff] = String(gameKey).split("|");
   return (person.bets || []).some((bet) => {
     if (!Number(bet.odds) || !quickAddOnSport(bet, sport)) return false;
-    return String(bet.match || "").toLowerCase().split(/ @ | v /).some((side) => {
-      const text = side.trim();
-      return text === full || (nick.length > 2 && text.endsWith(` ${nick}`)) || text === nick;
-    });
+    if (match && bet.match !== match) return false;
+    if (kickoff && bet.kickoff !== kickoff) return false;
+    return true;
   });
 }
 
-function quickAddTeams(people, sport) {
-  return people.filter((person) => person.kind === "team" && !/^(any other|no )/i.test(person.name || "") && (person.bets || []).some((bet) => Number(bet.odds) && quickAddOnSport(bet, sport)))
-    .sort((a, b) => a.name.localeCompare(b.name));
-}
-
-function quickAddPlayers(people, sport, teamName) {
+function quickAddPlayers(people, sport, gameKey) {
   const q = quickAdd.q.trim().toLowerCase();
   return people.filter((person) => {
     if (person.kind !== "player" || /^(any other|no )/i.test(person.name || "")) return false;
     if (q && !person.name.toLowerCase().includes(q)) return false;
     const bets = (person.bets || []).filter((bet) => Number(bet.odds) && quickAddOnSport(bet, sport));
     if (!bets.length) return false;
-    return quickAddOnTeam(person, teamName, sport);
+    return quickAddOnGame(person, gameKey, sport);
   }).sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -68,11 +77,20 @@ function quickAddPerson(people) {
   return people.find((person) => person.key === quickAdd.player) || null;
 }
 
-function quickAddPropList(person, sport) {
+function quickAddOnPick(bet, sport, gameKey) {
+  if (!Number(bet.odds) || !quickAddOnSport(bet, sport)) return false;
+  if (!gameKey) return true;
+  const [match, kickoff] = String(gameKey).split("|");
+  if (match && bet.match !== match) return false;
+  if (kickoff && bet.kickoff !== kickoff) return false;
+  return true;
+}
+
+function quickAddPropList(person, sport, gameKey) {
   if (!person || typeof legSwapStat !== "function") return [];
   const seen = new Map();
   (person.bets || []).forEach((bet) => {
-    if (!Number(bet.odds) || !quickAddOnSport(bet, sport)) return;
+    if (!quickAddOnPick(bet, sport, gameKey)) return;
     if (typeof parlayKey === "function" && typeof parlayLeg !== "undefined" && parlayLeg.has(parlayKey(bet))) return;
     const key = legSwapStat(person, bet);
     if (!key || seen.has(key)) return;
@@ -82,12 +100,12 @@ function quickAddPropList(person, sport) {
   return [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]));
 }
 
-function quickAddValues(person, sport, prop) {
+function quickAddValues(person, sport, prop, gameKey) {
   if (!person || !prop) return [];
   const want = typeof legSwapChance === "function" ? legSwapChance(-110) : 0.5;
   const best = new Map();
   (person.bets || []).forEach((bet) => {
-    if (!Number(bet.odds) || !quickAddOnSport(bet, sport)) return;
+    if (!quickAddOnPick(bet, sport, gameKey)) return;
     if (typeof legSwapStat === "function" && legSwapStat(person, bet) !== prop) return;
     if (typeof parlayKey === "function" && typeof parlayLeg !== "undefined" && parlayLeg.has(parlayKey(bet))) return;
     const label = String(bet.label || ""), under = /\bunder\b/i.test(label);
@@ -144,7 +162,7 @@ function quickAddBox(board) {
   box.className = "quick-add";
   const head = document.createElement("div");
   head.className = "quick-add-head";
-  head.innerHTML = `<b>Quick add</b><span>Today or this week → league → team or player → prop → line</span>`;
+  head.innerHTML = `<b>Quick add</b><span>Today or this week → league → game or player → prop → line</span>`;
   box.append(head);
 
   const paint = (focusSearch) => {
@@ -198,23 +216,23 @@ function quickAddBox(board) {
 
   if (!quickAdd.sport) return box;
 
-  const teams = quickAddTeams(people, quickAdd.sport);
-  const teamName = (teams.find((row) => row.key === quickAdd.team) || {}).name || "";
+  const games = quickAddGames(people, quickAdd.sport, quickAdd.when);
+  const game = games.find((row) => quickAddGameKey(row) === quickAdd.team) || null;
   const who = document.createElement("div");
   who.className = "quick-add-step";
   const whoHead = document.createElement("b");
-  whoHead.textContent = quickAdd.team ? "Player" : "Team or player";
+  whoHead.textContent = quickAdd.team ? "Player" : "Game or player";
   const search = document.createElement("input");
   search.type = "search";
   search.className = "quick-add-search";
-  search.placeholder = quickAdd.team ? "Filter players" : "Type a player, or pick a team";
+  search.placeholder = quickAdd.team ? "Filter players" : "Type a player, or pick a game";
   search.value = quickAdd.q;
   search.addEventListener("input", () => { quickAdd.q = search.value; paint(search.selectionStart); });
   const picks = document.createElement("div");
   picks.className = "quick-add-picks";
   if (!quickAdd.team && !quickAdd.q.trim()) {
-    teams.forEach((team) => picks.append(quickAddChip(team.name, false, () => {
-      quickAdd.team = team.key;
+    games.forEach((row) => picks.append(quickAddChip(quickAddGameSay(row), false, () => {
+      quickAdd.team = quickAddGameKey(row);
       quickAdd.player = "";
       quickAdd.prop = "";
       quickAdd.value = "";
@@ -223,7 +241,7 @@ function quickAddBox(board) {
     })));
   }
   if (quickAdd.team) {
-    picks.append(quickAddChip(`◂ ${teamName}`, false, () => {
+    picks.append(quickAddChip(`◂ ${game ? quickAddGameSay(game) : "Games"}`, false, () => {
       quickAdd.team = "";
       quickAdd.player = "";
       quickAdd.prop = "";
@@ -231,7 +249,7 @@ function quickAddBox(board) {
       paint();
     }));
   }
-  quickAddPlayers(people, quickAdd.sport, teamName).slice(0, quickAdd.q.trim() || quickAdd.team ? 40 : 12).forEach((person) => {
+  quickAddPlayers(people, quickAdd.sport, quickAdd.team).slice(0, quickAdd.q.trim() || quickAdd.team ? 40 : 12).forEach((person) => {
     picks.append(quickAddChip(person.name, quickAdd.player === person.key, () => {
       quickAdd.player = person.key;
       quickAdd.prop = "";
@@ -242,7 +260,7 @@ function quickAddBox(board) {
   if (!picks.childElementCount) {
     const none = document.createElement("p");
     none.className = "quick-add-none";
-    none.textContent = quickAdd.q.trim() ? "No one by that name." : "No players posted.";
+    none.textContent = quickAdd.q.trim() ? "No one by that name." : "No games posted.";
     picks.append(none);
   }
   who.append(whoHead, search, picks);
@@ -251,7 +269,7 @@ function quickAddBox(board) {
   const person = quickAddPerson(people);
   if (!person) return box;
 
-  const props = quickAddPropList(person, quickAdd.sport);
+  const props = quickAddPropList(person, quickAdd.sport, quickAdd.team);
   box.append(quickAddStep("Prop", props.length ? props.map(([key, label]) => quickAddChip(label, quickAdd.prop === key, () => {
     quickAdd.prop = key;
     quickAdd.value = "";
@@ -260,7 +278,7 @@ function quickAddBox(board) {
 
   if (!quickAdd.prop) return box;
 
-  const values = quickAddValues(person, quickAdd.sport, quickAdd.prop);
+  const values = quickAddValues(person, quickAdd.sport, quickAdd.prop, quickAdd.team);
   box.append(quickAddStep("Line", values.length ? values.map((row) => {
     const price = Number(row.bet.odds);
     const what = typeof legSwapWhat === "function" ? legSwapWhat(person, row.bet) : row.bet.label;
