@@ -91,6 +91,11 @@ function quickAddOnPick(bet, sport, gameKey) {
   return true;
 }
 
+function quickAddPropSay(stat) {
+  const raw = String(stat || "").replace(/\bn\+\b/g, "").replace(/\s+/g, " ").trim();
+  return raw.replace(/\b\w/g, (c) => c.toUpperCase()) || "Prop";
+}
+
 function quickAddPropList(person, sport, gameKey) {
   if (!person || typeof legSwapStat !== "function") return [];
   const seen = new Map();
@@ -99,28 +104,52 @@ function quickAddPropList(person, sport, gameKey) {
     if (typeof parlayKey === "function" && typeof parlayLeg !== "undefined" && parlayLeg.has(parlayKey(bet))) return;
     const key = legSwapStat(person, bet);
     if (!key || seen.has(key)) return;
-    const say = typeof legSwapWhat === "function" ? legSwapWhat(person, bet).replace(/\s+(over|under)\s+[\d.]+/i, "").replace(/\s+[+-]?\d+(?:\.\d+)?$/, "").trim() : key;
-    seen.set(key, say || key);
+    seen.set(key, quickAddPropSay(key));
   });
   return [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]));
 }
 
+function quickAddLineNum(person, bet) {
+  return Number((String(bet.label || "").replace(person.name, "").match(/\d+(?:\.\d+)?/) || String(bet.market || "").match(/\d+(?:\.\d+)?/) || [])[0]) || 0;
+}
+
 function quickAddValues(person, sport, prop, gameKey) {
   if (!person || !prop) return [];
-  const want = typeof legSwapChance === "function" ? legSwapChance(-110) : 0.5;
-  const best = new Map();
+  const seen = new Set(), rows = [];
   (person.bets || []).forEach((bet) => {
     if (!quickAddOnPick(bet, sport, gameKey)) return;
     if (typeof legSwapStat === "function" && legSwapStat(person, bet) !== prop) return;
     if (typeof parlayKey === "function" && typeof parlayLeg !== "undefined" && parlayLeg.has(parlayKey(bet))) return;
-    const label = String(bet.label || ""), under = /\bunder\b/i.test(label);
-    const line = (label.match(/([\d.]+)\s*$/) || label.match(/\b(?:over|under)\s+([\d.]+)/i) || [])[1] || label;
-    const key = `${under ? "u" : "o"}|${line}|${bet.match}|${bet.kickoff}`;
-    const chance = typeof legSwapChance === "function" ? legSwapChance(bet.odds) : 0;
-    const gap = Math.abs(chance - want), had = best.get(key);
-    if (!had || gap < had.gap) best.set(key, { bet, gap, under, line });
+    const id = typeof parlayKey === "function" ? parlayKey(bet) : `${bet.label}|${bet.odds}|${bet.match}`;
+    if (seen.has(id)) return;
+    seen.add(id);
+    rows.push({ person, bet, under: /\bunder\b/i.test(bet.label || ""), num: quickAddLineNum(person, bet) });
   });
-  return [...best.values()].sort((a, b) => Number(a.under) - Number(b.under) || a.gap - b.gap);
+  return rows.sort((a, b) => a.num - b.num || Number(a.under) - Number(b.under) || Number(a.bet.odds) - Number(b.bet.odds));
+}
+
+function quickAddLineButton(person, bet, on, go) {
+  const price = Number(bet.odds);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `quick-add-line${on ? " on" : ""}`;
+  button.setAttribute("aria-pressed", String(!!on));
+  const what = typeof legSwapWhat === "function" ? legSwapWhat(person, bet) : bet.label;
+  const cash = typeof findCash === "function" ? findCash(price) : "";
+  button.innerHTML = [
+    `<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`,
+    typeof findPct === "function" && findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`,
+    cash && `<i class="pay">${esc(`$5 profits ${cash}`)}</i>`,
+    `<i class="prop">${esc(what)}</i>`,
+  ].filter(Boolean).join("");
+  const rec = typeof scriptRecPill === "function" && scriptRecPill(bet);
+  if (rec) button.append(rec);
+  if (bet.sport === "NBA" && typeof proofOf === "function" && typeof proofPill === "function") {
+    const tip = proofOf(person.name, bet.market, bet.label, bet.odds);
+    if (tip) button.append(proofPill(tip));
+  }
+  button.addEventListener("click", go);
+  return button;
 }
 
 function quickAddChip(label, on, go) {
@@ -167,7 +196,7 @@ function quickAddBox(board) {
   box.className = "quick-add";
   const head = document.createElement("div");
   head.className = "quick-add-head";
-  head.innerHTML = `<b>Quick add</b><span>Today or this week → league → game or player → prop → line</span>`;
+  head.innerHTML = `<b>Quick add</b><span>Today or this week → league → game or player → prop → value</span>`;
   box.append(head);
 
   const paint = (focusSearch) => {
@@ -281,7 +310,7 @@ function quickAddBox(board) {
   if (!person) return box;
 
   const props = quickAddPropList(person, quickAdd.sport, quickAdd.team);
-  box.append(quickAddStep("Prop", props.length ? props.map(([key, label]) => quickAddChip(label, quickAdd.prop === key, () => {
+  box.append(quickAddStep("1. Prop", props.length ? props.map(([key, label]) => quickAddChip(label, quickAdd.prop === key, () => {
     quickAdd.prop = key;
     quickAdd.value = "";
     paint();
@@ -290,14 +319,26 @@ function quickAddBox(board) {
   if (!quickAdd.prop) return box;
 
   const values = quickAddValues(person, quickAdd.sport, quickAdd.prop, quickAdd.team);
-  box.append(quickAddStep("Line", values.length ? values.map((row) => {
-    const price = Number(row.bet.odds);
-    const what = typeof legSwapWhat === "function" ? legSwapWhat(person, row.bet) : row.bet.label;
-    const key = typeof parlayKey === "function" ? parlayKey(row.bet) : "";
-    const cash = typeof findCash === "function" ? findCash(price) : "";
-    const label = [`${what}`, price > 0 ? `+${price}` : String(price), typeof findPct === "function" && findPct(price), cash && `$5 profits ${cash}`].filter(Boolean).join(" · ");
-    return quickAddChip(label, quickAdd.value === key, () => { quickAdd.value = key; paint(); });
-  }) : [Object.assign(document.createElement("p"), { className: "quick-add-none", textContent: "No lines left for that prop." })]));
+  const valueStep = document.createElement("div");
+  valueStep.className = "quick-add-step";
+  const valueHead = document.createElement("b");
+  valueHead.textContent = "2. Value";
+  valueStep.append(valueHead);
+  if (!values.length) {
+    const none = document.createElement("p");
+    none.className = "quick-add-none";
+    none.textContent = "No lines left for that prop.";
+    valueStep.append(none);
+  } else {
+    const lines = document.createElement("div");
+    lines.className = "quick-add-lines";
+    values.forEach((row) => {
+      const key = typeof parlayKey === "function" ? parlayKey(row.bet) : "";
+      lines.append(quickAddLineButton(person, row.bet, quickAdd.value === key, () => { quickAdd.value = key; paint(); }));
+    });
+    valueStep.append(lines);
+  }
+  box.append(valueStep);
 
   if (!quickAdd.value) return box;
 
