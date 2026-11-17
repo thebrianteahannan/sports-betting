@@ -154,7 +154,56 @@ function startRandomLine({ person, bet }) {
   const who = person.name || "", raw = String(bet.label || "").split(/\s+—\s+/)[0].trim();
   const prop = who && raw.toLowerCase().startsWith(who.toLowerCase()) ? raw.slice(who.length).trim() : raw;
   const odds = Number(bet.odds);
-  return { who, prop: prop || bet.market || "", shown: odds > 0 ? `+${odds}` : String(odds), match: bet.match || "" };
+  return { who, prop: prop || bet.market || "", shown: odds > 0 ? `+${odds}` : String(odds), pct: typeof findPct === "function" ? findPct(odds) : "", match: bet.match || "" };
+}
+
+function startRandomStakeOf(box) {
+  const n = Number(box && box.dataset.stake);
+  if (n > 0) return n;
+  return typeof parlayStakeOf === "function" ? parlayStakeOf() : 5;
+}
+
+function startRandomCashLine(box, legs) {
+  const bets = legs.map(({ bet }) => bet);
+  const px = typeof savePrice === "function" ? savePrice(bets) : "";
+  const american = Number(String(px || "").replace("+", ""));
+  const stake = startRandomStakeOf(box);
+  const shown = Number.isInteger(stake) ? String(stake) : stake.toFixed(2);
+  const pct = typeof findPct === "function" ? findPct(american) : "";
+  const cash = typeof findCash === "function" ? findCash(american, stake) : "";
+  const bits = [
+    px && `<i class="px">${esc(px)}</i>`,
+    pct && `<i class="pct">${esc(pct)}</i>`,
+    cash && `<i class="pay"><button type="button" class="stake" aria-label="Change the bet size">$${esc(shown)}</button> profits ${esc(cash)}</i>`,
+  ].filter(Boolean);
+  return bits.length ? `${legs.length}-leg · ${bits.join("")}` : `${legs.length}-leg parlay`;
+}
+
+function startRandomEditStake(button, box) {
+  const pay = button.closest("i.pay");
+  if (!pay) return;
+  const input = document.createElement("input");
+  input.type = "number";
+  input.className = "stake";
+  input.min = "1";
+  input.max = "100000";
+  input.step = "1";
+  input.setAttribute("aria-label", "Bet size");
+  input.value = button.textContent.replace(/[^0-9.]/g, "") || "5";
+  button.replaceWith(input);
+  input.focus();
+  input.select();
+  const finish = () => {
+    if (!input.isConnected) return;
+    const amount = Number(input.value);
+    box.dataset.stake = String(Number.isFinite(amount) && amount > 0 ? Math.round(Math.min(amount, 100000) * 100) / 100 : 5);
+    if (startRandomAt && startRandomAt.legs) startRandomFill(box, startRandomAt.legs);
+  };
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") { event.preventDefault(); input.blur(); }
+    if (event.key === "Escape") { input.value = button.textContent; input.blur(); }
+  });
+  input.addEventListener("blur", finish);
 }
 
 function startRandomFill(box, legs) {
@@ -163,20 +212,27 @@ function startRandomFill(box, legs) {
   list.replaceChildren(...legs.map((hit) => {
     const line = startRandomLine(hit), row = document.createElement("div");
     row.className = "start-random-leg";
-    row.innerHTML = `<b>${esc(line.who)}</b><span>${esc(line.prop)}</span><i>${esc(line.shown)}</i><em>${esc(line.match)}</em>`;
+    row.innerHTML = `<b>${esc(line.who)}</b><span>${esc(line.prop)}</span><i class="px">${esc(line.shown)}</i>${line.pct ? `<i class="pct">${esc(line.pct)}</i>` : ""}<em>${esc(line.match)}</em>`;
     return row;
   }));
-  const px = typeof savePrice === "function" ? savePrice(legs.map(({ bet }) => bet)) : "";
-  price.textContent = px ? `${legs.length}-leg · ${px}` : `${legs.length}-leg parlay`;
+  price.innerHTML = startRandomCashLine(box, legs);
+  const stakeBtn = price.querySelector("button.stake");
+  if (stakeBtn) stakeBtn.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    startRandomEditStake(stakeBtn, box);
+  });
   if (startRandomAt) Object.assign(startRandomAt, { legs, sig: startRandomSig(legs) });
 }
 
-function startRandomAdd(board, legs) {
+function startRandomAdd(board, legs, stake) {
   if (!legs.length) return;
   const had = parlayLeg.size > 0;
   if (had && saveSig([...parlayLeg.values()]) !== saveHeld) saveNow();
   const prior = had ? window.parlayOpenId || "" : "", ids = new Set(saveList().map((row) => row.id));
   saveNew();
+  if (typeof parlayStakeSet === "function") parlayStakeSet(stake);
+  else window.parlayStake = Number(stake) > 0 ? Number(stake) : 5;
   if (typeof betFromSay === "function") betFromSay("Random Recommended", true);
   legs.forEach(({ person, bet }) => { parlayLeg.set(parlayKey(bet), bet); if (!parlayPick.has(person.key)) parlayPick.set(person.key, person); });
   if (typeof trayRoster === "function") trayRoster();
@@ -197,6 +253,7 @@ function startRandomShow(board, picks, n, legs) {
   startRandomAt = { board, picks, n, legs, sig: startRandomSig(legs) };
   const box = document.createElement("div");
   box.id = "start-random";
+  box.dataset.stake = String(startRandomStakeOf(null));
   box.innerHTML = `<div class="start-random-card" role="dialog" aria-modal="true" aria-labelledby="start-random-title"><button type="button" class="start-random-x" aria-label="Close">&times;</button><p id="start-random-title" class="start-random-head">Random parlay</p><p class="start-random-price"></p><div class="start-random-legs"></div><p class="start-random-do"><button type="button" class="start-random-again">Regenerate</button><button type="button" class="start-random-add">Add to My Bets</button></p></div>`;
   const close = () => startRandomClose();
   box.addEventListener("click", (event) => { if (event.target === box) close(); });
@@ -208,7 +265,7 @@ function startRandomShow(board, picks, n, legs) {
   });
   box.querySelector(".start-random-add").addEventListener("click", () => {
     if (!startRandomAt || !startRandomAt.legs.length) return;
-    startRandomAdd(startRandomAt.board, startRandomAt.legs);
+    startRandomAdd(startRandomAt.board, startRandomAt.legs, startRandomStakeOf(box));
   });
   startRandomFill(box, legs);
   document.body.append(box);
@@ -280,7 +337,14 @@ function startTdButton(board) {
   if (!hasNfl || typeof openTdPage !== "function") return null;
   const go = Object.assign(document.createElement("button"), { type: "button", className: "find-start-td", textContent: "Anytime TDs" });
   go.title = "See who is most likely to score a touchdown";
-  go.addEventListener("click", () => startTdGo(board));
+  go.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const live = document.querySelector("#desk-glass-in .find-board") || board;
+    if (!live || typeof startTdGo !== "function") return;
+    if (!(live.people || []).some((person) => person.kind === "player" && (person.bets || []).length)) return;
+    startTdGo(live);
+  });
   return go;
 }
 

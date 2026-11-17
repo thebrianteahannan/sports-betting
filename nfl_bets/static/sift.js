@@ -829,7 +829,7 @@ function slimTray() {
 function paintTrayBuild(tray) {
   const legs = [...parlayLeg.values()];
   const group = [...parlayPick.values()];
-  const covered = !group.length || group.every((person) => legs.some((bet) => String(bet.label || "").startsWith(person.name)));
+  const covered = !group.length || group.every((person) => legs.some((bet) => typeof legOwns === "function" ? legOwns(person, bet) : String(bet.label || "").startsWith(person.name)));
   if (legs.length < 1 || !covered) return;
   const dec = legs.reduce((p, leg) => p * (1 + findRank(leg.odds)), 1);
   const price = dec >= 2 ? Math.round((dec - 1) * 100) : Math.round(-100 / (dec - 1));
@@ -840,7 +840,9 @@ function paintTrayBuild(tray) {
   line.className = "find-ticket";
   const head = document.createElement("b");
   const tag = price > 0 ? `+${price}` : String(price);
-  head.innerHTML = [tag && `<i class="px">${esc(tag)}</i>`, findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`, cash && `<i class="pay"><button type="button" class="stake" aria-label="Change the bet size">$${esc(shown)}</button> profits ${esc(cash)}</i>`, ((rows) => { const games = rows.map((leg) => String(leg.match || leg.gameId || "")); return games.length > 1 && games.every(Boolean) && new Set(games).size === 1; })(legs) && `<i class="sg">Same game</i>`, typeof gameShortList === "function" && gameShortList(legs) && gameShortList(legs).split(", ").map((game) => `<i class="gm" data-game="${esc(game)}" role="button" title="Open this game">${esc(game)}</i>`).join("")].filter(Boolean).join("");
+  const seen = new Set(), names = [];
+  legs.forEach((bet) => { const who = typeof legName === "function" ? legName(bet) : ""; if (!who || seen.has(who)) return; seen.add(who); names.push(who); });
+  head.innerHTML = [tag && `<i class="px">${esc(tag)}</i>`, findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`, cash && `<i class="pay"><button type="button" class="stake" aria-label="Change the bet size">$${esc(shown)}</button> profits ${esc(cash)}</i>`, ((rows) => { const games = rows.map((leg) => String(leg.match || leg.gameId || "")); return games.length > 1 && games.every(Boolean) && new Set(games).size === 1; })(legs) && `<i class="sg">Same game</i>`, typeof gameShortList === "function" && gameShortList(legs) && gameShortList(legs).split(", ").map((game) => `<i class="gm" data-game="${esc(game)}" role="button" title="Open this game">${esc(game)}</i>`).join(""), names.map((name) => `<i class="nm">${esc(name)}</i>`).join("")].filter(Boolean).join("");
   const share = document.createElement("button");
   share.type = "button";
   share.className = "share-bet";

@@ -23,8 +23,7 @@ function legRoles(legs) {
 }
 
 function legRoleName(bet) {
-  const label = String(bet.label || ""), person = typeof parlayPick !== "undefined" && [...parlayPick.values()].find((one) => one.name && label.startsWith(one.name));
-  const named = person ? person.name : (typeof legLoose === "function" && legLoose(bet).who) || "";
+  const named = (typeof legName === "function" && legName(bet)) || (typeof legLoose === "function" && legLoose(bet).who) || "";
   if (named && !named.includes("@")) {
     const words = named.split(/\s+/).filter((word) => !/^(jr\.?|sr\.?|ii|iii|iv|v)$/i.test(word));
     return words.pop() || named;

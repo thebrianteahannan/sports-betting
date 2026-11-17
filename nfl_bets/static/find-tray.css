@@ -114,6 +114,8 @@
 :is(.rec-board, #choice-result) .find-tray.find-shut > .find-row.find-just > :not(.find-in, .find-pick-hint, .find-chose.find-just) { display: none !important; }
 :is(.rec-board, #choice-result) .find-tray.find-shut > .find-row.find-just:has(> .find-chose.find-just) > :is(.find-in, .find-pick-hint) { display: none !important; }
 :is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket { padding-right: 0 !important; padding-bottom: 0 !important; }
+:is(.rec-board, #choice-result) .find-tray .find-ticket > b i.nm { display: none; }
+:is(.rec-board, #choice-result) .find-tray.find-shut .find-ticket > b i.nm { display: inline; color: #f4f7fb; font-style: normal; font-weight: 800; letter-spacing: 0; text-transform: none; white-space: nowrap; }
 :is(.rec-board, #choice-result) .find-tray .find-ticket { flex-shrink: 0; }
 .rec-board .find-match > .find-guide, #desk.tv-full #desk-glass .rec-board .find-match > .find-guide { grid-column: 1 / -1; margin: 0.15rem 0 0.1rem; color: #c9d4df; font-size: 14px; line-height: 1.35; text-align: center; }
 .rec-board .find-match.find-pga { grid-template-columns: repeat(3, minmax(0, 1fr)); }

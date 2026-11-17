@@ -37,12 +37,18 @@
 #start-random .start-random-card { position: relative; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; width: min(520px, 100%); max-height: min(82vh, 640px); padding: 18px 16px 16px; border: 1px solid rgba(61, 255, 110, 0.5); border-radius: 14px; background: #07090e; box-shadow: 0 0 24px rgba(61, 255, 110, 0.2); color: #f4f7fb; }
 #start-random .start-random-x { position: absolute; top: 10px; right: 10px; width: 2.2rem; height: 2.2rem; margin: 0; padding: 0; border: 1px solid rgba(61, 255, 110, 0.7); border-radius: 8px; background: rgba(4, 16, 12, 0.92); color: #3dff6e; font-size: 1.5rem; line-height: 1; cursor: pointer; }
 #start-random .start-random-head { margin: 0 2.4rem 0 0; color: #e7c15a; font-size: 20px; font-weight: 800; }
-#start-random .start-random-price { margin: 0; color: #3dff6e; font-size: 15px; font-weight: 800; }
+#start-random .start-random-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.55rem; margin: 0; color: #3dff6e; font-size: 15px; font-weight: 800; }
+#start-random .start-random-price > .px { color: #3dff6e; font-style: normal; }
+#start-random .start-random-price > .pct { color: #e7c15a; font-style: normal; }
+#start-random .start-random-price > .pay { color: #3dff6e; font-style: normal; }
+#start-random .start-random-price .pay button.stake { display: inline; width: auto; height: auto; min-height: 0; margin: 0; padding: 0 0.05rem; border: 0; border-bottom: 1px dashed #3dff6e; border-radius: 0; background: transparent; box-shadow: none; color: #3dff6e; font: inherit; font-weight: 800; letter-spacing: 0; line-height: inherit; text-transform: none; cursor: pointer; }
+#start-random .start-random-price .pay input.stake { width: 4.6rem; height: auto; min-height: 0; margin: 0; padding: 0 0.25rem; border: 1px solid #3dff6e; border-radius: 6px; background: #07140f; color: #fff; font: inherit; font-size: inherit; }
 #start-random .start-random-legs { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
-#start-random .start-random-leg { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "who odds" "prop prop" "game game"; gap: 2px 10px; padding: 10px 12px; border: 1px solid rgba(61, 255, 110, 0.28); border-radius: 10px; background: #041018; }
+#start-random .start-random-leg { display: grid; grid-template-columns: 1fr auto auto; grid-template-areas: "who odds pct" "prop prop prop" "game game game"; gap: 2px 10px; padding: 10px 12px; border: 1px solid rgba(61, 255, 110, 0.28); border-radius: 10px; background: #041018; }
 #start-random .start-random-leg > b { grid-area: who; color: #f4f7fb; font-size: 14px; font-weight: 800; }
 #start-random .start-random-leg > span { grid-area: prop; color: #c4cde0; font-size: 13px; font-weight: 600; }
-#start-random .start-random-leg > i { grid-area: odds; color: #3dff6e; font-size: 14px; font-style: normal; font-weight: 800; }
+#start-random .start-random-leg > i.px { grid-area: odds; color: #3dff6e; font-size: 14px; font-style: normal; font-weight: 800; }
+#start-random .start-random-leg > i.pct { grid-area: pct; color: #e7c15a; font-size: 13px; font-style: normal; font-weight: 700; }
 #start-random .start-random-leg > em { grid-area: game; color: #9fb3c8; font-size: 12px; font-style: normal; font-weight: 700; }
 #start-random .start-random-do { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin: 4px 0 0; }
 #start-random .start-random-do > button { width: auto; min-height: 0; margin: 0; padding: 0.55rem 1rem; border-radius: 999px; box-shadow: none; font: inherit; font-size: 14px; font-weight: 800; letter-spacing: normal; text-transform: none; cursor: pointer; }

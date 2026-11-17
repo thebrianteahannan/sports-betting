@@ -1,6 +1,20 @@
 /** Search the board by player, team, or game. Longest price first. */
 
-const parlayPick = new Map(), parlayLeg = new Map(), parlayKey = (bet) => [bet.label, bet.odds, bet.match, bet.kickoff].join("|");
+const parlayPick = new Map(), parlayLeg = new Map(), legOwner = new Map(), parlayKey = (bet) => [bet.label, bet.odds, bet.match, bet.kickoff].join("|");
+
+function legOwns(person, bet) {
+  return !!(person && person.name && bet && (String(bet.label || "").startsWith(person.name) || legOwner.get(parlayKey(bet)) === person.name));
+}
+
+function legName(bet) {
+  const person = [...parlayPick.values()].find((one) => legOwns(one, bet));
+  if (person) return person.name;
+  const owned = legOwner.get(parlayKey(bet));
+  if (owned) return owned;
+  const loose = legLoose(bet), who = String(loose.who || "").trim();
+  const game = typeof gameShort === "function" ? gameShort(bet.match) : "";
+  return who && who !== game && !who.includes("@") ? who : "";
+}
 
 function legLoose(bet) {
   const raw = String(bet.label || "").split(/\s+—\s+/)[0].trim();
@@ -11,24 +25,27 @@ function legLoose(bet) {
   const name = cut ? cut[1].trim() : "";
   const words = name.split(/\s+/).filter(Boolean);
   if (name && words.length >= 2 && words.length <= 4) return { who: name, prop: cut[2].trim() };
+  const plain = raw.split(/\s+/).filter(Boolean);
+  if (plain.length >= 2 && plain.length <= 3 && !/\d/.test(raw) && !/\b(over|under|moneyline|spread|total)\b/i.test(raw)) return { who: raw, prop: market };
   return { who: game, prop: raw };
 }
 
 function paintParlay() {
+  [...legOwner.keys()].forEach((key) => { if (!parlayLeg.has(key)) legOwner.delete(key); });
   document.querySelectorAll(".find-roster > button.find-parlay").forEach((node) => { node.hidden = parlayPick.size < 2; node.textContent = parlayPick.size < 2 ? "Build a parlay" : `Build a ${parlayPick.size}-leg parlay`; }); document.querySelectorAll(".find-list button.find-parlay, .find-profile button.find-parlay").forEach((node) => { const on = parlayPick.has(node.dataset.key); node.textContent = on ? "In the parlay" : "Add to the parlay"; node.disabled = on; }); document.querySelectorAll("button.find-leg").forEach((node) => { const on = parlayLeg.has(node.dataset.key); node.classList.toggle("on", on); node.textContent = on ? "In the parlay" : "Add this leg"; });
   document.querySelectorAll(".find-tray").forEach((tray) => {
   tray.replaceChildren();
   tray.hidden = !parlayPick.size && !parlayLeg.size;
   if (tray.hidden) { tray.classList.remove("find-slim", "find-shut"); return; }
   const say = document.createElement("p"); say.className = "find-say"; say.textContent = "THE BET"; const fold = document.createElement("button"); fold.type = "button"; fold.className = "find-fold"; const folded = () => { const n = parlayLeg.size || parlayPick.size, word = parlayLeg.size || !parlayPick.size ? "leg" : "player"; fold.textContent = tray.classList.contains("find-shut") ? `Show ${n} ${word}${n === 1 ? "" : "s"} ▾` : "Hide ▴"; }; folded(); fold.addEventListener("click", () => { if (tray.classList.toggle("find-shut")) { tray.classList.remove("find-edit"); const edit = tray.querySelector("button.find-edit"); if (edit) { edit.textContent = "Edit props"; edit.classList.remove("on"); } } folded(); }); say.append(fold); tray.append(say); parlayPick.forEach((person) => {
-    const row = document.createElement("div"); row.className = "find-row"; const top = document.createElement("div"); top.className = "find-in"; const name = document.createElement("button"); name.type = "button"; name.className = "find-name"; name.textContent = person.name; name.dataset.key = person.key; const out = document.createElement("button"); out.type = "button"; out.className = "find-out"; const bare = ![...parlayLeg.values()].some((bet) => String(bet.label || "").startsWith(person.name)); out.textContent = bare ? "×" : "Take out"; if (bare) { out.classList.add("find-x"); out.setAttribute("aria-label", `Take out ${person.name}`); } out.addEventListener("click", () => { parlayPick.delete(person.key); [...parlayLeg.entries()].forEach(([key, bet]) => { if (String(bet.label || "").startsWith(person.name)) parlayLeg.delete(key); }); document.querySelectorAll(".find-names button").forEach((node) => { if (node.textContent === person.name) { node.classList.remove("on"); node.setAttribute("aria-pressed", "false"); } }); paintParlay(); }); top.append(name, out); row.append(top); if (bare) { const hint = document.createElement("button"); hint.type = "button"; hint.className = "find-pick-hint"; const want = typeof shotWant !== "undefined" && shotWant.get(person.key); hint.textContent = want ? `${want.charAt(0).toUpperCase()}${want.slice(1)} · tap to pick the line ▸` : `Tap ${person.name} to pick the bet ▸`; hint.addEventListener("click", () => {
+    const row = document.createElement("div"); row.className = "find-row"; const top = document.createElement("div"); top.className = "find-in"; const name = document.createElement("button"); name.type = "button"; name.className = "find-name"; name.textContent = person.name; name.dataset.key = person.key; const out = document.createElement("button"); out.type = "button"; out.className = "find-out"; const bare = ![...parlayLeg.values()].some((bet) => legOwns(person, bet)); out.textContent = bare ? "×" : "Take out"; if (bare) { out.classList.add("find-x"); out.setAttribute("aria-label", `Take out ${person.name}`); } out.addEventListener("click", () => { parlayPick.delete(person.key); [...parlayLeg.entries()].forEach(([key, bet]) => { if (legOwns(person, bet)) { parlayLeg.delete(key); legOwner.delete(key); } }); document.querySelectorAll(".find-names button").forEach((node) => { if (node.textContent === person.name) { node.classList.remove("on"); node.setAttribute("aria-pressed", "false"); } }); paintParlay(); }); top.append(name, out); row.append(top); if (bare) { const hint = document.createElement("button"); hint.type = "button"; hint.className = "find-pick-hint"; const want = typeof shotWant !== "undefined" && shotWant.get(person.key); hint.textContent = want ? `${want.charAt(0).toUpperCase()}${want.slice(1)} · tap to pick the line ▸` : `Tap ${person.name} to pick the bet ▸`; hint.addEventListener("click", () => {
         const glass = document.getElementById("desk-glass-in");
         if (glass) glass.scrollTo({ top: 0, behavior: "smooth" });
         name.click();
       }); row.append(hint); }
-    const mine = [...parlayLeg.entries()].filter(([, bet]) => String(bet.label || "").startsWith(person.name)); mine.forEach(([key, bet]) => { const line = document.createElement("div"); line.className = "find-chose"; const said = document.createElement("span"); const price = Number(bet.odds); const rest = String(bet.label || "").replace(person.name, "").split(/\s+—\s+/)[0].trim(); const market = String(bet.market || "").replace(person.name, "").replace(/^\s*-\s*/, "").trim(); const what = typeof legSwapWhat === "function" ? legSwapWhat(person, bet) : /^most\s/i.test(market) && !/\d/.test(rest) ? market : !rest || /^(over|under)(\s+[\d.]+)?$/i.test(rest) ? [rest, market.replace(/^alt\s+/i, "")].filter(Boolean).join(" ") : rest; said.innerHTML = [`<i class="who">${esc(person.name)}</i>`, what && `<i class="prop">${esc(what)}</i>`, `<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`].filter(Boolean).join(""); const change = document.createElement("button"); change.type = "button"; change.className = "find-out"; change.textContent = "×"; change.setAttribute("aria-label", "Remove this leg"); change.addEventListener("click", () => { parlayLeg.delete(key); if (![...parlayLeg.values()].some((bet) => String(bet.label || "").startsWith(person.name))) return out.click(); paintParlay(); }); const hist = document.createElement("button"); hist.type = "button"; hist.className = "find-leg-hist"; hist.dataset.key = key; hist.title = "Show the history"; hist.setAttribute("aria-label", `Show the history for ${person.name}`); line.append(said, hist, change); row.append(line); });
+    const mine = [...parlayLeg.entries()].filter(([, bet]) => legOwns(person, bet)); mine.forEach(([key, bet]) => { const line = document.createElement("div"); line.className = "find-chose"; line.dataset.key = key; const said = document.createElement("span"); const price = Number(bet.odds); const rest = String(bet.label || "").replace(person.name, "").split(/\s+—\s+/)[0].trim(); const market = String(bet.market || "").replace(person.name, "").replace(/^\s*-\s*/, "").trim(); const what = typeof legSwapWhat === "function" ? legSwapWhat(person, bet) : /^most\s/i.test(market) && !/\d/.test(rest) ? market : !rest || /^(over|under)(\s+[\d.]+)?$/i.test(rest) ? [rest, market.replace(/^alt\s+/i, "")].filter(Boolean).join(" ") : rest; said.innerHTML = [`<i class="who">${esc(person.name)}</i>`, what && `<i class="prop">${esc(what)}</i>`, `<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`].filter(Boolean).join(""); const change = document.createElement("button"); change.type = "button"; change.className = "find-out"; change.textContent = "×"; change.setAttribute("aria-label", "Remove this leg"); change.addEventListener("click", () => { parlayLeg.delete(key); legOwner.delete(key); if (![...parlayLeg.values()].some((bet) => legOwns(person, bet))) return out.click(); paintParlay(); }); const hist = document.createElement("button"); hist.type = "button"; hist.className = "find-leg-hist"; hist.dataset.key = key; hist.title = "Show the history"; hist.setAttribute("aria-label", `Show the history for ${person.name}`); line.append(said, hist, change); row.append(line); });
     tray.append(row); });
-  parlayLeg.forEach((bet, key) => { if ([...parlayPick.values()].some((person) => String(bet.label || "").startsWith(person.name))) return; const row = document.createElement("div"); row.className = "find-row find-loose"; const line = document.createElement("div"); line.className = "find-chose"; line.dataset.key = key; const said = document.createElement("span"); const price = Number(bet.odds); const loose = legLoose(bet); said.innerHTML = [loose.who && `<i class="who">${esc(loose.who)}</i>`, `<i class="prop">${esc(loose.prop)}</i>`, `<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`].filter(Boolean).join(""); const out = document.createElement("button"); out.type = "button"; out.className = "find-out"; out.textContent = "×"; out.setAttribute("aria-label", "Remove this leg"); out.addEventListener("click", () => { parlayLeg.delete(key); paintParlay(); }); line.append(said, out); row.append(line); tray.append(row); });
+  parlayLeg.forEach((bet, key) => { if ([...parlayPick.values()].some((person) => legOwns(person, bet))) return; const row = document.createElement("div"); row.className = "find-row find-loose"; const line = document.createElement("div"); line.className = "find-chose"; line.dataset.key = key; const said = document.createElement("span"); const price = Number(bet.odds); const loose = legLoose(bet); said.innerHTML = [loose.who && `<i class="who">${esc(loose.who)}</i>`, `<i class="prop">${esc(loose.prop)}</i>`, `<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`].filter(Boolean).join(""); const out = document.createElement("button"); out.type = "button"; out.className = "find-out"; out.textContent = "×"; out.setAttribute("aria-label", "Remove this leg"); out.addEventListener("click", () => { parlayLeg.delete(key); legOwner.delete(key); paintParlay(); }); line.append(said, out); row.append(line); tray.append(row); });
   if (typeof parlayHint === "function") { const hint = parlayHint([...parlayLeg.values()]); if (hint) { if (hint.nodeType) tray.append(hint); else { const note = document.createElement("p"); note.className = "find-why"; note.textContent = hint; tray.append(note); } } } if (typeof trayStack === "function") trayStack(tray, [...parlayLeg.values()]); if (typeof clubTray === "function") clubTray(tray);
   if (!(parlayPick.size < 2 && parlayLeg.size < 1) && typeof paintTrayBuild === "function") paintTrayBuild(tray);
   if (typeof slimTray === "function") slimTray();
@@ -226,7 +243,7 @@ function profileBetHit(person, board) {
   const pick = ((typeof homeRecs !== "undefined" && homeRecs && homeRecs.picks) || []).find((row) => fold(row.who || "") === who || fold(row.label || "").startsWith(`${who} `));
   if (pick && typeof startHit === "function") {
     const hit = startHit(board, pick);
-    if (hit) return hit;
+    if (hit) return { ...hit, rec: true };
   }
   const people = board.people || [];
   for (const match of board.querySelectorAll(".find-teams .find-match")) {
@@ -237,10 +254,30 @@ function profileBetHit(person, board) {
       if (!row || typeof scriptPickHit !== "function") continue;
       const game = { match: row.match || ((person.bets || [])[0] && (person.bets || [])[0].match) || "" };
       const hit = scriptPickHit(row, game, people);
-      if (hit) return hit;
+      if (hit) return { ...hit, rec: true };
     }
   }
   return null;
+}
+
+function profileBetPick(person) {
+  if (!person || person.kind !== "player") return null;
+  const name = String(person.name || "");
+  if (!name) return null;
+  const skip = /half|quarter|\b1st\b|first|last|either|each quarter|each half|in the first|most\s|period|inning/i;
+  const chance = (odds) => {
+    const price = Number(odds);
+    return price > 0 ? 100 / (price + 100) : price < 0 ? -price / (-price + 100) : 0;
+  };
+  const own = (person.bets || []).filter((bet) => Number(bet.odds) && String(bet.label || "").startsWith(name));
+  const rows = own.filter((bet) => !skip.test(`${bet.label || ""} ${bet.market || ""}`) && !/\bunder\b/i.test(bet.label || ""));
+  const pool = rows.length ? rows : own;
+  if (!pool.length) {
+    const any = (person.bets || []).find((bet) => Number(bet.odds));
+    return any ? { person, bet: any, rec: false } : null;
+  }
+  pool.sort((a, b) => Math.abs(chance(a.odds) - 0.524) - Math.abs(chance(b.odds) - 0.524) || findRank(b.odds) - findRank(a.odds));
+  return { person, bet: pool[0], rec: false };
 }
 
 function profileBetPut(hit, fresh) {
@@ -250,10 +287,11 @@ function profileBetPut(hit, fresh) {
     closePlayerPop();
     return;
   }
-  if (typeof betFromSay === "function") betFromSay("Recommended", fresh);
+  if (hit.rec && typeof betFromSay === "function") betFromSay("Recommended", fresh);
   if (typeof legSwapAdd === "function") legSwapAdd(hit.person, hit.bet);
   else {
     parlayLeg.set(parlayKey(hit.bet), hit.bet);
+    if (hit.person && hit.person.name && typeof legOwner !== "undefined") legOwner.set(parlayKey(hit.bet), hit.person.name);
     if (hit.person && hit.person.kind === "player" && !parlayPick.has(hit.person.key) && parlayPick.size < 8) parlayPick.set(hit.person.key, hit.person);
     if (typeof paintParlay === "function") paintParlay();
   }
@@ -262,6 +300,11 @@ function profileBetPut(hit, fresh) {
     const fold = tray.querySelector(".find-fold");
     if (fold) fold.click();
   });
+  const tray = document.querySelector("#desk-glass-in .find-tray:not([hidden])") || document.querySelector(".find-tray:not([hidden])");
+  if (tray) {
+    tray.style.scrollMarginTop = "5.5rem";
+    tray.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
 }
 
 function profileAskPut(acts, hit) {
@@ -335,7 +378,7 @@ function openPlayerPop(person, list, bets, prefer) {
   if (rows.length && !golf) {
     const acts = document.createElement("span");
     acts.className = "find-profile-acts";
-    const preferHit = prefer && prefer.bet ? { person: prefer.person || person, bet: prefer.bet } : null;
+    const preferHit = prefer && prefer.bet ? { person: prefer.person || person, bet: prefer.bet, rec: true } : null;
     const already = preferHit && typeof parlayKey === "function" && typeof parlayLeg !== "undefined" && parlayLeg.has(parlayKey(preferHit.bet));
     const betIt = document.createElement("button");
     betIt.type = "button";
@@ -344,12 +387,8 @@ function openPlayerPop(person, list, bets, prefer) {
     betIt.disabled = !!already;
     betIt.addEventListener("click", () => {
       if (betIt.disabled) return;
-      const hit = preferHit || profileBetHit(person, board);
-      if (!hit) {
-        const go = profile.querySelector(".find-game-script-go");
-        if (go) go.click();
-        return;
-      }
+      const hit = preferHit || profileBetHit(person, board) || profileBetPick(person);
+      if (!hit) return;
       if (typeof parlayKey === "function" && typeof parlayLeg !== "undefined" && parlayLeg.has(parlayKey(hit.bet))) {
         betIt.textContent = "In the parlay";
         betIt.disabled = true;

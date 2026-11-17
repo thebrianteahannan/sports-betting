@@ -214,18 +214,36 @@ function homeTdChip(games) {
   go.className = "desk-games-td";
   go.textContent = "Anytime TDs ›";
   go.title = "See who is most likely to score a touchdown";
-  go.addEventListener("click", () => {
+  go.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const ready = () => {
+      const board = document.querySelector("#desk-glass-in .find-board");
+      if (!board || typeof startTdGo !== "function") return null;
+      if (!(board.people || []).some((person) => person.kind === "player" && (person.bets || []).length)) return null;
+      return board;
+    };
     const open = () => {
-      const board = document.querySelector("#desk-glass-in .find-board") || document.querySelector(".find-board");
-      if (!board || typeof startTdGo !== "function") return false;
+      const board = ready();
+      if (!board) return false;
       startTdGo(board);
       return true;
     };
     if (typeof goFull === "function") goFull();
     if (open()) return;
-    if (typeof birdMenu === "function") birdMenu("find");
-    let tries = 0;
-    const wait = setInterval(() => { if (open() || ++tries > 80) clearInterval(wait); }, 100);
+    let tries = 0, asked = false;
+    const wait = setInterval(() => {
+      if (open() || ++tries > 100) { clearInterval(wait); return; }
+      const desk = document.getElementById("desk");
+      if (!desk || !desk.classList.contains("tv-full")) {
+        if (typeof goFull === "function") goFull();
+        return;
+      }
+      if (!asked && !document.querySelector("#desk-glass-in .find-board") && typeof birdMenu === "function") {
+        asked = true;
+        birdMenu("find");
+      }
+    }, 100);
   });
   return go;
 }

@@ -75,9 +75,12 @@ if (saveSeek.get("td") === "1") {
   const waitTd = setInterval(() => {
     if (++tdTries > 160) { clearInterval(waitTd); console.log("[parlay-save] could not open anytime TDs"); return; }
     if (!window.memberReady || typeof window.birdMenu !== "function") return;
-    const board = document.querySelector(".find-board");
+    const desk = document.getElementById("desk");
+    if (!desk || !desk.classList.contains("tv-full")) { if (typeof goFull === "function") goFull(); return; }
+    const board = document.querySelector("#desk-glass-in .find-board");
     if (!board) { if (!tdAsked) { tdAsked = true; birdMenu("find"); } return; }
     if (typeof startTdGo !== "function") return;
+    if (!(board.people || []).some((person) => person.kind === "player" && (person.bets || []).length)) return;
     clearInterval(waitTd);
     startTdGo(board);
   }, 250);

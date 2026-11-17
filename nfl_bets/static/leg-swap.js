@@ -48,7 +48,7 @@ function legLineFind(key) {
   const old = parlayLeg.get(key);
   const board = document.querySelector(".find-board");
   if (!old || !board) return [];
-  const person = (board.people || []).find((one) => one.kind === "player" && String(old.label || "").startsWith(one.name));
+  const person = legSwapPerson(key, "line");
   if (!person) return legGameFind(key);
   const stat = (bet) => legSwapStat(person, bet);
   const under = (bet) => /\bunder\b/i.test(bet.label || "");
@@ -92,7 +92,7 @@ function legKindFind(key) {
   const old = parlayLeg.get(key);
   const board = document.querySelector(".find-board");
   if (!old || !board) return [];
-  const person = (board.people || []).find((one) => one.kind === "player" && String(old.label || "").startsWith(one.name));
+  const person = legSwapPerson(key, "kind");
   if (!person) return [];
   const stat = (bet) => legSwapStat(person, bet);
   const want = legSwapChance(old.odds), best = new Map();
@@ -109,7 +109,7 @@ function legKindFind(key) {
 function legWhoFind(key) {
   const person = parlayPick.get(key.replace(/^who:/, ""));
   if (!person) return [];
-  const mine = [...parlayLeg.values()].find((bet) => String(bet.label || "").startsWith(person.name));
+  const mine = [...parlayLeg.values()].find((bet) => typeof legOwns === "function" ? legOwns(person, bet) : String(bet.label || "").startsWith(person.name));
   const want = mine ? legSwapChance(mine.odds) : legSwapChance(-110), best = new Map();
   (person.bets || []).forEach((bet) => {
     const chance = legSwapChance(bet.odds);
@@ -127,15 +127,19 @@ function legSwapTrade(key, person, bet) {
   if (!old) return;
   legSwapOpen.delete(key);
   legSwapDrill.delete(key);
+  const owned = typeof legOwner !== "undefined" ? legOwner.get(key) : "";
   parlayLeg.delete(key);
+  if (typeof legOwner !== "undefined") legOwner.delete(key);
   parlayLeg.set(parlayKey(bet), bet);
+  if (person && person.name && typeof legOwner !== "undefined") legOwner.set(parlayKey(bet), person.name);
   if (person && !parlayPick.has(person.key)) parlayPick.set(person.key, person);
-  [...parlayPick.entries()].forEach(([pick, who]) => { if (String(old.label || "").startsWith(who.name) && ![...parlayLeg.values()].some((row) => String(row.label || "").startsWith(who.name))) parlayPick.delete(pick); });
+  [...parlayPick.entries()].forEach(([pick, who]) => { const was = String(old.label || "").startsWith(who.name) || owned === who.name; const left = [...parlayLeg.values()].some((row) => typeof legOwns === "function" ? legOwns(who, row) : String(row.label || "").startsWith(who.name)); if (was && !left) parlayPick.delete(pick); });
   paintParlay();
 }
 
 function legSwapAdd(person, bet) {
   parlayLeg.set(parlayKey(bet), bet);
+  if (person && person.name && typeof legOwner !== "undefined") legOwner.set(parlayKey(bet), person.name);
   if (person && !parlayPick.has(person.key)) parlayPick.set(person.key, person);
   paintParlay();
 }
@@ -184,6 +188,12 @@ function legSwapPerson(key, mode) {
   const old = parlayLeg.get(key);
   const board = document.querySelector(".find-board");
   if (!old || !board) return null;
+  const owned = typeof legOwner !== "undefined" ? legOwner.get(key) : "";
+  if (owned) {
+    const hit = (board.people || []).find((one) => one.kind === "player" && one.name === owned)
+      || [...parlayPick.values()].find((one) => one.name === owned);
+    if (hit) return hit;
+  }
   return (board.people || []).find((one) => one.kind === "player" && String(old.label || "").startsWith(one.name)) || null;
 }
 
