@@ -17,10 +17,15 @@ function quickAddPeople(board) {
   return (board && board.people) || [];
 }
 
+function quickAddUpcoming(kickoff) {
+  const kick = Date.parse(kickoff || "");
+  return Number.isFinite(kick) && kick > Date.now();
+}
+
 function quickAddScope(people, when) {
   if (!when || !people.length) return [];
-  const games = typeof loadedGames === "function" ? loadedGames(people, when) : [];
-  const keys = new Set((games || []).map((game) => `${game.match}|${game.kickoff}`));
+  const games = (typeof loadedGames === "function" ? loadedGames(people, when) : []).filter((game) => quickAddUpcoming(game.kickoff));
+  const keys = new Set(games.map((game) => `${game.match}|${game.kickoff}`));
   if (!keys.size) return [];
   return people.map((person) => {
     const bets = (person.bets || []).filter((bet) => keys.has(`${bet.match}|${bet.kickoff}`));
@@ -38,7 +43,7 @@ function quickAddOnSport(bet, sport) {
 
 function quickAddGames(people, sport, when) {
   const rows = typeof loadedGames === "function" ? loadedGames(people, when || quickAdd.when || "today") : [];
-  return (rows || []).filter((game) => quickAddOnSport(game, sport) && String(game.match || "").trim())
+  return (rows || []).filter((game) => quickAddUpcoming(game.kickoff) && quickAddOnSport(game, sport) && String(game.match || "").trim())
     .sort((a, b) => Date.parse(a.kickoff || "") - Date.parse(b.kickoff || "") || String(a.match).localeCompare(String(b.match)));
 }
 
@@ -192,12 +197,18 @@ function quickAddBox(board) {
     }),
   ]));
 
-  const people = quickAddScope(quickAddPeople(board), quickAdd.when);
+  const all = quickAddPeople(board);
+  const people = quickAddScope(all, quickAdd.when);
   const sports = quickAddSports(people);
   if (!sports.length) {
     const none = document.createElement("p");
     none.className = "quick-add-none";
-    none.textContent = quickAdd.when === "week" ? "Week props are still loading, or none are posted yet." : "Today’s props are still loading, or none are posted yet.";
+    const loaded = !!(all.length || (typeof findParts !== "undefined" && findParts[quickAdd.when] && findParts[quickAdd.when].data));
+    none.textContent = !loaded
+      ? "Looking up the board."
+      : quickAdd.when === "week"
+        ? "No games left this week that haven’t started."
+        : "No games left today that haven’t started.";
     box.append(none);
     return box;
   }
