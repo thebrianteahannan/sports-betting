@@ -221,6 +221,22 @@ function savePrice(legs) {
   return price > 0 ? `+${price}` : String(price);
 }
 
+function saveChipSaid(row) {
+  const who = (row.picks || []).map((lite) => String(lite.name || "").replace(/[\s\-–—:]+$/, "").split(" ").pop()).filter(Boolean);
+  if (who.length) return `${who.slice(0, 2).join(", ")}${row.legs.length > 2 ? ` +${row.legs.length - 2}` : ""}`;
+  if (row.group && row.legs.length < 3) return row.legs.map((bet) => String(bet.label || "").replace(/\s+spread$/i, "")).join(", ");
+  return `${row.legs.length} ${row.legs.length === 1 ? "leg" : "legs"}`;
+}
+
+function saveAllShareTicket(rows) {
+  const legs = (rows || []).filter((row) => (row.legs || []).length).map((row) => {
+    const games = typeof gameShortList === "function" ? gameShortList(row.legs) : "";
+    const price = savePrice(row.legs), n = Number(String(price).replace("+", ""));
+    return { label: saveChipSaid(row), odds: Number.isFinite(n) ? n : 0, form: games || (row.legs.length > 1 ? `${row.legs.length}-leg` : ""), kickoff: (row.legs[0] || {}).kickoff || "" };
+  });
+  return { title: "My bets", american: "", impliedPct: "", legs, card: "mine", pack: true };
+}
+
 function savePaint() {
   if (parlayLeg.size || parlayPick.size) document.querySelectorAll(".find-tips").forEach((node) => node.remove());
   else { const board = document.querySelector("#desk-glass-in .find-board"), input = board && board.querySelector("label.find input"); if (board && !board.tipsSeen && board.querySelector(":scope > .find-tray") && !(input && input.value.trim())) { board.tipsSeen = true; setTimeout(saveTips); } }
@@ -289,9 +305,18 @@ function savePaint() {
     const head = document.createElement("p"); head.className = "find-say"; head.textContent = "MY BETS";
     const fold = document.createElement("button"); fold.type = "button"; fold.className = "find-fold"; fold.textContent = window.saveShut ? `Show ${list.length} parlay${list.length === 1 ? "" : "s"} ▾` : "Hide ▴";
     fold.addEventListener("click", () => { window.saveShut = !window.saveShut; try { localStorage.setItem("savedShut", window.saveShut ? "1" : "0"); } catch (error) { console.log("[parlay-save] could not keep fold", error); } paintParlay(); });
+    const share = document.createElement("button");
+    share.type = "button";
+    share.className = "share-bet find-saved-share";
+    share.title = "Share all my bets";
+    share.setAttribute("aria-label", share.title);
+    share.dataset.share = "rec";
+    const pack = saveAllShareTicket(list);
+    share.dataset.shareId = String((window.recTickets = window.recTickets || []).push({ ticket: pack, name: "My bets" }) - 1);
+    share.hidden = !pack.legs.length;
     const shut = document.createElement("button"); shut.type = "button"; shut.className = "find-close"; shut.textContent = "×"; shut.title = "Close saved parlays"; shut.setAttribute("aria-label", shut.title);
     shut.addEventListener("click", () => { window.saveGone = true; box.classList.add("find-saved-gone"); });
-    head.append(fold, shut); box.append(head);
+    head.append(fold, share, shut); box.append(head);
     const stacks = document.createDocumentFragment(), groups = new Map();
     list.forEach((row) => {
       const chip = document.createElement("span");
@@ -300,8 +325,7 @@ function savePaint() {
       const go = document.createElement("button");
       go.type = "button";
       const games = typeof gameShortList === "function" ? gameShortList(row.legs) : "";
-      const who = (row.picks || []).map((lite) => String(lite.name || "").replace(/[\s\-–—:]+$/, "").split(" ").pop()).filter(Boolean);
-      const said = who.length ? `${who.slice(0, 2).join(", ")}${row.legs.length > 2 ? ` +${row.legs.length - 2}` : ""}` : row.group && row.legs.length < 3 ? row.legs.map((bet) => String(bet.label || "").replace(/\s+spread$/i, "")).join(", ") : `${row.legs.length} ${row.legs.length === 1 ? "leg" : "legs"}`;
+      const said = saveChipSaid(row);
       go.innerHTML = [games && `<i>${esc(games)}</i>`, `<span>${esc(said)}</span>`, savePrice(row.legs) && `<b>${esc(savePrice(row.legs))}</b>`].filter(Boolean).join("");
       go.addEventListener("click", () => { if (row.id === window.parlayOpenId) { saveNew(); return; } saveOpen(row.id); document.querySelectorAll(".find-tray.find-shut").forEach((tray) => { const fold = tray.querySelector(".find-fold"); if (!fold) return; saveAutoShut.delete(tray); fold.click(); }); });
       const drop = document.createElement("button");

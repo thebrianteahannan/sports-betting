@@ -192,6 +192,17 @@ function chatPickPaint() {
   });
 }
 
+function chatMyBetsShare() {
+  const rows = chatSaved().filter((row) => (row.legs || []).length);
+  if (!rows.length) return;
+  const parts = rows.map((row) => ({ legs: row.legs.map(chatLite), stake: chatStakeOf(row) }));
+  const one = parts.length === 1 ? chatBetOf(parts[0].legs, parts[0].stake) : null;
+  chat.sharing = { name: one ? one.name : `My bets · ${parts.length}`, stack: parts.length > 1, parts, briefs: [] };
+  chat.view = "list";
+  chat.room = null;
+  chatToggle(true);
+}
+
 function chatTicketButton() {
   if (typeof parlayLeg === "undefined") return;
   document.querySelectorAll(".find-tray .find-ticket").forEach((line) => {
@@ -210,6 +221,17 @@ function chatTicketButton() {
     go.setAttribute("aria-label", "Send this bet in a chat");
     const share = line.querySelector(":scope > .share-bet");
     if (share) share.before(go); else line.append(go);
+  });
+  document.querySelectorAll(".find-saved > p.find-say").forEach((head) => {
+    const had = head.querySelector(":scope > .chat-send");
+    const share = head.querySelector(":scope > .share-bet");
+    if (had) { had.hidden = !chat.on || (share && share.hidden); return; }
+    if (!chat.on || (share && share.hidden)) return;
+    const go = chatButton("", chatMyBetsShare, "chat-send");
+    go.innerHTML = CHAT_ICON;
+    go.title = "Send all my bets in a chat";
+    go.setAttribute("aria-label", go.title);
+    if (share) share.before(go); else { const fold = head.querySelector(".find-fold"); if (fold) fold.after(go); else head.append(go); }
   });
 }
 

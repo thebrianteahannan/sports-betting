@@ -1,20 +1,7 @@
 const SHARE_FONT = "Oswald, Impact, sans-serif";
 const SHARE_TEXT = "Rajdhani, sans-serif";
-const NAMED_BETS = [
-  ["band", "−150 to +100 window", "−150 TO +100"],
-  ["todayBet", "Highest chance parlay today", "HIGHEST CHANCE"],
-  ["weekThree", "3 legs, different days, near −200", "3 LEGS NEAR −200"],
-  ["weekFive", "5 legs, different days, near −200", "5 LEGS NEAR −200"],
-  ["weekSafe", "3 legs, different days, near −350", "NEAR −350"],
-  ["weekEven", "3 legs, different days, near −100", "NEAR −100"],
-  ["chalk", "−400 to −700 legs, near −180", "NEAR −180"],
-  ["four", "Four yardage legs near 85% each", "FOUR NEAR 85%"],
-  ["plus", "Four yardage legs near +250", "FOUR NEAR +250"],
-];
-
-let shareTemplate = null;
-let shareBits = null;
-let shareBet = null;
+const NAMED_BETS = [["band", "−150 to +100 window", "−150 TO +100"], ["todayBet", "Highest chance parlay today", "HIGHEST CHANCE"], ["weekThree", "3 legs, different days, near −200", "3 LEGS NEAR −200"], ["weekFive", "5 legs, different days, near −200", "5 LEGS NEAR −200"], ["weekSafe", "3 legs, different days, near −350", "NEAR −350"], ["weekEven", "3 legs, different days, near −100", "NEAR −100"], ["chalk", "−400 to −700 legs, near −180", "NEAR −180"], ["four", "Four yardage legs near 85% each", "FOUR NEAR 85%"], ["plus", "Four yardage legs near +250", "FOUR NEAR +250"]];
+let shareTemplate = null, shareBits = null, shareBet = null;
 
 function sharePct(value) {
   const raw = String(value ?? "").replace("%", "").trim();
@@ -87,16 +74,17 @@ function foundLine(card) {
   return `${when(stamp)} ET`;
 }
 function shareFrom(card, kicker, label) {
-  const legs = (card.legs || []).filter((leg) => leg && leg.label).map((leg) => { const n = Number(leg.odds); const implied = n < 0 ? Math.abs(n) / (Math.abs(n) + 100) * 100 : n > 0 ? 10000 / (n + 100) : ""; return { label: shareLabel(leg), odds: shareSigned(n), pct: sharePct(leg.pct) || sharePct(implied), form: String(leg.form || "").replace(/^In form:\s*/i, "") }; });
+  const pack = !!(card && card.pack);
+  const legs = (card.legs || []).filter((leg) => leg && leg.label).map((leg) => { const n = Number(leg.odds); const implied = n < 0 ? Math.abs(n) / (Math.abs(n) + 100) * 100 : n > 0 ? 10000 / (n + 100) : ""; return { label: pack ? String(leg.label || "") : shareLabel(leg), odds: shareSigned(n), pct: pack ? "" : (sharePct(leg.pct) || sharePct(implied)), form: String(leg.form || "").replace(/^In form:\s*/i, "") }; });
   const price = shareSigned(card.american);
-  const strategy = price ? `Near ${price}` : (card.strategy || label || "");
-  const profit = card.profit != null ? card.profit : (typeof winOn === "function" ? winOn(card.american) : null);
-  let game = gameLine(card);
+  const strategy = pack ? `${legs.length} open` : (price ? `Near ${price}` : (card.strategy || label || ""));
+  const profit = pack ? null : (card.profit != null ? card.profit : (typeof winOn === "function" ? winOn(card.american) : null));
+  let game = pack ? "My bets" : gameLine(card);
   if (game === "Across the slate" && kicker === "BET OF THE WEEK") game = "This week";
   if (game === "Across the slate" && kicker === "BET OF THE DAY") game = "Today";
   return {
-    kicker, title: card.title || label || "Parlay", strategy, game,
-    when: whenLine(card), found: foundLine(card), why: whyLines(card, kicker), legs, pct: sharePct(card.impliedPct), profit, serial: typeof betSerial === "function" ? betSerial(card) : "", strategyNo: typeof strategyNo === "function" ? strategyNo(card.card, card.card === "hits" && typeof hitsPart === "function" ? hitsPart(card) : "") : "",
+    kicker, title: card.title || label || "Parlay", strategy, game, pack,
+    when: whenLine(card), found: foundLine(card), why: whyLines(card, kicker), legs, pct: sharePct(card.impliedPct), profit, serial: pack ? "" : (typeof betSerial === "function" ? betSerial(card) : ""), strategyNo: pack ? "" : (typeof strategyNo === "function" ? strategyNo(card.card, card.card === "hits" && typeof hitsPart === "function" ? hitsPart(card) : "") : ""),
   };
 }
 
@@ -113,6 +101,7 @@ function savedShare(row) {
 }
 
 function shareKicker(ticket, label) {
+  if (ticket && (ticket.pack || ticket.card === "mine")) return "MY BETS";
   const named = NAMED_BETS.find((row) => row[0] === (ticket && ticket.card));
   if (named) return named[2];
   if (ticket && ticket.card === "hits") return "WHICH STACK";
@@ -243,12 +232,14 @@ function drawBoard(ctx, bet) {
     ctx.fillText(line, left, cursor);
     cursor += size + 8;
   }
-  const shown = bet.legs.length > 6 ? bet.legs.slice(0, 5) : bet.legs;
+  const pack = !!bet.pack || bet.kicker === "MY BETS";
+  const maxShow = pack ? 12 : 6;
+  const shown = bet.legs.length > maxShow ? bet.legs.slice(0, maxShow - 1) : bet.legs;
   const extra = bet.legs.length - shown.length;
   const bottom = y + h - 118;
   const noted = shown.some((leg) => leg.form);
   const slots = Math.max(shown.length + (extra ? 1 : 0), 1);
-  const rowH = Math.min(noted ? 98 : 76, Math.max(noted ? 72 : 40, (bottom - cursor) / slots));
+  const rowH = Math.min(pack ? (noted ? 52 : 40) : (noted ? 98 : 76), Math.max(pack ? 28 : (noted ? 72 : 40), (bottom - cursor) / slots));
   shown.forEach((leg) => {
     ctx.strokeStyle = "rgba(61,255,110,0.35)";
     ctx.lineWidth = 1;
@@ -256,14 +247,14 @@ function drawBoard(ctx, bet) {
     ctx.moveTo(left, cursor);
     ctx.lineTo(right, cursor);
     ctx.stroke();
-    const parts = splitLeg(leg.label);
+    const parts = pack ? { name: String(leg.label || ""), prop: "" } : splitLeg(leg.label);
     const name = parts.name.toUpperCase();
     const prop = parts.prop.toUpperCase();
     ctx.fillStyle = "#ffffff";
-    const nameSize = fitText(ctx, name, right - left - 96, 26, SHARE_FONT);
+    const nameSize = fitText(ctx, name, right - left - 96, pack ? 18 : 26, SHARE_FONT);
     ctx.font = `600 ${nameSize}px ${SHARE_FONT}`;
-    ctx.fillText(name, left, cursor + 8);
-    let under = cursor + 12 + nameSize;
+    ctx.fillText(name, left, cursor + (pack ? 4 : 8));
+    let under = cursor + (pack ? 6 : 12) + nameSize;
     if (prop) {
       ctx.fillStyle = "#f4f7fb";
       const propSize = fitText(ctx, prop, right - left - 96, 18, SHARE_TEXT);
@@ -274,12 +265,12 @@ function drawBoard(ctx, bet) {
     if (leg.form) {
       const note = leg.form.toUpperCase();
       ctx.fillStyle = "#b7ffc9";
-      const noteSize = fitText(ctx, note, right - left, 15, SHARE_TEXT);
+      const noteSize = fitText(ctx, note, right - left, pack ? 12 : 15, SHARE_TEXT);
       ctx.font = `600 ${noteSize}px ${SHARE_TEXT}`;
       ctx.fillText(note, left, under);
     }
     ctx.textAlign = "right";
-    if (leg.odds) { ctx.fillStyle = "#3dff6e"; ctx.font = `600 24px ${SHARE_FONT}`; ctx.fillText(String(leg.odds), right, cursor + 8); }
+    if (leg.odds) { ctx.fillStyle = "#3dff6e"; ctx.font = `600 ${pack ? 18 : 24}px ${SHARE_FONT}`; ctx.fillText(String(leg.odds), right, cursor + (pack ? 4 : 8)); }
     if (leg.pct) { ctx.fillStyle = "#e7c15a"; ctx.font = `600 18px ${SHARE_FONT}`; ctx.fillText(`${leg.pct}%`, right, cursor + (leg.odds ? 34 : 12)); }
     ctx.textAlign = "left";
     cursor += rowH;
@@ -287,13 +278,13 @@ function drawBoard(ctx, bet) {
   if (extra) {
     ctx.fillStyle = "#d5deea";
     ctx.font = `600 16px ${SHARE_TEXT}`;
-    ctx.fillText(`+ ${extra} MORE LEGS`, left, cursor);
+    ctx.fillText(`+ ${extra} MORE ${pack ? "BETS" : "LEGS"}`, left, cursor);
   }
   const barY = y + h - 102;
   ctx.fillStyle = "#3dff6e";
   ctx.fillRect(x + 10, barY, w - 20, 44);
   ctx.fillStyle = "#07131a";
-  const bar = `${bet.legs.length} LEG PARLAY`;
+  const bar = pack ? `${bet.legs.length} BET${bet.legs.length === 1 ? "" : "S"}` : `${bet.legs.length} LEG PARLAY`;
   ctx.font = `600 ${fitText(ctx, bar, right - left - 80, 24, SHARE_FONT)}px ${SHARE_FONT}`;
   ctx.fillText(bar, left, barY + 8);
   ctx.textAlign = "right";
@@ -301,7 +292,7 @@ function drawBoard(ctx, bet) {
   ctx.textAlign = "left";
   ctx.fillStyle = "#3dff6e";
   ctx.font = `600 18px ${SHARE_FONT}`;
-  const win = bet.profit != null ? `$5 BET WOULD WIN $${Number(bet.profit).toFixed(2)}` : "21+";
+  const win = pack ? "ALL MY BETS" : (bet.profit != null ? `$5 BET WOULD WIN $${Number(bet.profit).toFixed(2)}` : "21+");
   ctx.fillText(win, left, barY + 50);
   ctx.font = `600 13px ${SHARE_TEXT}`;
   ctx.fillStyle = "#d5deea";
@@ -484,18 +475,7 @@ async function paintPoster(key, imgId, card, kicker, label, textIds, boxId) {
     posterText(textIds, boxId, true);
   }
 }
-const DAY_TEXT = ["best-aim", "best-title", "best-when", "best-copy", "best-legs", "best-note"];
-const WEEK_TEXT = ["week-aim", "week-title", "week-when", "week-copy", "week-legs", "week-note"];
-
-function paintDayShare(board) {
-  paintPoster("day", "day-share", board && board.band, "−150 TO +100", "−150 to +100 window", DAY_TEXT, "best");
-}
-
-function paintWeekShare(board) {
-  paintPoster("week", "week-share", board && board.weekThree, "3 LEGS NEAR −200", "3 legs, different days, near −200", WEEK_TEXT, "week");
-}
-
-window.paintDayShare = paintDayShare;
-window.paintWeekShare = paintWeekShare;
-window.shareBack = shareBack;
-bindShareCard();
+const DAY_TEXT = ["best-aim", "best-title", "best-when", "best-copy", "best-legs", "best-note"], WEEK_TEXT = ["week-aim", "week-title", "week-when", "week-copy", "week-legs", "week-note"];
+function paintDayShare(board) { paintPoster("day", "day-share", board && board.band, "−150 TO +100", "−150 to +100 window", DAY_TEXT, "best"); }
+function paintWeekShare(board) { paintPoster("week", "week-share", board && board.weekThree, "3 LEGS NEAR −200", "3 legs, different days, near −200", WEEK_TEXT, "week"); }
+window.paintDayShare = paintDayShare; window.paintWeekShare = paintWeekShare; window.shareBack = shareBack; bindShareCard();

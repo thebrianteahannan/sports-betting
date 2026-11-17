@@ -1,4 +1,4 @@
-// "+ Add a leg" under the parlay opens a blank leg. Pick a player or team from the parlay's games, then pick a prop.
+// "+ Add a leg" under the parlay opens a blank leg. Pick a player or team from any game on the board, then pick a prop.
 const legNew = { open: false, pick: "", q: "" };
 
 function legNewGames() {
@@ -6,16 +6,17 @@ function legNewGames() {
 }
 
 function legNewPeople(board) {
-  const games = legNewGames(), inGame = (bet) => games.has(`${bet.match}|${bet.kickoff}`), count = (person) => (person.bets || []).filter(inGame).length;
+  const mine = legNewGames(), count = (person) => (person.bets || []).filter((bet) => Number(bet.odds)).length;
+  const near = (person) => (person.bets || []).some((bet) => mine.has(`${bet.match}|${bet.kickoff}`)) ? 0 : 1;
   return (board.people || []).filter((person) => (person.kind === "player" || person.kind === "team") && !/^(any other|no )/i.test(person.name || "") && count(person))
-    .sort((a, b) => (a.kind === "team" ? 0 : 1) - (b.kind === "team" ? 0 : 1) || count(b) - count(a) || a.name.localeCompare(b.name));
+    .sort((a, b) => (a.kind === "team" ? 0 : 1) - (b.kind === "team" ? 0 : 1) || near(a) - near(b) || count(b) - count(a) || a.name.localeCompare(b.name));
 }
 
 function legNewProps(person) {
-  const games = legNewGames(), team = person.kind === "team", want = legSwapChance(-110), best = new Map();
+  const team = person.kind === "team", want = legSwapChance(-110), best = new Map();
   (person.bets || []).forEach((bet) => {
     const chance = legSwapChance(bet.odds);
-    if (!chance || !games.has(`${bet.match}|${bet.kickoff}`) || parlayLeg.has(parlayKey(bet)) || (team && /alt/i.test(bet.market || ""))) return;
+    if (!chance || parlayLeg.has(parlayKey(bet)) || (team && /alt/i.test(bet.market || ""))) return;
     const group = team ? `${bet.market}|${String(bet.label || "").replace(/\s*spread\b/i, "").replace(/[+-]?\d+(?:\.\d+)?/g, "#")}` : `${legSwapStat(person, bet)}|${/\bunder\b/i.test(bet.label || "")}|${bet.match}`;
     const gap = Math.abs(chance - want), had = best.get(group);
     if (!had || gap < had.gap) best.set(group, { bet, gap });
@@ -35,7 +36,7 @@ function legNewWho(list, people) {
     go.addEventListener("click", () => { legNew.pick = person.key; legNewPaint(); });
     return go;
   }));
-  if (!list.children.length) { const none = document.createElement("p"); none.textContent = "No one in this game by that name."; list.append(none); }
+  if (!list.children.length) { const none = document.createElement("p"); none.textContent = q ? "No one by that name." : "No players on the board yet."; list.append(none); }
 }
 
 function legNewBox(board) {
@@ -88,7 +89,7 @@ function legNewBox(board) {
   const props = document.createElement("div");
   props.className = "find-tray-swap";
   const bets = legNewProps(person);
-  if (!bets.length) { const none = document.createElement("p"); none.textContent = `FanDuel has nothing else posted for ${person.name} in this game.`; props.append(none); }
+  if (!bets.length) { const none = document.createElement("p"); none.textContent = `FanDuel has nothing posted for ${person.name}.`; props.append(none); }
   bets.forEach((bet) => {
     const price = Number(bet.odds);
     const go = document.createElement("button");

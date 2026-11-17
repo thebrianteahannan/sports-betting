@@ -137,4 +137,5 @@
 .find-tray .find-ticket button.chat-send, #desk.tv-full #desk-glass .rec-board .find-tray .find-ticket button.chat-send { position: absolute; top: 0; right: 66px; z-index: 2; display: inline-grid; place-items: center; width: 1.7rem; height: 1.7rem; min-height: 0; margin: 0; padding: 0; border: 1px solid #3dff6e; border-radius: 8px; background: #07140f; color: #3dff6e; box-shadow: none; cursor: pointer; }
 .find-tray .find-ticket button.chat-send svg { width: 15px; height: 15px; }
 .find-tray .find-ticket button.chat-send[hidden] { display: none; }
+.find-saved > p.find-say > button.chat-send, #desk.tv-full #desk-glass .rec-board .find-saved > p.find-say > button.chat-send { position: static; top: auto; right: auto; }
 @media (max-width: 560px) { #chat-panel { width: 100vw; border-left: 0; } }
