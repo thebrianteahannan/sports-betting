@@ -136,17 +136,20 @@ function quickAddLineButton(person, bet, on, go) {
   button.setAttribute("aria-pressed", String(!!on));
   const what = typeof legSwapWhat === "function" ? legSwapWhat(person, bet) : bet.label;
   const cash = typeof findCash === "function" ? findCash(price) : "";
-  button.innerHTML = [
+  const inner = document.createElement("span");
+  inner.className = "quick-add-line-in";
+  inner.innerHTML = [
     `<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`,
     typeof findPct === "function" && findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`,
     cash && `<i class="pay">${esc(`$5 profits ${cash}`)}</i>`,
     `<i class="prop">${esc(what)}</i>`,
   ].filter(Boolean).join("");
+  button.append(inner);
   const rec = typeof scriptRecPill === "function" && scriptRecPill(bet);
-  if (rec) button.append(rec);
+  if (rec) inner.append(rec);
   if (bet.sport === "NBA" && typeof proofOf === "function" && typeof proofPill === "function") {
     const tip = proofOf(person.name, bet.market, bet.label, bet.odds);
-    if (tip) button.append(proofPill(tip));
+    if (tip) inner.append(proofPill(tip));
   }
   button.addEventListener("click", go);
   return button;
