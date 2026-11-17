@@ -3,25 +3,25 @@
 .find-board .quick-add-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.7rem; margin: 0 0 0.55rem; }
 .find-board .quick-add-head > b { color: #3dff6e; font-size: 13px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
 .find-board .quick-add-head > span { color: #9fb3c8; font-size: 13px; }
-.find-board .quick-add-step { margin: 0 0 0.55rem; }
-.find-board .quick-add-step > b { display: block; margin: 0 0 0.3rem; color: #e7c15a; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
-.find-board .quick-add-search { box-sizing: border-box; width: 100%; max-width: 22rem; margin: 0 0 0.4rem; padding: 0.4rem 0.65rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 8px; background: #07140f; color: #f4f7fb; font: inherit; font-size: 14px; }
-.find-board .quick-add-picks { display: flex; flex-wrap: wrap; gap: 0.35rem; max-height: 9.5rem; overflow: auto; }
-.find-board .quick-add-lines { display: flex; flex-direction: column; gap: 0.3rem; max-height: 14rem; overflow: auto; }
-:is(.rec-board, #choice-result) .find-start .quick-add-line { display: flex !important; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 0.5rem; width: 100% !important; min-height: 0 !important; margin: 0 !important; padding: 0.4rem 0.65rem !important; border: 0 !important; border-radius: 8px !important; background: rgba(255, 255, 255, 0.04) !important; box-shadow: inset 0 0 0 1px #2c3742 !important; color: #f4f7fb !important; font-size: 0.9rem !important; font-weight: 600 !important; letter-spacing: 0 !important; text-align: left !important; text-transform: none !important; cursor: pointer; }
-:is(.rec-board, #choice-result) .find-start .quick-add-line:hover { box-shadow: inset 0 0 0 1px #3dff6e !important; }
-:is(.rec-board, #choice-result) .find-start .quick-add-line.on { box-shadow: inset 0 0 0 1px #3dff6e !important; background: rgba(61, 255, 110, 0.08) !important; }
-.find-board .quick-add-line i { font-style: normal; }
-.find-board .quick-add-line i.px { min-width: 3.4em; color: #3dff6e; font-weight: 700; }
-.find-board .quick-add-line i.pct { min-width: 3.4em; color: #c9d4dd; font-size: 0.88em; }
-.find-board .quick-add-line i.pay { color: #3dff6e; font-weight: 700; }
-.find-board .quick-add-line i.prop { flex: 1; color: #e7c15a; }
+.find-board .quick-add-step { margin: 0 0 0.85rem; }
+.find-board .quick-add-step > b { display: block; margin: 0 0 0.5rem; color: #e7c15a; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.find-board .quick-add-search { box-sizing: border-box; width: 100%; max-width: 22rem; margin: 0 0 0.55rem; padding: 0.5rem 0.75rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 8px; background: #07140f; color: #f4f7fb; font: inherit; font-size: 14px; }
+.find-board .quick-add-picks { display: flex; flex-wrap: wrap; gap: 0.45rem; max-height: 11rem; overflow: auto; }
+.find-board .quick-add-lines { display: flex; flex-direction: column; gap: 0.45rem; max-height: 18rem; overflow: auto; padding: 0.1rem; }
+:is(.rec-board, #choice-result) .find-start .quick-add-line { display: flex !important; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.75rem; width: 100% !important; min-height: 0 !important; margin: 0 !important; padding: 0.7rem 0.85rem !important; border: 1px solid #2c3742 !important; border-radius: 10px !important; background: rgba(255, 255, 255, 0.04) !important; box-shadow: none !important; color: #f4f7fb !important; font-size: 0.95rem !important; font-weight: 600 !important; letter-spacing: 0 !important; line-height: 1.35 !important; text-align: left !important; text-transform: none !important; cursor: pointer; }
+:is(.rec-board, #choice-result) .find-start .quick-add-line:hover { border-color: #3dff6e !important; }
+:is(.rec-board, #choice-result) .find-start .quick-add-line.on { border-color: #3dff6e !important; background: rgba(61, 255, 110, 0.1) !important; }
+.find-board .quick-add-line i { font-style: normal; line-height: 1.3; }
+.find-board .quick-add-line i.px { min-width: 3.6em; color: #3dff6e; font-weight: 700; }
+.find-board .quick-add-line i.pct { min-width: 3.6em; color: #c9d4dd; font-size: 0.9em; }
+.find-board .quick-add-line i.pay { color: #3dff6e; font-weight: 700; white-space: nowrap; }
+.find-board .quick-add-line i.prop { flex: 1 1 8rem; color: #e7c15a; }
 .find-board .quick-add-line i.find-rec-pill { display: inline-flex; align-items: center; gap: 0.25rem; align-self: center; margin: 0 0 0 0.3rem; padding: 0 0.45rem 0 0.25rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 0.66rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.45; text-transform: uppercase; white-space: nowrap; }
 .find-board .quick-add-line i.find-rec-pill.good { background: #e7c15a; color: #1a1400; }
 .find-board .quick-add-line i.find-rec-pill::before { content: ""; width: 1.3em; height: 1.3em; background: url("/scene/parrot-head-tight.webp?v=1") center / contain no-repeat; }
 .find-board .quick-add-line i.prop:has(+ i.find-rec-pill) { flex: 0 1 auto; }
 .find-board .quick-add-line i.find-proof { display: inline-block; align-self: center; margin: 0 0 0 0.3rem; padding: 0 0.4rem; border: 1px solid #49d3ff; border-radius: 999px; color: #49d3ff; font-size: 0.66rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.45; text-transform: uppercase; white-space: nowrap; cursor: help; }
-:is(.rec-board, #choice-result) .find-start .quick-add-chip { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.28rem 0.7rem !important; border: 1px solid rgba(61, 255, 110, 0.45) !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #d8ffe4 !important; font-size: 13px !important; font-weight: 700 !important; letter-spacing: normal !important; text-transform: none !important; cursor: pointer; }
+:is(.rec-board, #choice-result) .find-start .quick-add-chip { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.4rem 0.85rem !important; border: 1px solid rgba(61, 255, 110, 0.45) !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #d8ffe4 !important; font-size: 13px !important; font-weight: 700 !important; letter-spacing: normal !important; line-height: 1.3 !important; text-transform: none !important; cursor: pointer; }
 :is(.rec-board, #choice-result) .find-start .quick-add-chip.on { background: #3dff6e !important; color: #04140c !important; }
 :is(.rec-board, #choice-result) .find-start .quick-add-chip:hover { background: rgba(61, 255, 110, 0.12) !important; }
 :is(.rec-board, #choice-result) .find-start .quick-add-chip.on:hover { background: #6bff92 !important; }

@@ -162,9 +162,10 @@ function quickAddChip(label, on, go) {
   return chip;
 }
 
-function quickAddStep(title, nodes) {
+function quickAddStep(title, nodes, key) {
   const step = document.createElement("div");
   step.className = "quick-add-step";
+  if (key) step.dataset.quick = key;
   const head = document.createElement("b");
   head.textContent = title;
   const row = document.createElement("div");
@@ -172,6 +173,28 @@ function quickAddStep(title, nodes) {
   row.append(...nodes);
   step.append(head, row);
   return step;
+}
+
+function quickAddReveal(box) {
+  if (!box || !box.isConnected) return;
+  const tip = box.querySelector(quickAdd.value ? ".quick-add-acts" : quickAdd.prop ? "[data-quick='value']" : quickAdd.player ? "[data-quick='prop']" : quickAdd.sport ? "[data-quick='who']" : "[data-quick='league']") || box;
+  const glass = document.getElementById("desk-glass-in");
+  const go = () => {
+    if (!tip.isConnected) return;
+    if (!glass || !glass.contains(tip)) {
+      tip.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      return;
+    }
+    const tray = glass.querySelector(":scope > .find-tray:not([hidden]), .find-tray:not([hidden])");
+    const sticky = box.closest(".find-start") && box.closest(".find-start").querySelector(".find-start-row");
+    const top = Math.max(
+      glass.getBoundingClientRect().top,
+      tray && tray.getClientRects().length ? tray.getBoundingClientRect().bottom : 0,
+      sticky && sticky.getClientRects().length ? sticky.getBoundingClientRect().bottom : 0
+    );
+    glass.scrollTo({ top: glass.scrollTop + tip.getBoundingClientRect().top - top - 12, behavior: "smooth" });
+  };
+  requestAnimationFrame(() => requestAnimationFrame(go));
 }
 
 function quickAddPut(board, fresh) {
@@ -203,11 +226,14 @@ function quickAddBox(board) {
     const keep = focusSearch && typeof focusSearch === "number" ? focusSearch : null;
     const next = quickAddBox(board);
     box.replaceWith(next);
-    if (keep == null) return;
-    const field = next.querySelector(".quick-add-search");
-    if (!field) return;
-    field.focus();
-    try { field.setSelectionRange(keep, keep); } catch (error) {}
+    if (keep != null) {
+      const field = next.querySelector(".quick-add-search");
+      if (!field) return;
+      field.focus();
+      try { field.setSelectionRange(keep, keep); } catch (error) {}
+      return;
+    }
+    quickAddReveal(next);
   };
 
   if (!quickAdd.when) quickAdd.when = "today";
@@ -224,7 +250,7 @@ function quickAddBox(board) {
       quickAddReset({ when: true });
       paint();
     }),
-  ]));
+  ], "when"));
 
   const all = quickAddPeople(board);
   const people = quickAddScope(all, quickAdd.when);
@@ -252,7 +278,7 @@ function quickAddBox(board) {
     quickAdd.value = "";
     quickAdd.q = "";
     paint();
-  }))));
+  })), "league"));
 
   if (!quickAdd.sport) return box;
 
@@ -260,6 +286,7 @@ function quickAddBox(board) {
   const game = games.find((row) => quickAddGameKey(row) === quickAdd.team) || null;
   const who = document.createElement("div");
   who.className = "quick-add-step";
+  who.dataset.quick = "who";
   const whoHead = document.createElement("b");
   whoHead.textContent = quickAdd.team ? "Player" : "Game or player";
   const search = document.createElement("input");
@@ -314,13 +341,14 @@ function quickAddBox(board) {
     quickAdd.prop = key;
     quickAdd.value = "";
     paint();
-  })) : [Object.assign(document.createElement("p"), { className: "quick-add-none", textContent: "No props posted." })]));
+  })) : [Object.assign(document.createElement("p"), { className: "quick-add-none", textContent: "No props posted." })], "prop"));
 
   if (!quickAdd.prop) return box;
 
   const values = quickAddValues(person, quickAdd.sport, quickAdd.prop, quickAdd.team);
   const valueStep = document.createElement("div");
   valueStep.className = "quick-add-step";
+  valueStep.dataset.quick = "value";
   const valueHead = document.createElement("b");
   valueHead.textContent = "2. Value";
   valueStep.append(valueHead);
