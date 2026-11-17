@@ -72,9 +72,16 @@ function trayLockGuard() {
 
 function trayLockPaint() {
   const locked = trayLockStarted([...parlayLeg.values()]);
+  const lockTip = "The game has started. Tap a prop to change it.";
   document.querySelectorAll(".find-tray").forEach((tray) => {
     tray.classList.toggle("find-locked", locked);
-    tray.title = locked ? "The game has started. Tap a prop to change it." : "";
+    tray.title = locked ? lockTip : "";
+    tray.querySelectorAll(".find-chose button.find-out, .find-chose button.find-leg-swap, .find-chose button.find-leg-to").forEach((button) => {
+      if (locked) button.title = lockTip;
+      else if (button.classList.contains("find-out")) button.removeAttribute("title");
+      else if (button.classList.contains("find-leg-to")) button.title = "Add this leg to another saved parlay";
+      else if (button.classList.contains("find-leg-swap")) button.title = button.classList.contains("on") ? "Hide the swaps" : "Swap for a bet at the same price";
+    });
   });
   if (locked && typeof legSwapOpen !== "undefined") [...legSwapOpen.entries()].forEach(([key, mode]) => { if (mode !== "line" && mode !== "kind") legSwapOpen.delete(key); });
 }

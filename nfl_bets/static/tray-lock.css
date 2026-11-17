@@ -1,2 +1,7 @@
-.find-tray.find-locked :is(.find-chose button.find-out, button.find-leg-swap, button.find-leg-to, .find-in button.find-out, .find-new, .find-leg-menu, .find-undo, .find-swap-add) { display: none !important; }
+/* Locked bet: keep the leg toolbar, but mute remove / swap / add-to. Hide the "add another leg" chrome. */
+.find-tray.find-locked :is(.find-chose button.find-out, .find-chose button.find-leg-swap, .find-chose button.find-leg-to) {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+.find-tray.find-locked :is(.find-in button.find-out, .find-new, .find-leg-menu, .find-undo, .find-swap-add) { display: none !important; }
 .find-tray.find-locked .find-in button.find-name { cursor: default !important; text-decoration: none !important; }
