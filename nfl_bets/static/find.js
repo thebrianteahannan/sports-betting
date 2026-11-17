@@ -280,6 +280,178 @@ function profileBetPick(person) {
   return { person, bet: pool[0], rec: false };
 }
 
+function parlayOpenTray(scroll) {
+  document.querySelectorAll(".find-tray.find-shut").forEach((tray) => {
+    const fold = tray.querySelector(".find-fold");
+    if (!fold) return;
+    if (typeof saveAutoShut !== "undefined") saveAutoShut.delete(tray);
+    fold.click();
+  });
+  if (scroll === false) return null;
+  const tray = document.querySelector("#desk-glass-in .find-tray:not([hidden])") || document.querySelector(".find-tray:not([hidden])");
+  if (tray) {
+    tray.style.scrollMarginTop = "5.5rem";
+    tray.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+  return tray;
+}
+
+const rosterPropDrill = new Map();
+let rosterPropRec = localStorage.getItem("rosterPropRec") !== "0";
+
+function rosterPropShut(names) {
+  if (!names) return;
+  names.querySelectorAll(":scope > .roster-props, :scope > .desk-rec-ask").forEach((node) => node.remove());
+}
+
+function rosterPropCats(person) {
+  if (!person || typeof legSwapCatKey !== "function") return [];
+  const best = new Map();
+  (person.bets || []).forEach((bet) => {
+    if (!Number(bet.odds) || parlayLeg.has(parlayKey(bet))) return;
+    const cat = legSwapCatKey(person, bet), rec = typeof legIsRec === "function" && legIsRec(bet), had = best.get(cat);
+    if (!had) best.set(cat, { person, bet, cat, count: 1, rec: !!rec });
+    else {
+      had.count += 1;
+      if (rec && !had.rec) { had.bet = bet; had.rec = true; }
+    }
+  });
+  return [...best.values()].sort((a, b) => Number(b.rec) - Number(a.rec) || (typeof legSwapCatSay === "function" ? legSwapCatSay(a.person, a.bet).localeCompare(legSwapCatSay(b.person, b.bet)) : 0));
+}
+
+function rosterPropLines(person, cat) {
+  if (!person || !cat || typeof legSwapStat !== "function") return [];
+  const under = cat.endsWith("|1"), stat = cat.slice(0, cat.lastIndexOf("|"));
+  const num = (bet) => Number((String(bet.label || "").replace(person.name, "").match(/\d+(?:\.\d+)?/) || String(bet.market || "").match(/\d+(?:\.\d+)?/) || [])[0]) || 0;
+  const seen = new Set(), rows = [];
+  (person.bets || []).forEach((bet) => {
+    const id = `${bet.label}|${bet.market}`;
+    if (!Number(bet.odds) || seen.has(id) || parlayLeg.has(parlayKey(bet))) return;
+    if (legSwapStat(person, bet) !== stat || /\bunder\b/i.test(bet.label || "") !== under) return;
+    seen.add(id);
+    rows.push({ person, bet });
+  });
+  return rows.sort((a, b) => num(a.bet) - num(b.bet));
+}
+
+function rosterPropRecs(person) {
+  if (!person || typeof legIsRec !== "function") return [];
+  const best = new Map();
+  (person.bets || []).forEach((bet) => {
+    if (!Number(bet.odds) || !legIsRec(bet) || parlayLeg.has(parlayKey(bet))) return;
+    const cat = typeof legSwapCatKey === "function" ? legSwapCatKey(person, bet) : `${bet.market}|${bet.label}`;
+    if (!best.has(cat)) best.set(cat, { person, bet, cat });
+  });
+  return [...best.values()];
+}
+
+function rosterPropAsk(box, hit) {
+  box.querySelectorAll(".desk-rec-ask").forEach((node) => node.remove());
+  if (!parlayLeg.size) { profileBetPut(hit, false); rosterPropShut(box.parentElement); return; }
+  const ask = document.createElement("span");
+  ask.className = "desk-rec-ask";
+  ask.innerHTML = `<i>You have a bet open.</i><span role="button" tabindex="0" data-bet-go="add">Add to this bet</span><span role="button" tabindex="0" data-bet-go="new">Start a new bet</span>`;
+  ask.addEventListener("click", (event) => {
+    const go = event.target.closest("[data-bet-go]");
+    if (!go) return;
+    event.preventDefault();
+    event.stopPropagation();
+    ask.remove();
+    profileBetPut(hit, go.dataset.betGo === "new");
+    rosterPropShut(box.parentElement);
+  });
+  box.append(ask);
+}
+
+function rosterPropPaint(box, person) {
+  box.replaceChildren();
+  const top = document.createElement("div");
+  top.className = "find-swap-top";
+  const held = document.createElement("span");
+  held.className = "find-swap-held";
+  held.textContent = person.name;
+  const rec = document.createElement("label");
+  rec.className = "find-swap-rec";
+  const check = document.createElement("input");
+  check.type = "checkbox";
+  check.checked = rosterPropRec;
+  check.addEventListener("change", () => {
+    rosterPropRec = check.checked;
+    try { localStorage.setItem("rosterPropRec", rosterPropRec ? "1" : "0"); } catch (error) {}
+    if (rosterPropRec) rosterPropDrill.delete(person.key);
+    rosterPropPaint(box, person);
+  });
+  rec.append(check, document.createTextNode("Show Recommended"));
+  const shut = document.createElement("button");
+  shut.type = "button";
+  shut.className = "find-swap-x";
+  shut.textContent = "Close";
+  shut.addEventListener("click", () => { rosterPropDrill.delete(person.key); rosterPropShut(box.parentElement); });
+  top.append(held, rec, shut);
+  box.append(top);
+
+  const drill = rosterPropDrill.get(person.key) || "";
+  const recs = rosterPropRec ? rosterPropRecs(person) : [];
+  const useRec = !!(rosterPropRec && recs.length);
+  if (drill && !useRec) {
+    const back = document.createElement("button");
+    back.type = "button";
+    back.className = "find-swap-back";
+    const sample = (person.bets || []).find((bet) => typeof legSwapCatKey === "function" && legSwapCatKey(person, bet) === drill);
+    back.textContent = `◂ ${sample && typeof legSwapCatSay === "function" ? legSwapCatSay(person, sample) : "Props"}`;
+    back.addEventListener("click", () => { rosterPropDrill.delete(person.key); rosterPropPaint(box, person); });
+    box.append(back);
+  }
+
+  let rows;
+  if (useRec) rows = recs.map((row) => ({ ...row, mode: "line" }));
+  else if (drill) rows = rosterPropLines(person, drill).map((row) => ({ ...row, mode: "line" }));
+  else rows = rosterPropCats(person).map((row) => ({ ...row, mode: "cat" }));
+
+  if (!rows.length) {
+    const none = document.createElement("p");
+    none.textContent = useRec ? "No recommended props for this player." : "FanDuel has no props posted for this player.";
+    box.append(none);
+    return;
+  }
+
+  rows.forEach((row) => {
+    const { bet, mode, count } = row;
+    const price = Number(bet.odds);
+    const go = document.createElement("button");
+    go.type = "button";
+    go.className = "find-swap-go";
+    if (mode === "cat") {
+      go.innerHTML = [`<i class="prop">${esc(typeof legSwapCatSay === "function" ? legSwapCatSay(person, bet) : bet.market)}</i>`, count > 1 && `<i class="pct">${esc(`${count} lines`)}</i>`].filter(Boolean).join("");
+      go.addEventListener("click", () => { rosterPropDrill.set(person.key, row.cat); rosterPropPaint(box, person); });
+    } else {
+      go.innerHTML = [`<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, typeof findPct === "function" && findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`, `<i class="prop">${esc(typeof legSwapWhat === "function" ? legSwapWhat(person, bet) : bet.label)}</i>`].filter(Boolean).join("");
+      const pill = typeof scriptRecPill === "function" && scriptRecPill(bet);
+      if (pill) go.append(pill);
+      go.addEventListener("click", () => rosterPropAsk(box, { person, bet, rec: typeof legIsRec === "function" && legIsRec(bet) }));
+    }
+    const line = document.createElement("div");
+    line.className = "find-swap-row";
+    line.append(go);
+    box.append(line);
+  });
+}
+
+function rosterOpenProps(person, anchor) {
+  if (!person || person.kind !== "player") return;
+  const chip = anchor && (anchor.closest(".find-chip") || anchor);
+  const names = chip && chip.closest(".find-names");
+  if (!names) return;
+  const open = names.querySelector(`:scope > .roster-props[data-key="${person.key}"]`);
+  rosterPropShut(names);
+  if (open) { rosterPropDrill.delete(person.key); return; }
+  const box = document.createElement("div");
+  box.className = "roster-props find-tray-swap";
+  box.dataset.key = person.key;
+  chip.after(box);
+  rosterPropPaint(box, person);
+}
+
 function profileBetPut(hit, fresh) {
   if (!hit || typeof parlayLeg === "undefined" || typeof parlayKey !== "function") return;
   if (fresh && parlayLeg.size && typeof saveNew === "function") saveNew();
@@ -296,15 +468,7 @@ function profileBetPut(hit, fresh) {
     if (typeof paintParlay === "function") paintParlay();
   }
   closePlayerPop();
-  document.querySelectorAll(".find-tray.find-shut").forEach((tray) => {
-    const fold = tray.querySelector(".find-fold");
-    if (fold) fold.click();
-  });
-  const tray = document.querySelector("#desk-glass-in .find-tray:not([hidden])") || document.querySelector(".find-tray:not([hidden])");
-  if (tray) {
-    tray.style.scrollMarginTop = "5.5rem";
-    tray.scrollIntoView({ block: "start", behavior: "smooth" });
-  }
+  parlayOpenTray();
 }
 
 function profileAskPut(acts, hit) {
@@ -500,9 +664,17 @@ function fillRoster(roster, team, list, hits, people) {
     lined.forEach((hit) => {
       const button = document.createElement("button");
       button.type = "button";
+      button.dataset.key = hit.key;
       button.textContent = absent.has(plainName(hit.name)) ? `${hit.name}, out` : hit.name;
       if (parlayPick.has(hit.key)) { button.classList.add("on"); button.setAttribute("aria-pressed", "true"); }
-      button.addEventListener("click", () => { if (showCardInGame(button, hit)) return; const field = document.querySelector(".find-board label.find input"); const boardRoster = list.parentElement && list.parentElement.querySelector(":scope > .find-roster"); if (field) { field.value = hit.name; field.dispatchEvent(new Event("input", { bubbles: true })); } showFind(list, hits, hit, boardRoster || roster, people); });
+      button.addEventListener("click", () => {
+        if (button.closest(".find-everyone")) { rosterOpenProps(hit, button); return; }
+        if (showCardInGame(button, hit)) return;
+        const field = document.querySelector(".find-board label.find input");
+        const boardRoster = list.parentElement && list.parentElement.querySelector(":scope > .find-roster");
+        if (field) { field.value = hit.name; field.dispatchEvent(new Event("input", { bubbles: true })); }
+        showFind(list, hits, hit, boardRoster || roster, people);
+      });
       names.append(button);
     });
     quiet.forEach((name) => { const span = document.createElement("span"); const gone = absent.has(plainName(name)); span.textContent = gone ? `${name}, out` : name; if (gone) span.className = "find-absent"; names.append(span); });

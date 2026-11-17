@@ -354,7 +354,10 @@ function savePaint() {
     share.hidden = !pack.legs.length;
     const shut = document.createElement("button"); shut.type = "button"; shut.className = "find-close"; shut.textContent = "×"; shut.title = "Close saved parlays"; shut.setAttribute("aria-label", shut.title);
     shut.addEventListener("click", () => { window.saveGone = true; box.classList.add("find-saved-gone"); });
-    head.append(fold, share, shut); box.append(head);
+    const acts = document.createElement("span");
+    acts.className = "find-saved-acts";
+    acts.append(fold, share, shut);
+    head.append(acts); box.append(head);
     const stacks = document.createDocumentFragment(), groups = new Map();
     list.forEach((row) => {
       const chip = document.createElement("span");
@@ -396,7 +399,7 @@ function savePaint() {
     fresh.className = "find-saved-new";
     fresh.textContent = "+ New bet";
     fresh.addEventListener("click", () => { const input = document.querySelector("label.find input"); saveNew(); if (input) input.focus(); if (!parlayLeg.size && !parlayPick.size && !(input && input.value.trim())) saveTips(); });
-    head.insertBefore(fresh, fold);
+    head.insertBefore(fresh, acts);
     if (!groups.size) return;
     const top = document.createElement("p");
     top.textContent = "MY STACKS";

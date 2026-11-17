@@ -135,11 +135,13 @@ function plays(groups, game, boxes) {
 
 function tellNfl(game, boxes, extra = {}) {
   const outs = extra.outs || { away: [], home: [] };
-  const groups = { "Game flow": flow(game, boxes, extra), "Matchups": matchups(boxes, outs), "Passing and rushing": passRun(boxes, outs), "Pace": pace(boxes), "Who's out": missing(boxes, outs), "History": history(boxes, game, extra) };
+  const sit = missing(boxes, outs);
+  const groups = { "Game flow": flow(game, boxes, extra), "Matchups": matchups(boxes, outs), "Passing and rushing": passRun(boxes, outs), "Pace": pace(boxes), "Who's out": sit, "History": history(boxes, game, extra) };
   const named = new Set((groups.Matchups || []).map((row) => (row.text.match(/^(.+?) has the/) || [])[1]).filter(Boolean));
-  const sections = Object.entries(groups).map(([title, rows]) => ({ title, lines: top(rows, 4).map((row) => (row.player && named.has(row.player) ? row.bare : row.text)) })).filter((row) => row.lines.length);
+  const sections = Object.entries(groups).filter(([title]) => title !== "Who's out").map(([title, rows]) => ({ title, lines: top(rows, 4).map((row) => (row.player && named.has(row.player) ? row.bare : row.text)) })).filter((row) => row.lines.length);
   const watch = top((groups.Matchups || []).filter((row) => row.say), 2).map((row) => ({ name: (row.say.match(/^(?:Watch )?([^:]+?)(?::| has)/) || [])[1] || "", edge: !!row.edge }));
-  return { plays: plays(groups, game, boxes), sections, watch };
+  const whoOut = top(sit, 6).map((row) => row.text).filter(Boolean);
+  return { plays: plays(groups, game, boxes), sections, watch, outs: whoOut.length ? { title: "Who's out", lines: whoOut } : null };
 }
 
 module.exports = { tellNfl };

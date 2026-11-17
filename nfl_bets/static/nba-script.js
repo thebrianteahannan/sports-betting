@@ -72,18 +72,45 @@ function scriptRecMark(match, bets) {
   }
   const rec = match.scriptRec;
   if (!rec) return;
-  const mark = (chip, on, test) => {
+  const mark = (chip, on, test, player) => {
     chip.classList.toggle("find-rec", on);
     const go = chip.querySelector(":scope > button.find-rec-go");
     if (on && !go) {
-      const button = document.createElement("button"); button.type = "button"; button.className = "find-rec-go"; button.title = "See Parlay's recommendation"; button.setAttribute("aria-label", button.title);
-      button.addEventListener("click", (event) => { event.stopPropagation(); scriptRecJump(match, test); });
+      const button = document.createElement("button"); button.type = "button"; button.className = "find-rec-go"; button.title = player ? "Add Parlay's recommendation" : "See Parlay's recommendation"; button.setAttribute("aria-label", button.title);
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        if (!player) { scriptRecJump(match, test); return; }
+        const board = match.closest(".find-board");
+        const key = chip.firstElementChild && chip.firstElementChild.dataset.key;
+        const person = (board && (board.people || []).find((row) => row.kind === "player" && (row.key === key || fold(row.name) === fold(chip.firstElementChild.textContent.replace(/, out$/, ""))))) || null;
+        const hit = person && ((typeof profileBetHit === "function" && profileBetHit(person, board)) || (typeof profileBetPick === "function" && profileBetPick(person)));
+        if (!hit) { scriptRecJump(match, test); return; }
+        const names = chip.parentElement;
+        if (names) names.querySelectorAll(":scope > .desk-rec-ask").forEach((node) => node.remove());
+        if (typeof parlayLeg === "undefined" || !parlayLeg.size) {
+          if (typeof profileBetPut === "function") profileBetPut(hit, false);
+          return;
+        }
+        const what = typeof legSwapWhat === "function" ? legSwapWhat(hit.person, hit.bet) : String(hit.bet.label || "");
+        const ask = document.createElement("span");
+        ask.className = "desk-rec-ask";
+        ask.innerHTML = `<i>${typeof esc === "function" ? esc(what) : what}</i><span role="button" tabindex="0" data-bet-go="add">Add to this bet</span><span role="button" tabindex="0" data-bet-go="new">Start a new bet</span>`;
+        ask.addEventListener("click", (ev) => {
+          const goAsk = ev.target.closest("[data-bet-go]");
+          if (!goAsk) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          ask.remove();
+          if (typeof profileBetPut === "function") profileBetPut(hit, goAsk.dataset.betGo === "new");
+        });
+        chip.after(ask);
+      });
       const plus = chip.querySelector(":scope > .find-plus"); if (plus) plus.before(button); else chip.append(button);
     }
     if (!on && go) go.remove();
   };
-  match.querySelectorAll(".find-everyone .find-chip").forEach((chip) => { const name = fold(chip.firstElementChild ? chip.firstElementChild.textContent.replace(/, out$/, "") : ""); mark(chip, rec.names.has(name), (info) => String(info.who || "").split("|").some((who) => fold(who) === name)); });
-  match.querySelectorAll(".find-line-chip").forEach((chip) => { const key = `${chip.dataset.label}|${chip.dataset.market}`; mark(chip, rec.bets.has(key), (info) => String(info.legs || "").split("||").includes(key)); });
+  match.querySelectorAll(".find-everyone .find-chip").forEach((chip) => { const name = fold(chip.firstElementChild ? chip.firstElementChild.textContent.replace(/, out$/, "") : ""); mark(chip, rec.names.has(name), (info) => String(info.who || "").split("|").some((who) => fold(who) === name), true); });
+  match.querySelectorAll(".find-line-chip").forEach((chip) => { const key = `${chip.dataset.label}|${chip.dataset.market}`; mark(chip, rec.bets.has(key), (info) => String(info.legs || "").split("||").includes(key), false); });
   if (typeof paintTdRec === "function") paintTdRec(match);
   const board = match.closest(".find-board"), head = (document.querySelector("#find-profile-pop .find-profile > h3") || (board && board.querySelector(".find-list > .find-profile > h3")));
   if (!head) return;
@@ -424,15 +451,31 @@ function nbaScript(holder, game, people) {
   if (top && top.parentElement === match) top.after(box);
   else { const crowd = match.querySelector(":scope > .find-stacks.find-team-bets, :scope > .find-odds.find-team-bets, :scope > .find-everyone, :scope > .find-body"); if (crowd) crowd.before(box); else match.append(box); }
   const key = `${full.match}|${full.kickoff}`, props = nbaScriptProps(people, full.match);
-  const ask = (list) => { const id = `${list}|${key}|${list === "story" ? props.length : ""}`; let job = nbaScriptJobs.get(id); if (!job) { job = fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list, match: full.match, kickoff: full.kickoff, props, ...(list === "story" && typeof teamRecLines === "function" ? { lines: teamRecLines(people, full.match) } : {}) }) }).then((res) => res.json()).catch(() => ({})); nbaScriptJobs.set(id, job); job.then((data) => { if (!data || !(data.summary || (data.sections || []).length)) nbaScriptJobs.delete(id); }); } return job; };
+  const ask = (list) => { const id = `${list}|${key}|${list === "story" ? props.length : ""}`; let job = nbaScriptJobs.get(id); if (!job) { job = fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list, match: full.match, kickoff: full.kickoff, props, ...(list === "story" && typeof teamRecLines === "function" ? { lines: teamRecLines(people, full.match) } : {}) }) }).then((res) => res.json()).catch(() => ({})); nbaScriptJobs.set(id, job); job.then((data) => { if (!data || !(data.summary || (data.sections || []).length || (data.outs && (data.outs.lines || []).length) || (data.plays || []).length)) nbaScriptJobs.delete(id); }); } return job; };
   const got = { nba: null, story: null, nbaDone: false, storyDone: false };
   const brief = () => holder.querySelector(".find-brief:not(.find-script .find-brief)");
   const adopt = () => { const node = brief(); if (node && box.isConnected) { node.open = false; node.style.gridColumn = "1 / -1"; box.after(node); } };
   setTimeout(adopt, 0);
+  const jumpOuts = (target) => { if (!target) return; target.open = true; const glass = document.getElementById("desk-glass-in"); if (glass && glass.contains(target)) { const tray = document.querySelector(".find-tray:not([hidden])"), stuck = tray && !tray.classList.contains("find-shut") && tray.getClientRects().length ? tray.offsetHeight : 0; glass.scrollTo({ top: glass.scrollTop + target.getBoundingClientRect().top - glass.getBoundingClientRect().top - stuck - 8, behavior: "smooth" }); } else target.scrollIntoView({ block: "start", behavior: "smooth" }); };
+  const paintOuts = (story) => {
+    const part = story && story.outs && (story.outs.lines || []).length ? story.outs : null;
+    let outs = match.querySelector(":scope > .find-outs");
+    const acts = match.querySelector(".find-pick .find-pick-acts");
+    let go = acts && acts.querySelector('[data-jump="outs"]');
+    if (!part) { if (outs) outs.remove(); if (go) go.remove(); return; }
+    if (!outs) { outs = document.createElement("details"); outs.className = "find-score find-script find-outs"; outs.style.gridColumn = "1 / -1"; outs.open = true; box.before(outs); }
+    outs.innerHTML = `<summary><b class="find-script-head">${esc(part.title || "Who's out")}</b></summary>${(part.lines || []).map((line) => `<p>${esc(line)}</p>`).join("")}`;
+    if (acts && !go) { go = document.createElement("button"); go.type = "button"; go.className = "find-pick-go"; go.dataset.jump = "outs"; go.textContent = "Who's out"; go.addEventListener("click", () => jumpOuts(match.querySelector(":scope > .find-outs"))); acts.append(go); }
+  };
   const paint = () => {
     if (!box.isConnected) return;
-    const nba = got.nba && got.nba.summary ? got.nba : null, story = got.story && (got.story.sections || []).length ? got.story : null;
-    if (!nba && !story) { if (got.nbaDone && got.storyDone) { const node = box.querySelector(".find-brief"); if (node) box.before(node); box.remove(); } return; }
+    const nba = got.nba && got.nba.summary ? got.nba : null, story = got.story && ((got.story.sections || []).length || (got.story.outs && (got.story.outs.lines || []).length) || (got.story.plays || []).length || (got.story.bets && (got.story.bets.groups || []).length) || (got.story.lines || []).length) ? got.story : null;
+    paintOuts(story);
+    const hasBody = !!(nba || (story && ((story.sections || []).length || (story.plays || []).length)));
+    const oldBets = box.parentElement && box.parentElement.querySelector(":scope > .find-bets");
+    const recBets = story && ((story.bets && (story.bets.groups || []).length) || (story.lines || []).length) ? { picks: [], groups: [], ...(story.bets || {}), lines: story.lines || [] } : null;
+    if (recBets) { const fresh = scriptBetsBox(recBets, full, people); scriptRecKeep(recBets, full); scriptRecMark(match, recBets); fresh.open = !!(oldBets && oldBets.open); if (oldBets) oldBets.replaceWith(fresh); else { const next = box.nextElementSibling; (next && next.classList.contains("find-brief") ? next : box).after(fresh); } scriptBetsSide(match, fresh); const td = match.querySelector(":scope > .find-td"); if (td) fresh.after(td); }
+    if (!hasBody) { if (got.nbaDone && got.storyDone) { const node = box.querySelector(".find-brief"); if (node) box.before(node); box.remove(); } return; }
     const data = box.querySelector(":scope > .find-brief");
     sum.replaceChildren(sum.firstElementChild);
     [...box.children].forEach((node) => { if (node !== sum && node !== data) node.remove(); });
@@ -446,9 +489,6 @@ function nbaScript(holder, game, people) {
     if (nba && story) { const lead = document.createElement("p"); lead.className = "find-script-lead"; lead.textContent = nba.summary; add(lead); }
     if (story && (story.plays || []).length) { const block = document.createElement("div"); block.className = "find-script-part"; block.innerHTML = `<b>How it plays out</b><p>${esc(story.plays.join(" "))}</p>`; add(block); }
     ((story && story.sections) || []).forEach((part) => { const block = document.createElement("div"); block.className = "find-script-part"; block.innerHTML = `<b>${esc(part.title || "")}</b>${(part.lines || []).map((line) => `<p>${esc(line)}</p>`).join("")}`; add(block); });
-    const oldBets = box.parentElement && box.parentElement.querySelector(":scope > .find-bets");
-    const recBets = story && ((story.bets && (story.bets.groups || []).length) || (story.lines || []).length) ? { picks: [], groups: [], ...(story.bets || {}), lines: story.lines || [] } : null;
-    if (recBets) { const fresh = scriptBetsBox(recBets, full, people); scriptRecKeep(recBets, full); scriptRecMark(match, recBets); fresh.open = !!(oldBets && oldBets.open); if (oldBets) oldBets.replaceWith(fresh); else { const next = box.nextElementSibling; (next && next.classList.contains("find-brief") ? next : box).after(fresh); } scriptBetsSide(match, fresh); const td = match.querySelector(":scope > .find-td"); if (td) fresh.after(td); }
     ((nba && nba.parts) || []).forEach((part) => { const block = document.createElement("div"); block.className = "find-script-part"; block.innerHTML = `<b>${esc(part.title || "")}</b><p>${esc(part.text || "")}</p>${String(part.proof || "").split("\n").filter(Boolean).map((line) => `<p class="find-script-proof">${esc(line)}</p>`).join("")}`; add(block); });
   };
   ask("nba").then((data) => { got.nba = data; got.nbaDone = true; paint(); });

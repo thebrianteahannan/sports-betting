@@ -223,15 +223,15 @@ function chatTicketButton() {
     if (share) share.before(go); else line.append(go);
   });
   document.querySelectorAll(".find-saved > p.find-say").forEach((head) => {
-    const had = head.querySelector(":scope > .chat-send");
-    const share = head.querySelector(":scope > .share-bet");
+    const share = head.querySelector(".share-bet");
+    const had = head.querySelector(".chat-send");
     if (had) { had.hidden = !chat.on || (share && share.hidden); return; }
     if (!chat.on || (share && share.hidden)) return;
     const go = chatButton("", chatMyBetsShare, "chat-send");
     go.innerHTML = CHAT_ICON;
     go.title = "Send all my bets in a chat";
     go.setAttribute("aria-label", go.title);
-    if (share) share.before(go); else { const fold = head.querySelector(".find-fold"); if (fold) fold.after(go); else head.append(go); }
+    if (share) share.before(go); else { const fold = head.querySelector(".find-fold"); if (fold) fold.after(go); else { const acts = head.querySelector(".find-saved-acts"); if (acts) acts.append(go); else head.append(go); } }
   });
 }
 

@@ -12,8 +12,8 @@
 .find-board.club-on :is(i.pct, .pct, b.find-at) { color: var(--club-hot) !important; }
 .find-board.club-on i.prop { color: var(--club-cool) !important; }
 .find-board.club-on :is(b.leg-league, button.share-bet:not(.find-saved-share), button.find-games-go, button.find-clear, button.find-edit, button.find-fold) { color: #ffffff !important; background-color: rgba(0, 0, 0, 0.3) !important; border-color: var(--club-edge) !important; }
-.find-board.club-on .find-saved > p.find-say > button.chat-send { color: #3dff6e !important; background: #07140f !important; border-color: #3dff6e !important; }
-.find-board.club-on .find-saved > p.find-say > button.share-bet.find-saved-share { color: #3dff6e !important; background-color: #07140f !important; border-color: #3dff6e !important; }
+.find-board.club-on .find-saved > p.find-say button.chat-send { color: #3dff6e !important; background: #07140f !important; border-color: #3dff6e !important; }
+.find-board.club-on .find-saved > p.find-say button.share-bet.find-saved-share { color: #3dff6e !important; background-color: #07140f !important; border-color: #3dff6e !important; }
 .find-board.club-on .find-tray { background: #07090e !important; }
 .find-board.club-on .find-tray .find-why { color: #e3e8f2 !important; }
 .find-board.club-on .find-tray i.prop { color: #e7c15a !important; }

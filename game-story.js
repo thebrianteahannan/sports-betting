@@ -194,10 +194,12 @@ async function build(body, board) {
 }
 
 function tell(game, boxes, read, fives, outs) {
-  const groups = { "Mismatches": mismatches(boxes, fives, outs), "Tempo": tempo(boxes, game), "Threes and the paint": shots(boxes), "Fouls and free throws": fouls(boxes, fives), "Minutes": minutes(read, boxes, outs), "History": history(read, boxes, game) };
-  const sections = Object.entries(groups).map(([title, rows]) => ({ title, lines: top(rows, 4).map((row) => row.text) })).filter((row) => row.lines.length);
+  const sit = minutes(read, boxes, outs);
+  const groups = { "Mismatches": mismatches(boxes, fives, outs), "Tempo": tempo(boxes, game), "Threes and the paint": shots(boxes), "Fouls and free throws": fouls(boxes, fives), "Minutes": sit, "History": history(read, boxes, game) };
+  const sections = Object.entries(groups).filter(([title]) => title !== "Minutes").map(([title, rows]) => ({ title, lines: top(rows, 4).map((row) => row.text) })).filter((row) => row.lines.length);
   const watch = top((groups.Mismatches || []).filter((row) => row.say), 2).map((row) => ({ name: (row.say.match(/^(?:Watch )?([^:]+?)(?::| draws| has)/) || [])[1] || "", edge: !!row.edge }));
-  return { plays: plays(groups, game, boxes), sections, watch };
+  const whoOut = top(sit, 6).map((row) => row.text).filter(Boolean);
+  return { plays: plays(groups, game, boxes), sections, watch, outs: whoOut.length ? { title: "Who's out", lines: whoOut } : null };
 }
 
 function gameStory(body, board) {

@@ -77,6 +77,18 @@ function rosterPlus(button, person) {
   if (button.dataset.def) chip.dataset.def = button.dataset.def;
   if (button.dataset.bench) chip.dataset.bench = button.dataset.bench;
   if (button.dataset.fringe) chip.dataset.fringe = button.dataset.fringe;
+  const info = document.createElement("button");
+  info.type = "button";
+  info.className = "find-info";
+  info.title = `About ${person.name}`;
+  info.setAttribute("aria-label", info.title);
+  info.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (typeof showCardInGame === "function" && showCardInGame(info, person)) return;
+    const board = info.closest(".find-board");
+    const list = board && board.querySelector(".find-list");
+    if (typeof openPlayerPop === "function") openPlayerPop(person, list);
+  });
   const plus = document.createElement("button");
   plus.type = "button";
   plus.className = "find-plus";
@@ -85,13 +97,18 @@ function rosterPlus(button, person) {
     if (parlayPick.has(person.key)) {
       parlayPick.delete(person.key);
       [...parlayLeg.entries()].forEach(([key, bet]) => { if (String(bet.label || "").startsWith(person.name)) parlayLeg.delete(key); });
-    } else if (parlayPick.size >= 8) return;
-    else parlayPick.set(person.key, person);
+      if (typeof trayRoster === "function") trayRoster();
+      paintParlay();
+      return;
+    }
+    if (parlayPick.size >= 8) return;
+    parlayPick.set(person.key, person);
     if (typeof trayRoster === "function") trayRoster();
     paintParlay();
+    if (typeof parlayOpenTray === "function") parlayOpenTray();
   });
   button.replaceWith(chip);
-  chip.append(button, plus);
+  chip.append(button, info, plus);
 }
 
 function rosterFlags(roster) {

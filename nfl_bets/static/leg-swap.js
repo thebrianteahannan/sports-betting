@@ -356,15 +356,43 @@ function legSwapBox(key, mode) {
       const rec = typeof scriptRecPill === "function" && scriptRecPill(bet);
       if (rec) go.append(rec);
       if (proof) go.append(proofPill(proof));
-      go.addEventListener("click", () => {
-        if (now) { legSwapClose(key); return; }
-        if (mode === "who") { legSwapOpen.delete(key); legSwapDrill.delete(key); legSwapAdd(person, bet); return; }
-        legSwapTrade(key, person, bet);
-      });
     }
     const line = document.createElement("div");
     line.className = "find-swap-row";
     line.append(go);
+    if (listMode !== "cat") {
+      go.addEventListener("click", () => {
+        if (now) { legSwapClose(key); return; }
+        if (mode === "who") {
+          const put = (fresh) => {
+            legSwapOpen.delete(key);
+            legSwapDrill.delete(key);
+            if (fresh && parlayLeg.size && typeof saveNew === "function") saveNew();
+            legSwapAdd(person, bet);
+            if (typeof parlayOpenTray === "function") parlayOpenTray();
+          };
+          if (parlayLeg.size) {
+            box.querySelectorAll(".desk-rec-ask").forEach((node) => node.remove());
+            const ask = document.createElement("span");
+            ask.className = "desk-rec-ask";
+            ask.innerHTML = `<i>You have a bet open.</i><span role="button" tabindex="0" data-bet-go="add">Add to this bet</span><span role="button" tabindex="0" data-bet-go="new">Start a new bet</span>`;
+            ask.addEventListener("click", (event) => {
+              const goAsk = event.target.closest("[data-bet-go]");
+              if (!goAsk) return;
+              event.preventDefault();
+              event.stopPropagation();
+              ask.remove();
+              put(goAsk.dataset.betGo === "new");
+            });
+            line.append(ask);
+            return;
+          }
+          put(false);
+          return;
+        }
+        legSwapTrade(key, person, bet);
+      });
+    }
     if (!now && listMode !== "cat" && mode !== "who") {
       const add = document.createElement("button");
       add.type = "button";

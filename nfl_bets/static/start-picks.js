@@ -451,7 +451,8 @@ function startPaint(again) {
   const leagues = typeof homeLeagues === "function" ? homeLeagues(box, leftGames()) : [];
   const td = startTab === "rec" ? startTdButton(board) : null;
   row.append(tabs, ...leagues, ...(startTab === "rec" ? [startRandomBar(board, picks)] : []), ...(((window.memberTeams || []).length || startFavOnly) ? [startFavBox()] : []), ...(td ? [td] : []));
-  box.append(row, ...(startTab === "rec" ? [...(all.length ? [startKindBar(all)] : []), ...recs] : startTab === "stacks" ? startStacks() : games));
+  const quick = typeof quickAddBox === "function" ? quickAddBox(board) : null;
+  box.append(...(quick ? [quick] : []), row, ...(startTab === "rec" ? [...(all.length ? [startKindBar(all)] : []), ...recs] : startTab === "stacks" ? startStacks() : games));
   box.hidden = Boolean(input && input.value.trim());
   spot.after(box);
   if ((!homeRecs || homeRecs.loading) && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
