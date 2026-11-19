@@ -298,7 +298,7 @@ function startRandomBar(board, picks) {
 }
 
 function startFavGame(match) {
-  const game = homeGamesList.find((row) => row.match === match) || ((window.state && state.board && state.board.games) || []).find((row) => row.match === match);
+  const game = homeGamesList.find((row) => row.match === match) || startWeekGames.find((row) => row.match === match) || ((window.state && state.board && state.board.games) || []).find((row) => row.match === match);
   return Boolean(game && typeof favTeamsHas === "function" && favTeamsHas(game));
 }
 
@@ -325,7 +325,7 @@ function startTdGo(board, people) {
   if (span) { span.classList.add("find-picked"); span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); }
   if (more) more.hidden = false;
   document.querySelectorAll(".find-start").forEach((node) => node.remove());
-  openTdPage(list, people || board.people || [], hits);
+  openTdPage(list, people || board.people || [], hits, null, null, startSpan === "week" ? "week" : "today");
 }
 window.startTdGo = startTdGo;
 
@@ -349,10 +349,18 @@ function startTdButton(board) {
 }
 
 function startRecs(board, box) {
-  const now = Date.now(), left = homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now), picks = [], all = [];
-  const recs = homeRecRows(left, box).filter((node) => { if (node.startPick) all.push(node.startPick); return !node.startPick || (startKindOk(node.startPick) && (!startFavOnly || startFavGame(node.startPick.match))); }).map((node) => {
+  const left = leftGames(), picks = [], all = [], when = startSpan === "week" ? "this week" : "today";
+  const recs = homeRecRows(left, box).filter((node) => {
+    if (!node.startPick) return true;
+    if (!startPickSpanOk(node.startPick)) return false;
+    all.push(node.startPick);
+    return startKindOk(node.startPick) && (!startFavOnly || startFavGame(node.startPick.match));
+  }).map((node) => {
     if (node.startPick) picks.push(node.startPick);
-    if (!node.classList.contains("desk-rec")) return node;
+    if (!node.classList.contains("desk-rec")) {
+      if (node.classList.contains("desk-games-label") && startSpan === "week") node.textContent = "This week";
+      return node;
+    }
     const copy = node.cloneNode(true), pick = node.startPick;
     if (pick) {
       copy.title = "Show the player";
@@ -380,7 +388,7 @@ function startRecs(board, box) {
     if (game) copy.addEventListener("click", () => startGameOpen(board, game));
     return copy;
   });
-  if (startFavOnly && !games.some((node) => node.startGame)) games.push(Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: "None of your teams play today. Uncheck Only my teams for the rest." }));
+  if (startFavOnly && !games.some((node) => node.startGame)) games.push(Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: `None of your teams play ${when}. Uncheck Only my teams for the rest.` }));
   if (all.length && !picks.length) recs.push(Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: startKinds.size ? "No picks match these filters. Tap Clear for the rest." : "None of your teams have a pick. Uncheck Only my teams for the rest." }));
   return { recs, games, picks, all };
 }
@@ -434,7 +442,8 @@ function startPaint(again) {
   const spot = startSpot(), board = spot && spot.closest(".find-board");
   if (!spot || !board || typeof homeRecRows !== "function") return;
   const input = board.querySelector("label.find input");
-  homeRecsLoad(); homeLogosLoad(); homeLeagueSync();
+  if (startSpan === "week") startWeekLoad();
+  homeRecsLoad(startSpan === "week" ? "week" : ""); homeLogosLoad(); homeLeagueSync();
   const box = document.createElement("div"), tabs = document.createElement("span");
   box.className = "find-start"; tabs.className = "desk-games-tabs";
   if (startTab === "shared") startTab = "rec";
@@ -450,17 +459,13 @@ function startPaint(again) {
   row.className = "find-start-row";
   const leagues = typeof homeLeagues === "function" ? homeLeagues(box, leftGames()) : [];
   const td = startTab === "rec" ? startTdButton(board) : null;
-  row.append(tabs, ...leagues, ...(startTab === "rec" ? [startRandomBar(board, picks)] : []), ...(((window.memberTeams || []).length || startFavOnly) ? [startFavBox()] : []), ...(td ? [td] : []));
+  row.append(tabs, startSpanBar(), ...leagues, ...(startTab === "rec" ? [startRandomBar(board, picks)] : []), ...(((window.memberTeams || []).length || startFavOnly) ? [startFavBox()] : []), ...(td ? [td] : []));
   const quick = typeof quickAddBox === "function" ? quickAddBox(board) : null;
   box.append(...(quick ? [quick] : []), row, ...(startTab === "rec" ? [...(all.length ? [startKindBar(all)] : []), ...recs] : startTab === "stacks" ? startStacks() : games));
   box.hidden = Boolean(input && input.value.trim());
   spot.after(box);
-  if ((!homeRecs || homeRecs.loading) && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
-}
-
-function leftGames() {
-  const now = Date.now();
-  return homeGamesList.filter((game) => Date.parse(game.kickoff || "") > now);
+  const waiting = (startSpan === "week" && startWeekLoading) || !homeRecs || homeRecs.loading;
+  if (waiting && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
 }
 
 if (typeof homeRecRow === "function") {

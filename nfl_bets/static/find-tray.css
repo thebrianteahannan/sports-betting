@@ -560,6 +560,14 @@
   border-color: #e7c15a !important; background: rgba(231, 193, 90, 0.12) !important; color: #e7c15a !important;
 }
 .rec-board .find-list.find-td-board > .find-td-teams > button.find-td-team .desk-team-logo { width: 18px; height: 18px; margin: 0; object-fit: contain; }
+.rec-board .find-list.find-td-board > .find-td-teams > button.find-td-team i.td-team-n {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 1.15rem; margin: 0; padding: 0.05rem 0.3rem;
+  border-radius: 999px; background: #e7c15a; color: #07090e; font-size: 10px; font-style: normal; font-weight: 800; line-height: 1.2;
+}
+:is(.rec-board, #choice-result) .find-list.find-td-board > .find-td-teams > button.find-td-team.has-rec,
+#desk.tv-full #desk-glass .rec-board .find-list.find-td-board > .find-td-teams > button.find-td-team.has-rec {
+  border-color: rgba(231, 193, 90, 0.65) !important;
+}
 .rec-board .find-list.find-td-board > .find-td-picks { margin: 0 0 0.45rem; }
 .rec-board .find-list.find-td-board > .find-td-page-filter { margin: 0 0 0.35rem; }
 .rec-board .find-list.find-td-board > .find-td-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0 0 0.45rem; }

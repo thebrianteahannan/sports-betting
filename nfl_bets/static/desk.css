@@ -140,6 +140,11 @@ body.needs-member .hot { display: none; }
   transform: rotate(-45deg);
 }
 #desk-glass #gate .pass-check li[hidden] { display: none; }
+#desk-glass #gate .pass-wrap { display: flex; align-items: stretch; gap: 0.4rem; }
+#desk-glass #gate .pass-wrap input { flex: 1 1 auto; width: auto; }
+#desk-glass #gate button.pass-show { flex: none; width: auto; min-height: 0; margin: 0; padding: 0.35rem 0.75rem; border: 1px solid rgba(61, 255, 110, 0.7); border-radius: 8px; background: transparent; box-shadow: none; color: #d8ffe4; font-size: 14px; font-weight: 800; letter-spacing: normal; text-transform: none; cursor: pointer; }
+#desk-glass #gate button.pass-show:hover { background: rgba(61, 255, 110, 0.12); }
+#desk-glass #gate button.pass-show[aria-pressed="true"] { background: #3dff6e; color: #04140c; border-color: #3dff6e; box-shadow: none; }
 #desk-glass #gate input {
   width: 100%;
   min-width: 0;

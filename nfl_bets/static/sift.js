@@ -628,7 +628,8 @@ function openTdPage(list, people, hits, game, team, spanWhen) {
       });
       filterRows();
       syncPick();
-    }).catch(() => { filterRows(); });
+      refreshTeams();
+    }).catch(() => { filterRows(); refreshTeams(); });
   };
   recOnly.addEventListener("change", filterRows);
   list.append(head, ...(when.childElementCount ? [when] : []), picks, filter, tools, teamsBar, few, allBox); syncPick();

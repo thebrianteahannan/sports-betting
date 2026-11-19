@@ -642,6 +642,13 @@ document.getElementById("member-form").addEventListener("submit", (event) => {
     state: "member-state",
   }, "member-error");
 });
+document.getElementById("login-pass-show").addEventListener("click", () => {
+  const field = document.getElementById("login-pass"), go = document.getElementById("login-pass-show");
+  const on = field.type === "password";
+  field.type = on ? "text" : "password";
+  go.textContent = on ? "Hide" : "Show";
+  go.setAttribute("aria-pressed", String(on));
+});
 document.getElementById("login-form").addEventListener("submit", (event) => {
   event.preventDefault();
   sendMember("/api/login", {

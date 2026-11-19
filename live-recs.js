@@ -133,10 +133,11 @@ async function recSample() {
   return { span, pick: picks[0] || null, picks, more: Math.max(0, ranked.length - picks.length) };
 }
 
-async function recTop(count) {
+async function recTop(count, when) {
+  if (when === "week") return { span: "week", picks: (await recRanked(14)).ranked.slice(0, count) };
   const today = (await recRanked()).ranked;
   if (today.length) return { span: "today", picks: today.slice(0, count) };
-  const day = (when) => new Date(when - 6 * 3600000).toLocaleDateString("en-CA", { timeZone: "America/New_York" }), next = day(Date.now() + 86400000);
+  const day = (at) => new Date(at - 6 * 3600000).toLocaleDateString("en-CA", { timeZone: "America/New_York" }), next = day(Date.now() + 86400000);
   const ahead = (await recRanked(14)).ranked, tomorrow = ahead.filter((pick) => day(Date.parse(pick.kickoff)) === next);
   return tomorrow.length ? { span: "tomorrow", picks: tomorrow.slice(0, count) } : { span: "week", picks: ahead.slice(0, count) };
 }

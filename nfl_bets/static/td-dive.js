@@ -198,9 +198,9 @@ function tdButtonClub(button, clubs, people) {
 
 function tdPaintTeams(bar, state) {
   if (!bar || !state) return;
-  const { allBox, few, clubs, people, getPick, setPick, filterRows } = state;
+  const { allBox, clubs, people, getPick, setPick, filterRows } = state;
   if (typeof homeLogosLoad === "function") homeLogosLoad();
-  const names = new Map();
+  const names = new Map(), recs = new Map();
   [...allBox.querySelectorAll("button[data-who]")].forEach((button) => {
     const club = tdButtonClub(button, clubs, people);
     if (club) {
@@ -211,26 +211,32 @@ function tdPaintTeams(bar, state) {
       const name = String(side || "").trim();
       if (name && ![...names.keys()].some((had) => tdClubSame(had, name))) names.set(name, true);
     });
+    if (button.dataset.rec !== "1" || !club) return;
+    const key = [...names.keys()].find((name) => tdClubSame(name, club)) || club;
+    recs.set(key, (recs.get(key) || 0) + 1);
   });
   const pick = getPick() || "";
+  const recTotal = [...recs.values()].reduce((sum, n) => sum + n, 0);
   bar.replaceChildren();
   if (!names.size) { bar.hidden = true; return; }
   bar.hidden = false;
   const all = document.createElement("button");
   all.type = "button";
   all.className = `find-td-team${pick ? "" : " on"}`;
-  all.textContent = "All";
+  all.innerHTML = recTotal ? `All<i class="td-team-n">${esc(String(recTotal))}</i>` : "All";
+  all.title = recTotal ? `${recTotal} recommended` : "All teams";
   all.addEventListener("click", () => { setPick(""); filterRows(); tdPaintTeams(bar, state); });
   bar.append(all);
-  [...names.keys()].sort((a, b) => a.localeCompare(b)).forEach((name) => {
+  [...names.keys()].sort((a, b) => (recs.get(b) || 0) - (recs.get(a) || 0) || a.localeCompare(b)).forEach((name) => {
     const button = document.createElement("button");
+    const n = recs.get(name) || 0;
     button.type = "button";
-    button.className = `find-td-team${pick && tdClubSame(pick, name) ? " on" : ""}`;
-    button.title = name;
-    button.setAttribute("aria-label", name);
+    button.className = `find-td-team${pick && tdClubSame(pick, name) ? " on" : ""}${n ? " has-rec" : ""}`;
+    button.title = n ? `${name} · ${n} recommended` : name;
+    button.setAttribute("aria-label", button.title);
     const logo = tdLogoHtml(name);
     const code = typeof gameShortTeam === "function" ? gameShortTeam(name) : name.split(/\s+/).pop();
-    button.innerHTML = `${logo}<span>${esc(code)}</span>`;
+    button.innerHTML = `${logo}<span>${esc(code)}</span>${n ? `<i class="td-team-n">${esc(String(n))}</i>` : ""}`;
     button.addEventListener("click", () => {
       setPick(pick && tdClubSame(pick, name) ? "" : name);
       filterRows();
