@@ -31,9 +31,19 @@ document.addEventListener("keydown", (event) => { if (event.key === "Escape" && 
 const HANG_WAIT = 2 * 60 * 1000;
 let hangAt = Date.now(), hangBusy = false;
 
+function hangGuest() {
+  return document.body.classList.contains("needs-member");
+}
+
 function hangHome() {
-  if (document.hidden || document.body.classList.contains("needs-member") || !window.memberReady) return false;
-  if (document.body.classList.contains("tv-zoom-on") || document.body.classList.contains("chat-open")) return false;
+  if (document.hidden || !window.memberReady) return false;
+  if (document.body.classList.contains("chat-open")) return false;
+  if (hangGuest()) {
+    // Guests sit in TV zoom on the gate — still nudge them after idle.
+    if (typeof gateFormOpen === "function" && gateFormOpen()) return false;
+    return true;
+  }
+  if (document.body.classList.contains("tv-zoom-on")) return false;
   if (document.querySelector("#desk-glass-in .rec-board")) return false;
   const desk = document.getElementById("desk"), profile = document.getElementById("pane-profile");
   if (profile && !profile.hidden && desk && desk.classList.contains("tv-full")) return false;
@@ -54,20 +64,35 @@ function hangPick(data) {
   return null;
 }
 
+function hangGuestJoin(mode) {
+  if (window.showGateMode) showGateMode(mode || "join");
+  else if (window.tvZoomOpen) tvZoomOpen();
+}
+
 function hangOpen(pick) {
   const box = document.getElementById("hang"), go = document.getElementById("hang-go"), lazy = document.getElementById("hang-lazy"), die = document.getElementById("hang-die");
   if (!box || !go || !pick) return;
-  go.textContent = pick.text;
+  const guest = hangGuest();
+  const say = box.querySelector(".hang-say");
+  if (say) say.textContent = guest ? "Sign in to track your bets and every game live." : "Track your bets and every game live.";
+  go.textContent = guest ? "Start free for 7 days — I'll walk you through tonight's picks." : pick.text;
   go.dataset.span = pick.span;
+  go.dataset.guest = guest ? "1" : "";
+  box.querySelectorAll('[data-hang="mine"], [data-hang="chat"]').forEach((btn) => { btn.hidden = guest; });
   if (lazy) lazy.classList.remove("rolled");
   const out = lazy && lazy.querySelector(".tv-lazy-out");
   if (out) out.replaceChildren();
   if (die) { die.disabled = false; die.innerHTML = tvLazyFace(5); }
   const chats = box.querySelector('[data-hang="chat"]'), unread = typeof chatUnread === "function" ? chatUnread() : 0;
-  if (chats) chats.textContent = unread ? `Messages (${unread})` : "Messages";
+  if (chats && !guest) chats.textContent = unread ? `Messages (${unread})` : "Messages";
   box.hidden = false;
   document.body.classList.add("hang-on");
   try { sessionStorage.setItem("hang-shut", "1"); } catch (error) {}
+  // Land a recommended bet on the die so the card isn't empty.
+  if (die && window.tvLazyRoll) {
+    const held = window.tvTick ? tvTick.hold : false;
+    tvLazyRoll(die).then(() => { if (window.tvTick) tvTick.hold = held; });
+  }
 }
 
 function hangShut() {
@@ -84,6 +109,10 @@ async function hangLook() {
   hangBusy = true;
   hangAt = Date.now();
   try {
+    if (hangGuest()) {
+      if (hangHome()) hangOpen({ span: "today", text: "Start free for 7 days — I'll walk you through tonight's picks." });
+      return;
+    }
     const res = await fetch("/api/live?all=1", { credentials: "same-origin" });
     if (!res.ok || !hangHome()) return;
     const pick = hangPick(await res.json());
@@ -114,6 +143,10 @@ function hangMine() {
 
 function hangAct(kind) {
   hangShut();
+  if (hangGuest()) {
+    hangGuestJoin(kind === "games" ? "login" : "join");
+    return;
+  }
   if (kind === "games") { hangGames(); return; }
   if (kind === "chat") { if (typeof chatToggle === "function") chatToggle(true); return; }
   window.asking = true;
@@ -125,13 +158,18 @@ function hangAct(kind) {
 }
 
 document.getElementById("hang-x").addEventListener("click", (event) => { event.stopPropagation(); hangShut(); });
-document.getElementById("hang-go").addEventListener("click", hangGames);
+document.getElementById("hang-go").addEventListener("click", () => {
+  if (document.getElementById("hang-go").dataset.guest === "1") { hangShut(); hangGuestJoin("join"); return; }
+  hangGames();
+});
 document.getElementById("hang-card").addEventListener("click", (event) => {
   if (event.target.closest("#hang-die, #hang-lazy .tv-lazy-again")) {
     const die = document.getElementById("hang-die"), held = tvTick.hold;
     tvLazyRoll(die).then(() => { tvTick.hold = held; });
     return;
   }
+  if (event.target.closest("[data-lazy-join]")) { hangShut(); hangGuestJoin("join"); return; }
+  if (event.target.closest("[data-lazy-login]")) { hangShut(); hangGuestJoin("login"); return; }
   if (event.target.closest("[data-lazy-open]") && tvLazy.pick) { hangShut(); tvTickOpen(tvLazy.pick); return; }
   if (event.target.closest("[data-lazy-add]") && tvLazy.pick) { hangShut(); tvLazyAdd(tvLazy.pick); return; }
   const act = event.target.closest("[data-hang]");

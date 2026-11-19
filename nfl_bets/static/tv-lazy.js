@@ -15,6 +15,8 @@ function tvLazyPaint() {
   slot.addEventListener("click", (event) => {
     const die = event.target.closest(".tv-lazy-die, .tv-lazy-again");
     if (die) { event.stopPropagation(); tvLazyRoll(slot.querySelector(".tv-lazy-die")); return; }
+    if (event.target.closest("[data-lazy-join]")) { event.stopPropagation(); if (window.showGateMode) showGateMode("join"); return; }
+    if (event.target.closest("[data-lazy-login]")) { event.stopPropagation(); if (window.showGateMode) showGateMode("login"); return; }
     if (event.target.closest("[data-lazy-open]") && tvLazy.pick && window.tvTickOpen) { event.stopPropagation(); tvTickOpen(tvLazy.pick); }
     if (event.target.closest("[data-lazy-add]") && tvLazy.pick) { event.stopPropagation(); tvLazyAdd(tvLazy.pick); }
     const chip = event.target.closest("[data-lazy-league]");
@@ -40,9 +42,17 @@ function tvLazyGame(pick) {
   return games.find((game) => game.match === pick.match && game.sport) || { match: pick.match };
 }
 
+function tvLazyGuest() {
+  return document.body.classList.contains("needs-member");
+}
+
+function tvLazyFavOn() {
+  return !!(tvLazy.fav && !tvLazyGuest() && (window.memberTeams || []).length && typeof favTeamsHas === "function");
+}
+
 function tvLazyFits(pick) {
   const game = tvLazyGame(pick);
-  return (!tvLazy.leagues.size || tvLazy.leagues.has(String(game.sport || "").toUpperCase())) && (!tvLazy.fav || (typeof favTeamsHas === "function" && favTeamsHas(game)));
+  return (!tvLazy.leagues.size || tvLazy.leagues.has(String(game.sport || "").toUpperCase())) && (!tvLazyFavOn() || favTeamsHas(game));
 }
 
 function tvLazyFilters(slot) {
@@ -50,7 +60,7 @@ function tvLazyFilters(slot) {
   if (!bar) return;
   const leagues = [...new Set([...(tvLazy.picks || []).map((pick) => String(tvLazyGame(pick).sport || "").toUpperCase()).filter(Boolean), ...tvLazy.leagues])].sort();
   const chips = leagues.length > 1 || tvLazy.leagues.size ? `<span class="tv-lazy-leagues"><button type="button" class="tv-lazy-league${tvLazy.leagues.size ? "" : " on"}" data-lazy-league="all">All</button>${leagues.map((id) => `<button type="button" class="tv-lazy-league${tvLazy.leagues.has(id) ? " on" : ""}" data-lazy-league="${esc(id)}" aria-pressed="${tvLazy.leagues.has(id)}">${esc(id)}</button>`).join("")}</span>` : "";
-  const fav = (window.memberTeams || []).length || tvLazy.fav ? `<label class="tv-lazy-fav"><input type="checkbox"${tvLazy.fav ? " checked" : ""}/> Only my teams</label>` : "";
+  const fav = !tvLazyGuest() && ((window.memberTeams || []).length || tvLazy.fav) ? `<label class="tv-lazy-fav"><input type="checkbox"${tvLazy.fav ? " checked" : ""}/> Only my teams</label>` : "";
   bar.innerHTML = chips + fav;
 }
 
@@ -103,7 +113,11 @@ function tvLazyChoose() {
 function tvLazyCard(pick) {
   const odds = Number(pick.odds), price = odds > 0 ? `+${odds}` : String(odds), win = (odds > 0 ? (5 * odds) / 100 : (5 * 100) / Math.abs(odds)).toFixed(2);
   const when = pick.kickoff ? new Date(pick.kickoff).toLocaleString("en-US", { timeZone: "America/New_York", ...(tvLazy.span === "week" ? { weekday: "short" } : {}), hour: "numeric", minute: "2-digit" }) + " ET" : "";
-  return `<div class="tv-tick-card"><p class="gate-sample-head">${tvLazy.span === "week" ? "This week's" : "Tonight's"} lazy pick${pick.fav ? " · one of your teams" : ""}</p><p class="gate-sample-bet">${esc(pick.label)} <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p><p class="gate-sample-why">${esc(pick.how || "")}</p><p class="gate-sample-pay">$5 wins $${win}.</p><button type="button" class="tv-tick-open" data-lazy-open>Open the game &#8250;</button><button type="button" class="tv-tick-open tv-tick-add" data-lazy-add>+ Add to my bets</button></div>`;
+  const guest = tvLazyGuest();
+  const acts = guest
+    ? `<button type="button" class="tv-tick-open" data-lazy-join>Start free for 7 days</button><button type="button" class="tv-tick-more" data-lazy-login>Sign in</button>`
+    : `<button type="button" class="tv-tick-open" data-lazy-open>Open the game &#8250;</button><button type="button" class="tv-tick-open tv-tick-add" data-lazy-add>+ Add to my bets</button>`;
+  return `<div class="tv-tick-card"><p class="gate-sample-head">${tvLazy.span === "week" ? "This week's" : "Tonight's"} lazy pick${pick.fav ? " · one of your teams" : ""}</p><p class="gate-sample-bet">${esc(pick.label)} <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p><p class="gate-sample-why">${esc(pick.how || "")}</p><p class="gate-sample-pay">$5 wins $${win}.</p>${acts}</div>`;
 }
 
 async function tvLazyRoll(die) {
@@ -129,8 +143,11 @@ async function tvLazyRoll(die) {
   die.disabled = false;
   tvLazy.pick = tvLazyChoose();
   lazy.classList.add("rolled");
-  tvLazyFilters(lazy.parentElement);
-  out.innerHTML = tvLazy.pick ? tvLazyCard(tvLazy.pick) : `<p class="tv-lazy-none">${(tvLazy.picks || []).length ? "No pick fits these filters. Pick another league or uncheck Only my teams." : "Tonight's picks are not posted yet."}</p>`;
+  tvLazyFilters(lazy.closest("#tv-tick-lazy") || lazy);
+  const none = (tvLazy.picks || []).length
+    ? (tvLazyGuest() ? "Tonight's lazy picks are warming up. Sign in and I'll roll you one." : "No pick fits these filters. Pick another league or uncheck Only my teams.")
+    : "Tonight's picks are not posted yet.";
+  out.innerHTML = tvLazy.pick ? tvLazyCard(tvLazy.pick) : `<p class="tv-lazy-none">${none}</p>`;
   out.animate([{ opacity: 0, transform: "translateY(12px)" }, { opacity: 1, transform: "none" }], { duration: 380, easing: "ease-out" });
 }
 

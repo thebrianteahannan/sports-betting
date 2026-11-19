@@ -603,7 +603,13 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === "GET" && url.pathname === "/api/recs") { const who = await memberFrom(req); if (refuseBoard(res, who)) return; const now = Date.now(); sendJson(res, { recs: (await require("./live-recs").recsList().catch(() => [])).filter((pick) => Date.parse(pick.kickoff) > now) }); return; }
     if (req.method === "GET" && url.pathname === "/api/top-picks") { const who = await memberFrom(req); if (refuseBoard(res, who)) return; sendJson(res, await require("./live-recs").recTop(120, url.searchParams.get("when")).catch(() => ({ picks: [] }))); return; }
-    if (req.method === "GET" && url.pathname === "/api/lazy-pick") { const who = await memberFrom(req); if (refuseBoard(res, who)) return; sendJson(res, await require("./live-recs").recLazy().catch(() => ({ span: "today", picks: [] }))); return; }
+    if (req.method === "GET" && url.pathname === "/api/lazy-pick") {
+      const who = await memberFrom(req);
+      // Guests can roll the bored / Feeling lazy die; signed-in trial-over still blocked.
+      if (who && refuseBoard(res, who)) return;
+      sendJson(res, await require("./live-recs").recLazy().catch(() => ({ span: "today", picks: [] })));
+      return;
+    }
     if (req.method === "GET" && url.pathname === "/api/sample") {
       const sample = await require("./live-recs").recSample().catch(() => ({ pick: null, more: 0 }));
       const day = await require("./day-parlay").dayParlay(await board().catch(() => ({}))).catch(() => ({ parlay: null }));
