@@ -116,6 +116,8 @@
 .tv-tick-stack > .tv-tick-find { align-self: center; margin-top: 0.15rem; }
 .tv-tick-add, #desk.tv-full #desk-glass .tv-tick-add { margin-left: 0.5rem; border: 1px solid #3dff6e; background: transparent; color: #3dff6e; }
 .tv-tick-nav { position: absolute; bottom: 0.6rem; left: 0.6rem; z-index: 9; display: flex; align-items: center; gap: 0.45rem; pointer-events: auto; }
+/* Above #bird-guide (z-index 8) so the arrows/dots stay on the main TV slide. */
+#desk.bird-on #tv-tick { z-index: 9; }
 #desk.tv-full .tv-tick-nav { top: auto; right: auto; bottom: 1.2rem; left: 50%; gap: 0.6rem; transform: translateX(-50%); }
 .tv-tick-go, #desk.tv-full #desk-glass .tv-tick-go { display: flex; align-items: center; justify-content: center; width: 1.9rem; height: 1.9rem; min-width: 0; min-height: 0; margin: 0; padding: 0 0 0.15rem; border: 1px solid #3dff6e; border-radius: 50%; box-shadow: none; background: rgba(4, 16, 10, 0.85); color: #3dff6e; font-family: Arial, sans-serif; font-size: 1.5rem; font-weight: 400; line-height: 1; letter-spacing: 0; text-transform: none; cursor: pointer; }
 .tv-tick-go:hover { background: #3dff6e; color: #04140c; }

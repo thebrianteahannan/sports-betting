@@ -432,10 +432,16 @@ function tvTickMenuOpen() {
   tvTickHideOthers([]);
   guide.getAnimations().forEach((anim) => anim.cancel());
   guide.style.transform = "";
-  // Sit above #tv-tick (z-index 7). Nav stays higher via CSS.
+  // Guide above glass content; #tv-tick stays above the guide (CSS) so .tv-tick-nav
+  // still paints. pointer-events:none on #tv-tick lets the menu buttons click through.
   guide.style.zIndex = "8";
   desk.classList.add("bird-on");
   guide.hidden = false;
+  const box = document.getElementById("tv-tick");
+  if (box && !tvTick.hold) {
+    box.classList.remove("tv-tick-quiet");
+    box.hidden = false;
+  }
   if (!guide.querySelector("#bird-picks button[data-menu]") && typeof birdGreet === "function") birdGreet();
 }
 
@@ -583,6 +589,7 @@ function tvTickWatch() {
   if (on && tvTickFormOn()) box.hidden = true;
   else if (on && box.hidden) {
     box.hidden = false;
+    if (!tvTick.hold) box.classList.remove("tv-tick-quiet");
     if (tvTickGateOn() && tvTick.at === "menu") {
       const first = tvTickPages()[0] || "meet";
       const el = tvTickEl(first);
