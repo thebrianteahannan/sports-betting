@@ -552,8 +552,14 @@ function tvTickWatch() {
   if (on && tvTickFormOn()) { if (!tvTick.hold) tvTickStay(); }
   else if (on && tvTick.hold) tvTickRelease();
   // Menu slide can lose bird-on / the Build A Bet buttons after other tick pages.
-  // Only heal while the ticker pane is up — not after Build A Bet hid it.
-  if (!tvTickGateOn() && tvTick.at === "menu" && !tvTickMenuOn() && !box.hidden) tvTickMenuOpen();
+  // Only heal while the ticker pane is up — not after Build A Bet / My Bets left
+  // for the full TV (find board, strategy board, etc.).
+  if (!tvTickGateOn() && tvTick.at === "menu" && !tvTickMenuOn() && !box.hidden) {
+    const desk = document.getElementById("desk");
+    const leftMenu = desk && desk.classList.contains("tv-full") && !desk.classList.contains("bird-on");
+    const board = document.querySelector("#desk-glass-in .find-board, #desk-glass-in .rec-board");
+    if (!leftMenu && !board) tvTickMenuOpen();
+  }
   const pages = tvTickPages().join(",");
   if (pages !== tvTick.pages) {
     const prev = tvTick.pages;

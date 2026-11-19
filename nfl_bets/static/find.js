@@ -89,12 +89,18 @@ function paintFind() {
   if (window.goFull) goFull();
   if (window.birdQuiet) birdQuiet();
   const desk = document.getElementById("desk");
-  if (!desk || !desk.classList.contains("tv-full")) { window.asking = false; if (window.birdGreet) birdGreet(); return; }
+  if (!desk || !desk.classList.contains("tv-full")) { if (window.goFull) goFull(); }
+  if (!desk || !desk.classList.contains("tv-full")) { window.asking = false; return; }
   desk.classList.remove("bird-on"); if (window.tvForce) tvForce(); if (window.tvPush) tvPush();
   desk.classList.remove("bird-on", "solo", "dug");
   window.recOpen = false;
   const guide = document.getElementById("bird-guide");
   if (guide) guide.hidden = true;
+  if (window.tvTickStay) tvTickStay();
+  else {
+    const tick = document.getElementById("tv-tick");
+    if (tick) tick.hidden = true;
+  }
   const row = document.getElementById("desk-glass-in");
   if (!row) return;
   document.querySelectorAll(".rec-board").forEach((node) => node.remove());

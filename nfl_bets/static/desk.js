@@ -136,6 +136,7 @@ function toggleTv() {
   btn.setAttribute("aria-pressed", on ? "true" : "false");
   btn.setAttribute("aria-label", on ? "Close the TV" : "Make the TV full screen");
 }
+window.toggleTv = toggleTv;
 
 function apply() {
   const world = document.getElementById("desk-world");
