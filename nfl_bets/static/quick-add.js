@@ -218,7 +218,7 @@ function quickAddChip(label, on, go, opts) {
   if (opts && opts.rec) {
     const tag = document.createElement("i");
     tag.className = "qa-rec";
-    tag.textContent = opts.recText || "Rec";
+    tag.textContent = opts.recText || "R";
     chip.append(tag);
   }
   chip.addEventListener("click", go);
