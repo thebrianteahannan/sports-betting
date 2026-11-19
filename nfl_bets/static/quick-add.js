@@ -56,6 +56,51 @@ function quickAddGameSay(game) {
   return String(game.match || "");
 }
 
+function quickAddLogoSrc(name) {
+  if (typeof homeLogosLoad === "function") homeLogosLoad();
+  const logos = (typeof homeLogos !== "undefined" && homeLogos) || {};
+  if (logos[name]) return logos[name];
+  const tail = ` ${String(name || "").split(" ").pop()}`, near = Object.keys(logos).filter((key) => key.endsWith(tail));
+  return near.length === 1 ? logos[near[0]] : "";
+}
+
+function quickAddLogoImg(name) {
+  const logo = quickAddLogoSrc(name);
+  if (!logo) return "";
+  const dark = logo.replace("/500/", "/500-dark/");
+  return `<img class="desk-team-logo" src="${esc(dark)}" alt="" loading="lazy"${dark !== logo ? ` onerror="this.onerror=null;this.src='${esc(logo)}'"` : ""}>`;
+}
+
+function quickAddGameHtml(game) {
+  const sides = String(game.match || "").split(/\s+@\s+/);
+  if (sides.length !== 2) return esc(quickAddGameSay(game));
+  return sides.map((side) => {
+    const code = typeof gameShortTeam === "function" ? gameShortTeam(side) : side;
+    return `${quickAddLogoImg(side)}<span>${esc(code)}</span>`;
+  }).join(`<i class="at">@</i>`);
+}
+
+function quickAddBetRec(bet) {
+  if (!bet) return false;
+  if (typeof legIsRec === "function" && legIsRec(bet)) return true;
+  if (typeof scriptRecAll !== "undefined" && scriptRecAll.has(`${bet.label}|${bet.market}`)) return true;
+  const picks = (typeof homeRecs !== "undefined" && homeRecs && homeRecs.picks) || [];
+  return picks.some((pick) => pick.label === bet.label && String(pick.market || "") === String(bet.market || ""));
+}
+
+function quickAddPersonRec(person, sport, gameKey) {
+  return (person.bets || []).some((bet) => quickAddOnPick(bet, sport, gameKey) && quickAddBetRec(bet));
+}
+
+function quickAddGameRec(people, game, sport) {
+  const key = quickAddGameKey(game);
+  return people.some((person) => person.kind === "player" && quickAddPersonRec(person, sport, key));
+}
+
+function quickAddPropRec(person, prop, sport, gameKey) {
+  return (person.bets || []).some((bet) => quickAddOnPick(bet, sport, gameKey) && typeof legSwapStat === "function" && legSwapStat(person, bet) === prop && quickAddBetRec(bet));
+}
+
 function quickAddOnGame(person, gameKey, sport) {
   if (!gameKey) return true;
   const [match, kickoff] = String(gameKey).split("|");
@@ -75,7 +120,7 @@ function quickAddPlayers(people, sport, gameKey) {
     const bets = (person.bets || []).filter((bet) => Number(bet.odds) && quickAddOnSport(bet, sport));
     if (!bets.length) return false;
     return quickAddOnGame(person, gameKey, sport);
-  }).sort((a, b) => a.name.localeCompare(b.name));
+  }).sort((a, b) => Number(quickAddPersonRec(b, sport, gameKey)) - Number(quickAddPersonRec(a, sport, gameKey)) || a.name.localeCompare(b.name));
 }
 
 function quickAddPerson(people) {
@@ -103,10 +148,12 @@ function quickAddPropList(person, sport, gameKey) {
     if (!quickAddOnPick(bet, sport, gameKey)) return;
     if (typeof parlayKey === "function" && typeof parlayLeg !== "undefined" && parlayLeg.has(parlayKey(bet))) return;
     const key = legSwapStat(person, bet);
-    if (!key || seen.has(key)) return;
-    seen.set(key, quickAddPropSay(key));
+    if (!key) return;
+    const had = seen.get(key), rec = quickAddBetRec(bet);
+    if (!had) seen.set(key, { label: quickAddPropSay(key), rec });
+    else if (rec) had.rec = true;
   });
-  return [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  return [...seen.entries()].sort((a, b) => Number(b[1].rec) - Number(a[1].rec) || a[1].label.localeCompare(b[1].label));
 }
 
 function quickAddLineNum(person, bet) {
@@ -125,14 +172,14 @@ function quickAddValues(person, sport, prop, gameKey) {
     seen.add(id);
     rows.push({ person, bet, under: /\bunder\b/i.test(bet.label || ""), num: quickAddLineNum(person, bet) });
   });
-  return rows.sort((a, b) => a.num - b.num || Number(a.under) - Number(b.under) || Number(a.bet.odds) - Number(b.bet.odds));
+  return rows.sort((a, b) => Number(quickAddBetRec(b.bet)) - Number(quickAddBetRec(a.bet)) || a.num - b.num || Number(a.under) - Number(b.under) || Number(a.bet.odds) - Number(b.bet.odds));
 }
 
 function quickAddLineButton(person, bet, on, go) {
   const price = Number(bet.odds);
   const button = document.createElement("button");
   button.type = "button";
-  button.className = `quick-add-line${on ? " on" : ""}`;
+  button.className = `quick-add-line${on ? " on" : ""}${quickAddBetRec(bet) ? " rec" : ""}`;
   button.setAttribute("aria-pressed", String(!!on));
   const what = typeof legSwapWhat === "function" ? legSwapWhat(person, bet) : bet.label;
   const cash = typeof findCash === "function" ? findCash(price) : "";
@@ -147,6 +194,12 @@ function quickAddLineButton(person, bet, on, go) {
   button.append(inner);
   const rec = typeof scriptRecPill === "function" && scriptRecPill(bet);
   if (rec) inner.append(rec);
+  else if (quickAddBetRec(bet)) {
+    const pill = document.createElement("i");
+    pill.className = "find-rec-pill";
+    pill.textContent = "Recommended";
+    inner.append(pill);
+  }
   if (bet.sport === "NBA" && typeof proofOf === "function" && typeof proofPill === "function") {
     const tip = proofOf(person.name, bet.market, bet.label, bet.odds);
     if (tip) inner.append(proofPill(tip));
@@ -155,12 +208,19 @@ function quickAddLineButton(person, bet, on, go) {
   return button;
 }
 
-function quickAddChip(label, on, go) {
+function quickAddChip(label, on, go, opts) {
   const chip = document.createElement("button");
   chip.type = "button";
-  chip.className = `quick-add-chip${on ? " on" : ""}`;
-  chip.textContent = label;
+  chip.className = `quick-add-chip${on ? " on" : ""}${opts && opts.rec ? " rec" : ""}`;
   chip.setAttribute("aria-pressed", String(!!on));
+  if (opts && opts.html) chip.innerHTML = opts.html;
+  else chip.textContent = label;
+  if (opts && opts.rec) {
+    const tag = document.createElement("i");
+    tag.className = "qa-rec";
+    tag.textContent = opts.recText || "Rec";
+    chip.append(tag);
+  }
   chip.addEventListener("click", go);
   return chip;
 }
@@ -307,14 +367,18 @@ function quickAddBox(board) {
   const picks = document.createElement("div");
   picks.className = "quick-add-picks";
   if (!quickAdd.team && !quickAdd.q.trim()) {
-    games.forEach((row) => picks.append(quickAddChip(quickAddGameSay(row), false, () => {
-      quickAdd.team = quickAddGameKey(row);
-      quickAdd.player = "";
-      quickAdd.prop = "";
-      quickAdd.value = "";
-      quickAdd.q = "";
-      paint();
-    })));
+    games.map((row) => ({ row, rec: quickAddGameRec(people, row, quickAdd.sport) }))
+      .sort((a, b) => Number(b.rec) - Number(a.rec))
+      .forEach(({ row, rec }) => {
+        picks.append(quickAddChip(quickAddGameSay(row), false, () => {
+          quickAdd.team = quickAddGameKey(row);
+          quickAdd.player = "";
+          quickAdd.prop = "";
+          quickAdd.value = "";
+          quickAdd.q = "";
+          paint();
+        }, { html: quickAddGameHtml(row), rec }));
+      });
   }
   if (quickAdd.team) {
     picks.append(quickAddChip(`◂ ${game ? quickAddGameSay(game) : "Games"}`, false, () => {
@@ -323,15 +387,16 @@ function quickAddBox(board) {
       quickAdd.prop = "";
       quickAdd.value = "";
       paint();
-    }));
+    }, game ? { html: `◂ ${quickAddGameHtml(game)}` } : null));
   }
-  quickAddPlayers(people, quickAdd.sport, quickAdd.team).slice(0, quickAdd.q.trim() || quickAdd.team ? 40 : 12).forEach((person) => {
+  quickAddPlayers(people, quickAdd.sport, quickAdd.team).slice(0, quickAdd.q.trim() || quickAdd.team ? 60 : 24).forEach((person) => {
+    const rec = quickAddPersonRec(person, quickAdd.sport, quickAdd.team);
     picks.append(quickAddChip(person.name, quickAdd.player === person.key, () => {
       quickAdd.player = person.key;
       quickAdd.prop = "";
       quickAdd.value = "";
       paint();
-    }));
+    }, { rec }));
   });
   if (!picks.childElementCount) {
     const none = document.createElement("p");
@@ -346,11 +411,11 @@ function quickAddBox(board) {
   if (!person) return box;
 
   const props = quickAddPropList(person, quickAdd.sport, quickAdd.team);
-  box.append(quickAddStep("1. Prop", props.length ? props.map(([key, label]) => quickAddChip(label, quickAdd.prop === key, () => {
+  box.append(quickAddStep("1. Prop", props.length ? props.map(([key, row]) => quickAddChip(row.label, quickAdd.prop === key, () => {
     quickAdd.prop = key;
     quickAdd.value = "";
     paint();
-  })) : [Object.assign(document.createElement("p"), { className: "quick-add-none", textContent: "No props posted." })], "prop"));
+  }, { rec: row.rec })) : [Object.assign(document.createElement("p"), { className: "quick-add-none", textContent: "No props posted." })], "prop"));
 
   if (!quickAdd.prop) return box;
 

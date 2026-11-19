@@ -71,7 +71,11 @@ let homeLogos = null;
 function homeLogosLoad() {
   if (homeLogos) return;
   homeLogos = {};
-  fetch("/api/logos").then((reply) => reply.json()).then((data) => { homeLogos = data || {}; homeGamesRepaint(); }).catch((error) => { console.log("[home-games] could not load logos", error); homeLogos = null; });
+  fetch("/api/logos").then((reply) => reply.json()).then((data) => {
+    homeLogos = data || {};
+    homeGamesRepaint();
+    if (typeof startPaint === "function" && document.querySelector("#desk-glass-in .find-start .quick-add")) startPaint(1);
+  }).catch((error) => { console.log("[home-games] could not load logos", error); homeLogos = null; });
 }
 
 function homeTeam(name) {
