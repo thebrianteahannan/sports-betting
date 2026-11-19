@@ -75,6 +75,8 @@ function homeLogosLoad() {
     homeLogos = data || {};
     homeGamesRepaint();
     if (typeof startPaint === "function" && document.querySelector("#desk-glass-in .find-start .quick-add")) startPaint(1);
+    const td = document.querySelector("#desk-glass-in .find-list.find-td-board .find-td-all");
+    if (td && typeof tdTeamRefresh === "function") tdTeamRefresh(td);
   }).catch((error) => { console.log("[home-games] could not load logos", error); homeLogos = null; });
 }
 

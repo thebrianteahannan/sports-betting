@@ -547,6 +547,19 @@
 #desk.tv-full #desk-glass .rec-board .find-list.find-td-board > .find-td-span button.on {
   border: 1px solid #e7c15a !important; background: transparent !important; color: #e7c15a !important; box-shadow: none !important;
 }
+.rec-board .find-list.find-td-board > .find-td-teams { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0 0 0.55rem; }
+.rec-board .find-list.find-td-board > .find-td-teams[hidden] { display: none !important; }
+:is(.rec-board, #choice-result) .find-list.find-td-board > .find-td-teams > button.find-td-team,
+#desk.tv-full #desk-glass .rec-board .find-list.find-td-board > .find-td-teams > button.find-td-team {
+  display: inline-flex !important; align-items: center; gap: 0.3rem; width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.28rem 0.55rem !important;
+  border: 1px solid rgba(61, 255, 110, 0.4) !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important;
+  color: #d8ffe4 !important; font-size: 12px !important; font-weight: 800 !important; letter-spacing: normal !important; text-transform: none !important; cursor: pointer;
+}
+:is(.rec-board, #choice-result) .find-list.find-td-board > .find-td-teams > button.find-td-team.on,
+#desk.tv-full #desk-glass .rec-board .find-list.find-td-board > .find-td-teams > button.find-td-team.on {
+  border-color: #e7c15a !important; background: rgba(231, 193, 90, 0.12) !important; color: #e7c15a !important;
+}
+.rec-board .find-list.find-td-board > .find-td-teams > button.find-td-team .desk-team-logo { width: 18px; height: 18px; margin: 0; object-fit: contain; }
 .rec-board .find-list.find-td-board > .find-td-picks { margin: 0 0 0.45rem; }
 .rec-board .find-list.find-td-board > .find-td-page-filter { margin: 0 0 0.35rem; }
 .rec-board .find-list.find-td-board > .find-td-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0 0 0.45rem; }

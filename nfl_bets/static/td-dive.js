@@ -159,3 +159,100 @@ document.addEventListener("click", (event) => {
   event.stopPropagation();
   tdEditStake(stake);
 }, true);
+
+function tdFold(text) {
+  return typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase().trim();
+}
+
+function tdClubSame(a, b) {
+  const left = tdFold(a), right = tdFold(b);
+  if (!left || !right) return false;
+  if (left === right) return true;
+  if (left.endsWith(` ${right}`) || right.endsWith(` ${left}`)) return true;
+  const tail = (name) => name.split(/\s+/).pop();
+  return tail(left) === tail(right) && tail(left).length > 2;
+}
+
+function tdLogoHtml(name) {
+  if (typeof homeLogosLoad === "function") homeLogosLoad();
+  const logos = (typeof homeLogos !== "undefined" && homeLogos) || {};
+  let logo = logos[name] || "";
+  if (!logo) {
+    const tail = ` ${String(name || "").split(" ").pop()}`;
+    const near = Object.keys(logos).filter((key) => key.endsWith(tail));
+    if (near.length === 1) logo = logos[near[0]];
+  }
+  if (!logo) return "";
+  const dark = logo.replace("/500/", "/500-dark/");
+  return `<img class="desk-team-logo" src="${esc(dark)}" alt="" loading="lazy"${dark !== logo ? ` onerror="this.onerror=null;this.src='${esc(logo)}'"` : ""}>`;
+}
+
+function tdButtonClub(button, clubs, people) {
+  if (!button) return "";
+  const who = tdFold(button.dataset.who);
+  return button.dataset.club
+    || (clubs && (clubs.get(who) || ([...clubs].find(([name]) => name.startsWith(`${who} `) || who.startsWith(`${name} `)) || [])[1]))
+    || (people && people.tdClub && people.tdClub.get(who))
+    || "";
+}
+
+function tdPaintTeams(bar, state) {
+  if (!bar || !state) return;
+  const { allBox, few, clubs, people, getPick, setPick, filterRows } = state;
+  if (typeof homeLogosLoad === "function") homeLogosLoad();
+  const names = new Map();
+  [...allBox.querySelectorAll("button[data-who]")].forEach((button) => {
+    const club = tdButtonClub(button, clubs, people);
+    if (club) {
+      button.dataset.club = club;
+      if (![...names.keys()].some((name) => tdClubSame(name, club))) names.set(club, true);
+    }
+    String(button.dataset.match || "").split(/\s+@\s+/).forEach((side) => {
+      const name = String(side || "").trim();
+      if (name && ![...names.keys()].some((had) => tdClubSame(had, name))) names.set(name, true);
+    });
+  });
+  const pick = getPick() || "";
+  bar.replaceChildren();
+  if (!names.size) { bar.hidden = true; return; }
+  bar.hidden = false;
+  const all = document.createElement("button");
+  all.type = "button";
+  all.className = `find-td-team${pick ? "" : " on"}`;
+  all.textContent = "All";
+  all.addEventListener("click", () => { setPick(""); filterRows(); tdPaintTeams(bar, state); });
+  bar.append(all);
+  [...names.keys()].sort((a, b) => a.localeCompare(b)).forEach((name) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `find-td-team${pick && tdClubSame(pick, name) ? " on" : ""}`;
+    button.title = name;
+    button.setAttribute("aria-label", name);
+    const logo = tdLogoHtml(name);
+    const code = typeof gameShortTeam === "function" ? gameShortTeam(name) : name.split(/\s+/).pop();
+    button.innerHTML = `${logo}<span>${esc(code)}</span>`;
+    button.addEventListener("click", () => {
+      setPick(pick && tdClubSame(pick, name) ? "" : name);
+      filterRows();
+      tdPaintTeams(bar, state);
+    });
+    bar.append(button);
+  });
+}
+window.tdPaintTeams = tdPaintTeams;
+window.tdButtonClub = tdButtonClub;
+window.tdClubSame = tdClubSame;
+
+function tdTeamRefresh(box) {
+  const list = box && box.closest(".find-list.find-td-board");
+  const bar = list && list.querySelector(".find-td-teams");
+  const state = list && list._tdTeamState;
+  if (!bar || !state) return;
+  [...box.querySelectorAll("button[data-who]")].forEach((button) => {
+    const club = tdButtonClub(button, state.clubs, state.people);
+    if (club) button.dataset.club = club;
+  });
+  tdPaintTeams(bar, state);
+  if (typeof state.filterRows === "function") state.filterRows();
+}
+window.tdTeamRefresh = tdTeamRefresh;
