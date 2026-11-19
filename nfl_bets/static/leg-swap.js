@@ -257,7 +257,9 @@ function legCatFind(key, mode) {
       else if (!had.same && rec && !had.rec) { had.bet = bet; had.rec = true; }
     }
   });
-  return [...best.values()].sort((a, b) => Number(b.now) - Number(a.now) || Number(b.rec) - Number(a.rec) || legSwapCatSay(a.person, a.bet).localeCompare(legSwapCatSay(b.person, b.bet)));
+  return [...best.values()]
+    .filter((row) => row.now || row.count > 1)
+    .sort((a, b) => Number(b.now) - Number(a.now) || b.count - a.count || legSwapCatSay(a.person, a.bet).localeCompare(legSwapCatSay(b.person, b.bet)));
 }
 
 function legCatLines(key, mode, cat) {
