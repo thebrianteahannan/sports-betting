@@ -425,6 +425,16 @@ function tvTickHideOthers(keep) {
   });
 }
 
+function tvTickMenuOpen() {
+  const desk = document.getElementById("desk"), guide = document.getElementById("bird-guide");
+  if (!desk || !guide || document.body.classList.contains("needs-member")) return;
+  // Clear every ticker slide so Build A Bet / The Games on bird-guide are visible again.
+  tvTickHideOthers([]);
+  desk.classList.add("bird-on");
+  guide.hidden = false;
+  if (!guide.querySelector("#bird-picks button[data-menu]") && typeof birdGreet === "function") birdGreet();
+}
+
 function tvTickShow(next, dir) {
   // Logged-out TV has no parrot menu. Going to "menu" used to blank every slide
   // and leave a clear pane over the gate sample cards — keep sliding instead.
@@ -459,8 +469,15 @@ function tvTickShow(next, dir) {
     tvTickFindPaint();
     return;
   }
+  if (next === "menu") {
+    tvTickMenuOpen();
+    tvTick.at = "menu";
+    tvTickDots();
+    tvTickFindPaint();
+    return;
+  }
   tvTickHideOthers([inEl, outEl]);
-  if (next !== "menu") inEl.hidden = false;
+  inEl.hidden = false;
   inEl.animate([{ transform: `translateX(${dir * 100}%)` }, { transform: "none" }], { duration: ms, easing: ease });
   outEl.animate([{ transform: "none" }, { transform: `translateX(${-dir * 100}%)` }], { duration: ms, easing: ease }).finished.then(() => {
     if (outEl.id === "bird-guide" || outEl === tvTickEl(tvTick.at)) return;
@@ -469,7 +486,7 @@ function tvTickShow(next, dir) {
     outEl.style.transform = "";
   }).catch(() => {});
   tvTick.at = next;
-  if (next !== "menu") tvTick.last = next;
+  tvTick.last = next;
   if (next === "meet") tvTickMetMark();
   tvTickDots();
   tvTickFindPaint();
@@ -514,6 +531,8 @@ function tvTickWatch() {
   tvTickPaintCards();
   if (on && tvTickFormOn()) { if (!tvTick.hold) tvTickStay(); }
   else if (on && tvTick.hold) tvTickRelease();
+  // Menu slide can lose bird-on / the Build A Bet buttons after other tick pages.
+  if (on && !tvTickGateOn() && tvTick.at === "menu" && !tvTickMenuOn()) tvTickMenuOpen();
   const pages = tvTickPages().join(",");
   if (pages !== tvTick.pages) {
     const prev = tvTick.pages;
