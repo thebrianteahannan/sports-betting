@@ -414,15 +414,26 @@ function tvTickAskPaint(slot, id) {
   }
 }
 
+function tvTickHideOthers(keep) {
+  const keepSet = new Set((Array.isArray(keep) ? keep : [keep]).filter(Boolean));
+  TV_TICK_SLOTS.forEach((id) => {
+    const slot = document.getElementById(id);
+    if (!slot || keepSet.has(slot)) return;
+    slot.getAnimations().forEach((anim) => anim.cancel());
+    slot.hidden = true;
+    slot.style.transform = "";
+  });
+}
+
 function tvTickShow(next, dir) {
+  // Logged-out TV has no parrot menu. Going to "menu" used to blank every slide
+  // and leave a clear pane over the gate sample cards — keep sliding instead.
   if (tvTickGateOn() && next === "menu") {
-    const page = tvTickEl(tvTick.at);
-    if (!page || page.id === "bird-guide" || tvTick.at === "menu") return;
-    const ms = 600, ease = "cubic-bezier(0.45, 0, 0.2, 1)";
-    page.animate([{ transform: "none" }, { transform: `translateX(${-dir * 100}%)` }], { duration: ms, easing: ease }).finished.then(() => { if (tvTick.at === "menu") page.hidden = true; }).catch(() => {});
-    tvTick.at = "menu";
-    tvTickDots();
-    return;
+    const pages = tvTickPages().filter((id) => id !== "menu");
+    const at = pages.indexOf(tvTick.at);
+    const go = pages[(at + (dir > 0 ? 1 : pages.length - 1)) % Math.max(pages.length, 1)] || pages[0];
+    if (!go || go === tvTick.at) return;
+    return tvTickShow(go, dir);
   }
   const inEl = tvTickEl(next), outEl = tvTickEl(tvTick.at);
   if (!inEl || !outEl || next === tvTick.at) return;
@@ -436,9 +447,27 @@ function tvTickShow(next, dir) {
   if (next === "state" || next === "askbook" || next === "teams") tvTickAskPaint(inEl, next);
   if (next === "day" || next === "pick") tvTickPaintCards(true);
   if (next === "meet") tvTickTalk(inEl);
+  // Guest TV sits over the gate. Never leave two slides open or a clear pane,
+  // or the membership sample cards show through the carousel.
+  if (tvTickGateOn()) {
+    tvTickHideOthers([inEl]);
+    if (next !== "menu") { inEl.hidden = false; inEl.style.transform = ""; }
+    tvTick.at = next;
+    if (next !== "menu") tvTick.last = next;
+    if (next === "meet") tvTickMetMark();
+    tvTickDots();
+    tvTickFindPaint();
+    return;
+  }
+  tvTickHideOthers([inEl, outEl]);
   if (next !== "menu") inEl.hidden = false;
   inEl.animate([{ transform: `translateX(${dir * 100}%)` }, { transform: "none" }], { duration: ms, easing: ease });
-  outEl.animate([{ transform: "none" }, { transform: `translateX(${-dir * 100}%)` }], { duration: ms, easing: ease }).finished.then(() => { if (outEl.id !== "bird-guide" && outEl !== tvTickEl(tvTick.at)) outEl.hidden = true; }).catch(() => {});
+  outEl.animate([{ transform: "none" }, { transform: `translateX(${-dir * 100}%)` }], { duration: ms, easing: ease }).finished.then(() => {
+    if (outEl.id === "bird-guide" || outEl === tvTickEl(tvTick.at)) return;
+    outEl.getAnimations().forEach((anim) => anim.cancel());
+    outEl.hidden = true;
+    outEl.style.transform = "";
+  }).catch(() => {});
   tvTick.at = next;
   if (next !== "menu") tvTick.last = next;
   if (next === "meet") tvTickMetMark();
@@ -494,10 +523,14 @@ function tvTickWatch() {
         const first = tvTickPages()[0] || "meet";
         const out = tvTickEl(tvTick.at), inn = tvTickEl(first);
         if (out) out.hidden = true;
-        if (inn) inn.hidden = false;
-        tvTick.at = first;
-        tvTick.last = first;
+        if (inn) {
+          inn.hidden = false;
+          tvTick.at = first;
+          tvTick.last = first;
+          if (first === "meet") tvTickTalk(inn);
+        }
         tvTickDots();
+        tvTickFindPaint();
       } else tvTickShow("menu", -1);
     } else tvTickDots();
   }
@@ -507,9 +540,15 @@ function tvTickWatch() {
     if (tvTickGateOn() && tvTick.at === "menu") {
       const first = tvTickPages()[0] || "meet";
       const el = tvTickEl(first);
-      if (el) { el.hidden = false; tvTick.at = first; tvTick.last = first; }
+      if (el) {
+        el.hidden = false;
+        tvTick.at = first;
+        tvTick.last = first;
+        if (first === "meet") tvTickTalk(el);
+      }
     }
     tvTickDots();
+    tvTickFindPaint();
     tvTickTime();
   }
   if (!on && !box.hidden) {

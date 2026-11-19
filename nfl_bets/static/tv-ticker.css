@@ -1,4 +1,4 @@
-#tv-tick { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
+#tv-tick { position: absolute; inset: 0; z-index: 7; background: #07131a; pointer-events: none; }
 #tv-tick[hidden] { display: none; }
 #tv-tick-meet, #tv-tick-state, #tv-tick-askbook, #tv-tick-teams, #tv-tick-day, #tv-tick-pick, #tv-tick-lazy, #tv-tick-way, #tv-tick-steady, #tv-tick-how, #tv-tick-odds, #tv-tick-book, #tv-tick-qr, #tv-tick-law, #tv-tick-risk, #tv-tick-help { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1.2rem 1.2rem 3rem; overflow: auto; background: #07131a; pointer-events: auto; }
 #tv-tick-meet { flex-direction: column; align-items: center; justify-content: center; gap: 0.8rem; padding: 0.8rem 0.8rem 3.1rem; background: radial-gradient(ellipse at 50% 0%, rgba(61, 255, 110, 0.12), transparent 55%), #07131a; }
@@ -136,7 +136,7 @@
 .tv-steady-row span:last-child { border-color: #e7c15a; background: rgba(231, 193, 90, 0.1); }
 .tv-steady-row span:last-child b { color: #e7c15a; }
 #desk-glass button.tv-how-go { min-height: 0; border: 0; box-shadow: none; text-transform: none; cursor: pointer; }
-body.needs-member #desk-glass #tv-tick { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
+body.needs-member #desk-glass #tv-tick { position: absolute; inset: 0; z-index: 7; background: #07131a; pointer-events: none; }
 body.needs-member #desk-glass :is(#tv-tick-meet, #tv-tick-state, #tv-tick-askbook, #tv-tick-teams, #tv-tick-day, #tv-tick-pick, #tv-tick-lazy, #tv-tick-way, #tv-tick-steady, #tv-tick-how, #tv-tick-odds, #tv-tick-book, #tv-tick-qr, #tv-tick-law, #tv-tick-risk, #tv-tick-help) { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1.2rem 1.2rem 3rem; overflow: auto; background: #07131a; pointer-events: auto; }
 body.needs-member #desk-glass #tv-tick-meet { flex-direction: column; align-items: center; justify-content: center; gap: 0.8rem; padding: 0.8rem 0.8rem 3.1rem; background: radial-gradient(ellipse at 50% 0%, rgba(61, 255, 110, 0.12), transparent 55%), #07131a; }
 body.needs-member #desk-glass :is(#tv-tick-meet, #tv-tick-state, #tv-tick-askbook, #tv-tick-teams, #tv-tick-day, #tv-tick-pick, #tv-tick-lazy, #tv-tick-way, #tv-tick-steady, #tv-tick-how, #tv-tick-odds, #tv-tick-book, #tv-tick-qr, #tv-tick-law, #tv-tick-risk, #tv-tick-help)[hidden] { display: none; pointer-events: none; }
