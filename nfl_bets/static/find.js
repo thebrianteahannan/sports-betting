@@ -321,17 +321,17 @@ function rosterPropCats(person) {
 
 function rosterPropLines(person, cat) {
   if (!person || !cat || typeof legSwapStat !== "function") return [];
-  const under = cat.endsWith("|1"), stat = cat.slice(0, cat.lastIndexOf("|"));
+  const stat = String(cat).includes("|") ? cat.slice(0, cat.lastIndexOf("|")) : cat;
   const num = (bet) => Number((String(bet.label || "").replace(person.name, "").match(/\d+(?:\.\d+)?/) || String(bet.market || "").match(/\d+(?:\.\d+)?/) || [])[0]) || 0;
   const seen = new Set(), rows = [];
   (person.bets || []).forEach((bet) => {
     const id = `${bet.label}|${bet.market}`;
     if (!Number(bet.odds) || seen.has(id) || parlayLeg.has(parlayKey(bet))) return;
-    if (legSwapStat(person, bet) !== stat || /\bunder\b/i.test(bet.label || "") !== under) return;
+    if (legSwapStat(person, bet) !== stat) return;
     seen.add(id);
     rows.push({ person, bet });
   });
-  return rows.sort((a, b) => num(a.bet) - num(b.bet));
+  return rows.sort((a, b) => num(a.bet) - num(b.bet) || /\bunder\b/i.test(a.bet.label || "") - /\bunder\b/i.test(b.bet.label || ""));
 }
 
 function rosterPropRecs(person) {

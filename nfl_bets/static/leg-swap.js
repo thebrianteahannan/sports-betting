@@ -192,14 +192,12 @@ function legRecFind(key, mode) {
 }
 
 function legSwapCatKey(person, bet) {
-  return `${legSwapStat(person, bet)}|${/\bunder\b/i.test(bet.label || "") ? 1 : 0}`;
+  return legSwapStat(person, bet);
 }
 
 function legSwapCatSay(person, bet) {
-  const under = /\bunder\b/i.test(bet.label || "");
   const raw = String(legSwapStat(person, bet) || "").replace(/\bn\+\b/g, "").trim();
-  const name = raw.replace(/\b\w/g, (c) => c.toUpperCase()) || "Prop";
-  return under ? `Under ${name}` : name;
+  return raw.replace(/\b\w/g, (c) => c.toUpperCase()) || "Prop";
 }
 
 function legSwapPerson(key, mode) {
@@ -267,20 +265,20 @@ function legCatLines(key, mode, cat) {
   if (!person || !cat) return [];
   const old = mode === "who" ? null : parlayLeg.get(key);
   const wantMatch = old ? old.match : "", wantKick = old ? old.kickoff : "";
-  const under = cat.endsWith("|1"), stat = cat.slice(0, cat.lastIndexOf("|"));
+  const stat = String(cat).includes("|") ? cat.slice(0, cat.lastIndexOf("|")) : cat;
   const num = (bet) => Number((String(bet.label || "").replace(person.name, "").match(/\d+(?:\.\d+)?/) || String(bet.market || "").match(/\d+(?:\.\d+)?/) || [])[0]) || (stat === "touchdowns" ? 1 : 0);
   const seen = new Set(), rows = [];
   (person.bets || []).forEach((bet) => {
     const id = `${bet.label}|${bet.market}`;
     if (!Number(bet.odds) || seen.has(id)) return;
     if (old && (bet.match !== wantMatch || bet.kickoff !== wantKick)) return;
-    if (legSwapStat(person, bet) !== stat || /\bunder\b/i.test(bet.label || "") !== under) return;
+    if (legSwapStat(person, bet) !== stat) return;
     const same = !!(old && bet.label === old.label && bet.market === old.market);
     if (!same && parlayLeg.has(parlayKey(bet))) return;
     seen.add(id);
     rows.push({ person, bet, now: same });
   });
-  return rows.sort((a, b) => num(a.bet) - num(b.bet));
+  return rows.sort((a, b) => num(a.bet) - num(b.bet) || /\bunder\b/i.test(a.bet.label || "") - /\bunder\b/i.test(b.bet.label || ""));
 }
 
 function legSwapBox(key, mode) {
