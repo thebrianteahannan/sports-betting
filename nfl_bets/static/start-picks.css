@@ -1,5 +1,6 @@
 .find-board .find-start { margin: 0 0 0.8rem; overflow-x: clip; overflow-clip-margin: 8px; }
-.find-board .quick-add { margin: 0 0 0.85rem; padding: 0.75rem 0.85rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: rgba(4, 16, 24, 0.55); }
+.find-board .quick-add { margin: 0 0 1.55rem; padding: 0.75rem 0.85rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: rgba(4, 16, 24, 0.55); }
+.find-board .find-start:has(> .quick-add) > .find-start-row { margin-top: 0.15rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.14); }
 .find-board .quick-add-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.7rem; margin: 0 0 0.55rem; }
 .find-board .quick-add-head > b { color: #3dff6e; font-size: 13px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
 .find-board .quick-add-head > span { color: #9fb3c8; font-size: 13px; }
@@ -43,8 +44,9 @@
 .find-start-random > select option { background: #07090e; color: #f4f7fb; }
 :is(.rec-board, #choice-result) .find-start button.desk-games-tab { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.3rem 0.65rem !important; border: 0 !important; border-radius: 7px !important; background: transparent !important; box-shadow: none !important; color: #9fb3c8 !important; font-size: 14px !important; font-weight: 800 !important; letter-spacing: normal !important; text-transform: none !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-games-tab.on { background: #e7c15a !important; color: #07090e !important; }
-:is(.rec-board, #choice-result) .find-start button.desk-game { display: grid !important; width: 100% !important; min-height: 0 !important; margin: 0 0 8px !important; padding: 10px 12px !important; border: 1px solid rgba(61, 255, 110, 0.35) !important; border-radius: 12px !important; background: #041018 !important; box-shadow: none !important; color: #f4f7fb !important; font: inherit !important; text-align: left !important; text-transform: none !important; letter-spacing: normal !important; }
+:is(.rec-board, #choice-result) .find-start button.desk-game { display: grid !important; width: 100% !important; min-height: 0 !important; margin: 0 0 10px !important; padding: 12px 14px !important; border: 1px solid rgba(61, 255, 110, 0.35) !important; border-radius: 12px !important; background: #041018 !important; box-shadow: none !important; color: #f4f7fb !important; font: inherit !important; text-align: left !important; text-transform: none !important; letter-spacing: normal !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-game:hover { border-color: #3dff6e !important; }
+:is(.rec-board, #choice-result) .find-start button.desk-rec { margin: 0 0 12px !important; }
 .find-start-kinds { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin: 0 0 0.6rem; }
 :is(.rec-board, #choice-result) .find-start-kinds > button { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.22rem 0.65rem !important; border: 1px solid rgba(159, 179, 200, 0.55) !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #c9d6e3 !important; font-size: 12px !important; font-weight: 800 !important; letter-spacing: 0.03em !important; text-transform: uppercase !important; cursor: pointer; }
 :is(.rec-board, #choice-result) .find-start-kinds > button.on { border-color: #3dff6e !important; background: #3dff6e !important; color: #04140c !important; }
@@ -53,7 +55,7 @@
 :is(.rec-board, #choice-result) .find-start button.find-start-td { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.28rem 0.75rem !important; border: 1px solid #3dff6e !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #3dff6e !important; font-size: 13px !important; font-weight: 800 !important; letter-spacing: normal !important; text-transform: none !important; cursor: pointer; }
 :is(.rec-board, #choice-result) .find-start button.find-start-td:hover { background: rgba(61, 255, 110, 0.12) !important; }
 #desk-glass .find-start-fav input, .find-start-fav input { width: 1rem !important; height: 1rem !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; accent-color: #3dff6e; cursor: pointer; }
-#desk-glass-in .find-start .desk-rec { grid-template-areas: "name bet" "how legs" "read read"; }
+#desk-glass-in .find-start .desk-rec { grid-template-areas: "name bet" "pay pay" "how legs" "read read"; }
 #desk-glass-in .find-start .desk-rec-go { grid-area: bet; display: inline-flex; flex-wrap: wrap; justify-self: end; align-self: start; gap: 0.35rem; }
 #desk-glass-in .find-start .desk-rec-bet { padding: 0.2rem 0.8rem; border: 1px solid #3dff6e; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 13px; font-weight: 800; white-space: nowrap; }
 #desk-glass-in .find-start .desk-rec-bet:hover { background: #6bff92; }
