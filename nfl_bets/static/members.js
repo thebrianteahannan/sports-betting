@@ -3,13 +3,37 @@ const memberFetch = window.fetch.bind(window);
 function showGateMode(mode) {
   const wait = document.getElementById("gate-wait"); if (wait) wait.hidden = true;
   const trial = document.getElementById("gate-trial");
+  const forgot = document.getElementById("forgot-form"), reset = document.getElementById("reset-form");
   document.getElementById("gate-pick").hidden = mode !== "pick";
   document.getElementById("member-form").hidden = mode !== "join";
   document.getElementById("login-form").hidden = mode !== "login";
+  if (forgot) forgot.hidden = mode !== "forgot";
+  if (reset) reset.hidden = mode !== "reset";
   if (trial) trial.hidden = mode !== "trial";
   if (mode === "join") bornRange(document.getElementById("member-born"));
-  if (mode === "join" || mode === "login" || mode === "trial") { goFull(); if (window.tvTickStay) tvTickStay(); }
+  if (mode === "forgot") {
+    const ok = document.getElementById("forgot-ok"), err = document.getElementById("forgot-error");
+    if (ok) { ok.hidden = true; ok.textContent = ""; }
+    if (err) err.textContent = "";
+    const loginMail = document.getElementById("login-email"), forgotMail = document.getElementById("forgot-email");
+    if (loginMail && forgotMail && loginMail.value && !forgotMail.value) forgotMail.value = loginMail.value;
+  }
+  if (mode === "join" || mode === "login" || mode === "forgot" || mode === "reset" || mode === "trial") { goFull(); if (window.tvTickStay) tvTickStay(); }
   else if (window.tvTickRelease) tvTickRelease();
+}
+
+function gateFormOpen() {
+  return ["login-form", "member-form", "forgot-form", "reset-form"].some((id) => { const node = document.getElementById(id); return node && !node.hidden; });
+}
+window.gateFormOpen = gateFormOpen;
+
+function passShowToggle(fieldId, buttonId) {
+  const field = document.getElementById(fieldId), go = document.getElementById(buttonId);
+  if (!field || !go) return;
+  const on = field.type === "password";
+  field.type = on ? "text" : "password";
+  go.textContent = on ? "Hide" : "Show";
+  go.setAttribute("aria-pressed", String(on));
 }
 
 async function paintGateRecord() {
@@ -48,7 +72,7 @@ function birdBragGo(text) {
 function showGate() {
   const already = document.body.classList.contains("needs-member");
   const login = document.getElementById("login-form"), join = document.getElementById("member-form");
-  const form = (join && !join.hidden && join) || (login && !login.hidden && login) || null;
+  const form = (join && !join.hidden && join) || (login && !login.hidden && login) || (document.getElementById("forgot-form") && !document.getElementById("forgot-form").hidden && document.getElementById("forgot-form")) || (document.getElementById("reset-form") && !document.getElementById("reset-form").hidden && document.getElementById("reset-form")) || null;
   const typing = already && form && form.contains(document.activeElement);
   document.body.classList.add("needs-member");
   const desk = document.getElementById("desk");
@@ -57,7 +81,7 @@ function showGate() {
   if (window.state) window.state.showLive = false;
   const who = document.getElementById("who");
   if (who) { who.hidden = false; if (who.parentElement !== document.body) document.body.append(who); who.innerHTML = `<button type="button" id="gate-profile" aria-label="Sign in" title="Sign in"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.5-3.1 4-4.6 7-4.6s5.5 1.5 7 4.6"/></svg></button>`; }
-  if (!((login && !login.hidden) || (join && !join.hidden))) showGateMode("pick");
+  if (!gateFormOpen()) showGateMode("pick");
   if (typing) return;
   if (window.deskGate) window.deskGate();
 }
@@ -178,8 +202,17 @@ async function signOut() {
 }
 
 function gateFromUrl() {
-  const gate = new URLSearchParams(location.search).get("gate");
-  if (gate !== "join" && gate !== "login") return;
+  const params = new URLSearchParams(location.search);
+  const reset = params.get("reset");
+  if (reset) {
+    history.replaceState(null, "", "/");
+    const field = document.getElementById("reset-token");
+    if (field) field.value = reset;
+    showGateMode("reset");
+    return;
+  }
+  const gate = params.get("gate");
+  if (gate !== "join" && gate !== "login" && gate !== "forgot") return;
   history.replaceState(null, "", "/");
   showGateMode(gate);
 }
@@ -556,6 +589,9 @@ document.getElementById("gate-join").addEventListener("click", () => showGateMod
 document.getElementById("gate-have").addEventListener("click", () => showGateMode("login"));
 document.getElementById("join-signin").addEventListener("click", () => showGateMode("login"));
 document.getElementById("login-join").addEventListener("click", (event) => { event.preventDefault(); showGateMode("join"); });
+document.getElementById("login-forgot").addEventListener("click", (event) => { event.preventDefault(); showGateMode("forgot"); });
+document.getElementById("forgot-back").addEventListener("click", (event) => { event.preventDefault(); showGateMode("login"); });
+document.getElementById("reset-back").addEventListener("click", (event) => { event.preventDefault(); showGateMode("login"); });
 const trialPay = document.getElementById("gate-trial-pay");
 if (trialPay) trialPay.addEventListener("click", () => {
   if (window.openBilling) openBilling("/api/billing/checkout", { plan: "pro" }).catch((error) => {
@@ -642,19 +678,55 @@ document.getElementById("member-form").addEventListener("submit", (event) => {
     state: "member-state",
   }, "member-error");
 });
-document.getElementById("login-pass-show").addEventListener("click", () => {
-  const field = document.getElementById("login-pass"), go = document.getElementById("login-pass-show");
-  const on = field.type === "password";
-  field.type = on ? "text" : "password";
-  go.textContent = on ? "Hide" : "Show";
-  go.setAttribute("aria-pressed", String(on));
-});
+document.getElementById("login-pass-show").addEventListener("click", () => passShowToggle("login-pass", "login-pass-show"));
+document.getElementById("reset-pass-show").addEventListener("click", () => passShowToggle("reset-pass", "reset-pass-show"));
 document.getElementById("login-form").addEventListener("submit", (event) => {
   event.preventDefault();
   sendMember("/api/login", {
     email: "login-email",
     password: "login-pass",
   }, "login-error");
+});
+document.getElementById("forgot-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const error = document.getElementById("forgot-error"), ok = document.getElementById("forgot-ok"), email = document.getElementById("forgot-email");
+  if (error) error.textContent = "";
+  if (ok) { ok.hidden = true; ok.textContent = ""; }
+  const response = await memberFetch("/api/forgot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email ? email.value : "" }) });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) { if (error) error.textContent = payload.error || "Could not send a reset link."; return; }
+  if (ok) {
+    ok.hidden = false;
+    ok.textContent = payload.say || "If that email is on a membership, a reset link is on its way.";
+    if (payload.link) {
+      const go = document.createElement("a");
+      go.href = payload.link;
+      go.textContent = "Open reset link";
+      go.addEventListener("click", (click) => {
+        click.preventDefault();
+        const token = new URL(payload.link, location.origin).searchParams.get("reset") || "";
+        const field = document.getElementById("reset-token");
+        if (field) field.value = token;
+        showGateMode("reset");
+      });
+      ok.append(document.createTextNode(" "), go);
+    }
+  }
+});
+document.getElementById("reset-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const error = document.getElementById("reset-error");
+  const a = document.getElementById("reset-pass"), b = document.getElementById("reset-pass2"), token = document.getElementById("reset-token");
+  if (error) error.textContent = "";
+  if (!a || !a.value) { if (error) error.textContent = "Enter a password."; if (a) a.focus(); return; }
+  if (a.value.length < 8) { if (error) error.textContent = "Use at least 8 characters."; a.focus(); return; }
+  if (!b || a.value !== b.value) { if (error) error.textContent = "Passwords must match."; if (b) b.focus(); return; }
+  const response = await memberFetch("/api/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: token ? token.value : "", password: a.value }) });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) { if (error) error.textContent = payload.error || "Could not update the password."; return; }
+  showGateMode("login");
+  const note = document.getElementById("login-error");
+  if (note) note.textContent = payload.say || "Password updated. Sign in with the new one.";
 });
 
 bootMember();

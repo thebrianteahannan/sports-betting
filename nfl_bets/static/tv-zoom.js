@@ -17,8 +17,8 @@ function tvZoomShut() {
   zoom.hidden = true;
   glow.after(glass);
   document.body.classList.remove("tv-zoom-on");
-  const login = document.getElementById("login-form"), join = document.getElementById("member-form");
-  if (document.body.classList.contains("needs-member") && ((login && !login.hidden) || (join && !join.hidden)) && window.showGateMode) showGateMode("pick");
+  const open = typeof gateFormOpen === "function" ? gateFormOpen() : (() => { const login = document.getElementById("login-form"), join = document.getElementById("member-form"); return (login && !login.hidden) || (join && !join.hidden); })();
+  if (document.body.classList.contains("needs-member") && open && window.showGateMode) showGateMode("pick");
 }
 
 window.tvZoomOpen = tvZoomOpen;

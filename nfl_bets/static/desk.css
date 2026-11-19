@@ -166,7 +166,9 @@ body.needs-member .hot { display: none; }
   color: #d8ffe4;
   border: 1px solid rgba(61, 255, 110, 0.7);
   box-shadow: none;
-} #desk-glass #gate a#login-join { color: #d8ffe4; font-size: 15px; text-decoration: underline; text-underline-offset: 3px; }
+} #desk-glass #gate a#login-join, #desk-glass #gate a#login-forgot, #desk-glass #gate a#forgot-back, #desk-glass #gate a#reset-back, #desk-glass #gate #forgot-ok a { color: #d8ffe4; font-size: 15px; text-decoration: underline; text-underline-offset: 3px; }
+#desk-glass #gate .gate-links { display: flex; flex-wrap: wrap; gap: 0.55rem 1.1rem; margin: 0.35rem 0; }
+#desk-glass #gate #forgot-ok { color: #3dff6e; }
 #desk-glass #gate-wait:not([hidden]) ~ .gate-legal, #desk-glass #gate-wait:not([hidden]) ~ #gate-record { display: none; }
 #desk-glass #gate .gate-legal {
   flex-shrink: 0;
@@ -606,7 +608,7 @@ body.day-board .banner:not([hidden]) {
 #tv-zoom-open { display: none; }
 body:not(.tv-zoom-on) #desk:not(.tv-full) #tv-zoom-open { position: absolute; right: 0.7rem; bottom: 1.05rem; z-index: 12; display: grid; place-items: center; width: 2.4rem; height: 2.4rem; min-height: 0; margin: 0; padding: 0; border: 1px solid rgba(61, 255, 110, 0.85); border-radius: 8px; background: rgba(4, 16, 12, 0.92); color: #3dff6e; box-shadow: 0 0 14px rgba(61, 255, 110, 0.35); cursor: pointer; pointer-events: auto; }
 body.needs-member #desk-glass #gate { padding-bottom: 4.4rem; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-body.needs-member #desk-glass #gate:has(#member-form:not([hidden]), #login-form:not([hidden])) .gate-age { margin-top: 0.75rem; padding-top: 0.35rem; }
+body.needs-member #desk-glass #gate:has(#member-form:not([hidden]), #login-form:not([hidden]), #forgot-form:not([hidden]), #reset-form:not([hidden])) .gate-age { margin-top: 0.75rem; padding-top: 0.35rem; }
 body.needs-member #desk-glass #gate .gate-age { margin-bottom: 0.15rem; }
 body.needs-member:not(.tv-zoom-on) #desk-glass #gate .gate-age { margin-right: 2.8rem; }
 #desk-glass:has(#tv-tick-meet:not([hidden])) #gate .gate-age,

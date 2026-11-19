@@ -11,6 +11,10 @@
  *   SUPABASE_SERVICE_ROLE_KEY
  *   STRIPE_SECRET_KEY
  *   STRIPE_WEBHOOK_SECRET
+ *   SITE_URL (optional; used for password-reset links)
+ *   RESEND_API_KEY (optional; password-reset email)
+ *   or MAIL_USER + MAIL_PASS (Gmail app password / SMTP)
+ *   MAIL_HOST MAIL_PORT MAIL_FROM (optional SMTP extras)
  * Local Mac reads the same names from .env. Hostinger sets them in hPanel.
  *
  * The Mac keeps pulling FanDuel and writes bets/board.json and bets/archive.json.
@@ -26,6 +30,7 @@ const { createPull } = require("./desk-pull");
 const { createNotes } = require("./desk-notes"); const { createShelve } = require("./desk-shelve");
 const { createResearch } = require("./desk-research"); const { propLog } = require("./prop-log"); const { slipList, slipPost } = require("./slip-api"); const { howsPost } = require("./hows-api"); const { parlayList, parlayPut, parlayArchive } = require("./parlay-api"); const friendsApi = require("./friends-api"); const chatApi = require("./chat-api").createChat(sb, readKey, writeKey, loadMembers);
 const billing = require("./billing-api");
+const passReset = require("./pass-reset");
 const ROOT = __dirname;
 loadEnv(path.join(ROOT, ".env"));
 const sendDoc = createDocs(ROOT);
@@ -688,6 +693,14 @@ const server = http.createServer(async (req, res) => {
       if (url.pathname === "/api/choose/ask") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await saveAsk(user, body.said, body.missing)); return; }
       if (url.pathname === "/api/taste") { const user = await memberFrom(req); if (!user) { sendJson(res, { error: "Sign in." }, 401); return; } sendJson(res, await noteTaste(user, String(body.slot || ""), body)); return; }
       const cookie = (token) => ({ "Set-Cookie": "pod=" + token + "; HttpOnly; Path=/; SameSite=Lax; Max-Age=2592000" });
+      if (url.pathname === "/api/forgot") {
+        sendJson(res, await passReset.requestReset(req, body.email, loadMembers, writeKey));
+        return;
+      }
+      if (url.pathname === "/api/reset") {
+        sendJson(res, await passReset.applyReset(body.token, body.password, loadMembers, writeKey, passHash));
+        return;
+      }
       if (url.pathname === "/api/join" || url.pathname === "/api/login") {
         const email = String(body.email || "").trim().toLowerCase();
         const password = String(body.password || "");

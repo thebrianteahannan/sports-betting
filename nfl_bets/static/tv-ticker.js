@@ -539,6 +539,7 @@ function tvTickRest() {
 
 function tvTickFormOn() {
   if (!tvTickGateOn()) return false;
+  if (typeof gateFormOpen === "function") return gateFormOpen();
   const login = document.getElementById("login-form"), join = document.getElementById("member-form");
   return (login && !login.hidden) || (join && !join.hidden);
 }
@@ -567,7 +568,7 @@ window.tvTickMeetFirst = tvTickMeetFirst;
 window.tvTickPaintCards = tvTickPaintCards;
 
 document.addEventListener("input", (event) => {
-  const field = event.target.closest && event.target.closest("#login-form input, #member-form input, #member-form select");
+  const field = event.target.closest && event.target.closest("#login-form input, #member-form input, #member-form select, #forgot-form input, #reset-form input");
   if (!field || !String(field.value || "").length || !tvTickGateOn() || tvTick.hold) return;
   tvTickStay();
 });
