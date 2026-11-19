@@ -40,6 +40,7 @@ function createAdmins(readKey, writeKey) {
         beta: Boolean(row.beta),
         trial,
         trialEndsAt: row.trialEndsAt || "",
+        periodEnd: row.periodEnd || "",
         lastLogin: row.lastLogin || "",
         createdAt: row.createdAt || "",
       };

@@ -6,6 +6,24 @@ function planName(row) {
   return "Trial over";
 }
 
+function planLeftSay(row) {
+  if (!row || row.admin) return "";
+  const iso = row.plan === "pro" ? row.periodEnd : row.trialEndsAt;
+  const end = Date.parse(iso || "");
+  if (!Number.isFinite(end)) return "";
+  const stamp = (ms) => new Date(ms).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const a = Date.parse(`${stamp(Date.now())}T12:00:00`);
+  const b = Date.parse(`${stamp(end)}T12:00:00`);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return "";
+  const days = Math.round((b - a) / 86400000);
+  if (days > 1) return `${days} days left`;
+  if (days === 1) return "1 day left";
+  if (days === 0) return row.plan === "pro" ? "expires today" : "ends today";
+  const ago = Math.abs(days);
+  if (ago === 1) return row.plan === "pro" ? "expired yesterday" : "ended yesterday";
+  return row.plan === "pro" ? `expired ${ago} days ago` : `ended ${ago} days ago`;
+}
+
 function loginWhen(stamp) {
   if (!stamp) return "Not yet";
   return typeof when === "function" ? `${when(stamp)} ET` : stamp;
@@ -216,7 +234,8 @@ function paintAdmin(payload) {
     const lines = [];
     if (habit && habit.blurb) String(habit.blurb).split("\n").forEach((line) => { const text = line.trim(); if (text) lines.push(text); });
     if (habit && (habit.recent || []).length) lines.push(`Recent answers: ${habit.recent.join("; ")}.`);
-    const gist = `${esc(item.row.email || "")}<em>${esc(planName(item.row))} · ${esc(loginWhen(item.row.lastLogin))}</em>`;
+    const left = planLeftSay(item.row);
+    const gist = `${esc(item.row.email || "")}<em>${esc(planName(item.row))}${left ? ` · ${esc(left)}` : ""} · ${esc(loginWhen(item.row.lastLogin))}</em>`;
     return adminCard(`${esc(item.row.name || "Member")} · ${esc(item.role)}`, gist, lines, item.action ? `<p class="pick-save">${item.action}</p>` : "");
   }).join("");
   if (showAllHabits) list.querySelectorAll(".rec-bet").forEach((card) => { if (card.querySelector(":scope > span")) card.classList.add("open"); });
