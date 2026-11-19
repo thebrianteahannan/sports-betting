@@ -101,11 +101,15 @@ async function recRanked(days) {
   return { all: picks.length, ranked: ranked.map((pick) => ({ who: pick.who, team: pick.team, label: pick.label, market: pick.market, text: pick.text || "", odds: pick.odds, need: pick.need, hits: pick.hits, n: pick.n, how: pick.how, kind: pick.kind || "", basis: pick.basis || "", match: pick.match, kickoff: pick.kickoff })) };
 }
 
+let sportBoardAt = 0, sportBoardGames = [];
 async function sportMap() {
-  const rows = await kv(`?k=eq.${encodeURIComponent("bets/board.json")}&select=v`);
-  const games = (rows && rows[0] && rows[0].v && rows[0].v.games) || [];
+  if (Date.now() - sportBoardAt >= 60000) {
+    const rows = await kv(`?k=eq.${encodeURIComponent("bets/board.json")}&select=v`);
+    sportBoardGames = (rows && rows[0] && rows[0].v && rows[0].v.games) || [];
+    sportBoardAt = Date.now();
+  }
   const map = new Map();
-  games.forEach((game) => { if (!game || !game.match) return; map.set(`${game.match}|${game.kickoff}`, game.sport || ""); if (!map.has(game.match)) map.set(game.match, game.sport || ""); });
+  sportBoardGames.forEach((game) => { if (!game || !game.match) return; map.set(`${game.match}|${game.kickoff}`, game.sport || ""); if (!map.has(game.match)) map.set(game.match, game.sport || ""); });
   return map;
 }
 

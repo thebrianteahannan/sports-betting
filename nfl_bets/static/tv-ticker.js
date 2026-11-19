@@ -430,9 +430,21 @@ function tvTickMenuOpen() {
   if (!desk || !guide || document.body.classList.contains("needs-member")) return;
   // Clear every ticker slide so Build A Bet / The Games on bird-guide are visible again.
   tvTickHideOthers([]);
+  guide.getAnimations().forEach((anim) => anim.cancel());
+  guide.style.transform = "";
+  // Sit above #tv-tick (z-index 7). Nav stays higher via CSS.
+  guide.style.zIndex = "8";
   desk.classList.add("bird-on");
   guide.hidden = false;
   if (!guide.querySelector("#bird-picks button[data-menu]") && typeof birdGreet === "function") birdGreet();
+}
+
+function tvTickMenuLeave() {
+  const guide = document.getElementById("bird-guide");
+  if (!guide) return;
+  guide.getAnimations().forEach((anim) => anim.cancel());
+  guide.style.transform = "";
+  guide.style.zIndex = "";
 }
 
 function tvTickShow(next, dir) {
@@ -476,15 +488,23 @@ function tvTickShow(next, dir) {
     tvTickFindPaint();
     return;
   }
-  tvTickHideOthers([inEl, outEl]);
+  const fromMenu = tvTick.at === "menu";
+  if (fromMenu) tvTickMenuLeave();
+  // Never slide bird-guide itself — that left it translated off-screen when
+  // the carousel came back to the menu. Keep the outgoing tick pane visible
+  // so it can slide away; from menu there is no outgoing tick pane.
+  tvTickHideOthers(fromMenu || outEl.id === "bird-guide" ? [inEl] : [inEl, outEl]);
   inEl.hidden = false;
+  inEl.style.transform = "";
   inEl.animate([{ transform: `translateX(${dir * 100}%)` }, { transform: "none" }], { duration: ms, easing: ease });
-  outEl.animate([{ transform: "none" }, { transform: `translateX(${-dir * 100}%)` }], { duration: ms, easing: ease }).finished.then(() => {
-    if (outEl.id === "bird-guide" || outEl === tvTickEl(tvTick.at)) return;
-    outEl.getAnimations().forEach((anim) => anim.cancel());
-    outEl.hidden = true;
-    outEl.style.transform = "";
-  }).catch(() => {});
+  if (!fromMenu && outEl.id !== "bird-guide") {
+    outEl.animate([{ transform: "none" }, { transform: `translateX(${-dir * 100}%)` }], { duration: ms, easing: ease }).finished.then(() => {
+      if (outEl === tvTickEl(tvTick.at)) return;
+      outEl.getAnimations().forEach((anim) => anim.cancel());
+      outEl.hidden = true;
+      outEl.style.transform = "";
+    }).catch(() => {});
+  }
   tvTick.at = next;
   tvTick.last = next;
   if (next === "meet") tvTickMetMark();
@@ -532,7 +552,8 @@ function tvTickWatch() {
   if (on && tvTickFormOn()) { if (!tvTick.hold) tvTickStay(); }
   else if (on && tvTick.hold) tvTickRelease();
   // Menu slide can lose bird-on / the Build A Bet buttons after other tick pages.
-  if (on && !tvTickGateOn() && tvTick.at === "menu" && !tvTickMenuOn()) tvTickMenuOpen();
+  // Only heal while the ticker pane is up — not after Build A Bet hid it.
+  if (!tvTickGateOn() && tvTick.at === "menu" && !tvTickMenuOn() && !box.hidden) tvTickMenuOpen();
   const pages = tvTickPages().join(",");
   if (pages !== tvTick.pages) {
     const prev = tvTick.pages;

@@ -1,13 +1,16 @@
 """Publish the desk to Supabase. The Mac writes. The website reads.
 
-Same key-value table as the Wizards site. Betting rows use a bets/ prefix
-so they do not touch roster or schedule data.
+All Parlay rows live under a bets/ prefix in the kv table. Older Wizards of
+Wiff keys (roster.json, schedule.json, …) are not used; purge-wizards-kv.js
+removes them once Supabase is unlocked.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -22,6 +25,7 @@ _KEYS = {
     "picks": "bets/picks.json",
 }
 _CARD_KEYS = ("updatedAt", "intervalSeconds", "book", "errors", "chalk", "four", "plus", "hits", "todayBet", "band", "weekThree", "weekFive", "weekSafe", "weekEven", "safe2", "mid3", "win4", "plusLegs", "mix21", "low3", "yards3", "ou4", "alt3", "games4", "early3", "prime3", "weekend4", "td2", "td3", "pay5", "pay10", "pay15", "pay20", "pay25", "pay50", "pra", "sixth")
+_REMOTE_ARCHIVE_EVERY = 60 * 60
 
 
 def configured() -> bool:
@@ -34,20 +38,70 @@ def publish_board(board: dict[str, Any]) -> None:
     if not configured():
         return
     local = thin_archive(_local_archive())
-    remote_rows: list[Any] = []
-    try:
-        remote = _get(_KEYS["archive"]) or {}
-        remote_rows = remote.get("tickets") if isinstance(remote, dict) else []
-    except RuntimeError:
-        remote_rows = []
-    merged = thin_archive(_merge_archive(local, remote_rows))
-    if merged != local:
-        write_json(out_dir() / "archive.json", {"tickets": merged})
+    remote_rows: list[Any] | None = None
+    # Local-first: pull remote archive at most once an hour (each refresh is a
+    # new process, so the stamp lives on disk).
+    if _remote_archive_due():
+        try:
+            remote = _get(_KEYS["archive"]) or {}
+            remote_rows = remote.get("tickets") if isinstance(remote, dict) else []
+            _mark_remote_archive()
+        except RuntimeError:
+            remote_rows = []
+    if remote_rows is not None:
+        merged = thin_archive(_merge_archive(local, remote_rows))
+        if merged != local:
+            write_json(out_dir() / "archive.json", {"tickets": merged})
+        if merged != remote_rows:
+            _put_archive(merged)
+    else:
+        merged = local
+        _put_archive_if_changed(merged)
     _put(_KEYS["board"], _slim(board))
-    if merged != remote_rows:
-        _put(_KEYS["archive"], {"tickets": merged})
-    _put("bets/ignored.json", read_json(out_dir() / "ignored.json", {"tickets": []}))
+    _put_ignored_if_changed(read_json(out_dir() / "ignored.json", {"tickets": []}))
     publish_logs()
+
+
+def _archive_tag(tickets: list[Any]) -> str:
+    raw = json.dumps(tickets, separators=(",", ":"), default=str)
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:12]
+
+
+def _put_archive(tickets: list[Any]) -> None:
+    tag = _archive_tag(tickets)
+    _put(_KEYS["archive"], {"tickets": tickets, "tag": tag})
+    write_json(out_dir() / "archive-sent.json", {"tag": tag})
+
+
+def _put_archive_if_changed(tickets: list[Any]) -> None:
+    tag = _archive_tag(tickets)
+    sent = read_json(out_dir() / "archive-sent.json", {})
+    if isinstance(sent, dict) and sent.get("tag") == tag:
+        return
+    _put_archive(tickets)
+
+
+def _put_ignored_if_changed(body: Any) -> None:
+    raw = json.dumps(body, sort_keys=True, separators=(",", ":"), default=str)
+    digest = hashlib.sha1(raw.encode("utf-8")).hexdigest()
+    sent = read_json(out_dir() / "ignored-sent.json", {})
+    if isinstance(sent, dict) and sent.get("sha") == digest:
+        return
+    _put("bets/ignored.json", body)
+    write_json(out_dir() / "ignored-sent.json", {"sha": digest})
+
+
+def _remote_archive_due() -> bool:
+    data = read_json(out_dir() / "archive-remote-at.json", {})
+    try:
+        last = float((data or {}).get("at") or 0)
+    except (TypeError, ValueError):
+        last = 0
+    return time.time() - last >= _REMOTE_ARCHIVE_EVERY
+
+
+def _mark_remote_archive() -> None:
+    write_json(out_dir() / "archive-remote-at.json", {"at": str(time.time())})
 
 
 def _log_body(pack: dict[str, Any]) -> dict[str, Any]:

@@ -82,10 +82,17 @@ async function sb(pathname, options = {}) {
   return text ? JSON.parse(text) : null;
 }
 
+// Host-side kv cache: stops re-downloading board/archive/members on every poll.
+const kvCache = new Map();
+const KV_TTL_MS = 60 * 1000;
+
 async function readKey(key) {
+  const hit = kvCache.get(key);
+  if (hit && Date.now() - hit.at < KV_TTL_MS) return hit.value;
   const rows = await sb("kv?k=eq." + encodeURIComponent(key) + "&select=v");
-  if (Array.isArray(rows) && rows[0]) return rows[0].v;
-  return null;
+  const value = Array.isArray(rows) && rows[0] ? rows[0].v : null;
+  kvCache.set(key, { at: Date.now(), value });
+  return value;
 }
 
 async function writeKey(key, value) {
@@ -94,6 +101,25 @@ async function writeKey(key, value) {
     prefer: "resolution=merge-duplicates,return=minimal",
     body: { k: key, v: value },
   });
+  kvCache.set(key, { at: Date.now(), value });
+}
+
+function archiveTagOf(rows) {
+  return crypto.createHash("sha1").update(JSON.stringify(rows || [])).digest("hex").slice(0, 12);
+}
+
+async function readArchiveDoc() {
+  const data = (await readKey("bets/archive.json")) || {};
+  const tickets = Array.isArray(data.tickets) ? data.tickets : [];
+  const tag = typeof data.tag === "string" && data.tag ? data.tag : archiveTagOf(tickets);
+  return { tickets, tag };
+}
+
+async function writeArchive(tickets) {
+  const rows = Array.isArray(tickets) ? tickets : [];
+  const tag = archiveTagOf(rows);
+  await writeKey("bets/archive.json", { tickets: rows, tag });
+  return tag;
 }
 
 async function board() {
@@ -101,8 +127,7 @@ async function board() {
 }
 
 async function archive() {
-  const data = (await readKey("bets/archive.json")) || { tickets: [] };
-  return Array.isArray(data.tickets) ? data.tickets : [];
+  return (await readArchiveDoc()).tickets;
 }
 
 const { ignoreView, sweepIgnored } = createIgnore(readKey, writeKey, archive);
@@ -118,7 +143,11 @@ async function picks() {
 
 async function publicBoard() {
   const data = await board();
-  data.archive = await archive(); data.picks = await picks(); data.shelved = await shelvedCards();
+  const arch = await readArchiveDoc();
+  data.archive = arch.tickets;
+  data.archiveTag = arch.tag;
+  data.picks = await picks();
+  data.shelved = await shelvedCards();
   return data;
 }
 
@@ -233,7 +262,7 @@ async function markGood(id, cardId, groupTitle, stars) {
     if (next) row.goodAt = new Date().toISOString();
     else delete row.goodAt;
   }
-  await writeKey("bets/archive.json", { tickets: rows });
+  await writeArchive(rows);
   return { archive: rows };
 }
 
@@ -246,7 +275,7 @@ async function settleArchive(id, result) {
   found.result = result;
   found.settledAt = new Date().toISOString();
   found.how = "marked here";
-  await writeKey("bets/archive.json", { tickets: rows });
+  await writeArchive(rows);
   return { archive: rows };
 }
 
@@ -596,8 +625,8 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/board") {
       const who = await memberFrom(req);
       if (refuseBoard(res, who)) return;
-      const { archive: rows, ...rest } = await publicBoard();
-      rest.archiveTag = crypto.createHash("sha1").update(JSON.stringify(rows)).digest("hex").slice(0, 12);
+      const { archive: rows, archiveTag, ...rest } = await publicBoard();
+      rest.archiveTag = archiveTag || archiveTagOf(rows);
       sendJson(res, url.searchParams.get("have") === rest.archiveTag ? rest : { ...rest, archive: rows });
       return;
     }

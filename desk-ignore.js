@@ -1,9 +1,15 @@
+const crypto = require("crypto");
+
 function createIgnore(readKey, writeKey, archive) {
   const RULES = [
     ["short", "Under half the line"],
     ["early", "One miss, legs still open"],
     ["college", "College receiving yards"],
   ];
+
+  function archiveTagOf(rows) {
+    return crypto.createHash("sha1").update(JSON.stringify(rows || [])).digest("hex").slice(0, 12);
+  }
 
   function sport(leg) {
     if (leg.sport) return leg.sport;
@@ -63,7 +69,7 @@ function createIgnore(readKey, writeKey, archive) {
         seen.add(String(row.id || ""));
       }
     }
-    await writeKey("bets/archive.json", { tickets: keep });
+    await writeKey("bets/archive.json", { tickets: keep, tag: archiveTagOf(keep) });
     await writeKey("bets/ignored.json", { tickets: parked.concat(drop).slice(-400) });
     return ignoreView();
   }
