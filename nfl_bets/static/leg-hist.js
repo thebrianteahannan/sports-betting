@@ -212,7 +212,9 @@ document.addEventListener("click", (event) => {
   if (pick) { const key = legMenuKey; legMenuKey = ""; legTo(key, pick.dataset.id); legMenuPaint(); return; }
   if (event.target.closest(".find-leg-menu")) return;
   const to = event.target.closest(".find-tray button.find-leg-to");
-  legMenuKey = to && to.dataset.key !== legMenuKey ? to.dataset.key : "";
+  const next = to && to.dataset.key !== legMenuKey ? to.dataset.key : "";
+  if (next === legMenuKey) return;
+  legMenuKey = next;
   if (legMenuKey) legToolsSolo(legMenuKey, "menu");
   legMenuPaint();
   if (typeof legSwapPaint === "function") legSwapPaint();

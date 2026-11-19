@@ -176,17 +176,19 @@ function legRecFind(key, mode) {
   if (!person) return [];
   const old = mode === "who" ? null : parlayLeg.get(key);
   const wantMatch = old ? old.match : "", wantKick = old ? old.kickoff : "";
-  const best = new Map();
+  const seen = new Set(), rows = [];
   (person.bets || []).forEach((bet) => {
     if (!Number(bet.odds)) return;
     if (old && (bet.match !== wantMatch || bet.kickoff !== wantKick)) return;
     const same = !!(old && bet.label === old.label && bet.market === old.market);
     if (!legIsRec(bet) && !same) return;
     if (!same && parlayLeg.has(parlayKey(bet))) return;
-    const cat = legSwapCatKey(person, bet), had = best.get(cat);
-    if (!had || same) best.set(cat, { person, bet, now: same, cat });
+    const id = `${bet.label}|${bet.market}`;
+    if (seen.has(id)) return;
+    seen.add(id);
+    rows.push({ person, bet, now: same });
   });
-  return [...best.values()].sort((a, b) => Number(b.now) - Number(a.now) || legSwapCatSay(a.person, a.bet).localeCompare(legSwapCatSay(b.person, b.bet)));
+  return rows.sort((a, b) => Number(b.now) - Number(a.now) || Number(a.bet.odds) - Number(b.bet.odds) || legSwapWhat(a.person, a.bet).localeCompare(legSwapWhat(b.person, b.bet)));
 }
 
 function legSwapCatKey(person, bet) {
@@ -284,9 +286,9 @@ function legSwapBox(key, mode) {
   box.className = "find-tray-swap";
   box.dataset.key = key;
   const cats = mode === "who" || mode === "kind";
-  const recRows = cats && legSwapRec ? legRecFind(key, mode) : null;
-  const usedRec = !!(recRows && recRows.some((row) => legIsRec(row.bet) && !row.now));
-  const drill = cats ? legSwapDrill.get(key) || "" : "";
+  const usedRec = !!(cats && legSwapRec);
+  const recRows = usedRec ? legRecFind(key, mode) : null;
+  const drill = cats && !usedRec ? legSwapDrill.get(key) || "" : "";
   const top = document.createElement("div");
   top.className = "find-swap-top";
   const said = legSwapSaid(key, mode);
@@ -333,12 +335,12 @@ function legSwapBox(key, mode) {
   }
   let rows, listMode = mode;
   if (cats && drill) { rows = legCatLines(key, mode, drill); listMode = "line"; }
-  else if (usedRec) { rows = recRows; listMode = "cat"; }
+  else if (usedRec) { rows = recRows; listMode = "line"; }
   else if (cats) { rows = legCatFind(key, mode); listMode = "cat"; }
   else rows = mode === "line" ? legLineFind(key) : legSwapFind(key);
   if (!rows.length || (mode === "swap" && !rows.some((row) => !row.now))) {
     const none = document.createElement("p");
-    none.textContent = cats && usedRec ? "No recommended props for this player in this game." : mode === "who" ? "FanDuel has no props posted for this player." : mode === "line" || listMode === "line" ? "FanDuel has no other numbers on this prop." : mode === "kind" || listMode === "cat" ? "FanDuel has no other props for this player in this game." : "Nothing else in this game sits at this price.";
+    none.textContent = usedRec ? "No recommended props for this player in this game." : mode === "who" ? "FanDuel has no props posted for this player." : mode === "line" || listMode === "line" ? "FanDuel has no other numbers on this prop." : mode === "kind" || listMode === "cat" ? "FanDuel has no other props for this player in this game." : "Nothing else in this game sits at this price.";
     box.append(none);
     return box;
   }
@@ -353,7 +355,7 @@ function legSwapBox(key, mode) {
       go.innerHTML = [`<i class="prop">${esc(legSwapCatSay(person, bet))}</i>`, count > 1 && `<i class="pct">${esc(`${count} lines`)}</i>`, now && `<i class="held">Selected</i>`].filter(Boolean).join("");
       go.addEventListener("click", () => { legSwapDrill.set(key, cat); legSwapPaint(); });
     } else {
-      go.title = now ? "Selected · in the parlay" : mode === "who" || (cats && !legSwapRec) ? "Add to the parlay" : mode === "line" || listMode === "line" ? "Change to this number" : mode === "kind" ? "Change to this prop" : `Trade this leg for ${person.name}`;
+      go.title = now ? "Selected · in the parlay" : mode === "who" ? "Add to the parlay" : mode === "line" || (listMode === "line" && !usedRec) ? "Change to this number" : mode === "kind" || usedRec ? "Change to this prop" : `Trade this leg for ${person.name}`;
       go.innerHTML = [`<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, typeof findPct === "function" && findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`, mode === "swap" && `<i class="who">${esc(person.name)}</i>`, `<i class="prop">${esc(person ? legSwapWhat(person, bet) : legGameWhat(bet))}</i>`, now && `<i class="held">Selected</i>`].filter(Boolean).join("");
       const proof = person && bet.sport === "NBA" && typeof proofOf === "function" && proofOf(person.name, bet.market, bet.label, bet.odds);
       const rec = typeof scriptRecPill === "function" && scriptRecPill(bet);
