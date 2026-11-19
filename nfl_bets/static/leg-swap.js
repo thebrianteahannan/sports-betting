@@ -285,8 +285,8 @@ function legSwapBox(key, mode) {
   box.dataset.key = key;
   const cats = mode === "who" || mode === "kind";
   const recRows = cats && legSwapRec ? legRecFind(key, mode) : null;
-  const usedRec = !!(recRows && recRows.some((row) => legIsRec(row.bet)));
-  const drill = cats && !usedRec ? legSwapDrill.get(key) || "" : "";
+  const usedRec = !!(recRows && recRows.some((row) => legIsRec(row.bet) && !row.now));
+  const drill = cats ? legSwapDrill.get(key) || "" : "";
   const top = document.createElement("div");
   top.className = "find-swap-top";
   const said = legSwapSaid(key, mode);
@@ -302,12 +302,15 @@ function legSwapBox(key, mode) {
     const check = document.createElement("input");
     check.type = "checkbox";
     check.checked = legSwapRec;
-    check.addEventListener("change", () => {
+    const saveRec = () => {
       legSwapRec = check.checked;
       try { localStorage.setItem("legSwapRec", legSwapRec ? "1" : "0"); } catch (error) {}
       if (legSwapRec) legSwapDrill.delete(key);
       legSwapPaint();
-    });
+    };
+    label.addEventListener("click", (event) => event.stopPropagation());
+    check.addEventListener("click", (event) => event.stopPropagation());
+    check.addEventListener("change", saveRec);
     label.append(check, document.createTextNode("Show Recommended"));
     top.append(label);
   }
@@ -329,8 +332,8 @@ function legSwapBox(key, mode) {
     box.append(back);
   }
   let rows, listMode = mode;
-  if (usedRec) { rows = recRows; listMode = mode; }
-  else if (cats && drill) { rows = legCatLines(key, mode, drill); listMode = "line"; }
+  if (cats && drill) { rows = legCatLines(key, mode, drill); listMode = "line"; }
+  else if (usedRec) { rows = recRows; listMode = "cat"; }
   else if (cats) { rows = legCatFind(key, mode); listMode = "cat"; }
   else rows = mode === "line" ? legLineFind(key) : legSwapFind(key);
   if (!rows.length || (mode === "swap" && !rows.some((row) => !row.now))) {
