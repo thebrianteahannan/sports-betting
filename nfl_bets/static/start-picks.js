@@ -87,13 +87,53 @@ function startTeam(board, pick) {
   if (side && typeof legSeek === "function") legSeek(side);
 }
 
+function startRecWhy(pick) {
+  const box = document.createElement("div");
+  box.className = "desk-rec-why";
+  const tips = [];
+  if (pick && pick.golden) tips.push({ label: "Golden Ticket", tip: "Golden Ticket: the top recommended pick from +100 to −250." });
+  if (typeof scriptKindSay === "function" && pick) {
+    const say = scriptKindSay(pick);
+    if (say && say.text && say.tip) tips.push({ label: say.text, tip: say.tip });
+  }
+  if (pick && (pick.role === "solid" || pick.role === "thin")) {
+    tips.push({
+      label: pick.role === "solid" ? "Steady role" : "Thin role",
+      tip: pick.role === "solid" ? "His minutes and role look locked in." : "His minutes are thin, so the opportunity can vanish.",
+    });
+  }
+  if (pick && pick.cushion) tips.push({ label: "Cushion", tip: "Cushion: he has room above the line, so a soft night can still cash." });
+  if (pick && pick.how) {
+    const why = document.createElement("p");
+    why.className = "desk-rec-why-how";
+    why.innerHTML = `<em>Why:</em> ${typeof esc === "function" ? esc(pick.how) : String(pick.how)}`;
+    box.append(why);
+  }
+  tips.forEach((row) => {
+    const line = document.createElement("p");
+    line.className = "desk-rec-why-tag";
+    line.innerHTML = `<b>${typeof esc === "function" ? esc(row.label) : row.label}</b> ${typeof esc === "function" ? esc(row.tip) : row.tip}`;
+    box.append(line);
+  });
+  return box.childNodes.length ? box : null;
+}
+
 function startCard(board, pick, card) {
-  const open = card.querySelector(":scope > .desk-rec-more"), hit = startHit(board, pick);
-  if (open) { open.remove(); return; }
+  const open = card.querySelector(":scope > .desk-rec-more");
+  const info = card.querySelector(".desk-rec-info");
+  if (open) {
+    open.remove();
+    if (info) { info.textContent = "More info"; info.setAttribute("aria-expanded", "false"); }
+    return;
+  }
+  const hit = startHit(board, pick);
   if (!hit || typeof paintCard !== "function") { startSeek(board, pick); return; }
   const more = document.createElement("div"), mark = document.createElement("span");
   more.className = "desk-rec-more"; mark.hidden = true;
+  const why = startRecWhy(pick);
+  if (why) more.append(why);
   more.append(mark); card.append(more);
+  if (info) { info.textContent = "Less info"; info.setAttribute("aria-expanded", "true"); }
   paintCard(more, mark, hit.person);
 }
 
@@ -357,40 +397,134 @@ function startDialCommit() {
   // Dial already filtered the list with CSS while dragging — do not rebuild the board (that made the thumb choppy).
 }
 
-function startRecs(board, box) {
-  const left = leftGames(), picks = [], all = [], when = startSpan === "week" ? "this week" : "today";
-  const recs = homeRecRows(left, box).filter((node) => {
-    if (!node.startPick) return true;
-    if (!startPickSpanOk(node.startPick)) return false;
-    all.push(node.startPick);
-    return startKindOk(node.startPick) && (!startFavOnly || startFavGame(node.startPick.match));
-  }).map((node) => {
-    if (node.startPick) picks.push(node.startPick);
-    if (!node.classList.contains("desk-rec")) {
-      if (node.classList.contains("desk-games-label") && startSpan === "week") node.textContent = "This week";
-      return node;
-    }
-    const copy = node.cloneNode(true), pick = node.startPick;
-    if (pick) {
-      copy.title = "Show the player";
-      const actions = document.createElement("span");
-      actions.className = "desk-rec-go";
-      actions.append(
-        Object.assign(document.createElement("span"), { className: "desk-rec-bet", textContent: "Bet it", title: "Bet it" }),
-        Object.assign(document.createElement("span"), { className: "desk-rec-team", textContent: "Team", title: "Team page" })
-      );
-      copy.append(actions);
-      copy.addEventListener("click", (event) => {
-        const go = event.target.closest("[data-bet-go]");
-        if (go) { copy.querySelectorAll(".desk-rec-ask").forEach((node) => node.remove()); startBetGo(board, pick, go.dataset.betGo); return; }
-        if (event.target.closest(".desk-rec-team")) { startTeam(board, pick); return; }
-        if (event.target.closest(".desk-rec-bet")) { startBetAsk(board, pick, copy); return; }
-        if (event.target.closest(".desk-rec-ask, .desk-rec-more, .desk-rec-go")) return;
-        startCard(board, pick, copy);
-      });
-    }
-    return copy;
+const START_REC_PAGE = 24;
+const START_REC_CAP = 120;
+
+function startRecPool(games, opts) {
+  if (!homeRecs || (homeRecs.loading && !(homeRecs.picks || []).length)) return { status: "loading", picks: [], league: "" };
+  if (!(homeRecs.picks || []).length) return { status: (homeRecs.want || "auto") !== "week" ? "tonight" : "empty", picks: [], league: "" };
+  const league = opts && Object.prototype.hasOwnProperty.call(opts, "league")
+    ? (opts.league || "")
+    : (typeof homeLeagueOn === "function" ? homeLeagueOn(games) : "");
+  const picks = [];
+  const seen = new Set();
+  const push = (pick) => {
+    if (!pick) return;
+    const key = `${pick.label}|${pick.market}|${pick.match}|${pick.odds}`;
+    if (seen.has(key)) return;
+    if (typeof startPickSpanOk === "function" && !startPickSpanOk(pick)) return;
+    if (league && typeof homePickSport === "function" && homePickSport(pick) !== league) return;
+    if (!startKindOk(pick)) return;
+    if (startFavOnly && !startFavGame(pick.match)) return;
+    seen.add(key);
+    picks.push(pick);
+  };
+  if (homeRecs.golden) push(homeRecs.golden);
+  (homeRecs.picks || []).forEach(push);
+  return { status: "ok", picks: picks.slice(0, START_REC_CAP), league, span: homeRecs.span || "today" };
+}
+
+function startRecCard(board, pick, index) {
+  const card = homeRecRow(pick, index, { stay: true });
+  card.startPick = pick;
+  card.title = "Show the player";
+  const actions = document.createElement("span");
+  actions.className = "desk-rec-go";
+  const info = Object.assign(document.createElement("span"), { className: "desk-rec-info", textContent: "More info", title: "More info" });
+  info.setAttribute("role", "button");
+  info.setAttribute("aria-expanded", "false");
+  actions.append(
+    Object.assign(document.createElement("span"), { className: "desk-rec-bet", textContent: "Bet it", title: "Bet it" }),
+    info,
+    Object.assign(document.createElement("span"), { className: "desk-rec-team", textContent: "Team", title: "Team page" })
+  );
+  card.append(actions);
+  card.addEventListener("click", (event) => {
+    if (event.target.closest(".bet-kind, .desk-rec-golden-tag")) return;
+    const go = event.target.closest("[data-bet-go]");
+    if (go) { card.querySelectorAll(".desk-rec-ask").forEach((node) => node.remove()); startBetGo(board, pick, go.dataset.betGo); return; }
+    if (event.target.closest(".desk-rec-team")) { startTeam(board, pick); return; }
+    if (event.target.closest(".desk-rec-bet")) { startBetAsk(board, pick, card); return; }
+    if (event.target.closest(".desk-rec-info")) { startCard(board, pick, card); return; }
+    if (event.target.closest(".desk-rec-ask, .desk-rec-more, .desk-rec-go, .desk-rec-tag-why")) return;
+    startCard(board, pick, card);
   });
+  return card;
+}
+
+function startRecMoreSync(wrap, more, pool, shown) {
+  if (!more) return;
+  const left = (pool.picks || []).slice(shown);
+  const moreMatch = left.some((pick) => typeof recDialOk !== "function" || recDialOk(pick));
+  if (shown >= (pool.picks || []).length) {
+    more.hidden = true;
+    return;
+  }
+  if (typeof recDial === "number" && recDial < 2 && !moreMatch) {
+    more.hidden = false;
+    more.textContent = "Slide toward All for more picks.";
+    more.dataset.scroll = "0";
+    return;
+  }
+  more.hidden = false;
+  more.textContent = "Scroll for more picks.";
+  more.dataset.scroll = "1";
+}
+
+function startRecFeed(board, box) {
+  const games = leftGames();
+  const pool = startRecPool(games);
+  const when = startSpan === "week" ? "this week" : "tonight";
+  const recs = [];
+  if (pool.span && pool.span !== "today" && startSpan !== "week") {
+    recs.push(Object.assign(document.createElement("p"), { className: "desk-games-note desk-games-label", textContent: pool.span === "tomorrow" ? "Tomorrow" : "Coming up" }));
+  } else if (startSpan === "week") {
+    recs.push(Object.assign(document.createElement("p"), { className: "desk-games-note desk-games-label", textContent: "This week" }));
+  }
+  if (pool.status === "loading") return { recs: [...recs, Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: "Looking up the picks." })], picks: [], all: [] };
+  if (pool.status === "tonight") return { recs: [...recs, typeof homeWeekNote === "function" ? homeWeekNote(box, pool.league || "") : Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: "No picks tonight." })], picks: [], all: [] };
+  if (pool.status === "empty" || !pool.picks.length) {
+    const say = pool.league
+      ? (typeof homeLeagueClearNote === "function" ? homeLeagueClearNote(box, `No ${pool.league} picks ${when}.`) : Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: `No ${pool.league} picks ${when}.` }))
+      : Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: startKinds.size ? "No picks match these filters. Tap Clear for the rest." : startFavOnly ? "None of your teams have a pick. Uncheck Only my teams for the rest." : `No picks ${when}.` });
+    return { recs: [...recs, say], picks: [], all: [] };
+  }
+  const wrap = document.createElement("div");
+  wrap.className = "find-start-recs";
+  if (typeof recDialEmptyNote === "function") wrap.append(recDialEmptyNote());
+  let shown = 0;
+  const more = document.createElement("p");
+  more.className = "desk-games-note find-start-recs-more";
+  more.hidden = true;
+  more.textContent = "Scroll for more picks.";
+  const paintChunk = () => {
+    const chunk = pool.picks.slice(shown, shown + START_REC_PAGE);
+    chunk.forEach((pick, i) => wrap.insertBefore(startRecCard(board, pick, shown + i), more));
+    shown += chunk.length;
+    startRecMoreSync(wrap, more, pool, shown);
+    if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 1, { quiet: true });
+    startRecMoreSync(wrap, more, pool, shown);
+  };
+  wrap.append(more);
+  wrap._recMoreSync = () => startRecMoreSync(wrap, more, pool, shown);
+  paintChunk();
+  if (pool.picks.length > START_REC_PAGE) {
+    const glass = document.getElementById("desk-glass-in");
+    const watch = new IntersectionObserver((rows) => {
+      if (!rows.some((row) => row.isIntersecting) || !wrap.isConnected) return;
+      if (more.dataset.scroll !== "1") return;
+      paintChunk();
+      if (shown >= pool.picks.length) watch.disconnect();
+    }, { root: glass || null, rootMargin: "240px 0px" });
+    watch.observe(more);
+  }
+  recs.push(wrap);
+  return { recs, picks: pool.picks, all: pool.picks };
+}
+
+function startRecs(board, box) {
+  const left = leftGames(), when = startSpan === "week" ? "this week" : "today";
+  const { recs, picks, all } = startRecFeed(board, box);
   const games = homeGameRows(left, box).filter((node) => !startFavOnly || !node.startGame || startFavGame(node.startGame.match)).map((node) => {
     if (!node.classList.contains("desk-game") || node.classList.contains("desk-game-live")) return node;
     const copy = node.cloneNode(true), game = node.startGame;
@@ -398,7 +532,6 @@ function startRecs(board, box) {
     return copy;
   });
   if (startFavOnly && !games.some((node) => node.startGame)) games.push(Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: `None of your teams play ${when}. Uncheck Only my teams for the rest.` }));
-  if (all.length && !picks.length) recs.push(Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: startKinds.size ? "No picks match these filters. Tap Clear for the rest." : "None of your teams have a pick. Uncheck Only my teams for the rest." }));
   return { recs, games, picks, all };
 }
 
@@ -503,7 +636,7 @@ function startPaint(again) {
   const input = board.querySelector("label.find input");
   const panel = board.dataset.page === "rec";
   if (startSpan === "week") startWeekLoad();
-  homeRecsLoad(startSpan === "week" ? "week" : ""); homeLogosLoad(); homeLeagueSync();
+  homeRecsLoad(startSpan === "week" ? "week" : "auto"); homeLogosLoad(); homeLeagueSync();
   const box = document.createElement("div");
   box.className = `find-start${panel ? " find-start-panel" : " find-start-quick"}`;
   if (!panel) {
@@ -560,6 +693,10 @@ function startPaint(again) {
   box.append(row, ...body);
   spot.after(box);
   if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 1, { quiet: true });
+  if (startTab === "rec" && typeof recDialCountPaint === "function") {
+    const counts = typeof recDialCountOf === "function" ? recDialCountOf(all) : { golden: 0, all: all.length };
+    recDialCountPaint(counts);
+  }
   const waiting = (startSpan === "week" && startWeekLoading) || !homeRecs || homeRecs.loading;
   if (waiting && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
 }

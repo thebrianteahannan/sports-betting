@@ -24,7 +24,7 @@ function teamRecBlock(lines, game, people) {
   const money = (odds) => (odds > 0 ? `+${odds}` : String(odds));
   const block = document.createElement("div");
   block.className = "find-script-part find-team-recs";
-  block.innerHTML = `<b>Team bets</b>${lines.map((pick) => `<div class="find-script-pick" data-who="${esc(pick.who || "")}" data-legs="${esc(`${pick.label}|${pick.market}`)}"${pick.who ? scriptClubStyle(game, pick.team) : ""}><p><strong>${esc(pick.team)} ${esc(pick.text)}, ${money(pick.odds)}.</strong> ${scriptKindTag(pick)}</p><p class="find-script-why"><em>Why:</em> ${esc(pick.how)}</p></div>`).join("")}`;
+  block.innerHTML = `<b>Team bets</b>${lines.map((pick) => `<div class="find-script-pick" data-who="${esc(pick.who || "")}" data-legs="${esc(`${pick.label}|${pick.market}`)}"${pick.who ? scriptClubStyle(game, pick.team) : ""}><p><strong>${esc(pick.team)} ${esc(pick.text)}, ${money(pick.odds)}.</strong> ${typeof scriptPickTags === "function" ? scriptPickTags(pick, game) : scriptKindTag(pick)}</p><p class="find-script-why"><em>Why:</em> ${esc(pick.how)}</p></div>`).join("")}`;
   block.querySelectorAll(".find-script-pick").forEach((row, at) => {
     const go = document.createElement("button");
     go.type = "button"; go.className = "find-script-add"; go.textContent = "Add to bet";

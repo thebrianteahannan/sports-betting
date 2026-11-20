@@ -21,10 +21,21 @@ function recDialInBand(odds) {
   return Number.isFinite(o) && o >= -250 && o <= 100;
 }
 
-function recDialSay(level) {
-  if (level <= 0) return "Golden Ticket";
-  if (level >= 2) return "All picks";
-  return "+100 to −250";
+function recDialSay(level, showing) {
+  const n = Number(showing);
+  const count = Number.isFinite(n) ? ` · ${Math.max(0, Math.round(n))}` : "";
+  if (level <= 0) return `Golden Ticket${count}`;
+  if (level >= 2) return `All picks${count}`;
+  return `+100 to −250${count}`;
+}
+
+function recDialShowingOf(level, counts) {
+  const golden = Math.max(0, Number(counts && counts.golden) || 0);
+  const band = Math.max(0, Number(counts && counts.band) || 0);
+  const all = Math.max(0, Number(counts && counts.all) || 0);
+  if (level <= 0) return golden;
+  if (level >= 2) return all;
+  return band;
 }
 
 function recDialSave(level) {
@@ -61,13 +72,32 @@ function recDialHosts() {
 }
 
 function recDialSyncInputs(level, quiet) {
-  if (quiet || recDialDrag) return;
+  const showing = recDialShowingPaint(level);
+  const say = recDialSay(level, showing);
   document.querySelectorAll("input.rec-dial-range").forEach((box) => {
-    box.value = String(level);
+    if (!(quiet || recDialDrag)) box.value = String(level);
     box.setAttribute("aria-valuenow", String(level));
-    box.setAttribute("aria-valuetext", recDialSay(level));
-    box.title = recDialSay(level);
+    box.setAttribute("aria-valuetext", say);
+    box.title = say;
   });
+}
+
+function recDialShowingPaint(level) {
+  const at = level == null ? recDial : Math.max(0, Math.min(REC_DIAL_MAX, Math.round(Number(level) || 0)));
+  let showing = 0;
+  document.querySelectorAll(".rec-dial").forEach((bar) => {
+    const counts = {
+      golden: Number(bar.dataset.golden) || 0,
+      band: Number(bar.dataset.band) || 0,
+      all: Number(bar.dataset.all) || 0,
+    };
+    showing = recDialShowingOf(at, counts);
+    const now = bar.querySelector(".rec-dial-now");
+    if (now) now.textContent = String(showing);
+    bar.dataset.showing = String(showing);
+    bar.dataset.level = String(at);
+  });
+  return showing;
 }
 
 function recDialApply(next, opts) {
@@ -83,6 +113,9 @@ function recDialApply(next, opts) {
     node.hidden = !show;
     if (show) node.textContent = recDialEmptySay();
   });
+  document.querySelectorAll(".find-start-recs").forEach((wrap) => {
+    if (typeof wrap._recMoreSync === "function") wrap._recMoreSync();
+  });
   if (!quiet && typeof opts?.onCommit === "function") opts.onCommit(recDial);
 }
 
@@ -93,13 +126,42 @@ function recDialEmptyNote() {
   return line;
 }
 
+function recDialCountOf(picks) {
+  const rows = picks || [];
+  return {
+    golden: rows.filter((pick) => pick && pick.golden).length,
+    band: rows.filter((pick) => pick && recDialInBand(pick.odds)).length,
+    all: rows.length,
+  };
+}
+
+function recDialCountPaint(counts) {
+  const golden = Math.max(0, Number(counts && counts.golden) || 0);
+  const band = Math.max(0, Number(counts && counts.band) || 0);
+  const all = Math.max(0, Number(counts && counts.all) || 0);
+  document.querySelectorAll(".rec-dial").forEach((bar) => {
+    const less = bar.querySelector(".rec-dial-less .rec-dial-n");
+    const more = bar.querySelector(".rec-dial-more .rec-dial-n");
+    if (less) less.textContent = String(golden);
+    if (more) more.textContent = String(all);
+    bar.dataset.golden = String(golden);
+    bar.dataset.band = String(band);
+    bar.dataset.all = String(all);
+  });
+  recDialShowingPaint(recDial);
+}
+
 function recDialBar(onCommit) {
   const bar = document.createElement("label");
   bar.className = "rec-dial";
   const less = document.createElement("span");
-  less.textContent = "Golden Ticket";
+  less.className = "rec-dial-less";
+  less.innerHTML = `Golden Ticket <i class="rec-dial-n">0</i>`;
   const more = document.createElement("span");
-  more.textContent = "All";
+  more.className = "rec-dial-more";
+  more.innerHTML = `All <i class="rec-dial-n">0</i>`;
+  const slide = document.createElement("span");
+  slide.className = "rec-dial-slide";
   const input = document.createElement("input");
   input.type = "range";
   input.className = "rec-dial-range";
@@ -113,6 +175,10 @@ function recDialBar(onCommit) {
   input.setAttribute("aria-valuetext", recDialSay(recDial));
   input.setAttribute("aria-label", "Show more or fewer recommended picks");
   input.title = recDialSay(recDial);
+  const now = document.createElement("i");
+  now.className = "rec-dial-now";
+  now.textContent = "0";
+  now.setAttribute("aria-hidden", "true");
   const end = () => {
     recDialDrag = false;
     const snapped = Math.max(0, Math.min(REC_DIAL_MAX, Math.round(Number(input.value) || 0)));
@@ -129,13 +195,11 @@ function recDialBar(onCommit) {
   input.addEventListener("input", () => {
     recDialDrag = true;
     const level = Math.max(0, Math.min(REC_DIAL_MAX, Math.round(Number(input.value) || 0)));
-    input.setAttribute("aria-valuenow", String(level));
-    input.setAttribute("aria-valuetext", recDialSay(level));
-    input.title = recDialSay(level);
     recDialApply(level, { quiet: true });
   });
   input.addEventListener("change", end);
-  bar.append(less, input, more);
+  slide.append(input, now);
+  bar.append(less, slide, more);
   return bar;
 }
 
@@ -149,3 +213,7 @@ window.recDialInBand = recDialInBand;
 window.recDialMark = recDialMark;
 window.recDialSave = recDialSave;
 window.recDialSay = recDialSay;
+window.recDialCountOf = recDialCountOf;
+window.recDialCountPaint = recDialCountPaint;
+window.recDialShowingOf = recDialShowingOf;
+window.recDialShowingPaint = recDialShowingPaint;

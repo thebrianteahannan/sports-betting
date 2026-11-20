@@ -102,6 +102,8 @@
 :is(.rec-board, #choice-result) .find-start button.desk-rec { margin: 0 0 12px !important; }
 :is(.rec-board, #choice-result) .find-start[data-rec-dial="0"] button.desk-rec:not([data-rec-golden]),
 :is(.rec-board, #choice-result) .find-start[data-rec-dial="1"] button.desk-rec:not([data-rec-band]) { display: none !important; }
+.find-start .find-start-recs { display: flex; flex-direction: column; gap: 0; }
+.find-start .find-start-recs-more { margin: 0.2rem 0 0.8rem; }
 .find-start .rec-dial,
 #desk-games .rec-dial {
   display: inline-flex;
@@ -113,6 +115,31 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
+}
+.find-start .rec-dial .rec-dial-n,
+#desk-games .rec-dial .rec-dial-n {
+  display: inline-block;
+  margin-left: 0.25rem;
+  color: #e7c15a;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.find-start .rec-dial-slide,
+#desk-games .rec-dial-slide {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.find-start .rec-dial-now,
+#desk-games .rec-dial-now {
+  min-width: 1.5em;
+  color: #3dff6e;
+  font-style: normal;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-align: center;
 }
 .find-start .rec-dial input[type="range"],
 #desk-games .rec-dial input[type="range"] {
@@ -172,11 +199,20 @@
 :is(.rec-board, #choice-result) .find-start button.find-start-td:hover { background: rgba(61, 255, 110, 0.12) !important; }
 #desk-glass .find-start-fav input, .find-start-fav input { width: 1rem !important; height: 1rem !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; accent-color: #3dff6e; cursor: pointer; }
 #desk-glass-in .find-start .desk-rec { grid-template-areas: "name bet" "pay pay" "how legs" "read read"; }
+#desk-glass-in .find-start .desk-rec.desk-rec-tip-on { grid-template-areas: "name bet" "pay pay" "how legs" "read read" "why why"; }
 #desk-glass-in .find-start .desk-rec-go { grid-area: bet; display: inline-flex; flex-wrap: wrap; justify-self: end; align-self: start; gap: 0.35rem; }
 #desk-glass-in .find-start .desk-rec-bet { padding: 0.2rem 0.8rem; border: 1px solid #3dff6e; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 13px; font-weight: 800; white-space: nowrap; }
 #desk-glass-in .find-start .desk-rec-bet:hover { background: #6bff92; }
+#desk-glass-in .find-start .desk-rec-info { padding: 0.2rem 0.8rem; border: 1px solid rgba(159, 179, 200, 0.55); border-radius: 999px; background: transparent; color: #c9d6e3; font-size: 13px; font-weight: 800; white-space: nowrap; cursor: pointer; }
+#desk-glass-in .find-start .desk-rec-info:hover,
+#desk-glass-in .find-start .desk-rec-info[aria-expanded="true"] { border-color: #e7c15a; color: #e7c15a; }
 #desk-glass-in .find-start .desk-rec-team { padding: 0.2rem 0.8rem; border: 1px solid #3dff6e; border-radius: 999px; background: transparent; color: #3dff6e; font-size: 13px; font-weight: 800; white-space: nowrap; cursor: pointer; }
 #desk-glass-in .find-start .desk-rec-team:hover { background: rgba(61, 255, 110, 0.12); }
+#desk-glass-in .find-start .desk-rec-why { display: flex; flex-direction: column; gap: 0.35rem; margin: 0 0 0.55rem; }
+#desk-glass-in .find-start .desk-rec-why-how,
+#desk-glass-in .find-start .desk-rec-why-tag { margin: 0; color: #e7c15a; font-size: 13px; font-weight: 600; line-height: 1.4; text-align: left; text-transform: none; letter-spacing: normal; }
+#desk-glass-in .find-start .desk-rec-why-how em { font-style: normal; font-weight: 800; color: #f4f7fb; }
+#desk-glass-in .find-start .desk-rec-why-tag b { margin-right: 0.35rem; color: #f4f7fb; font-weight: 800; }
 #desk-glass-in .find-start .desk-rec-ask { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.3rem; padding-top: 0.55rem; border-top: 1px solid rgba(61, 255, 110, 0.25); }
 #desk-glass-in .find-start .desk-rec-ask i { margin-right: 0.2rem; color: #f4f7fb; font-size: 13px; font-style: normal; font-weight: 700; }
 #desk-glass-in .find-start .desk-rec-ask [data-bet-go] { padding: 0.25rem 0.8rem; border: 1px solid #3dff6e; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 13px; font-weight: 800; cursor: pointer; }

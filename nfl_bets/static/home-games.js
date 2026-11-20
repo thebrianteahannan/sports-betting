@@ -88,6 +88,7 @@ function startSpanBar() {
       if (startSpan === id) return;
       startSpan = id;
       try { localStorage.setItem("startSpan", id === "week" ? "week" : ""); } catch (error) {}
+      homeRecs = null;
       if (id === "week") { chip.textContent = "Looking up…"; startWeekLoad(() => { if (typeof startPaint === "function") startPaint(1); }); return; }
       if (typeof startPaint === "function") startPaint(1);
     });
@@ -97,11 +98,12 @@ function startSpanBar() {
 }
 
 function startPickSpanOk(pick) {
-  if (startSpan !== "week") return true;
   const kick = Date.parse(pick.kickoff || "");
-  if (!Number.isFinite(kick)) return true;
+  if (!Number.isFinite(kick)) return startSpan !== "today";
   const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
-  return fmt.format(kick) > fmt.format(Date.now());
+  const day = fmt.format(kick), now = fmt.format(Date.now());
+  if (startSpan === "week") return day >= now;
+  return day === now;
 }
 
 function leftGames() {
@@ -223,7 +225,8 @@ function homeRecTitle(pick) {
   return `${label} ${prop}`.replace(/\s+/g, " ").trim();
 }
 
-function homeRecRow(pick, index) {
+function homeRecRow(pick, index, opts) {
+  const stay = !!(opts && opts.stay);
   const card = document.createElement("button");
   card.type = "button";
   card.className = "desk-game desk-rec";
@@ -239,12 +242,45 @@ function homeRecRow(pick, index) {
   const when = pick.kickoff ? `${span === "week" ? `${new Date(pick.kickoff).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short" })} ` : ""}${new Date(pick.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET` : "";
   const side = String(pick.match || "").split(" @ ").find((name) => pick.team && (name === pick.team || name.endsWith(` ${pick.team}`))) || "", logo = (side && homeLogos && homeLogos[side]) || "", dark = logo.replace("/500/", "/500-dark/");
   const pay = [`<i class="px">${esc(price)}</i>`, pct && `<i class="pct">${esc(pct)}</i>`, cash && `<i class="pay">${esc(`$5 profits ${cash}`)}</i>`, star].filter(Boolean).join("");
-  const tags = [golden ? `<i class="desk-rec-golden-tag">Golden Ticket</i>` : "", typeof scriptKindTag === "function" ? scriptKindTag(pick) : "", typeof scriptRoleTag === "function" ? scriptRoleTag(pick) : "", typeof scriptCushionTag === "function" ? scriptCushionTag(pick) : ""].filter(Boolean).join("");
+  const goldenTip = "Golden Ticket: the top recommended pick from +100 to −250.";
+  const tags = [golden ? `<i class="desk-rec-golden-tag" title="${esc(goldenTip)}" data-tip="${esc(goldenTip)}">Golden Ticket</i>` : "", typeof scriptKindTag === "function" ? scriptKindTag(pick) : "", typeof scriptRoleTag === "function" ? scriptRoleTag(pick) : "", typeof scriptCushionTag === "function" ? scriptCushionTag(pick) : ""].filter(Boolean).join("");
   card.innerHTML = `<span class="desk-rec-name">${logo ? `<img class="desk-team-logo desk-rec-logo" src="${esc(dark)}" alt="${esc(side)}" loading="lazy"${dark !== logo ? ` onerror="this.onerror=null;this.src='${esc(logo)}'"` : ""}>` : ""}${esc(homeRecTitle(pick))}</span><span class="desk-rec-pay">${pay}</span><span class="desk-rec-how">${lead}${tags}</span><span class="desk-rec-legs">${esc(when)}</span><span class="desk-rec-read">${esc(`${pick.match}. Hit in ${pick.hits} of his last ${pick.n}.`)}</span>`;
-  card.addEventListener("click", () => { if (document.body.classList.contains("needs-member")) { const join = document.getElementById("gate-join"); if (join) join.click(); return; } window.location.href = `/?${new URLSearchParams({ game: pick.match, label: pick.label, market: pick.market || "" })}`; });
+  card.addEventListener("click", (event) => {
+    const tag = event.target.closest(".bet-kind, .desk-rec-golden-tag");
+    if (tag && card.contains(tag)) {
+      event.preventDefault();
+      event.stopPropagation();
+      deskRecTagWhy(card, tag);
+      return;
+    }
+    if (stay) return;
+    if (document.body.classList.contains("needs-member")) { const join = document.getElementById("gate-join"); if (join) join.click(); return; }
+    window.location.href = `/?${new URLSearchParams({ game: pick.match, label: pick.label, market: pick.market || "" })}`;
+  });
   if (typeof recDialMark === "function") recDialMark(card, pick);
   return card;
 }
+
+function deskRecTagWhy(card, tag) {
+  const tip = String((tag && (tag.getAttribute("data-tip") || tag.getAttribute("title"))) || "").trim();
+  if (!tip || !card) return false;
+  let why = card.querySelector(":scope > .desk-rec-tag-why");
+  if (why && why.dataset.tip === tip) {
+    why.remove();
+    card.classList.remove("desk-rec-tip-on");
+    return true;
+  }
+  if (!why) {
+    why = document.createElement("span");
+    why.className = "desk-rec-tag-why";
+    card.append(why);
+  }
+  card.classList.add("desk-rec-tip-on");
+  why.dataset.tip = tip;
+  why.textContent = tip;
+  return true;
+}
+window.deskRecTagWhy = deskRecTagWhy;
 
 function homeGamesRepaint() {
   const box = document.getElementById("desk-games");
@@ -349,16 +385,45 @@ function homeTdChip(games) {
   return go;
 }
 
+function homeLeagueCounts(games) {
+  const by = { "": 0 };
+  homeLeagueList(games).forEach((league) => { by[league] = 0; });
+  if (typeof startRecPool === "function") {
+    const all = startRecPool(games, { league: "" });
+    if (all.status === "ok") {
+      by[""] = (all.picks || []).length;
+      homeLeagueList(games).forEach((league) => {
+        by[league] = (all.picks || []).filter((pick) => (typeof homePickSport === "function" ? homePickSport(pick) : pick.sport) === league).length;
+      });
+    }
+    return by;
+  }
+  const picks = ((homeRecs && homeRecs.picks) || []).slice();
+  if (homeRecs && homeRecs.golden && !picks.some((pick) => pick && pick.golden)) picks.unshift(homeRecs.golden);
+  picks.forEach((pick) => {
+    if (!pick) return;
+    by[""] += 1;
+    const sport = typeof homePickSport === "function" ? homePickSport(pick) : pick.sport;
+    if (sport && Object.prototype.hasOwnProperty.call(by, sport)) by[sport] += 1;
+  });
+  return by;
+}
+
 function homeLeagues(box, games) {
   const leagues = homeLeagueList(games), on = homeLeagueOn(games);
   if (leagues.length < 2) return [];
+  const counts = homeGamesTab === "rec" || (typeof startTab === "string" && startTab === "rec") ? homeLeagueCounts(games) : null;
   const row = document.createElement("span");
   row.className = "desk-games-leagues";
   ["", ...leagues].forEach((league) => {
     const chip = document.createElement("button");
     chip.type = "button";
     chip.className = `desk-games-league${league === on ? " on" : ""}`;
-    chip.textContent = league || "All";
+    const n = counts && Number(counts[league] || 0);
+    if (!league && counts) {
+      chip.innerHTML = `All <i class="desk-tab-n">${n}</i>`;
+      chip.setAttribute("aria-label", `All ${n}`);
+    } else chip.textContent = league || "All";
     chip.setAttribute("aria-pressed", String(league === on));
     chip.addEventListener("click", () => { homeLeague = league; box.scrollTop = 0; homeLeagueSave(box); });
     row.append(chip);

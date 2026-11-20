@@ -31,7 +31,7 @@ const scriptRecAll = new Map(), legRecAll = new Map();
 function scriptRecLearn(bets) {
   (bets.records || []).forEach((row) => legRecAll.set(`${row.label}|${row.market}`, { hits: row.hits, n: row.n }));
   const picks = [bets, bets.stars].filter(Boolean).flatMap((set) => set.picks || []);
-  picks.forEach((pick) => scriptRecAll.set(`${pick.label}|${pick.market}`, { kind: pick.kind, basis: pick.basis, tier: pick.tier, drop: pick.drop, hits: pick.hits, n: pick.n }));
+  picks.forEach((pick) => scriptRecAll.set(`${pick.label}|${pick.market}`, { kind: pick.kind, basis: pick.basis, tier: pick.tier, drop: pick.drop, hits: pick.hits, n: pick.n, role: pick.role, cushion: !!pick.cushion }));
   return picks;
 }
 const SCRIPT_KIND = { safe: ["Safe", "Picked to hit. Judged by how often it wins."], balanced: ["Balanced", "Near even money. Judged by wins and dollars both."], payout: ["Payout", "Picked for the price. Judged by the dollars it makes over many bets."] };
@@ -50,18 +50,39 @@ function scriptKindSay(pick) {
 function scriptKindTag(pick) {
   if (!pick) return "";
   const say = scriptKindSay(pick);
-  return `<i class="bet-kind k-${say.key}" title="${esc(say.tip)}">${esc(say.text)}</i>`;
+  return `<i class="bet-kind k-${say.key}" title="${esc(say.tip)}" data-tip="${esc(say.tip)}">${esc(say.text)}</i>`;
 }
 
 function scriptRoleTag(pick) {
   if (!pick || (pick.role !== "solid" && pick.role !== "thin")) return "";
   const solid = pick.role === "solid";
-  return `<i class="bet-kind k-role-${solid ? "solid" : "thin"}" title="${esc(solid ? "His minutes and role look locked in." : "His minutes are thin, so the opportunity can vanish.")}">${solid ? "Steady role" : "Thin role"}</i>`;
+  const tip = solid ? "His minutes and role look locked in." : "His minutes are thin, so the opportunity can vanish.";
+  return `<i class="bet-kind k-role-${solid ? "solid" : "thin"}" title="${esc(tip)}" data-tip="${esc(tip)}">${solid ? "Steady role" : "Thin role"}</i>`;
 }
 
 function scriptCushionTag(pick) {
   if (!pick || !pick.cushion) return "";
-  return `<i class="bet-kind k-cushion" title="He has room above the line at this price.">Cushion</i>`;
+  const tip = "Cushion: he has room above the line, so a soft night can still cash.";
+  return `<i class="bet-kind k-cushion" title="${esc(tip)}" data-tip="${esc(tip)}">Cushion</i>`;
+}
+
+function scriptGoldenOf(pick, game) {
+  if (!pick) return false;
+  if (pick.golden) return true;
+  const g = (typeof homeRecs !== "undefined" && homeRecs && homeRecs.golden) || null;
+  if (!g) return false;
+  const match = (game && game.match) || pick.match || "";
+  return g.label === pick.label && g.market === pick.market && (!g.match || g.match === match);
+}
+
+function scriptGoldenTag(pick, game) {
+  if (!scriptGoldenOf(pick, game)) return "";
+  const tip = "Golden Ticket: the top recommended pick from +100 to −250.";
+  return `<i class="desk-rec-golden-tag" title="${esc(tip)}" data-tip="${esc(tip)}">Golden Ticket</i>`;
+}
+
+function scriptPickTags(pick, game) {
+  return `${scriptGoldenTag(pick, game)}${scriptKindTag(pick)}${scriptRoleTag(pick)}${scriptCushionTag(pick)}`;
 }
 
 function scriptRecPill(bet) {
@@ -392,7 +413,7 @@ function scriptBetsBlock(bets, group, game, people, keep = {}, starsOnly = false
   const club = group.name !== "Both teams" && scriptClub(game, group.name);
   if (club) { block.classList.add("find-script-club"); block.style.borderLeftColor = club.color; block.style.backgroundImage = `linear-gradient(90deg, ${club.color}4d, ${club.color}12 80%)`; }
   const lead = mine.slice(0, 3), rest = mine.slice(3);
-  const pickHtml = (pick) => `<div class="find-script-pick"${club ? "" : scriptClubStyle(game, pick.team)}><p><strong>${who(pick)} ${esc(pick.text)}, ${money(pick.odds)}.</strong> ${scriptKindTag(pick)}${scriptRoleTag(pick)}${scriptCushionTag(pick)}</p><p class="find-script-why"><em>Why:</em> ${esc(pick.how || `Hit in ${pick.hits} of his last ${pick.n}. Needs ${pick.need}.`)}</p></div>`;
+  const pickHtml = (pick) => `<div class="find-script-pick"${club ? "" : scriptClubStyle(game, pick.team)}><p><strong>${who(pick)} ${esc(pick.text)}, ${money(pick.odds)}.</strong> ${scriptPickTags(pick, game)}</p><p class="find-script-why"><em>Why:</em> ${esc(pick.how || `Hit in ${pick.hits} of his last ${pick.n}. Needs ${pick.need}.`)}</p></div>`;
   block.innerHTML = `<b${club ? ` style="color: ${club.text}"` : ""}>${esc(group.name)}</b>${lead.map(pickHtml).join("")}`;
   block.querySelectorAll(".find-script-pick").forEach((row, at) => scriptPickPlus(row, lead[at], game, people));
   if (rest.length) {
@@ -408,7 +429,7 @@ function scriptBetsBlock(bets, group, game, people, keep = {}, starsOnly = false
     tabs.querySelectorAll("button").forEach((node) => node.classList.toggle("on", Number(node.dataset.size) === parlay.size));
     const legs = edit || parlay.legs.map((at) => bets.picks[at]), deal = edit && typeof recLegDeal === "function" ? recLegDeal(legs) : parlay;
     const top = `<div class="find-script-top"><i class="px">${money(deal.odds)}</i><i class="pct">${esc(deal.need)}</i><i class="pay">$5 profits $${deal.wins.toFixed(2)}</i>${scriptKindTag({ kind: scriptKindOf(deal.odds) })}${parlay.size > 1 ? `<i class="sg">Same game</i>` : ""}</div>`;
-    const rows = legs.map((pick) => `<div class="find-script-leg" data-who="${esc(pick.who)}" data-label="${esc(pick.label)}" data-market="${esc(pick.market)}" data-odds="${esc(pick.odds)}"${scriptClubStyle(game, pick.team)}><i class="px">${money(pick.odds)}</i><i class="pct">${esc(typeof findPct === "function" ? findPct(pick.odds) : "")}</i><i class="who">${esc(pick.who)}</i><i class="tm">${esc([pick.team, pick.pos].filter(Boolean).join(" · "))}</i><i class="prop">${esc(pick.text)}</i>${scriptKindTag(pick)}</div>`).join("");
+    const rows = legs.map((pick) => `<div class="find-script-leg" data-who="${esc(pick.who)}" data-label="${esc(pick.label)}" data-market="${esc(pick.market)}" data-odds="${esc(pick.odds)}"${scriptClubStyle(game, pick.team)}><i class="px">${money(pick.odds)}</i><i class="pct">${esc(typeof findPct === "function" ? findPct(pick.odds) : "")}</i><i class="who">${esc(pick.who)}</i><i class="tm">${esc([pick.team, pick.pos].filter(Boolean).join(" · "))}</i><i class="prop">${esc(pick.text)}</i>${scriptPickTags(pick, game)}</div>`).join("");
     card.innerHTML = `${top}${rows}${parlay.how && !edit ? `<p class="find-script-why"><em>Why:</em> ${esc(parlay.how)}</p>` : ""}${parlay.size > 1 ? `<p class="find-script-proof">FanDuel prices same-game parlays itself, so the slip can pay less than this.</p>` : ""}`;
     if (typeof recLegTools === "function") recLegTools(card, legs, game, people, (next) => show(parlay, next), edit);
     if (game.sport === "NBA" && typeof proofScript === "function") proofScript(card);
@@ -530,6 +551,14 @@ function nbaScript(holder, game, people) {
 }
 
 document.addEventListener("click", (event) => {
+  const tag = event.target.closest(".find-script-leg .bet-kind, .find-script-leg .desk-rec-golden-tag, .find-script-pick .bet-kind, .find-script-pick .desk-rec-golden-tag");
+  const row = tag && tag.closest(".find-script-leg, .find-script-pick");
+  if (row && typeof deskRecTagWhy === "function") {
+    event.preventDefault();
+    event.stopPropagation();
+    deskRecTagWhy(row, tag);
+    return;
+  }
   const hit = event.target.closest(".find-script-bets .find-script-who, .find-script-leg[data-who] i.who"), board = hit && hit.closest(".find-board");
   if (!board || typeof showFind !== "function") return;
   const name = hit.dataset.who || hit.closest("[data-who]").dataset.who, person = (board.people || []).find((row) => row.kind === "player" && row.name === name);
