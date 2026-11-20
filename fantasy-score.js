@@ -20,6 +20,8 @@ function isOver(text) {
 function classifyProp(bet) {
   const blob = `${bet.market || ""} ${bet.label || ""}`.toLowerCase();
   if (/under|quarter|qtr|half|each|most|1st|first|minutes|double|triple|team total|alt\b|longest/.test(blob)) return null;
+  // "20+ Yard Reception" is a catch length, not reception count.
+  if (/\d+\s*\+?\s*yard reception|record a \d+\+?\s*yard reception/.test(blob)) return null;
   if (!isOver(blob)) return null;
   const line = lineOf(blob);
   const p = implied(bet.odds);
@@ -27,21 +29,28 @@ function classifyProp(bet) {
   if (/pass.*td|td.*pass|passing touchdown/.test(blob)) return { key: "pass_td", line: line ?? 0.5, p, bet };
   if (/rush.*td|td.*rush|rushing touchdown/.test(blob)) return { key: "rush_td", line: line ?? 0.5, p, bet };
   if (/rec.*td|td.*rec|receiving touchdown/.test(blob)) return { key: "rec_td", line: line ?? 0.5, p, bet };
-  // Skip combo yards — "passing + rushing" is not a pass-yard median.
-  if (/pass.*(?:yard|yds?)|passing (?:yard|yds?)/.test(blob) && !/\+|and|&/.test(blob)) return { key: "pass_yd", line, p, bet };
-  if (/rush.*(?:yard|yds?)|rushing (?:yard|yds?)/.test(blob) && !/\+|and|&/.test(blob)) return { key: "rush_yd", line, p, bet };
-  if (/receiv.*(?:yard|yds?)|receiving (?:yard|yds?)/.test(blob)) return { key: "rec_yd", line, p, bet };
-  if (/reception|\brecs?\b/.test(blob)) return { key: "rec", line, p, bet };
+  // Skip combo yards — "passing + rushing" / "rushing + receiving" are not single-stat medians.
+  // Use \band\b so names like Loveland do not trip the combo filter.
+  const combo = /\+|\&|\band\b/.test(blob);
+  if (/pass.*(?:yard|yds?)|passing (?:yard|yds?)/.test(blob) && !combo) return { key: "pass_yd", line, p, bet };
+  if (/rush.*(?:yard|yds?)|rushing (?:yard|yds?)/.test(blob) && !combo) return { key: "rush_yd", line, p, bet };
+  if (/receiv.*(?:yard|yds?)|receiving (?:yard|yds?)/.test(blob) && !combo) return { key: "rec_yd", line, p, bet };
+  if (/(?:total )?receptions?\b|\brecs?\b/.test(blob) && !/yard/.test(blob)) return { key: "rec", line, p, bet };
   return null;
 }
 
 function pickLine(rows) {
   if (!rows.length) return null;
   // Prefer a line priced near a coin flip — that's Vegas's median.
-  const ranked = rows.slice().sort((a, b) => {
+  // For receptions, ignore absurd lines left over from yard-catch props.
+  const pool = rows[0] && rows[0].key === "rec"
+    ? rows.filter((row) => Number(row.line) > 0 && Number(row.line) <= 12)
+    : rows;
+  const use = pool.length ? pool : rows;
+  const ranked = use.slice().sort((a, b) => {
     const da = Math.abs((a.p || 0.5) - 0.5);
     const db = Math.abs((b.p || 0.5) - 0.5);
-    return da - db || Number(b.line) - Number(a.line);
+    return da - db || Number(a.line) - Number(b.line);
   });
   return ranked[0];
 }

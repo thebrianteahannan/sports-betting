@@ -339,14 +339,17 @@ function markStatus(row, reserveIds, weekInfo) {
 function fillLineup(players, slots, opts = {}) {
   const byId = new Map((players || []).map((row) => [row.id, row]));
   const current = (opts.currentStarters || []).map(String);
+  const keepCurrent = opts.keepCurrent !== false;
   const used = new Set();
   const start = slots.map((slot, i) => {
+    if (!keepCurrent) return null;
     const id = current[i];
-    const row = id && byId.get(id);
-    // Keep anyone already started whose NFL game has locked.
-    if (row && row.gameLocked && !row.ir) {
+    if (!id || id === "0") return null;
+    const row = byId.get(id);
+    // Mirror the Sleeper lineup the user already set.
+    if (row) {
       used.add(row.id);
-      return { slot, ...row, start: true, locked: true };
+      return { slot, ...row, start: true, locked: !!(row.gameLocked && !row.ir) };
     }
     return null;
   });
@@ -535,10 +538,12 @@ async function startSit(body, board) {
     };
   });
 
-  const lineup = fillLineup(scored, pack.league.slots || [], {
-    currentStarters: pack.roster.starters || [],
-  });
-  const swaps = suggestSwaps(lineup.start, pack.roster.starters || [], scored);
+  const slots = pack.league.slots || [];
+  const currentIds = pack.roster.starters || [];
+  // Show the lineup they already set on Sleeper; swaps come from a fresh optimal fill.
+  const lineup = fillLineup(scored, slots, { currentStarters: currentIds, keepCurrent: true });
+  const optimal = fillLineup(scored, slots, { currentStarters: [], keepCurrent: false });
+  const swaps = suggestSwaps(optimal.start, currentIds, scored);
   return {
     sport: pack.sport || "NFL",
     season: pack.season,
