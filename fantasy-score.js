@@ -27,8 +27,9 @@ function classifyProp(bet) {
   if (/pass.*td|td.*pass|passing touchdown/.test(blob)) return { key: "pass_td", line: line ?? 0.5, p, bet };
   if (/rush.*td|td.*rush|rushing touchdown/.test(blob)) return { key: "rush_td", line: line ?? 0.5, p, bet };
   if (/rec.*td|td.*rec|receiving touchdown/.test(blob)) return { key: "rec_td", line: line ?? 0.5, p, bet };
-  if (/pass.*(?:yard|yds?)|passing (?:yard|yds?)/.test(blob)) return { key: "pass_yd", line, p, bet };
-  if (/rush.*(?:yard|yds?)|rushing (?:yard|yds?)/.test(blob)) return { key: "rush_yd", line, p, bet };
+  // Skip combo yards — "passing + rushing" is not a pass-yard median.
+  if (/pass.*(?:yard|yds?)|passing (?:yard|yds?)/.test(blob) && !/\+|and|&/.test(blob)) return { key: "pass_yd", line, p, bet };
+  if (/rush.*(?:yard|yds?)|rushing (?:yard|yds?)/.test(blob) && !/\+|and|&/.test(blob)) return { key: "rush_yd", line, p, bet };
   if (/receiv.*(?:yard|yds?)|receiving (?:yard|yds?)/.test(blob)) return { key: "rec_yd", line, p, bet };
   if (/reception|\brecs?\b/.test(blob)) return { key: "rec", line, p, bet };
   return null;
@@ -129,27 +130,40 @@ function projectPlayer(person, scoring, pos) {
     buckets[hit.key].push(hit);
   });
 
-  const passYd = expectedFromOver(pickLine(buckets.pass_yd));
-  const rushYd = expectedFromOver(pickLine(buckets.rush_yd));
-  const recYd = expectedFromOver(pickLine(buckets.rec_yd));
-  const recs = expectedFromOver(pickLine(buckets.rec));
-  const passTd = expectedTds(pickLine(buckets.pass_td));
-  const rushTd = expectedTds(pickLine(buckets.rush_td));
-  const recTd = expectedTds(pickLine(buckets.rec_td));
-  const anytime = expectedTds(pickLine(buckets.anytime_td));
+  const pick = {
+    pass_yd: pickLine(buckets.pass_yd),
+    rush_yd: pickLine(buckets.rush_yd),
+    rec_yd: pickLine(buckets.rec_yd),
+    rec: pickLine(buckets.rec),
+    pass_td: pickLine(buckets.pass_td),
+    rush_td: pickLine(buckets.rush_td),
+    rec_td: pickLine(buckets.rec_td),
+    anytime_td: pickLine(buckets.anytime_td),
+  };
+  const passYd = expectedFromOver(pick.pass_yd);
+  const rushYd = expectedFromOver(pick.rush_yd);
+  const recYd = expectedFromOver(pick.rec_yd);
+  const recs = expectedFromOver(pick.rec);
+  const passTd = expectedTds(pick.pass_td);
+  const rushTd = expectedTds(pick.rush_td);
+  const recTd = expectedTds(pick.rec_td);
+  const anytime = expectedTds(pick.anytime_td);
 
   // Fold anytime TD into the position's main TD bucket when no typed TD line exists.
   let rushTdUse = rushTd;
   let recTdUse = recTd;
   let passTdUse = passTd;
+  let rushTdPick = pick.rush_td;
+  let recTdPick = pick.rec_td;
+  let passTdPick = pick.pass_td;
   const role = String(pos || "").toUpperCase();
   if (anytime > 0) {
-    if (role === "QB" && !passTdUse) passTdUse = anytime * 0.35;
-    else if (role === "RB" && !rushTdUse) rushTdUse = anytime;
-    else if ((role === "WR" || role === "TE") && !recTdUse) recTdUse = anytime;
+    if (role === "QB" && !passTdUse) { passTdUse = anytime * 0.35; passTdPick = pick.anytime_td; }
+    else if (role === "RB" && !rushTdUse) { rushTdUse = anytime; rushTdPick = pick.anytime_td; }
+    else if ((role === "WR" || role === "TE") && !recTdUse) { recTdUse = anytime; recTdPick = pick.anytime_td; }
     else if (!rushTdUse && !recTdUse) {
-      if (role === "RB") rushTdUse = anytime;
-      else recTdUse = anytime;
+      if (role === "RB") { rushTdUse = anytime; rushTdPick = pick.anytime_td; }
+      else { recTdUse = anytime; recTdPick = pick.anytime_td; }
     }
   }
 
@@ -161,6 +175,15 @@ function projectPlayer(person, scoring, pos) {
     rec: recs,
     rec_yd: recYd,
     rec_td: recTdUse || null,
+  };
+  const oddsOf = {
+    pass_yd: pick.pass_yd && pick.pass_yd.bet ? pick.pass_yd.bet.odds : null,
+    pass_td: passTdPick && passTdPick.bet ? passTdPick.bet.odds : null,
+    rush_yd: pick.rush_yd && pick.rush_yd.bet ? pick.rush_yd.bet.odds : null,
+    rush_td: rushTdPick && rushTdPick.bet ? rushTdPick.bet.odds : null,
+    rec: pick.rec && pick.rec.bet ? pick.rec.bet.odds : null,
+    rec_yd: pick.rec_yd && pick.rec_yd.bet ? pick.rec_yd.bet.odds : null,
+    rec_td: recTdPick && recTdPick.bet ? recTdPick.bet.odds : null,
   };
   const ptsOf = {
     pass_yd: (passYd || 0) * rate(scoring, "pass_yd", 0.04),
@@ -176,12 +199,14 @@ function projectPlayer(person, scoring, pos) {
   const stats = kit.map(([key, short, label]) => {
     const amount = values[key];
     const pts = amount == null ? 0 : ptsOf[key];
+    const odds = Number(oddsOf[key]);
     return {
       key,
       short,
       label,
       amount: amount == null ? null : +Number(amount).toFixed(2),
       pts: amount == null ? null : +Number(pts).toFixed(2),
+      odds: Number.isFinite(odds) && odds ? odds : null,
       have: amount != null,
     };
   });
@@ -215,8 +240,12 @@ function suggestSwaps(optimalStart, currentIds, players) {
   const byId = new Map((players || []).map((row) => [row.id, row]));
   const optimalIds = new Set((optimalStart || []).filter((row) => row && row.id && !row.empty).map((row) => row.id));
   const current = (currentIds || []).map(String).filter((id) => byId.has(id));
-  const onBench = (players || []).filter((row) => !current.includes(row.id) && optimalIds.has(row.id));
-  const shouldSit = current.filter((id) => !optimalIds.has(id)).map((id) => byId.get(id)).filter(Boolean);
+  const onBench = (players || []).filter((row) => !current.includes(row.id) && optimalIds.has(row.id) && !row.ir && !row.out && !row.bye);
+  // Locked starters stay put — never suggest sitting them.
+  const shouldSit = current
+    .filter((id) => !optimalIds.has(id))
+    .map((id) => byId.get(id))
+    .filter((row) => row && !row.gameLocked && !row.ir);
   const swaps = [];
   onBench.slice().sort((a, b) => b.score - a.score).forEach((bench) => {
     const victim = shouldSit
@@ -243,4 +272,4 @@ function suggestSwaps(optimalStart, currentIds, players) {
   return swaps.slice(0, 5);
 }
 
-module.exports = { projectPlayer, suggestSwaps, classifyProp, implied };
+module.exports = { projectPlayer, suggestSwaps, classifyProp, implied, statKit, rate };

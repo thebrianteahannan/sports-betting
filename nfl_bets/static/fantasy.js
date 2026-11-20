@@ -150,14 +150,16 @@ function fantasyLeaguePicker(board) {
   board.append(box);
 }
 
-async function fantasyRun(board, leagueId) {
+async function fantasyRun(board, leagueId, opts) {
   fantasyState.leagueId = leagueId;
   fantasyState.result = null;
   fantasyState.openId = "";
   fantasyState.showVegas = false;
   paintFantasy(board, { loading: true });
   try {
-    const data = await fantasyPost("/api/fantasy/start-sit", { user: fantasyState.user, leagueId });
+    const body = { user: fantasyState.user, leagueId };
+    if (opts && opts.refresh) body.refresh = true;
+    const data = await fantasyPost("/api/fantasy/start-sit", body);
     fantasyState.result = data;
     paintFantasy(board);
   } catch (error) {
@@ -171,22 +173,58 @@ function fantasyStatLine(player) {
   if (!rows.length) return `<span class="stats mute">No Vegas stats yet</span>`;
   return `<span class="stats">${rows.map((row) => {
     const val = row.have && row.amount != null ? fantasyPts(row.amount) : "—";
-    return `<i><b>${fantasyEsc(row.short)}</b> ${fantasyEsc(val)}</i>`;
+    const juice = row.have && row.odds != null ? fantasyOdds(row.odds) : "";
+    const lean = row.have && row.odds != null ? (Number(row.odds) < 0 ? "fav" : "dog") : "";
+    return `<i><b>${fantasyEsc(row.short)}</b> ${fantasyEsc(val)}${juice ? `<em class="juice ${lean}">${fantasyEsc(juice)}</em>` : ""}</i>`;
   }).join("")}</span>`;
+}
+
+function fantasyScoreCell(player) {
+  if (player.empty) return `<span class="score"><b>—</b></span>`;
+  const live = player.livePts != null && Number.isFinite(Number(player.livePts));
+  const primary = live ? fantasyPts(player.livePts) : fantasyPts(player.score);
+  const primaryCls = live ? "live" : "vegas";
+  const primaryTag = live ? "live" : "veg";
+  const slp = player.sleeperPts != null && Number.isFinite(Number(player.sleeperPts)) ? fantasyPts(player.sleeperPts) : "—";
+  return `<span class="score"><b class="${primaryCls}">${fantasyEsc(primary)}</b><i>${primaryTag}</i><b class="slp">${fantasyEsc(slp)}</b><i>slp</i></span>`;
+}
+
+function fantasyPct(n) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return "";
+  return `${Math.round(v)}%`;
+}
+
+function fantasyFlags(player) {
+  const bits = [];
+  if (player.matchup && !player.bye) bits.push(player.matchup);
+  else if (player.bye) bits.push("Bye");
+  if (player.locked || player.gameLocked) bits.push("Locked");
+  if (player.ir) bits.push("IR");
+  else if (player.out) bits.push(player.injury || "Out");
+  else if (player.questionable || /^questionable$/i.test(player.injury || "")) bits.push("Questionable");
+  else if (player.injury && !/active|normal/i.test(player.injury)) bits.push(player.injury);
+  const own = fantasyPct(player.ownPct);
+  const start = fantasyPct(player.startPct);
+  if (own) bits.push(`${own} own`);
+  if (start) bits.push(`${start} start`);
+  return bits;
 }
 
 function fantasyRow(player, kind) {
   const row = document.createElement("button");
   row.type = "button";
-  row.className = `fantasy-row ${kind}${fantasyState.openId === player.id ? " open" : ""}`;
-  const slot = player.slot ? `<i class="slot">${fantasyEsc(player.slot)}</i>` : `<i class="slot">BN</i>`;
-  const injury = player.injury || (/out|ir/i.test(player.status || "") ? player.status : "");
-  const tag = [player.team, injury].filter(Boolean).join(" · ");
+  const locked = !!(player.locked || player.gameLocked);
+  const q = !!(player.questionable || /^questionable$/i.test(player.injury || ""));
+  row.className = `fantasy-row ${kind}${fantasyState.openId === player.id ? " open" : ""}${player.bye ? " bye" : ""}${locked ? " locked" : ""}${q ? " questionable" : ""}`;
+  const slotLabel = player.slot || (kind === "ir" ? "IR" : kind === "out" ? "OUT" : "BN");
+  const slot = `<i class="slot">${fantasyEsc(slotLabel)}</i>`;
+  const tag = [player.team, ...fantasyFlags(player)].filter(Boolean).join(" · ");
   row.innerHTML = `
     ${slot}
     <span class="who"><b>${fantasyEsc(player.name || "—")}</b>${tag ? `<em>${fantasyEsc(tag)}</em>` : ""}</span>
     ${player.empty ? `<span class="stats mute">Empty</span>` : fantasyStatLine(player)}
-    <span class="score">${fantasyEsc(player.empty ? "—" : fantasyPts(player.score))}<i>pts</i></span>
+    ${fantasyScoreCell(player)}
   `;
   if (!player.empty) {
     row.addEventListener("click", () => {
@@ -236,12 +274,34 @@ function fantasyLineup(board, result) {
   const meta = document.createElement("div");
   meta.className = "fantasy-meta";
   meta.innerHTML = `
-    <p><b>${fantasyEsc((result.league && result.league.name) || "League")}</b>
-      · ${fantasyEsc((result.owner && (result.owner.team_name || result.owner.display_name)) || fantasyState.user)}
-      ${result.week != null ? ` · Wk ${fantasyEsc(result.week)}` : ""}
-      <i class="fantasy-note-inline">${fantasyEsc(result.note || "Roster not saved.")}</i></p>
+    <div class="fantasy-meta-top">
+      <p><b>${fantasyEsc((result.league && result.league.name) || "League")}</b>
+        · ${fantasyEsc((result.owner && (result.owner.team_name || result.owner.display_name)) || fantasyState.user)}
+        ${result.week != null ? ` · Wk ${fantasyEsc(result.week)}` : ""}</p>
+      <span class="fantasy-meta-acts">
+        <button type="button" class="fantasy-back fantasy-reload">Reload</button>
+        <button type="button" class="fantasy-back fantasy-league-switch">Pick a different league</button>
+      </span>
+    </div>
     <p class="fantasy-method">${fantasyEsc(result.method || "Projected fantasy points from Vegas lines using your Sleeper scoring.")}</p>
   `;
+  const switchLeague = meta.querySelector(".fantasy-league-switch");
+  if (switchLeague) {
+    switchLeague.addEventListener("click", () => {
+      fantasyState.leagueId = "";
+      fantasyState.result = null;
+      fantasyState.openId = "";
+      fantasyState.showVegas = false;
+      paintFantasy(board);
+    });
+  }
+  const reload = meta.querySelector(".fantasy-reload");
+  if (reload) {
+    reload.addEventListener("click", () => {
+      if (!fantasyState.leagueId) return;
+      fantasyRun(board, fantasyState.leagueId, { refresh: true });
+    });
+  }
   wrap.append(meta);
 
   if ((result.swaps || []).length) {
@@ -275,18 +335,28 @@ function fantasyLineup(board, result) {
   }
   wrap.append(sit);
 
-  const swap = document.createElement("button");
-  swap.type = "button";
-  swap.className = "fantasy-back";
-  swap.textContent = "Pick another league";
-  swap.addEventListener("click", () => {
-    fantasyState.leagueId = "";
-    fantasyState.result = null;
-    fantasyState.openId = "";
-    fantasyState.showVegas = false;
-    paintFantasy(board);
-  });
-  wrap.append(swap);
+  if ((result.out || []).length) {
+    const out = document.createElement("section");
+    out.className = "fantasy-col out";
+    out.innerHTML = "<h3>Out</h3>";
+    result.out.forEach((player) => {
+      out.append(fantasyRow(player, "out"));
+      if (fantasyState.openId && fantasyState.openId === player.id) out.append(fantasyProof(player));
+    });
+    wrap.append(out);
+  }
+
+  if ((result.ir || []).length) {
+    const ir = document.createElement("section");
+    ir.className = "fantasy-col ir";
+    ir.innerHTML = "<h3>IR</h3>";
+    result.ir.forEach((player) => {
+      ir.append(fantasyRow(player, "ir"));
+      if (fantasyState.openId && fantasyState.openId === player.id) ir.append(fantasyProof(player));
+    });
+    wrap.append(ir);
+  }
+
   board.append(wrap);
 }
 

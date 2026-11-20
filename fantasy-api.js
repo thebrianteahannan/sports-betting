@@ -10,11 +10,36 @@ const FLEX = {
   SUPER_FLEX: ["QB", "RB", "WR", "TE"],
   IDP_FLEX: ["DL", "LB", "DB"],
 };
-const { projectPlayer, suggestSwaps } = require("./fantasy-score");
+const { projectPlayer, suggestSwaps, statKit, rate } = require("./fantasy-score");
 
 let playerMap = null;
 let playerAt = 0;
 const rosterCache = new Map();
+let weekCache = { week: 0, at: 0, data: null };
+let projCache = { key: "", at: 0, data: null };
+let statsCache = { key: "", at: 0, data: null };
+let ownCache = { key: "", at: 0, data: null };
+
+const TEAM_NORM = {
+  WAS: "WSH", WSH: "WSH", JAC: "JAX", JAX: "JAX", LAR: "LAR", LA: "LAR",
+  STL: "LAR", SD: "LAC", LAC: "LAC", OAK: "LV", LV: "LV", ARZ: "ARI",
+};
+
+const DST_NAME = {
+  ARI: "Cardinals D/ST", ATL: "Falcons D/ST", BAL: "Ravens D/ST", BUF: "Bills D/ST",
+  CAR: "Panthers D/ST", CHI: "Bears D/ST", CIN: "Bengals D/ST", CLE: "Browns D/ST",
+  DAL: "Cowboys D/ST", DEN: "Broncos D/ST", DET: "Lions D/ST", GB: "Packers D/ST",
+  HOU: "Texans D/ST", IND: "Colts D/ST", JAX: "Jaguars D/ST", KC: "Chiefs D/ST",
+  LAC: "Chargers D/ST", LAR: "Rams D/ST", LV: "Raiders D/ST", MIA: "Dolphins D/ST",
+  MIN: "Vikings D/ST", NE: "Patriots D/ST", NO: "Saints D/ST", NYG: "Giants D/ST",
+  NYJ: "Jets D/ST", PHI: "Eagles D/ST", PIT: "Steelers D/ST", SEA: "Seahawks D/ST",
+  SF: "49ers D/ST", TB: "Buccaneers D/ST", TEN: "Titans D/ST", WSH: "Commanders D/ST",
+};
+
+function teamKey(team) {
+  const raw = String(team || "").toUpperCase();
+  return TEAM_NORM[raw] || raw;
+}
 
 function words(text) {
   return String(text || "")
@@ -27,7 +52,22 @@ function words(text) {
 function samePlayer(a, b) {
   const left = words(a);
   const right = words(b);
-  return Boolean(left.length && right.length && left[left.length - 1] === right[right.length - 1] && left[0][0] === right[0][0]);
+  if (!left.length || !right.length) return false;
+  // Exact token match (Jr/Sr already stripped by words()).
+  if (left.join(" ") === right.join(" ")) return true;
+  // Full first + last — not just an initial. Stops "Josh Allen" → "Jonathan Allen"
+  // and rejects extra middles like "Josh Hines Allen".
+  if (left.length !== right.length) return false;
+  return left[0] === right[0] && left[left.length - 1] === right[right.length - 1];
+}
+
+function findPerson(people, name) {
+  const want = words(name).join(" ");
+  if (!want) return null;
+  const rows = people || [];
+  const exact = rows.find((p) => words(p.name).join(" ") === want);
+  if (exact) return exact;
+  return rows.find((p) => samePlayer(p.name, name)) || null;
 }
 
 async function sleeperGet(path) {
@@ -73,6 +113,189 @@ function playerRow(id, map) {
   };
 }
 
+function sleeperPts(proj, scoring) {
+  if (!proj || typeof proj !== "object") return null;
+  let total = 0;
+  let used = false;
+  Object.entries(scoring || {}).forEach(([key, rate]) => {
+    if (/^pts_|^adp_|^pos_adp|^gp$/i.test(key)) return;
+    const n = Number(proj[key]);
+    const r = Number(rate);
+    if (!Number.isFinite(n) || !Number.isFinite(r) || !r) return;
+    total += n * r;
+    used = true;
+  });
+  if (used) return +total.toFixed(1);
+  const fallback = Number(proj.pts_ppr ?? proj.pts_half_ppr ?? proj.pts_std);
+  return Number.isFinite(fallback) ? +fallback.toFixed(1) : null;
+}
+
+async function loadProjections(season, week) {
+  const key = `${season}:${week}`;
+  if (projCache.data && projCache.key === key && Date.now() - projCache.at < 30 * 60000) return projCache.data;
+  const path = `/projections/nfl/regular/${encodeURIComponent(season)}/${encodeURIComponent(week)}`;
+  const raw = await sleeperGet(path);
+  const data = raw && typeof raw === "object" ? raw : {};
+  projCache = { key, at: Date.now(), data };
+  return data;
+}
+
+async function loadWeekStats(season, week) {
+  const key = `${season}:${week}`;
+  if (statsCache.data && statsCache.key === key && Date.now() - statsCache.at < 5 * 60000) return statsCache.data;
+  const path = `/stats/nfl/regular/${encodeURIComponent(season)}/${encodeURIComponent(week)}`;
+  const raw = await sleeperGet(path);
+  const data = raw && typeof raw === "object" ? raw : {};
+  statsCache = { key, at: Date.now(), data };
+  return data;
+}
+
+function hasPlayed(stat) {
+  if (!stat || typeof stat !== "object") return false;
+  if (Number(stat.gp) > 0 || Number(stat.gms_active) > 0) return true;
+  return ["pass_yd", "pass_td", "rush_yd", "rush_td", "rec", "rec_yd", "rec_td", "fgm", "xpm", "sack", "int", "fum_rec", "def_td"]
+    .some((key) => Number(stat[key]) > 0);
+}
+
+function statsFromActual(stat, pos, scoring) {
+  if (!stat) return null;
+  const kit = statKit(pos, scoring);
+  if (!kit.length) return null;
+  const rows = kit.map(([key, short, label]) => {
+    const amount = Number(stat[key]);
+    const have = Number.isFinite(amount);
+    const pts = have ? amount * rate(scoring, key, key.endsWith("_td") ? 6 : key === "rec" ? 1 : key.includes("yd") ? 0.1 : 0) : null;
+    return {
+      key,
+      short,
+      label,
+      amount: have ? +amount.toFixed(2) : null,
+      pts: pts == null ? null : +Number(pts).toFixed(2),
+      odds: null,
+      have,
+    };
+  });
+  return rows.some((row) => row.have) ? rows : null;
+}
+
+function kickLabel(ms) {
+  if (!Number.isFinite(ms)) return "";
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).formatToParts(new Date(ms));
+  const get = (type) => (parts.find((p) => p.type === type) || {}).value || "";
+  const day = get("weekday");
+  const hour = get("hour");
+  const minute = get("minute");
+  const dayPeriod = get("dayPeriod").replace(/\./g, "").toLowerCase().replace(/m$/, "");
+  if (!day || !hour) return "";
+  const time = minute === "00" ? `${hour}${dayPeriod}` : `${hour}:${minute}${dayPeriod}`;
+  return `${day} ${time}`;
+}
+
+async function loadNflWeek(week) {
+  const w = Number(week) || 0;
+  if (weekCache.data && weekCache.week === w && Date.now() - weekCache.at < 10 * 60000) return weekCache.data;
+  const url = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?seasontype=2&week=${encodeURIComponent(w || "")}`;
+  const res = await fetch(url, {
+    headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) throw new Error(`NFL week ${res.status}`);
+  const data = await res.json();
+  const playing = new Set();
+  const kick = new Map();
+  const matchup = new Map();
+  const lockedTeams = new Set();
+  const now = Date.now();
+  (data.events || []).forEach((ev) => {
+    const comp = (ev.competitions || [])[0] || {};
+    const when = Date.parse(comp.date || ev.date || "");
+    const state = String((comp.status && comp.status.type && (comp.status.type.name || comp.status.type.state)) || "").toLowerCase();
+    const started = (Number.isFinite(when) && when <= now) || /in|live|halftime|end|final|status_in_progress|status_halftime|status_final/.test(state);
+    const sides = (comp.competitors || []).map((side) => ({
+      ab: teamKey((side.team || {}).abbreviation),
+      home: String(side.homeAway || "").toLowerCase() === "home",
+    })).filter((side) => side.ab);
+    sides.forEach((side) => {
+      playing.add(side.ab);
+      if (Number.isFinite(when)) kick.set(side.ab, when);
+      if (started) lockedTeams.add(side.ab);
+      const opp = sides.find((other) => other.ab !== side.ab);
+      if (!opp) return;
+      const label = kickLabel(when);
+      matchup.set(side.ab, {
+        opp: opp.ab,
+        home: side.home,
+        kick: Number.isFinite(when) ? when : null,
+        text: `${side.home ? "vs" : "@"} ${opp.ab}${label ? ` · ${label}` : ""}`,
+      });
+    });
+  });
+  // NFL has 32 teams; anything not on this week's board is on bye.
+  const all = ["ARI", "ATL", "BAL", "BUF", "CAR", "CHI", "CIN", "CLE", "DAL", "DEN", "DET", "GB", "HOU", "IND", "JAX", "KC", "LAC", "LAR", "LV", "MIA", "MIN", "NE", "NO", "NYG", "NYJ", "PHI", "PIT", "SEA", "SF", "TB", "TEN", "WSH"];
+  const bye = new Set(all.filter((team) => !playing.has(team)));
+  const pack = { week: w, playing, kick, matchup, lockedTeams, bye };
+  weekCache = { week: w, at: Date.now(), data: pack };
+  return pack;
+}
+
+async function loadOwnership(season, week) {
+  const key = `${season}:${week}`;
+  if (ownCache.data && ownCache.key === key && Date.now() - ownCache.at < 30 * 60000) return ownCache.data;
+  const filter = JSON.stringify({
+    players: {
+      filterStatsForCurrentSeasonScoringPeriodId: { value: [Number(week) || 0] },
+      sortPercOwned: { sortPriority: 1, sortAsc: false },
+      limit: 1000,
+    },
+  });
+  const url = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${encodeURIComponent(season)}/segments/0/leaguedefaults/3?view=kona_player_info&scoringPeriodId=${encodeURIComponent(week || "")}`;
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "Mozilla/5.0",
+      "X-Fantasy-Filter": filter,
+    },
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) throw new Error(`ESPN ownership ${res.status}`);
+  const data = await res.json();
+  const byName = new Map();
+  (data.players || []).forEach((row) => {
+    const player = row.player || {};
+    const name = String(player.fullName || "").trim();
+    if (!name) return;
+    const own = player.ownership || {};
+    const pack = {
+      ownPct: Number.isFinite(Number(own.percentOwned)) ? +Number(own.percentOwned).toFixed(1) : null,
+      startPct: Number.isFinite(Number(own.percentStarted)) ? +Number(own.percentStarted).toFixed(1) : null,
+      injury: String(player.injuryStatus || ""),
+    };
+    byName.set(words(name).join(" "), pack);
+    byName.set(name.toLowerCase(), pack);
+  });
+  ownCache = { key, at: Date.now(), data: byName };
+  return byName;
+}
+
+function ownershipFor(row, byName) {
+  if (!byName || !byName.size) return { ownPct: null, startPct: null };
+  const team = teamKey(row.team);
+  if ((row.pos === "DEF" || (row.fantasy || []).includes("DEF")) && team && DST_NAME[team]) {
+    const dst = byName.get(words(DST_NAME[team]).join(" ")) || byName.get(DST_NAME[team].toLowerCase());
+    if (dst) return dst;
+  }
+  const want = words(row.name).join(" ");
+  if (byName.has(want)) return byName.get(want);
+  const hit = [...byName.entries()].find(([key]) => samePlayer(key, row.name));
+  return hit ? hit[1] : { ownPct: null, startPct: null };
+}
+
 function starterSlots(positions) {
   return (positions || []).filter((slot) => !BENCH.has(String(slot || "").toUpperCase()));
 }
@@ -85,21 +308,75 @@ function slotEligible(slot, fantasy) {
   return have.includes(key);
 }
 
-function fillLineup(players, slots) {
-  const left = players.slice().sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
-  const start = [];
+function markStatus(row, reserveIds, weekInfo) {
+  const injury = String(row.injury || "");
+  const status = String(row.status || "");
+  const blob = `${injury} ${status}`;
+  const onReserve = (reserveIds || []).includes(String(row.id));
+  const ir = onReserve || /\bir\b|injured reserve|pup|nfi/i.test(blob);
+  const questionable = !ir && /^questionable$/i.test(injury.trim());
+  const out = !ir && !questionable && (
+    /^(out|doubtful)$/i.test(injury.trim())
+    || (/\bout\b|\bdoubtful\b|suspended/i.test(blob) && !/questionable|probable/i.test(injury))
+  );
+  const team = teamKey(row.team);
+  const bye = !!(team && weekInfo && weekInfo.bye && weekInfo.bye.has(team));
+  const locked = !!(team && weekInfo && weekInfo.lockedTeams && weekInfo.lockedTeams.has(team));
+  const game = team && weekInfo && weekInfo.matchup ? weekInfo.matchup.get(team) : null;
+  return {
+    ...row,
+    ir: !!ir,
+    out: !!out,
+    questionable: !!questionable,
+    bye: !!bye,
+    gameLocked: !!locked,
+    opp: game ? game.opp : "",
+    kick: game && game.kick != null ? game.kick : null,
+    matchup: bye ? "Bye" : (game ? game.text : ""),
+  };
+}
+
+function fillLineup(players, slots, opts = {}) {
+  const byId = new Map((players || []).map((row) => [row.id, row]));
+  const current = (opts.currentStarters || []).map(String);
   const used = new Set();
-  slots.forEach((slot) => {
-    const pick = left.find((row) => !used.has(row.id) && slotEligible(slot, row.fantasy));
+  const start = slots.map((slot, i) => {
+    const id = current[i];
+    const row = id && byId.get(id);
+    // Keep anyone already started whose NFL game has locked.
+    if (row && row.gameLocked && !row.ir) {
+      used.add(row.id);
+      return { slot, ...row, start: true, locked: true };
+    }
+    return null;
+  });
+
+  const pool = (players || [])
+    .filter((row) => !used.has(row.id) && !row.ir && !row.out)
+    .sort((a, b) => Number(b.bye) - Number(a.bye) || b.score - a.score || a.name.localeCompare(b.name));
+  // Prefer non-bye when filling open slots, then bye as last resort.
+  const open = pool.filter((row) => !row.bye).concat(pool.filter((row) => row.bye));
+
+  start.forEach((held, i) => {
+    if (held) return;
+    const slot = slots[i];
+    const pick = open.find((row) => !used.has(row.id) && slotEligible(slot, row.fantasy));
     if (!pick) {
-      start.push({ slot, empty: true });
+      start[i] = { slot, empty: true };
       return;
     }
     used.add(pick.id);
-    start.push({ slot, ...pick, start: true });
+    start[i] = { slot, ...pick, start: true, locked: false };
   });
-  const sit = left.filter((row) => !used.has(row.id)).map((row) => ({ ...row, start: false }));
-  return { start, sit };
+
+  const rest = (players || []).filter((row) => !used.has(row.id));
+  const sit = rest.filter((row) => !row.out && !row.ir).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+    .map((row) => ({ ...row, start: false }));
+  const out = rest.filter((row) => row.out && !row.ir).sort((a, b) => a.name.localeCompare(b.name))
+    .map((row) => ({ ...row, start: false }));
+  const ir = rest.filter((row) => row.ir).sort((a, b) => a.name.localeCompare(b.name))
+    .map((row) => ({ ...row, start: false }));
+  return { start, sit, out, ir };
 }
 
 async function resolveUser(username) {
@@ -183,7 +460,16 @@ async function sleeper(query) {
   return { sport: "NFL", season, week, user, leagues, ...packed };
 }
 
+function clearCaches() {
+  rosterCache.clear();
+  weekCache = { week: 0, at: 0, data: null };
+  projCache = { key: "", at: 0, data: null };
+  statsCache = { key: "", at: 0, data: null };
+  ownCache = { key: "", at: 0, data: null };
+}
+
 async function startSit(body, board) {
+  if (body && (body.refresh || body.reload)) clearCaches();
   const query = {
     user: body.user || body.username,
     league: body.league || body.leagueId,
@@ -191,23 +477,67 @@ async function startSit(body, board) {
     season: body.season,
   };
   const pack = await sleeper(query);
+  const weekInfo = await loadNflWeek(pack.week).catch(() => ({ bye: new Set(), lockedTeams: new Set(), playing: new Set(), matchup: new Map() }));
+  const [projections, weekStats, ownership] = await Promise.all([
+    loadProjections(pack.season, pack.week).catch(() => ({})),
+    loadWeekStats(pack.season, pack.week).catch(() => ({})),
+    loadOwnership(pack.season, pack.week).catch(() => new Map()),
+  ]);
   const peopleBook = await require("./choose-api").chooseBet({ list: "lookup", when: "week" }, board).catch(() => ({ people: [] }));
   const people = ((peopleBook && peopleBook.people) || []).filter((person) => person.kind === "player");
   const scoring = (pack.league && pack.league.scoring_settings) || {};
+  const reserveIds = ((pack.roster && pack.roster.reserve) || []).map(String);
 
-  const scored = (pack.roster.players || []).map((row) => {
-    const person = people.find((p) => samePlayer(p.name, row.name)) || { name: row.name, bets: [] };
-    const marked = projectPlayer({ ...person, name: row.name }, scoring, row.pos || (row.fantasy || [])[0]);
-    const out = /out|ir|pup|suspended/i.test(`${row.status} ${row.injury}`);
+  const scored = ((pack.roster && pack.roster.players) || []).map((row) => {
+    const person = findPerson(people, row.name) || { name: row.name, bets: [] };
+    const pos = row.pos || (row.fantasy || [])[0];
+    const marked = projectPlayer({ ...person, name: row.name }, scoring, pos);
+    const status = markStatus(row, reserveIds, weekInfo);
+    const owned = ownershipFor(row, ownership);
+    const teamId = teamKey(row.team);
+    const proj = projections[row.id] || projections[teamId] || null;
+    const played = weekStats[row.id] || weekStats[String(row.id)] || weekStats[teamId] || null;
+    let sleeperScore = sleeperPts(proj, scoring);
+    let livePts = hasPlayed(played) ? sleeperPts(played, scoring) : null;
     let score = marked.score;
-    if (out) {
+    let stats = marked.stats;
+    const why = [...(marked.why || [])];
+    // Locked / already in the box score: show real fantasy points, not a cut projection.
+    if (livePts != null) {
+      const liveStats = statsFromActual(played, pos, scoring);
+      if (liveStats) stats = liveStats;
+      why.unshift(`Live: ${livePts} fantasy pts`);
+    } else if (status.bye) {
+      score = 0;
+      sleeperScore = sleeperScore == null ? null : 0;
+      livePts = null;
+      why.unshift("Bye week");
+    } else if (status.ir) {
+      score = 0;
+      sleeperScore = sleeperScore == null ? null : 0;
+      why.unshift(`${row.injury || "IR"} — no play`);
+    } else if (status.out) {
       score = Math.min(score, 1.5);
-      marked.why = [`${row.injury || row.status || "Out"} — projection cut`, ...marked.why].slice(0, 6);
+      if (sleeperScore != null) sleeperScore = Math.min(sleeperScore, 1.5);
+      why.unshift(`${row.injury || row.status || "Out"} — projection cut`);
     }
-    return { ...row, ...marked, score };
+    return {
+      ...row,
+      ...marked,
+      ...status,
+      stats,
+      score,
+      sleeperPts: sleeperScore,
+      livePts,
+      ownPct: owned.ownPct,
+      startPct: owned.startPct,
+      why: why.slice(0, 6),
+    };
   });
 
-  const lineup = fillLineup(scored, pack.league.slots || []);
+  const lineup = fillLineup(scored, pack.league.slots || [], {
+    currentStarters: pack.roster.starters || [],
+  });
   const swaps = suggestSwaps(lineup.start, pack.roster.starters || [], scored);
   return {
     sport: pack.sport || "NFL",
@@ -221,6 +551,8 @@ async function startSit(body, board) {
     players: scored.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name)),
     start: lineup.start,
     sit: lineup.sit,
+    out: lineup.out,
+    ir: lineup.ir,
     swaps,
   };
 }
