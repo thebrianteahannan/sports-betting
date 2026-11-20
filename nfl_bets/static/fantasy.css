@@ -328,11 +328,48 @@
 }
 
 .fantasy-board .fantasy-row .who > b {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.35rem;
   font-size: 12px;
   font-weight: 800;
+  min-width: 0;
+}
+
+.fantasy-board .fantasy-row .who > b > .role-tag {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.fantasy-board .fantasy-row .who > b > .role-tag.start {
+  border-color: rgba(61, 255, 110, 0.55);
+  background: rgba(61, 255, 110, 0.14);
+  color: #3dff6e;
+}
+
+.fantasy-board .fantasy-row .who > b > .role-tag.sit {
+  border-color: rgba(155, 179, 200, 0.4);
+  background: rgba(155, 179, 200, 0.1);
+  color: #c9d4dd;
+}
+
+.fantasy-board .fantasy-row .who > b > .role-tag.out,
+.fantasy-board .fantasy-row .who > b > .role-tag.ir {
+  border-color: rgba(255, 143, 143, 0.45);
+  background: rgba(255, 143, 143, 0.1);
+  color: #ff8f8f;
 }
 
 .fantasy-board .fantasy-row .who > em {

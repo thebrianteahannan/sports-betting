@@ -427,7 +427,7 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
   padding: 0.45rem 0.85rem;
   border: 1px solid rgba(61, 255, 110, 0.85);
   border-radius: 999px;
-  background: rgba(4, 16, 12, 0.92);
+  background: #04140c;
   box-shadow: 0 0 16px rgba(61, 255, 110, 0.35);
   color: #3dff6e;
   font-family: Outfit, system-ui, sans-serif;
@@ -435,11 +435,18 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
   font-weight: 800;
   letter-spacing: 0.02em;
   line-height: 1.2;
+  text-transform: none;
   text-align: center;
   cursor: pointer;
+  filter: none;
 }
-#desk-fantasy:hover {
-  background: rgba(61, 255, 110, 0.16);
+#desk-fantasy:hover,
+#desk-fantasy:focus-visible {
+  filter: none;
+  background: #3dff6e;
+  border-color: #3dff6e;
+  color: #04140c;
+  box-shadow: 0 0 18px rgba(61, 255, 110, 0.45);
 }
 #desk.tv-full #desk-fantasy,
 body.needs-member #desk-fantasy { display: none; }
@@ -703,8 +710,13 @@ body.trial-warn-on #desk { z-index: 40; }
 #hang-acts { display: flex; flex-wrap: wrap; gap: 0.55rem; }
 #hang-acts button { margin: 0; padding: 0.72rem 1rem; border: 0; border-radius: 10px; background: #3dff6e; color: #04140c; box-shadow: none; font-family: "Rajdhani", sans-serif; font-size: 1.15rem; font-weight: 700; letter-spacing: 0.03em; text-transform: none; }
 #hang-acts button:hover { background: #6bff92; filter: none; }
-#hang-acts button[data-hang="mine"], #hang-acts button[data-hang="chat"] { background: transparent; color: #3dff6e; border: 1px solid rgba(61, 255, 110, 0.7); }
-#hang-acts button[data-hang="mine"]:hover, #hang-acts button[data-hang="chat"]:hover { background: rgba(61, 255, 110, 0.12); }
+#hang-acts button[data-hang="mine"], #hang-acts button[data-hang="chat"], #hang-acts button[data-hang="fantasy"] { background: #04140c; color: #3dff6e; border: 1px solid rgba(61, 255, 110, 0.7); }
+#hang-acts button[data-hang="mine"]:hover, #hang-acts button[data-hang="chat"]:hover, #hang-acts button[data-hang="fantasy"]:hover {
+  filter: none;
+  background: #3dff6e;
+  border-color: #3dff6e;
+  color: #04140c;
+}
 #tv-zoom #desk-glass #gate { padding-left: 4.6rem; }
 body.needs-member #tv-zoom #desk-glass #gate { padding-top: 4.4rem; padding-left: 1rem; padding-right: 1rem; }
 #tv-zoom #desk-glass { position: absolute; left: 0; top: 0; right: 0; bottom: 0; width: auto; height: auto; transform: none; overflow-x: hidden; overflow-y: auto; z-index: 1; }

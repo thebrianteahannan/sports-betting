@@ -211,6 +211,14 @@ function fantasyFlags(player) {
   return bits;
 }
 
+function fantasyRoleTag(kind) {
+  if (kind === "start") return { cls: "start", label: "Start" };
+  if (kind === "sit") return { cls: "sit", label: "Sit" };
+  if (kind === "out") return { cls: "out", label: "Out" };
+  if (kind === "ir") return { cls: "ir", label: "IR" };
+  return { cls: "sit", label: "Sit" };
+}
+
 function fantasyRow(player, kind) {
   const row = document.createElement("button");
   row.type = "button";
@@ -219,10 +227,11 @@ function fantasyRow(player, kind) {
   row.className = `fantasy-row ${kind}${fantasyState.openId === player.id ? " open" : ""}${player.bye ? " bye" : ""}${locked ? " locked" : ""}${q ? " questionable" : ""}`;
   const slotLabel = player.slot || (kind === "ir" ? "IR" : kind === "out" ? "OUT" : "BN");
   const slot = `<i class="slot">${fantasyEsc(slotLabel)}</i>`;
+  const role = fantasyRoleTag(kind);
   const tag = [player.team, ...fantasyFlags(player)].filter(Boolean).join(" · ");
   row.innerHTML = `
     ${slot}
-    <span class="who"><b>${fantasyEsc(player.name || "—")}</b>${tag ? `<em>${fantasyEsc(tag)}</em>` : ""}</span>
+    <span class="who"><b>${fantasyEsc(player.name || "—")} <i class="role-tag ${role.cls}">${fantasyEsc(role.label)}</i></b>${tag ? `<em>${fantasyEsc(tag)}</em>` : ""}</span>
     ${player.empty ? `<span class="stats mute">Empty</span>` : fantasyStatLine(player)}
     ${fantasyScoreCell(player)}
   `;
