@@ -86,7 +86,8 @@ window.sampleShareMark = sampleShareMark;
 
 function samplePickHtml(pick, more) {
   const odds = Number(pick.odds), price = samplePrice(odds), win = sampleWin(odds), when = sampleWhen(pick.kickoff);
-  return `<p class="gate-sample-head">Today's free pick</p><p class="gate-sample-bet">${esc(pick.label)} <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p><p class="gate-sample-why">${esc(pick.how || "")}</p><p class="gate-sample-pay">$5 wins $${esc(win)}.</p>${more > 0 ? `<p class="gate-sample-more">${more} more recommended picks tonight. Sign up or sign in to see them.</p>` : ""}<p class="gate-sample-acts"><button type="button" class="gate-sample-share" data-sample-share>Share with a friend</button></p>`;
+  const head = pick.golden ? "Today's Golden Ticket" : "Today's free pick";
+  return `<p class="gate-sample-head">${head}</p><p class="gate-sample-bet">${esc(pick.label)} <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p><p class="gate-sample-why">${esc(pick.how || "")}</p><p class="gate-sample-pay">$5 wins $${esc(win)}.</p>${more > 0 ? `<p class="gate-sample-more">${more} more recommended picks tonight. Sign up or sign in to see them.</p>` : ""}<p class="gate-sample-acts"><button type="button" class="gate-sample-share" data-sample-share>Share with a friend</button></p>`;
 }
 
 function sampleParlayHtml(parlay) {

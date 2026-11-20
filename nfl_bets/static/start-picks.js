@@ -353,6 +353,10 @@ function startTdButton(board) {
   return go;
 }
 
+function startDialCommit() {
+  // Dial already filtered the list with CSS while dragging — do not rebuild the board (that made the thumb choppy).
+}
+
 function startRecs(board, box) {
   const left = leftGames(), picks = [], all = [], when = startSpan === "week" ? "this week" : "today";
   const recs = homeRecRows(left, box).filter((node) => {
@@ -545,8 +549,9 @@ function startPaint(again) {
     if ((window.memberTeams || []).length || startFavOnly) row.append(startFavBox());
     if (td) row.append(td);
   }
+  const dial = startTab === "rec" && typeof recDialBar === "function" ? recDialBar(startDialCommit) : null;
   const body = startTab === "rec"
-    ? [...(all.length ? [startKindBar(all)] : []), ...recs]
+    ? [...(dial ? [dial] : []), ...(all.length ? [startKindBar(all)] : []), ...recs]
     : startTab === "stacks"
       ? startStacks()
       : startTab === "stats"
@@ -554,6 +559,7 @@ function startPaint(again) {
         : games;
   box.append(row, ...body);
   spot.after(box);
+  if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 1, { quiet: true });
   const waiting = (startSpan === "week" && startWeekLoading) || !homeRecs || homeRecs.loading;
   if (waiting && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
 }

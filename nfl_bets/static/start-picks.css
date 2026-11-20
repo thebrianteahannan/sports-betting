@@ -100,6 +100,69 @@
 :is(.rec-board, #choice-result) .find-start button.desk-game { display: grid !important; width: 100% !important; min-height: 0 !important; margin: 0 0 10px !important; padding: 12px 14px !important; border: 1px solid rgba(61, 255, 110, 0.35) !important; border-radius: 12px !important; background: #041018 !important; box-shadow: none !important; color: #f4f7fb !important; font: inherit !important; text-align: left !important; text-transform: none !important; letter-spacing: normal !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-game:hover { border-color: #3dff6e !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-rec { margin: 0 0 12px !important; }
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="0"] button.desk-rec:not([data-rec-golden]),
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="1"] button.desk-rec:not([data-rec-band]) { display: none !important; }
+.find-start .rec-dial,
+#desk-games .rec-dial {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 0.7rem;
+  color: #9fb3c8;
+  font: 700 12px Outfit, system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.find-start .rec-dial input[type="range"],
+#desk-games .rec-dial input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: min(180px, 42vw);
+  height: 28px;
+  margin: 0;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  accent-color: #3dff6e;
+  touch-action: none;
+}
+.find-start .rec-dial input[type="range"]::-webkit-slider-runnable-track,
+#desk-games .rec-dial input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: #1c2a36;
+}
+.find-start .rec-dial input[type="range"]::-moz-range-track,
+#desk-games .rec-dial input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: #1c2a36;
+  border: 0;
+}
+.find-start .rec-dial input[type="range"]::-webkit-slider-thumb,
+#desk-games .rec-dial input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border: 2px solid #04140c;
+  border-radius: 50%;
+  background: #3dff6e;
+  box-shadow: 0 0 10px rgba(61, 255, 110, 0.45);
+  cursor: grab;
+}
+.find-start .rec-dial input[type="range"]::-moz-range-thumb,
+#desk-games .rec-dial input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #04140c;
+  border-radius: 50%;
+  background: #3dff6e;
+  box-shadow: 0 0 10px rgba(61, 255, 110, 0.45);
+  cursor: grab;
+}
 .find-start-kinds { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin: 0 0 0.6rem; }
 :is(.rec-board, #choice-result) .find-start-kinds > button { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.22rem 0.65rem !important; border: 1px solid rgba(159, 179, 200, 0.55) !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #c9d6e3 !important; font-size: 12px !important; font-weight: 800 !important; letter-spacing: 0.03em !important; text-transform: uppercase !important; cursor: pointer; }
 :is(.rec-board, #choice-result) .find-start-kinds > button.on { border-color: #3dff6e !important; background: #3dff6e !important; color: #04140c !important; }

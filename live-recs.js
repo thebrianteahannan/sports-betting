@@ -85,6 +85,25 @@ function recStory(match, kickoff) {
   return kept && kept.story ? kept.story : null;
 }
 
+function inGoldenBand(odds) {
+  const o = Number(odds);
+  return Number.isFinite(o) && o >= -250 && o <= 100;
+}
+
+function pickKey(pick) {
+  return `${pick.label}|${pick.market}|${pick.match}|${pick.odds}`;
+}
+
+function markGolden(ranked) {
+  const list = ranked || [];
+  const golden = list.find((pick) => inGoldenBand(pick.odds)) || null;
+  const key = golden ? pickKey(golden) : "";
+  return {
+    picks: list.map((pick) => ({ ...pick, golden: key ? pickKey(pick) === key : false })),
+    golden: golden ? { ...golden, golden: true } : null,
+  };
+}
+
 async function recRanked(days) {
   await pull();
   const now = Date.now(), day = (when) => new Date(when - 6 * 3600000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
@@ -139,8 +158,15 @@ async function recSample() {
     span = tomorrow.length ? "tomorrow" : "week";
     ranked = tomorrow.length ? tomorrow : ahead.ranked;
   }
-  const picks = oneEach(ranked, await sportMap().catch(() => new Map()));
-  return { span, pick: picks[0] || null, picks, more: Math.max(0, ranked.length - picks.length) };
+  const marked = markGolden(ranked);
+  const sports = await sportMap().catch(() => new Map());
+  const band = marked.picks.filter((pick) => inGoldenBand(pick.odds));
+  const pool = band.length ? band : marked.picks;
+  let picks = oneEach(pool, sports);
+  const golden = marked.golden ? (await withSport([marked.golden]))[0] : null;
+  if (golden && !picks.some((pick) => pick.golden)) picks = [golden, ...picks];
+  const pick = golden || picks[0] || null;
+  return { span, pick, picks, golden, more: Math.max(0, ranked.length - picks.length) };
 }
 
 async function withSport(picks) {
@@ -151,15 +177,31 @@ async function withSport(picks) {
   });
 }
 
+async function recTopPack(ranked, count) {
+  const marked = markGolden(ranked);
+  const picks = await withSport(marked.picks.slice(0, count));
+  const golden = marked.golden ? (await withSport([marked.golden]))[0] : null;
+  return { picks, golden };
+}
+
 async function recTop(count, when) {
-  if (when === "week") return { span: "week", picks: await withSport((await recRanked(14)).ranked.slice(0, count)) };
+  if (when === "week") {
+    const pack = await recTopPack((await recRanked(14)).ranked, count);
+    return { span: "week", ...pack };
+  }
   const today = (await recRanked()).ranked;
-  if (today.length) return { span: "today", picks: await withSport(today.slice(0, count)) };
+  if (today.length) {
+    const pack = await recTopPack(today, count);
+    return { span: "today", ...pack };
+  }
   const day = (at) => new Date(at - 6 * 3600000).toLocaleDateString("en-CA", { timeZone: "America/New_York" }), next = day(Date.now() + 86400000);
   const ahead = (await recRanked(14)).ranked, tomorrow = ahead.filter((pick) => day(Date.parse(pick.kickoff)) === next);
-  return tomorrow.length
-    ? { span: "tomorrow", picks: await withSport(tomorrow.slice(0, count)) }
-    : { span: "week", picks: await withSport(ahead.slice(0, count)) };
+  if (tomorrow.length) {
+    const pack = await recTopPack(tomorrow, count);
+    return { span: "tomorrow", ...pack };
+  }
+  const pack = await recTopPack(ahead, count);
+  return { span: "week", ...pack };
 }
 
 async function recLazy() {

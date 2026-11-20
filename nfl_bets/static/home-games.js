@@ -205,7 +205,10 @@ function homeRecsLoad(forceWhen) {
     // A newer load (e.g. week) started while this one was in flight — drop the stale reply.
     if (!homeRecs || homeRecs.want !== want) return;
     const sample = (data && data.picks && data.picks.length) ? data.picks : (data && data.pick ? [data.pick] : []);
-    homeRecs = stillGuest ? { at: Date.now(), span: (data && data.span) || (want === "week" ? "week" : "today"), picks: sample, more: Number(data && data.more) || 0, guest: true, want } : { at: Date.now(), span: (data && data.span) || (want === "week" ? "week" : "today"), picks: (data && data.picks) || [], guest: false, want };
+    const golden = (data && data.golden) || sample.find((pick) => pick && pick.golden) || null;
+    homeRecs = stillGuest
+      ? { at: Date.now(), span: (data && data.span) || (want === "week" ? "week" : "today"), picks: sample, golden, more: Number(data && data.more) || 0, guest: true, want }
+      : { at: Date.now(), span: (data && data.span) || (want === "week" ? "week" : "today"), picks: (data && data.picks) || [], golden, guest: false, want };
     const box = document.getElementById("desk-games");
     if (box) box.dataset.sig = "";
     homeGamesPaint();
@@ -230,13 +233,16 @@ function homeRecRow(pick, index) {
   const star = homeTeamStar(homeGamesList.find((game) => game.match === pick.match)).trim();
   const span = (homeRecs && homeRecs.span) || "today";
   const guest = document.body.classList.contains("needs-member");
-  const lead = guest ? `${homePickSport(pick) || "Top"} pick` : index ? `#${index + 1}` : span === "today" ? "Today's free pick" : span === "tomorrow" ? "Tomorrow's top pick" : "Top pick";
+  const golden = !!pick.golden;
+  if (golden) card.classList.add("desk-rec-golden");
+  const lead = golden ? "Golden Ticket" : guest ? `${homePickSport(pick) || "Top"} pick` : index ? `#${index + 1}` : span === "today" ? "Today's free pick" : span === "tomorrow" ? "Tomorrow's top pick" : "Top pick";
   const when = pick.kickoff ? `${span === "week" ? `${new Date(pick.kickoff).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short" })} ` : ""}${new Date(pick.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET` : "";
   const side = String(pick.match || "").split(" @ ").find((name) => pick.team && (name === pick.team || name.endsWith(` ${pick.team}`))) || "", logo = (side && homeLogos && homeLogos[side]) || "", dark = logo.replace("/500/", "/500-dark/");
   const pay = [`<i class="px">${esc(price)}</i>`, pct && `<i class="pct">${esc(pct)}</i>`, cash && `<i class="pay">${esc(`$5 profits ${cash}`)}</i>`, star].filter(Boolean).join("");
-  const tags = [typeof scriptKindTag === "function" ? scriptKindTag(pick) : "", typeof scriptRoleTag === "function" ? scriptRoleTag(pick) : "", typeof scriptCushionTag === "function" ? scriptCushionTag(pick) : ""].filter(Boolean).join("");
+  const tags = [golden ? `<i class="desk-rec-golden-tag">Golden Ticket</i>` : "", typeof scriptKindTag === "function" ? scriptKindTag(pick) : "", typeof scriptRoleTag === "function" ? scriptRoleTag(pick) : "", typeof scriptCushionTag === "function" ? scriptCushionTag(pick) : ""].filter(Boolean).join("");
   card.innerHTML = `<span class="desk-rec-name">${logo ? `<img class="desk-team-logo desk-rec-logo" src="${esc(dark)}" alt="${esc(side)}" loading="lazy"${dark !== logo ? ` onerror="this.onerror=null;this.src='${esc(logo)}'"` : ""}>` : ""}${esc(homeRecTitle(pick))}</span><span class="desk-rec-pay">${pay}</span><span class="desk-rec-how">${lead}${tags}</span><span class="desk-rec-legs">${esc(when)}</span><span class="desk-rec-read">${esc(`${pick.match}. Hit in ${pick.hits} of his last ${pick.n}.`)}</span>`;
   card.addEventListener("click", () => { if (document.body.classList.contains("needs-member")) { const join = document.getElementById("gate-join"); if (join) join.click(); return; } window.location.href = `/?${new URLSearchParams({ game: pick.match, label: pick.label, market: pick.market || "" })}`; });
+  if (typeof recDialMark === "function") recDialMark(card, pick);
   return card;
 }
 
@@ -387,16 +393,20 @@ function homeRecRows(games, box) {
     return note("No picks are posted yet.");
   }
   const league = homeLeagueOn(games), span = homeRecs.span || "today";
-  // Short desk: lead with the best few; drop direct conflicts; rest live under Build a bet.
-  const pool = (typeof corrHomeFeatured === "function" ? corrHomeFeatured(homeRecs.picks) : homeRecs.picks)
-    .map((pick, index) => [pick, index]).filter(([pick]) => !league || homePickSport(pick) === league);
+  // Keep the full featured set in the DOM so the dial can hide/show with CSS (like Live Less↔More).
+  const featured = typeof corrHomeFeatured === "function" ? corrHomeFeatured(homeRecs.picks) : homeRecs.picks.slice();
+  if (homeRecs.golden && !featured.some((pick) => pick && pick.golden)) featured.unshift(homeRecs.golden);
+  const pool = featured
+    .map((pick, index) => [pick, index])
+    .filter(([pick]) => !league || homePickSport(pick) === league);
   const rows = pool.slice(0, 5);
   const head = span === "today" ? [] : [Object.assign(document.createElement("p"), { className: "desk-games-note desk-games-label", textContent: span === "tomorrow" ? "Tomorrow" : "Coming up" })];
   const guestMore = document.body.classList.contains("needs-member") && homeRecs.more > 0 ? [homeMoreNote()] : [];
   const memberMore = !document.body.classList.contains("needs-member") && homeRecs.picks.filter((pick) => !league || homePickSport(pick) === league).length > 5
     ? [Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: "Parlay's cut is up top. Open Build a bet for the rest of the board." })]
     : [];
-  if (rows.length) return [...head, ...rows.map(([pick, index]) => homeRecRow(pick, index)), ...guestMore, ...memberMore];
+  const empty = typeof recDialEmptyNote === "function" ? [recDialEmptyNote()] : [];
+  if (rows.length) return [...head, ...empty, ...rows.map(([pick, index]) => homeRecRow(pick, index)), ...guestMore, ...memberMore];
   const when = span === "today" ? "tonight" : span === "tomorrow" ? "tomorrow" : "this week";
   if ((homeRecs.want || "auto") !== "week" && (span === "today" || !homeRecs.picks.length)) return [homeWeekNote(box, league || ""), ...guestMore];
   return [...(league ? [homeLeagueClearNote(box, `No ${league} picks ${when}.`)] : note(`No picks ${when}.`)), ...guestMore];
@@ -499,6 +509,7 @@ function homeGamesPaint() {
   }
   head.append(fresh.length ? said : homeGamesTabs(box, games), ...leagues);
   box.replaceChildren(head, ...(fresh.length ? fresh.map(homeSharedRow) : homeGamesTab === "rec" ? homeRecRows(games, box) : homeGameRows(games, box)));
+  if (homeGamesTab === "rec" && typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 1, { quiet: true });
   homeGamesWake(box);
 }
 
