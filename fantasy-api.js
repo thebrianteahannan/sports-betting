@@ -339,26 +339,28 @@ function markStatus(row, reserveIds, weekInfo) {
 function fillLineup(players, slots, opts = {}) {
   const byId = new Map((players || []).map((row) => [row.id, row]));
   const current = (opts.currentStarters || []).map(String);
-  const keepCurrent = opts.keepCurrent !== false;
+  // "all" = mirror Sleeper. "locked" = hold locked starters only, then optimize. "none" = pure optimize.
+  const keep = opts.keep || (opts.keepCurrent === false ? "none" : opts.keepCurrent === "locked" ? "locked" : "all");
+  const allowBye = opts.allowBye !== false;
   const used = new Set();
   const start = slots.map((slot, i) => {
-    if (!keepCurrent) return null;
+    if (keep === "none") return null;
     const id = current[i];
     if (!id || id === "0") return null;
     const row = byId.get(id);
-    // Mirror the Sleeper lineup the user already set.
-    if (row) {
-      used.add(row.id);
-      return { slot, ...row, start: true, locked: !!(row.gameLocked && !row.ir) };
-    }
-    return null;
+    if (!row) return null;
+    const locked = !!(row.gameLocked && !row.ir);
+    if (keep === "locked" && !locked) return null;
+    used.add(row.id);
+    return { slot, ...row, start: true, locked };
   });
 
   const pool = (players || [])
-    .filter((row) => !used.has(row.id) && !row.ir && !row.out)
-    .sort((a, b) => Number(b.bye) - Number(a.bye) || b.score - a.score || a.name.localeCompare(b.name));
-  // Prefer non-bye when filling open slots, then bye as last resort.
-  const open = pool.filter((row) => !row.bye).concat(pool.filter((row) => row.bye));
+    .filter((row) => !used.has(row.id) && !row.ir && !row.out && (allowBye || !row.bye))
+    .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+  const open = allowBye
+    ? pool.filter((row) => !row.bye).concat(pool.filter((row) => row.bye))
+    : pool;
 
   start.forEach((held, i) => {
     if (held) return;
@@ -540,18 +542,23 @@ async function startSit(body, board) {
 
   const slots = pack.league.slots || [];
   const currentIds = pack.roster.starters || [];
-  // Columns = lineup on Sleeper. Tags/swaps = who Vegas+scoring says to start.
-  const lineup = fillLineup(scored, slots, { currentStarters: currentIds, keepCurrent: true });
-  const optimal = fillLineup(scored, slots, { currentStarters: [], keepCurrent: false });
+  // Columns never move: exact Sleeper lineup + bench.
+  const lineup = fillLineup(scored, slots, { currentStarters: currentIds, keep: "all" });
+  // Recommendation keeps locked starters put, then fills the rest (no bye starts).
+  const optimal = fillLineup(scored, slots, { currentStarters: currentIds, keep: "locked", allowBye: false });
   const swaps = suggestSwaps(optimal.start, currentIds, scored);
   const recommendIds = new Set(
-    (optimal.start || []).filter((row) => row && row.id && !row.empty).map((row) => String(row.id))
+    (optimal.start || [])
+      .filter((row) => row && row.id && !row.empty && !row.bye)
+      .map((row) => String(row.id))
   );
-  // Locked starters cannot be moved — always recommend Start for them.
-  (lineup.start || []).forEach((row) => {
-    if (row && row.id && (row.locked || row.gameLocked) && !row.ir) recommendIds.add(String(row.id));
-  });
-  const markRec = (row) => (row && row.id ? { ...row, shouldStart: recommendIds.has(String(row.id)) } : row);
+  const markRec = (row) => {
+    if (!row || !row.id) return row;
+    let shouldStart = recommendIds.has(String(row.id));
+    if (row.bye || row.ir) shouldStart = false;
+    if (row.out && !(row.locked || row.gameLocked)) shouldStart = false;
+    return { ...row, shouldStart };
+  };
   return {
     sport: pack.sport || "NFL",
     season: pack.season,
@@ -560,7 +567,7 @@ async function startSit(body, board) {
     league: pack.league,
     owner: pack.owner,
     note: pack.note,
-    method: "Columns are your Sleeper lineup. Start/Sit tags are the recommendation from Vegas lines + your scoring.",
+    method: "Your Sleeper lineup stays put. Red Sit / green Start tags tell you what to change.",
     players: scored.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name)),
     start: (lineup.start || []).map(markRec),
     sit: (lineup.sit || []).map(markRec),

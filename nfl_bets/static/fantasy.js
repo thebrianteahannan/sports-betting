@@ -214,11 +214,10 @@ function fantasyFlags(player) {
 function fantasyRoleTag(kind, player) {
   if (kind === "out") return { cls: "out", label: "Out" };
   if (kind === "ir") return { cls: "ir", label: "IR" };
-  // Tag = recommendation. Columns = what's currently set on Sleeper.
-  if (player && player.shouldStart === true) return { cls: "start", label: "Start" };
-  if (player && player.shouldStart === false) return { cls: "sit", label: "Sit" };
-  if (kind === "start") return { cls: "start", label: "Start" };
-  return { cls: "sit", label: "Sit" };
+  // Only flag an action. Cards stay in the Sleeper column they already occupy.
+  if (kind === "start" && player && player.shouldStart === false) return { cls: "sit", label: "Sit" };
+  if (kind === "sit" && player && player.shouldStart === true) return { cls: "start", label: "Start" };
+  return null;
 }
 
 function fantasyRow(player, kind) {
@@ -227,14 +226,15 @@ function fantasyRow(player, kind) {
   const locked = !!(player.locked || player.gameLocked);
   const q = !!(player.questionable || /^questionable$/i.test(player.injury || ""));
   const role = fantasyRoleTag(kind, player);
-  const mismatch = (kind === "start" && role.cls === "sit") || (kind === "sit" && role.cls === "start");
+  const mismatch = !!(role && ((kind === "start" && role.cls === "sit") || (kind === "sit" && role.cls === "start")));
   row.className = `fantasy-row ${kind}${fantasyState.openId === player.id ? " open" : ""}${player.bye ? " bye" : ""}${locked ? " locked" : ""}${q ? " questionable" : ""}${mismatch ? " rec-swap" : ""}`;
   const slotLabel = player.slot || (kind === "ir" ? "IR" : kind === "out" ? "OUT" : "BN");
   const slot = `<i class="slot">${fantasyEsc(slotLabel)}</i>`;
   const tag = [player.team, ...fantasyFlags(player)].filter(Boolean).join(" · ");
+  const roleHtml = role ? ` <i class="role-tag ${role.cls}">${fantasyEsc(role.label)}</i>` : "";
   row.innerHTML = `
     ${slot}
-    <span class="who"><b>${fantasyEsc(player.name || "—")} <i class="role-tag ${role.cls}">${fantasyEsc(role.label)}</i></b>${tag ? `<em>${fantasyEsc(tag)}</em>` : ""}</span>
+    <span class="who"><b>${fantasyEsc(player.name || "—")}${roleHtml}</b>${tag ? `<em>${fantasyEsc(tag)}</em>` : ""}</span>
     ${player.empty ? `<span class="stats mute">Empty</span>` : fantasyStatLine(player)}
     ${fantasyScoreCell(player)}
   `;

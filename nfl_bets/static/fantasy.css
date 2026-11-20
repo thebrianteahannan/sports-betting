@@ -361,9 +361,9 @@
 }
 
 .fantasy-board .fantasy-row .who > b > .role-tag.sit {
-  border-color: rgba(155, 179, 200, 0.4);
-  background: rgba(155, 179, 200, 0.1);
-  color: #c9d4dd;
+  border-color: rgba(255, 90, 90, 0.7);
+  background: rgba(255, 70, 70, 0.2);
+  color: #ff6b6b;
 }
 
 .fantasy-board .fantasy-row .who > b > .role-tag.out,
