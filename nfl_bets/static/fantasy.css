@@ -302,6 +302,7 @@
 .fantasy-board button.fantasy-row:focus-visible .stats { color: #9fb3c8; }
 
 .fantasy-board button.fantasy-row.start { border-color: rgba(61, 255, 110, 0.32) !important; }
+.fantasy-board button.fantasy-row.rec-swap { border-color: rgba(231, 193, 90, 0.5) !important; }
 .fantasy-board button.fantasy-row.bye { opacity: 0.72; }
 .fantasy-board button.fantasy-row.bye:hover,
 .fantasy-board button.fantasy-row.bye:focus-visible { opacity: 0.9; }

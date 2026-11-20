@@ -540,10 +540,18 @@ async function startSit(body, board) {
 
   const slots = pack.league.slots || [];
   const currentIds = pack.roster.starters || [];
-  // Show the lineup they already set on Sleeper; swaps come from a fresh optimal fill.
+  // Columns = lineup on Sleeper. Tags/swaps = who Vegas+scoring says to start.
   const lineup = fillLineup(scored, slots, { currentStarters: currentIds, keepCurrent: true });
   const optimal = fillLineup(scored, slots, { currentStarters: [], keepCurrent: false });
   const swaps = suggestSwaps(optimal.start, currentIds, scored);
+  const recommendIds = new Set(
+    (optimal.start || []).filter((row) => row && row.id && !row.empty).map((row) => String(row.id))
+  );
+  // Locked starters cannot be moved — always recommend Start for them.
+  (lineup.start || []).forEach((row) => {
+    if (row && row.id && (row.locked || row.gameLocked) && !row.ir) recommendIds.add(String(row.id));
+  });
+  const markRec = (row) => (row && row.id ? { ...row, shouldStart: recommendIds.has(String(row.id)) } : row);
   return {
     sport: pack.sport || "NFL",
     season: pack.season,
@@ -552,12 +560,12 @@ async function startSit(body, board) {
     league: pack.league,
     owner: pack.owner,
     note: pack.note,
-    method: "Projected fantasy points from Vegas lines using your Sleeper scoring settings.",
+    method: "Columns are your Sleeper lineup. Start/Sit tags are the recommendation from Vegas lines + your scoring.",
     players: scored.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name)),
-    start: lineup.start,
-    sit: lineup.sit,
-    out: lineup.out,
-    ir: lineup.ir,
+    start: (lineup.start || []).map(markRec),
+    sit: (lineup.sit || []).map(markRec),
+    out: (lineup.out || []).map(markRec),
+    ir: (lineup.ir || []).map(markRec),
     swaps,
   };
 }

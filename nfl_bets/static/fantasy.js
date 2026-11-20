@@ -211,11 +211,13 @@ function fantasyFlags(player) {
   return bits;
 }
 
-function fantasyRoleTag(kind) {
-  if (kind === "start") return { cls: "start", label: "Start" };
-  if (kind === "sit") return { cls: "sit", label: "Sit" };
+function fantasyRoleTag(kind, player) {
   if (kind === "out") return { cls: "out", label: "Out" };
   if (kind === "ir") return { cls: "ir", label: "IR" };
+  // Tag = recommendation. Columns = what's currently set on Sleeper.
+  if (player && player.shouldStart === true) return { cls: "start", label: "Start" };
+  if (player && player.shouldStart === false) return { cls: "sit", label: "Sit" };
+  if (kind === "start") return { cls: "start", label: "Start" };
   return { cls: "sit", label: "Sit" };
 }
 
@@ -224,10 +226,11 @@ function fantasyRow(player, kind) {
   row.type = "button";
   const locked = !!(player.locked || player.gameLocked);
   const q = !!(player.questionable || /^questionable$/i.test(player.injury || ""));
-  row.className = `fantasy-row ${kind}${fantasyState.openId === player.id ? " open" : ""}${player.bye ? " bye" : ""}${locked ? " locked" : ""}${q ? " questionable" : ""}`;
+  const role = fantasyRoleTag(kind, player);
+  const mismatch = (kind === "start" && role.cls === "sit") || (kind === "sit" && role.cls === "start");
+  row.className = `fantasy-row ${kind}${fantasyState.openId === player.id ? " open" : ""}${player.bye ? " bye" : ""}${locked ? " locked" : ""}${q ? " questionable" : ""}${mismatch ? " rec-swap" : ""}`;
   const slotLabel = player.slot || (kind === "ir" ? "IR" : kind === "out" ? "OUT" : "BN");
   const slot = `<i class="slot">${fantasyEsc(slotLabel)}</i>`;
-  const role = fantasyRoleTag(kind);
   const tag = [player.team, ...fantasyFlags(player)].filter(Boolean).join(" · ");
   row.innerHTML = `
     ${slot}
@@ -322,7 +325,7 @@ function fantasyLineup(board, result) {
 
   const start = document.createElement("section");
   start.className = "fantasy-col start";
-  start.innerHTML = "<h3>Start</h3>";
+  start.innerHTML = "<h3>Your lineup</h3>";
   (result.start || []).forEach((player) => {
     start.append(fantasyRow(player, "start"));
     if (fantasyState.openId && fantasyState.openId === player.id) start.append(fantasyProof(player));
@@ -331,7 +334,7 @@ function fantasyLineup(board, result) {
 
   const sit = document.createElement("section");
   sit.className = "fantasy-col sit";
-  sit.innerHTML = "<h3>Sit</h3>";
+  sit.innerHTML = "<h3>Your bench</h3>";
   (result.sit || []).forEach((player) => {
     sit.append(fantasyRow(player, "sit"));
     if (fantasyState.openId && fantasyState.openId === player.id) sit.append(fantasyProof(player));
