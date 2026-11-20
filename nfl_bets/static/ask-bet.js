@@ -188,6 +188,7 @@ document.getElementById("desk-back").addEventListener("click", (event) => {
   if (window.shareBack && shareBack()) return;
   if (window.recBack && recBack()) return;
   if (window.askBack && askBack()) return;
+  if (window.fantasyBack && fantasyBack()) return;
   const home = document.getElementById("desk-home");
   if (home && !desk.classList.contains("bird-on") && document.querySelector("#desk-glass-in .find-board")) { const full = document.getElementById("desk-full"); if (full) full.click(); if (typeof showTab === "function") showTab("today"); home.click(); return; }
   const page = document.querySelector("#desk-glass-in .rec-board"), fromTray = !!(page && page.dataset.page === "stack" && page.dataset.fromTray);

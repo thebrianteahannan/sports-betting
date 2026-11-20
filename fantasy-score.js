@@ -245,38 +245,66 @@ function projectPlayer(person, scoring, pos) {
   };
 }
 
+function rankOf(row) {
+  const n = Number(row && (row.rankScore != null ? row.rankScore : row.score));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function flexFit(bench, starter) {
+  const have = (starter.fantasy || []).map((p) => String(p).toUpperCase());
+  return (bench.fantasy || []).some((pos) => {
+    const want = String(pos).toUpperCase();
+    if (have.includes(want)) return true;
+    const flex = ["RB", "WR", "TE"];
+    return flex.includes(want) && have.some((p) => flex.includes(p));
+  });
+}
+
 function suggestSwaps(optimalStart, currentIds, players) {
   const byId = new Map((players || []).map((row) => [row.id, row]));
-  const optimalIds = new Set((optimalStart || []).filter((row) => row && row.id && !row.empty).map((row) => row.id));
+  const optimalIds = new Set((optimalStart || []).filter((row) => row && row.id && !row.empty).map((row) => String(row.id)));
   const current = (currentIds || []).map(String).filter((id) => byId.has(id));
-  const onBench = (players || []).filter((row) => !current.includes(row.id) && optimalIds.has(row.id) && !row.ir && !row.out && !row.bye);
+  const onBench = (players || []).filter((row) => !current.includes(String(row.id)) && optimalIds.has(String(row.id)) && !row.ir && !row.out && !row.bye);
   // Locked starters stay put — never suggest sitting them.
   const shouldSit = current
     .filter((id) => !optimalIds.has(id))
     .map((id) => byId.get(id))
-    .filter((row) => row && !row.gameLocked && !row.ir);
-  const swaps = [];
-  onBench.slice().sort((a, b) => b.score - a.score).forEach((bench) => {
-    const victim = shouldSit
-      .filter((row) => (bench.fantasy || []).some((pos) => {
-        // Same position family or flex-eligible overlap.
-        const have = (row.fantasy || []).map((p) => String(p).toUpperCase());
-        const want = String(pos).toUpperCase();
-        if (have.includes(want)) return true;
-        const flex = ["RB", "WR", "TE"];
-        return flex.includes(want) && have.some((p) => flex.includes(p));
-      }))
-      .sort((a, b) => a.score - b.score)[0];
-    if (!victim) return;
-    const gain = +(bench.score - victim.score).toFixed(1);
-    if (gain < 0.4) return;
-    swaps.push({
-      in: { id: bench.id, name: bench.name, pos: bench.pos, score: bench.score },
-      out: { id: victim.id, name: victim.name, pos: victim.pos, score: victim.score },
-      gain,
-      text: `Start ${bench.name} over ${victim.name} (+${gain} pts)`,
+    .filter((row) => row && !row.gameLocked && !row.ir && !row.bye);
+  // Build all legal pairs, then pick the matching with the best total gain.
+  // Stops "Smith over Moore" + "Washington over Mayer" when Moore is better than Washington.
+  const pairs = [];
+  onBench.forEach((bench) => {
+    shouldSit.forEach((victim) => {
+      if (!flexFit(bench, victim)) return;
+      const gain = +(rankOf(bench) - rankOf(victim)).toFixed(1);
+      if (gain < 0.4) return;
+      // Never sit someone who ranks above the player coming in.
+      if (rankOf(victim) >= rankOf(bench)) return;
+      pairs.push({ bench, victim, gain });
     });
-    shouldSit.splice(shouldSit.indexOf(victim), 1);
+  });
+  pairs.sort((a, b) => b.gain - a.gain || a.victim.name.localeCompare(b.victim.name));
+  const usedIn = new Set();
+  const usedOut = new Set();
+  const swaps = [];
+  pairs.forEach((pair) => {
+    if (usedIn.has(pair.bench.id) || usedOut.has(pair.victim.id)) return;
+    // If this victim still ranks above any other unused incoming, skip — sit the weaker starter instead.
+    const strongerThanOtherIns = onBench.some((other) => (
+      !usedIn.has(other.id)
+      && other.id !== pair.bench.id
+      && rankOf(pair.victim) >= rankOf(other)
+      && flexFit(other, pair.victim)
+    ));
+    if (strongerThanOtherIns) return;
+    usedIn.add(pair.bench.id);
+    usedOut.add(pair.victim.id);
+    swaps.push({
+      in: { id: pair.bench.id, name: pair.bench.name, pos: pair.bench.pos, score: rankOf(pair.bench) },
+      out: { id: pair.victim.id, name: pair.victim.name, pos: pair.victim.pos, score: rankOf(pair.victim) },
+      gain: pair.gain,
+      text: `Start ${pair.bench.name} over ${pair.victim.name} (+${pair.gain} pts)`,
+    });
   });
   return swaps.slice(0, 5);
 }

@@ -355,9 +355,10 @@ function fillLineup(players, slots, opts = {}) {
     return { slot, ...row, start: true, locked };
   });
 
+  const rank = (row) => (Number.isFinite(Number(row.rankScore)) ? Number(row.rankScore) : Number(row.score) || 0);
   const pool = (players || [])
     .filter((row) => !used.has(row.id) && !row.ir && !row.out && (allowBye || !row.bye))
-    .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+    .sort((a, b) => rank(b) - rank(a) || a.name.localeCompare(b.name));
   const open = allowBye
     ? pool.filter((row) => !row.bye).concat(pool.filter((row) => row.bye))
     : pool;
@@ -365,6 +366,11 @@ function fillLineup(players, slots, opts = {}) {
   start.forEach((held, i) => {
     if (held) return;
     const slot = slots[i];
+    // Mirror mode: leave Sleeper empties empty. Do not pull bench into the lineup.
+    if (keep === "all") {
+      start[i] = { slot, empty: true };
+      return;
+    }
     const pick = open.find((row) => !used.has(row.id) && slotEligible(slot, row.fantasy));
     if (!pick) {
       start[i] = { slot, empty: true };
@@ -421,6 +427,12 @@ async function packRoster(leagueId, ownerId) {
   const slots = starterSlots(league.roster_positions);
   const ids = [...new Set([...(roster.players || []), ...(roster.starters || []), ...(roster.reserve || [])].filter(Boolean))];
   const players = ids.map((id) => playerRow(id, map)).filter(Boolean);
+  const taken = new Set();
+  (rosters || []).forEach((row) => {
+    [...(row.players || []), ...(row.reserve || []), ...(row.starters || [])].forEach((id) => {
+      if (id && id !== "0") taken.add(String(id));
+    });
+  });
   const data = {
     league: {
       league_id: String(league.league_id),
@@ -441,6 +453,7 @@ async function packRoster(leagueId, ownerId) {
       starters: (roster.starters || []).filter(Boolean).map(String),
       reserve: (roster.reserve || []).filter(Boolean).map(String),
       players,
+      taken: [...taken],
     },
     note: "Roster is not saved. Pull again anytime.",
   };
@@ -471,6 +484,60 @@ function clearCaches() {
   projCache = { key: "", at: 0, data: null };
   statsCache = { key: "", at: 0, data: null };
   ownCache = { key: "", at: 0, data: null };
+}
+
+function benchCanFill(slot, holder, scored, startIds) {
+  return (scored || []).some((row) => {
+    if (!row || !row.id || startIds.has(String(row.id))) return false;
+    if (holder && String(row.id) === String(holder.id)) return false;
+    if (row.ir || row.out || row.bye) return false;
+    return slotEligible(slot, row.fantasy);
+  });
+}
+
+function pickupHoles(lineupStart, slots, scored) {
+  const startIds = new Set((lineupStart || []).filter((row) => row && row.id && !row.empty).map((row) => String(row.id)));
+  const holes = [];
+  const seen = new Set();
+  (slots || []).forEach((slot, i) => {
+    const row = (lineupStart || [])[i];
+    const empty = !row || row.empty;
+    const dead = row && !row.empty && (row.bye || (row.out && !row.gameLocked));
+    if (!empty && !dead) return;
+    if (benchCanFill(slot, dead ? row : null, scored, startIds)) return;
+    if (seen.has(slot)) return;
+    seen.add(slot);
+    const who = dead ? row.name : "";
+    const why = empty
+      ? `Your ${slot} slot is empty and nobody on your bench can fill it.`
+      : `${who} is ${row.bye ? "on bye" : "out"} at ${slot}, and nobody on your bench can fill it.`;
+    holes.push({ slot, why, holding: who || null });
+  });
+  return holes;
+}
+
+function pickupOptions(slot, map, taken, scoring, projections, weekInfo, limit = 8) {
+  const takenSet = taken instanceof Set ? taken : new Set(taken || []);
+  const bye = (weekInfo && weekInfo.bye) || new Set();
+  const rows = [];
+  Object.keys(projections || {}).forEach((id) => {
+    if (takenSet.has(String(id))) return;
+    const base = playerRow(id, map);
+    if (!base || !slotEligible(slot, base.fantasy)) return;
+    const team = teamKey(base.team);
+    if (team && bye.has(team)) return;
+    if (base.injury && /^(out|ir|pup|suspended)$/i.test(String(base.injury).trim())) return;
+    const pts = sleeperPts(projections[id], scoring);
+    if (pts == null || pts < 0.5) return;
+    rows.push({
+      id: base.id,
+      name: base.name,
+      pos: base.pos || (base.fantasy || [])[0] || "",
+      team: base.team || "",
+      sleeperPts: pts,
+    });
+  });
+  return rows.sort((a, b) => b.sleeperPts - a.sleeperPts || a.name.localeCompare(b.name)).slice(0, limit);
 }
 
 async function startSit(body, board) {
@@ -526,12 +593,20 @@ async function startSit(body, board) {
       if (sleeperScore != null) sleeperScore = Math.min(sleeperScore, 1.5);
       why.unshift(`${row.injury || row.status || "Out"} — projection cut`);
     }
+    const vegasReady = (stats || []).some((stat) => stat && stat.have);
+    // Thin Vegas (no props) was ranking studs like Moore near 0 and sitting them. Use Sleeper then.
+    let rankScore = score;
+    if (status.bye || status.ir) rankScore = 0;
+    else if (livePts != null) rankScore = livePts;
+    else if (!vegasReady && sleeperScore != null) rankScore = sleeperScore;
+    else if (vegasReady && sleeperScore != null && score < sleeperScore * 0.35 && sleeperScore >= 6) rankScore = sleeperScore;
     return {
       ...row,
       ...marked,
       ...status,
       stats,
       score,
+      rankScore,
       sleeperPts: sleeperScore,
       livePts,
       ownPct: owned.ownPct,
@@ -559,6 +634,15 @@ async function startSit(body, board) {
     if (row.out && !(row.locked || row.gameLocked)) shouldStart = false;
     return { ...row, shouldStart };
   };
+  const holes = pickupHoles(lineup.start, slots, scored);
+  const map = await loadPlayers().catch(() => ({}));
+  const taken = new Set((pack.roster && pack.roster.taken) || []);
+  const pickups = holes.map((hole) => ({
+    slot: hole.slot,
+    why: hole.why,
+    holding: hole.holding,
+    options: pickupOptions(hole.slot, map, taken, scoring, projections, weekInfo, 8),
+  })).filter((row) => row.options.length || row.why);
   return {
     sport: pack.sport || "NFL",
     season: pack.season,
@@ -574,6 +658,7 @@ async function startSit(body, board) {
     out: (lineup.out || []).map(markRec),
     ir: (lineup.ir || []).map(markRec),
     swaps,
+    pickups,
   };
 }
 

@@ -1,6 +1,6 @@
 /** Fantasy Sports · Start/Sit from Sleeper + Vegas-implied fantasy points. */
 
-let fantasyState = { user: "", leagues: [], leagueId: "", result: null, openId: "", showVegas: false };
+let fantasyState = { user: "", leagues: [], leagueId: "", result: null, openId: "", showVegas: false, wantConnect: false, pulling: false, pullError: "" };
 
 function fantasySavedUser() {
   return String(window.memberSleeper || fantasyState.user || "").trim().replace(/^@/, "");
@@ -72,6 +72,30 @@ function fantasyHead(board) {
   board.append(head);
 }
 
+async function fantasyPullLeagues(board, user) {
+  const name = String(user || "").trim().replace(/^@/, "");
+  if (!name) return;
+  fantasyState.pulling = true;
+  fantasyState.pullError = "";
+  paintFantasy(board, { loading: true, loadSay: "Looking up Sleeper…" });
+  try {
+    const data = await fantasyGet(`/api/fantasy/sleeper?user=${encodeURIComponent(name)}`);
+    fantasyState.user = (data.user && data.user.username) || name;
+    fantasyState.leagues = data.leagues || [];
+    fantasyState.leagueId = "";
+    fantasyState.result = null;
+    fantasyState.wantConnect = false;
+    await fantasyRemember(fantasyState.user);
+    paintFantasy(board);
+  } catch (error) {
+    fantasyState.wantConnect = true;
+    fantasyState.pullError = String((error && error.message) || error);
+    paintFantasy(board);
+  } finally {
+    fantasyState.pulling = false;
+  }
+}
+
 function fantasyConnect(board) {
   if (!fantasyState.user) fantasyState.user = fantasySavedUser();
   const signedIn = !!(window.memberCard && !document.body.classList.contains("needs-member"));
@@ -84,7 +108,7 @@ function fantasyConnect(board) {
       <input name="user" type="text" autocomplete="username" spellcheck="false" placeholder="yourname" value="${fantasyEsc(fantasyState.user)}">
     </label>
     <button type="submit" class="fantasy-go">Pull leagues</button>
-    <p class="fantasy-note quiet"></p>
+    <p class="fantasy-note quiet">${fantasyEsc(fantasyState.pullError || "")}</p>
   `;
   box.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -95,18 +119,8 @@ function fantasyConnect(board) {
     if (!user) { note.textContent = "Enter a Sleeper username."; return; }
     go.disabled = true;
     note.textContent = "Looking up Sleeper…";
-    try {
-      const data = await fantasyGet(`/api/fantasy/sleeper?user=${encodeURIComponent(user)}`);
-      fantasyState.user = data.user && data.user.username || user;
-      fantasyState.leagues = data.leagues || [];
-      fantasyState.leagueId = "";
-      fantasyState.result = null;
-      await fantasyRemember(fantasyState.user);
-      paintFantasy(board);
-    } catch (error) {
-      note.textContent = String((error && error.message) || error);
-      go.disabled = false;
-    }
+    fantasyState.wantConnect = false;
+    await fantasyPullLeagues(board, user);
   });
   board.append(box);
 }
@@ -138,7 +152,17 @@ function fantasyLeaguePicker(board) {
   again.className = "fantasy-back";
   again.textContent = "Different username";
   again.addEventListener("click", () => {
-    fantasyState = { user: fantasyState.user, leagues: [], leagueId: "", result: null, openId: "", showVegas: false };
+    fantasyState = {
+      user: fantasyState.user,
+      leagues: [],
+      leagueId: "",
+      result: null,
+      openId: "",
+      showVegas: false,
+      wantConnect: true,
+      pulling: false,
+      pullError: "",
+    };
     paintFantasy(board);
   });
   // Keep a change control on the league picker too.
@@ -323,6 +347,18 @@ function fantasyLineup(board, result) {
     wrap.append(swaps);
   }
 
+  if ((result.pickups || []).length) {
+    const pickups = document.createElement("div");
+    pickups.className = "fantasy-pickups";
+    pickups.innerHTML = `<h3>Pickups</h3>${result.pickups.map((hole) => {
+      const opts = (hole.options || []).map((row) =>
+        `<li><b>${fantasyEsc(row.name)}</b> ${fantasyEsc(row.pos)}${row.team ? ` · ${fantasyEsc(row.team)}` : ""} <em>${fantasyEsc(fantasyPts(row.sleeperPts))} pts</em></li>`
+      ).join("") || "<li class=\"quiet\">No free agents projecting into this slot right now.</li>";
+      return `<div class="fantasy-pickup"><p>${fantasyEsc(hole.why)}</p><ul>${opts}</ul></div>`;
+    }).join("")}`;
+    wrap.append(pickups);
+  }
+
   const start = document.createElement("section");
   start.className = "fantasy-col start";
   start.innerHTML = "<h3>Your lineup</h3>";
@@ -411,7 +447,7 @@ function paintFantasy(keep, opts) {
   if (opts && opts.loading) {
     const load = document.createElement("div");
     load.className = "bet-load";
-    load.innerHTML = `<span class="bet-bird"><img src="/scene/parrot-head.webp?v=1" alt=""></span><p>Projecting the roster.</p>`;
+    load.innerHTML = `<span class="bet-bird"><img src="/scene/parrot-head.webp?v=1" alt=""></span><p>${fantasyEsc((opts && opts.loadSay) || "Projecting the roster.")}</p>`;
     board.append(load);
     return;
   }
@@ -435,7 +471,36 @@ function paintFantasy(keep, opts) {
     return;
   }
 
+  const saved = fantasySavedUser();
+  if (saved && !fantasyState.wantConnect) {
+    fantasyState.user = fantasyState.user || saved;
+    if (!fantasyState.pulling) fantasyPullLeagues(board, saved);
+    else {
+      const load = document.createElement("div");
+      load.className = "bet-load";
+      load.innerHTML = `<span class="bet-bird"><img src="/scene/parrot-head.webp?v=1" alt=""></span><p>Looking up Sleeper…</p>`;
+      board.append(load);
+    }
+    return;
+  }
+
   fantasyConnect(board);
 }
 
+function fantasyBack() {
+  const board = fantasyBoard();
+  if (!board || !board.isConnected) return false;
+  // From a loaded lineup, go back to league pick — do not leave Fantasy.
+  if (fantasyState.result || fantasyState.leagueId) {
+    fantasyState.leagueId = "";
+    fantasyState.result = null;
+    fantasyState.openId = "";
+    fantasyState.showVegas = false;
+    paintFantasy(board);
+    return true;
+  }
+  return false;
+}
+
 window.paintFantasy = paintFantasy;
+window.fantasyBack = fantasyBack;
