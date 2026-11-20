@@ -60,9 +60,25 @@ function scriptRoleTag(pick) {
   return `<i class="bet-kind k-role-${solid ? "solid" : "thin"}" title="${esc(tip)}" data-tip="${esc(tip)}">${solid ? "Steady role" : "Thin role"}</i>`;
 }
 
+function scriptCushionTip(pick) {
+  if (!pick || !pick.cushion) return "";
+  const avg = Number(pick.avg), line = Number(pick.reach);
+  const room = Number.isFinite(Number(pick.cushionRoom)) ? Number(pick.cushionRoom) : (Number.isFinite(avg) && Number.isFinite(line) ? avg - line : null);
+  const pct = Number.isFinite(Number(pick.cushionPct)) ? Number(pick.cushionPct) : (Number.isFinite(room) && Number.isFinite(line) && line > 0 ? room / line : null);
+  const n1 = (value) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return "";
+    return Math.abs(n - Math.round(n)) < 0.05 ? String(Math.round(n)) : n.toFixed(1).replace(/\.0$/, "");
+  };
+  if (Number.isFinite(avg) && Number.isFinite(line) && Number.isFinite(room) && Number.isFinite(pct)) {
+    return `Cushion: averages ${n1(avg)} vs line ${n1(line)} (+${n1(room)}, ${Math.round(pct * 100)}%). Soft night can still cash.`;
+  }
+  return "Cushion: he has room above the line, so a soft night can still cash.";
+}
+
 function scriptCushionTag(pick) {
   if (!pick || !pick.cushion) return "";
-  const tip = "Cushion: he has room above the line, so a soft night can still cash.";
+  const tip = scriptCushionTip(pick);
   return `<i class="bet-kind k-cushion" title="${esc(tip)}" data-tip="${esc(tip)}">Cushion</i>`;
 }
 

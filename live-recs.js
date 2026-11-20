@@ -123,7 +123,32 @@ async function recRanked(days) {
     return base + role + cushion;
   };
   const ranked = picks.map(cleared).filter((pick) => pick.how && pick.tier !== "good" && Number.isFinite(edge(pick))).sort((a, b) => edge(b) - edge(a));
-  return { all: picks.length, ranked: ranked.map((pick) => ({ who: pick.who, team: pick.team, label: pick.label, market: pick.market, text: pick.text || "", odds: pick.odds, need: pick.need, hits: pick.hits, n: pick.n, how: pick.how, kind: pick.kind || "", basis: pick.basis || "", role: pick.role || "", cushion: !!pick.cushion, starter: !!pick.starter, match: pick.match, kickoff: pick.kickoff })) };
+  return {
+    all: picks.length,
+    ranked: ranked.map((pick) => ({
+      who: pick.who,
+      team: pick.team,
+      label: pick.label,
+      market: pick.market,
+      text: pick.text || "",
+      odds: pick.odds,
+      need: pick.need,
+      hits: pick.hits,
+      n: pick.n,
+      how: pick.how,
+      kind: pick.kind || "",
+      basis: pick.basis || "",
+      role: pick.role || "",
+      cushion: !!pick.cushion,
+      cushionRoom: pick.cushion && Number.isFinite(Number(pick.cushionRoom)) ? Number(pick.cushionRoom) : null,
+      cushionPct: pick.cushion && Number.isFinite(Number(pick.cushionPct)) ? Number(pick.cushionPct) : null,
+      avg: Number.isFinite(Number(pick.avg)) ? Number(pick.avg) : undefined,
+      reach: Number.isFinite(Number(pick.reach)) ? Number(pick.reach) : undefined,
+      starter: !!pick.starter,
+      match: pick.match,
+      kickoff: pick.kickoff,
+    })),
+  };
 }
 
 let sportBoardAt = 0, sportBoardGames = [];

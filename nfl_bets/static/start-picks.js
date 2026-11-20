@@ -102,7 +102,7 @@ function startRecWhy(pick) {
       tip: pick.role === "solid" ? "His minutes and role look locked in." : "His minutes are thin, so the opportunity can vanish.",
     });
   }
-  if (pick && pick.cushion) tips.push({ label: "Cushion", tip: "Cushion: he has room above the line, so a soft night can still cash." });
+  if (pick && pick.cushion) tips.push({ label: "Cushion", tip: typeof scriptCushionTip === "function" ? scriptCushionTip(pick) : "Cushion: he has room above the line, so a soft night can still cash." });
   if (pick && pick.how) {
     const why = document.createElement("p");
     why.className = "desk-rec-why-how";
