@@ -10,8 +10,7 @@ const FLEX = {
   SUPER_FLEX: ["QB", "RB", "WR", "TE"],
   IDP_FLEX: ["DL", "LB", "DB"],
 };
-const PROP_OK = /pass|rush|rec|receiv|yard|reception|anytime|touchdown|td\b|rushing \+|receiving \+|longest/i;
-const PROP_SKIP = /under|quarter|qtr|half|each|most|1st|first|minutes|double|triple|team total|alt\b/i;
+const { projectPlayer, suggestSwaps } = require("./fantasy-score");
 
 let playerMap = null;
 let playerAt = 0;
@@ -29,10 +28,6 @@ function samePlayer(a, b) {
   const left = words(a);
   const right = words(b);
   return Boolean(left.length && right.length && left[left.length - 1] === right[right.length - 1] && left[0][0] === right[0][0]);
-}
-
-function clamp(n, lo, hi) {
-  return Math.max(lo, Math.min(hi, n));
 }
 
 async function sleeperGet(path) {
@@ -88,69 +83,6 @@ function slotEligible(slot, fantasy) {
   if (FLEX[key]) return FLEX[key].some((p) => have.includes(p));
   if (FAN_POS.has(key)) return have.includes(key);
   return have.includes(key);
-}
-
-function needOf(odds) {
-  const o = Number(odds);
-  if (!Number.isFinite(o) || !o) return null;
-  const implied = o > 0 ? 100 / (o + 100) : Math.abs(o) / (Math.abs(o) + 100);
-  return +(implied * 100).toFixed(1);
-}
-
-function oddsVolume(odds) {
-  const o = Number(odds);
-  if (!Number.isFinite(o) || !o) return 20;
-  // Shorter prices → more expected volume/usage.
-  if (o <= -200) return 40;
-  if (o <= -150) return 34;
-  if (o <= -110) return 28;
-  if (o <= 100) return 22;
-  if (o <= 150) return 14;
-  return 8;
-}
-
-function scorePlayer(person, recs) {
-  const bets = ((person && person.bets) || []).filter((bet) => {
-    const blob = `${bet.market || ""} ${bet.label || ""}`;
-    return /NFL/i.test(bet.sport || "NFL") && PROP_OK.test(blob) && !PROP_SKIP.test(blob);
-  });
-  const matched = (recs || []).filter((pick) => samePlayer(pick.who || pick.label, person && person.name));
-  const bestRec = matched.slice().sort((a, b) => {
-    const ea = Number(a.n) > 0 ? (a.hits / a.n) * 100 - parseFloat(a.need) : -99;
-    const eb = Number(b.n) > 0 ? (b.hits / b.n) * 100 - parseFloat(b.need) : -99;
-    return eb - ea;
-  })[0];
-  const bestBet = bets.slice().sort((a, b) => oddsVolume(a.odds) - oddsVolume(b.odds)).reverse()[0];
-
-  let score = 18;
-  const why = [];
-  if (bestRec && Number(bestRec.n) > 0) {
-    const edge = (bestRec.hits / bestRec.n) * 100 - parseFloat(bestRec.need || needOf(bestRec.odds) || 0);
-    score = 45 + clamp(edge, -20, 35);
-    why.push(`${bestRec.hits}/${bestRec.n} vs ${bestRec.need || needOf(bestRec.odds)}% on ${bestRec.label || "prop"}`);
-    if (bestRec.role === "solid") { score += 10; why.push("solid role"); }
-    else if (bestRec.role === "thin") { score -= 5; why.push("thin role"); }
-    if (bestRec.cushion) { score += 10; why.push("cushion"); }
-    if (bestRec.tier === "rec") { score += 15; why.push("on the rec board"); }
-    else if (bestRec.tier === "good") { score += 8; why.push("clears the price"); }
-  } else if (bestBet) {
-    score = 30 + oddsVolume(bestBet.odds);
-    why.push(`${bestBet.label} ${Number(bestBet.odds) > 0 ? `+${bestBet.odds}` : bestBet.odds}`);
-  } else {
-    why.push("No matching NFL prop this week");
-  }
-
-  score = Math.round(clamp(score, 0, 100));
-  return {
-    score,
-    why: why.slice(0, 3),
-    prop: bestRec
-      ? { label: bestRec.label, odds: bestRec.odds, market: bestRec.market, match: bestRec.match, hits: bestRec.hits, n: bestRec.n, need: bestRec.need, tier: bestRec.tier || "", role: bestRec.role || "", cushion: !!bestRec.cushion }
-      : bestBet
-        ? { label: bestBet.label, odds: bestBet.odds, market: bestBet.market, match: bestBet.match }
-        : null,
-    props: bets.slice(0, 6).map((bet) => ({ label: bet.label, odds: bet.odds, market: bet.market, match: bet.match })),
-  };
 }
 
 function fillLineup(players, slots) {
@@ -214,6 +146,7 @@ async function packRoster(leagueId, ownerId) {
       season: String(league.season || ""),
       status: String(league.status || ""),
       roster_positions: league.roster_positions || [],
+      scoring_settings: league.scoring_settings || {},
       slots,
     },
     owner: {
@@ -260,34 +193,22 @@ async function startSit(body, board) {
   const pack = await sleeper(query);
   const peopleBook = await require("./choose-api").chooseBet({ list: "lookup", when: "week" }, board).catch(() => ({ people: [] }));
   const people = ((peopleBook && peopleBook.people) || []).filter((person) => person.kind === "player");
-  let recs = [];
-  try {
-    const ranked = await require("./live-recs").recRanked(14);
-    recs = ((ranked && ranked.ranked) || []).map((pick) => ({
-      ...pick,
-      who: pick.who || String(pick.label || "").split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "").trim(),
-    }));
-  } catch (error) {
-    try {
-      recs = (await require("./live-recs").recsList()).map((pick) => ({
-        ...pick,
-        who: pick.who || String(pick.label || "").split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "").trim(),
-      }));
-    } catch (err) {
-      recs = [];
-    }
-  }
+  const scoring = (pack.league && pack.league.scoring_settings) || {};
 
   const scored = (pack.roster.players || []).map((row) => {
     const person = people.find((p) => samePlayer(p.name, row.name)) || { name: row.name, bets: [] };
-    const marked = scorePlayer({ ...person, name: row.name }, recs);
+    const marked = projectPlayer({ ...person, name: row.name }, scoring, row.pos || (row.fantasy || [])[0]);
     const out = /out|ir|pup|suspended/i.test(`${row.status} ${row.injury}`);
-    const score = out ? Math.min(marked.score, 12) : marked.score;
-    if (out) marked.why = [`${row.injury || row.status || "Out"}`, ...marked.why].slice(0, 3);
+    let score = marked.score;
+    if (out) {
+      score = Math.min(score, 1.5);
+      marked.why = [`${row.injury || row.status || "Out"} — projection cut`, ...marked.why].slice(0, 6);
+    }
     return { ...row, ...marked, score };
   });
 
   const lineup = fillLineup(scored, pack.league.slots || []);
+  const swaps = suggestSwaps(lineup.start, pack.roster.starters || [], scored);
   return {
     sport: pack.sport || "NFL",
     season: pack.season,
@@ -296,10 +217,12 @@ async function startSit(body, board) {
     league: pack.league,
     owner: pack.owner,
     note: pack.note,
+    method: "Projected fantasy points from Vegas lines using your Sleeper scoring settings.",
     players: scored.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name)),
     start: lineup.start,
     sit: lineup.sit,
+    swaps,
   };
 }
 
-module.exports = { sleeper, startSit, samePlayer, scorePlayer, fillLineup };
+module.exports = { sleeper, startSit, samePlayer, fillLineup };

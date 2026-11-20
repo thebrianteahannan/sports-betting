@@ -393,6 +393,7 @@ function publicMember(user) {
     board: boardOpen(user),
     state: user.state || "",
     book: user.book || "",
+    sleeper: user.sleeper || "",
     hide: user.hide || {},
     teams: Array.isArray(user.teams) ? user.teams : null,
     league: user.league || null,
@@ -757,6 +758,19 @@ const server = http.createServer(async (req, res) => {
         const row = data.users.find((item) => item.id === user.id);
         if (!row) throw new Error("That membership is not here.");
         if (body.league) row.league = { pick: /^[A-Z]{2,5}$/.test(String(body.league.pick || "")) ? String(body.league.pick) : "", open: !!body.league.open }; else if (body.teams) row.teams = [...new Set((Array.isArray(body.teams) ? body.teams : []).map((team) => String(team || "").trim()).filter((team) => /^[A-Z]{2,4}\|[A-Za-z0-9 .'&-]{2,30}$/.test(team)))].slice(0, 40); else if (body.hide) row.hide = { defense: !!body.hide.defense, bench: !!body.hide.bench, empty: !!body.hide.empty, out: !!body.hide.out, stars: !!body.hide.stars, teams: Object.fromEntries(Object.entries(body.hide.teams && typeof body.hide.teams === "object" ? body.hide.teams : {}).filter(([name, one]) => /^[A-Za-z0-9 .'&-]{2,40}$/.test(name) && one && typeof one === "object").slice(0, 300).map(([name, one]) => [name, { defense: !!one.defense, bench: !!one.bench, empty: !!one.empty, out: !!one.out, stars: !!one.stars }])) }; else row.book = book;
+        await writeKey("bets/members.json", data);
+        sendJson(res, { member: publicMember(row) });
+        return;
+      }
+      if (url.pathname === "/api/sleeper") {
+        const user = await memberFrom(req);
+        if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
+        const sleeper = String(body.sleeper || body.user || body.username || "").trim().replace(/^@/, "").slice(0, 40);
+        if (sleeper && !/^[A-Za-z0-9_]{1,40}$/.test(sleeper)) throw new Error("That Sleeper username does not look right.");
+        const data = await loadMembers();
+        const row = data.users.find((item) => item.id === user.id);
+        if (!row) throw new Error("That membership is not here.");
+        row.sleeper = sleeper;
         await writeKey("bets/members.json", data);
         sendJson(res, { member: publicMember(row) });
         return;

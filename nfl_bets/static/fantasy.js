@@ -1,6 +1,28 @@
-/** Fantasy Sports · Start/Sit from a Sleeper roster + our NFL prop desk. */
+/** Fantasy Sports · Start/Sit from Sleeper + Vegas-implied fantasy points. */
 
-let fantasyState = { user: "", leagues: [], leagueId: "", result: null, openId: "" };
+let fantasyState = { user: "", leagues: [], leagueId: "", result: null, openId: "", showVegas: false };
+
+function fantasySavedUser() {
+  return String(window.memberSleeper || fantasyState.user || "").trim().replace(/^@/, "");
+}
+
+async function fantasyRemember(user) {
+  const name = String(user || "").trim().replace(/^@/, "");
+  if (!name || !window.memberCard || document.body.classList.contains("needs-member")) return;
+  if (String(window.memberSleeper || "") === name) return;
+  try {
+    const res = await fetch("/api/sleeper", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sleeper: name }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return;
+    window.memberSleeper = (data.member && data.member.sleeper) || name;
+    if (window.memberCard) window.memberCard.sleeper = window.memberSleeper;
+  } catch (error) {}
+}
 
 function fantasyEsc(text) {
   return String(text ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -10,6 +32,12 @@ function fantasyOdds(n) {
   const o = Number(n);
   if (!Number.isFinite(o) || !o) return "";
   return o > 0 ? `+${o}` : String(o);
+}
+
+function fantasyPts(n) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return "—";
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
 }
 
 async function fantasyGet(path) {
@@ -40,20 +68,17 @@ function fantasyHead(board) {
   head.className = "fantasy-head";
   const title = document.createElement("h2");
   title.textContent = "Fantasy Start / Sit";
-  const back = document.createElement("button");
-  back.type = "button";
-  back.className = "fantasy-back";
-  back.textContent = "← Recommended";
-  back.addEventListener("click", () => { if (typeof birdMenu === "function") birdMenu("rec"); });
-  head.append(title, back);
+  head.append(title);
   board.append(head);
 }
 
 function fantasyConnect(board) {
+  if (!fantasyState.user) fantasyState.user = fantasySavedUser();
+  const signedIn = !!(window.memberCard && !document.body.classList.contains("needs-member"));
   const box = document.createElement("form");
   box.className = "fantasy-connect";
   box.innerHTML = `
-    <p class="fantasy-lead">Paste your Sleeper username. We pull this week’s roster, score it with the prop desk, and fill your slots. Roster is not saved.</p>
+    <p class="fantasy-lead">Paste your Sleeper username. We pull this week’s roster, project points with your league’s scoring from Vegas lines, and fill Start / Sit. Roster is not saved.${signedIn ? " We’ll remember the username on this membership." : ""}</p>
     <label class="fantasy-field">
       <span>Sleeper username</span>
       <input name="user" type="text" autocomplete="username" spellcheck="false" placeholder="yourname" value="${fantasyEsc(fantasyState.user)}">
@@ -76,6 +101,7 @@ function fantasyConnect(board) {
       fantasyState.leagues = data.leagues || [];
       fantasyState.leagueId = "";
       fantasyState.result = null;
+      await fantasyRemember(fantasyState.user);
       paintFantasy(board);
     } catch (error) {
       note.textContent = String((error && error.message) || error);
@@ -112,9 +138,14 @@ function fantasyLeaguePicker(board) {
   again.className = "fantasy-back";
   again.textContent = "Different username";
   again.addEventListener("click", () => {
-    fantasyState = { user: fantasyState.user, leagues: [], leagueId: "", result: null, openId: "" };
+    fantasyState = { user: fantasyState.user, leagues: [], leagueId: "", result: null, openId: "", showVegas: false };
     paintFantasy(board);
   });
+  // Keep a change control on the league picker too.
+  const change = document.createElement("p");
+  change.className = "fantasy-lead";
+  change.textContent = `Sleeper: ${fantasyState.user}`;
+  box.prepend(change);
   box.append(again);
   board.append(box);
 }
@@ -123,6 +154,7 @@ async function fantasyRun(board, leagueId) {
   fantasyState.leagueId = leagueId;
   fantasyState.result = null;
   fantasyState.openId = "";
+  fantasyState.showVegas = false;
   paintFantasy(board, { loading: true });
   try {
     const data = await fantasyPost("/api/fantasy/start-sit", { user: fantasyState.user, leagueId });
@@ -134,30 +166,27 @@ async function fantasyRun(board, leagueId) {
   }
 }
 
+function fantasyStatLine(player) {
+  const rows = Array.isArray(player.stats) ? player.stats : [];
+  if (!rows.length) return `<span class="stats mute">No Vegas stats yet</span>`;
+  return `<span class="stats">${rows.map((row) => {
+    const val = row.have && row.amount != null ? fantasyPts(row.amount) : "—";
+    return `<i><b>${fantasyEsc(row.short)}</b> ${fantasyEsc(val)}</i>`;
+  }).join("")}</span>`;
+}
+
 function fantasyRow(player, kind) {
   const row = document.createElement("button");
   row.type = "button";
   row.className = `fantasy-row ${kind}${fantasyState.openId === player.id ? " open" : ""}`;
   const slot = player.slot ? `<i class="slot">${fantasyEsc(player.slot)}</i>` : `<i class="slot">BN</i>`;
-  const last = String(player.name || "").trim().split(/\s+/).pop() || player.name || "";
   const injury = player.injury || (/out|ir/i.test(player.status || "") ? player.status : "");
   const tag = [player.team, injury].filter(Boolean).join(" · ");
-  let prop = "";
-  if (player.prop) {
-    let label = String(player.prop.label || "");
-    const who = String(player.name || "");
-    if (who && label.toLowerCase().startsWith(who.toLowerCase())) label = label.slice(who.length).trim();
-    label = label.replace(/\s+/g, " ").trim();
-    const odds = player.prop.odds != null ? fantasyOdds(player.prop.odds) : "";
-    prop = `<span class="prop">${fantasyEsc(label)}${odds ? ` ${fantasyEsc(odds)}` : ""}</span>`;
-  } else {
-    prop = `<span class="prop mute">—</span>`;
-  }
   row.innerHTML = `
     ${slot}
-    <span class="who"><b>${fantasyEsc(last)}</b>${tag ? `<em>${fantasyEsc(tag)}</em>` : ""}</span>
-    ${prop}
-    <span class="score">${fantasyEsc(player.empty ? "—" : player.score)}</span>
+    <span class="who"><b>${fantasyEsc(player.name || "—")}</b>${tag ? `<em>${fantasyEsc(tag)}</em>` : ""}</span>
+    ${player.empty ? `<span class="stats mute">Empty</span>` : fantasyStatLine(player)}
+    <span class="score">${fantasyEsc(player.empty ? "—" : fantasyPts(player.score))}<i>pts</i></span>
   `;
   if (!player.empty) {
     row.addEventListener("click", () => {
@@ -174,16 +203,29 @@ function fantasyRow(player, kind) {
 function fantasyProof(player) {
   const box = document.createElement("div");
   box.className = "fantasy-proof";
-  const whys = (player.why || []).map((line) => `<li>${fantasyEsc(line)}</li>`).join("") || "<li>No prop desk read yet.</li>";
+  const whys = (player.why || []).map((line) => `<li>${fantasyEsc(line)}</li>`).join("") || "<li>No Vegas lines matched this player yet.</li>";
   const props = (player.props || []).map((bet) => {
     const odds = fantasyOdds(bet.odds);
     return `<li><b>${fantasyEsc(odds)}</b> ${fantasyEsc(bet.label)}${bet.match ? ` <i>${fantasyEsc(bet.match)}</i>` : ""}</li>`;
   }).join("");
   box.innerHTML = `
-    <p class="fantasy-proof-head">${fantasyEsc(player.name)} · score ${fantasyEsc(player.score)}</p>
+    <p class="fantasy-proof-head">${fantasyEsc(player.name)} · ${fantasyEsc(fantasyPts(player.score))} projected pts</p>
+    <p class="fantasy-proof-method">${fantasyEsc(player.method || "Vegas lines through your league scoring.")}</p>
     <ul class="fantasy-whys">${whys}</ul>
-    ${props ? `<ul class="fantasy-props">${props}</ul>` : ""}
+    <button type="button" class="fantasy-vegas-toggle">${fantasyState.showVegas ? "Hide Vegas lines" : "Show Vegas lines"}</button>
+    ${fantasyState.showVegas && props ? `<ul class="fantasy-props">${props}</ul>` : ""}
+    ${fantasyState.showVegas && !props ? `<p class="quiet">No FanDuel props on the board for him this week.</p>` : ""}
   `;
+  const toggle = box.querySelector(".fantasy-vegas-toggle");
+  if (toggle) {
+    toggle.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      fantasyState.showVegas = !fantasyState.showVegas;
+      const board = fantasyBoard();
+      if (board) paintFantasy(board);
+    });
+  }
   return box;
 }
 
@@ -198,8 +240,16 @@ function fantasyLineup(board, result) {
       · ${fantasyEsc((result.owner && (result.owner.team_name || result.owner.display_name)) || fantasyState.user)}
       ${result.week != null ? ` · Wk ${fantasyEsc(result.week)}` : ""}
       <i class="fantasy-note-inline">${fantasyEsc(result.note || "Roster not saved.")}</i></p>
+    <p class="fantasy-method">${fantasyEsc(result.method || "Projected fantasy points from Vegas lines using your Sleeper scoring.")}</p>
   `;
   wrap.append(meta);
+
+  if ((result.swaps || []).length) {
+    const swaps = document.createElement("div");
+    swaps.className = "fantasy-swaps";
+    swaps.innerHTML = `<h3>Swaps</h3>${result.swaps.map((row) => `<p><b>Start ${fantasyEsc(row.in.name)}</b> over ${fantasyEsc(row.out.name)} <em>+${fantasyEsc(fantasyPts(row.gain))} pts</em></p>`).join("")}`;
+    wrap.append(swaps);
+  }
 
   const start = document.createElement("section");
   start.className = "fantasy-col start";
@@ -220,7 +270,7 @@ function fantasyLineup(board, result) {
   if (!(result.sit || []).length) {
     const none = document.createElement("p");
     none.className = "quiet";
-    none.textContent = "Everyone who scored a slot is starting.";
+    none.textContent = "Everyone who projects into a slot is starting.";
     sit.append(none);
   }
   wrap.append(sit);
@@ -233,6 +283,7 @@ function fantasyLineup(board, result) {
     fantasyState.leagueId = "";
     fantasyState.result = null;
     fantasyState.openId = "";
+    fantasyState.showVegas = false;
     paintFantasy(board);
   });
   wrap.append(swap);
@@ -278,7 +329,7 @@ function paintFantasy(keep, opts) {
   if (opts && opts.loading) {
     const load = document.createElement("div");
     load.className = "bet-load";
-    load.innerHTML = `<span class="bet-bird"><img src="/scene/parrot-head.webp?v=1" alt=""></span><p>Scoring the roster.</p>`;
+    load.innerHTML = `<span class="bet-bird"><img src="/scene/parrot-head.webp?v=1" alt=""></span><p>Projecting the roster.</p>`;
     board.append(load);
     return;
   }

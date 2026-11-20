@@ -112,7 +112,7 @@ function showMember(payload) {
   window.memberName = member.name || "";
   window.memberBorn = member.born || "";
   window.memberState = member.state || "";
-  window.memberBook = member.book || ""; window.memberHide = member.hide || {}; window.memberTeams = Array.isArray(member.teams) ? member.teams : null; window.memberLeague = member.league || null; window.memberListed = member.listed !== false; paintListed();
+  window.memberBook = member.book || ""; window.memberSleeper = member.sleeper || ""; window.memberHide = member.hide || {}; window.memberTeams = Array.isArray(member.teams) ? member.teams : null; window.memberLeague = member.league || null; window.memberListed = member.listed !== false; paintListed();
   window.fullAt = member.fullAt || "";
   if (window.applyMember) applyMember(window.memberState);
   window.memberReady = !mustPass;
