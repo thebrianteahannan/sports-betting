@@ -533,7 +533,7 @@ const server = http.createServer(async (req, res) => {
       send(res, 200, require("./script-bundle").bundlePage().body, TYPES[".js"], keepFor(url));
       return;
     }
-    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/billing.js", "/ones.js", "/stack.js", "/stack-more.js", "/game-stacks.js", "/game-four.js", "/stack-grade.js", "/close-calls.js", "/nba-script.js", "/blowout-proof.js", "/hows.js", "/player-card.js", "/find.js", "/game-note.js", "/sift.js", "/find-sort.js", "/find-roster.js", "/club-theme.css", "/club-theme.js", "/tray-stack.js", "/club-colors.js", "/prop-seek.js", "/band-pick.js", "/top-bar.css", "/top-bar.js", "/game-guide.js", "/bet-shot.js", "/game-short.js", "/game-until.js", "/game-done.js", "/home-games.js", "/home-games.css", "/rec-dial.js", "/rec-page.js", "/fav-teams.js", "/parlay-save.js", "/parlay-archive.js", "/friends.js", "/site-qr.js", "/site-qr.css", "/bird-tips.js", "/gate-sample.js", "/gate-sample.css", "/manifest.webmanifest", "/tv-ticker.js", "/tv-ticker.css", "/tv-lazy.js", "/leg-hist.js", "/leg-swap.js", "/leg-new.js", "/search-habit.js", "/habit-watch.js", "/live-stats.js", "/td-dive.js", "/prop-lines.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/bet-ask.js", "/ask-bet.css", "/find-tray.css", "/slip.js", "/us-map.svg", "/doc-view.html", "/live.js", "/live-read.js", "/live-pace.js", "/tray-live.js", "/who-bets.js", "/tray-live.css", "/rec-leg-tools.js", "/rec-leg-tools.css", "/tray-lock.js", "/tray-lock.css", "/leg-role.js", "/leg-role.css", "/leg-boost.js", "/start-picks.js", "/start-picks.css", "/manage-bets.js", "/manage-bets.css", "/quick-add.js", "/stack-brief.js", "/stack-brief.css", "/shared-tab.js", "/shared-tab.css", "/team-recs.js", "/team-recs.css", "/bet-from.js", "/bet-from.css", "/leg-hedge.js", "/leg-steady.js", "/leg-steady.css", "/stack-saved.js", "/stack-saved.css", "/chat.js", "/chat-card.js", "/chat.css", "/live.css", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/app.css", "/app.js", "/desk.css", "/desk.js", "/choose.js", "/lessons.js", "/swipe.js", "/stars.js", "/filters.js", "/members.js", "/billing.js", "/ones.js", "/stack.js", "/stack-more.js", "/game-stacks.js", "/game-four.js", "/stack-grade.js", "/close-calls.js", "/nba-script.js", "/blowout-proof.js", "/hows.js", "/player-card.js", "/find.js", "/game-note.js", "/sift.js", "/find-sort.js", "/find-roster.js", "/club-theme.css", "/club-theme.js", "/tray-stack.js", "/club-colors.js", "/prop-seek.js", "/band-pick.js", "/top-bar.css", "/top-bar.js", "/game-guide.js", "/bet-shot.js", "/game-short.js", "/game-until.js", "/game-done.js", "/home-games.js", "/home-games.css", "/rec-dial.js", "/rec-page.js", "/fav-teams.js", "/parlay-save.js", "/parlay-archive.js", "/friends.js", "/site-qr.js", "/site-qr.css", "/bird-tips.js", "/gate-sample.js", "/gate-sample.css", "/manifest.webmanifest", "/tv-ticker.js", "/tv-ticker.css", "/tv-lazy.js", "/leg-hist.js", "/leg-swap.js", "/leg-new.js", "/search-habit.js", "/habit-watch.js", "/live-stats.js", "/td-dive.js", "/prop-lines.js", "/reports.js", "/admin.js", "/sharecard.js", "/states.js", "/states.css", "/ask-bet.js", "/bet-ask.js", "/ask-bet.css", "/find-tray.css", "/slip.js", "/us-map.svg", "/doc-view.html", "/live.js", "/live-read.js", "/live-pace.js", "/tray-live.js", "/who-bets.js", "/tray-live.css", "/rec-leg-tools.js", "/rec-leg-tools.css", "/tray-lock.js", "/tray-lock.css", "/leg-role.js", "/leg-role.css", "/leg-boost.js", "/start-picks.js", "/start-picks.css", "/manage-bets.js", "/manage-bets.css", "/fantasy.js", "/fantasy.css", "/quick-add.js", "/stack-brief.js", "/stack-brief.css", "/shared-tab.js", "/shared-tab.css", "/team-recs.js", "/team-recs.css", "/bet-from.js", "/bet-from.css", "/leg-hedge.js", "/leg-steady.js", "/leg-steady.css", "/stack-saved.js", "/stack-saved.css", "/chat.js", "/chat-card.js", "/chat.css", "/live.css", "/logo.png", "/favicon.ico", "/share-template.jpg"].includes(url.pathname)) {
       serveStatic(res, url.pathname.slice(1), keepFor(url));
       return;
     }
@@ -606,6 +606,21 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, { won, lost, pct: decided ? ((won / decided) * 100).toFixed(1) : null });
       return;
     }
+    if (req.method === "GET" && url.pathname === "/api/fantasy/sleeper") {
+      const who = await memberFrom(req);
+      if (who && refuseBoard(res, who)) return;
+      try {
+        sendJson(res, await require("./fantasy-api").sleeper({
+          user: url.searchParams.get("user") || url.searchParams.get("username") || "",
+          league: url.searchParams.get("league") || url.searchParams.get("leagueId") || "",
+          ownerId: url.searchParams.get("ownerId") || "",
+          season: url.searchParams.get("season") || "",
+        }));
+      } catch (error) {
+        sendJson(res, { error: String((error && error.message) || error) }, 400);
+      }
+      return;
+    }
     if (req.method === "GET" && url.pathname === "/api/recs") { const who = await memberFrom(req); if (refuseBoard(res, who)) return; const now = Date.now(); sendJson(res, { recs: (await require("./live-recs").recsList().catch(() => [])).filter((pick) => Date.parse(pick.kickoff) > now) }); return; }
     if (req.method === "GET" && url.pathname === "/api/top-picks") {
       const who = await memberFrom(req);
@@ -666,6 +681,16 @@ const server = http.createServer(async (req, res) => {
         const user = await memberFrom(req);
         if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
         sendJson(res, url.pathname.endsWith("/portal") ? await billing.portal(user, req) : await billing.checkout(user, body.plan, req, loadMembers, writeKey));
+        return;
+      }
+      if (url.pathname === "/api/fantasy/start-sit") {
+        const who = await memberFrom(req);
+        if (who && refuseBoard(res, who)) return;
+        try {
+          sendJson(res, await require("./fantasy-api").startSit(body || {}, await board().catch(() => ({}))));
+        } catch (error) {
+          sendJson(res, { error: String((error && error.message) || error) }, 400);
+        }
         return;
       }
       if (url.pathname === "/api/chat") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; try { sendJson(res, await chatApi.post(user, body)); } catch (error) { sendJson(res, { error: String((error && error.message) || error) }, 400); } return; } if (["/api/friends", "/api/share", "/api/shared"].includes(url.pathname)) { const user = await memberFrom(req); if (refuseBoard(res, user)) return; try { sendJson(res, url.pathname === "/api/friends" ? await friendsApi.friendsPost(user, body, readKey, writeKey, loadMembers) : url.pathname === "/api/share" ? await friendsApi.shareSend(user, body, readKey, writeKey) : await friendsApi.sharedPost(user, body, readKey, writeKey)); } catch (error) { sendJson(res, { error: String((error && error.message) || error) }, 400); } return; } if (url.pathname === "/api/parlays") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, await parlayPut(user, body, readKey, writeKey)); return; } if (url.pathname === "/api/how") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, await howsPost(body)); return; } if (url.pathname === "/api/slip") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, await slipPost(user, body, readKey, writeKey)); return; } if (url.pathname === "/api/choose") { const chooser = await memberFrom(req); if (refuseBoard(res, chooser)) return; const chosen = await chooseBet(body, await require("./game-keep").withKept(await board(), body.game || (["game", "nba"].includes(body.list) ? body.match : ""), body.gameSport || body.sport)); if (chosen && chosen.found && chosen.error && !isAdmin(chooser)) delete chosen.error; sendJson(res, chosen); return; }

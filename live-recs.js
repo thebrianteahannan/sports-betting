@@ -265,4 +265,4 @@ async function recLazy() {
 
 pull();
 
-module.exports = { recRecord, recWarm, recsList, recStory, recSample, recTop, recLazy, kv };
+module.exports = { recRecord, recWarm, recsList, recRanked, recStory, recSample, recTop, recLazy, kv };

@@ -143,7 +143,7 @@ function hangMine() {
 
 function hangAct(kind) {
   hangShut();
-  if (hangGuest()) {
+  if (hangGuest() && kind !== "fantasy") {
     hangGuestJoin(kind === "games" ? "login" : "join");
     return;
   }
@@ -158,6 +158,7 @@ function hangAct(kind) {
     if (window.birdMenu) birdMenu("manage");
     return;
   }
+  if (kind === "fantasy" && window.birdMenu) { birdMenu("fantasy"); return; }
   if (kind === "rec" && window.birdMenu) birdMenu("rec");
   else if (window.birdMenu) birdMenu("find");
 }

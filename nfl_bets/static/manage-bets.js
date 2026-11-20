@@ -1,6 +1,80 @@
 /** Manage My Bets: every saved ticket, lock-as-placed, stake and line edits. */
 
 let manageFilter = "all";
+const MANAGE_ZOOM_MAX = 2;
+let manageZoom = (() => {
+  try {
+    const raw = localStorage.getItem("manageZoom");
+    const ver = localStorage.getItem("manageZoomVer");
+    let n = Number(raw);
+    if (Number.isFinite(n)) {
+      // v5: list → squares → squares+buttons. Drop old legs/full slides.
+      if (ver !== "5") {
+        n = Math.min(MANAGE_ZOOM_MAX, Math.round(n));
+        localStorage.setItem("manageZoom", String(n));
+        localStorage.setItem("manageZoomVer", "5");
+      }
+      return Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(n)));
+    }
+  } catch (error) {}
+  return MANAGE_ZOOM_MAX;
+})();
+let manageZoomDrag = false;
+
+function manageZoomApply(next, opts) {
+  const quiet = !!(opts && opts.quiet);
+  manageZoom = Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(Number(next) || 0)));
+  document.querySelectorAll(".manage-board").forEach((board) => { board.dataset.manageZoom = String(manageZoom); });
+  if (!quiet && !manageZoomDrag) {
+    document.querySelectorAll("input.manage-zoom-range").forEach((box) => {
+      box.value = String(manageZoom);
+      box.setAttribute("aria-valuenow", String(manageZoom));
+    });
+  }
+  try { localStorage.setItem("manageZoom", String(manageZoom)); } catch (error) {}
+}
+
+function manageZoomBar() {
+  const bar = document.createElement("label");
+  bar.className = "manage-zoom";
+  const less = document.createElement("span");
+  less.textContent = "Less";
+  const more = document.createElement("span");
+  more.textContent = "More";
+  const input = document.createElement("input");
+  input.type = "range";
+  input.className = "manage-zoom-range";
+  input.min = "0";
+  input.max = String(MANAGE_ZOOM_MAX);
+  input.step = "any";
+  input.value = String(manageZoom);
+  input.setAttribute("aria-valuemin", "0");
+  input.setAttribute("aria-valuemax", String(MANAGE_ZOOM_MAX));
+  input.setAttribute("aria-valuenow", String(manageZoom));
+  input.setAttribute("aria-label", "Show more or less on each bet");
+  const end = () => {
+    manageZoomDrag = false;
+    const snapped = Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(Number(input.value) || 0)));
+    input.value = String(snapped);
+    manageZoomApply(snapped);
+  };
+  input.addEventListener("pointerdown", (event) => {
+    manageZoomDrag = true;
+    try { input.setPointerCapture(event.pointerId); } catch (error) {}
+  });
+  input.addEventListener("pointerup", end);
+  input.addEventListener("pointercancel", end);
+  input.addEventListener("lostpointercapture", end);
+  input.addEventListener("input", () => {
+    manageZoomDrag = true;
+    const level = Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(Number(input.value) || 0)));
+    input.setAttribute("aria-valuenow", String(level));
+    manageZoomApply(level, { quiet: true });
+  });
+  input.addEventListener("change", end);
+  bar.append(less, input, more);
+  return bar;
+}
 
 function manageCash(stake, legs) {
   const dec = (legs || []).reduce((p, leg) => p * (1 + (typeof findRank === "function" ? findRank(leg.odds) : 0)), 1);
@@ -54,17 +128,75 @@ function manageCard(row) {
   title.textContent = manageTitle(row);
   const badge = document.createElement("span");
   badge.className = "manage-badge";
-  badge.textContent = row.locked ? "Locked in" : "Open";
+  badge.textContent = row.locked ? "Locked" : "Open";
   head.append(title, badge);
 
-  const meta = document.createElement("p");
-  meta.className = "manage-meta";
   const stake = Number(row.stake) > 0 ? Number(row.stake) : 5;
   const odds = manageOddsSaid(row);
   const win = manageCash(stake, row.legs);
+  const games = manageGames(row);
+  const legsN = (row.legs || []).length;
+  const oddsNum = manageParseOdds(odds);
+  const ticketPct = typeof findPct === "function" && oddsNum != null ? findPct(oddsNum) : "";
+  const ticketCash = typeof findCash === "function" && oddsNum != null ? findCash(oddsNum, stake) : (win > 0 ? `$${manageMoney(win)}` : "");
+  const compactWho = (leg) => {
+    const who = String(leg.player || "").trim() || String(leg.label || "").split(/\s+(?:\d|\+|Over\b|Under\b)/i)[0].trim();
+    const last = who ? who.split(/\s+/).pop() : "";
+    let prop = String(leg.label || "").trim();
+    if (who && prop.toLowerCase().startsWith(who.toLowerCase())) prop = prop.slice(who.length).trim();
+    prop = prop.replace(/\s+/g, " ").trim();
+    const game = typeof gameShort === "function" && leg.match ? gameShort(leg.match) : "";
+    return [last || who, prop].filter(Boolean).join(" ") || game || "Leg";
+  };
+  const line = document.createElement("div");
+  line.className = "manage-line";
+  const gameParts = String(games || "").split(/\s*[·,]\s*/).map((part) => part.trim()).filter(Boolean);
+  const gameSaid = !gameParts.length
+    ? ""
+    : gameParts.length === 1
+      ? gameParts[0]
+      : `${gameParts[0]} +${gameParts.length - 1}`;
+  const main = document.createElement("span");
+  main.className = "manage-line-main";
+  main.innerHTML = [
+    `<i class="who">${esc(manageTitle(row))}</i>`,
+    odds && `<b>${esc(odds)}</b>`,
+    `<em>$${esc(manageMoney(stake))}</em>`,
+    row.locked ? `<i class="lock">Locked</i>` : "",
+  ].filter(Boolean).join("");
+  const sub = document.createElement("span");
+  sub.className = "manage-line-sub";
+  sub.textContent = [legsN > 1 ? `${legsN}-leg` : (legsN === 1 ? "1-leg" : ""), gameSaid].filter(Boolean).join(" · ");
+  line.append(main);
+  if (sub.textContent) line.append(sub);
+
+  const compact = document.createElement("div");
+  compact.className = "manage-compact";
+  const top = document.createElement("div");
+  top.className = "manage-compact-top";
+  top.innerHTML = [
+    odds && `<b>${esc(odds)}</b>`,
+    ticketPct && `<i class="pct">${esc(ticketPct)}</i>`,
+    ticketCash && `<em class="pay">$${esc(String(ticketCash).replace(/^\$/, ""))}</em>`,
+    `<span class="n">${legsN}-leg · $${esc(manageMoney(stake))}</span>`,
+  ].filter(Boolean).join("");
+  const compactLegs = document.createElement("ul");
+  compactLegs.className = "manage-compact-legs";
+  (row.legs || []).forEach((leg) => {
+    const item = document.createElement("li");
+    const american = Number(leg.odds) > 0 ? `+${leg.odds}` : String(leg.odds ?? "");
+    const pct = typeof findPct === "function" ? findPct(leg.odds) : "";
+    const cash = typeof findCash === "function" ? findCash(leg.odds, stake) : "";
+    item.innerHTML = `<span class="leg-who">${esc(compactWho(leg))}</span><span class="leg-pay"><b>${esc(american)}</b>${pct ? ` · ${esc(pct)}` : ""}${cash ? ` · ${esc(cash)}` : ""}</span>`;
+    compactLegs.append(item);
+  });
+  compact.append(top, compactLegs);
+
+  const meta = document.createElement("p");
+  meta.className = "manage-meta";
   meta.innerHTML = [
-    `${(row.legs || []).length}-leg`,
-    manageGames(row) && esc(manageGames(row)),
+    `${legsN}-leg`,
+    games && esc(games),
     manageKick(row) && esc(manageKick(row)),
     odds && `<b>${esc(odds)}</b>`,
     `Stake $${esc(manageMoney(stake))}`,
@@ -141,6 +273,27 @@ function manageCard(row) {
     legs.append(item);
   });
 
+  const openBet = () => {
+    if (typeof birdMenu === "function") birdMenu("find");
+    setTimeout(() => { if (typeof saveOpen === "function") saveOpen(row.id); }, 80);
+  };
+  const dropBet = () => {
+    if (typeof saveDrop === "function") saveDrop(row.id);
+    manageRefresh();
+  };
+
+  const kill = document.createElement("button");
+  kill.type = "button";
+  kill.className = "manage-x";
+  kill.setAttribute("aria-label", "Delete");
+  kill.title = "Delete";
+  kill.textContent = "×";
+  kill.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    dropBet();
+  });
+
   const acts = document.createElement("div");
   acts.className = "manage-acts";
   const lock = document.createElement("button");
@@ -156,10 +309,7 @@ function manageCard(row) {
   open.type = "button";
   open.className = "manage-act";
   open.textContent = "Open";
-  open.addEventListener("click", () => {
-    if (typeof birdMenu === "function") birdMenu("find");
-    setTimeout(() => { if (typeof saveOpen === "function") saveOpen(row.id); }, 80);
-  });
+  open.addEventListener("click", openBet);
   const track = document.createElement("button");
   track.type = "button";
   track.className = "manage-act";
@@ -169,13 +319,27 @@ function manageCard(row) {
   drop.type = "button";
   drop.className = "manage-act danger";
   drop.textContent = "Delete";
-  drop.addEventListener("click", () => {
-    if (typeof saveDrop === "function") saveDrop(row.id);
-    manageRefresh();
-  });
+  drop.addEventListener("click", dropBet);
   acts.append(lock, open, track, drop);
 
-  card.append(head, meta, stakeRow, legs, acts);
+  card.tabIndex = 0;
+  card.setAttribute("role", "button");
+  card.title = "Open bet";
+  card.addEventListener("click", (event) => {
+    if (event.target.closest(".manage-x, .manage-acts, .manage-stake, .manage-leg-edits, input, button, label, a")) return;
+    const zoom = Number((card.closest(".manage-board") || {}).dataset.manageZoom);
+    if (zoom === 0 || zoom === 1) openBet();
+  });
+  card.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    if (event.target !== card) return;
+    const zoom = Number((card.closest(".manage-board") || {}).dataset.manageZoom);
+    if (zoom !== 0 && zoom !== 1) return;
+    event.preventDefault();
+    openBet();
+  });
+
+  card.append(kill, line, head, compact, meta, stakeRow, legs, acts);
   return card;
 }
 
@@ -241,8 +405,10 @@ function paintManage(keep) {
     chip.addEventListener("click", () => { manageFilter = key; manageRefresh(); });
     filters.append(chip);
   });
+  filters.append(manageZoomBar());
 
   board.append(head, filters);
+  manageZoomApply(manageZoom, { quiet: true });
 
   if (!shown.length) {
     const none = document.createElement("div");

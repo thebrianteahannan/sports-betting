@@ -220,9 +220,19 @@ function homeRecsLoad(forceWhen) {
 
 function homeRecTitle(pick) {
   const label = String(pick.label || "").trim();
-  const prop = String(pick.text || "").trim() || (!/\d/.test(label) ? String(pick.market || "").trim() : "");
-  if (!prop || /\d/.test(label) || label.toLowerCase().includes(prop.toLowerCase())) return label;
-  return `${label} ${prop}`.replace(/\s+/g, " ").trim();
+  const who = String(pick.who || "").trim();
+  const prop = String(pick.text || "").trim();
+  // Prefer text — it carries units (e.g. "Over 22.5 points + rebounds"). Label is often bare "Over 22.5".
+  if (prop) {
+    if (who && !prop.toLowerCase().startsWith(who.toLowerCase())) return `${who} ${prop}`.replace(/\s+/g, " ").trim();
+    return prop;
+  }
+  const market = String(pick.market || "").trim();
+  if (market && who && /\bover\s+[\d.]+$/i.test(label)) {
+    const unit = market.replace(new RegExp(`^${who.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*-\\s*`, "i"), "").trim();
+    if (unit) return `${label} ${unit}`.replace(/\s+/g, " ").trim();
+  }
+  return label;
 }
 
 function homeRecRow(pick, index, opts) {

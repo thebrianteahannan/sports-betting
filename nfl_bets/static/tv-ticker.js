@@ -538,7 +538,20 @@ function tvTickAuto(dir = 1) {
 }
 
 function tvTickStep(dir) {
-  tvTickAuto(dir);
+  // Manual arrows skip the menu interstitial — only auto-tick returns to it.
+  if (tvTick.typed) return;
+  const pages = tvTickPages().filter((id) => id !== "menu");
+  if (!pages.length) return;
+  if (tvTick.at !== "menu") {
+    const at = pages.indexOf(tvTick.at);
+    const i = at < 0 ? 0 : at;
+    tvTickShow(dir > 0 ? pages[(i + 1) % pages.length] : pages[(i - 1 + pages.length) % pages.length], dir);
+  } else if (tvTickGateOn()) {
+    tvTickAuto(dir);
+  } else {
+    const at = pages.indexOf(tvTick.last);
+    tvTickShow(dir > 0 ? pages[(at + 1) % pages.length] : pages[at < 0 ? pages.length - 1 : at], dir);
+  }
   tvTickTime();
 }
 
