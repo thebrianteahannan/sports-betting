@@ -8,10 +8,17 @@
 .find-board .quick-add-step > b { display: block; margin: 0 0 0.5rem; color: #e7c15a; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .find-board .quick-add-search { box-sizing: border-box; width: 100%; max-width: 22rem; margin: 0 0 0.55rem; padding: 0.5rem 0.75rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 8px; background: #07140f; color: #f4f7fb; font: inherit; font-size: 14px; }
 .find-board .quick-add-picks { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: flex-start; }
+/* Matchup chip owns the first row so team cards never sit beside it on a narrow screen. */
+.find-board .quick-add-picks:has(> .quick-add-team-card) > .quick-add-chip {
+  flex: 1 0 100%;
+  width: max-content;
+  max-width: 100%;
+  align-self: flex-start;
+}
 .find-board .quick-add-team-block { flex: 1 0 100%; display: grid; gap: 0.35rem; margin: 0.2rem 0 0.15rem; }
 .find-board .quick-add-team-block > .quick-add-team { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0; color: #e7c15a; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .find-board .quick-add-team-block > .quick-add-team .desk-team-logo { width: 16px; height: 16px; margin: 0; object-fit: contain; }
-.find-board .quick-add-team-card { flex: 1 1 16rem; display: grid; gap: 0.55rem; margin: 0.2rem 0 0.15rem; padding: 0.7rem 0.75rem; border: 1px solid rgba(61, 255, 110, 0.3); border-radius: 12px; background: rgba(0, 0, 0, 0.28); }
+.find-board .quick-add-team-card { flex: 1 1 16rem; min-width: min(100%, 16rem); display: grid; gap: 0.55rem; margin: 0.2rem 0 0.15rem; padding: 0.7rem 0.75rem; border: 1px solid rgba(61, 255, 110, 0.3); border-radius: 12px; background: rgba(0, 0, 0, 0.28); }
 .find-board .quick-add-team-card.other { flex: 1 0 100%; border-color: rgba(255, 255, 255, 0.14); }
 .find-board .quick-add-team-card > .quick-add-team { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0; color: #e7c15a; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .find-board .quick-add-team-picks { display: flex; flex-wrap: wrap; gap: 0.45rem; }

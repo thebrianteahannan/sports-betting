@@ -852,8 +852,6 @@ function quickAddOpen() {
     if (glass && glass.contains(target)) {
       glass.scrollTo({ top: Math.max(0, glass.scrollTop + target.getBoundingClientRect().top - glass.getBoundingClientRect().top - 8), behavior: "smooth" });
     } else target.scrollIntoView({ block: "start", behavior: "smooth" });
-    const seek = target.querySelector(".quick-add-search");
-    if (seek) seek.focus({ preventScroll: true });
   };
   requestAnimationFrame(() => requestAnimationFrame(scroll));
 }

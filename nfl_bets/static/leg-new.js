@@ -13,12 +13,8 @@ function legNewBox(board) {
       legNew.open = true;
       if (typeof quickAddReset === "function") quickAddReset({ when: true, sport: true });
       legNewPaint();
-      const field = document.querySelector(".find-tray .find-new .quick-add-search");
-      if (field) field.focus();
-      else {
-        const tip = document.querySelector(".find-tray .find-new .quick-add");
-        if (tip && typeof quickAddReveal === "function") quickAddReveal(tip);
-      }
+      const tip = document.querySelector(".find-tray .find-new .quick-add");
+      if (tip && typeof quickAddReveal === "function") quickAddReveal(tip);
     });
     box.append(add);
     return box;
