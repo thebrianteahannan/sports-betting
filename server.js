@@ -132,7 +132,7 @@ async function archive() {
 
 const { ignoreView, sweepIgnored } = createIgnore(readKey, writeKey, archive);
 const pullLive = createPull(readKey, writeKey, ROOT);
-const { adminList, whoIsHere, setMemberAdmin, dropMember, saveAsk, noteTaste, saveRated } = createAdmins(readKey, writeKey);
+const { adminList, whoIsHere, setMemberAdmin, dropMember, resetMemberPass, saveAsk, noteTaste, saveRated } = createAdmins(readKey, writeKey);
 const { list: noteList, save: noteSave } = createNotes(readKey, writeKey); const { cards: shelvedCards, save: shelveSave } = createShelve(readKey, writeKey);
 const researchBet = createResearch(readKey);
 
@@ -399,6 +399,7 @@ function publicMember(user) {
     born: user.born || "",
     fullAt: user.fullAt || "",
     listed: user.listed !== false,
+    mustChangePass: Boolean(user.mustChangePass),
   };
 }
 
@@ -418,6 +419,10 @@ async function loadMembers() {
 
 function refuseBoard(res, user) {
   if (!user) { sendJson(res, { error: "Sign in." }, 401); return true; }
+  if (user.mustChangePass) {
+    sendJson(res, { error: "Set a new password first.", code: "must_change_pass" }, 403);
+    return true;
+  }
   if (boardOpen(user)) return false;
   sendJson(res, { error: "Your free trial is over. Sign up for a membership to continue.", code: "trial_over" }, 402);
   return true;
@@ -790,6 +795,33 @@ const server = http.createServer(async (req, res) => {
         const user = await memberFrom(req);
         if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
         sendJson(res, await dropMember(body.email));
+        return;
+      }
+      if (url.pathname === "/api/admin/pass") {
+        const user = await memberFrom(req);
+        if (!user || !isAdmin(user)) { sendJson(res, { error: "Sign in as an admin." }, 403); return; }
+        sendJson(res, await resetMemberPass(body.email, body.password, passHash));
+        return;
+      }
+      if (url.pathname === "/api/pass") {
+        const user = await memberFrom(req);
+        if (!user) { sendJson(res, { error: "Sign in." }, 401); return; }
+        if (!user.mustChangePass) throw new Error("Your password does not need a reset.");
+        const next = String(body.password || "");
+        if (next.length < 8) throw new Error("Use at least 8 characters.");
+        const same = passHash(next, user.salt) === user.hash;
+        if (same) throw new Error("Pick a new password, not the temporary one.");
+        const data = await loadMembers();
+        const row = data.users.find((item) => item.id === user.id);
+        if (!row) throw new Error("Sign in.");
+        const salt = crypto.randomBytes(16).toString("hex");
+        row.salt = salt;
+        row.hash = passHash(next, salt);
+        row.mustChangePass = false;
+        delete row.resetHash;
+        delete row.resetAt;
+        await writeKey("bets/members.json", data);
+        sendJson(res, memberProfile(data, row));
         return;
       }
       if (url.pathname === "/api/reports") {

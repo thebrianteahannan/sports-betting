@@ -3,12 +3,13 @@ const memberFetch = window.fetch.bind(window);
 function showGateMode(mode) {
   const wait = document.getElementById("gate-wait"); if (wait) wait.hidden = true;
   const trial = document.getElementById("gate-trial");
-  const forgot = document.getElementById("forgot-form"), reset = document.getElementById("reset-form");
+  const forgot = document.getElementById("forgot-form"), reset = document.getElementById("reset-form"), pass = document.getElementById("pass-form");
   document.getElementById("gate-pick").hidden = mode !== "pick";
   document.getElementById("member-form").hidden = mode !== "join";
   document.getElementById("login-form").hidden = mode !== "login";
   if (forgot) forgot.hidden = mode !== "forgot";
   if (reset) reset.hidden = mode !== "reset";
+  if (pass) pass.hidden = mode !== "pass";
   if (trial) trial.hidden = mode !== "trial";
   if (mode === "join") bornRange(document.getElementById("member-born"));
   if (mode === "forgot") {
@@ -18,12 +19,17 @@ function showGateMode(mode) {
     const loginMail = document.getElementById("login-email"), forgotMail = document.getElementById("forgot-email");
     if (loginMail && forgotMail && loginMail.value && !forgotMail.value) forgotMail.value = loginMail.value;
   }
-  if (mode === "join" || mode === "login" || mode === "forgot" || mode === "reset" || mode === "trial") { goFull(); if (window.tvTickStay) tvTickStay(); }
+  if (mode === "pass") {
+    const err = document.getElementById("pass-error");
+    if (err) err.textContent = "";
+    ["pass-new", "pass-new2"].forEach((id) => { const field = document.getElementById(id); if (field) field.value = ""; });
+  }
+  if (mode === "join" || mode === "login" || mode === "forgot" || mode === "reset" || mode === "pass" || mode === "trial") { goFull(); if (window.tvTickStay) tvTickStay(); }
   else if (window.tvTickRelease) tvTickRelease();
 }
 
 function gateFormOpen() {
-  return ["login-form", "member-form", "forgot-form", "reset-form"].some((id) => { const node = document.getElementById(id); return node && !node.hidden; });
+  return ["login-form", "member-form", "forgot-form", "reset-form", "pass-form"].some((id) => { const node = document.getElementById(id); return node && !node.hidden; });
 }
 window.gateFormOpen = gateFormOpen;
 
@@ -72,7 +78,7 @@ function birdBragGo(text) {
 function showGate() {
   const already = document.body.classList.contains("needs-member");
   const login = document.getElementById("login-form"), join = document.getElementById("member-form");
-  const form = (join && !join.hidden && join) || (login && !login.hidden && login) || (document.getElementById("forgot-form") && !document.getElementById("forgot-form").hidden && document.getElementById("forgot-form")) || (document.getElementById("reset-form") && !document.getElementById("reset-form").hidden && document.getElementById("reset-form")) || null;
+  const form = (join && !join.hidden && join) || (login && !login.hidden && login) || (document.getElementById("forgot-form") && !document.getElementById("forgot-form").hidden && document.getElementById("forgot-form")) || (document.getElementById("reset-form") && !document.getElementById("reset-form").hidden && document.getElementById("reset-form")) || (document.getElementById("pass-form") && !document.getElementById("pass-form").hidden && document.getElementById("pass-form")) || null;
   const typing = already && form && form.contains(document.activeElement);
   document.body.classList.add("needs-member");
   const desk = document.getElementById("desk");
@@ -91,7 +97,8 @@ window.birdBrag = birdBrag; window.birdBragGo = birdBragGo; window.recBlurb = re
 function showMember(payload) {
   const member = payload.member || {};
   const admin = !!member.admin;
-  const board = member.board !== false;
+  const mustPass = !!member.mustChangePass;
+  const board = member.board !== false && !mustPass;
   if (board) document.body.classList.remove("needs-member");
   else document.body.classList.add("needs-member");
   if (window.tvZoomShut) tvZoomShut();
@@ -108,7 +115,7 @@ function showMember(payload) {
   window.memberBook = member.book || ""; window.memberHide = member.hide || {}; window.memberTeams = Array.isArray(member.teams) ? member.teams : null; window.memberLeague = member.league || null; window.memberListed = member.listed !== false; paintListed();
   window.fullAt = member.fullAt || "";
   if (window.applyMember) applyMember(window.memberState);
-  window.memberReady = true;
+  window.memberReady = !mustPass;
   const call = document.getElementById("call-name");
   if (call && document.activeElement !== call) call.value = member.name || "";
   const spoken = document.getElementById("bird-line");
@@ -116,7 +123,7 @@ function showMember(payload) {
   const desk = document.getElementById("desk");
   if (desk && desk.classList.contains("bird-on") && ((said === "Aight, bet!" && Date.now() > (window.squawkUntil || 0)) || said.startsWith("Hey. What") || said.startsWith("What should I call you") || said.startsWith("When were you born") || said.startsWith("Which state") || said.startsWith("Which sportsbook"))) birdGreet();
   const adminBox = document.getElementById("profile-admin");
-  if (adminBox) adminBox.hidden = !admin;
+  if (adminBox) adminBox.hidden = !admin || mustPass;
   window.memberCard = member;
   const plan = document.getElementById("activity-plan");
   if (plan) plan.hidden = false;
@@ -130,6 +137,11 @@ function showMember(payload) {
   if (window.state) {
     window.state.admin = admin;
     window.state.showLive = false;
+  }
+  if (mustPass) {
+    showGateMode("pass");
+    if (window.deskGate) window.deskGate();
+    return;
   }
   if (!board) {
     showGateMode("trial");
@@ -180,7 +192,9 @@ async function sendMember(path, fields, errorId) {
     return;
   }
   if (window.state) window.state.tab = "today";
-  showMember(payload.activity ? payload : { member: payload.member, activity: [] });
+  const next = payload.activity ? payload : { member: payload.member, activity: [] };
+  showMember(next);
+  if (next.member && next.member.mustChangePass) return;
   if (window.startDesk) window.startDesk();
   const desk = document.getElementById("desk"); const full = document.getElementById("desk-full"); if (desk && full && desk.classList.contains("tv-full")) full.click();
   if (typeof showTab === "function") showTab("today");
@@ -227,7 +241,7 @@ async function bootMember() {
   }
   const payload = await response.json();
   showMember(payload);
-  if (payload.member && payload.member.board === false) {
+  if (payload.member && (payload.member.mustChangePass || payload.member.board === false)) {
     document.documentElement.classList.remove("desk-going");
     return;
   }
@@ -686,12 +700,34 @@ document.getElementById("member-form").addEventListener("submit", (event) => {
 });
 document.getElementById("login-pass-show").addEventListener("click", () => passShowToggle("login-pass", "login-pass-show"));
 document.getElementById("reset-pass-show").addEventListener("click", () => passShowToggle("reset-pass", "reset-pass-show"));
+const passNewShow = document.getElementById("pass-new-show");
+if (passNewShow) passNewShow.addEventListener("click", () => passShowToggle("pass-new", "pass-new-show"));
 document.getElementById("login-form").addEventListener("submit", (event) => {
   event.preventDefault();
   sendMember("/api/login", {
     email: "login-email",
     password: "login-pass",
   }, "login-error");
+});
+const passForm = document.getElementById("pass-form");
+if (passForm) passForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const error = document.getElementById("pass-error");
+  const a = document.getElementById("pass-new"), b = document.getElementById("pass-new2");
+  if (error) error.textContent = "";
+  if (!a || !a.value) { if (error) error.textContent = "Enter a password."; if (a) a.focus(); return; }
+  if (a.value.length < 8) { if (error) error.textContent = "Use at least 8 characters."; a.focus(); return; }
+  if (!b || a.value !== b.value) { if (error) error.textContent = "Passwords must match."; if (b) b.focus(); return; }
+  const response = await memberFetch("/api/pass", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: a.value }) });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) { if (error) error.textContent = payload.error || "Could not update the password."; return; }
+  if (window.state) window.state.tab = "today";
+  showMember(payload);
+  if (window.startDesk) window.startDesk();
+  const desk = document.getElementById("desk"); const full = document.getElementById("desk-full"); if (desk && full && desk.classList.contains("tv-full")) full.click();
+  if (typeof showTab === "function") showTab("today");
+  const home = document.getElementById("desk-home");
+  if (home) home.click();
 });
 document.getElementById("forgot-form").addEventListener("submit", async (event) => {
   event.preventDefault();

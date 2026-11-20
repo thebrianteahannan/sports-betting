@@ -224,7 +224,9 @@ function paintAdmin(payload) {
   const line = (row) => {
     const role = row.admin ? "Admin" : "Member";
     const stay = ["bthannan@gmail.com", "parlayoftheday11@gmail.com"].includes(String(row.email || "").toLowerCase());
-    const action = stay ? "" : `<button type="button" class="ghost" data-admin-email="${esc(row.email || "")}" data-admin-on="${row.admin ? "0" : "1"}">${row.admin ? "Remove" : "Make admin"}</button><button type="button" class="ghost" data-admin-drop="${esc(row.email || "")}" data-admin-name="${esc(row.name || "this member")}">Delete</button>`;
+    const roleActs = stay ? "" : `<button type="button" class="ghost" data-admin-email="${esc(row.email || "")}" data-admin-on="${row.admin ? "0" : "1"}">${row.admin ? "Remove" : "Make admin"}</button><button type="button" class="ghost" data-admin-drop="${esc(row.email || "")}" data-admin-name="${esc(row.name || "this member")}">Delete</button>`;
+    const passAct = `<button type="button" class="ghost" data-admin-pass="${esc(row.email || "")}" data-admin-name="${esc(row.name || "this member")}">Reset password</button>`;
+    const action = `${passAct}${roleActs}`;
     return { role, action, row };
   };
   const head = `<p class="quiet">${esc(memberSpan(rows))}</p><label class="admin-habits-all"><input type="checkbox" id="admin-habits-all"${showAllHabits ? " checked" : ""}> Show all habits</label><p class="quiet">Admins: ${esc(admins.join(", ") || "none")}.</p>`;
@@ -234,6 +236,7 @@ function paintAdmin(payload) {
     const lines = [];
     if (habit && habit.blurb) String(habit.blurb).split("\n").forEach((line) => { const text = line.trim(); if (text) lines.push(text); });
     if (habit && (habit.recent || []).length) lines.push(`Recent answers: ${habit.recent.join("; ")}.`);
+    if (item.row.mustChangePass) lines.push("Waiting on a new password after the temp reset.");
     const left = planLeftSay(item.row);
     const gist = `${esc(item.row.email || "")}<em>${esc(planName(item.row))}${left ? ` · ${esc(left)}` : ""} · ${esc(loginWhen(item.row.lastLogin))}</em>`;
     return adminCard(`${esc(item.row.name || "Member")} · ${esc(item.role)}`, gist, lines, item.action ? `<p class="pick-save">${item.action}</p>` : "");
@@ -271,6 +274,23 @@ async function dropMember(email) {
     return;
   }
   paintAdmin(payload);
+}
+
+async function resetMemberPass(email, password) {
+  const note = document.getElementById("admin-role-note");
+  if (note) note.textContent = "";
+  const response = await fetch("/api/admin/pass", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    if (note) note.textContent = payload.error || "Could not reset that password.";
+    return;
+  }
+  paintAdmin(payload);
+  if (note) note.textContent = `Temp password set for ${payload.email || email}. Tell them that password, then they choose a new one on first sign-in.`;
 }
 
 async function loadAdmin() {
@@ -341,6 +361,30 @@ function bindAdmin() {
       return;
     }
     if (event.target.closest("[data-admin-drop-no]")) { loadAdmin().catch(() => {}); return; }
+    const pass = event.target.closest("[data-admin-pass]");
+    if (pass) {
+      const row = pass.closest(".pick-save");
+      const email = pass.dataset.adminPass;
+      const name = pass.dataset.adminName || email;
+      if (row) {
+        row.innerHTML = `<span>Temp password for ${esc(name)}</span><input type="text" class="admin-temp-pass" data-admin-pass-input="${esc(email)}" autocomplete="off" minlength="8" placeholder="At least 8 characters"><button type="button" class="ghost" data-admin-pass-yes="${esc(email)}">Set temp password</button><button type="button" class="ghost" data-admin-pass-no>Cancel</button>`;
+        const field = row.querySelector("[data-admin-pass-input]");
+        if (field) field.focus();
+      }
+      return;
+    }
+    const passYes = event.target.closest("[data-admin-pass-yes]");
+    if (passYes) {
+      const row = passYes.closest(".pick-save");
+      const field = row && row.querySelector("[data-admin-pass-input]");
+      const password = field ? String(field.value || "") : "";
+      resetMemberPass(passYes.dataset.adminPassYes, password).catch((error) => {
+        const note = document.getElementById("admin-role-note");
+        if (note) note.textContent = String(error.message || error);
+      });
+      return;
+    }
+    if (event.target.closest("[data-admin-pass-no]")) { loadAdmin().catch(() => {}); return; }
     const button = event.target.closest("[data-admin-email]");
     if (!button) return;
     setAdminRole(button.dataset.adminEmail, button.dataset.adminOn === "1").catch((error) => {

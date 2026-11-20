@@ -1,3 +1,5 @@
+const crypto = require("crypto");
+
 function createAdmins(readKey, writeKey) {
   const owners = new Set(["bthannan@gmail.com", "parlayoftheday11@gmail.com"]);
 
@@ -43,6 +45,7 @@ function createAdmins(readKey, writeKey) {
         periodEnd: row.periodEnd || "",
         lastLogin: row.lastLogin || "",
         createdAt: row.createdAt || "",
+        mustChangePass: Boolean(row.mustChangePass),
       };
     }).sort((a, b) => String(b.lastLogin).localeCompare(String(a.lastLogin)));
   }
@@ -432,6 +435,26 @@ function createAdmins(readKey, writeKey) {
       await writeKey(`bets/parlays/${id}-done.json`, { parlays: [], at: Date.now() });
       await writeKey(`bets/shared/${id}.json`, { items: [], at: Date.now() });
       return { users: rows(data.users), online: onlineOf(data) };
+    },
+    async resetMemberPass(email, password, passHash) {
+      const clean = String(email || "").trim().toLowerCase();
+      const next = String(password || "");
+      if (!clean.includes("@")) throw new Error("That member is not here.");
+      if (next.length < 8) throw new Error("Use at least 8 characters.");
+      const data = await load();
+      const row = data.users.find((item) => item.email === clean);
+      if (!row) throw new Error("That member is not here.");
+      const salt = crypto.randomBytes(16).toString("hex");
+      row.salt = salt;
+      row.hash = passHash(next, salt);
+      row.mustChangePass = true;
+      delete row.resetHash;
+      delete row.resetAt;
+      Object.keys(data.sessions).forEach((token) => {
+        if (data.sessions[token] && data.sessions[token].userId === row.id) delete data.sessions[token];
+      });
+      await writeKey("bets/members.json", data);
+      return { users: rows(data.users), online: onlineOf(data), email: row.email, mustChangePass: true };
     },
   };
 }

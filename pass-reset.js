@@ -140,6 +140,7 @@ async function applyReset(token, password, loadMembers, writeKey, passHash) {
   const salt = crypto.randomBytes(16).toString("hex");
   user.salt = salt;
   user.hash = passHash(next, salt);
+  user.mustChangePass = false;
   delete user.resetHash;
   delete user.resetAt;
   await writeKey("bets/members.json", data);
