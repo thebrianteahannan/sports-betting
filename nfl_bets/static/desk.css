@@ -416,6 +416,33 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
   cursor: pointer;
 }
 .hot:hover, .hot.on { box-shadow: inset 0 0 0 2px rgba(61, 255, 110, 0.0), 0 0 18px rgba(61, 255, 110, 0.35); }
+#desk-fantasy {
+  position: absolute;
+  left: 42px;
+  top: 628px;
+  z-index: 9;
+  width: auto;
+  max-width: 210px;
+  margin: 0;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid rgba(61, 255, 110, 0.85);
+  border-radius: 999px;
+  background: rgba(4, 16, 12, 0.92);
+  box-shadow: 0 0 16px rgba(61, 255, 110, 0.35);
+  color: #3dff6e;
+  font-family: Outfit, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+}
+#desk-fantasy:hover {
+  background: rgba(61, 255, 110, 0.16);
+}
+#desk.tv-full #desk-fantasy,
+body.needs-member #desk-fantasy { display: none; }
 #desk-full, #desk-menu {
   position: absolute;
   top: 0.6rem;

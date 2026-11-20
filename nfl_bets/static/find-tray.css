@@ -244,10 +244,12 @@
 .rec-board > h2 button.find-shot, #desk.tv-full #desk-glass .rec-board > h2 button.find-shot { display: inline-flex; align-items: center; gap: 0.4rem; flex: none; width: auto; height: auto; min-height: 0; margin: 0 0 0 auto; padding: 0.3rem 0.8rem; border: 1px solid #3dff6e; border-radius: 999px; background: #07140f; box-shadow: none; color: #3dff6e; font-family: Outfit, system-ui, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: normal; text-transform: none; cursor: pointer; }
 .rec-board > h2 button.find-rec-go,
 .rec-board > h2 button.find-build-go,
+.rec-board > h2 button.find-fantasy-go,
 .rec-board > h2 button.find-quick-go,
 .rec-board > h2 button.find-games-go,
 #desk.tv-full #desk-glass .rec-board > h2 button.find-rec-go,
 #desk.tv-full #desk-glass .rec-board > h2 button.find-build-go,
+#desk.tv-full #desk-glass .rec-board > h2 button.find-fantasy-go,
 #desk.tv-full #desk-glass .rec-board > h2 button.find-quick-go,
 #desk.tv-full #desk-glass .rec-board > h2 button.find-games-go { display: inline-flex; align-items: center; flex: none; width: auto; height: auto; min-height: 0; margin: 0; padding: 0.28rem 0.75rem; border: 1px solid #3dff6e; border-radius: 999px; background: #07140f; box-shadow: none; color: #3dff6e; font-family: Outfit, system-ui, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: normal; text-transform: none; cursor: pointer; }
 .find-board.find-rec-page > h2 > button.find-quick-go { margin-left: auto; }

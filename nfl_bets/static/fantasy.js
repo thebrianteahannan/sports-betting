@@ -39,7 +39,7 @@ function fantasyHead(board) {
   const head = document.createElement("div");
   head.className = "fantasy-head";
   const title = document.createElement("h2");
-  title.textContent = "Start / Sit";
+  title.textContent = "Fantasy Start / Sit";
   const back = document.createElement("button");
   back.type = "button";
   back.className = "fantasy-back";
@@ -138,16 +138,26 @@ function fantasyRow(player, kind) {
   const row = document.createElement("button");
   row.type = "button";
   row.className = `fantasy-row ${kind}${fantasyState.openId === player.id ? " open" : ""}`;
-  const slot = player.slot ? `<i class="slot">${fantasyEsc(player.slot)}</i>` : "";
-  const prop = player.prop
-    ? `<span class="prop">${fantasyEsc(player.prop.label)}${player.prop.odds != null ? ` · ${fantasyEsc(fantasyOdds(player.prop.odds))}` : ""}</span>`
-    : `<span class="prop mute">No prop match</span>`;
+  const slot = player.slot ? `<i class="slot">${fantasyEsc(player.slot)}</i>` : `<i class="slot">BN</i>`;
+  const last = String(player.name || "").trim().split(/\s+/).pop() || player.name || "";
   const injury = player.injury || (/out|ir/i.test(player.status || "") ? player.status : "");
+  const tag = [player.team, injury].filter(Boolean).join(" · ");
+  let prop = "";
+  if (player.prop) {
+    let label = String(player.prop.label || "");
+    const who = String(player.name || "");
+    if (who && label.toLowerCase().startsWith(who.toLowerCase())) label = label.slice(who.length).trim();
+    label = label.replace(/\s+/g, " ").trim();
+    const odds = player.prop.odds != null ? fantasyOdds(player.prop.odds) : "";
+    prop = `<span class="prop">${fantasyEsc(label)}${odds ? ` ${fantasyEsc(odds)}` : ""}</span>`;
+  } else {
+    prop = `<span class="prop mute">—</span>`;
+  }
   row.innerHTML = `
     ${slot}
-    <span class="who"><b>${fantasyEsc(player.name)}</b><em>${fantasyEsc([player.pos || (player.fantasy || [])[0], player.team, injury].filter(Boolean).join(" · "))}</em></span>
-    <span class="score">${fantasyEsc(player.empty ? "—" : player.score)}</span>
+    <span class="who"><b>${fantasyEsc(last)}</b>${tag ? `<em>${fantasyEsc(tag)}</em>` : ""}</span>
     ${prop}
+    <span class="score">${fantasyEsc(player.empty ? "—" : player.score)}</span>
   `;
   if (!player.empty) {
     row.addEventListener("click", () => {
@@ -186,8 +196,8 @@ function fantasyLineup(board, result) {
   meta.innerHTML = `
     <p><b>${fantasyEsc((result.league && result.league.name) || "League")}</b>
       · ${fantasyEsc((result.owner && (result.owner.team_name || result.owner.display_name)) || fantasyState.user)}
-      ${result.week != null ? ` · Week ${fantasyEsc(result.week)}` : ""}</p>
-    <p class="quiet">${fantasyEsc(result.note || "Roster is not saved.")}</p>
+      ${result.week != null ? ` · Wk ${fantasyEsc(result.week)}` : ""}
+      <i class="fantasy-note-inline">${fantasyEsc(result.note || "Roster not saved.")}</i></p>
   `;
   wrap.append(meta);
 
