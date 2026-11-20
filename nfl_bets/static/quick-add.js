@@ -123,6 +123,70 @@ function quickAddPlayers(people, sport, gameKey) {
   }).sort((a, b) => Number(quickAddPersonRec(b, sport, gameKey)) - Number(quickAddPersonRec(a, sport, gameKey)) || a.name.localeCompare(b.name));
 }
 
+function quickAddSideNick(side) {
+  return typeof whereNick === "function" ? whereNick(side) : String(side || "").split(" ").pop();
+}
+
+function quickAddClubMatch(side, nick) {
+  const team = String(nick || "").trim();
+  if (!team || !side) return false;
+  const mine = quickAddSideNick(side);
+  return side === team || side.endsWith(` ${team}`) || team === mine || team.endsWith(` ${mine}`) || mine === team;
+}
+
+function quickAddPersonClub(person, game) {
+  const nick = String(person && person.team || "").trim();
+  const sidesOf = (match) => String(match || "").split(/\s+@\s+/).map((side) => side.trim()).filter(Boolean);
+  const from = (match) => sidesOf(match).find((side) => quickAddClubMatch(side, nick));
+  if (game && game.match) {
+    const hit = from(game.match);
+    if (hit) return hit;
+  }
+  const bet = ((person && person.bets) || []).find((row) => row.match);
+  if (bet) {
+    const hit = from(bet.match);
+    if (hit) return hit;
+  }
+  return nick || "Other";
+}
+
+function quickAddPersonSay(person) {
+  const pos = String(person && person.pos || "").trim();
+  return pos ? `${person.name} · ${pos}` : person.name;
+}
+
+function quickAddPlayerGroups(players, sport, gameKey, game) {
+  const order = game && game.match
+    ? String(game.match).split(/\s+@\s+/).map((side) => side.trim()).filter(Boolean)
+    : [];
+  const groups = new Map();
+  players.forEach((person) => {
+    const club = quickAddPersonClub(person, game);
+    const key = club.toLowerCase();
+    if (!groups.has(key)) groups.set(key, { club, people: [] });
+    groups.get(key).people.push(person);
+  });
+  const rows = [...groups.values()];
+  rows.forEach((row) => {
+    row.people.sort((a, b) => Number(quickAddPersonRec(b, sport, gameKey)) - Number(quickAddPersonRec(a, sport, gameKey)) || a.name.localeCompare(b.name));
+    row.rec = row.people.some((person) => quickAddPersonRec(person, sport, gameKey));
+  });
+  return rows.sort((a, b) => {
+    const ai = order.findIndex((side) => quickAddClubMatch(side, a.club) || side.toLowerCase() === a.club.toLowerCase());
+    const bi = order.findIndex((side) => quickAddClubMatch(side, b.club) || side.toLowerCase() === b.club.toLowerCase());
+    if (ai >= 0 || bi >= 0) return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+    return Number(b.rec) - Number(a.rec) || a.club.localeCompare(b.club);
+  });
+}
+
+function quickAddTeamHead(club) {
+  const head = document.createElement("b");
+  head.className = "quick-add-team";
+  const code = typeof gameShortTeam === "function" ? gameShortTeam(club) : quickAddSideNick(club);
+  head.innerHTML = `${quickAddLogoImg(club)}<span>${esc(code || club)}</span>`;
+  return head;
+}
+
 function quickAddPerson(people) {
   return people.find((person) => person.key === quickAdd.player) || null;
 }
@@ -279,6 +343,7 @@ function quickAddPut(board, fresh) {
     if (typeof paintParlay === "function") paintParlay();
   }
   quickAddReset({ when: true, sport: true });
+  if (typeof legNewClose === "function") legNewClose();
   if (typeof parlayOpenTray === "function") parlayOpenTray();
   if (typeof startPaint === "function") startPaint(1);
 }
@@ -389,14 +454,25 @@ function quickAddBox(board) {
       paint();
     }, game ? { html: `◂ ${quickAddGameHtml(game)}` } : null));
   }
-  quickAddPlayers(people, quickAdd.sport, quickAdd.team).slice(0, quickAdd.q.trim() || quickAdd.team ? 60 : 24).forEach((person) => {
-    const rec = quickAddPersonRec(person, quickAdd.sport, quickAdd.team);
-    picks.append(quickAddChip(person.name, quickAdd.player === person.key, () => {
-      quickAdd.player = person.key;
-      quickAdd.prop = "";
-      quickAdd.value = "";
-      paint();
-    }, { rec }));
+  const playerCap = quickAdd.q.trim() || quickAdd.team ? 60 : 24;
+  const players = quickAddPlayers(people, quickAdd.sport, quickAdd.team).slice(0, playerCap);
+  quickAddPlayerGroups(players, quickAdd.sport, quickAdd.team, game).forEach((group) => {
+    const block = document.createElement("div");
+    block.className = "quick-add-team-block";
+    block.append(quickAddTeamHead(group.club));
+    const row = document.createElement("div");
+    row.className = "quick-add-team-picks";
+    group.people.forEach((person) => {
+      const rec = quickAddPersonRec(person, quickAdd.sport, quickAdd.team);
+      row.append(quickAddChip(quickAddPersonSay(person), quickAdd.player === person.key, () => {
+        quickAdd.player = person.key;
+        quickAdd.prop = "";
+        quickAdd.value = "";
+        paint();
+      }, { rec }));
+    });
+    block.append(row);
+    picks.append(block);
   });
   if (!picks.childElementCount) {
     const none = document.createElement("p");

@@ -207,6 +207,19 @@ function gameFourFill(box, stacks, at, recCount) {
   box.dataset.grade = recommended ? "recommended" : "generated";
 }
 
+function gameFourNodes(match) {
+  return match ? match.querySelectorAll(":scope > .find-four, :scope > .find-bets > .find-four") : [];
+}
+
+function gameFourPlace(bets, box) {
+  if (!bets || !box) return;
+  box.style.gridColumn = "";
+  box.open = true;
+  const sum = bets.querySelector(":scope > summary");
+  if (sum) sum.after(box);
+  else bets.prepend(box);
+}
+
 function gameFourMount(match, betsNode, stacksNode, recommended = true, recCount = 0) {
   const box = document.createElement("details");
   box.className = "find-four find-team-bets";
@@ -216,10 +229,17 @@ function gameFourMount(match, betsNode, stacksNode, recommended = true, recCount
   box.innerHTML = recommended
     ? `<summary><b class="find-script-head">Parlay's 4-Legged Friend <i class="find-four-tag">Recommended</i>${n ? `<i class="find-script-count">${n}</i>` : ""}</b></summary><p class="find-four-shape">Anchors and juice · 3 players + 1 game bet</p>`
     : `<summary><b class="find-script-head">Generated 4-leg parlay <i class="find-four-tag find-four-tag-gen">Generated</i></b></summary><p class="find-four-shape">Anchors and juice · 3 players + 1 game bet</p>`;
-  if (betsNode) betsNode.before(box);
+  const bets = betsNode || (match && match.querySelector(":scope > .find-bets"));
+  if (bets) gameFourPlace(bets, box);
   else if (stacksNode) stacksNode.before(box);
-  else match.append(box);
+  else if (match) match.append(box);
   return box;
+}
+
+function gameFourAdopt(match, bets) {
+  if (!match || !bets) return;
+  const four = [...gameFourNodes(match)].find((node) => node.parentElement !== bets) || bets.querySelector(":scope > .find-four");
+  if (four) gameFourPlace(bets, four);
 }
 
 function gameFourShow(match, game, found, near) {
@@ -245,7 +265,7 @@ function gameFourShow(match, game, found, near) {
   // Team filter can wipe the slate — fall back to the closest whole-game ticket.
   if (!(rec.length || gen.length) && side) ({ hard: rec, soft: gen } = take(false));
   const list = [...rec, ...gen];
-  match.querySelectorAll(":scope > .find-four").forEach((node) => node.remove());
+  gameFourNodes(match).forEach((node) => node.remove());
   const betsNode = match.querySelector(":scope > .find-bets");
   const stacksNode = match.querySelector(":scope > .find-stacks");
   if (!list.length) {
@@ -276,7 +296,7 @@ function paintGameFour(holder, game) {
   if (!game || !game.match || !/^(NFL|NBA|WNBA|NHL|MLB)$/i.test(String(game.sport || ""))) return;
   const match = holder.classList.contains("find-match") ? holder : [...holder.querySelectorAll(".find-match")].pop();
   if (!match || typeof gameStackData !== "function") return;
-  match.querySelectorAll(":scope > .find-four").forEach((node) => node.remove());
+  gameFourNodes(match).forEach((node) => node.remove());
   match._gameFourRetry = 0;
   gameStackData().then((data) => {
     if (!match.isConnected) return;
@@ -297,10 +317,12 @@ function paintGameFour(holder, game) {
     }
   }).catch(() => {
     if (!match.isConnected) return;
-    match.querySelectorAll(":scope > .find-four").forEach((node) => node.remove());
+    gameFourNodes(match).forEach((node) => node.remove());
     const box = gameFourMount(match, match.querySelector(":scope > .find-bets"), match.querySelector(":scope > .find-stacks"), false);
     box.append(Object.assign(document.createElement("p"), { className: "quiet", textContent: "Could not load Anchors and juice." }));
   });
 }
 
 window.paintGameFour = paintGameFour;
+window.gameFourPlace = gameFourPlace;
+window.gameFourAdopt = gameFourAdopt;

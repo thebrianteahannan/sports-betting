@@ -262,7 +262,7 @@ function paintScores(holder, game, people, list, hits) {
     const four = match.querySelector(":scope > .find-four");
     const script = match.querySelector(":scope > .find-script:not(.find-bets)");
     if (bets) bets.after(box);
-    else if (four) four.after(box);
+    else if (four && four.parentElement === match) four.after(box);
     else if (script) script.after(box);
     else match.append(box);
     paintTdRec(match);

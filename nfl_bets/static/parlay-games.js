@@ -22,8 +22,17 @@ function parlayGameMatchOf(node) {
 }
 
 function parlayGameFoldSay(match) {
-  const fold = match && match.querySelector(":scope > .find-when .find-game-fold");
-  if (fold) fold.textContent = match.classList.contains("find-game-shut") ? "Show ▾" : "Hide ▴";
+  if (!match) return;
+  const shut = match.classList.contains("find-game-shut");
+  const say = shut ? "Show ▾" : "Hide ▴";
+  match.querySelectorAll(":scope > .find-when .find-game-fold, :scope > .find-when .find-game-open").forEach((node) => {
+    if (node.classList.contains("find-game-open")) {
+      const base = node.dataset.base || node.textContent.replace(/\s·\s(?:Show ▾|Hide ▴)\s*$/, "").trim();
+      node.dataset.base = base;
+      node.textContent = [base, say].filter(Boolean).join(" · ");
+      node.setAttribute("aria-expanded", String(!shut));
+    } else node.textContent = say;
+  });
 }
 
 function parlayGameShut(match, shut) {
@@ -52,12 +61,22 @@ function parlayGameLabel(match, bet) {
   const tools = bar.querySelector(".find-game-tools");
   const short = typeof gameShort === "function" ? gameShort(bet.match) : "";
   const time = bet.kickoff && typeof window.when === "function" ? `${window.when(bet.kickoff)} ET` : "";
+  const base = [short || bet.match, time].filter(Boolean).join(" · ");
   bar.replaceChildren();
-  bar.append([short || bet.match, time].filter(Boolean).join(" · "));
+  const open = document.createElement("button");
+  open.type = "button";
+  open.className = "find-game-open";
+  open.dataset.base = base;
+  open.setAttribute("aria-expanded", String(!match.classList.contains("find-game-shut")));
+  bar.append(open);
   if (tools) {
     tools.querySelectorAll(".find-game-x").forEach((node) => node.remove());
+    const fold = tools.querySelector(".find-game-fold");
+    // Keep Show on the left of the tools row so chat/profile chips do not cover it.
+    if (fold) tools.prepend(fold);
     bar.append(tools);
   }
+  parlayGameFoldSay(match);
 }
 
 function parlayGamesPaint() {
@@ -96,17 +115,19 @@ function parlayGamesPaint() {
 }
 
 document.addEventListener("click", (event) => {
-  const fold = event.target.closest && event.target.closest("#desk-glass-in .find-teams[data-parlay-games] .find-game-fold");
-  if (!fold) return;
-  const match = fold.closest(".find-match");
+  const bar = event.target.closest && event.target.closest("#desk-glass-in .find-teams[data-parlay-games] .find-match > .find-when");
+  if (!bar) return;
+  if (event.target.closest(".find-game-x")) return;
+  const match = bar.closest(".find-match");
   const teams = match && match.parentElement;
   if (!match || !teams) return;
-  queueTimeout(() => {
-    if (match.classList.contains("find-game-shut")) return;
-    teams.querySelectorAll(":scope > .find-match[data-parlay-match]").forEach((other) => {
-      if (other !== match) parlayGameShut(other, true);
-    });
-  }, 0);
+  event.preventDefault();
+  event.stopPropagation();
+  const open = !match.classList.contains("find-game-shut");
+  if (open) parlayGameShut(match, true);
+  else {
+    parlayGameExpand(parlayGameMatchOf(match));
+  }
 });
 
 document.addEventListener("click", (event) => {

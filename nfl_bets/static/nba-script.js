@@ -494,7 +494,20 @@ function nbaScript(holder, game, people) {
     const hasBody = !!(nba || (story && ((story.sections || []).length || (story.plays || []).length)));
     const oldBets = box.parentElement && box.parentElement.querySelector(":scope > .find-bets");
     const recBets = story && ((story.bets && (story.bets.groups || []).length) || (story.lines || []).length) ? { picks: [], groups: [], ...(story.bets || {}), lines: story.lines || [] } : null;
-    if (recBets) { const fresh = scriptBetsBox(recBets, full, people); scriptRecKeep(recBets, full); scriptRecMark(match, recBets); fresh.open = !!(oldBets && oldBets.open); if (oldBets) oldBets.replaceWith(fresh); else { const next = box.nextElementSibling; (next && next.classList.contains("find-brief") ? next : box).after(fresh); } scriptBetsSide(match, fresh); const td = match.querySelector(":scope > .find-td"); if (td) fresh.after(td); }
+    if (recBets) {
+      const keptFour = (oldBets && oldBets.querySelector(":scope > .find-four")) || match.querySelector(":scope > .find-four");
+      const fresh = scriptBetsBox(recBets, full, people);
+      scriptRecKeep(recBets, full);
+      scriptRecMark(match, recBets);
+      fresh.open = !!(oldBets && oldBets.open);
+      if (oldBets) oldBets.replaceWith(fresh);
+      else { const next = box.nextElementSibling; (next && next.classList.contains("find-brief") ? next : box).after(fresh); }
+      if (keptFour && typeof gameFourPlace === "function") gameFourPlace(fresh, keptFour);
+      else if (typeof gameFourAdopt === "function") gameFourAdopt(match, fresh);
+      scriptBetsSide(match, fresh);
+      const td = match.querySelector(":scope > .find-td");
+      if (td) fresh.after(td);
+    }
     if (!hasBody) { if (got.nbaDone && got.storyDone) { const node = box.querySelector(".find-brief"); if (node) box.before(node); box.remove(); } return; }
     const data = box.querySelector(":scope > .find-brief");
     sum.replaceChildren(sum.firstElementChild);
