@@ -50,9 +50,7 @@ document.addEventListener("click", (event) => {
   const teams = board.querySelector(":scope > .find-teams");
   // When the open bet already stacked its games under THE BET, expand that one.
   if (teams && teams.dataset.parlayGames && typeof parlayGameExpand === "function") {
-    const open = [...teams.querySelectorAll(":scope > .find-match[data-parlay-match]")].find((node) => (typeof parlayGameMatchOf === "function" ? parlayGameMatchOf(node) : node.dataset.parlayMatch) === leg.match && !node.classList.contains("find-game-shut"));
-    if (open && typeof parlayGameShut === "function") parlayGameShut(open, true);
-    else parlayGameExpand(leg.match);
+    parlayGameExpand(leg.match);
     return;
   }
   if (typeof paintMatch !== "function") return;

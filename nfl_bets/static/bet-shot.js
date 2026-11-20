@@ -407,9 +407,10 @@ function shotPick(board) {
 }
 
 function betShotMount() {
-  const board = document.querySelector(".find-board");
+  const board = document.querySelector("#desk-glass-in .find-board") || document.querySelector(".find-board");
   const head = board && board.querySelector(":scope > h2");
   if (!head || head.querySelector(".find-shot")) return;
+  if (board.dataset.page === "rec" || board.classList.contains("find-rec-page")) return;
   const go = document.createElement("button");
   go.type = "button";
   go.className = "find-shot";
@@ -420,8 +421,8 @@ function betShotMount() {
   file.type = "file"; file.accept = "image/*"; file.hidden = true; file.className = "find-shot-file";
   file.addEventListener("change", () => { const pick = file.files && file.files[0]; file.value = ""; if (pick) shotRead(board, pick); });
   go.addEventListener("click", () => shotPick(board));
-  const games = head.querySelector(".find-games-go");
-  if (games) games.before(go, file); else head.append(go, file);
+  const tip = head.querySelector(".find-quick-go, .find-rec-go, .find-games-go");
+  if (tip) tip.before(go, file); else head.append(go, file);
 }
 
 window.addEventListener("paste", (event) => {

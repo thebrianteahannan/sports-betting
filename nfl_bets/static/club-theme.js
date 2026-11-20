@@ -54,12 +54,22 @@ function clubBase(board, names) {
   clubPaint(board);
 }
 
+function clubClear(node) {
+  if (!node) return;
+  node.classList.remove("club-on");
+  CLUB_VARS.forEach((key) => node.style.removeProperty(`--club-${key}`));
+}
+
 function clubPaint(board) {
   const side = board.querySelector(".find-side-go.on");
   const names = side ? [side.textContent.split(",")[0]] : board.clubNames || [];
   const [a, b] = names.map((name) => clubPalette(name, board.clubSport)).filter(Boolean);
   const glass = board.closest("#desk-glass");
-  if (!a) { board.classList.remove("club-on"); CLUB_VARS.forEach((key) => board.style.removeProperty(`--club-${key}`)); if (glass) glass.style.removeProperty("--club-page"); return; }
+  // Theme THE GAME only — leave Build a bet / THE BET on the default look.
+  clubClear(board);
+  if (glass) glass.style.removeProperty("--club-page");
+  const matches = [...board.querySelectorAll(".find-match")];
+  if (!a) { matches.forEach(clubClear); return; }
   const two = b && b !== a;
   const mix = (key) => (two ? `linear-gradient(90deg, ${a[key]}, ${b[key]})` : a[key]);
   const vars = {
@@ -67,7 +77,8 @@ function clubPaint(board) {
     chip: mix("c1"), "chip-ink": "#ffffff", pick: mix("c2"), "pick-ink": two ? "#ffffff" : a.ink2, "pick-shadow": two ? "0 1px 2px rgba(0, 0, 0, 0.7)" : "none",
     card: mix("card"), panel: mix("card"), edge: a.edge, line: a.line, hot: a.hot, cool: (b || a).cool, input: a.input,
   };
-  CLUB_VARS.forEach((key) => board.style.setProperty(`--club-${key}`, vars[key]));
-  if (glass) glass.style.setProperty("--club-page", vars.page);
-  board.classList.add("club-on");
+  matches.forEach((match) => {
+    CLUB_VARS.forEach((key) => match.style.setProperty(`--club-${key}`, vars[key]));
+    match.classList.add("club-on");
+  });
 }

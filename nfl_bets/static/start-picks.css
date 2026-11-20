@@ -11,6 +11,9 @@
 .find-board .quick-add-team-block { flex: 1 0 100%; display: grid; gap: 0.35rem; margin: 0.2rem 0 0.15rem; }
 .find-board .quick-add-team-block > .quick-add-team { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0; color: #e7c15a; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .find-board .quick-add-team-block > .quick-add-team .desk-team-logo { width: 16px; height: 16px; margin: 0; object-fit: contain; }
+.find-board .quick-add-team-card { flex: 1 1 16rem; display: grid; gap: 0.55rem; margin: 0.2rem 0 0.15rem; padding: 0.7rem 0.75rem; border: 1px solid rgba(61, 255, 110, 0.3); border-radius: 12px; background: rgba(0, 0, 0, 0.28); }
+.find-board .quick-add-team-card.other { flex: 1 0 100%; border-color: rgba(255, 255, 255, 0.14); }
+.find-board .quick-add-team-card > .quick-add-team { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0; color: #e7c15a; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .find-board .quick-add-team-picks { display: flex; flex-wrap: wrap; gap: 0.45rem; }
 .find-board .quick-add-lines { display: flex; flex-direction: column; gap: 0.45rem; padding: 0.1rem; }
 :is(.rec-board, #choice-result) :is(.find-start, .find-new) .quick-add-line { display: block !important; width: 100% !important; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.7rem 0.85rem !important; border: 1px solid #2c3742 !important; border-radius: 10px !important; background: rgba(255, 255, 255, 0.04) !important; box-shadow: none !important; color: #f4f7fb !important; font-size: 0.95rem !important; font-weight: 600 !important; letter-spacing: 0 !important; line-height: 1.35 !important; text-align: left !important; text-transform: none !important; cursor: pointer; -webkit-appearance: none; appearance: none; }
@@ -45,7 +48,16 @@
 :is(.rec-board, #choice-result) :is(.find-start, .find-new) .quick-add-go.new:hover { background: rgba(61, 255, 110, 0.12) !important; }
 .find-tray .find-new .quick-add { margin: 0; padding: 0; border: 0; background: transparent; }
 .find-tray .find-new .quick-add-head > b { display: none; }
-.find-board:has(.find-guide, .find-match:not([data-parlay-match])) .find-start { display: none; }
+.find-board:has(.find-guide, .find-match:not([data-parlay-match])):not(:has(.find-start.find-start-open)) .find-start { display: none; }
+.find-board .find-start.find-start-open { display: block !important; }
+.find-board.find-rec-page > label.find,
+.find-board.find-rec-page > .find-span,
+.find-board.find-rec-page > .find-shot-row,
+.find-board.find-rec-page > h2 .find-shot,
+.find-board.find-rec-page > .find-hits:not(.find-tray),
+.find-board.find-rec-page > .find-saved { display: none !important; }
+.find-board.find-rec-page > h2 { margin-bottom: 0.75rem; }
+.find-board.find-rec-page > .find-start { margin-top: 0; }
 .find-board .find-start .find-start-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; margin: 0 0 0.6rem; position: sticky; top: 0.4rem; z-index: 6; background: #000; box-shadow: 0 0 0 8px #000, 0 14px 12px -2px rgba(0, 0, 0, 0.85); }
 .find-board .find-start .desk-games-tabs { display: flex; width: fit-content; margin: 0; }
 .find-board .find-start .find-start-span { flex: 1 0 100%; }
@@ -57,6 +69,27 @@
 .find-start-random > select option { background: #07090e; color: #f4f7fb; }
 :is(.rec-board, #choice-result) .find-start button.desk-games-tab { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.3rem 0.65rem !important; border: 0 !important; border-radius: 7px !important; background: transparent !important; box-shadow: none !important; color: #9fb3c8 !important; font-size: 14px !important; font-weight: 800 !important; letter-spacing: normal !important; text-transform: none !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-games-tab.on { background: #e7c15a !important; color: #07090e !important; }
+.find-board .find-start button.desk-games-tab > i.desk-tab-n { margin-left: 0.28rem; padding: 0.05rem 0.4rem; border-radius: 999px; background: rgba(255, 255, 255, 0.12); color: #e7c15a; font-size: 12px; font-style: normal; font-weight: 800; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; vertical-align: 0.05em; }
+.find-board .find-start button.desk-games-tab.on > i.desk-tab-n { background: rgba(7, 9, 14, 0.18); color: #07090e; }
+.find-board .find-start .find-start-stats { margin: 0.35rem 0 0.8rem; max-width: 34rem; }
+.find-board .find-start .find-start-stats-load { margin: 0; }
+.find-board .find-start .find-start-stats-score { display: grid; gap: 0.85rem; color: #f4f7fb; }
+.find-board .find-start .find-start-stats-score > i { color: #3dff6e; font-size: 12px; font-style: normal; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.find-board .find-start .hit-rate { display: grid; gap: 0.3rem; padding: 0 0 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.find-board .find-start .hit-rate:last-child { padding-bottom: 0; border-bottom: 0; }
+.find-board .find-start .hit-rate-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
+.find-board .find-start .hit-rate-top > b { color: #9fb3c8; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.find-board .find-start .hit-rate-top > strong { color: #f4f7fb; font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+.find-board .find-start .hit-rate.hit-hot .hit-rate-top > strong { color: #3dff6e; }
+.find-board .find-start .hit-rate.hit-ok .hit-rate-top > strong { color: #e7c15a; }
+.find-board .find-start .hit-rate.hit-cold .hit-rate-top > strong { color: #ff8f8f; }
+.find-board .find-start .hit-rate.hit-empty .hit-rate-top > strong { color: #6b7a88; }
+.find-board .find-start .hit-rate-bar { height: 0.45rem; border-radius: 999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.find-board .find-start .hit-rate-bar > i { display: block; height: 100%; width: 0; border-radius: inherit; background: #6b7a88; font-style: normal; }
+.find-board .find-start .hit-rate.hit-hot .hit-rate-bar > i { background: linear-gradient(90deg, #1f9a48, #3dff6e); }
+.find-board .find-start .hit-rate.hit-ok .hit-rate-bar > i { background: linear-gradient(90deg, #a8842a, #e7c15a); }
+.find-board .find-start .hit-rate.hit-cold .hit-rate-bar > i { background: linear-gradient(90deg, #a34545, #ff8f8f); }
+.find-board .find-start .hit-rate-count { color: #9fb3c8; font-size: 13px; font-weight: 600; }
 :is(.rec-board, #choice-result) .find-start button.desk-game { display: grid !important; width: 100% !important; min-height: 0 !important; margin: 0 0 10px !important; padding: 12px 14px !important; border: 1px solid rgba(61, 255, 110, 0.35) !important; border-radius: 12px !important; background: #041018 !important; box-shadow: none !important; color: #f4f7fb !important; font: inherit !important; text-align: left !important; text-transform: none !important; letter-spacing: normal !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-game:hover { border-color: #3dff6e !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-rec { margin: 0 0 12px !important; }

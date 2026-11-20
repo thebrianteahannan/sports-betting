@@ -17,7 +17,10 @@ function betFromTag() {
   }
   [...betFrom.keys()].forEach((key) => { if (!parlayLeg.has(key)) betFrom.delete(key); });
   const next = betFromNext && Date.now() - betFromNext.at < 5000 ? betFromNext : null;
-  parlayLeg.forEach((bet, key) => { if (!betFrom.has(key) || (next && next.all)) betFrom.set(key, next ? next.say : "you"); if (betFrom.get(key) === "you" && betFromRec(bet)) betFrom.set(key, "Recommended"); });
+  parlayLeg.forEach((bet, key) => {
+    if (!betFrom.has(key) || (next && next.all)) betFrom.set(key, next ? next.say : "you");
+    if (/^recommended$/i.test(String(betFrom.get(key) || "")) || /^random recommended$/i.test(String(betFrom.get(key) || ""))) betFrom.set(key, "you");
+  });
   if (next && parlayLeg.size) betFromNext = null;
 }
 
@@ -36,9 +39,9 @@ function betFromRec(bet) {
 const BET_FROM_OLD = { "Random parlay": "Random Recommended", "Add juice": "Juice", "Add stability": "Stability" };
 
 function betFromText() {
-  const says = [...new Set([...parlayLeg.keys()].map((key) => BET_FROM_OLD[betFrom.get(key)] || betFrom.get(key)).filter(Boolean))].sort((a, b) => (a === "you") - (b === "you"));
+  const skip = /^(you|recommended|random recommended)$/i;
+  const says = [...new Set([...parlayLeg.keys()].map((key) => BET_FROM_OLD[betFrom.get(key)] || betFrom.get(key)).filter((say) => say && !skip.test(say)))].sort();
   if (!says.length) return "";
-  if (says.length === 1 && says[0] === "you") return "Built by you";
   return `From ${says.join(" + ")}`;
 }
 

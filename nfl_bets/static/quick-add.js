@@ -1,5 +1,5 @@
 /** Quick add above Recommended: today/week → league → team or player → player → prop → value → current or new bet. */
-const quickAdd = { when: "today", sport: "", team: "", player: "", prop: "", value: "", q: "" };
+const quickAdd = { when: "today", sport: "", team: "", side: "", player: "", prop: "", value: "", q: "" };
 
 function quickAddReset(keep) {
   const when = keep && keep.when ? quickAdd.when : "today";
@@ -7,6 +7,7 @@ function quickAddReset(keep) {
   quickAdd.when = when;
   quickAdd.sport = sport;
   quickAdd.team = "";
+  quickAdd.side = "";
   quickAdd.player = "";
   quickAdd.prop = "";
   quickAdd.value = "";
@@ -121,14 +122,27 @@ function quickAddBare(name) {
   return raw.replace(/ (jr|sr|ii|iii|iv|v)$/, "");
 }
 
-function quickAddPlayers(people, sport, gameKey) {
+function quickAddOnSide(person, side, game, people) {
+  if (!side) return true;
+  const club = quickAddResolveSide(person, game, quickAdd.sport, people) || quickAddPersonClub(person, game);
+  if (!club) return false;
+  return quickAddClubMatch(side, club) || quickAddClubMatch(club, side) || quickAddFold(side) === quickAddFold(club);
+}
+
+function quickAddSideOn(person) {
+  if (!quickAdd.side || !person) return false;
+  return quickAddClubMatch(quickAdd.side, person.name) || quickAddClubMatch(person.name, quickAdd.side) || quickAddFold(quickAdd.side) === quickAddFold(person.name);
+}
+
+function quickAddPlayers(people, sport, gameKey, game, anySide) {
   const q = quickAdd.q.trim().toLowerCase();
   return people.filter((person) => {
     if (person.kind !== "player" || /^(any other|no )/i.test(person.name || "")) return false;
     if (q && !person.name.toLowerCase().includes(q)) return false;
     const bets = (person.bets || []).filter((bet) => Number(bet.odds) && quickAddOnSport(bet, sport));
     if (!bets.length) return false;
-    return quickAddOnGame(person, gameKey, sport);
+    if (!quickAddOnGame(person, gameKey, sport)) return false;
+    return anySide ? true : quickAddOnSide(person, quickAdd.side, game, people);
   }).sort((a, b) => Number(quickAddPersonRec(b, sport, gameKey)) - Number(quickAddPersonRec(a, sport, gameKey)) || a.name.localeCompare(b.name));
 }
 
@@ -154,33 +168,121 @@ function quickAddSideNick(side) {
 }
 
 function quickAddClubMatch(side, nick) {
+  const left = String(side || "").trim();
   const team = String(nick || "").trim();
-  if (!team || !side) return false;
-  const mine = quickAddSideNick(side);
-  const fold = (text) => String(text || "").toLowerCase();
-  return side === team || side.endsWith(` ${team}`) || team === mine || team.endsWith(` ${mine}`) || mine === team
-    || fold(side) === fold(team) || fold(side).endsWith(` ${fold(mine)}`) || fold(team).endsWith(` ${fold(mine)}`);
+  if (!left || !team) return false;
+  const fold = (text) => String(text || "").toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
+  const a = fold(left), b = fold(team);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const nickA = fold(quickAddSideNick(left));
+  const nickB = fold(quickAddSideNick(team));
+  // Match full name to nickname either way — never test a side against its own nick alone.
+  if (nickA && (b === nickA || b.endsWith(` ${nickA}`))) return true;
+  if (nickB && (a === nickB || a.endsWith(` ${nickB}`))) return true;
+  if (nickA && nickB && nickA === nickB) return true;
+  const codeA = typeof gameShortTeam === "function" ? fold(gameShortTeam(left)) : "";
+  const codeB = typeof gameShortTeam === "function" ? fold(gameShortTeam(team)) : "";
+  if (codeA && b === codeA) return true;
+  if (codeB && a === codeB) return true;
+  if (codeA && codeB && codeA === codeB) return true;
+  return false;
 }
 
 function quickAddFold(text) {
   return String(text || "").toLowerCase();
 }
 
-function quickAddPersonClub(person, game) {
+function quickAddGameSides(game) {
+  return String((game && game.match) || "").split(/\s+@\s+/).map((side) => side.trim()).filter(Boolean);
+}
+
+function quickAddSideHit(sides, club) {
+  const want = String(club || "").trim();
+  if (!want || !sides || !sides.length) return "";
+  const hits = sides.filter((side) => quickAddClubMatch(side, want));
+  return hits.length === 1 ? hits[0] : "";
+}
+
+function quickAddClubLookup(person) {
   const bare = quickAddBare(person && person.name);
-  const fromClub = typeof clubOf !== "undefined" && bare ? clubOf.get(bare) : "";
-  const nick = String(fromClub || (person && person.team) || "").trim();
-  const sidesOf = (match) => String(match || "").split(/\s+@\s+/).map((side) => side.trim()).filter(Boolean);
-  if (fromClub && game && game.match) {
-    const hit = sidesOf(game.match).find((side) => quickAddFold(side) === quickAddFold(fromClub) || quickAddClubMatch(side, fromClub) || quickAddClubMatch(fromClub, side));
-    if (hit) return hit;
-    return fromClub;
+  if (!bare) return String((person && person.team) || "").trim();
+  // Exact full-name only. Last-name fuzzy parks Josh Allen under Miami when Kaytron Allen is on that roster.
+  if (typeof clubOf !== "undefined") {
+    const direct = clubOf.get(bare);
+    if (direct) return String(direct).trim();
   }
-  if (game && game.match && nick) {
-    const hit = sidesOf(game.match).find((side) => quickAddClubMatch(side, nick) || (fromClub && (side === fromClub || quickAddFold(side) === quickAddFold(fromClub))));
+  return String((person && person.team) || "").trim();
+}
+
+function quickAddPersonClub(person, game) {
+  const sides = quickAddGameSides(game);
+  const nick = quickAddClubLookup(person);
+  if (sides.length) {
+    const hit = quickAddSideHit(sides, nick);
     if (hit) return hit;
   }
   if (nick && !/^other$/i.test(nick)) return nick;
+  return "";
+}
+
+function quickAddRosterBag(game, sport) {
+  return `${sport || ""}|${quickAddGameKey(game || {})}`;
+}
+
+function quickAddTdSide(people, person, game) {
+  const sides = quickAddGameSides(game);
+  if (sides.length !== 2 || !person || !people) return "";
+  const want = quickAddBare(person.name);
+  if (!want) return "";
+  const spot = `${game.match}|${game.kickoff || ""}`;
+  if (people.tdBook && people.tdBook.who) {
+    let club = people.tdBook.who.get(`${want}|${spot}`);
+    if (!club) {
+      for (const [key, value] of people.tdBook.who) {
+        if (!key.endsWith(`|${spot}`)) continue;
+        const player = key.slice(0, key.length - spot.length - 1);
+        if (player === want || player.startsWith(`${want} `) || want.startsWith(`${player} `)) {
+          club = value;
+          break;
+        }
+      }
+    }
+    const hit = club ? quickAddSideHit(sides, club) : "";
+    if (hit) return hit;
+  }
+  const hits = [];
+  people.forEach((row) => {
+    if (!row || row.kind !== "team") return;
+    const side = quickAddSideHit(sides, row.name);
+    if (!side) return;
+    (row.bets || []).forEach((bet) => {
+      if (bet.match !== game.match) return;
+      if (game.kickoff && bet.kickoff && bet.kickoff !== game.kickoff) return;
+      if (!/td scorer$|to score a td$/i.test(String(bet.market || ""))) return;
+      const label = quickAddBare(bet.label);
+      if (label === want || label.startsWith(`${want} `) || want.startsWith(`${label} `)) hits.push(side);
+    });
+  });
+  const unique = [...new Set(hits)];
+  return unique.length === 1 ? unique[0] : "";
+}
+
+function quickAddResolveSide(person, game, sport, people) {
+  const sides = quickAddGameSides(game);
+  if (sides.length !== 2) return quickAddPersonClub(person, game);
+  const fromTd = quickAddTdSide(people, person, game);
+  if (fromTd) return fromTd;
+  const bare = quickAddBare(person && person.name);
+  const bag = quickAddGameRosters.get(quickAddRosterBag(game, sport || quickAdd.sport));
+  if (bag) {
+    const ready = sides.every((side) => bag.has(side));
+    if (ready) {
+      const hits = sides.filter((side) => bag.get(side).has(bare));
+      if (hits.length === 1) return hits[0];
+      return "";
+    }
+  }
   return "";
 }
 
@@ -196,14 +298,12 @@ function quickAddPersonSay(person) {
   return pos ? `${person.name} · ${pos}` : person.name;
 }
 
-function quickAddPlayerGroups(players, sport, gameKey, game) {
-  const order = game && game.match
-    ? String(game.match).split(/\s+@\s+/).map((side) => side.trim()).filter(Boolean)
-    : [];
+function quickAddPlayerGroups(players, sport, gameKey, game, people) {
+  const order = quickAddGameSides(game);
   const groups = new Map();
   const loose = [];
   players.forEach((person) => {
-    const club = quickAddPersonClub(person, game);
+    const club = order.length === 2 ? quickAddResolveSide(person, game, sport, people) : quickAddPersonClub(person, game);
     if (!club) { loose.push(person); return; }
     const key = club.toLowerCase();
     if (!groups.has(key)) groups.set(key, { club, people: [] });
@@ -220,9 +320,13 @@ function quickAddPlayerGroups(players, sport, gameKey, game) {
     if (ai >= 0 || bi >= 0) return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
     return Number(b.rec) - Number(a.rec) || a.club.localeCompare(b.club);
   });
-  if (loose.length) {
+  if (loose.length && order.length !== 2) {
     loose.sort((a, b) => Number(quickAddPersonRec(b, sport, gameKey)) - Number(quickAddPersonRec(a, sport, gameKey)) || a.name.localeCompare(b.name));
     rows.push({ club: "", people: loose, rec: loose.some((person) => quickAddPersonRec(person, sport, gameKey)) });
+  } else if (loose.length && order.length === 2) {
+    // Still unknown after roster lookup: keep them off a fake Other card; attach once a side resolves.
+    loose.sort((a, b) => Number(quickAddPersonRec(b, sport, gameKey)) - Number(quickAddPersonRec(a, sport, gameKey)) || a.name.localeCompare(b.name));
+    rows.push({ club: "", people: loose, rec: loose.some((person) => quickAddPersonRec(person, sport, gameKey)), pending: true });
   }
   return rows;
 }
@@ -238,27 +342,40 @@ function quickAddTeamHead(club) {
 }
 
 const quickAddRosterJobs = new Set();
+const quickAddGameRosters = new Map();
 
 function quickAddLoadRosters(game, sport, paint) {
   if (!game || !game.match || !sport) return;
-  String(game.match).split(/\s+@\s+/).map((side) => side.trim()).filter(Boolean).forEach((side) => {
-    const key = `${sport}|${side}`;
-    if (quickAddRosterJobs.has(key) || (typeof clubAsked !== "undefined" && clubAsked.has(key))) return;
-    quickAddRosterJobs.add(key);
-    if (typeof clubAsked !== "undefined") clubAsked.add(key);
+  const gameKey = quickAddRosterBag(game, sport);
+  let bag = quickAddGameRosters.get(gameKey);
+  if (!bag) {
+    bag = new Map();
+    quickAddGameRosters.set(gameKey, bag);
+  }
+  quickAddGameSides(game).forEach((side) => {
+    const job = `${gameKey}|${side}`;
+    if (quickAddRosterJobs.has(job)) return;
+    if (bag.has(side) && bag.get(side).size) return;
+    quickAddRosterJobs.add(job);
     fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "roster", name: side, sport }) })
       .then((res) => res.json())
       .then((data) => {
+        const set = new Set();
         (data.players || []).forEach((row) => {
           const name = String((row && row.name) || row || "").replace(/, out$/, "");
           if (!name) return;
           const bare = quickAddBare(name);
+          if (!bare) return;
+          set.add(bare);
           if (typeof clubOf !== "undefined") clubOf.set(bare, side);
           if (row && row.pos && typeof clubSpot !== "undefined") clubSpot.set(bare, String(row.pos));
         });
+        bag.set(side, set);
+        // Empty or failed roster must retry — do not treat clubAsked as done.
+        if (!set.size) quickAddRosterJobs.delete(job);
         if (typeof paint === "function") paint();
       })
-      .catch(() => {});
+      .catch(() => { quickAddRosterJobs.delete(job); });
   });
 }
 
@@ -470,7 +587,10 @@ function quickAddBox(board) {
   const paint = (focusSearch) => {
     const keep = focusSearch && typeof focusSearch === "number" ? focusSearch : null;
     const next = quickAddBox(board);
-    box.replaceWith(next);
+    // Roster callbacks outlive this box — always swap the live Quick Add node.
+    const live = box.isConnected ? box : board.querySelector(".quick-add");
+    if (!live || !live.parentNode) return;
+    live.replaceWith(next);
     if (keep != null) {
       const field = next.querySelector(".quick-add-search");
       if (!field) return;
@@ -506,29 +626,35 @@ function quickAddBox(board) {
     const loaded = !!(all.length || (typeof findParts !== "undefined" && findParts[quickAdd.when] && findParts[quickAdd.when].data));
     none.textContent = !loaded
       ? "Looking up the board."
-      : quickAdd.when === "week"
-        ? "No games left this week that haven’t started."
-        : "No games left today that haven’t started.";
+      : "We don’t support live odds or building live bets yet.";
     box.append(none);
     return box;
   }
   if (quickAdd.sport && !sports.includes(quickAdd.sport)) quickAddReset({ when: true });
-  if (!quickAdd.sport && typeof homeLeague === "string" && homeLeague && sports.includes(homeLeague)) quickAdd.sport = homeLeague;
 
-  box.append(quickAddStep("League", sports.map((sport) => quickAddChip(sport, quickAdd.sport === sport, () => {
-    quickAdd.sport = sport;
+  const clearWho = () => {
     quickAdd.team = "";
+    quickAdd.side = "";
     quickAdd.player = "";
     quickAdd.prop = "";
     quickAdd.value = "";
     quickAdd.q = "";
-    paint();
-  })), "league"));
-
-  if (!quickAdd.sport) return box;
+  };
+  box.append(quickAddStep("League", [
+    quickAddChip("All", !quickAdd.sport, () => { quickAdd.sport = ""; clearWho(); paint(); }),
+    ...sports.map((sport) => quickAddChip(sport, quickAdd.sport === sport, () => {
+      quickAdd.sport = sport;
+      clearWho();
+      paint();
+    })),
+  ], "league"));
 
   const games = quickAddGames(people, quickAdd.sport, quickAdd.when);
   const game = games.find((row) => quickAddGameKey(row) === quickAdd.team) || null;
+  if (quickAdd.side && game) {
+    const sides = String(game.match || "").split(/\s+@\s+/).map((side) => side.trim());
+    if (!sides.some((side) => quickAddClubMatch(side, quickAdd.side) || quickAddFold(side) === quickAddFold(quickAdd.side))) quickAdd.side = "";
+  } else if (quickAdd.side && !game) quickAdd.side = "";
   const who = document.createElement("div");
   who.className = "quick-add-step";
   who.dataset.quick = "who";
@@ -548,6 +674,7 @@ function quickAddBox(board) {
       .forEach(({ row, rec }) => {
         picks.append(quickAddChip(quickAddGameSay(row), false, () => {
           quickAdd.team = quickAddGameKey(row);
+          quickAdd.side = "";
           quickAdd.player = "";
           quickAdd.prop = "";
           quickAdd.value = "";
@@ -559,55 +686,89 @@ function quickAddBox(board) {
   if (quickAdd.team) {
     picks.append(quickAddChip(`◂ ${game ? quickAddGameSay(game) : "Games"}`, false, () => {
       quickAdd.team = "";
+      quickAdd.side = "";
       quickAdd.player = "";
       quickAdd.prop = "";
       quickAdd.value = "";
       paint();
     }, game ? { html: `◂ ${quickAddGameHtml(game)}` } : null));
-    quickAddLoadRosters(game, quickAdd.sport, () => { if (box.isConnected) paint(); });
+    quickAddLoadRosters(game, quickAdd.sport, paint);
+  }
+  const playerCap = quickAdd.q.trim() || quickAdd.team ? 60 : 24;
+  const splitTeams = !!(quickAdd.team && game && game.match);
+  // Both team cards always list their own players; selecting a side only highlights the header.
+  const players = quickAddPlayers(people, quickAdd.sport, quickAdd.team, game, splitTeams).slice(0, playerCap);
+  if (splitTeams) {
+    const sides = quickAddGameSides(game);
     const teams = quickAddTeams(people, quickAdd.sport, quickAdd.team);
-    if (teams.length) {
-      const gameBlock = document.createElement("div");
-      gameBlock.className = "quick-add-team-block";
-      const gameHead = document.createElement("b");
-      gameHead.className = "quick-add-team";
-      gameHead.textContent = "Game";
-      const gameRow = document.createElement("div");
-      gameRow.className = "quick-add-team-picks";
-      teams.forEach((person) => {
+    if (typeof teamTd === "function" && people && !people.tdBook) teamTd(people, "", game.match, game.kickoff || "");
+    const bySide = new Map(sides.map((side) => [side, []]));
+    players.forEach((person) => {
+      const side = quickAddResolveSide(person, game, quickAdd.sport, people);
+      if (side && bySide.has(side)) bySide.get(side).push(person);
+    });
+    sides.forEach((side) => {
+      const card = document.createElement("div");
+      card.className = "quick-add-team-card";
+      const teamPerson = teams.find((person) => quickAddClubMatch(side, person.name) || quickAddFold(side) === quickAddFold(person.name));
+      const on = !!(quickAdd.side && (quickAddClubMatch(side, quickAdd.side) || quickAddFold(side) === quickAddFold(quickAdd.side)));
+      const teamChip = quickAddChip(side, on, () => {
+        if (on) {
+          quickAdd.side = "";
+          if (teamPerson && quickAdd.player === teamPerson.key) {
+            quickAdd.player = "";
+            quickAdd.prop = "";
+            quickAdd.value = "";
+          }
+        } else {
+          quickAdd.side = side;
+          if (teamPerson) quickAdd.player = teamPerson.key;
+          quickAdd.prop = "";
+          quickAdd.value = "";
+        }
+        paint();
+      }, {
+        rec: teamPerson ? quickAddPersonRec(teamPerson, quickAdd.sport, quickAdd.team) : quickAddGameRec(people, game, quickAdd.sport),
+        html: `${quickAddLogoImg(side)}<span>${esc(side)}</span>`,
+      });
+      card.append(teamChip);
+      const row = document.createElement("div");
+      row.className = "quick-add-team-picks";
+      const sidePlayers = (bySide.get(side) || []).slice().sort((a, b) => Number(quickAddPersonRec(b, quickAdd.sport, quickAdd.team)) - Number(quickAddPersonRec(a, quickAdd.sport, quickAdd.team)) || a.name.localeCompare(b.name));
+      sidePlayers.forEach((person) => {
         const rec = quickAddPersonRec(person, quickAdd.sport, quickAdd.team);
-        gameRow.append(quickAddChip(quickAddPersonSay(person), quickAdd.player === person.key, () => {
+        row.append(quickAddChip(quickAddPersonSay(person), quickAdd.player === person.key, () => {
+          quickAdd.side = side;
           quickAdd.player = person.key;
           quickAdd.prop = "";
           quickAdd.value = "";
           paint();
-        }, { rec, html: `${quickAddLogoImg(person.name)}<span>${esc(person.name)}</span>` }));
+        }, { rec }));
       });
-      gameBlock.append(gameHead, gameRow);
-      picks.append(gameBlock);
-    }
-  }
-  const playerCap = quickAdd.q.trim() || quickAdd.team ? 60 : 24;
-  const players = quickAddPlayers(people, quickAdd.sport, quickAdd.team).slice(0, playerCap);
-  quickAddPlayerGroups(players, quickAdd.sport, quickAdd.team, game).forEach((group) => {
-    const block = document.createElement("div");
-    block.className = "quick-add-team-block";
-    const head = quickAddTeamHead(group.club);
-    if (head) block.append(head);
-    const row = document.createElement("div");
-    row.className = "quick-add-team-picks";
-    group.people.forEach((person) => {
-      const rec = quickAddPersonRec(person, quickAdd.sport, quickAdd.team);
-      row.append(quickAddChip(quickAddPersonSay(person), quickAdd.player === person.key, () => {
-        quickAdd.player = person.key;
-        quickAdd.prop = "";
-        quickAdd.value = "";
-        paint();
-      }, { rec }));
+      if (row.childElementCount) card.append(row);
+      picks.append(card);
     });
-    block.append(row);
-    picks.append(block);
-  });
+  } else {
+    quickAddPlayerGroups(players, quickAdd.sport, quickAdd.team, game, people).forEach((group) => {
+      const block = document.createElement("div");
+      block.className = "quick-add-team-block";
+      const head = quickAddTeamHead(group.club);
+      if (head) block.append(head);
+      const row = document.createElement("div");
+      row.className = "quick-add-team-picks";
+      group.people.forEach((person) => {
+        const rec = quickAddPersonRec(person, quickAdd.sport, quickAdd.team);
+        row.append(quickAddChip(quickAddPersonSay(person), quickAdd.player === person.key, () => {
+          quickAdd.player = person.key;
+          quickAdd.prop = "";
+          quickAdd.value = "";
+          paint();
+        }, { rec }));
+      });
+      block.append(row);
+      picks.append(block);
+    });
+  }
   if (!picks.childElementCount) {
     const none = document.createElement("p");
     none.className = "quick-add-none";
@@ -669,4 +830,37 @@ function quickAddBox(board) {
   acts.append(current, fresh);
   box.append(acts);
   return box;
+}
+
+function quickAddOpen() {
+  const board = document.querySelector("#desk-glass-in .find-board");
+  if (!board || board.dataset.page === "rec" || board.classList.contains("find-rec-page")) return;
+  window.quickAddPending = false;
+  if (typeof startPlace === "function") startPlace();
+  if (typeof startPaint === "function" && !board.querySelector(".find-start .quick-add")) startPaint();
+  const box = board.querySelector(".find-start");
+  const add = board.querySelector(".quick-add");
+  if (box) {
+    box.hidden = false;
+    box.classList.add("find-start-open");
+  }
+  const glass = document.getElementById("desk-glass-in");
+  const target = add || box;
+  if (!target) return;
+  const scroll = () => {
+    if (!target.isConnected) return;
+    if (glass && glass.contains(target)) {
+      glass.scrollTo({ top: Math.max(0, glass.scrollTop + target.getBoundingClientRect().top - glass.getBoundingClientRect().top - 8), behavior: "smooth" });
+    } else target.scrollIntoView({ block: "start", behavior: "smooth" });
+    const seek = target.querySelector(".quick-add-search");
+    if (seek) seek.focus({ preventScroll: true });
+  };
+  requestAnimationFrame(() => requestAnimationFrame(scroll));
+}
+
+function quickAddPendingOpen() {
+  if (!window.quickAddPending) return;
+  const board = document.querySelector('#desk-glass-in .find-board[data-page="find"]');
+  if (!board || !board.querySelector(".find-start .quick-add, .find-start-quick .quick-add, .quick-add")) return;
+  if (typeof quickAddOpen === "function") quickAddOpen();
 }

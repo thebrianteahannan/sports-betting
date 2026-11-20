@@ -62,12 +62,29 @@ function paintLive(list, heading, person) {
   box.className = "find-live";
   box.style.cssText = "margin: 0.35rem 0; color: #3dff6e; font-weight: 800;";
   heading.after(box);
-  const run = () => window.noteEspnId(path, bet).then((id) => id && fetch(`https://site.web.api.espn.com/apis/site/v2/sports/${path}/summary?event=${id}`).then((res) => res.json())).then((data) => {
-    if (!data || !box.isConnected) return;
+  const run = () => window.noteEspnId(path, bet).then((id) => id && fetch(`https://site.web.api.espn.com/apis/site/v2/sports/${path}/summary?event=${id}`).then((res) => res.json()).then((data) => ({ data, id }))).then((payload) => {
+    if (!payload || !payload.data || !box.isConnected) return;
+    const { data, id } = payload;
     const status = ((((data.header || {}).competitions || [])[0] || {}).status || {}).type || {};
     if (status.state !== "in") { box.remove(); list.querySelectorAll(".find-live-row").forEach((node) => node.remove()); return; }
     const { got, lines } = liveBox(data, person.name);
-    box.textContent = `Live, ${status.detail || "in progress"}. ${lines.length ? lines.join(". ") : `${person.name} has no stats yet`}.`;
+    box.textContent = `Live, ${status.detail || "in progress"}. ${lines.length ? lines.join(". ") : `${person.name} has no stats yet`}. Watch live ›`;
+    if (id) {
+      box.dataset.liveGame = id;
+      box.setAttribute("role", "link");
+      box.tabIndex = 0;
+      box.title = "Watch live on The Games";
+      box.classList.add("find-live-go");
+      box.style.cursor = "pointer";
+      box.style.textDecoration = "underline";
+      box.style.textUnderlineOffset = "3px";
+      if (!box.dataset.liveBound) {
+        box.dataset.liveBound = "1";
+        const go = () => { window.location.href = `/live?${new URLSearchParams({ game: box.dataset.liveGame })}`; };
+        box.addEventListener("click", go);
+        box.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); go(); } });
+      }
+    }
     list.querySelectorAll(":scope > .rec-bet").forEach((row) => {
       const kind = row.dataset.kind || "", have = liveValue(got, kind, bet.sport);
       const text = have == null ? "" : liveSay(row, have, kind);

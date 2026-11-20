@@ -10,12 +10,7 @@ function whereNick(team) {
 }
 
 function whereFind(board) {
-  const who = document.querySelector("#find-profile-pop .find-profile > h3 .rec-count") || board.querySelector(".find-list > h3 .rec-count, .find-list > .find-profile > h3 .rec-count");
-  if (who) return `Search results for ${who.parentElement.firstChild.textContent.split(",")[0].trim()}`;
-  const match = [...board.querySelectorAll(".find-teams .find-match")].pop();
-  const sides = match ? [...match.querySelectorAll(":scope > .find-side-go")].map((side) => whereNick(side.textContent)) : [];
-  if (sides.length === 2) return `Search results for ${sides[0]} @ ${sides[1]} game`;
-  return "Search for a player, team or game";
+  return "Search for a player, team, or game. Or build your own bet";
 }
 
 function whereText() {

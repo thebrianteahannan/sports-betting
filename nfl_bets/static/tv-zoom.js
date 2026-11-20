@@ -152,9 +152,14 @@ function hangAct(kind) {
   window.asking = true;
   if (document.body.classList.contains("tv-zoom-on")) tvZoomShut();
   if (window.goFull) goFull();
-  if (kind === "mine") { window.saveGone = false; window.saveShut = false; }
-  if (window.birdMenu) birdMenu("find");
-  if (kind === "mine") hangMine();
+  if (kind === "mine") {
+    window.saveGone = false;
+    window.saveShut = false;
+    if (window.birdMenu) birdMenu("manage");
+    return;
+  }
+  if (kind === "rec" && window.birdMenu) birdMenu("rec");
+  else if (window.birdMenu) birdMenu("find");
 }
 
 document.getElementById("hang-x").addEventListener("click", (event) => { event.stopPropagation(); hangShut(); });

@@ -1,4 +1,4 @@
-/** Build a bet always shows the home Recommended picks and Games under the bet, so a leg or a game is one tap away instead of on another page. */
+/** Build a bet keeps Quick add. Recommended / Games / Strategies live on the Recommended page. */
 
 let startTab = "rec", startBack = null, startUndo = null, startRandomAt = null;
 let startFavOnly = localStorage.getItem("startFavOnly") === "1";
@@ -119,7 +119,7 @@ function startBetAsk(board, pick, card) {
 
 function startBet(board, pick) {
   const hit = startHit(board, pick);
-  if (hit) { startUndo = { board, key: parlayKey(hit.bet), ids: new Set(saveList().map((row) => row.id)) }; if (typeof betFromSay === "function") betFromSay("Recommended"); return legSwapAdd(hit.person, hit.bet); }
+  if (hit) { startUndo = { board, key: parlayKey(hit.bet), ids: new Set(saveList().map((row) => row.id)) }; return legSwapAdd(hit.person, hit.bet); }
   window.location.href = `/?${new URLSearchParams({ game: pick.match, label: pick.label, market: pick.market || "" })}`;
 }
 
@@ -239,7 +239,6 @@ function startRandomAdd(board, legs, stake) {
   saveNew();
   if (typeof parlayStakeSet === "function") parlayStakeSet(stake);
   else window.parlayStake = Number(stake) > 0 ? Number(stake) : 5;
-  if (typeof betFromSay === "function") betFromSay("Random Recommended", true);
   legs.forEach(({ person, bet }) => { parlayLeg.set(parlayKey(bet), bet); if (!parlayPick.has(person.key)) parlayPick.set(person.key, person); });
   if (typeof trayRoster === "function") trayRoster();
   window.saveGone = false;
@@ -442,21 +441,95 @@ function startPlace() {
   if (!box) startPaint(); else if (spot.nextElementSibling !== box) spot.after(box);
 }
 
+function startRecStats() {
+  const box = document.createElement("div");
+  box.className = "find-start-stats";
+  box.innerHTML = `<p class="find-start-stats-load quiet">Looking up hit rates.</p>`;
+  const escHtml = (text) => (typeof esc === "function" ? esc(text) : String(text == null ? "" : text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])));
+  const rateOf = (hit, of) => (of > 0 ? Math.round((100 * hit) / of) : null);
+  // hit-hot / hit-ok / hit-cold — not "hot" alone; desk.css parks .hot as absolute desk spots.
+  const toneOf = (pct) => (pct == null ? "hit-empty" : pct >= 55 ? "hit-hot" : pct >= 40 ? "hit-ok" : "hit-cold");
+  const row = (name, hit, of, tip, say = "") => {
+    const pct = rateOf(hit, of);
+    const width = pct == null ? 0 : Math.max(0, Math.min(100, pct));
+    const count = `${hit} of ${of}${say}`;
+    return `<div class="hit-rate ${toneOf(pct)}" title="${escHtml(tip)}"><div class="hit-rate-top"><b>${escHtml(name)}</b><strong>${pct == null ? "—" : `${pct}%`}</strong></div><div class="hit-rate-bar" aria-hidden="true"><i style="width:${width}%"></i></div><span class="hit-rate-count">${escHtml(count)}</span></div>`;
+  };
+  const kinds = (bag) => {
+    const boxOf = (key) => (bag && bag[key]) || { won: 0, lost: 0 };
+    const safe = boxOf("safe"), even = boxOf("balanced");
+    return `${row("Safe", safe.won, safe.won + safe.lost, "Recommended at -150 or shorter, all time.")}${row("Balanced", even.won, even.won + even.lost, "Recommended from -149 to +100, all time.")}`;
+  };
+  fetch("/api/live?all=1", { credentials: "same-origin" }).then((res) => res.json()).then((data) => {
+    if (!box.isConnected) return;
+    if (typeof liveRecs !== "undefined") liveRecs = data.recs || [];
+    let won = 0, lost = 0, all = 0, pace = 0;
+    (data.live || []).forEach((game) => {
+      if (typeof liveMine !== "function" || typeof liveLegState !== "function") return;
+      liveMine(game, liveRecs).forEach((pick) => {
+        if (pick.tier === "good") return;
+        const { state, level } = liveLegState(game, pick);
+        all += 1;
+        if (state === "hit") won += 1; else if (state === "lost") lost += 1;
+        if (state === "hit" || level === "ahead" || level === "close") pace += 1;
+      });
+    });
+    const tally = data.tally || {}, today = tally.today || { won: 0, lost: 0 }, ever = tally.all || { won: 0, lost: 0 };
+    const score = document.createElement("div");
+    score.className = "find-start-stats-score";
+    score.innerHTML = [
+      `<i>How the picks are hitting</i>`,
+      row("Live", pace, all, "Recommended bets in games on now that have hit or are on pace to hit", " on pace"),
+      row("Today", today.won + won, today.won + today.lost + won + lost, "Recommended bets won today, out of the ones already decided"),
+      row("All time", ever.won + won, ever.won + ever.lost + won + lost, "Every recommended bet that has finished"),
+      kinds((tally.kinds || {}).all || {}),
+    ].join("");
+    box.replaceChildren(score);
+  }).catch(() => {
+    if (box.isConnected) box.innerHTML = `<p class="quiet">Could not load hit rates.</p>`;
+  });
+  return [box];
+}
+
 function startPaint(again) {
   if (startTdOpen()) return;
   document.querySelectorAll(".find-start").forEach((node) => node.remove());
   const spot = startSpot(), board = spot && spot.closest(".find-board");
   if (!spot || !board || typeof homeRecRows !== "function") return;
   const input = board.querySelector("label.find input");
+  const panel = board.dataset.page === "rec";
   if (startSpan === "week") startWeekLoad();
   homeRecsLoad(startSpan === "week" ? "week" : ""); homeLogosLoad(); homeLeagueSync();
-  const box = document.createElement("div"), tabs = document.createElement("span");
-  box.className = "find-start"; tabs.className = "desk-games-tabs";
+  const box = document.createElement("div");
+  box.className = `find-start${panel ? " find-start-panel" : " find-start-quick"}`;
+  if (!panel) {
+    const quick = typeof quickAddBox === "function" ? quickAddBox(board) : null;
+    if (quick) box.append(quick);
+    box.hidden = Boolean(input && input.value.trim());
+    spot.after(box);
+    if (typeof quickAddPendingOpen === "function") quickAddPendingOpen();
+    return;
+  }
   if (startTab === "shared") startTab = "rec";
+  const tabs = document.createElement("span");
+  tabs.className = "desk-games-tabs";
   const { recs, games, picks, all } = startRecs(board, box);
-  [["rec", "Recommended"], ["games", `Games ${games.filter((node) => node.classList.contains("desk-game")).length}`], ["stacks", "Strategies"]].forEach(([id, label]) => {
-    const tab = Object.assign(document.createElement("button"), { type: "button", className: `desk-games-tab${startTab === id ? " on" : ""}`, textContent: label });
+  const gameN = games.filter((node) => node.classList.contains("desk-game")).length;
+  [
+    ["rec", "Players", picks.length],
+    ["games", "Games", gameN],
+    ["stacks", "Strategies", null],
+    ["stats", "Hit Rates", null],
+  ].forEach(([id, label, count]) => {
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = `desk-games-tab${startTab === id ? " on" : ""}`;
     tab.setAttribute("aria-pressed", String(startTab === id));
+    if (count == null) tab.textContent = label;
+    else {
+      tab.innerHTML = `${label} <i class="desk-tab-n">${count}</i>`;
+      tab.setAttribute("aria-label", `${label} ${count}`);
+    }
     tab.addEventListener("click", () => { startTab = id; startPaint(1); });
     tabs.append(tab);
   });
@@ -465,10 +538,21 @@ function startPaint(again) {
   row.className = "find-start-row";
   const leagues = typeof homeLeagues === "function" ? homeLeagues(box, leftGames()) : [];
   const td = startTab === "rec" ? startTdButton(board) : null;
-  row.append(tabs, startSpanBar(), ...leagues, ...(startTab === "rec" ? [startRandomBar(board, picks)] : []), ...(((window.memberTeams || []).length || startFavOnly) ? [startFavBox()] : []), ...(td ? [td] : []));
-  const quick = typeof quickAddBox === "function" ? quickAddBox(board) : null;
-  box.append(...(quick ? [quick] : []), row, ...(startTab === "rec" ? [...(all.length ? [startKindBar(all)] : []), ...recs] : startTab === "stacks" ? startStacks() : games));
-  box.hidden = Boolean(input && input.value.trim());
+  row.append(tabs);
+  if (startTab !== "stats") {
+    row.append(startSpanBar(), ...leagues);
+    if (startTab === "rec") row.append(startRandomBar(board, picks));
+    if ((window.memberTeams || []).length || startFavOnly) row.append(startFavBox());
+    if (td) row.append(td);
+  }
+  const body = startTab === "rec"
+    ? [...(all.length ? [startKindBar(all)] : []), ...recs]
+    : startTab === "stacks"
+      ? startStacks()
+      : startTab === "stats"
+        ? startRecStats()
+        : games;
+  box.append(row, ...body);
   spot.after(box);
   const waiting = (startSpan === "week" && startWeekLoading) || !homeRecs || homeRecs.loading;
   if (waiting && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
@@ -489,9 +573,17 @@ if (typeof saveTips === "function") {
 if (typeof paintParlay === "function") {
   const paintParlayStart = paintParlay;
   paintParlay = function () {
-    if (window.saveStacksOpen) { window.saveStacksOpen = false; startTab = "stacks"; document.querySelectorAll(".find-start").forEach((node) => node.remove()); }
+    if (window.saveStacksOpen) {
+      window.saveStacksOpen = false;
+      startTab = "stacks";
+      document.querySelectorAll(".find-start").forEach((node) => node.remove());
+      if (typeof paintRec === "function" && !document.querySelector('#desk-glass-in .find-board[data-page="rec"]')) {
+        paintRec();
+        return;
+      }
+    }
     paintParlayStart.apply(this, arguments); startPlace();
-    const box = document.querySelector("#desk-glass-in .find-start");
+    const box = document.querySelector("#desk-glass-in .find-start-panel");
     if (box && startTab === "stacks" && box.dataset.stacks !== startStackKey()) startPaint(1);
   };
 }

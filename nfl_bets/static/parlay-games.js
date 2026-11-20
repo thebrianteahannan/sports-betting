@@ -21,15 +21,47 @@ function parlayGameMatchOf(node) {
   return (node && (node.dataset.parlayMatch || "")) || "";
 }
 
+function parlayGameLogoSrc(name) {
+  if (typeof homeLogosLoad === "function") homeLogosLoad();
+  const logos = (typeof homeLogos !== "undefined" && homeLogos) || {};
+  if (logos[name]) return logos[name];
+  const tail = ` ${String(name || "").split(" ").pop()}`, near = Object.keys(logos).filter((key) => key.endsWith(tail));
+  return near.length === 1 ? logos[near[0]] : "";
+}
+
+function parlayGameLogoImg(name) {
+  const logo = parlayGameLogoSrc(name);
+  if (!logo) return "";
+  const dark = logo.replace("/500/", "/500-dark/");
+  return `<img class="desk-team-logo" src="${esc(dark)}" alt="" loading="lazy"${dark !== logo ? ` onerror="this.onerror=null;this.src='${esc(logo)}'"` : ""}>`;
+}
+
+function parlayGameOpenHtml(bet) {
+  const sides = String(bet.match || "").split(/\s+@\s+/);
+  const short = typeof gameShort === "function" ? gameShort(bet.match) : "";
+  const time = bet.kickoff && typeof window.when === "function" ? `${window.when(bet.kickoff)} ET` : "";
+  const teams = sides.length === 2
+    ? sides.map((side) => {
+      const code = typeof gameShortTeam === "function" ? gameShortTeam(side) : side;
+      return `${parlayGameLogoImg(side)}<span class="code">${esc(code)}</span>`;
+    }).join(`<i class="at">@</i>`)
+    : `<span class="code">${esc(short || bet.match || "")}</span>`;
+  return `${teams}${time ? `<span class="find-game-kick">${esc(time)}</span>` : ""}<span class="find-game-fold-say"></span>`;
+}
+
 function parlayGameFoldSay(match) {
   if (!match) return;
   const shut = match.classList.contains("find-game-shut");
   const say = shut ? "Show ▾" : "Hide ▴";
   match.querySelectorAll(":scope > .find-when .find-game-fold, :scope > .find-when .find-game-open").forEach((node) => {
     if (node.classList.contains("find-game-open")) {
-      const base = node.dataset.base || node.textContent.replace(/\s·\s(?:Show ▾|Hide ▴)\s*$/, "").trim();
-      node.dataset.base = base;
-      node.textContent = [base, say].filter(Boolean).join(" · ");
+      const tip = node.querySelector(".find-game-fold-say");
+      if (tip) tip.textContent = say;
+      else {
+        const base = node.dataset.base || node.textContent.replace(/\s·\s(?:Show ▾|Hide ▴)\s*$/, "").trim();
+        node.dataset.base = base;
+        node.textContent = [base, say].filter(Boolean).join(" · ");
+      }
       node.setAttribute("aria-expanded", String(!shut));
     } else node.textContent = say;
   });
@@ -39,6 +71,33 @@ function parlayGameShut(match, shut) {
   if (!match) return;
   match.classList.toggle("find-game-shut", !!shut);
   parlayGameFoldSay(match);
+}
+
+function parlayGameFoldBet() {
+  // Collapse THE BET so THE GAME header and team buttons aren't buried under the sticky tray.
+  document.querySelectorAll("#desk-glass-in .find-tray:not([hidden]):not(.find-shut)").forEach((tray) => {
+    const fold = tray.querySelector(".find-fold");
+    if (!fold) { tray.classList.add("find-shut"); return; }
+    if (typeof saveAutoShut !== "undefined") saveAutoShut.add(tray);
+    if (typeof saveFoldAt !== "undefined") saveFoldAt = Date.now();
+    fold.click();
+  });
+}
+
+function parlayGameScroll(match) {
+  if (!match || !match.isConnected) return;
+  const glass = document.getElementById("desk-glass-in");
+  const tip = match.querySelector(":scope > .find-when") || match;
+  if (!glass || !glass.contains(tip)) {
+    tip.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  const tray = document.querySelector("#desk-glass-in .find-board > .find-tray:not([hidden])");
+  // Sticky THE BET is tall until fold finishes — measuring early overshoots past CHA@ATL.
+  if (tray && !tray.classList.contains("find-shut")) return;
+  const cover = (tray && tray.getClientRects().length ? tray.getBoundingClientRect().bottom : glass.getBoundingClientRect().top) + 10;
+  const top = glass.scrollTop + tip.getBoundingClientRect().top - cover;
+  if (Math.abs(top - glass.scrollTop) > 2) glass.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
 }
 
 function parlayGameExpand(want) {
@@ -51,8 +110,17 @@ function parlayGameExpand(want) {
     parlayGameShut(match, !on);
     if (on) opened = match;
   });
-  if (opened && typeof gameScrollTo === "function") gameScrollTo(opened);
-  else if (opened) opened.scrollIntoView({ behavior: "smooth", block: "start" });
+  parlayGameFoldBet();
+  if (!opened) return;
+  // Wait for the slim THE BET bar, then park THE GAME header just under it.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const live = [...teams.querySelectorAll(":scope > .find-match[data-parlay-match]")].find((node) => parlayGameMatchOf(node) === want) || opened;
+    const go = () => parlayGameScroll(live);
+    go();
+    setTimeout(go, 120);
+    setTimeout(go, 280);
+    setTimeout(go, 500);
+  }));
 }
 
 function parlayGameLabel(match, bet) {
@@ -67,6 +135,7 @@ function parlayGameLabel(match, bet) {
   open.type = "button";
   open.className = "find-game-open";
   open.dataset.base = base;
+  open.innerHTML = parlayGameOpenHtml(bet);
   open.setAttribute("aria-expanded", String(!match.classList.contains("find-game-shut")));
   bar.append(open);
   if (tools) {

@@ -1,0 +1,340 @@
+/* Manage My Bets — beat desk button/input defaults with #desk.tv-full specificity. */
+
+#desk.tv-full #desk-glass .manage-board,
+.manage-board {
+  display: grid !important;
+  gap: 1rem;
+  align-content: start;
+  padding: 0.2rem 0 2.5rem;
+  font-family: Outfit, system-ui, sans-serif;
+  color: #c9d4dd;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-head,
+.manage-board .manage-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-head > h2,
+.manage-board .manage-head > h2 {
+  margin: 0 !important;
+  color: #e7c15a !important;
+  font-family: Outfit, system-ui, sans-serif !important;
+  font-size: clamp(1.35rem, 3.5vw, 1.85rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  line-height: 1.15 !important;
+}
+
+#desk.tv-full #desk-glass .manage-board button.manage-back,
+#desk.tv-full #desk-glass .manage-board button.manage-filter,
+#desk.tv-full #desk-glass .manage-board button.manage-act,
+.manage-board button.manage-back,
+.manage-board button.manage-filter,
+.manage-board button.manage-act {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0.4rem 0.9rem !important;
+  border: 1px solid rgba(61, 255, 110, 0.5) !important;
+  border-radius: 999px !important;
+  background: #07140f !important;
+  box-shadow: none !important;
+  color: #d8ffe4 !important;
+  font-family: Outfit, system-ui, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em !important;
+  line-height: 1.2 !important;
+  text-transform: none !important;
+  cursor: pointer;
+}
+
+#desk.tv-full #desk-glass .manage-board button.manage-back:hover,
+#desk.tv-full #desk-glass .manage-board button.manage-filter:hover,
+#desk.tv-full #desk-glass .manage-board button.manage-act:hover,
+.manage-board button.manage-back:hover,
+.manage-board button.manage-filter:hover,
+.manage-board button.manage-act:hover {
+  background: rgba(61, 255, 110, 0.14) !important;
+  filter: none !important;
+}
+
+#desk.tv-full #desk-glass .manage-board button.manage-filter.on,
+.manage-board button.manage-filter.on {
+  background: #3dff6e !important;
+  border-color: #3dff6e !important;
+  color: #04140c !important;
+}
+
+#desk.tv-full #desk-glass .manage-board button.manage-act.lock,
+.manage-board button.manage-act.lock {
+  background: #3dff6e !important;
+  border-color: #3dff6e !important;
+  color: #04140c !important;
+}
+
+#desk.tv-full #desk-glass .manage-board button.manage-act.lock:hover,
+.manage-board button.manage-act.lock:hover {
+  background: #6bff92 !important;
+}
+
+#desk.tv-full #desk-glass .manage-board button.manage-act.unlock,
+.manage-board button.manage-act.unlock {
+  border-color: #e7c15a !important;
+  color: #e7c15a !important;
+  background: transparent !important;
+}
+
+#desk.tv-full #desk-glass .manage-board button.manage-act.danger,
+.manage-board button.manage-act.danger {
+  border-color: rgba(255, 110, 110, 0.55) !important;
+  color: #ff9a9a !important;
+  background: transparent !important;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-filters,
+.manage-board .manage-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-list,
+.manage-board .manage-list {
+  display: grid;
+  gap: 0.95rem;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-card,
+.manage-board .manage-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(61, 255, 110, 0.35);
+  border-radius: 14px;
+  background: rgba(4, 16, 24, 0.92);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-card.locked,
+.manage-board .manage-card.locked {
+  border-color: rgba(231, 193, 90, 0.65);
+  box-shadow: inset 0 0 0 1px rgba(231, 193, 90, 0.2);
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-card-head,
+.manage-board .manage-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem 0.75rem;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-card-head > h3,
+.manage-board .manage-card-head > h3 {
+  margin: 0 !important;
+  color: #f4f7fb !important;
+  font-family: Outfit, system-ui, sans-serif !important;
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  line-height: 1.25 !important;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-badge,
+.manage-board .manage-badge {
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #9fb3c8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-card.locked .manage-badge,
+.manage-board .manage-card.locked .manage-badge {
+  background: #e7c15a;
+  color: #1a1400;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-meta,
+.manage-board .manage-meta {
+  margin: 0 !important;
+  color: #9fb3c8 !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-meta > b,
+.manage-board .manage-meta > b {
+  color: #3dff6e !important;
+  font-weight: 800 !important;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-stake,
+.manage-board .manage-stake {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: fit-content;
+  max-width: 100%;
+  color: #e7c15a;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-stake input,
+#desk.tv-full #desk-glass .manage-board input.manage-leg-label,
+#desk.tv-full #desk-glass .manage-board input.manage-leg-odds,
+.manage-board .manage-stake input,
+.manage-board input.manage-leg-label,
+.manage-board input.manage-leg-odds {
+  box-sizing: border-box !important;
+  display: inline-block !important;
+  width: 5.6rem !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0.4rem 0.55rem !important;
+  border: 1px solid rgba(61, 255, 110, 0.4) !important;
+  border-radius: 8px !important;
+  background: #07140f !important;
+  box-shadow: none !important;
+  color: #f4f7fb !important;
+  font-family: Outfit, system-ui, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  -moz-appearance: textfield;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-stake input::-webkit-outer-spin-button,
+#desk.tv-full #desk-glass .manage-board .manage-stake input::-webkit-inner-spin-button,
+.manage-board .manage-stake input::-webkit-outer-spin-button,
+.manage-board .manage-stake input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+#desk.tv-full #desk-glass .manage-board input.manage-leg-label,
+.manage-board input.manage-leg-label {
+  width: 100% !important;
+}
+
+#desk.tv-full #desk-glass .manage-board input.manage-leg-odds,
+.manage-board input.manage-leg-odds {
+  width: 5.2rem !important;
+  text-align: center !important;
+  color: #3dff6e !important;
+  font-weight: 800 !important;
+}
+
+#desk.tv-full #desk-glass .manage-board ul.manage-legs,
+.manage-board ul.manage-legs {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: grid;
+  gap: 0.5rem;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-leg,
+.manage-board .manage-leg {
+  padding: 0.6rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.32);
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-leg-top,
+.manage-board .manage-leg-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.55rem;
+  margin: 0 0 0.35rem;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-leg-match,
+.manage-board .manage-leg-match {
+  color: #3dff6e;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-leg-market,
+.manage-board .manage-leg-market {
+  color: #9fb3c8;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-leg-line,
+.manage-board .manage-leg-line {
+  margin: 0 !important;
+  color: #f4f7fb !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-leg-edits,
+.manage-board .manage-leg-edits {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.4rem;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-acts,
+.manage-board .manage-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding-top: 0.15rem;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-empty,
+.manage-board .manage-empty {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: start;
+  padding: 1.25rem 0.25rem;
+}
+
+#desk.tv-full #desk-glass .manage-board .manage-empty > p,
+.manage-board .manage-empty > p {
+  margin: 0 !important;
+  color: #9fb3c8 !important;
+  font-size: 15px !important;
+}
+
+.find-saved-chip.locked > button > i.lock {
+  color: #e7c15a;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 0.72em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
