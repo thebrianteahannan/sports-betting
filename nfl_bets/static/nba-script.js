@@ -60,18 +60,49 @@ function scriptRoleTag(pick) {
   return `<i class="bet-kind k-role-${solid ? "solid" : "thin"}" title="${esc(tip)}" data-tip="${esc(tip)}">${solid ? "Steady role" : "Thin role"}</i>`;
 }
 
+function scriptCushionNums(pick) {
+  if (!pick) return null;
+  const n1 = (value) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
+    return n;
+  };
+  let avg = n1(pick.avg), line = n1(pick.reach);
+  let room = n1(pick.cushionRoom), pct = n1(pick.cushionPct);
+  const how = String(pick.how || "");
+  if (!Number.isFinite(line)) {
+    const text = `${pick.text || ""} ${pick.label || ""}`;
+    const hit = text.match(/\bover\s+([\d.]+)\b/i) || text.match(/([\d.]+)\s*\+/);
+    if (hit) line = Number(hit[1]);
+  }
+  if (!Number.isFinite(avg) || !Number.isFinite(line)) {
+    const hit = how.match(/averages\s+([\d.]+)[\s\S]*?reached\s+([\d.]+)/i);
+    if (hit) {
+      if (!Number.isFinite(avg)) avg = Number(hit[1]);
+      if (!Number.isFinite(line)) line = Number(hit[2]);
+    }
+  }
+  if (!Number.isFinite(room) && how) {
+    const hit = how.match(/sits\s+([\d.]+)\s+above/i) || how.match(/\(\+([\d.]+),\s*\d+%\)/i);
+    if (hit) room = Number(hit[1]);
+  }
+  if (!Number.isFinite(room) && Number.isFinite(avg) && Number.isFinite(line)) room = avg - line;
+  if (!Number.isFinite(avg) && Number.isFinite(line) && Number.isFinite(room)) avg = line + room;
+  if (!Number.isFinite(pct) && Number.isFinite(room) && Number.isFinite(line) && line > 0) pct = room / line;
+  if (![avg, line, room, pct].every(Number.isFinite)) return null;
+  return { avg, line, room, pct };
+}
+
 function scriptCushionTip(pick) {
   if (!pick || !pick.cushion) return "";
-  const avg = Number(pick.avg), line = Number(pick.reach);
-  const room = Number.isFinite(Number(pick.cushionRoom)) ? Number(pick.cushionRoom) : (Number.isFinite(avg) && Number.isFinite(line) ? avg - line : null);
-  const pct = Number.isFinite(Number(pick.cushionPct)) ? Number(pick.cushionPct) : (Number.isFinite(room) && Number.isFinite(line) && line > 0 ? room / line : null);
+  const nums = scriptCushionNums(pick);
   const n1 = (value) => {
     const n = Number(value);
     if (!Number.isFinite(n)) return "";
     return Math.abs(n - Math.round(n)) < 0.05 ? String(Math.round(n)) : n.toFixed(1).replace(/\.0$/, "");
   };
-  if (Number.isFinite(avg) && Number.isFinite(line) && Number.isFinite(room) && Number.isFinite(pct)) {
-    return `Cushion: averages ${n1(avg)} vs line ${n1(line)} (+${n1(room)}, ${Math.round(pct * 100)}%). Soft night can still cash.`;
+  if (nums) {
+    return `Cushion: averages ${n1(nums.avg)} vs line ${n1(nums.line)} (+${n1(nums.room)}, ${Math.round(nums.pct * 100)}%). Soft night can still cash.`;
   }
   return "Cushion: he has room above the line, so a soft night can still cash.";
 }

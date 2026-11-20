@@ -102,7 +102,22 @@ function startRecWhy(pick) {
       tip: pick.role === "solid" ? "His minutes and role look locked in." : "His minutes are thin, so the opportunity can vanish.",
     });
   }
-  if (pick && pick.cushion) tips.push({ label: "Cushion", tip: typeof scriptCushionTip === "function" ? scriptCushionTip(pick) : "Cushion: he has room above the line, so a soft night can still cash." });
+  if (pick && pick.cushion) {
+    const tip = typeof scriptCushionTip === "function" ? scriptCushionTip(pick) : "Cushion: he has room above the line, so a soft night can still cash.";
+    const nums = typeof scriptCushionNums === "function" ? scriptCushionNums(pick) : null;
+    const n1 = (value) => {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return "";
+      return Math.abs(n - Math.round(n)) < 0.05 ? String(Math.round(n)) : n.toFixed(1).replace(/\.0$/, "");
+    };
+    tips.push({
+      label: "Cushion",
+      tip,
+      detail: nums
+        ? `Projected ${n1(nums.avg)} · Line ${n1(nums.line)} · Cushion +${n1(nums.room)} (${Math.round(nums.pct * 100)}%)`
+        : "",
+    });
+  }
   if (pick && pick.how) {
     const why = document.createElement("p");
     why.className = "desk-rec-why-how";
@@ -114,6 +129,12 @@ function startRecWhy(pick) {
     line.className = "desk-rec-why-tag";
     line.innerHTML = `<b>${typeof esc === "function" ? esc(row.label) : row.label}</b> ${typeof esc === "function" ? esc(row.tip) : row.tip}`;
     box.append(line);
+    if (row.detail) {
+      const detail = document.createElement("p");
+      detail.className = "desk-rec-why-nums";
+      detail.textContent = row.detail;
+      box.append(detail);
+    }
   });
   return box.childNodes.length ? box : null;
 }

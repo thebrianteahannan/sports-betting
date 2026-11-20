@@ -122,32 +122,61 @@ async function recRanked(days) {
     const cushion = pick.cushion ? 0.75 : 0;
     return base + role + cushion;
   };
+  const fillCushion = (pick) => {
+    let avg = Number(pick.avg), reach = Number(pick.reach);
+    let room = Number(pick.cushionRoom), pct = Number(pick.cushionPct);
+    const how = String(pick.how || "");
+    const text = `${pick.text || ""} ${pick.label || ""}`;
+    if (!Number.isFinite(reach)) {
+      const hit = text.match(/\bover\s+([\d.]+)\b/i) || text.match(/([\d.]+)\s*\+/);
+      if (hit) reach = Number(hit[1]);
+    }
+    if (!Number.isFinite(avg) || !Number.isFinite(reach)) {
+      const hit = how.match(/averages\s+([\d.]+)[\s\S]*?reached\s+([\d.]+)/i);
+      if (hit) {
+        if (!Number.isFinite(avg)) avg = Number(hit[1]);
+        if (!Number.isFinite(reach)) reach = Number(hit[2]);
+      }
+    }
+    if (!Number.isFinite(room) && Number.isFinite(avg) && Number.isFinite(reach)) room = avg - reach;
+    if (!Number.isFinite(pct) && Number.isFinite(room) && Number.isFinite(reach) && reach > 0) pct = room / reach;
+    return {
+      ...pick,
+      avg: Number.isFinite(avg) ? avg : pick.avg,
+      reach: Number.isFinite(reach) ? reach : pick.reach,
+      cushionRoom: pick.cushion && Number.isFinite(room) ? room : null,
+      cushionPct: pick.cushion && Number.isFinite(pct) ? pct : null,
+    };
+  };
   const ranked = picks.map(cleared).filter((pick) => pick.how && pick.tier !== "good" && Number.isFinite(edge(pick))).sort((a, b) => edge(b) - edge(a));
   return {
     all: picks.length,
-    ranked: ranked.map((pick) => ({
-      who: pick.who,
-      team: pick.team,
-      label: pick.label,
-      market: pick.market,
-      text: pick.text || "",
-      odds: pick.odds,
-      need: pick.need,
-      hits: pick.hits,
-      n: pick.n,
-      how: pick.how,
-      kind: pick.kind || "",
-      basis: pick.basis || "",
-      role: pick.role || "",
-      cushion: !!pick.cushion,
-      cushionRoom: pick.cushion && Number.isFinite(Number(pick.cushionRoom)) ? Number(pick.cushionRoom) : null,
-      cushionPct: pick.cushion && Number.isFinite(Number(pick.cushionPct)) ? Number(pick.cushionPct) : null,
-      avg: Number.isFinite(Number(pick.avg)) ? Number(pick.avg) : undefined,
-      reach: Number.isFinite(Number(pick.reach)) ? Number(pick.reach) : undefined,
-      starter: !!pick.starter,
-      match: pick.match,
-      kickoff: pick.kickoff,
-    })),
+    ranked: ranked.map((row) => {
+      const pick = fillCushion(row);
+      return {
+        who: pick.who,
+        team: pick.team,
+        label: pick.label,
+        market: pick.market,
+        text: pick.text || "",
+        odds: pick.odds,
+        need: pick.need,
+        hits: pick.hits,
+        n: pick.n,
+        how: pick.how,
+        kind: pick.kind || "",
+        basis: pick.basis || "",
+        role: pick.role || "",
+        cushion: !!pick.cushion,
+        cushionRoom: pick.cushion && Number.isFinite(Number(pick.cushionRoom)) ? Number(pick.cushionRoom) : null,
+        cushionPct: pick.cushion && Number.isFinite(Number(pick.cushionPct)) ? Number(pick.cushionPct) : null,
+        avg: Number.isFinite(Number(pick.avg)) ? Number(pick.avg) : undefined,
+        reach: Number.isFinite(Number(pick.reach)) ? Number(pick.reach) : undefined,
+        starter: !!pick.starter,
+        match: pick.match,
+        kickoff: pick.kickoff,
+      };
+    }),
   };
 }
 
