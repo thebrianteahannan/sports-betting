@@ -487,6 +487,14 @@
 .rec-board .find-script p.find-script-why { margin-top: 0.15rem; color: #b9c7d4; font-size: 14px; }
 .rec-board .find-script p.find-script-why em { color: #e7c15a; font-style: normal; font-weight: 700; }
 .rec-board .find-script .find-script-ticket p.find-script-why { margin-top: 0.4rem; }
+.rec-board .find-script .find-script-more { margin: 0.55rem 0 0; border: 1px solid rgba(61, 255, 110, 0.28); border-radius: 10px; background: rgba(4, 16, 12, 0.45); }
+.rec-board .find-script .find-script-more > summary { cursor: pointer; padding: 0.45rem 0.7rem; color: #3dff6e; font-family: "Rajdhani", sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.03em; list-style: none; }
+.rec-board .find-script .find-script-more > summary::-webkit-details-marker { display: none; }
+.rec-board .find-script .find-script-more[open] > summary { border-bottom: 1px solid rgba(61, 255, 110, 0.2); }
+.rec-board .find-script .find-script-more .find-script-pick { margin: 0.55rem 0.7rem; }
+.find-tray .corr-check { margin: 0.35rem 0 0.55rem; padding: 0.45rem 0.65rem; border: 1px solid rgba(255, 154, 46, 0.55); border-radius: 8px; background: rgba(255, 154, 46, 0.1); color: #ffd7a8; font-family: "Outfit", sans-serif; font-size: 0.92rem; line-height: 1.35; }
+.find-tray .corr-check.corr-conflict, .find-tray .corr-check.corr-low { border-color: rgba(255, 90, 90, 0.65); background: rgba(255, 70, 70, 0.12); color: #ffc9c9; }
+.find-tray .corr-check.corr-moderate { border-color: rgba(231, 193, 90, 0.55); background: rgba(231, 193, 90, 0.1); color: #f0e0a8; }
 .rec-board .find-script .find-script-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.7rem 0 0.4rem; }
 .rec-board .find-script .find-script-tabs button { padding: 0.3rem 0.75rem; border: 1px solid #3dff6e; border-radius: 999px; background: transparent; color: #d8ffe4; box-shadow: none; font-size: 14px; }
 .rec-board .find-script .find-script-tabs button.on { background: #3dff6e; color: #04140c; }
@@ -755,6 +763,9 @@
 #find-profile-pop .find-card .find-log > span { display: block; min-width: 0; overflow-wrap: anywhere; color: #d5dde6; font-size: 0.9rem; line-height: 1.3; }
 #find-profile-pop .find-card .find-log > span > b { display: block; margin: 0 0 0.12rem; color: #f4f7fb; font-size: 0.82rem; font-weight: 700; line-height: 1.2; }
 #find-profile-pop .find-card .find-log > span > .find-swing { display: inline-block; margin: 0 0 0 0.25rem; vertical-align: 0.08em; white-space: nowrap; }
+.find-card .find-log > span.find-log-bet { cursor: pointer; border-radius: 8px; padding: 0.2rem 0.25rem; margin: -0.2rem -0.25rem; }
+.find-card .find-log > span.find-log-bet:hover, .find-card .find-log > span.find-log-bet:focus { outline: none; background: rgba(61, 255, 110, 0.12); box-shadow: inset 0 0 0 1px rgba(61, 255, 110, 0.45); }
+.find-card .find-log > span.find-log-bet:hover > b, .find-card .find-log > span.find-log-bet:focus > b { color: #3dff6e; }
 @media (max-width: 699px) {
   #find-profile-pop .find-card .find-log { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

@@ -39,11 +39,25 @@ function gameShortList(legs) {
 
 document.addEventListener("click", (event) => {
   const tag = event.target.closest && event.target.closest(".find-board .find-ticket i.gm[data-game]");
-  if (!tag || typeof paintMatch !== "function" || typeof parlayLeg === "undefined") return;
+  if (!tag || typeof parlayLeg === "undefined") return;
   const board = tag.closest(".find-board");
-  const leg = [...parlayLeg.values()].find((row) => gameShort(row.match) === tag.dataset.game);
-  const teams = board.querySelector(":scope > .find-teams"), list = board.querySelector(":scope > .find-list"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)"), span = board.querySelector(":scope > .find-span"), more = board.querySelector(".find-games-go");
-  if (!leg || !teams || !list) return;
+  if (!board) return;
+  const want = tag.dataset.game;
+  const leg = [...parlayLeg.values()].find((row) => gameShort(row.match) === want);
+  if (!leg || !leg.match) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const teams = board.querySelector(":scope > .find-teams");
+  // When the open bet already stacked its games under THE BET, expand that one.
+  if (teams && teams.dataset.parlayGames && typeof parlayGameExpand === "function") {
+    const open = [...teams.querySelectorAll(":scope > .find-match[data-parlay-match]")].find((node) => (typeof parlayGameMatchOf === "function" ? parlayGameMatchOf(node) : node.dataset.parlayMatch) === leg.match && !node.classList.contains("find-game-shut"));
+    if (open && typeof parlayGameShut === "function") parlayGameShut(open, true);
+    else parlayGameExpand(leg.match);
+    return;
+  }
+  if (typeof paintMatch !== "function") return;
+  const list = board.querySelector(":scope > .find-list"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)"), span = board.querySelector(":scope > .find-span"), more = board.querySelector(".find-games-go");
+  if (!teams || !list) return;
   if (hits) hits.replaceChildren();
   teams.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on");
   if (span) { span.classList.add("find-picked"); span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); }

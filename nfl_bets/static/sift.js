@@ -368,7 +368,7 @@ function openTdPage(list, people, hits, game, team, spanWhen) {
       betIt.type = "button";
       betIt.className = "find-profile-bet";
       const on = typeof parlayKey === "function" && typeof parlayLeg !== "undefined" && parlayLeg.has(parlayKey(hit.bet));
-      betIt.textContent = on ? "In the parlay" : "Bet it";
+      betIt.textContent = on ? "In the parlay" : (typeof betOnSay === "function" ? betOnSay(row.person) : "Bet on him");
       betIt.disabled = on;
       betIt.addEventListener("click", (event) => {
         event.preventDefault();

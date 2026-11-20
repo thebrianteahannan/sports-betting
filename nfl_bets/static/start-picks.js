@@ -2,16 +2,22 @@
 
 let startTab = "rec", startBack = null, startUndo = null, startRandomAt = null;
 let startFavOnly = localStorage.getItem("startFavOnly") === "1";
-const startKinds = new Set(), START_KINDS = [["safe", "Safe"], ["balanced", "Balanced"], ["payout", "Payout"], ["good", "Good bet"], ["math", "Math"], ["script", "Script"]];
+const startKinds = new Set(), START_KINDS = [["safe", "Safe"], ["balanced", "Balanced"], ["payout", "Payout"], ["good", "Good bet"], ["math", "Math"], ["script", "Script"], ["solid", "Steady role"], ["cushion", "Cushion"]];
 
 function startKindOf(pick) {
   const key = typeof scriptKindSay === "function" ? scriptKindSay(pick).key : "";
-  return [key, ...(pick.basis === "both" ? ["math", "script"] : [pick.basis])].filter(Boolean);
+  return [
+    key,
+    ...(pick.basis === "both" ? ["math", "script"] : [pick.basis]),
+    pick.role === "solid" ? "solid" : "",
+    pick.cushion ? "cushion" : "",
+  ].filter(Boolean);
 }
 
 function startKindOk(pick) {
   const has = startKindOf(pick), kinds = ["safe", "balanced", "payout", "good"].filter((id) => startKinds.has(id)), bases = ["math", "script"].filter((id) => startKinds.has(id));
-  return (!kinds.length || kinds.some((id) => has.includes(id))) && (!bases.length || bases.some((id) => has.includes(id)));
+  const extras = ["solid", "cushion"].filter((id) => startKinds.has(id));
+  return (!kinds.length || kinds.some((id) => has.includes(id))) && (!bases.length || bases.some((id) => has.includes(id))) && (!extras.length || extras.every((id) => has.includes(id)));
 }
 
 function startKindBar(all) {

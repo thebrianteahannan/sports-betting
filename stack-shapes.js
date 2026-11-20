@@ -131,6 +131,33 @@ function unders(loaded) {
   return ranked(picked);
 }
 
+function cushions(loaded) {
+  // Fat dog spreads and roomy unders: more ways to cash without needing the perfect script.
+  const picked = [];
+  loaded.forEach(([game, legs]) => {
+    legs.forEach((leg) => {
+      const market = String(leg.market || "");
+      const text = runner(leg);
+      const line = lineOf(text);
+      const odds = Number(leg.odds);
+      if (!Number.isFinite(odds) || odds < -180 || odds > 140 || line === null) return;
+      const altSpread = /alternate spread|spread/i.test(market) && line >= 10.5 && !/under/i.test(text);
+      const fatUnder = /under/i.test(text) && (/total|team total/i.test(market) || /under/i.test(market)) && odds <= -105 && odds >= -150;
+      if (!altSpread && !fatUnder) return;
+      const room = altSpread ? `${g(line)} points of room — they can lose and you still cash.` : `Room under the total at ${signOdds(odds)}.`;
+      const score = altSpread ? Math.abs(line - 14) + Math.abs(odds + 110) / 40 : Math.abs(odds + 120) / 30;
+      picked.push([score, stack(match(game), [
+        bet("Single", "The cushion side", say(leg), odds, 5, `${room} $5.`, match(game)),
+      ])]);
+    });
+  });
+  return ranked(picked).slice(0, 24);
+}
+
+function signOdds(odds) {
+  return odds > 0 ? `+${odds}` : String(odds);
+}
+
 function middles(loaded) {
   const picked = [];
   loaded.forEach(([game, legs]) => {
@@ -352,6 +379,7 @@ async function findStacks(board) {
   const found = {
     "Prop ladder": ladders(loaded),
     "Overlapping under": unders(loaded),
+    "Cushion": cushions(loaded),
     "Classic middle": middles(loaded),
     "Key-number middle": keys(loaded),
     "Buying the hook": hooks(loaded),

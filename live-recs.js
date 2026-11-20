@@ -96,9 +96,15 @@ async function recRanked(days) {
     const tag = betTag({ ...pick, need: need > 1 ? need / 100 : need });
     return tag.tier === "rec" ? { ...pick, tier: "rec", drop: "" } : pick;
   };
-  const edge = (pick) => (pick.n >= 5 ? (pick.hits / pick.n) * 100 - parseFloat(pick.need) : -Infinity);
+  const edge = (pick) => {
+    if (pick.n < 5) return -Infinity;
+    const base = (pick.hits / pick.n) * 100 - parseFloat(pick.need);
+    const role = pick.role === "solid" ? 1.5 : pick.role === "thin" ? -2 : 0;
+    const cushion = pick.cushion ? 0.75 : 0;
+    return base + role + cushion;
+  };
   const ranked = picks.map(cleared).filter((pick) => pick.how && pick.tier !== "good" && Number.isFinite(edge(pick))).sort((a, b) => edge(b) - edge(a));
-  return { all: picks.length, ranked: ranked.map((pick) => ({ who: pick.who, team: pick.team, label: pick.label, market: pick.market, text: pick.text || "", odds: pick.odds, need: pick.need, hits: pick.hits, n: pick.n, how: pick.how, kind: pick.kind || "", basis: pick.basis || "", match: pick.match, kickoff: pick.kickoff })) };
+  return { all: picks.length, ranked: ranked.map((pick) => ({ who: pick.who, team: pick.team, label: pick.label, market: pick.market, text: pick.text || "", odds: pick.odds, need: pick.need, hits: pick.hits, n: pick.n, how: pick.how, kind: pick.kind || "", basis: pick.basis || "", role: pick.role || "", cushion: !!pick.cushion, starter: !!pick.starter, match: pick.match, kickoff: pick.kickoff })) };
 }
 
 let sportBoardAt = 0, sportBoardGames = [];
@@ -137,13 +143,23 @@ async function recSample() {
   return { span, pick: picks[0] || null, picks, more: Math.max(0, ranked.length - picks.length) };
 }
 
+async function withSport(picks) {
+  const sports = await sportMap().catch(() => new Map());
+  return (picks || []).map((pick) => {
+    const sport = pick.sport || (sports.get(`${pick.match}|${pick.kickoff}`) || sports.get(pick.match) || "");
+    return sport ? { ...pick, sport } : { ...pick };
+  });
+}
+
 async function recTop(count, when) {
-  if (when === "week") return { span: "week", picks: (await recRanked(14)).ranked.slice(0, count) };
+  if (when === "week") return { span: "week", picks: await withSport((await recRanked(14)).ranked.slice(0, count)) };
   const today = (await recRanked()).ranked;
-  if (today.length) return { span: "today", picks: today.slice(0, count) };
+  if (today.length) return { span: "today", picks: await withSport(today.slice(0, count)) };
   const day = (at) => new Date(at - 6 * 3600000).toLocaleDateString("en-CA", { timeZone: "America/New_York" }), next = day(Date.now() + 86400000);
   const ahead = (await recRanked(14)).ranked, tomorrow = ahead.filter((pick) => day(Date.parse(pick.kickoff)) === next);
-  return tomorrow.length ? { span: "tomorrow", picks: tomorrow.slice(0, count) } : { span: "week", picks: ahead.slice(0, count) };
+  return tomorrow.length
+    ? { span: "tomorrow", picks: await withSport(tomorrow.slice(0, count)) }
+    : { span: "week", picks: await withSport(ahead.slice(0, count)) };
 }
 
 async function recLazy() {

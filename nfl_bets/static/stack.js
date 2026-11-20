@@ -10,6 +10,9 @@ const STACKS = [
     ["Single or parlay", "Higher under", "The cushion. Its payout has to cover the tighter under when the player lands in the gap."],
     ["Single or parlay", "Lower under", "The tight line. Both cash only when he stays under this number."],
   ]],
+  ["Cushion", "More ways to cash at this price. The line has room, and the payout still clears the risk.", [
+    ["Single", "The cushion side", "A dog spread, a fat under, or a short prop with room above the line. He can miss the perfect script and still cash."],
+  ]],
   ["Classic middle", "A finish inside the gap wins both. Outside it, one wins and one loses, and the loss is the juice.", [
     ["Single or parlay", "Low side", "The over on the lower line."],
     ["Single or parlay", "High side", "The under on the higher line. The gap between them is the middle."],
@@ -131,25 +134,26 @@ const STACK_RANK = {
   "Classic middle": [10, "Both win only inside the gap. The ordinary night loses the juice. Take it when that loss is a few cents and the gap is wide."],
   "Prop ladder": [11, "The bottom rung is a cushion only when its profit covers the tickets above it. Otherwise a safe finish is still a loss."],
   "Overlapping under": [12, "The higher under has to pay for the tighter one when he lands in the gap. Same test as the ladder."],
-  "Side and the total": [13, "A favorite and the under are one script. A dog and the under need two different games."],
-  "Player and the total": [14, "A receiver over and the game over need points. A back over and a blowout need a lead. Opposite scripts are a hedge you did not plan."],
-  "First touchdown and anytime": [15, "The anytime has to pay for the first-touchdown ticket when he scores later. The first-touchdown price is usually the fat one."],
-  "Parlay's Way": [16, "Cash out when the offer beats your buy-in. Locked profit. The next leg can miss and you still walk ahead."],
-  "Parlay hedge": [17, "Hedge a last leg at plus money. A -300 last leg sells the ticket cheap."],
-  "Hedge": [18, "Locks a number you want to keep, and gives up the rest of the ticket."],
-  "Future hedge": [19, "The same lock, on a ticket you have held all season."],
-  "If-bet": [20, "You risk the first ticket only. The price is the same price."],
-  "Paroli": [21, "A loss costs one unit. Three wins, then stop. The price is unchanged."],
-  "1-3-2-6": [22, "Two wins lock a profit even if the third loses. The price is unchanged."],
-  "Dutching": [23, "Every winner pays the same. The set has to be priced under 100%. One book is usually over that."],
-  "Reverse": [24, "Both openers are live, so you risk two units. One if-bet risks one."],
-  "Teaser": [25, "A 6-point teaser that does not cross 3 and 7 gives the juice back."],
-  "Round robin": [26, "Three pairs means three juices. One miss still kills two of the three tickets."],
-  "Oscar's grind": [27, "The series wants one unit. A long losing run is a pile of units you win back one at a time."],
-  "Fibonacci": [28, "1, 1, 2, 3, 5, 8. Slower than doubling. It still climbs until the bankroll stops."],
-  "Pleaser": [29, "You sell 3 and 7 for a longer price. Those are the margins that hit."],
-  "Cash-out": [30, "Below the buy-in, the book is selling you a short hedge. Above it, that is Parlay's Way."],
-  "Martingale": [31, "$5 becomes $5,120 after ten losses. The book stops the bet before that win arrives."],
+  "Cushion": [13, "Room to miss the perfect game and still cash. Skip it when the juice eats the room."],
+  "Side and the total": [14, "A favorite and the under are one script. A dog and the under need two different games."],
+  "Player and the total": [15, "A receiver over and the game over need points. A back over and a blowout need a lead. Opposite scripts are a hedge you did not plan."],
+  "First touchdown and anytime": [16, "The anytime has to pay for the first-touchdown ticket when he scores later. The first-touchdown price is usually the fat one."],
+  "Parlay's Way": [17, "Cash out when the offer beats your buy-in. Locked profit. The next leg can miss and you still walk ahead."],
+  "Parlay hedge": [18, "Hedge a last leg at plus money. A -300 last leg sells the ticket cheap."],
+  "Hedge": [19, "Locks a number you want to keep, and gives up the rest of the ticket."],
+  "Future hedge": [20, "The same lock, on a ticket you have held all season."],
+  "If-bet": [21, "You risk the first ticket only. The price is the same price."],
+  "Paroli": [22, "A loss costs one unit. Three wins, then stop. The price is unchanged."],
+  "1-3-2-6": [23, "Two wins lock a profit even if the third loses. The price is unchanged."],
+  "Dutching": [24, "Every winner pays the same. The set has to be priced under 100%. One book is usually over that."],
+  "Reverse": [25, "Both openers are live, so you risk two units. One if-bet risks one."],
+  "Teaser": [26, "A 6-point teaser that does not cross 3 and 7 gives the juice back."],
+  "Round robin": [27, "Three pairs means three juices. One miss still kills two of the three tickets."],
+  "Oscar's grind": [28, "The series wants one unit. A long losing run is a pile of units you win back one at a time."],
+  "Fibonacci": [29, "1, 1, 2, 3, 5, 8. Slower than doubling. It still climbs until the bankroll stops."],
+  "Pleaser": [30, "You sell 3 and 7 for a longer price. Those are the margins that hit."],
+  "Cash-out": [31, "Below the buy-in, the book is selling you a short hedge. Above it, that is Parlay's Way."],
+  "Martingale": [32, "$5 becomes $5,120 after ten losses. The book stops the bet before that win arrives."],
 };
 
 function paintStack() {
@@ -492,7 +496,7 @@ function fillStacks(board) {
     .catch(() => { const wait = board.querySelector(".bet-load"); if (wait) wait.remove(); });
 }
 
-window.STACK_BUILD = ["Prop ladder", "Overlapping under", "Classic middle", "Key-number middle", "Buying the hook", "Dutching", "Round robin", "Correlated stack", "Side and the total", "Player and the total", "First touchdown and anytime"];
+window.STACK_BUILD = ["Prop ladder", "Overlapping under", "Cushion", "Classic middle", "Key-number middle", "Buying the hook", "Dutching", "Round robin", "Correlated stack", "Side and the total", "Player and the total", "First touchdown and anytime"];
 
 async function showStackBuild() {
   const box = document.getElementById("choice-result");

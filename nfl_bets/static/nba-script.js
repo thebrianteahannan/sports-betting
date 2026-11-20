@@ -53,6 +53,17 @@ function scriptKindTag(pick) {
   return `<i class="bet-kind k-${say.key}" title="${esc(say.tip)}">${esc(say.text)}</i>`;
 }
 
+function scriptRoleTag(pick) {
+  if (!pick || (pick.role !== "solid" && pick.role !== "thin")) return "";
+  const solid = pick.role === "solid";
+  return `<i class="bet-kind k-role-${solid ? "solid" : "thin"}" title="${esc(solid ? "His minutes and role look locked in." : "His minutes are thin, so the opportunity can vanish.")}">${solid ? "Steady role" : "Thin role"}</i>`;
+}
+
+function scriptCushionTag(pick) {
+  if (!pick || !pick.cushion) return "";
+  return `<i class="bet-kind k-cushion" title="He has room above the line at this price.">Cushion</i>`;
+}
+
 function scriptRecPill(bet) {
   const info = bet && scriptRecAll.get(`${bet.label}|${bet.market}`);
   if (!bet || !(bet.rec || info)) return null;
@@ -380,8 +391,17 @@ function scriptBetsBlock(bets, group, game, people, keep = {}, starsOnly = false
   const block = document.createElement("div"); block.className = "find-script-part find-script-bets";
   const club = group.name !== "Both teams" && scriptClub(game, group.name);
   if (club) { block.classList.add("find-script-club"); block.style.borderLeftColor = club.color; block.style.backgroundImage = `linear-gradient(90deg, ${club.color}4d, ${club.color}12 80%)`; }
-  block.innerHTML = `<b${club ? ` style="color: ${club.text}"` : ""}>${esc(group.name)}</b>${mine.map((pick) => `<div class="find-script-pick"${club ? "" : scriptClubStyle(game, pick.team)}><p><strong>${who(pick)} ${esc(pick.text)}, ${money(pick.odds)}.</strong> ${scriptKindTag(pick)}</p><p class="find-script-why"><em>Why:</em> ${esc(pick.how || `Hit in ${pick.hits} of his last ${pick.n}. Needs ${pick.need}.`)}</p></div>`).join("")}`;
-  block.querySelectorAll(".find-script-pick").forEach((row, at) => scriptPickPlus(row, mine[at], game, people));
+  const lead = mine.slice(0, 3), rest = mine.slice(3);
+  const pickHtml = (pick) => `<div class="find-script-pick"${club ? "" : scriptClubStyle(game, pick.team)}><p><strong>${who(pick)} ${esc(pick.text)}, ${money(pick.odds)}.</strong> ${scriptKindTag(pick)}${scriptRoleTag(pick)}${scriptCushionTag(pick)}</p><p class="find-script-why"><em>Why:</em> ${esc(pick.how || `Hit in ${pick.hits} of his last ${pick.n}. Needs ${pick.need}.`)}</p></div>`;
+  block.innerHTML = `<b${club ? ` style="color: ${club.text}"` : ""}>${esc(group.name)}</b>${lead.map(pickHtml).join("")}`;
+  block.querySelectorAll(".find-script-pick").forEach((row, at) => scriptPickPlus(row, lead[at], game, people));
+  if (rest.length) {
+    const more = document.createElement("details");
+    more.className = "find-script-more";
+    more.innerHTML = `<summary>More on this game (${rest.length})</summary>${rest.map(pickHtml).join("")}`;
+    more.querySelectorAll(".find-script-pick").forEach((row, at) => scriptPickPlus(row, rest[at], game, people));
+    block.append(more);
+  }
   const tabs = document.createElement("div"); tabs.className = "find-script-tabs";
   const card = document.createElement("div"); card.className = "find-script-ticket";
   const show = (parlay, edit) => {

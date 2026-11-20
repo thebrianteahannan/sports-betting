@@ -13,6 +13,12 @@ const STACK_MORE = {
     "16 or fewer: both cash, up $14.83. 17 to 20: the higher under pays for the lower one, up $0.33. 21 or more: you lose $13.",
     "This is a ladder turned upside down. The big payout comes from the tight under, so the bet is on a quiet night.",
   ],
+  "Cushion": [
+    "One ticket with room. A dog can lose and still cash. A fat under can survive a few scores. A short prop can clear on a quiet night.",
+    "Example: Detroit +21.5 at -110. They can lose by 20 and you still cash. The moneyline on San Antonio may pay about the same — pick the one with more ways to win at that price.",
+    "The site keeps spreads of 10.5 or more, fat unders, and short props where the recent average sits clear of the line. It skips a huge number that does not pay.",
+    "Cushion is not safe because the number is big. It is smart when the room is real and the juice still clears.",
+  ],
   "Classic middle": [
     "An over on a low line and an under on a higher line of the same total. A finish between the two numbers wins both tickets. Anywhere else, one wins and one loses.",
     "Example: Over 222.5 at -140 is $5 to win $3.57. Under 230.5 at -140 is $5 to win $3.57. That is $10 in play.",

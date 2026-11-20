@@ -1,6 +1,8 @@
 /** What a pick is for. Kind by price: safe (-150 or shorter), balanced (-149 to +100), payout (longer than +100).
  * Basis by what backs it: math (his record against the price), script (the game script), or both.
- * Tier: rec when it passes the whittle rules, good when the record clears the price but a rule says not to trust it. */
+ * Tier: rec when it passes the whittle rules, good when the record clears the price but a rule says not to trust it.
+ * Role (steady): solid when minutes/starter look locked; thin when the opportunity is shaky.
+ * Cushion: room above the line at a price that still pays. */
 
 function betKind(odds) {
   const o = Number(odds);
@@ -9,6 +11,23 @@ function betKind(odds) {
 
 function betShrunk(hits, n, need) {
   return (hits - n * need) / (n + 10);
+}
+
+function betRole(pick) {
+  if (pick.role === "solid" || pick.role === "thin") return pick.role;
+  const starter = pick.starter === true, min = Number(pick.min);
+  if (starter && (!Number.isFinite(min) || min >= 22)) return "solid";
+  if (!starter && Number.isFinite(min) && min >= 28) return "solid";
+  if (!starter && Number.isFinite(min) && min < 24) return "thin";
+  if (starter) return "solid";
+  return "";
+}
+
+function betCushion(pick) {
+  if (pick.cushion === true || pick.cushion === false) return !!pick.cushion;
+  const avg = Number(pick.avg), reach = Number(pick.reach), odds = Number(pick.odds);
+  if (!Number.isFinite(avg) || !Number.isFinite(reach) || !Number.isFinite(odds)) return false;
+  return avg - reach >= 2 && odds <= 120 && odds >= -220;
 }
 
 function betTag(pick) {
@@ -21,7 +40,8 @@ function betTag(pick) {
   else if (hits / n - need >= 0.3) drop = "the edge over the price is too big to trust";
   else if (odds >= 150 && !strong) drop = "the price is long and ten games do not prove it";
   else if (/goal/.test(stat) && !/shot|against/.test(stat) && Number(pick.reach) === 1 && odds > 0) drop = "one goal at plus money is a coin flip ten games cannot read";
-  return { kind: betKind(odds), basis, tier: drop ? "good" : "rec", drop };
+  const role = betRole(pick), cushion = betCushion(pick);
+  return { kind: betKind(odds), basis, tier: drop ? "good" : "rec", drop, role, cushion };
 }
 
 function betCash(odds, result) {
@@ -29,4 +49,4 @@ function betCash(odds, result) {
   return result === "won" ? 5 * (o > 0 ? o / 100 : 100 / -o) : result === "lost" ? -5 : 0;
 }
 
-module.exports = { betKind, betTag, betCash };
+module.exports = { betKind, betTag, betCash, betRole, betCushion };

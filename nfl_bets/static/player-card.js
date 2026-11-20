@@ -37,6 +37,26 @@ function paintCard(list, heading, person) {
         pill.className = `find-swing find-blow ${stat.blow}`;
         item.append(" ", pill);
       }
+      if (stat.value && typeof profileStatBet === "function") {
+        item.classList.add("find-log-bet");
+        item.tabIndex = 0;
+        const whom = typeof betOnSay === "function" && /her\b/i.test(betOnSay(person)) ? "her" : "his";
+        item.title = `Bet ${stat.label} near ${whom} ${stat.value} average`;
+        const go = () => {
+          const hit = profileStatBet(person, stat.label, stat.value);
+          if (!hit) return;
+          const host = box.parentElement;
+          const acts = host && (host.querySelector(".find-profile-acts") || host.querySelector(".td-more-acts"));
+          if (typeof profileAskPut === "function" && acts) profileAskPut(acts, hit);
+          else if (typeof profileBetPut === "function") profileBetPut(hit, false);
+        };
+        item.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); go(); });
+        item.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          go();
+        });
+      }
       grid.append(item);
     });
     if (grid.childNodes.length) box.append(grid);

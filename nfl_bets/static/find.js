@@ -46,6 +46,7 @@ function paintParlay() {
     const mine = [...parlayLeg.entries()].filter(([, bet]) => legOwns(person, bet)); mine.forEach(([key, bet]) => { const line = document.createElement("div"); line.className = "find-chose"; line.dataset.key = key; const said = document.createElement("span"); const price = Number(bet.odds); const rest = String(bet.label || "").replace(person.name, "").split(/\s+—\s+/)[0].trim(); const market = String(bet.market || "").replace(person.name, "").replace(/^\s*-\s*/, "").trim(); const what = typeof legSwapWhat === "function" ? legSwapWhat(person, bet) : /^most\s/i.test(market) && !/\d/.test(rest) ? market : !rest || /^(over|under)(\s+[\d.]+)?$/i.test(rest) ? [rest, market.replace(/^alt\s+/i, "")].filter(Boolean).join(" ") : rest; said.innerHTML = [`<i class="who">${esc(person.name)}</i>`, what && `<i class="prop">${esc(what)}</i>`, `<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`].filter(Boolean).join(""); const change = document.createElement("button"); change.type = "button"; change.className = "find-out"; change.textContent = "×"; change.setAttribute("aria-label", "Remove this leg"); change.addEventListener("click", () => { parlayLeg.delete(key); legOwner.delete(key); if (![...parlayLeg.values()].some((bet) => legOwns(person, bet))) return out.click(); paintParlay(); }); const hist = document.createElement("button"); hist.type = "button"; hist.className = "find-leg-hist"; hist.dataset.key = key; hist.title = "Show the history"; hist.setAttribute("aria-label", `Show the history for ${person.name}`); line.append(said, hist, change); row.append(line); });
     tray.append(row); });
   parlayLeg.forEach((bet, key) => { if ([...parlayPick.values()].some((person) => legOwns(person, bet))) return; const row = document.createElement("div"); row.className = "find-row find-loose"; const line = document.createElement("div"); line.className = "find-chose"; line.dataset.key = key; const said = document.createElement("span"); const price = Number(bet.odds); const loose = legLoose(bet); said.innerHTML = [loose.who && `<i class="who">${esc(loose.who)}</i>`, `<i class="prop">${esc(loose.prop)}</i>`, `<i class="px">${esc(price > 0 ? `+${price}` : String(price))}</i>`, findPct(price) && `<i class="pct">${esc(findPct(price))}</i>`].filter(Boolean).join(""); const out = document.createElement("button"); out.type = "button"; out.className = "find-out"; out.textContent = "×"; out.setAttribute("aria-label", "Remove this leg"); out.addEventListener("click", () => { parlayLeg.delete(key); legOwner.delete(key); paintParlay(); }); line.append(said, out); row.append(line); tray.append(row); });
+  if (typeof corrPaint === "function") corrPaint(tray, [...parlayLeg.values()]);
   if (typeof parlayHint === "function") { const hint = parlayHint([...parlayLeg.values()]); if (hint) { if (hint.nodeType) tray.append(hint); else { const note = document.createElement("p"); note.className = "find-why"; note.textContent = hint; tray.append(note); } } } if (typeof trayStack === "function") trayStack(tray, [...parlayLeg.values()]); if (typeof clubTray === "function") clubTray(tray);
   if (!(parlayPick.size < 2 && parlayLeg.size < 1) && typeof paintTrayBuild === "function") paintTrayBuild(tray);
   if (typeof slimTray === "function") slimTray();
@@ -285,6 +286,67 @@ function profileBetPick(person) {
   pool.sort((a, b) => Math.abs(chance(a.odds) - 0.524) - Math.abs(chance(b.odds) - 0.524) || findRank(b.odds) - findRank(a.odds));
   return { person, bet: pool[0], rec: false };
 }
+
+function betOnSay(person) {
+  const row = ((person && person.bets) || []).find((bet) => bet && bet.sport);
+  const sport = String((row && row.sport) || (person && person.sport) || "").toUpperCase();
+  return /^(WNBA|NCAAW|WTA)$/.test(sport) || /\bwomen\b/i.test(sport) ? "Bet on her" : "Bet on him";
+}
+
+function profileStatLine(text) {
+  const raw = String(text || "");
+  const over = raw.match(/\bOver\s+(\d+(?:\.\d+)?)/i);
+  if (over) return Number(over[1]);
+  const plus = raw.match(/\b(\d+(?:\.\d+)?)\+/);
+  if (plus) return Number(plus[1]);
+  return null;
+}
+
+function profileStatBet(person, label, value) {
+  if (!person || person.kind !== "player") return null;
+  const avg = Number(String(value || "").replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(avg) || avg <= 0) return null;
+  const name = String(person.name || "");
+  const want = {
+    "Pass Yds/Game": /pass(ing)?\s*yards?/i,
+    "Pass TD/Game": /pass(ing)?\s*touchdowns?/i,
+    "Rush Yds/Game": /rush(ing)?\s*yards?/i,
+    "Carries/Game": /rush(ing)?\s*attempts?|carries/i,
+    "Rush TD/Game": /rush(ing)?\s*touchdowns?/i,
+    "Rec Yds/Game": /receiv(ing)?\s*yards?/i,
+    "Receptions/Game": /receptions?/i,
+    "Targets/Game": /targets?/i,
+    "TD/Game": /anytime\s+touchdown|any\s+time\s+touchdown|to\s+score\s+\d*\+?\s*touchdowns?/i,
+    "Pts/Game": /\bpoints?\b/i,
+    "Assists/Game": /assists?/i,
+    "Rebounds/Game": /rebounds?/i,
+    "3pters/Game": /threes?|made\s+threes?|3-pointers?/i,
+    "Steals/Game": /steals?/i,
+    "Blocks/Game": /blocks?/i,
+    "PRA/Game": /pts\s*\+\s*reb\s*\+\s*ast|points?\s*\+\s*rebounds?\s*\+\s*assists?/i,
+    "Goals/Game": /\bgoals?\b/i,
+    "Points/Game": /\bpoints?\b/i,
+    "Shots/Game": /\bshots?\b/i,
+  }[String(label || "")];
+  if (!want) return null;
+  const skip = /half|quarter|\b1st\b|first|last|either|each quarter|each half|period|inning|most\s/i;
+  const rows = (person.bets || []).filter((bet) => {
+    if (!Number(bet.odds)) return false;
+    const blob = `${bet.label || ""} ${bet.market || ""}`;
+    if (name && !String(bet.label || "").startsWith(name) && !want.test(blob)) return false;
+    if (skip.test(blob) || /\bunder\b/i.test(blob)) return false;
+    return want.test(blob);
+  }).map((bet) => {
+    const line = profileStatLine(`${bet.label || ""} ${bet.market || ""}`);
+    return line == null ? null : { bet, line, gap: Math.abs(line - avg) };
+  }).filter(Boolean);
+  if (!rows.length) return null;
+  rows.sort((a, b) => a.gap - b.gap || Math.abs(Number(a.bet.odds) + 110) - Math.abs(Number(b.bet.odds) + 110));
+  return { person, bet: rows[0].bet, rec: false };
+}
+
+window.betOnSay = betOnSay;
+window.profileStatBet = profileStatBet;
 
 function parlayOpenTray(scroll) {
   document.querySelectorAll(".find-tray.find-shut").forEach((tray) => {
@@ -553,7 +615,7 @@ function openPlayerPop(person, list, bets, prefer) {
     const betIt = document.createElement("button");
     betIt.type = "button";
     betIt.className = "find-profile-bet";
-    betIt.textContent = already ? "In the parlay" : "Bet it";
+    betIt.textContent = already ? "In the parlay" : betOnSay(person);
     betIt.disabled = !!already;
     betIt.addEventListener("click", () => {
       if (betIt.disabled) return;

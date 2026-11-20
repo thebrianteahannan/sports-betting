@@ -5,7 +5,7 @@ const STATS = {
   "pts + reb": ["pts", "reb"], "pts + ast": ["pts", "ast"], "pts + reb + ast": ["pts", "reb", "ast"], "reb + ast": ["reb", "ast"],
 };
 const WORDS = { points: "points", rebounds: "rebounds", assists: "assists", threes: "threes", "made threes": "threes", "pts + reb": "points + rebounds", "pts + ast": "points + assists", "pts + reb + ast": "points + rebounds + assists", "reb + ast": "rebounds + assists" };
-const { betKind, betTag } = require("./bet-kind");
+const { betKind, betTag, betRole, betCushion } = require("./bet-kind");
 const KINDS = "Points|Rebounds|Assists|Made Threes|Threes|Pts \\+ Reb \\+ Ast|Pts \\+ Reb|Pts \\+ Ast|Reb \\+ Ast";
 
 function n1(value) { return Number.isFinite(value) ? (Math.round(value * 10) / 10).toFixed(1).replace(/\.0$/, "") : ""; }
@@ -76,7 +76,13 @@ function sign(odds) { return odds > 0 ? `+${odds}` : String(odds); }
 
 function howPick(pick) {
   const rate = pick.hits / pick.n;
-  return `He averages ${n1(pick.avg)} ${pick.word || WORDS[pick.stat]} over his last ${pick.n} games and reached ${pick.reach} in ${pick.hits} of them (${Math.round(rate * 100)}%). At ${sign(pick.odds)} the bet needs ${pct(pick.need)}, so his record clears the price by ${n1((rate - pick.need) * 100)} percentage points.${pick.why ? ` The script backs it: ${pick.why}` : ""}${pick.against ? ` The matchup works against it: ${pick.against}` : ""}`;
+  const role = pick.role === "solid"
+    ? (pick.starter ? " He starts and his minutes have held, so the opportunity is locked in." : " His minutes have held without a start, so the opportunity looks steady.")
+    : pick.role === "thin"
+      ? " His minutes are thin, so the opportunity can vanish even if the matchup looks right."
+      : "";
+  const cushion = pick.cushion ? ` His average sits ${n1(pick.avg - pick.reach)} above the line, so he has room and can still cash a quiet night.` : "";
+  return `He averages ${n1(pick.avg)} ${pick.word || WORDS[pick.stat]} over his last ${pick.n} games and reached ${pick.reach} in ${pick.hits} of them (${Math.round(rate * 100)}%). At ${sign(pick.odds)} the bet needs ${pct(pick.need)}, so his record clears the price by ${n1((rate - pick.need) * 100)} percentage points.${role}${cushion}${pick.why ? ` The script backs it: ${pick.why}` : ""}${pick.against ? ` The matchup works against it: ${pick.against}` : ""}`;
 }
 
 function howTicket(legs, kind, teams) {
@@ -131,9 +137,11 @@ function betsFrom(game, boxes, fives, outs, props, star) {
       one.starter = starters.has(name);
       const read = reasons(team, foe, base, one, gone, both);
       records.push(...propRecords(rows, row.log || []));
-      const tag = { who: name, team: last(team.name), pos: one.spot || row.pos || "" };
-      const strict = goodProps(rows, row.log || [], read, false, star).map((prop) => ({ ...tag, ...prop }));
-      const loose = goodProps(rows, row.log || [], read, true, star).map((prop) => ({ ...tag, ...prop }));      if (strict.length || loose.length) picks.push({ team: tag.team, strict, loose });
+      const role = betRole({ starter: one.starter, min: row.min });
+      const tag = { who: name, team: last(team.name), pos: one.spot || row.pos || "", starter: one.starter, min: row.min, role };
+      const strict = goodProps(rows, row.log || [], read, false, star).map((prop) => ({ ...tag, ...prop, cushion: betCushion(prop) }));
+      const loose = goodProps(rows, row.log || [], read, true, star).map((prop) => ({ ...tag, ...prop, cushion: betCushion(prop) }));
+      if (strict.length || loose.length) picks.push({ team: tag.team, strict, loose });
     });
   });
   const out = ticketsFrom(picks, away, home);
@@ -153,21 +161,26 @@ function ticketsFrom(picks, away, home) {
   });
   const top = teams.flat();
   if (!top.length) return null;
-  top.forEach((pick) => Object.assign(pick, betTag(pick)));
-  const ok = (rows) => rows.filter((pick) => pick.tier === "rec"), good = teams.map(ok), pool = good.flat();
+  top.forEach((pick) => {
+    pick.cushion = betCushion(pick);
+    Object.assign(pick, betTag(pick));
+  });
+  // Prefer steady-role props when building tickets so thin minutes sit further down.
+  const byRole = (a, b) => (b.role === "solid" ? 1 : 0) - (a.role === "solid" ? 1 : 0) || (a.role === "thin" ? 1 : 0) - (b.role === "thin" ? 1 : 0);
+  const ok = (rows) => rows.filter((pick) => pick.tier === "rec").sort(byRole), good = teams.map(ok), pool = good.flat();
   const build = (legs, kind, teamName) => { const price = ticket(legs); return { size: legs.length, legs: legs.map((pick) => top.indexOf(pick)), how: howTicket(legs, kind, teamName), kind: betKind(price.odds), ...price }; };
   const groups = teams.map((all, side) => {
     if (!all.length) return null;
     const rows = good[side], teamName = last([away, home][side].name);
     if (!rows.length) return { name: teamName, parlays: [] };
-    const single = rows.slice().sort((a, b) => (b.chance - b.need) - (a.chance - a.need))[0];
+    const single = rows.slice().sort((a, b) => byRole(a, b) || (b.chance - b.need) - (a.chance - a.need))[0];
     return { name: teamName, parlays: [1, 2, 3, 4].filter((size) => size <= rows.length).map((size) => build(size === 1 ? [single] : sure(rows).slice(0, size), "team", teamName)) };
   }).filter(Boolean);
   if (good[0].length && good[1].length) {
     const lead = [sure(good[0])[0], sure(good[1])[0]], rest = sure(pool).filter((pick) => !lead.includes(pick));
     groups.push({ name: "Both teams", parlays: [2, 3, 4].filter((size) => size <= pool.length).map((size) => build(lead.concat(rest.slice(0, size - 2)), "both")) });
   }
-  return { picks: top.map(({ chance, score, edge, avg, reach, ...rest }) => ({ ...rest, how: howPick({ ...rest, avg, reach }), need: pct(rest.need) })), groups };
+  return { picks: top.map(({ chance, score, edge, avg, reach, min, ...rest }) => ({ ...rest, how: howPick({ ...rest, avg, reach }), need: pct(rest.need) })), groups };
 }
 
 module.exports = { scriptBets, readProp, goodProps, ticketsFrom, propRecords };
