@@ -283,15 +283,6 @@ function friendsPanel() {
 function friendsPaint() {
   document.querySelectorAll(".find-saved").forEach((box) => {
     box.querySelectorAll(":scope > .find-saved-friends, :scope > .find-saved-live, :scope > .find-friends, :scope > .find-shared-head-row, :scope > .find-shared-chip").forEach((node) => node.remove());
-    if (!window.saveWho) return;
-    const fresh = window.sharedItems.filter((item) => !item.seen).length + window.friendsData.incoming.length;
-    const go = document.createElement("button");
-    go.type = "button";
-    go.className = "find-saved-st find-saved-friends";
-    go.textContent = `Shared bets${fresh ? ` (${fresh} new)` : ""}`;
-    go.addEventListener("click", () => sharedGo());
-    const after = box.querySelector(":scope > .find-saved-done") || box.querySelector(":scope > .find-saved-st");
-    if (after) after.after(go); else box.append(go);
   });
   profileShared();
 }

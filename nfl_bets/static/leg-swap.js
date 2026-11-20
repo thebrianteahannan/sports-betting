@@ -500,6 +500,17 @@ document.addEventListener("click", (event) => {
   if (typeof legMenuPaint === "function") legMenuPaint();
 });
 
+document.addEventListener("click", (event) => {
+  if (!legSwapOpen.size) return;
+  const keep = event.target.closest && event.target.closest(".find-tray-swap, .find-tray button.find-leg-swap, .find-tray .find-chose i.prop[data-key], .find-tray .find-chose i.who[data-key], .find-tray .find-in button.find-name[data-key]");
+  if (keep) return;
+  legSwapOpen.clear();
+  legSwapDrill.clear();
+  legSwapPaint();
+  if (typeof legHistPaint === "function") legHistPaint();
+  if (typeof legMenuPaint === "function") legMenuPaint();
+});
+
 if (typeof paintParlay === "function") {
   const paintParlaySwaps = paintParlay;
   paintParlay = function () { paintParlaySwaps.apply(this, arguments); legSwapPaint(); };

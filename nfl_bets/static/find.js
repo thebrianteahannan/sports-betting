@@ -37,7 +37,7 @@ function paintParlay() {
   tray.replaceChildren();
   tray.hidden = !parlayPick.size && !parlayLeg.size;
   if (tray.hidden) { tray.classList.remove("find-slim", "find-shut"); return; }
-  const say = document.createElement("p"); say.className = "find-say"; say.textContent = "THE BET"; const fold = document.createElement("button"); fold.type = "button"; fold.className = "find-fold"; const folded = () => { const n = parlayLeg.size || parlayPick.size, word = parlayLeg.size || !parlayPick.size ? "leg" : "player"; fold.textContent = tray.classList.contains("find-shut") ? `Show ${n} ${word}${n === 1 ? "" : "s"} ▾` : "Hide ▴"; }; folded(); fold.addEventListener("click", () => { if (tray.classList.toggle("find-shut")) { tray.classList.remove("find-edit"); const edit = tray.querySelector("button.find-edit"); if (edit) { edit.textContent = "Edit props"; edit.classList.remove("on"); } } folded(); }); say.append(fold); tray.append(say); parlayPick.forEach((person) => {
+  const say = document.createElement("p"); say.className = "find-say"; say.textContent = "THE BET"; const fold = document.createElement("button"); fold.type = "button"; fold.className = "find-fold"; const folded = () => { const n = parlayLeg.size || parlayPick.size, word = parlayLeg.size || !parlayPick.size ? "leg" : "player"; fold.textContent = tray.classList.contains("find-shut") ? `Show ${n} ${word}${n === 1 ? "" : "s"} ▾` : "Hide ▴"; }; folded(); fold.addEventListener("click", () => { const shut = tray.classList.toggle("find-shut"); if (shut) { tray.classList.remove("find-edit"); const edit = tray.querySelector("button.find-edit"); if (edit) { edit.textContent = "Edit props"; edit.classList.remove("on"); } window.savePeek = false; } else if (typeof saveCollapseForBet === "function") saveCollapseForBet(); folded(); if (typeof paintParlay === "function") paintParlay(); }); say.append(fold); tray.append(say); parlayPick.forEach((person) => {
     const row = document.createElement("div"); row.className = "find-row"; const top = document.createElement("div"); top.className = "find-in"; const name = document.createElement("button"); name.type = "button"; name.className = "find-name"; name.textContent = person.name; name.dataset.key = person.key; const out = document.createElement("button"); out.type = "button"; out.className = "find-out"; const bare = ![...parlayLeg.values()].some((bet) => legOwns(person, bet)); out.textContent = bare ? "×" : "Take out"; if (bare) { out.classList.add("find-x"); out.setAttribute("aria-label", `Take out ${person.name}`); } out.addEventListener("click", () => { parlayPick.delete(person.key); [...parlayLeg.entries()].forEach(([key, bet]) => { if (legOwns(person, bet)) { parlayLeg.delete(key); legOwner.delete(key); } }); document.querySelectorAll(".find-names button").forEach((node) => { if (node.textContent === person.name) { node.classList.remove("on"); node.setAttribute("aria-pressed", "false"); } }); paintParlay(); }); top.append(name, out); row.append(top); if (bare) { const hint = document.createElement("button"); hint.type = "button"; hint.className = "find-pick-hint"; const want = typeof shotWant !== "undefined" && shotWant.get(person.key); hint.textContent = want ? `${want.charAt(0).toUpperCase()}${want.slice(1)} · tap to pick the line ▸` : `Tap ${person.name} to pick the bet ▸`; hint.addEventListener("click", () => {
         const glass = document.getElementById("desk-glass-in");
         if (glass) glass.scrollTo({ top: 0, behavior: "smooth" });
@@ -349,12 +349,14 @@ window.betOnSay = betOnSay;
 window.profileStatBet = profileStatBet;
 
 function parlayOpenTray(scroll) {
+  if (typeof saveCollapseForBet === "function") saveCollapseForBet();
   document.querySelectorAll(".find-tray.find-shut").forEach((tray) => {
     const fold = tray.querySelector(".find-fold");
     if (!fold) return;
     if (typeof saveAutoShut !== "undefined") saveAutoShut.delete(tray);
     fold.click();
   });
+  if (typeof paintParlay === "function") paintParlay();
   if (scroll === false) return null;
   const tray = document.querySelector("#desk-glass-in .find-tray:not([hidden])") || document.querySelector(".find-tray:not([hidden])");
   if (tray) {
