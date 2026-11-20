@@ -183,19 +183,6 @@ function fillFind(board, data) {
   list.className = "find-list";
   board.people = people;
   const today = document.createElement("details"); const week = document.createElement("details"); const span = document.createElement("div"); span.className = "find-span"; const games = document.createElement("button"); games.type = "button"; games.className = "find-games-go"; games.textContent = "The Games"; games.addEventListener("click", () => { window.location.href = "/live"; }); const pickHead = document.createElement("p"); pickHead.className = "find-span-head"; pickHead.textContent = "Or pick a game."; span.append(pickHead, today, week);
-  const quickGo = document.createElement("button");
-  quickGo.type = "button";
-  quickGo.className = "find-quick-go";
-  quickGo.textContent = "Quick Add";
-  quickGo.addEventListener("click", () => {
-    if (recPage) {
-      window.quickAddPending = true;
-      if (typeof birdMenu === "function") birdMenu("find");
-      else if (typeof paintFind === "function") paintFind();
-      return;
-    }
-    if (typeof quickAddOpen === "function") quickAddOpen();
-  });
   const jumpGo = document.createElement("button");
   jumpGo.type = "button";
   jumpGo.className = recPage ? "find-build-go" : "find-rec-go";
@@ -209,7 +196,7 @@ function fillFind(board, data) {
     if (typeof birdMenu === "function") birdMenu("rec");
     else if (typeof paintRec === "function") paintRec();
   });
-  heading.append(quickGo, jumpGo, games);
+  heading.append(jumpGo, games);
   findGamesLive(games);
   const pickSpan = (name) => { const on = name === "today"; today.classList.toggle("find-on", on); week.classList.toggle("find-on", !on); if (today.open !== on) today.open = on; if (week.open === on) week.open = !on; };
   today.className = "find-games find-on"; today.dataset.span = "today"; today.open = true; week.className = "find-games find-week"; week.dataset.span = "week";

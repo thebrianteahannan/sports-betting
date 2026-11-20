@@ -342,7 +342,7 @@
 .rec-board .find-saved.find-saved-slim > p.find-say > .find-saved-title,
 .rec-board .find-saved.find-saved-slim > p.find-say > .find-saved-pay,
 .rec-board .find-saved.find-saved-slim > p.find-say > .find-saved-new,
-.rec-board .find-saved.find-saved-slim > p.find-say > .find-saved-acts > :not(.find-fold, .find-saved-manage),
+.rec-board .find-saved.find-saved-slim > p.find-say > .find-saved-acts > :not(.find-fold, .find-saved-manage, .find-saved-quick),
 .rec-board .find-saved.find-saved-slim > p.find-say > button.chat-send,
 .rec-board .find-saved.find-saved-slim > p.find-say > button.share-bet,
 .rec-board .find-saved.find-saved-slim > p.find-say > button.find-close { display: none !important; }
@@ -350,7 +350,9 @@
 .rec-board .find-saved.find-saved-slim > p.find-say > .find-saved-acts { margin-left: 0; gap: 0.45rem; }
 .rec-board .find-saved.find-saved-slim > p.find-say > .find-saved-acts > .find-fold { margin: 0 !important; }
 #desk.tv-full #desk-glass .rec-board .find-saved button.find-saved-manage,
-.rec-board .find-saved button.find-saved-manage {
+.rec-board .find-saved button.find-saved-manage,
+#desk.tv-full #desk-glass .rec-board .find-saved button.find-saved-quick,
+.rec-board .find-saved button.find-saved-quick {
   width: auto !important;
   min-height: 0 !important;
   height: auto !important;
@@ -370,7 +372,9 @@
   white-space: nowrap;
 }
 #desk.tv-full #desk-glass .rec-board .find-saved button.find-saved-manage:hover,
-.rec-board .find-saved button.find-saved-manage:hover {
+.rec-board .find-saved button.find-saved-manage:hover,
+#desk.tv-full #desk-glass .rec-board .find-saved button.find-saved-quick:hover,
+.rec-board .find-saved button.find-saved-quick:hover {
   background: rgba(61, 255, 110, 0.12) !important;
   filter: none;
 }

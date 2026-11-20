@@ -33,7 +33,9 @@ a { color: #3dff6e; }
 .live-week-game { color: #3dff6e; font-size: 13px; font-weight: 700; text-decoration: none; }
 .live-week-game:hover { text-decoration: underline; }
 .live-leagues button.on { border-color: #3dff6e; background: #3dff6e; color: #04140c; }
-.live-filters { position: sticky; top: 0; z-index: 6; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 10px; padding: 0.45rem 0; background: #02080c; }
+#live, #live .live-game, #live .live-pack, #live .live-filters { overflow-anchor: none; }
+.live-filters { position: sticky; top: 0; z-index: 6; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 10px; padding: 0.45rem 0; background: #02080c; box-sizing: border-box; }
+.live-pack { display: flex; flex-direction: column; gap: 0; }
 .live-filters .live-td-go { display: inline-flex; align-items: center; padding: 5px 14px; border: 1px solid #3dff6e; border-radius: 999px; background: rgba(61, 255, 110, 0.1); color: #3dff6e; font: 800 13px Outfit, system-ui, sans-serif; letter-spacing: 0.02em; text-decoration: none; white-space: nowrap; }
 .live-filters .live-td-go:hover { background: rgba(61, 255, 110, 0.2); color: #f4f7fb; }
 .live-filters .live-court { margin-left: 0; }
@@ -45,16 +47,17 @@ a { color: #3dff6e; }
 .live-zoom input[type="range"]:active::-webkit-slider-thumb { cursor: grabbing; }
 .live-zoom input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border: 2px solid #04140c; border-radius: 50%; background: #3dff6e; box-shadow: 0 0 10px rgba(61, 255, 110, 0.45); cursor: grab; }
 .live-zoom input[type="range"]:active::-moz-range-thumb { cursor: grabbing; }
-/* 0 grid · 1 scores · 2 clock · 3 league · 4 buttons · 5 my bets · 6 recommended · 7 last play / script */
-body[data-live-zoom="0"] #live { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 8px; align-items: start; }
-body[data-live-zoom="0"] #live > :not(.live-game) { grid-column: 1 / -1; }
-body[data-live-zoom="0"] .live-game { margin: 0; }
-body[data-live-zoom="0"] .live-game > summary, body[data-live-zoom="0"] .live-game > .live-head { padding: 8px 10px; gap: 6px 8px; }
+/* 0 game blocks (keep score + clock/when) · 1 fuller rows · 2 sport · 3 buttons · 4 meta · 5 my bets · 6 recommended · 7 last play
+   Only .live-pack goes multi-column — never #live, or the Less/More bar jumps when blocks become rows. */
+body[data-live-zoom="0"] .live-pack { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 8px; align-items: start; }
+body[data-live-zoom="0"] .live-pack > .live-game { margin: 0; }
+body[data-live-zoom="0"] .live-game > summary, body[data-live-zoom="0"] .live-game > .live-head { padding: 8px 10px; gap: 4px 6px; }
 body[data-live-zoom="0"] .live-side img { width: 18px; height: 18px; }
 body[data-live-zoom="0"] .live-side b { font-size: 12px; }
 body[data-live-zoom="0"] .live-side i { font-size: 18px; }
-body[data-live-zoom="0"] .live-clock, body[data-live-zoom="1"] .live-clock,
-body[data-live-zoom="0"] .live-next li > i, body[data-live-zoom="1"] .live-next li > i { display: none !important; }
+body[data-live-zoom="0"] .live-clock,
+body[data-live-zoom="0"] .live-next li > i { font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
+body[data-live-zoom="0"] .live-soon .live-side i:empty { display: none; }
 body[data-live-zoom="0"] .live-sport, body[data-live-zoom="1"] .live-sport, body[data-live-zoom="2"] .live-sport { display: none !important; }
 body[data-live-zoom="0"] .live-open, body[data-live-zoom="1"] .live-open, body[data-live-zoom="2"] .live-open, body[data-live-zoom="3"] .live-open,
 body[data-live-zoom="0"] .live-stats, body[data-live-zoom="1"] .live-stats, body[data-live-zoom="2"] .live-stats, body[data-live-zoom="3"] .live-stats,

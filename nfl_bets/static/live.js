@@ -143,6 +143,10 @@ let liveZoom = (() => {
 
 let liveZoomDrag = false;
 
+function livePack(html) {
+  return html ? `<div class="live-pack">${html}</div>` : "";
+}
+
 function liveZoomApply(next, opts) {
   const quiet = !!(opts && opts.quiet);
   liveZoom = Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(Number(next) || 0)));
@@ -186,7 +190,7 @@ function liveSoonCard(game) {
 
 function liveWeekList(week) {
   if (liveSpan !== "week" || !week.length) return "";
-  return `<h2>This week, ${week.length} ${week.length === 1 ? "game" : "games"}</h2>${week.map(liveSoonCard).join("")}`;
+  return `<h2>This week, ${week.length} ${week.length === 1 ? "game" : "games"}</h2>${livePack(week.map(liveSoonCard).join(""))}`;
 }
 
 function liveHasMine(game) {
@@ -212,14 +216,14 @@ function livePaint(data, quiet) {
   const pgaLive = board.filter(pgaOn);
   const week = board.filter((game) => liveDayKey(game.kickoff) > today || pgaOn(game));
   const soon = board.filter((game) => liveDayKey(game.kickoff) === today && Date.parse(game.kickoff) > Date.now());
-  const next = (data.week || []).length ? (soon.length ? `<h2>Up next today, ${soon.length} ${soon.length === 1 ? "game" : "games"}</h2>${soon.map(liveSoonCard).join("")}` : "") : liveNext((data.next || []).filter(keep));
+  const next = (data.week || []).length ? (soon.length ? `<h2>Up next today, ${soon.length} ${soon.length === 1 ? "game" : "games"}</h2>${livePack(soon.map(liveSoonCard).join(""))}` : "") : liveNext((data.next || []).filter(keep));
   const past = done.filter((game) => liveDayKey(game.when) !== today), ended = done.filter((game) => liveDayKey(game.when) === today);
-  const final = (day, list) => list.length ? `<h2>Final ${day}, ${list.length} ${list.length === 1 ? "game" : "games"}</h2>${list.map(liveGame).join("")}` : "";
+  const final = (day, list) => list.length ? `<h2>Final ${day}, ${list.length} ${list.length === 1 ? "game" : "games"}</h2>${livePack(list.map(liveGame).join(""))}` : "";
   const hist = ((data.tally || {}).history || []), histIds = new Set(hist.map((row) => String(row.id)));
   const liveCount = live.length + pgaLive.length;
   const bar = liveLeagueBar(data, { past: past.filter((game) => !histIds.has(String(game.id))).length + hist.length, today: liveCount + ended.length + ((data.week || []).length ? soon.length : (data.next || []).filter(keep).length), week: week.length });
   const filters = liveFilters();
-  const liveBlock = liveCount ? `<h2>Live now, ${liveCount} ${liveCount === 1 ? "game" : "games"}</h2>${live.map(liveGame).join("")}${pgaLive.map(liveSoonCard).join("")}` : `<p class="live-note">No games are live right now.</p>`;
+  const liveBlock = liveCount ? `<h2>Live now, ${liveCount} ${liveCount === 1 ? "game" : "games"}</h2>${livePack(live.map(liveGame).join("") + pgaLive.map(liveSoonCard).join(""))}` : `<p class="live-note">No games are live right now.</p>`;
   box.innerHTML = liveSpan === "week" ? `${bar}${filters}${week.length ? liveWeekList(week) : `<p class="live-note">No games this week.</p>`}` : liveSpan === "past" ? `${bar}${filters}${(final("yesterday", past) + liveHistory(hist)) || `<p class="live-note">No past games to show.</p>`}` : `${bar}${filters}${liveBlock}${next}<div class="live-today-recap">${liveHistory(hist.filter((row) => liveDayKey(row.kickoff) === today), true)}</div>${final("today", ended)}`;
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => { const left = liveSlide.get(node.dataset.slide); if (left) node.scrollLeft = left; });
   if (!first) {
@@ -351,9 +355,9 @@ document.getElementById("live").addEventListener("lostpointercapture", (event) =
 });
 document.getElementById("live").addEventListener("input", (event) => {
   if (!event.target.matches("input.live-zoom-range")) return;
+  liveZoomDrag = true;
   const level = Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(Number(event.target.value) || 0)));
   event.target.setAttribute("aria-valuenow", String(level));
-  // Update live while dragging. Pointer capture keeps the thumb even when level 0's grid reflows.
   liveZoomApply(level, { quiet: true });
 });
 document.getElementById("live").addEventListener("change", (event) => {

@@ -449,6 +449,11 @@ function savePaint() {
     manage.className = "find-saved-manage";
     manage.textContent = "Manage my bets";
     manage.addEventListener("click", () => { if (typeof birdMenu === "function") birdMenu("manage"); });
+    const quick = document.createElement("button");
+    quick.type = "button";
+    quick.className = "find-saved-quick";
+    quick.textContent = "Quick Add";
+    quick.addEventListener("click", () => { if (typeof quickAddOpen === "function") quickAddOpen(); });
     const share = document.createElement("button");
     share.type = "button";
     share.className = "share-bet find-saved-share";
@@ -462,7 +467,7 @@ function savePaint() {
     shut.addEventListener("click", () => { window.saveGone = true; box.classList.add("find-saved-gone"); });
     const acts = document.createElement("span");
     acts.className = "find-saved-acts";
-    if (folded) acts.append(fold, manage);
+    if (folded) acts.append(fold, manage, quick);
     else acts.append(share, shut);
     head.append(acts); box.append(head);
     const bag = document.createElement("div");
