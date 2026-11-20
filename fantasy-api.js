@@ -10,7 +10,7 @@ const FLEX = {
   SUPER_FLEX: ["QB", "RB", "WR", "TE"],
   IDP_FLEX: ["DL", "LB", "DB"],
 };
-const { projectPlayer, suggestSwaps, statKit, rate } = require("./fantasy-score");
+const { projectPlayer, suggestSwaps, statKit, rate, statAmount, returnKeys } = require("./fantasy-score");
 
 let playerMap = null;
 let playerAt = 0;
@@ -117,10 +117,10 @@ function sleeperPts(proj, scoring) {
   if (!proj || typeof proj !== "object") return null;
   let total = 0;
   let used = false;
-  Object.entries(scoring || {}).forEach(([key, rate]) => {
+  Object.entries(scoring || {}).forEach(([key, rateVal]) => {
     if (/^pts_|^adp_|^pos_adp|^gp$/i.test(key)) return;
-    const n = Number(proj[key]);
-    const r = Number(rate);
+    const n = statAmount(proj, key);
+    const r = Number(rateVal);
     if (!Number.isFinite(n) || !Number.isFinite(r) || !r) return;
     total += n * r;
     used = true;
@@ -128,6 +128,49 @@ function sleeperPts(proj, scoring) {
   if (used) return +total.toFixed(1);
   const fallback = Number(proj.pts_ppr ?? proj.pts_half_ppr ?? proj.pts_std);
   return Number.isFinite(fallback) ? +fallback.toFixed(1) : null;
+}
+
+function returnLabel(key) {
+  if (/kr_td|def_kr_td/.test(key)) return ["KRTD", "Kick return TDs"];
+  if (/pr_td|def_pr_td/.test(key)) return ["PRTD", "Punt return TDs"];
+  if (/pr_yd|def_pr_yd/.test(key)) return ["PR", "Punt return yards"];
+  return ["KR", "Kick return yards"];
+}
+
+function foldReturnStats(stats, proj, scoring) {
+  const keys = returnKeys(scoring);
+  if (!keys.length || !proj) return { stats, returnPts: 0, why: [] };
+  const rows = [...(stats || [])];
+  const why = [];
+  let returnPts = 0;
+  const seen = new Set();
+  keys.forEach((key) => {
+    const amount = statAmount(proj, key);
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    const pts = amount * rate(scoring, key, 0);
+    if (!Number.isFinite(pts) || Math.abs(pts) < 0.05) return;
+    const [short, label] = returnLabel(key);
+    // League may score both kr_yd and def_kr_yd — only count once.
+    const stamp = `${short}:${Math.round(amount * 10)}`;
+    if (seen.has(stamp)) return;
+    seen.add(stamp);
+    returnPts += pts;
+    const idx = rows.findIndex((row) => row && (row.key === key || row.short === short));
+    const next = {
+      key,
+      short,
+      label,
+      amount: +amount.toFixed(2),
+      pts: +pts.toFixed(2),
+      odds: null,
+      have: true,
+      from: "sleeper",
+    };
+    if (idx >= 0) rows[idx] = { ...rows[idx], ...next };
+    else rows.push(next);
+    why.push(`${label} ~${amount.toFixed(1)} → ${pts.toFixed(1)} fantasy pts`);
+  });
+  return { stats: rows, returnPts: +returnPts.toFixed(1), why };
 }
 
 async function loadProjections(season, week) {
@@ -162,7 +205,7 @@ function statsFromActual(stat, pos, scoring) {
   const kit = statKit(pos, scoring);
   if (!kit.length) return null;
   const rows = kit.map(([key, short, label]) => {
-    const amount = Number(stat[key]);
+    const amount = statAmount(stat, key);
     const have = Number.isFinite(amount);
     const pts = have ? amount * rate(scoring, key, key.endsWith("_td") ? 6 : key === "rec" ? 1 : key.includes("yd") ? 0.1 : 0) : null;
     return {
@@ -356,8 +399,9 @@ function fillLineup(players, slots, opts = {}) {
   });
 
   const rank = (row) => (Number.isFinite(Number(row.rankScore)) ? Number(row.rankScore) : Number(row.score) || 0);
+  // Locked bench stays on the bench — kickoff already passed, they cannot enter a slot.
   const pool = (players || [])
-    .filter((row) => !used.has(row.id) && !row.ir && !row.out && (allowBye || !row.bye))
+    .filter((row) => !used.has(row.id) && !row.ir && !row.out && !row.gameLocked && (allowBye || !row.bye))
     .sort((a, b) => rank(b) - rank(a) || a.name.localeCompare(b.name));
   const open = allowBye
     ? pool.filter((row) => !row.bye).concat(pool.filter((row) => row.bye))
@@ -490,7 +534,7 @@ function benchCanFill(slot, holder, scored, startIds) {
   return (scored || []).some((row) => {
     if (!row || !row.id || startIds.has(String(row.id))) return false;
     if (holder && String(row.id) === String(holder.id)) return false;
-    if (row.ir || row.out || row.bye) return false;
+    if (row.ir || row.out || row.bye || row.gameLocked) return false;
     return slotEligible(slot, row.fantasy);
   });
 }
@@ -574,6 +618,17 @@ async function startSit(body, board) {
     let score = marked.score;
     let stats = marked.stats;
     const why = [...(marked.why || [])];
+    // Vegas does not price return yards. Fold Sleeper KR/PR into the card when the league scores them.
+    let returnPts = 0;
+    if (livePts == null && !status.bye && !status.ir) {
+      const folded = foldReturnStats(stats, proj, scoring);
+      stats = folded.stats;
+      returnPts = folded.returnPts;
+      if (returnPts) {
+        score = +(score + returnPts).toFixed(1);
+        why.push(...folded.why);
+      }
+    }
     // Locked / already in the box score: show real fantasy points, not a cut projection.
     if (livePts != null) {
       const liveStats = statsFromActual(played, pos, scoring);
@@ -593,13 +648,14 @@ async function startSit(body, board) {
       if (sleeperScore != null) sleeperScore = Math.min(sleeperScore, 1.5);
       why.unshift(`${row.injury || row.status || "Out"} — projection cut`);
     }
-    const vegasReady = (stats || []).some((stat) => stat && stat.have);
+    const vegasReady = (stats || []).some((stat) => stat && stat.have && stat.from !== "sleeper");
     // Thin Vegas (no props) was ranking studs like Moore near 0 and sitting them. Use Sleeper then.
     let rankScore = score;
     if (status.bye || status.ir) rankScore = 0;
     else if (livePts != null) rankScore = livePts;
     else if (!vegasReady && sleeperScore != null) rankScore = sleeperScore;
     else if (vegasReady && sleeperScore != null && score < sleeperScore * 0.35 && sleeperScore >= 6) rankScore = sleeperScore;
+    else if (returnPts && sleeperScore != null && sleeperScore > score) rankScore = sleeperScore;
     return {
       ...row,
       ...marked,
@@ -627,11 +683,14 @@ async function startSit(body, board) {
       .filter((row) => row && row.id && !row.empty && !row.bye)
       .map((row) => String(row.id))
   );
+  const currentStartSet = new Set((currentIds || []).filter((id) => id && id !== "0").map(String));
   const markRec = (row) => {
     if (!row || !row.id) return row;
     let shouldStart = recommendIds.has(String(row.id));
     if (row.bye || row.ir) shouldStart = false;
     if (row.out && !(row.locked || row.gameLocked)) shouldStart = false;
+    // Already locked on the bench — cannot start them now.
+    if (row.gameLocked && !currentStartSet.has(String(row.id))) shouldStart = false;
     return { ...row, shouldStart };
   };
   const holes = pickupHoles(lineup.start, slots, scored);

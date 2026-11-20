@@ -83,6 +83,34 @@ function rate(scoring, key, fallback) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+/** Sleeper projections often store KR/PR under def_*; leagues usually score kr_ or pr_ keys. */
+const STAT_FALLBACKS = {
+  kr_yd: ["def_kr_yd"],
+  pr_yd: ["def_pr_yd"],
+  kr_td: ["def_kr_td"],
+  pr_td: ["def_pr_td"],
+  def_kr_yd: ["kr_yd"],
+  def_pr_yd: ["pr_yd"],
+  def_kr_td: ["kr_td"],
+  def_pr_td: ["pr_td"],
+};
+
+function statAmount(blob, key) {
+  if (!blob || typeof blob !== "object") return null;
+  const direct = Number(blob[key]);
+  if (Number.isFinite(direct)) return direct;
+  for (const alt of (STAT_FALLBACKS[key] || [])) {
+    const n = Number(blob[alt]);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
+
+function returnKeys(scoring) {
+  return ["kr_yd", "pr_yd", "kr_td", "pr_td", "def_kr_yd", "def_pr_yd", "def_kr_td", "def_pr_td"]
+    .filter((key) => Math.abs(rate(scoring, key, 0)) > 0.0001);
+}
+
 function n1(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return null;
@@ -106,23 +134,26 @@ function statKit(pos, scoring) {
     if (want("rec", 1)) kit.push(["rec", "Rec", "Receptions"]);
     if (want("rec_yd", 0.1)) kit.push(["rec_yd", "RecYd", "Rec yards"]);
     if (want("rec_td", 6)) kit.push(["rec_td", "ReTD", "Rec TDs"]);
-    return kit;
-  }
-  if (role === "WR" || role === "TE") {
+  } else if (role === "WR" || role === "TE") {
     if (want("rec", 1)) kit.push(["rec", "Rec", "Receptions"]);
     if (want("rec_yd", 0.1)) kit.push(["rec_yd", "RecYd", "Rec yards"]);
     if (want("rec_td", 6)) kit.push(["rec_td", "ReTD", "Rec TDs"]);
     if (want("rush_yd", 0.1)) kit.push(["rush_yd", "Rush", "Rush yards"]);
     if (want("rush_td", 6)) kit.push(["rush_td", "RuTD", "Rush TDs"]);
-    return kit;
-  }
-  // Flex / unknown skill: show the common skill set.
-  if (role !== "K" && role !== "DEF" && role !== "DST") {
+  } else if (role !== "K" && role !== "DEF" && role !== "DST") {
+    // Flex / unknown skill: show the common skill set.
     if (want("rush_yd", 0.1)) kit.push(["rush_yd", "Rush", "Rush yards"]);
     if (want("rec", 1)) kit.push(["rec", "Rec", "Receptions"]);
     if (want("rec_yd", 0.1)) kit.push(["rec_yd", "RecYd", "Rec yards"]);
     if (want("rush_td", 6)) kit.push(["rush_td", "RuTD", "Rush TDs"]);
     if (want("rec_td", 6)) kit.push(["rec_td", "ReTD", "Rec TDs"]);
+  }
+  // Return yards/TDs when the league scores them (Vegas rarely prices these).
+  if (role !== "K" && role !== "DEF" && role !== "DST" && role !== "QB") {
+    if (want("kr_yd", 0) || want("def_kr_yd", 0)) kit.push([want("kr_yd", 0) ? "kr_yd" : "def_kr_yd", "KR", "Kick return yards"]);
+    if (want("pr_yd", 0) || want("def_pr_yd", 0)) kit.push([want("pr_yd", 0) ? "pr_yd" : "def_pr_yd", "PR", "Punt return yards"]);
+    if (want("kr_td", 0) || want("def_kr_td", 0)) kit.push([want("kr_td", 0) ? "kr_td" : "def_kr_td", "KRTD", "Kick return TDs"]);
+    if (want("pr_td", 0) || want("def_pr_td", 0)) kit.push([want("pr_td", 0) ? "pr_td" : "def_pr_td", "PRTD", "Punt return TDs"]);
   }
   return kit;
 }
@@ -264,7 +295,7 @@ function suggestSwaps(optimalStart, currentIds, players) {
   const byId = new Map((players || []).map((row) => [row.id, row]));
   const optimalIds = new Set((optimalStart || []).filter((row) => row && row.id && !row.empty).map((row) => String(row.id)));
   const current = (currentIds || []).map(String).filter((id) => byId.has(id));
-  const onBench = (players || []).filter((row) => !current.includes(String(row.id)) && optimalIds.has(String(row.id)) && !row.ir && !row.out && !row.bye);
+  const onBench = (players || []).filter((row) => !current.includes(String(row.id)) && optimalIds.has(String(row.id)) && !row.ir && !row.out && !row.bye && !row.gameLocked);
   // Locked starters stay put — never suggest sitting them.
   const shouldSit = current
     .filter((id) => !optimalIds.has(id))
@@ -309,4 +340,4 @@ function suggestSwaps(optimalStart, currentIds, players) {
   return swaps.slice(0, 5);
 }
 
-module.exports = { projectPlayer, suggestSwaps, classifyProp, implied, statKit, rate };
+module.exports = { projectPlayer, suggestSwaps, classifyProp, implied, statKit, rate, statAmount, returnKeys, STAT_FALLBACKS };
