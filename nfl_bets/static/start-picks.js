@@ -719,7 +719,8 @@ function startGoldenList() {
       const pay = made == null
         ? `$5 profits ${startMoney(startFive(ticket.odds, "won")).replace(/^\+/, "")}`
         : result === "won" ? `$5 won ${startMoney(made)}` : result === "lost" ? `$5 lost ${startMoney(made)}` : `$5 ${startMoney(made)}`;
-      const meta = [price(ticket.odds), ticket.match].filter(Boolean).join(" · ");
+      const need = typeof findPct === "function" ? findPct(ticket.odds) : "";
+      const meta = [price(ticket.odds), need, ticket.match].filter(Boolean).join(" · ");
       return `<article class="golden-card"><div class="golden-card-top"><b>${escHtml(ticket.label || "")}</b><i class="${escHtml(result)}">${escHtml(word[result] || "Open")}</i></div><p class="golden-card-pay"><b>${escHtml(record)}</b><span class="${escHtml(result)}">${escHtml(pay)}</span></p>${meta ? `<p class="golden-card-meta">${escHtml(meta)}</p>` : ""}${ticket.markedAt ? `<p class="golden-card-when">Marked ${escHtml(when(ticket.markedAt))}</p>` : ""}${ticket.how ? `<p class="golden-card-how">${escHtml(ticket.how)}</p>` : ""}</article>`;
     }).join("");
     const list = document.createElement("div");
