@@ -43,22 +43,14 @@ function fantasyZoomBar() {
   input.setAttribute("aria-valuemax", String(FANTASY_ZOOM_MAX));
   input.setAttribute("aria-valuenow", String(fantasyZoom));
   input.setAttribute("aria-label", "Show more or less on each player");
-  let dragFrom = fantasyZoom;
   const end = () => {
     fantasyZoomDrag = false;
     const snapped = Math.max(0, Math.min(FANTASY_ZOOM_MAX, Math.round(Number(input.value) || 0)));
     input.value = String(snapped);
     fantasyZoomApply(snapped);
-    // Quiet drag already moved fantasyZoom; compare to where the drag started so More can repaint proofs.
-    if (snapped !== dragFrom) {
-      dragFrom = snapped;
-      const board = fantasyBoard();
-      if (board) paintFantasy(board);
-    }
   };
   input.addEventListener("pointerdown", (event) => {
     fantasyZoomDrag = true;
-    dragFrom = fantasyZoom;
     try { input.setPointerCapture(event.pointerId); } catch (error) {}
   });
   input.addEventListener("pointerup", end);
@@ -68,8 +60,7 @@ function fantasyZoomBar() {
     fantasyZoomDrag = true;
     const level = Math.max(0, Math.min(FANTASY_ZOOM_MAX, Math.round(Number(input.value) || 0)));
     input.setAttribute("aria-valuenow", String(level));
-    // Preview layout with CSS only — do not commit fantasyZoom until release (proofs need a paint).
-    document.querySelectorAll(".fantasy-board").forEach((board) => { board.dataset.fantasyZoom = String(level); });
+    fantasyZoomApply(level, { quiet: true });
   });
   input.addEventListener("change", end);
   bar.append(less, input, more);
@@ -350,20 +341,12 @@ function fantasyRow(player, kind) {
   `;
   if (player.empty) {
     row.disabled = true;
-  } else if (fantasyZoom < 2) {
+  } else {
     row.addEventListener("click", () => {
       fantasyZoomApply(2);
-      const board = fantasyBoard();
-      if (board) paintFantasy(board);
     });
-  } else {
-    row.style.cursor = "default";
   }
   return row;
-}
-
-function fantasyShowProof(player) {
-  return !!(player && !player.empty && player.id && fantasyZoom >= 2);
 }
 
 function fantasyProof(player) {
@@ -454,19 +437,18 @@ function fantasyLineup(board, result) {
   const start = document.createElement("section");
   start.className = "fantasy-col start";
   start.innerHTML = "<h3>Your lineup</h3>";
-  (result.start || []).forEach((player) => {
-    start.append(fantasyRow(player, "start"));
-    if (fantasyShowProof(player)) start.append(fantasyProof(player));
-  });
+  const addPlayer = (col, player, kind) => {
+    col.append(fantasyRow(player, kind));
+    if (!player.empty && player.id) col.append(fantasyProof(player));
+  };
+
+  (result.start || []).forEach((player) => addPlayer(start, player, "start"));
   wrap.append(start);
 
   const sit = document.createElement("section");
   sit.className = "fantasy-col sit";
   sit.innerHTML = "<h3>Your bench</h3>";
-  (result.sit || []).forEach((player) => {
-    sit.append(fantasyRow(player, "sit"));
-    if (fantasyShowProof(player)) sit.append(fantasyProof(player));
-  });
+  (result.sit || []).forEach((player) => addPlayer(sit, player, "sit"));
   if (!(result.sit || []).length) {
     const none = document.createElement("p");
     none.className = "quiet";
@@ -479,10 +461,7 @@ function fantasyLineup(board, result) {
     const out = document.createElement("section");
     out.className = "fantasy-col out";
     out.innerHTML = "<h3>Out</h3>";
-    result.out.forEach((player) => {
-      out.append(fantasyRow(player, "out"));
-      if (fantasyShowProof(player)) out.append(fantasyProof(player));
-    });
+    result.out.forEach((player) => addPlayer(out, player, "out"));
     wrap.append(out);
   }
 
@@ -490,10 +469,7 @@ function fantasyLineup(board, result) {
     const ir = document.createElement("section");
     ir.className = "fantasy-col ir";
     ir.innerHTML = "<h3>IR</h3>";
-    result.ir.forEach((player) => {
-      ir.append(fantasyRow(player, "ir"));
-      if (fantasyShowProof(player)) ir.append(fantasyProof(player));
-    });
+    result.ir.forEach((player) => addPlayer(ir, player, "ir"));
     wrap.append(ir);
   }
 
