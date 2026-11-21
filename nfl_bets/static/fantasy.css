@@ -19,6 +19,73 @@
   gap: 0.35rem 0.75rem;
 }
 
+#desk.tv-full #desk-glass .fantasy-board .fantasy-zoom,
+.fantasy-board .fantasy-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  color: #9fb3c8;
+  font: 700 12px Outfit, system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+#desk.tv-full #desk-glass .fantasy-board .fantasy-zoom input[type="range"],
+.fantasy-board .fantasy-zoom input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: min(180px, 42vw);
+  height: 28px;
+  margin: 0;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  accent-color: #3dff6e;
+  touch-action: none;
+}
+
+#desk.tv-full #desk-glass .fantasy-board .fantasy-zoom input[type="range"]::-webkit-slider-runnable-track,
+.fantasy-board .fantasy-zoom input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: #1c2a36;
+}
+
+#desk.tv-full #desk-glass .fantasy-board .fantasy-zoom input[type="range"]::-moz-range-track,
+.fantasy-board .fantasy-zoom input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: #1c2a36;
+  border: 0;
+}
+
+#desk.tv-full #desk-glass .fantasy-board .fantasy-zoom input[type="range"]::-webkit-slider-thumb,
+.fantasy-board .fantasy-zoom input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border: 2px solid #04140c;
+  border-radius: 50%;
+  background: #3dff6e;
+  box-shadow: 0 0 10px rgba(61, 255, 110, 0.45);
+  cursor: grab;
+}
+
+#desk.tv-full #desk-glass .fantasy-board .fantasy-zoom input[type="range"]::-moz-range-thumb,
+.fantasy-board .fantasy-zoom input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #04140c;
+  border-radius: 50%;
+  background: #3dff6e;
+  box-shadow: 0 0 10px rgba(61, 255, 110, 0.45);
+  cursor: grab;
+}
+
 #desk.tv-full #desk-glass .fantasy-board .fantasy-head > h2,
 .fantasy-board .fantasy-head > h2 {
   margin: 0 !important;
@@ -436,6 +503,29 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
+
+.fantasy-board .fantasy-row .who > em.match,
+.fantasy-board .fantasy-row .who > em.meta {
+  display: -webkit-box;
+}
+
+/* Zoom 0: player, pts, matchup */
+.fantasy-board[data-fantasy-zoom="0"] button.fantasy-row {
+  grid-template-columns: 2.2rem minmax(0, 1fr) 3.6rem !important;
+}
+
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-row .stats,
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > em.meta,
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-proof {
+  display: none !important;
+}
+
+/* Zoom 1: + stats, locked, owned */
+.fantasy-board[data-fantasy-zoom="1"] .fantasy-proof {
+  display: none !important;
+}
+
+/* Zoom 2 keeps stats + meta + proof (proof rendered in JS). */
 
 .fantasy-board .fantasy-row .stats {
   display: flex;

@@ -2,6 +2,76 @@
 
 let fantasyState = { user: "", leagues: [], leagueId: "", result: null, openId: "", showVegas: false, wantConnect: false, pulling: false, pullError: "" };
 
+const FANTASY_ZOOM_MAX = 2;
+let fantasyZoom = (() => {
+  try {
+    const n = Number(localStorage.getItem("fantasyZoom"));
+    if (Number.isFinite(n)) return Math.max(0, Math.min(FANTASY_ZOOM_MAX, Math.round(n)));
+  } catch (error) {}
+  return 1;
+})();
+let fantasyZoomDrag = false;
+
+function fantasyZoomApply(next, opts) {
+  const quiet = !!(opts && opts.quiet);
+  fantasyZoom = Math.max(0, Math.min(FANTASY_ZOOM_MAX, Math.round(Number(next) || 0)));
+  document.querySelectorAll(".fantasy-board").forEach((board) => { board.dataset.fantasyZoom = String(fantasyZoom); });
+  if (!quiet && !fantasyZoomDrag) {
+    document.querySelectorAll("input.fantasy-zoom-range").forEach((box) => {
+      box.value = String(fantasyZoom);
+      box.setAttribute("aria-valuenow", String(fantasyZoom));
+    });
+  }
+  try { localStorage.setItem("fantasyZoom", String(fantasyZoom)); } catch (error) {}
+}
+
+function fantasyZoomBar() {
+  const bar = document.createElement("label");
+  bar.className = "fantasy-zoom";
+  const less = document.createElement("span");
+  less.textContent = "Less";
+  const more = document.createElement("span");
+  more.textContent = "More";
+  const input = document.createElement("input");
+  input.type = "range";
+  input.className = "fantasy-zoom-range";
+  input.min = "0";
+  input.max = String(FANTASY_ZOOM_MAX);
+  input.step = "any";
+  input.value = String(fantasyZoom);
+  input.setAttribute("aria-valuemin", "0");
+  input.setAttribute("aria-valuemax", String(FANTASY_ZOOM_MAX));
+  input.setAttribute("aria-valuenow", String(fantasyZoom));
+  input.setAttribute("aria-label", "Show more or less on each player");
+  const end = () => {
+    fantasyZoomDrag = false;
+    const snapped = Math.max(0, Math.min(FANTASY_ZOOM_MAX, Math.round(Number(input.value) || 0)));
+    input.value = String(snapped);
+    const prev = fantasyZoom;
+    fantasyZoomApply(snapped);
+    if (snapped !== prev) {
+      const board = fantasyBoard();
+      if (board) paintFantasy(board);
+    }
+  };
+  input.addEventListener("pointerdown", (event) => {
+    fantasyZoomDrag = true;
+    try { input.setPointerCapture(event.pointerId); } catch (error) {}
+  });
+  input.addEventListener("pointerup", end);
+  input.addEventListener("pointercancel", end);
+  input.addEventListener("lostpointercapture", end);
+  input.addEventListener("input", () => {
+    fantasyZoomDrag = true;
+    const level = Math.max(0, Math.min(FANTASY_ZOOM_MAX, Math.round(Number(input.value) || 0)));
+    input.setAttribute("aria-valuenow", String(level));
+    fantasyZoomApply(level, { quiet: true });
+  });
+  input.addEventListener("change", end);
+  bar.append(less, input, more);
+  return bar;
+}
+
 function fantasySavedUser() {
   return String(window.memberSleeper || fantasyState.user || "").trim().replace(/^@/, "");
 }
@@ -69,6 +139,7 @@ function fantasyHead(board) {
   const title = document.createElement("h2");
   title.textContent = "Fantasy Start / Sit";
   head.append(title);
+  if (fantasyState.result && !fantasyState.result.error) head.append(fantasyZoomBar());
   board.append(head);
 }
 
@@ -219,10 +290,16 @@ function fantasyPct(n) {
   return `${Math.round(v)}%`;
 }
 
-function fantasyFlags(player) {
+function fantasyMatchBits(player) {
   const bits = [];
+  if (player.team) bits.push(player.team);
   if (player.matchup && !player.bye) bits.push(player.matchup);
   else if (player.bye) bits.push("Bye");
+  return bits;
+}
+
+function fantasyMetaBits(player) {
+  const bits = [];
   if (player.locked || player.gameLocked) bits.push("Locked");
   if (player.ir) bits.push("IR");
   else if (player.out) bits.push(player.injury || "Out");
@@ -251,27 +328,38 @@ function fantasyRow(player, kind) {
   const q = !!(player.questionable || /^questionable$/i.test(player.injury || ""));
   const role = fantasyRoleTag(kind, player);
   const mismatch = !!(role && ((kind === "start" && role.cls === "sit") || (kind === "sit" && role.cls === "start")));
-  row.className = `fantasy-row ${kind}${fantasyState.openId === player.id ? " open" : ""}${player.bye ? " bye" : ""}${locked ? " locked" : ""}${q ? " questionable" : ""}${mismatch ? " rec-swap" : ""}`;
+  row.className = `fantasy-row ${kind}${player.bye ? " bye" : ""}${locked ? " locked" : ""}${q ? " questionable" : ""}${mismatch ? " rec-swap" : ""}`;
   const slotLabel = player.slot || (kind === "ir" ? "IR" : kind === "out" ? "OUT" : "BN");
   const slot = `<i class="slot">${fantasyEsc(slotLabel)}</i>`;
-  const tag = [player.team, ...fantasyFlags(player)].filter(Boolean).join(" · ");
+  const match = fantasyMatchBits(player).join(" · ");
+  const meta = fantasyMetaBits(player).join(" · ");
   const roleHtml = role ? ` <i class="role-tag ${role.cls}">${fantasyEsc(role.label)}</i>` : "";
   row.innerHTML = `
     ${slot}
-    <span class="who"><b>${fantasyEsc(player.name || "—")}${roleHtml}</b>${tag ? `<em>${fantasyEsc(tag)}</em>` : ""}</span>
+    <span class="who">
+      <b>${fantasyEsc(player.name || "—")}${roleHtml}</b>
+      ${match ? `<em class="match">${fantasyEsc(match)}</em>` : ""}
+      ${meta ? `<em class="meta">${fantasyEsc(meta)}</em>` : ""}
+    </span>
     ${player.empty ? `<span class="stats mute">Empty</span>` : fantasyStatLine(player)}
     ${fantasyScoreCell(player)}
   `;
-  if (!player.empty) {
+  if (player.empty) {
+    row.disabled = true;
+  } else if (fantasyZoom < 2) {
     row.addEventListener("click", () => {
-      fantasyState.openId = fantasyState.openId === player.id ? "" : player.id;
+      fantasyZoomApply(2);
       const board = fantasyBoard();
       if (board) paintFantasy(board);
     });
   } else {
-    row.disabled = true;
+    row.style.cursor = "default";
   }
   return row;
+}
+
+function fantasyShowProof(player) {
+  return !!(player && !player.empty && player.id && fantasyZoom >= 2);
 }
 
 function fantasyProof(player) {
@@ -364,7 +452,7 @@ function fantasyLineup(board, result) {
   start.innerHTML = "<h3>Your lineup</h3>";
   (result.start || []).forEach((player) => {
     start.append(fantasyRow(player, "start"));
-    if (fantasyState.openId && fantasyState.openId === player.id) start.append(fantasyProof(player));
+    if (fantasyShowProof(player)) start.append(fantasyProof(player));
   });
   wrap.append(start);
 
@@ -373,7 +461,7 @@ function fantasyLineup(board, result) {
   sit.innerHTML = "<h3>Your bench</h3>";
   (result.sit || []).forEach((player) => {
     sit.append(fantasyRow(player, "sit"));
-    if (fantasyState.openId && fantasyState.openId === player.id) sit.append(fantasyProof(player));
+    if (fantasyShowProof(player)) sit.append(fantasyProof(player));
   });
   if (!(result.sit || []).length) {
     const none = document.createElement("p");
@@ -389,7 +477,7 @@ function fantasyLineup(board, result) {
     out.innerHTML = "<h3>Out</h3>";
     result.out.forEach((player) => {
       out.append(fantasyRow(player, "out"));
-      if (fantasyState.openId && fantasyState.openId === player.id) out.append(fantasyProof(player));
+      if (fantasyShowProof(player)) out.append(fantasyProof(player));
     });
     wrap.append(out);
   }
@@ -400,7 +488,7 @@ function fantasyLineup(board, result) {
     ir.innerHTML = "<h3>IR</h3>";
     result.ir.forEach((player) => {
       ir.append(fantasyRow(player, "ir"));
-      if (fantasyState.openId && fantasyState.openId === player.id) ir.append(fantasyProof(player));
+      if (fantasyShowProof(player)) ir.append(fantasyProof(player));
     });
     wrap.append(ir);
   }
@@ -442,6 +530,7 @@ function paintFantasy(keep, opts) {
   }
 
   board.replaceChildren();
+  board.dataset.fantasyZoom = String(fantasyZoom);
   fantasyHead(board);
 
   if (opts && opts.loading) {
