@@ -43,19 +43,22 @@ function fantasyZoomBar() {
   input.setAttribute("aria-valuemax", String(FANTASY_ZOOM_MAX));
   input.setAttribute("aria-valuenow", String(fantasyZoom));
   input.setAttribute("aria-label", "Show more or less on each player");
+  let dragFrom = fantasyZoom;
   const end = () => {
     fantasyZoomDrag = false;
     const snapped = Math.max(0, Math.min(FANTASY_ZOOM_MAX, Math.round(Number(input.value) || 0)));
     input.value = String(snapped);
-    const prev = fantasyZoom;
     fantasyZoomApply(snapped);
-    if (snapped !== prev) {
+    // Quiet drag already moved fantasyZoom; compare to where the drag started so More can repaint proofs.
+    if (snapped !== dragFrom) {
+      dragFrom = snapped;
       const board = fantasyBoard();
       if (board) paintFantasy(board);
     }
   };
   input.addEventListener("pointerdown", (event) => {
     fantasyZoomDrag = true;
+    dragFrom = fantasyZoom;
     try { input.setPointerCapture(event.pointerId); } catch (error) {}
   });
   input.addEventListener("pointerup", end);
@@ -65,7 +68,8 @@ function fantasyZoomBar() {
     fantasyZoomDrag = true;
     const level = Math.max(0, Math.min(FANTASY_ZOOM_MAX, Math.round(Number(input.value) || 0)));
     input.setAttribute("aria-valuenow", String(level));
-    fantasyZoomApply(level, { quiet: true });
+    // Preview layout with CSS only — do not commit fantasyZoom until release (proofs need a paint).
+    document.querySelectorAll(".fantasy-board").forEach((board) => { board.dataset.fantasyZoom = String(level); });
   });
   input.addEventListener("change", end);
   bar.append(less, input, more);

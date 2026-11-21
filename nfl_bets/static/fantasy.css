@@ -509,9 +509,52 @@
   display: -webkit-box;
 }
 
-/* Zoom 0: player, pts, matchup */
+/* Zoom 0: square cards — slot, name, matchup, pts */
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-col {
+  grid-template-columns: repeat(auto-fill, minmax(7.6rem, 1fr));
+  gap: 0.4rem;
+  align-items: stretch;
+}
+
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-col > h3 {
+  grid-column: 1 / -1;
+}
+
 .fantasy-board[data-fantasy-zoom="0"] button.fantasy-row {
-  grid-template-columns: 2.2rem minmax(0, 1fr) 3.6rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 0.25rem !important;
+  min-height: 7.6rem;
+  aspect-ratio: 1 / 1;
+  padding: 0.45rem 0.5rem !important;
+}
+
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-row .slot {
+  font-size: 11px;
+}
+
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who {
+  flex: 1 1 auto;
+  gap: 0.15rem;
+}
+
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > b {
+  font-size: 13px;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > b > .role-tag {
+  margin-top: 0.1rem;
+}
+
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > em.match {
+  -webkit-line-clamp: 2;
 }
 
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .stats,
@@ -520,12 +563,18 @@
   display: none !important;
 }
 
-/* Zoom 1: + stats, locked, owned */
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-row .score {
+  justify-self: start;
+  margin-top: auto;
+  font-size: 13px;
+}
+
+/* Zoom 1: row with stats, locked, owned */
 .fantasy-board[data-fantasy-zoom="1"] .fantasy-proof {
   display: none !important;
 }
 
-/* Zoom 2 keeps stats + meta + proof (proof rendered in JS). */
+/* Zoom 2: proofs rendered in JS under each card. */
 
 .fantasy-board .fantasy-row .stats {
   display: flex;
