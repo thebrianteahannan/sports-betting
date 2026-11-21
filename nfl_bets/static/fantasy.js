@@ -1,6 +1,6 @@
 /** Fantasy Sports · Start/Sit from Sleeper + Vegas-implied fantasy points. */
 
-let fantasyState = { user: "", leagues: [], leagueId: "", result: null, openId: "", showVegas: false, wantConnect: false, pulling: false, pullError: "", checks: null, checking: false, checkError: "" };
+let fantasyState = { user: "", leagues: [], leagueId: "", result: null, openId: "", showVegas: false, wantConnect: false, pulling: false, pullError: "", checks: null, checking: false, checkError: "", pickupSlot: "" };
 
 const FANTASY_ZOOM_MAX = 2;
 let fantasyZoom = (() => {
@@ -265,6 +265,7 @@ function fantasyLeaguePicker(board) {
       checks: null,
       checking: false,
       checkError: "",
+      pickupSlot: "",
     };
     paintFantasy(board);
   });
@@ -298,6 +299,7 @@ async function fantasyCheckAll(board) {
 
 async function fantasyRun(board, leagueId, opts) {
   fantasyState.leagueId = leagueId;
+  fantasyState.pickupSlot = "";
   fantasyState.result = null;
   fantasyState.openId = "";
   fantasyState.showVegas = false;
@@ -372,14 +374,43 @@ function fantasyRoleTag(kind, player) {
   return null;
 }
 
-function fantasyRow(player, kind) {
+function fantasyHole(player, pickups) {
+  if (!player) return null;
+  const slot = String(player.slot || "").toUpperCase();
+  if (!slot) return null;
+  const holes = (pickups || []).filter((row) => String(row.slot || "").toUpperCase() === slot);
+  if (player.empty) return holes.find((row) => !row.holding) || null;
+  return holes.find((row) => row.holding && row.holding === player.name) || null;
+}
+
+function fantasyFillKey(player, index) {
+  return `${String((player && player.slot) || "").toUpperCase()}:${index}`;
+}
+
+function fantasyTogglePickup(key) {
+  fantasyState.pickupSlot = fantasyState.pickupSlot === key ? "" : key;
+  const board = fantasyBoard();
+  if (board) paintFantasy(board);
+}
+
+function fantasyPickupList(hole) {
+  const box = document.createElement("div");
+  box.className = "fantasy-pickups fantasy-pickup-pop";
+  const opts = (hole.options || []).map((row) =>
+    `<li><b>${fantasyEsc(row.name)}</b> ${fantasyEsc(row.pos)}${row.team ? ` · ${fantasyEsc(row.team)}` : ""} <em>${fantasyEsc(fantasyPts(row.sleeperPts))} pts</em></li>`
+  ).join("") || "<li class=\"quiet\">No free agents projecting into this slot right now.</li>";
+  box.innerHTML = `<p>${fantasyEsc(hole.why)}</p><ul>${opts}</ul>`;
+  return box;
+}
+
+function fantasyRow(player, kind, hole) {
   const row = document.createElement("button");
   row.type = "button";
   const locked = !!(player.locked || player.gameLocked);
   const q = !!(player.questionable || /^questionable$/i.test(player.injury || ""));
   const role = fantasyRoleTag(kind, player);
   const mismatch = !!(role && ((kind === "start" && role.cls === "sit") || (kind === "sit" && role.cls === "start")));
-  row.className = `fantasy-row ${kind}${player.bye ? " bye" : ""}${locked ? " locked" : ""}${q ? " questionable" : ""}${mismatch ? " rec-swap" : ""}`;
+  row.className = `fantasy-row ${kind}${player.bye ? " bye" : ""}${locked ? " locked" : ""}${q ? " questionable" : ""}${mismatch ? " rec-swap" : ""}${hole ? " needs-fill" : ""}`;
   const slotLabel = player.slot || (kind === "ir" ? "IR" : kind === "out" ? "OUT" : "BN");
   const slot = `<i class="slot">${fantasyEsc(slotLabel)}</i>`;
   const match = fantasyMatchBits(player).join(" · ");
@@ -395,7 +426,13 @@ function fantasyRow(player, kind) {
     ${player.empty ? `<span class="stats mute">Empty</span>` : fantasyStatLine(player)}
     ${fantasyScoreCell(player)}
   `;
-  if (player.empty) {
+  if (hole) {
+    row.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      fantasyTogglePickup(row.dataset.fill);
+    });
+  } else if (player.empty) {
     row.disabled = true;
   } else {
     row.addEventListener("click", () => {
@@ -494,6 +531,7 @@ function fantasyLineup(board, result) {
       fantasyState.leagueId = "";
       fantasyState.result = null;
       fantasyState.openId = "";
+      fantasyState.pickupSlot = "";
       fantasyState.showVegas = false;
       paintFantasy(board);
     });
@@ -514,20 +552,14 @@ function fantasyLineup(board, result) {
     wrap.append(swaps);
   }
 
-  if ((result.pickups || []).length) {
-    const pickups = document.createElement("div");
-    pickups.className = "fantasy-pickups";
-    pickups.innerHTML = `<h3>Pickups</h3>${result.pickups.map((hole) => {
-      const opts = (hole.options || []).map((row) =>
-        `<li><b>${fantasyEsc(row.name)}</b> ${fantasyEsc(row.pos)}${row.team ? ` · ${fantasyEsc(row.team)}` : ""} <em>${fantasyEsc(fantasyPts(row.sleeperPts))} pts</em></li>`
-      ).join("") || "<li class=\"quiet\">No free agents projecting into this slot right now.</li>";
-      return `<div class="fantasy-pickup"><p>${fantasyEsc(hole.why)}</p><ul>${opts}</ul></div>`;
-    }).join("")}`;
-    wrap.append(pickups);
-  }
-
   const addPlayer = (col, player, kind) => {
-    col.append(fantasyRow(player, kind));
+    const index = kind === "start" ? (result.start || []).indexOf(player) : -1;
+    const hole = kind === "start" ? fantasyHole(player, result.pickups) : null;
+    const key = hole ? fantasyFillKey(player, index) : "";
+    const row = fantasyRow(player, kind, hole);
+    if (key) row.dataset.fill = key;
+    col.append(row);
+    if (key && fantasyState.pickupSlot === key) col.append(fantasyPickupList(hole));
     if (!player.empty && player.id) col.append(fantasyProof(player));
   };
 
@@ -680,6 +712,7 @@ function fantasyBack() {
     fantasyState.leagueId = "";
     fantasyState.result = null;
     fantasyState.openId = "";
+    fantasyState.pickupSlot = "";
     fantasyState.showVegas = false;
     paintFantasy(board);
     return true;
