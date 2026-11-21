@@ -106,6 +106,17 @@
 .find-board .find-start .golden-card-top i { font-style: normal; font-weight: 800; color: #9fb3c8; }
 .find-board .find-start .golden-card-top i.won { color: #3dff6e; }
 .find-board .find-start .golden-card-top i.lost { color: #ff8f8f; }
+.find-board .find-start .golden-sum { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; padding: 0.2rem 0 0.85rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.find-board .find-start .golden-sum b, .find-board .find-start .golden-sum strong { display: block; color: #f4f7fb; font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+.find-board .find-start .golden-sum strong.up { color: #3dff6e; }
+.find-board .find-start .golden-sum strong.down { color: #ff8f8f; }
+.find-board .find-start .golden-sum span { color: #9fb3c8; font-size: 13px; font-weight: 600; }
+.find-board .find-start .golden-sum > div:last-child { text-align: right; }
+.find-board .find-start .golden-card-pay { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; margin: 0; }
+.find-board .find-start .golden-card-pay b { color: #e7c15a; font-size: 14px; font-weight: 800; }
+.find-board .find-start .golden-card-pay span { color: #d5deea; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.find-board .find-start .golden-card-pay span.won { color: #3dff6e; }
+.find-board .find-start .golden-card-pay span.lost { color: #ff8f8f; }
 .find-board .find-start .golden-card-meta, .find-board .find-start .golden-card-when { margin: 0; color: #9fb3c8; font-size: 13px; }
 .find-board .find-start .golden-card-how { margin: 0.15rem 0 0; color: #d5deea; font-size: 13px; line-height: 1.4; }
 :is(.rec-board, #choice-result) .find-start button.desk-game { display: grid !important; width: 100% !important; min-height: 0 !important; margin: 0 0 10px !important; padding: 12px 14px !important; border: 1px solid rgba(61, 255, 110, 0.35) !important; border-radius: 12px !important; background: #041018 !important; box-shadow: none !important; color: #f4f7fb !important; font: inherit !important; text-align: left !important; text-transform: none !important; letter-spacing: normal !important; }

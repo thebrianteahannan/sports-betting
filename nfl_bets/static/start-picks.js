@@ -659,7 +659,7 @@ function startRecStats() {
       row("Live", pace, all, "Recommended bets in games on now that have hit or are on pace to hit", " on pace"),
       row("Today", today.won + won, today.won + today.lost + won + lost, "Recommended bets won today, out of the ones already decided"),
       row("All time", ever.won + won, ever.won + ever.lost + won + lost, "Every recommended bet that has finished"),
-      row("Golden Ticket", golden.won, golden.won + golden.lost, "Open the saved Golden Tickets.", "", true),
+      row("Golden Ticket", golden.won, golden.won + golden.lost, "Open the saved Golden Tickets.", ` · ${startMoney(startGoldenCash(golden))}`, true),
       kinds((tally.kinds || {}).all || {}),
     ].join("");
     box.replaceChildren(score);
@@ -667,6 +667,30 @@ function startRecStats() {
     if (box.isConnected) box.innerHTML = `<p class="quiet">Could not load hit rates.</p>`;
   });
   return [box];
+}
+
+function startFive(odds, result) {
+  const o = Number(odds);
+  if (!Number.isFinite(o) || !o) return null;
+  const win = Math.round(5 * (o > 0 ? o / 100 : 100 / -o) * 100) / 100;
+  if (result === "won") return win;
+  if (result === "lost") return -5;
+  if (result === "void") return 0;
+  return null;
+}
+
+function startMoney(n) {
+  const value = Math.round(Number(n) * 100) / 100;
+  if (!Number.isFinite(value)) return "";
+  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
+  return `${sign}$${Math.abs(value).toFixed(2)}`;
+}
+
+function startGoldenCash(golden) {
+  return ((golden && golden.history) || []).reduce((sum, ticket) => {
+    const cash = startFive(ticket.odds, ticket.result);
+    return cash == null ? sum : sum + cash;
+  }, 0);
 }
 
 function startGoldenList() {
@@ -681,14 +705,26 @@ function startGoldenList() {
   const word = { won: "Won", lost: "Lost", void: "Void" };
   const paint = (golden) => {
     const rows = (golden && golden.history) || [];
+    const won = Number(golden && golden.won) || rows.filter((ticket) => ticket.result === "won").length;
+    const lost = Number(golden && golden.lost) || rows.filter((ticket) => ticket.result === "lost").length;
+    const of = won + lost;
+    const pct = of > 0 ? `${Math.round((100 * won) / of)}%` : "—";
+    const cash = startGoldenCash(golden);
+    const tone = cash > 0 ? "up" : cash < 0 ? "down" : "flat";
     const cards = rows.map((ticket) => {
       const result = ticket.result || "open";
+      const hits = Number(ticket.hits), n = Number(ticket.n);
+      const record = n > 0 && Number.isFinite(hits) ? `${Math.round((100 * hits) / n)}%` : "";
+      const made = startFive(ticket.odds, result);
+      const pay = made == null
+        ? `$5 profits ${startMoney(startFive(ticket.odds, "won")).replace(/^\+/, "")}`
+        : result === "won" ? `$5 won ${startMoney(made)}` : result === "lost" ? `$5 lost ${startMoney(made)}` : `$5 ${startMoney(made)}`;
       const meta = [price(ticket.odds), ticket.match].filter(Boolean).join(" · ");
-      return `<article class="golden-card"><div class="golden-card-top"><b>${escHtml(ticket.label || "")}</b><i class="${escHtml(result)}">${escHtml(word[result] || "Open")}</i></div>${meta ? `<p class="golden-card-meta">${escHtml(meta)}</p>` : ""}${ticket.markedAt ? `<p class="golden-card-when">Marked ${escHtml(when(ticket.markedAt))}</p>` : ""}${ticket.how ? `<p class="golden-card-how">${escHtml(ticket.how)}</p>` : ""}</article>`;
+      return `<article class="golden-card"><div class="golden-card-top"><b>${escHtml(ticket.label || "")}</b><i class="${escHtml(result)}">${escHtml(word[result] || "Open")}</i></div><p class="golden-card-pay"><b>${escHtml(record)}</b><span class="${escHtml(result)}">${escHtml(pay)}</span></p>${meta ? `<p class="golden-card-meta">${escHtml(meta)}</p>` : ""}${ticket.markedAt ? `<p class="golden-card-when">Marked ${escHtml(when(ticket.markedAt))}</p>` : ""}${ticket.how ? `<p class="golden-card-how">${escHtml(ticket.how)}</p>` : ""}</article>`;
     }).join("");
     const list = document.createElement("div");
     list.className = "golden-list";
-    list.innerHTML = cards || `<p class="quiet">No Golden Ticket has been marked yet.</p>`;
+    list.innerHTML = `<div class="golden-sum"><div><b>${escHtml(pct)}</b><span>${of ? `${won} of ${of}` : "0 settled"}</span></div><div><strong class="${tone}">${escHtml(startMoney(cash))}</strong><span>$5 on each settled ticket</span></div></div>${cards || `<p class="quiet">No Golden Ticket has been marked yet.</p>`}`;
     box.replaceChildren(list);
   };
   if (startGolden) paint(startGolden);
