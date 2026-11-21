@@ -343,16 +343,33 @@
 .fantasy-board .fantasy-lineup {
   width: 100%;
   max-width: 56rem;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 0.35rem 0.65rem;
   align-items: start;
 }
 
+.fantasy-board .fantasy-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem 0.65rem;
+  width: 100%;
+  align-items: start;
+}
+
 .fantasy-board .fantasy-meta,
-.fantasy-board .fantasy-col.out,
-.fantasy-board .fantasy-col.ir,
+.fantasy-board .fantasy-spots,
+.fantasy-board .fantasy-swaps,
+.fantasy-board .fantasy-pickups,
+.fantasy-board .fantasy-split .fantasy-col.out,
+.fantasy-board .fantasy-split .fantasy-col.ir,
 .fantasy-board .fantasy-lineup > .fantasy-back {
   grid-column: 1 / -1;
+}
+
+.fantasy-board .fantasy-spots {
+  display: none;
+  width: 100%;
+  gap: 0.45rem;
 }
 
 .fantasy-board .fantasy-col {
@@ -360,6 +377,11 @@
   gap: 0.2rem;
   width: 100%;
   min-width: 0;
+}
+
+.fantasy-board .fantasy-split .fantasy-col.out,
+.fantasy-board .fantasy-split .fantasy-col.ir {
+  grid-column: 1 / -1;
 }
 
 .fantasy-board .fantasy-col > h3 {
@@ -509,92 +531,147 @@
   display: -webkit-box;
 }
 
-/* Zoom 0: square cards — slot, name, matchup, pts */
-.fantasy-board[data-fantasy-zoom="0"] .fantasy-col {
-  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
-  gap: 0.45rem;
-  align-items: stretch;
+/* Zoom 0: one readable line per position — starters then bench at that spot */
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-spots,
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-spots {
+  display: grid !important;
+  gap: 0.55rem;
+  width: 100%;
 }
 
-.fantasy-board[data-fantasy-zoom="0"] .fantasy-col > h3 {
-  grid-column: 1 / -1;
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-split,
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-split {
+  display: none !important;
 }
 
-.fantasy-board[data-fantasy-zoom="0"] button.fantasy-row {
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-row,
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-row {
+  display: grid !important;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  gap: 0.35rem 0.55rem;
+  align-items: center;
+  width: 100%;
+}
+
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-row > h3,
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-row > h3 {
+  margin: 0 !important;
+  color: #e7c15a !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  line-height: 1.2 !important;
+}
+
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards,
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards {
   display: flex !important;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: stretch;
+  min-width: 0;
+}
+
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > .fantasy-proof,
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > .fantasy-proof {
+  display: none !important;
+}
+
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > button.fantasy-row,
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > button.fantasy-row {
+  display: flex !important;
+  flex: 0 0 auto !important;
   flex-direction: column !important;
   align-items: stretch !important;
   justify-content: flex-start !important;
-  gap: 0.3rem !important;
-  min-height: 9.5rem;
+  gap: 0.25rem !important;
+  grid-template-columns: none !important;
+  width: 11.5rem !important;
+  min-width: 11.5rem !important;
+  max-width: 14rem !important;
+  min-height: 0 !important;
   height: auto !important;
-  aspect-ratio: 1 / 1.05;
-  padding: 0.55rem 0.6rem !important;
-  overflow: hidden;
+  aspect-ratio: auto !important;
+  padding: 0.55rem 0.65rem !important;
+  overflow: visible !important;
 }
 
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .slot,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .slot {
   flex: 0 0 auto;
   color: #3dff6e !important;
   font-size: 11px !important;
-  line-height: 1.2;
+  line-height: 1.2 !important;
 }
 
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who {
   display: flex !important;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: 0.2rem;
-  min-height: 0;
-  overflow: hidden;
+  flex: 0 0 auto !important;
+  flex-direction: column !important;
+  gap: 0.15rem !important;
+  min-width: 0 !important;
+  overflow: visible !important;
 }
 
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > b,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > b {
   display: block !important;
-  flex: 0 0 auto;
   color: #f4f7fb !important;
-  font-size: 14px !important;
+  font-size: 15px !important;
   font-weight: 800 !important;
   line-height: 1.25 !important;
   white-space: normal !important;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-height: 2.6em;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  max-height: none !important;
+  -webkit-line-clamp: unset !important;
 }
 
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > b > .role-tag,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > b > .role-tag {
   display: none !important;
 }
 
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > em.match,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > em.match {
   display: block !important;
-  flex: 0 0 auto;
   color: #9fb3c8 !important;
-  font-size: 11px !important;
+  font-size: 12px !important;
   font-weight: 600 !important;
   line-height: 1.3 !important;
-  white-space: nowrap !important;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  -webkit-line-clamp: unset;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  -webkit-line-clamp: unset !important;
 }
 
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .stats,
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > em.meta,
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-proof,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .stats,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > em.meta,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-proof {
   display: none !important;
 }
 
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .score,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .score {
   display: grid !important;
   flex: 0 0 auto;
-  justify-self: start;
-  align-self: stretch;
-  margin-top: auto;
-  padding-top: 0.15rem;
+  margin-top: 0.15rem;
   color: #e7c15a !important;
-  font-size: 14px !important;
-  line-height: 1.2;
+  font-size: 15px !important;
+  line-height: 1.2 !important;
+}
+
+/* Middle/More use the lineup|bench split, not the position lines */
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="1"] .fantasy-spots,
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="2"] .fantasy-spots,
+.fantasy-board[data-fantasy-zoom="1"] .fantasy-spots,
+.fantasy-board[data-fantasy-zoom="2"] .fantasy-spots {
+  display: none !important;
 }
 
 /* Zoom 1: row with stats, locked, owned — proofs stay in DOM, hidden until More */

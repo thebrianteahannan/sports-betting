@@ -8,7 +8,7 @@ let fantasyZoom = (() => {
     const n = Number(localStorage.getItem("fantasyZoom"));
     if (Number.isFinite(n)) return Math.max(0, Math.min(FANTASY_ZOOM_MAX, Math.round(n)));
   } catch (error) {}
-  return 1;
+  return 0;
 })();
 let fantasyZoomDrag = false;
 
@@ -378,6 +378,42 @@ function fantasyProof(player) {
   return box;
 }
 
+const FANTASY_POS_ORDER = [
+  "QB", "RB", "WR", "TE", "FLEX", "WRRB_FLEX", "REC_FLEX", "SUPER_FLEX",
+  "K", "DEF", "DL", "LB", "DB", "IDP_FLEX", "BN", "OUT", "IR",
+];
+
+function fantasyPosKey(player, kind) {
+  if (kind === "start") {
+    const slot = String((player && player.slot) || "").toUpperCase();
+    if (slot && slot !== "BN" && slot !== "0") return slot;
+  }
+  if (kind === "out") return "OUT";
+  if (kind === "ir") return "IR";
+  const pos = String((player && (player.pos || (player.fantasy || [])[0])) || "BN").toUpperCase();
+  return pos || "BN";
+}
+
+function fantasyPosBands(result) {
+  const bands = new Map();
+  const ensure = (key) => {
+    if (!bands.has(key)) bands.set(key, { key, start: [], sit: [], out: [], ir: [] });
+    return bands.get(key);
+  };
+  (result.start || []).forEach((player) => ensure(fantasyPosKey(player, "start")).start.push(player));
+  (result.sit || []).forEach((player) => ensure(fantasyPosKey(player, "sit")).sit.push(player));
+  (result.out || []).forEach((player) => ensure(fantasyPosKey(player, "out")).out.push(player));
+  (result.ir || []).forEach((player) => ensure(fantasyPosKey(player, "ir")).ir.push(player));
+  const keys = [...bands.keys()].sort((a, b) => {
+    const ia = FANTASY_POS_ORDER.indexOf(a);
+    const ib = FANTASY_POS_ORDER.indexOf(b);
+    const aa = ia < 0 ? 900 : ia;
+    const bb = ib < 0 ? 900 : ib;
+    return aa - bb || a.localeCompare(b);
+  });
+  return keys.map((key) => bands.get(key));
+}
+
 function fantasyLineup(board, result) {
   const wrap = document.createElement("div");
   wrap.className = "fantasy-lineup";
@@ -434,16 +470,39 @@ function fantasyLineup(board, result) {
     wrap.append(pickups);
   }
 
-  const start = document.createElement("section");
-  start.className = "fantasy-col start";
-  start.innerHTML = "<h3>Your lineup</h3>";
   const addPlayer = (col, player, kind) => {
     col.append(fantasyRow(player, kind));
     if (!player.empty && player.id) col.append(fantasyProof(player));
   };
 
+  // Less zoom: one horizontal line per position (starters, then bench at that spot).
+  const spots = document.createElement("div");
+  spots.className = "fantasy-spots";
+  fantasyPosBands(result).forEach((band) => {
+    const row = document.createElement("section");
+    row.className = "fantasy-pos-row";
+    row.dataset.pos = band.key;
+    const label = document.createElement("h3");
+    label.textContent = band.key;
+    const cards = document.createElement("div");
+    cards.className = "fantasy-pos-cards";
+    band.start.forEach((player) => addPlayer(cards, player, "start"));
+    band.sit.forEach((player) => addPlayer(cards, player, "sit"));
+    band.out.forEach((player) => addPlayer(cards, player, "out"));
+    band.ir.forEach((player) => addPlayer(cards, player, "ir"));
+    row.append(label, cards);
+    spots.append(row);
+  });
+  wrap.append(spots);
+
+  const split = document.createElement("div");
+  split.className = "fantasy-split";
+
+  const start = document.createElement("section");
+  start.className = "fantasy-col start";
+  start.innerHTML = "<h3>Your lineup</h3>";
   (result.start || []).forEach((player) => addPlayer(start, player, "start"));
-  wrap.append(start);
+  split.append(start);
 
   const sit = document.createElement("section");
   sit.className = "fantasy-col sit";
@@ -455,14 +514,14 @@ function fantasyLineup(board, result) {
     none.textContent = "Everyone who projects into a slot is starting.";
     sit.append(none);
   }
-  wrap.append(sit);
+  split.append(sit);
 
   if ((result.out || []).length) {
     const out = document.createElement("section");
     out.className = "fantasy-col out";
     out.innerHTML = "<h3>Out</h3>";
     result.out.forEach((player) => addPlayer(out, player, "out"));
-    wrap.append(out);
+    split.append(out);
   }
 
   if ((result.ir || []).length) {
@@ -470,9 +529,10 @@ function fantasyLineup(board, result) {
     ir.className = "fantasy-col ir";
     ir.innerHTML = "<h3>IR</h3>";
     result.ir.forEach((player) => addPlayer(ir, player, "ir"));
-    wrap.append(ir);
+    split.append(ir);
   }
 
+  wrap.append(split);
   board.append(wrap);
 }
 
