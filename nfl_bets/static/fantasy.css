@@ -178,6 +178,56 @@
   font-size: 12px;
 }
 
+#desk.tv-full #desk-glass .fantasy-board button.fantasy-league.needs,
+.fantasy-board button.fantasy-league.needs {
+  border-color: rgba(255, 107, 107, 0.8) !important;
+}
+
+.fantasy-board button.fantasy-league > span.league-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  max-width: 11rem;
+  color: inherit;
+  font-weight: 800;
+}
+
+.fantasy-board .league-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.08rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.fantasy-board .league-tag.ok,
+.fantasy-board .league-tag.start {
+  border-color: rgba(61, 255, 110, 0.55);
+  background: rgba(61, 255, 110, 0.14);
+  color: #3dff6e;
+}
+
+.fantasy-board .league-tag.sit,
+.fantasy-board .league-tag.miss {
+  border-color: rgba(255, 90, 90, 0.7);
+  background: rgba(255, 70, 70, 0.2);
+  color: #ff6b6b;
+}
+
+.fantasy-board .league-tag.pickup {
+  border-color: rgba(231, 193, 90, 0.7);
+  background: rgba(231, 193, 90, 0.16);
+  color: #e7c15a;
+}
+
 .fantasy-board .fantasy-lead,
 .fantasy-board .fantasy-note,
 .fantasy-board .fantasy-empty,
@@ -837,4 +887,52 @@
   .fantasy-board .fantasy-row .slot { font-size: 10px; }
   .fantasy-board .fantasy-row .score { font-size: 11px; }
   .fantasy-board .fantasy-row .score > i { font-size: 7px; }
+
+  /* Less zoom: two cards across. The side position label repeats the slot on the card. */
+  #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-spots,
+  .fantasy-board[data-fantasy-zoom="0"] .fantasy-spots {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+  }
+
+  #desk.tv-full #desk-glass .fantasy-board,
+  .fantasy-board {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-row,
+  .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-row,
+  #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards,
+  .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards {
+    display: contents !important;
+  }
+
+  #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-row > h3,
+  .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-row > h3 {
+    display: none !important;
+  }
+
+  #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > button.fantasy-row,
+  .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > button.fantasy-row {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 0.4rem 0.45rem !important;
+  }
+
+  #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > b,
+  .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > b {
+    font-size: 13px !important;
+  }
+
+  #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > em.match,
+  .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > em.match {
+    font-size: 11px !important;
+  }
+
+  #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .score,
+  .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .score {
+    font-size: 13px !important;
+  }
 }

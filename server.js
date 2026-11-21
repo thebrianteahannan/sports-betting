@@ -694,6 +694,16 @@ const server = http.createServer(async (req, res) => {
         }
         return;
       }
+      if (url.pathname === "/api/fantasy/league-check") {
+        const who = await memberFrom(req);
+        if (who && refuseBoard(res, who)) return;
+        try {
+          sendJson(res, await require("./fantasy-api").leagueCheck(body || {}, await board().catch(() => ({}))));
+        } catch (error) {
+          sendJson(res, { error: String((error && error.message) || error) }, 400);
+        }
+        return;
+      }
       if (url.pathname === "/api/chat") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; try { sendJson(res, await chatApi.post(user, body)); } catch (error) { sendJson(res, { error: String((error && error.message) || error) }, 400); } return; } if (["/api/friends", "/api/share", "/api/shared"].includes(url.pathname)) { const user = await memberFrom(req); if (refuseBoard(res, user)) return; try { sendJson(res, url.pathname === "/api/friends" ? await friendsApi.friendsPost(user, body, readKey, writeKey, loadMembers) : url.pathname === "/api/share" ? await friendsApi.shareSend(user, body, readKey, writeKey) : await friendsApi.sharedPost(user, body, readKey, writeKey)); } catch (error) { sendJson(res, { error: String((error && error.message) || error) }, 400); } return; } if (url.pathname === "/api/parlays") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, await parlayPut(user, body, readKey, writeKey)); return; } if (url.pathname === "/api/how") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, await howsPost(body)); return; } if (url.pathname === "/api/slip") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, await slipPost(user, body, readKey, writeKey)); return; } if (url.pathname === "/api/choose") { const chooser = await memberFrom(req); if (refuseBoard(res, chooser)) return; const chosen = await chooseBet(body, await require("./game-keep").withKept(await board(), body.game || (["game", "nba"].includes(body.list) ? body.match : ""), body.gameSport || body.sport)); if (chosen && chosen.found && chosen.error && !isAdmin(chooser)) delete chosen.error; sendJson(res, chosen); return; }
       if (url.pathname === "/api/bet-ask") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, await researchBet(body)); return; } if (url.pathname === "/api/prop-log") { const user = await memberFrom(req); if (refuseBoard(res, user)) return; sendJson(res, await propLog(body)); return; }
       if (url.pathname === "/api/admin/pull") {

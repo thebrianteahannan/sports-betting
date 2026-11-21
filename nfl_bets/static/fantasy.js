@@ -1,6 +1,6 @@
 /** Fantasy Sports · Start/Sit from Sleeper + Vegas-implied fantasy points. */
 
-let fantasyState = { user: "", leagues: [], leagueId: "", result: null, openId: "", showVegas: false, wantConnect: false, pulling: false, pullError: "" };
+let fantasyState = { user: "", leagues: [], leagueId: "", result: null, openId: "", showVegas: false, wantConnect: false, pulling: false, pullError: "", checks: null, checking: false, checkError: "" };
 
 const FANTASY_ZOOM_MAX = 2;
 let fantasyZoom = (() => {
@@ -150,6 +150,8 @@ async function fantasyPullLeagues(board, user) {
     fantasyState.leagues = data.leagues || [];
     fantasyState.leagueId = "";
     fantasyState.result = null;
+    fantasyState.checks = null;
+    fantasyState.checkError = "";
     fantasyState.wantConnect = false;
     await fantasyRemember(fantasyState.user);
     paintFantasy(board);
@@ -205,11 +207,43 @@ function fantasyLeaguePicker(board) {
   label.className = "fantasy-lead";
   label.textContent = `Leagues for ${fantasyState.user}. Pick one.`;
   box.append(label);
+  const check = document.createElement("button");
+  check.type = "button";
+  check.className = "fantasy-go";
+  check.textContent = fantasyState.checking ? "Checking your teams…" : (fantasyState.checks ? "Check again" : "Check my teams");
+  check.disabled = !!fantasyState.checking;
+  check.addEventListener("click", () => fantasyCheckAll(board));
+  box.append(check);
+  if (fantasyState.checkError) {
+    const note = document.createElement("p");
+    note.className = "fantasy-note";
+    note.textContent = fantasyState.checkError;
+    box.append(note);
+  }
+  if (fantasyState.checks) {
+    const rows = fantasyState.leagues.map((league) => fantasyState.checks[league.league_id]).filter(Boolean);
+    const need = rows.filter((row) => (row.tags || []).some((tag) => tag.id !== "miss")).length;
+    const missed = rows.filter((row) => (row.tags || []).some((tag) => tag.id === "miss")).length;
+    const say = document.createElement("p");
+    say.className = "fantasy-lead";
+    if (need) say.textContent = `${need} ${need === 1 ? "league needs" : "leagues need"} a move.`;
+    else if (missed) say.textContent = "Could not check those leagues.";
+    else say.textContent = "Every league is all set.";
+    box.append(say);
+  }
   fantasyState.leagues.forEach((league) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `fantasy-league${fantasyState.leagueId === league.league_id ? " on" : ""}`;
-    btn.innerHTML = `<b>${fantasyEsc(league.name)}</b><span>${fantasyEsc(league.status || "in season")}</span>`;
+    const hit = fantasyState.checks && fantasyState.checks[league.league_id];
+    const tags = hit && !hit.skip ? (hit.tags || []) : null;
+    const needs = !!(tags && tags.length);
+    btn.className = `fantasy-league${fantasyState.leagueId === league.league_id ? " on" : ""}${needs ? " needs" : ""}${tags && !needs ? " ready" : ""}`;
+    const tagHtml = tags
+      ? (needs
+        ? `<span class="league-tags">${tags.map((tag) => `<i class="league-tag ${fantasyEsc(tag.id)}">${fantasyEsc(tag.label)}</i>`).join("")}</span>`
+        : `<span class="league-tags"><i class="league-tag ok">All set</i></span>`)
+      : `<span>${fantasyEsc(league.status || "in season")}</span>`;
+    btn.innerHTML = `<b>${fantasyEsc(league.name)}</b>${tagHtml}`;
     btn.addEventListener("click", () => fantasyRun(board, league.league_id));
     box.append(btn);
   });
@@ -228,6 +262,9 @@ function fantasyLeaguePicker(board) {
       wantConnect: true,
       pulling: false,
       pullError: "",
+      checks: null,
+      checking: false,
+      checkError: "",
     };
     paintFantasy(board);
   });
@@ -238,6 +275,25 @@ function fantasyLeaguePicker(board) {
   box.prepend(change);
   box.append(again);
   board.append(box);
+}
+
+async function fantasyCheckAll(board) {
+  if (fantasyState.checking || !fantasyState.user) return;
+  const refresh = !!fantasyState.checks;
+  fantasyState.checking = true;
+  fantasyState.checkError = "";
+  paintFantasy(board);
+  try {
+    const data = await fantasyPost("/api/fantasy/league-check", { user: fantasyState.user, refresh });
+    const checks = {};
+    (data.leagues || []).forEach((row) => { checks[row.league_id] = row; });
+    fantasyState.checks = checks;
+  } catch (error) {
+    fantasyState.checkError = String((error && error.message) || error);
+  } finally {
+    fantasyState.checking = false;
+    paintFantasy(board);
+  }
 }
 
 async function fantasyRun(board, leagueId, opts) {

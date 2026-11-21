@@ -584,23 +584,40 @@ function pickupOptions(slot, map, taken, scoring, projections, weekInfo, limit =
   return rows.sort((a, b) => b.sleeperPts - a.sleeperPts || a.name.localeCompare(b.name)).slice(0, limit);
 }
 
-async function startSit(body, board) {
-  if (body && (body.refresh || body.reload)) clearCaches();
-  const query = {
-    user: body.user || body.username,
-    league: body.league || body.leagueId,
-    ownerId: body.ownerId,
-    season: body.season,
-  };
-  const pack = await sleeper(query);
-  const weekInfo = await loadNflWeek(pack.week).catch(() => ({ bye: new Set(), lockedTeams: new Set(), playing: new Set(), matchup: new Map() }));
-  const [projections, weekStats, ownership] = await Promise.all([
-    loadProjections(pack.season, pack.week).catch(() => ({})),
-    loadWeekStats(pack.season, pack.week).catch(() => ({})),
-    loadOwnership(pack.season, pack.week).catch(() => new Map()),
+async function loadLineupContext(season, week, board) {
+  const weekInfo = await loadNflWeek(week).catch(() => ({ bye: new Set(), lockedTeams: new Set(), playing: new Set(), matchup: new Map() }));
+  const [projections, weekStats, ownership, peopleBook, map] = await Promise.all([
+    loadProjections(season, week).catch(() => ({})),
+    loadWeekStats(season, week).catch(() => ({})),
+    loadOwnership(season, week).catch(() => new Map()),
+    require("./choose-api").chooseBet({ list: "lookup", when: "week" }, board).catch(() => ({ people: [] })),
+    loadPlayers().catch(() => ({})),
   ]);
-  const peopleBook = await require("./choose-api").chooseBet({ list: "lookup", when: "week" }, board).catch(() => ({ people: [] }));
   const people = ((peopleBook && peopleBook.people) || []).filter((person) => person.kind === "player");
+  return { weekInfo, projections, weekStats, ownership, people, map };
+}
+
+function tagLabel(word, count) {
+  return count > 1 ? `${word} ${count}` : word;
+}
+
+function actionTags(result) {
+  const tags = [];
+  const sitCount = (result.start || []).filter((row) => row && row.id && !row.empty && row.shouldStart === false && !(row.locked || row.gameLocked)).length;
+  const startCount = (result.sit || []).filter((row) => row && row.id && row.shouldStart === true).length;
+  const pickupCount = (result.pickups || []).length;
+  if (startCount) tags.push({ id: "start", label: tagLabel("Start", startCount) });
+  if (sitCount) tags.push({ id: "sit", label: tagLabel("Sit", sitCount) });
+  if (pickupCount) tags.push({ id: "pickup", label: tagLabel("Pickup", pickupCount) });
+  return tags;
+}
+
+function buildLineup(pack, ctx) {
+  const weekInfo = ctx.weekInfo;
+  const projections = ctx.projections || {};
+  const weekStats = ctx.weekStats || {};
+  const ownership = ctx.ownership || new Map();
+  const people = ctx.people || [];
   const scoring = (pack.league && pack.league.scoring_settings) || {};
   const reserveIds = ((pack.roster && pack.roster.reserve) || []).map(String);
 
@@ -694,7 +711,7 @@ async function startSit(body, board) {
     return { ...row, shouldStart };
   };
   const holes = pickupHoles(lineup.start, slots, scored);
-  const map = await loadPlayers().catch(() => ({}));
+  const map = ctx.map || {};
   const taken = new Set((pack.roster && pack.roster.taken) || []);
   const pickups = holes.map((hole) => ({
     slot: hole.slot,
@@ -703,14 +720,6 @@ async function startSit(body, board) {
     options: pickupOptions(hole.slot, map, taken, scoring, projections, weekInfo, 8),
   })).filter((row) => row.options.length || row.why);
   return {
-    sport: pack.sport || "NFL",
-    season: pack.season,
-    week: pack.week,
-    user: pack.user,
-    league: pack.league,
-    owner: pack.owner,
-    note: pack.note,
-    method: "Your Sleeper lineup stays put. Red Sit / green Start tags tell you what to change.",
     players: scored.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name)),
     start: (lineup.start || []).map(markRec),
     sit: (lineup.sit || []).map(markRec),
@@ -721,4 +730,71 @@ async function startSit(body, board) {
   };
 }
 
-module.exports = { sleeper, startSit, samePlayer, fillLineup };
+async function startSit(body, board) {
+  if (body && (body.refresh || body.reload)) clearCaches();
+  const pack = await sleeper({
+    user: body.user || body.username,
+    league: body.league || body.leagueId,
+    ownerId: body.ownerId,
+    season: body.season,
+  });
+  const lineup = buildLineup(pack, await loadLineupContext(pack.season, pack.week, board));
+  return {
+    sport: pack.sport || "NFL",
+    season: pack.season,
+    week: pack.week,
+    user: pack.user,
+    league: pack.league,
+    owner: pack.owner,
+    note: pack.note,
+    method: "Your Sleeper lineup stays put. Red Sit / green Start tags tell you what to change.",
+    ...lineup,
+  };
+}
+
+async function mapPool(items, limit, fn) {
+  const out = new Array(items.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (cursor < items.length) {
+      const i = cursor;
+      cursor += 1;
+      out[i] = await fn(items[i], i);
+    }
+  });
+  await Promise.all(workers);
+  return out;
+}
+
+async function leagueCheck(body, board) {
+  if (body && (body.refresh || body.reload)) clearCaches();
+  const state = await nflState();
+  const season = String((body && body.season) || state.league_season || state.season || new Date().getFullYear());
+  const week = Number(state.display_week || state.week) || null;
+  const user = await resolveUser((body && (body.user || body.username)) || "");
+  const leagues = await leaguesFor(user.user_id, season);
+  const live = leagues.some((row) => row.status === "in_season");
+  const ctx = live ? await loadLineupContext(season, week, board) : null;
+  const rows = await mapPool(leagues, 3, async (league) => {
+    if (league.status !== "in_season") {
+      return { league_id: league.league_id, name: league.name, ok: true, skip: true, tags: [], status: league.status };
+    }
+    try {
+      const pack = await packRoster(league.league_id, user.user_id);
+      const tags = actionTags(buildLineup(pack, ctx));
+      return { league_id: league.league_id, name: league.name, ok: tags.length === 0, tags, status: league.status };
+    } catch (error) {
+      return {
+        league_id: league.league_id,
+        name: league.name,
+        ok: false,
+        tags: [{ id: "miss", label: "Check failed" }],
+        error: String((error && error.message) || error),
+        status: league.status,
+      };
+    }
+  });
+  return { user, season, week, leagues: rows };
+}
+
+module.exports = { sleeper, startSit, leagueCheck, samePlayer, fillLineup };
