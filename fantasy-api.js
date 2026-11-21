@@ -401,7 +401,7 @@ function fillLineup(players, slots, opts = {}) {
   const rank = (row) => (Number.isFinite(Number(row.rankScore)) ? Number(row.rankScore) : Number(row.score) || 0);
   // Locked bench stays on the bench — kickoff already passed, they cannot enter a slot.
   const pool = (players || [])
-    .filter((row) => !used.has(row.id) && !row.ir && !row.out && !row.gameLocked && (allowBye || !row.bye))
+    .filter((row) => !used.has(row.id) && !row.ir && !row.out && !row.taxi && !row.gameLocked && (allowBye || !row.bye))
     .sort((a, b) => rank(b) - rank(a) || a.name.localeCompare(b.name));
   const open = allowBye
     ? pool.filter((row) => !row.bye).concat(pool.filter((row) => row.bye))
@@ -425,13 +425,16 @@ function fillLineup(players, slots, opts = {}) {
   });
 
   const rest = (players || []).filter((row) => !used.has(row.id));
-  const sit = rest.filter((row) => !row.out && !row.ir).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+  const taxi = rest.filter((row) => row.taxi).sort((a, b) => a.name.localeCompare(b.name))
     .map((row) => ({ ...row, start: false }));
-  const out = rest.filter((row) => row.out && !row.ir).sort((a, b) => a.name.localeCompare(b.name))
+  const active = rest.filter((row) => !row.taxi);
+  const sit = active.filter((row) => !row.out && !row.ir).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
     .map((row) => ({ ...row, start: false }));
-  const ir = rest.filter((row) => row.ir).sort((a, b) => a.name.localeCompare(b.name))
+  const out = active.filter((row) => row.out && !row.ir).sort((a, b) => a.name.localeCompare(b.name))
     .map((row) => ({ ...row, start: false }));
-  return { start, sit, out, ir };
+  const ir = active.filter((row) => row.ir).sort((a, b) => a.name.localeCompare(b.name))
+    .map((row) => ({ ...row, start: false }));
+  return { start, sit, out, taxi, ir };
 }
 
 async function resolveUser(username) {
@@ -470,11 +473,11 @@ async function packRoster(leagueId, ownerId, opts = {}) {
   if (!roster) throw new Error("That user is not on this league roster.");
   const owner = (users || []).find((row) => String(row.user_id) === String(ownerId));
   const slots = starterSlots(league.roster_positions);
-  const ids = [...new Set([...(roster.players || []), ...(roster.starters || []), ...(roster.reserve || [])].filter(Boolean))];
+  const ids = [...new Set([...(roster.players || []), ...(roster.starters || []), ...(roster.reserve || []), ...(roster.taxi || [])].filter(Boolean))];
   const players = ids.map((id) => playerRow(id, map)).filter(Boolean);
   const taken = new Set();
   (rosters || []).forEach((row) => {
-    [...(row.players || []), ...(row.reserve || []), ...(row.starters || [])].forEach((id) => {
+    [...(row.players || []), ...(row.reserve || []), ...(row.starters || []), ...(row.taxi || [])].forEach((id) => {
       if (id && id !== "0") taken.add(String(id));
     });
   });
@@ -497,6 +500,7 @@ async function packRoster(leagueId, ownerId, opts = {}) {
       roster_id: roster.roster_id,
       starters: (roster.starters || []).filter(Boolean).map(String),
       reserve: (roster.reserve || []).filter(Boolean).map(String),
+      taxi: (roster.taxi || []).filter(Boolean).map(String),
       players,
       taken: [...taken],
     },
@@ -535,7 +539,7 @@ function benchCanFill(slot, holder, scored, startIds) {
   return (scored || []).some((row) => {
     if (!row || !row.id || startIds.has(String(row.id))) return false;
     if (holder && String(row.id) === String(holder.id)) return false;
-    if (row.ir || row.out || row.bye || row.gameLocked) return false;
+    if (row.ir || row.out || row.bye || row.taxi || row.gameLocked) return false;
     return slotEligible(slot, row.fantasy);
   });
 }
@@ -621,12 +625,13 @@ function buildLineup(pack, ctx) {
   const people = ctx.people || [];
   const scoring = (pack.league && pack.league.scoring_settings) || {};
   const reserveIds = ((pack.roster && pack.roster.reserve) || []).map(String);
+  const taxiIds = new Set(((pack.roster && pack.roster.taxi) || []).map(String));
 
   const scored = ((pack.roster && pack.roster.players) || []).map((row) => {
     const person = findPerson(people, row.name) || { name: row.name, bets: [] };
     const pos = row.pos || (row.fantasy || [])[0];
     const marked = projectPlayer({ ...person, name: row.name }, scoring, pos);
-    const status = markStatus(row, reserveIds, weekInfo);
+    const status = markStatus({ ...row, taxi: taxiIds.has(String(row.id)) }, reserveIds, weekInfo);
     const owned = ownershipFor(row, ownership);
     const teamId = teamKey(row.team);
     const proj = projections[row.id] || projections[teamId] || null;
@@ -705,7 +710,7 @@ function buildLineup(pack, ctx) {
   const markRec = (row) => {
     if (!row || !row.id) return row;
     let shouldStart = recommendIds.has(String(row.id));
-    if (row.bye || row.ir) shouldStart = false;
+    if (row.bye || row.ir || row.taxi) shouldStart = false;
     if (row.out && !(row.locked || row.gameLocked)) shouldStart = false;
     // Already locked on the bench — cannot start them now.
     if (row.gameLocked && !currentStartSet.has(String(row.id))) shouldStart = false;
@@ -725,6 +730,7 @@ function buildLineup(pack, ctx) {
     start: (lineup.start || []).map(markRec),
     sit: (lineup.sit || []).map(markRec),
     out: (lineup.out || []).map(markRec),
+    taxi: (lineup.taxi || []).map(markRec),
     ir: (lineup.ir || []).map(markRec),
     swaps,
     pickups,
