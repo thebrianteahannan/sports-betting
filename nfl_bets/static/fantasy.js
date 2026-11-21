@@ -440,6 +440,20 @@ function fantasyPickupList(hole) {
   return box;
 }
 
+function fantasySlotLabel(slot, kind) {
+  const raw = String(slot || (kind === "ir" ? "IR" : kind === "out" ? "OUT" : "BN")).toUpperCase();
+  if (raw === "SUPER_FLEX") return "SUPER";
+  return raw;
+}
+
+function fantasyTogglePlayer(id) {
+  const next = String(id || "");
+  fantasyState.openId = fantasyState.openId === next ? "" : next;
+  fantasyState.showVegas = false;
+  const board = fantasyBoard();
+  if (board) paintFantasy(board);
+}
+
 function fantasyRow(player, kind, hole) {
   const row = document.createElement("button");
   row.type = "button";
@@ -448,7 +462,7 @@ function fantasyRow(player, kind, hole) {
   const role = fantasyRoleTag(kind, player);
   const mismatch = !!(role && ((kind === "start" && role.cls === "sit") || (kind === "sit" && role.cls === "start")));
   row.className = `fantasy-row ${kind}${player.bye ? " bye" : ""}${locked ? " locked" : ""}${q ? " questionable" : ""}${mismatch ? " rec-swap" : ""}${hole ? " needs-fill" : ""}`;
-  const slotLabel = player.slot || (kind === "ir" ? "IR" : kind === "out" ? "OUT" : "BN");
+  const slotLabel = fantasySlotLabel(player.slot, kind);
   const slot = `<i class="slot">${fantasyEsc(slotLabel)}</i>`;
   const match = fantasyMatchBits(player).join(" · ");
   const meta = fantasyMetaBits(player).join(" · ");
@@ -473,7 +487,7 @@ function fantasyRow(player, kind, hole) {
     row.disabled = true;
   } else {
     row.addEventListener("click", () => {
-      fantasyZoomApply(2);
+      fantasyTogglePlayer(player.id);
     });
   }
   return row;
@@ -559,9 +573,14 @@ function fantasyLineup(board, result) {
     const key = hole ? fantasyFillKey(player, index) : "";
     const row = fantasyRow(player, kind, hole);
     if (key) row.dataset.fill = key;
+    if (player.id && String(fantasyState.openId) === String(player.id)) row.classList.add("open");
     col.append(row);
     if (key && fantasyState.pickupSlot === key) col.append(fantasyPickupList(hole));
-    if (!player.empty && player.id) col.append(fantasyProof(player));
+    if (!player.empty && player.id) {
+      const proof = fantasyProof(player);
+      if (String(fantasyState.openId) === String(player.id)) proof.classList.add("open");
+      col.append(proof);
+    }
   };
 
   // Less: starters in roster order, then bench, out, and IR. One player a line.

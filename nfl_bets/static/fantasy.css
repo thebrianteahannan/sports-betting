@@ -639,7 +639,7 @@
 #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > button.fantasy-row,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > button.fantasy-row {
   display: grid !important;
-  grid-template-columns: 2.4rem minmax(0, 1fr) auto !important;
+  grid-template-columns: 3.4rem minmax(0, 1fr) auto !important;
   align-items: center !important;
   gap: 0.1rem 0.45rem !important;
   width: 100% !important;
@@ -658,6 +658,7 @@
   color: #3dff6e !important;
   font-size: 11px !important;
   line-height: 1.2 !important;
+  white-space: nowrap !important;
 }
 
 #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who,
@@ -710,6 +711,13 @@
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > em.meta,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-proof {
   display: none !important;
+}
+
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > .fantasy-proof.open,
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="1"] .fantasy-proof.open,
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > .fantasy-proof.open,
+.fantasy-board[data-fantasy-zoom="1"] .fantasy-proof.open {
+  display: block !important;
 }
 
 #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .score,
