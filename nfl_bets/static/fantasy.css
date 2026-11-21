@@ -663,16 +663,18 @@
 #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who {
   display: flex !important;
-  flex: 0 0 auto !important;
-  flex-direction: column !important;
-  gap: 0.15rem !important;
+  flex: 1 1 auto !important;
+  flex-direction: row !important;
+  align-items: baseline !important;
+  gap: 0.45rem !important;
   min-width: 0 !important;
-  overflow: visible !important;
+  overflow: hidden !important;
 }
 
 #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > b,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > b {
   display: flex !important;
+  flex: 0 1 auto !important;
   flex-wrap: nowrap !important;
   min-width: 0 !important;
   color: #f4f7fb !important;
@@ -689,6 +691,8 @@
 #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > em.match,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > em.match {
   display: block !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
   color: #9fb3c8 !important;
   font-size: 11px !important;
   font-weight: 600 !important;
@@ -710,12 +714,15 @@
 
 #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .score,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .score {
-  display: grid !important;
+  display: flex !important;
+  align-items: baseline;
+  gap: 0.35rem;
   justify-self: end;
   margin-top: 0 !important;
   color: #e7c15a !important;
   font-size: 13px !important;
   line-height: 1.15 !important;
+  white-space: nowrap !important;
 }
 
 /* Middle/More use the lineup|bench split, not the position lines */

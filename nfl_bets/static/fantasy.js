@@ -297,6 +297,43 @@ async function fantasyCheckAll(board) {
   }
 }
 
+function fantasyStamp(data) {
+  const line = (rows) => (rows || []).map((player) => (player && player.id) || `empty:${player && player.slot}`).join(",");
+  if (!data) return "";
+  return [line(data.start), line(data.sit), line(data.out), line(data.ir)].join("#");
+}
+
+let fantasyWatchToken = 0;
+
+function fantasyArmWatch() {
+  const token = ++fantasyWatchToken;
+  const leagueId = fantasyState.leagueId;
+  setTimeout(() => fantasyQuietRefresh(token, leagueId), 15000);
+}
+
+async function fantasyQuietRefresh(token, leagueId) {
+  if (token !== fantasyWatchToken) return;
+  if (!fantasyState.result || fantasyState.result.error || fantasyState.leagueId !== leagueId) return;
+  const board = fantasyBoard();
+  if (!board) return;
+  try {
+    const data = await fantasyPost("/api/fantasy/start-sit", { user: fantasyState.user, leagueId });
+    if (token !== fantasyWatchToken || fantasyState.leagueId !== leagueId) return;
+    if (fantasyStamp(data) !== fantasyStamp(fantasyState.result)) {
+      fantasyState.result = data;
+      paintFantasy(board);
+      return;
+    }
+  } catch (error) {}
+  if (token === fantasyWatchToken) fantasyArmWatch();
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") return;
+  if (!fantasyState.result || fantasyState.result.error || !fantasyState.leagueId) return;
+  fantasyQuietRefresh(fantasyWatchToken, fantasyState.leagueId);
+});
+
 async function fantasyRun(board, leagueId, opts) {
   fantasyState.leagueId = leagueId;
   fantasyState.pickupSlot = "";
@@ -471,42 +508,6 @@ function fantasyProof(player) {
   return box;
 }
 
-const FANTASY_POS_ORDER = [
-  "QB", "RB", "WR", "TE", "FLEX", "WRRB_FLEX", "REC_FLEX", "SUPER_FLEX",
-  "K", "DEF", "DL", "LB", "DB", "IDP_FLEX", "BN", "OUT", "IR",
-];
-
-function fantasyPosKey(player, kind) {
-  if (kind === "start") {
-    const slot = String((player && player.slot) || "").toUpperCase();
-    if (slot && slot !== "BN" && slot !== "0") return slot;
-  }
-  if (kind === "out") return "OUT";
-  if (kind === "ir") return "IR";
-  const pos = String((player && (player.pos || (player.fantasy || [])[0])) || "BN").toUpperCase();
-  return pos || "BN";
-}
-
-function fantasyPosBands(result) {
-  const bands = new Map();
-  const ensure = (key) => {
-    if (!bands.has(key)) bands.set(key, { key, start: [], sit: [], out: [], ir: [] });
-    return bands.get(key);
-  };
-  (result.start || []).forEach((player) => ensure(fantasyPosKey(player, "start")).start.push(player));
-  (result.sit || []).forEach((player) => ensure(fantasyPosKey(player, "sit")).sit.push(player));
-  (result.out || []).forEach((player) => ensure(fantasyPosKey(player, "out")).out.push(player));
-  (result.ir || []).forEach((player) => ensure(fantasyPosKey(player, "ir")).ir.push(player));
-  const keys = [...bands.keys()].sort((a, b) => {
-    const ia = FANTASY_POS_ORDER.indexOf(a);
-    const ib = FANTASY_POS_ORDER.indexOf(b);
-    const aa = ia < 0 ? 900 : ia;
-    const bb = ib < 0 ? 900 : ib;
-    return aa - bb || a.localeCompare(b);
-  });
-  return keys.map((key) => bands.get(key));
-}
-
 function fantasyLineup(board, result) {
   const wrap = document.createElement("div");
   wrap.className = "fantasy-lineup";
@@ -563,24 +564,16 @@ function fantasyLineup(board, result) {
     if (!player.empty && player.id) col.append(fantasyProof(player));
   };
 
-  // Less zoom: one horizontal line per position (starters, then bench at that spot).
+  // Less: starters in roster order, then bench, out, and IR. One player a line.
   const spots = document.createElement("div");
   spots.className = "fantasy-spots";
-  fantasyPosBands(result).forEach((band) => {
-    const row = document.createElement("section");
-    row.className = "fantasy-pos-row";
-    row.dataset.pos = band.key;
-    const label = document.createElement("h3");
-    label.textContent = band.key;
-    const cards = document.createElement("div");
-    cards.className = "fantasy-pos-cards";
-    band.start.forEach((player) => addPlayer(cards, player, "start"));
-    band.sit.forEach((player) => addPlayer(cards, player, "sit"));
-    band.out.forEach((player) => addPlayer(cards, player, "out"));
-    band.ir.forEach((player) => addPlayer(cards, player, "ir"));
-    row.append(label, cards);
-    spots.append(row);
-  });
+  const list = document.createElement("div");
+  list.className = "fantasy-pos-cards";
+  (result.start || []).forEach((player) => addPlayer(list, player, "start"));
+  (result.sit || []).forEach((player) => addPlayer(list, player, "sit"));
+  (result.out || []).forEach((player) => addPlayer(list, player, "out"));
+  (result.ir || []).forEach((player) => addPlayer(list, player, "ir"));
+  spots.append(list);
   wrap.append(spots);
 
   const split = document.createElement("div");
@@ -680,6 +673,7 @@ function paintFantasy(keep, opts) {
 
   if (fantasyState.result) {
     fantasyLineup(board, fantasyState.result);
+    fantasyArmWatch();
     return;
   }
 

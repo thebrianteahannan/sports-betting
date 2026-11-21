@@ -453,10 +453,11 @@ async function leaguesFor(userId, season) {
   }));
 }
 
-async function packRoster(leagueId, ownerId) {
+async function packRoster(leagueId, ownerId, opts = {}) {
   const key = `${leagueId}:${ownerId}`;
   const hit = rosterCache.get(key);
-  if (hit && Date.now() - hit.at < 10 * 60000) return hit.data;
+  // League sweep can reuse a roster for a few seconds. A lineup view always asks again.
+  if (!opts.fresh && hit && Date.now() - hit.at < 20 * 1000) return hit.data;
 
   const [league, users, rosters, map] = await Promise.all([
     sleeperGet(`/league/${encodeURIComponent(leagueId)}`),
@@ -518,7 +519,7 @@ async function sleeper(query) {
   if (!leagues.some((row) => row.league_id === leagueId) && !query.ownerId) {
     // Still allow direct league id if they pasted one and own a roster there.
   }
-  const packed = await packRoster(leagueId, query.ownerId || user.user_id);
+  const packed = await packRoster(leagueId, query.ownerId || user.user_id, { fresh: !!query.fresh });
   return { sport: "NFL", season, week, user, leagues, ...packed };
 }
 
@@ -731,12 +732,12 @@ function buildLineup(pack, ctx) {
 }
 
 async function startSit(body, board) {
-  if (body && (body.refresh || body.reload)) clearCaches();
   const pack = await sleeper({
     user: body.user || body.username,
     league: body.league || body.leagueId,
     ownerId: body.ownerId,
     season: body.season,
+    fresh: true,
   });
   const lineup = buildLineup(pack, await loadLineupContext(pack.season, pack.week, board));
   return {
