@@ -714,14 +714,18 @@ function startGoldenList() {
     const cards = rows.map((ticket) => {
       const result = ticket.result || "open";
       const hits = Number(ticket.hits), n = Number(ticket.n);
-      const record = n > 0 && Number.isFinite(hits) ? `${Math.round((100 * hits) / n)}%` : "";
+      const recordShown = n > 0 && Number.isFinite(hits) ? Math.round((100 * hits) / n) : null;
+      const record = recordShown == null ? "" : `${recordShown}%`;
       const made = startFive(ticket.odds, result);
       const pay = made == null
         ? `$5 profits ${startMoney(startFive(ticket.odds, "won")).replace(/^\+/, "")}`
         : result === "won" ? `$5 won ${startMoney(made)}` : result === "lost" ? `$5 lost ${startMoney(made)}` : `$5 ${startMoney(made)}`;
       const need = typeof findPct === "function" ? findPct(ticket.odds) : "";
+      const needN = parseFloat(need);
+      const clear = recordShown != null && Number.isFinite(needN) ? Math.round((recordShown - needN) * 10) / 10 : null;
+      const clearText = clear == null ? "" : `${clear > 0 ? "+" : ""}${clear.toFixed(1)}%`;
       const meta = [price(ticket.odds), need, ticket.match].filter(Boolean).join(" · ");
-      return `<article class="golden-card"><div class="golden-card-top"><b>${escHtml(ticket.label || "")}</b><i class="${escHtml(result)}">${escHtml(word[result] || "Open")}</i></div><p class="golden-card-pay"><b>${escHtml(record)}</b><span class="${escHtml(result)}">${escHtml(pay)}</span></p>${meta ? `<p class="golden-card-meta">${escHtml(meta)}</p>` : ""}${ticket.markedAt ? `<p class="golden-card-when">Marked ${escHtml(when(ticket.markedAt))}</p>` : ""}${ticket.how ? `<p class="golden-card-how">${escHtml(ticket.how)}</p>` : ""}</article>`;
+      return `<article class="golden-card"><div class="golden-card-top"><b>${escHtml(ticket.label || "")}</b><i class="${escHtml(result)}">${escHtml(word[result] || "Open")}</i></div><p class="golden-card-pay"><span class="golden-card-edge"><b>${escHtml(record)}</b>${clearText ? `<i class="${clear > 0 ? "up" : clear < 0 ? "down" : ""}">${escHtml(clearText)}</i>` : ""}</span><span class="${escHtml(result)}">${escHtml(pay)}</span></p>${meta ? `<p class="golden-card-meta">${escHtml(meta)}</p>` : ""}${ticket.markedAt ? `<p class="golden-card-when">Marked ${escHtml(when(ticket.markedAt))}</p>` : ""}${ticket.how ? `<p class="golden-card-how">${escHtml(ticket.how)}</p>` : ""}</article>`;
     }).join("");
     const list = document.createElement("div");
     list.className = "golden-list";

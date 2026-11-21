@@ -114,6 +114,10 @@
 .find-board .find-start .golden-sum > div:last-child { text-align: right; }
 .find-board .find-start .golden-card-pay { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; margin: 0; }
 .find-board .find-start .golden-card-pay b { color: #e7c15a; font-size: 14px; font-weight: 800; }
+.find-board .find-start .golden-card-edge { display: inline-flex; align-items: baseline; gap: 0.45rem; }
+.find-board .find-start .golden-card-edge i { font-style: normal; font-weight: 800; font-size: 14px; color: #9fb3c8; }
+.find-board .find-start .golden-card-edge i.up { color: #3dff6e; }
+.find-board .find-start .golden-card-edge i.down { color: #ff8f8f; }
 .find-board .find-start .golden-card-pay span { color: #d5deea; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .find-board .find-start .golden-card-pay span.won { color: #3dff6e; }
 .find-board .find-start .golden-card-pay span.lost { color: #ff8f8f; }
