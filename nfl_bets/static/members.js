@@ -199,7 +199,8 @@ async function sendMember(path, fields, errorId) {
   const desk = document.getElementById("desk"); const full = document.getElementById("desk-full"); if (desk && full && desk.classList.contains("tv-full")) full.click();
   if (typeof showTab === "function") showTab("today");
   const home = document.getElementById("desk-home");
-  if (home) home.click();
+  if (location.pathname === "/fantasy" && window.fantasyGo) fantasyGo();
+  else if (home) home.click();
   const settle = () => {
     if (typeof homeGamesLoad === "function") homeGamesLoad();
     if (typeof homeRecsLoad === "function") homeRecsLoad();
@@ -727,7 +728,8 @@ if (passForm) passForm.addEventListener("submit", async (event) => {
   const desk = document.getElementById("desk"); const full = document.getElementById("desk-full"); if (desk && full && desk.classList.contains("tv-full")) full.click();
   if (typeof showTab === "function") showTab("today");
   const home = document.getElementById("desk-home");
-  if (home) home.click();
+  if (location.pathname === "/fantasy" && window.fantasyGo) fantasyGo();
+  else if (home) home.click();
 });
 document.getElementById("forgot-form").addEventListener("submit", async (event) => {
   event.preventDefault();

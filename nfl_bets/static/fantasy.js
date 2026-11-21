@@ -709,6 +709,7 @@ function paintFantasy(keep, opts) {
   const desk = document.getElementById("desk");
   if (!desk || !desk.classList.contains("tv-full")) { if (window.goFull) goFull(); }
   if (!desk || !desk.classList.contains("tv-full")) { window.asking = false; return; }
+  if (location.pathname !== "/fantasy") history.pushState({ page: "fantasy" }, "", "/fantasy");
   desk.classList.remove("bird-on", "solo", "dug");
   if (window.tvForce) tvForce();
   if (window.tvPush) tvPush();
@@ -800,3 +801,32 @@ function fantasyBack() {
 
 window.paintFantasy = paintFantasy;
 window.fantasyBack = fantasyBack;
+window.fantasyGo = function fantasyGo() { paintFantasy(); return true; };
+
+function fantasyFromUrl() {
+  if (location.pathname !== "/fantasy") return;
+  const open = (n) => {
+    if (document.body.classList.contains("needs-member") || !document.getElementById("desk")) {
+      if (n < 40) setTimeout(() => open(n + 1), 200);
+      return;
+    }
+    paintFantasy();
+  };
+  setTimeout(() => open(0), 200);
+}
+fantasyFromUrl();
+
+window.addEventListener("popstate", () => {
+  const open = document.querySelector('.rec-board[data-page="fantasy"]');
+  if (location.pathname === "/fantasy") { if (!open) paintFantasy(); return; }
+  if (!open) return;
+  fantasyState.result = null;
+  fantasyState.leagueId = "";
+  const back = document.getElementById("desk-back");
+  if (back) back.click();
+});
+
+const fantasyHome = document.getElementById("desk-home");
+if (fantasyHome) fantasyHome.addEventListener("click", () => {
+  if (location.pathname === "/fantasy") history.replaceState({ page: "home" }, "", "/");
+});

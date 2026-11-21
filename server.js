@@ -524,7 +524,7 @@ function serveStatic(res, name, cache) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", "http://localhost");
   try {
-    if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
+    if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html" || url.pathname === "/fantasy")) {
       let made = null;
       try { if (!url.searchParams.has("nobundle")) made = require("./script-bundle").bundlePage(); } catch (error) { console.error("script bundle failed:", error); }
       if (made) send(res, 200, made.page, TYPES[".html"]); else serveStatic(res, "index.html");
