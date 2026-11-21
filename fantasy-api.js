@@ -70,9 +70,14 @@ function findPerson(people, name) {
   return rows.find((p) => samePlayer(p.name, name)) || null;
 }
 
-async function sleeperGet(path) {
-  const res = await fetch(`${SLEEPER}${path}`, {
-    headers: { Accept: "application/json", "User-Agent": "ParlayOfTheDay/1.0" },
+async function sleeperGet(path, opts = {}) {
+  const bust = opts.fresh ? `${path.includes("?") ? "&" : "?"}t=${Date.now()}` : "";
+  const res = await fetch(`${SLEEPER}${path}${bust}`, {
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "ParlayOfTheDay/1.0",
+      ...(opts.fresh ? { "Cache-Control": "no-cache", Pragma: "no-cache" } : {}),
+    },
     signal: AbortSignal.timeout(20000),
   });
   if (res.status === 404) return null;
@@ -465,7 +470,7 @@ async function packRoster(leagueId, ownerId, opts = {}) {
   const [league, users, rosters, map] = await Promise.all([
     sleeperGet(`/league/${encodeURIComponent(leagueId)}`),
     sleeperGet(`/league/${encodeURIComponent(leagueId)}/users`),
-    sleeperGet(`/league/${encodeURIComponent(leagueId)}/rosters`),
+    sleeperGet(`/league/${encodeURIComponent(leagueId)}/rosters`, { fresh: !!opts.fresh }),
     loadPlayers(),
   ]);
   if (!league) throw new Error("League not found.");
@@ -745,6 +750,7 @@ async function startSit(body, board) {
     season: body.season,
     fresh: true,
   });
+  const received = new Date().toISOString();
   const lineup = buildLineup(pack, await loadLineupContext(pack.season, pack.week, board));
   return {
     sport: pack.sport || "NFL",
@@ -754,6 +760,7 @@ async function startSit(body, board) {
     league: pack.league,
     owner: pack.owner,
     note: pack.note,
+    received,
     method: "Your Sleeper lineup stays put. Red Sit / green Start tags tell you what to change.",
     ...lineup,
   };

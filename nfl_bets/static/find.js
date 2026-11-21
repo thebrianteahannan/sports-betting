@@ -128,6 +128,15 @@ function paintFind() {
   }).catch(() => { if (board.isConnected && !board.querySelector("h2")) fillFind(board, {}); });
 }
 
+function findSameGame(match, want) {
+  const nick = (name) => String(name || "").toLowerCase().replace(/[^a-z0-9 ]/g, "").trim().split(/\s+/).pop();
+  const sides = (text) => String(text || "").split(/\s+@\s+/);
+  const left = sides(match), right = sides(want);
+  if (!want) return false;
+  if (left.length !== 2 || right.length !== 2) return String(match || "") === String(want);
+  return nick(left[0]) === nick(right[0]) && nick(left[1]) === nick(right[1]);
+}
+
 function loadedGames(people, span) {
   const saved = people.games;
   if (saved && saved.n === people.length) return saved[span];
@@ -136,7 +145,7 @@ function loadedGames(people, span) {
   const buckets = { today: new Map(), week: new Map() };
   people.forEach((person) => (person.bets || []).forEach((bet) => {
     const kick = Date.parse(bet.kickoff || "");
-    if (!bet.match || kick !== kick || (kick <= now - 6 * 60 * 60 * 1000 && bet.sport !== "PGA" && !(typeof saveSeekGame === "string" && bet.match === saveSeekGame)) || (bet.sport === "PGA" && kick <= now - 5 * 24 * 60 * 60 * 1000) || !keep.test(bet.sport || "")) return;
+    if (!bet.match || kick !== kick || (kick <= now - 6 * 60 * 60 * 1000 && bet.sport !== "PGA" && !(typeof saveSeekGame === "string" && findSameGame(bet.match, saveSeekGame))) || (bet.sport === "PGA" && kick <= now - 5 * 24 * 60 * 60 * 1000) || !keep.test(bet.sport || "")) return;
     const day = fmt.format(kick), key = `${bet.match}|${bet.kickoff}`;
     const bucket = day === today || kick <= now ? buckets.today : day > today && day <= end ? buckets.week : null;
     if (bucket && !bucket.has(key)) bucket.set(key, bet);

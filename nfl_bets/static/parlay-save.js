@@ -106,8 +106,44 @@ if (saveSeek.get("from") === "live") document.addEventListener("click", (event) 
   if (!event.target.closest || !event.target.closest("#desk-back") || !desk || desk.classList.contains("bird-on") || !document.querySelector("#desk-glass-in .find-board")) return;
   event.stopImmediatePropagation(); event.preventDefault(); window.location.href = "/live";
 }, true);
+function seekPaintGame(board, want, sport, kick, espn) {
+  const same = (match) => match === want || (typeof findSameGame === "function" && findSameGame(match, want));
+  const posted = ((window.state && state.board && state.board.games) || []).find((row) => row && same(row.match) && (!sport || !row.sport || row.sport === sport));
+  let fromBet = null;
+  (board.people || []).forEach((person) => (person.bets || []).forEach((row) => {
+    if (!row || !row.match || !same(row.match) || (sport && row.sport && row.sport !== sport)) return;
+    if (!fromBet || Date.parse(row.kickoff || "") > Date.parse(fromBet.kickoff || "")) fromBet = row;
+  }));
+  const game = posted
+    ? { ...posted, espnId: posted.espnId || espn || "" }
+    : fromBet
+      ? { ...fromBet, sport: fromBet.sport || sport, kickoff: fromBet.kickoff || kick, espnId: espn || "" }
+      : { match: want, sport, kickoff: kick, espnId: espn };
+  const teams = board.querySelector(":scope > .find-teams");
+  const list = board.querySelector(":scope > .find-list");
+  const hits = board.querySelector(":scope > .find-hits:not(.find-tray)");
+  const span = board.querySelector(":scope > .find-span");
+  if (!teams || !list || typeof paintMatch !== "function") return false;
+  if (hits) hits.replaceChildren();
+  teams.replaceChildren();
+  list.replaceChildren();
+  list.classList.remove("find-only-on");
+  if (span) { span.classList.add("find-picked"); span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); }
+  paintMatch(teams, game, board.people || [], list, hits, true);
+  const shown = teams.querySelector(".find-match");
+  if (shown && !shown.querySelector(".find-side-go")) {
+    let when = shown.querySelector(".find-when");
+    if (!when) { when = document.createElement("p"); when.className = "find-when"; shown.prepend(when); }
+    if (game.match && !when.textContent.includes(game.match)) when.textContent = [game.match, when.textContent].filter(Boolean).join(" · ");
+    const brief = teams.querySelector(".find-brief");
+    if (brief) brief.open = true;
+  }
+  return true;
+}
+
 if (saveSeekGame) {
   const bet = saveSeek.get("bet") || "", leg = `${saveSeek.get("label") || ""}|${saveSeek.get("market") || ""}`;
+  const seekSport = saveSeek.get("sport") || "", seekKick = saveSeek.get("kick") || "", seekEspn = saveSeek.get("espn") || "";
   window.deskGoing = true;
   history.replaceState(null, "", "/");
   let seekTries = 0, seekAsked = false, seekOpened = false;
@@ -117,13 +153,18 @@ if (saveSeekGame) {
     const board = document.querySelector(".find-board");
     if (!board) { if (!seekAsked) { seekAsked = true; birdMenu("find"); } return; }
     if (!seekOpened) {
-      if (!((window.state && state.board && state.board.games) || []).length && seekTries < 120) return;
-      if (bet && (!window.saveWho || (!(board.people || []).length && seekTries < 40))) return;
-      const hit = [...board.querySelectorAll('.find-games[data-span="today"] button, .find-games button')].find((node) => node.textContent.startsWith(saveSeekGame));
-      if (!hit) return;
+      if (board.querySelector(".bet-load")) return;
+      if (!(board.people || []).length && seekTries < 40) return;
+      if (bet && !window.saveWho && seekTries < 40) return;
+      const hit = [...board.querySelectorAll(".find-games button")].find((node) => {
+        const name = String(node.textContent || "").split(",")[0];
+        return String(node.textContent || "").startsWith(saveSeekGame) || (typeof findSameGame === "function" && findSameGame(name, saveSeekGame));
+      });
+      if (!hit && !((window.state && state.board && state.board.games) || []).length && seekTries < 80 && !seekEspn) return;
       seekOpened = true;
       if (bet) { saveOpen(bet); document.querySelectorAll(".find-tray.find-shut").forEach((tray) => { const fold = tray.querySelector(".find-fold"); if (fold) { saveAutoShut.delete(tray); fold.click(); } }); }
-      hit.click();
+      if (hit) hit.click();
+      else seekPaintGame(board, saveSeekGame, seekSport, seekKick, seekEspn);
       return;
     }
     const match = board.querySelector(".find-match");

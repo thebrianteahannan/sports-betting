@@ -360,6 +360,9 @@ async function fantasyQuietRefresh(token, leagueId) {
       paintFantasy(board);
       return;
     }
+    fantasyState.result.received = data.received;
+    const received = board.querySelector(".fantasy-received");
+    if (received) received.textContent = fantasyReceived(data.received);
   } catch (error) {}
   if (token === fantasyWatchToken) fantasyArmWatch();
 }
@@ -558,6 +561,13 @@ function fantasyProof(player) {
   return box;
 }
 
+function fantasyReceived(iso) {
+  const when = new Date(iso);
+  if (Number.isNaN(when.getTime())) return "";
+  const time = when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return `Sleeper sent this roster at ${time}.`;
+}
+
 function fantasyLineup(board, result) {
   const wrap = document.createElement("div");
   wrap.className = "fantasy-lineup";
@@ -566,15 +576,15 @@ function fantasyLineup(board, result) {
   meta.className = "fantasy-meta";
   meta.innerHTML = `
     <div class="fantasy-meta-top">
-      <p><b>${fantasyEsc((result.league && result.league.name) || "League")}</b>
-        · ${fantasyEsc((result.owner && (result.owner.team_name || result.owner.display_name)) || fantasyState.user)}
-        ${result.week != null ? ` · Wk ${fantasyEsc(result.week)}` : ""}</p>
+      <p class="fantasy-league-name">${fantasyEsc((result.league && result.league.name) || "League")}</p>
       <span class="fantasy-meta-acts">
         <button type="button" class="fantasy-back fantasy-reload">Reload</button>
         <button type="button" class="fantasy-back fantasy-league-switch">Pick a different league</button>
       </span>
     </div>
+    <p class="fantasy-roster-who">${fantasyEsc((result.owner && (result.owner.team_name || result.owner.display_name)) || fantasyState.user)}${result.week != null ? ` · Wk ${fantasyEsc(result.week)}` : ""}</p>
     <p class="fantasy-method">${fantasyEsc(result.method || "Projected fantasy points from Vegas lines using your Sleeper scoring.")}</p>
+    ${result.received ? `<p class="fantasy-received">${fantasyEsc(fantasyReceived(result.received))}</p>` : ""}
   `;
   const switchLeague = meta.querySelector(".fantasy-league-switch");
   if (switchLeague) {
@@ -624,10 +634,20 @@ function fantasyLineup(board, result) {
   spots.className = "fantasy-spots";
   const list = document.createElement("div");
   list.className = "fantasy-pos-cards";
+  const breakBefore = (label) => {
+    const rule = document.createElement("div");
+    rule.className = "fantasy-break";
+    rule.textContent = label;
+    list.append(rule);
+  };
   (result.start || []).forEach((player) => addPlayer(list, player, "start"));
+  if ((result.sit || []).length) breakBefore("Bench");
   (result.sit || []).forEach((player) => addPlayer(list, player, "sit"));
+  if ((result.out || []).length) breakBefore("Out");
   (result.out || []).forEach((player) => addPlayer(list, player, "out"));
+  if ((result.taxi || []).length) breakBefore("Taxi");
   (result.taxi || []).forEach((player) => addPlayer(list, player, "taxi"));
+  if ((result.ir || []).length) breakBefore("IR");
   (result.ir || []).forEach((player) => addPlayer(list, player, "ir"));
   spots.append(list);
   wrap.append(spots);

@@ -271,6 +271,13 @@
   flex: 1 1 12rem;
 }
 
+.fantasy-board .fantasy-meta p.fantasy-league-name {
+  color: #f4f7fb;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
 .fantasy-board .fantasy-meta-acts {
   display: inline-flex;
   flex-wrap: wrap;
@@ -278,7 +285,8 @@
   gap: 0.35rem;
 }
 
-.fantasy-board .fantasy-method {
+.fantasy-board .fantasy-method,
+.fantasy-board .fantasy-received {
   margin: 0.15rem 0 0;
   color: #8b97a3;
   font-size: 11px;
@@ -652,6 +660,26 @@
   min-width: 0;
 }
 
+.fantasy-board .fantasy-break {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.45rem 0 0.15rem;
+  color: #8b97a3;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.fantasy-board .fantasy-break::before,
+.fantasy-board .fantasy-break::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: rgba(155, 179, 200, 0.32);
+}
+
 #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > .fantasy-proof,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > .fantasy-proof {
   display: none !important;
@@ -752,6 +780,20 @@
   font-size: 13px !important;
   line-height: 1.15 !important;
   white-space: nowrap !important;
+}
+
+@media (min-width: 721px) {
+  #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > button.fantasy-row,
+  .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > button.fantasy-row {
+    grid-template-columns: 3.4rem minmax(0, max-content) max-content !important;
+    justify-content: start !important;
+    column-gap: 0.85rem !important;
+  }
+
+  #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .score,
+  .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .score {
+    justify-self: start;
+  }
 }
 
 /* Middle/More use the lineup|bench split, not the position lines */
