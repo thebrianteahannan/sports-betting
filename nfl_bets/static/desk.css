@@ -448,8 +448,7 @@ body.needs-member #desk-head { animation: desk-talk 0.48s ease-in-out infinite; 
   color: #04140c;
   box-shadow: 0 0 18px rgba(61, 255, 110, 0.45);
 }
-#desk.tv-full #desk-fantasy,
-body.needs-member #desk-fantasy { display: none; }
+#desk.tv-full #desk-fantasy { display: none; }
 #desk-full, #desk-menu {
   position: absolute;
   top: 0.6rem;

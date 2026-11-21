@@ -353,7 +353,7 @@ async function fantasyQuietRefresh(token, leagueId) {
   const board = fantasyBoard();
   if (!board) return;
   try {
-    const data = await fantasyPost("/api/fantasy/start-sit", { user: fantasyState.user, leagueId });
+    const data = await fantasyPost("/api/fantasy/start-sit", { user: fantasyState.user, leagueId, watch: true });
     if (token !== fantasyWatchToken || fantasyState.leagueId !== leagueId) return;
     if (fantasyStamp(data) !== fantasyStamp(fantasyState.result)) {
       fantasyState.result = data;
@@ -704,10 +704,12 @@ function fantasyLineup(board, result) {
 function paintFantasy(keep, opts) {
   window.asking = true;
   if (document.body.classList.contains("tv-zoom-on") && typeof tvZoomShut === "function") tvZoomShut();
-  if (window.goFull) goFull();
-  if (window.birdQuiet) birdQuiet();
   const desk = document.getElementById("desk");
-  if (!desk || !desk.classList.contains("tv-full")) { if (window.goFull) goFull(); }
+  const guest = document.body.classList.contains("needs-member");
+  if (guest) { if (desk && !desk.classList.contains("tv-full") && window.toggleTv) toggleTv(); }
+  else if (window.goFull) goFull();
+  if (window.birdQuiet) birdQuiet();
+  if (!desk || !desk.classList.contains("tv-full")) { if (!guest && window.goFull) goFull(); }
   if (!desk || !desk.classList.contains("tv-full")) { window.asking = false; return; }
   if (location.pathname !== "/fantasy") history.pushState({ page: "fantasy" }, "", "/fantasy");
   desk.classList.remove("bird-on", "solo", "dug");
@@ -826,7 +828,16 @@ window.addEventListener("popstate", () => {
   if (back) back.click();
 });
 
-const fantasyHome = document.getElementById("desk-home");
-if (fantasyHome) fantasyHome.addEventListener("click", () => {
+function fantasyLeave() {
   if (location.pathname === "/fantasy") history.replaceState({ page: "home" }, "", "/");
-});
+  if (!document.body.classList.contains("needs-member")) return;
+  if (window.memberCard) {
+    if (window.showGateMode) showGateMode(window.memberCard.mustChangePass ? "pass" : "trial");
+    if (window.deskGate) window.deskGate();
+    return;
+  }
+  if (window.showGate) showGate();
+}
+
+const fantasyHome = document.getElementById("desk-home");
+if (fantasyHome) fantasyHome.addEventListener("click", fantasyLeave);

@@ -238,12 +238,14 @@ async function bootMember() {
     showGate();
     gateFromUrl();
     document.documentElement.classList.remove("desk-going");
+    if (location.pathname === "/fantasy" && window.fantasyGo) fantasyGo();
     return;
   }
   const payload = await response.json();
   showMember(payload);
   if (payload.member && (payload.member.mustChangePass || payload.member.board === false)) {
     document.documentElement.classList.remove("desk-going");
+    if (location.pathname === "/fantasy" && payload.member.board === false && !payload.member.mustChangePass && window.fantasyGo) fantasyGo();
     return;
   }
   if (window.startDesk) window.startDesk();
@@ -254,7 +256,7 @@ window.fetch = async function memberAwareFetch(url, options) {
   const response = await memberFetch(url, options);
   const target = String(url);
   if (response.status === 401 && target.startsWith("/api/") && !target.startsWith("/api/me") && !document.body.classList.contains("needs-member")) showGate();
-  if (response.status === 402 && target.startsWith("/api/") && window.memberCard) showMember({ member: Object.assign({}, window.memberCard, { board: false, trial: false }), activity: [] });
+  if (response.status === 402 && target.startsWith("/api/") && window.memberCard && !document.querySelector('.rec-board[data-page="fantasy"]')) showMember({ member: Object.assign({}, window.memberCard, { board: false, trial: false }), activity: [] });
   if (response.ok && (target === "/api/archive/good" || target === "/api/picks")) refreshActivity();
   return response;
 };

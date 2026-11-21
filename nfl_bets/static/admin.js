@@ -30,7 +30,7 @@ function loginWhen(stamp) {
 }
 
 function showAdminTab(name) {
-  ["members", "notes", "laws", "errors"].forEach((id) => {
+  ["members", "notes", "laws", "errors", "fantasy"].forEach((id) => {
     const pane = document.getElementById(`admin-${id}`);
     if (pane) pane.hidden = id !== name;
     const button = document.querySelector(`[data-admin-tab="${id}"]`);
@@ -327,6 +327,7 @@ function bindAdmin() {
       showAdminTab(button.dataset.adminTab);
       if (button.dataset.adminTab === "notes") loadNotes().catch((error) => { const msg = document.getElementById("note-msg"); if (msg) msg.textContent = String(error.message || error); });
       if (button.dataset.adminTab === "laws" && window.paintLaws) window.paintLaws();
+      if (button.dataset.adminTab === "fantasy" && window.paintFantasyUse) paintFantasyUse();
     }
   });
   const admin = document.getElementById("profile-admin");
