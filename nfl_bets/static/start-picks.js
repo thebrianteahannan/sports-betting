@@ -1,6 +1,6 @@
 /** Build a bet keeps Quick add. Recommended / Games / Strategies live on the Recommended page. */
 
-let startTab = "rec", startBack = null, startUndo = null, startRandomAt = null;
+let startTab = "rec", startBack = null, startUndo = null, startRandomAt = null, startGolden = null;
 let startFavOnly = localStorage.getItem("startFavOnly") === "1";
 const startKinds = new Set(), START_KINDS = [["safe", "Safe"], ["balanced", "Balanced"], ["payout", "Payout"], ["good", "Good bet"], ["math", "Math"], ["script", "Script"], ["solid", "Steady role"], ["cushion", "Cushion"]];
 
@@ -618,12 +618,18 @@ function startRecStats() {
   const rateOf = (hit, of) => (of > 0 ? Math.round((100 * hit) / of) : null);
   // hit-hot / hit-ok / hit-cold — not "hot" alone; desk.css parks .hot as absolute desk spots.
   const toneOf = (pct) => (pct == null ? "hit-empty" : pct >= 55 ? "hit-hot" : pct >= 40 ? "hit-ok" : "hit-cold");
-  const row = (name, hit, of, tip, say = "") => {
+  const row = (name, hit, of, tip, say = "", open) => {
     const pct = rateOf(hit, of);
     const width = pct == null ? 0 : Math.max(0, Math.min(100, pct));
     const count = `${hit} of ${of}${say}`;
-    return `<div class="hit-rate ${toneOf(pct)}" title="${escHtml(tip)}"><div class="hit-rate-top"><b>${escHtml(name)}</b><strong>${pct == null ? "—" : `${pct}%`}</strong></div><div class="hit-rate-bar" aria-hidden="true"><i style="width:${width}%"></i></div><span class="hit-rate-count">${escHtml(count)}</span></div>`;
+    const tag = open ? "button" : "div";
+    return `<${tag}${open ? ` type="button"` : ""} class="hit-rate ${toneOf(pct)}${open ? " hit-rate-open" : ""}" title="${escHtml(tip)}"${open ? ` aria-label="Open Golden Tickets"` : ""}><div class="hit-rate-top"><b>${escHtml(name)}</b><strong>${pct == null ? "—" : `${pct}%`}</strong></div><div class="hit-rate-bar" aria-hidden="true"><i style="width:${width}%"></i></div><span class="hit-rate-count">${escHtml(count)}</span></${tag}>`;
   };
+  box.addEventListener("click", (event) => {
+    if (!event.target.closest(".hit-rate-open")) return;
+    startTab = "golden";
+    startPaint(1);
+  });
   const kinds = (bag) => {
     const boxOf = (key) => (bag && bag[key]) || { won: 0, lost: 0 };
     const safe = boxOf("safe"), even = boxOf("balanced");
@@ -645,12 +651,7 @@ function startRecStats() {
     });
     const tally = data.tally || {}, today = tally.today || { won: 0, lost: 0 }, ever = tally.all || { won: 0, lost: 0 };
     const golden = tally.golden || { won: 0, lost: 0, history: [] };
-    const when = (ms) => {
-      const at = new Date(ms);
-      return Number.isNaN(at.getTime()) ? "" : at.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-    };
-    const word = { won: "Won", lost: "Lost", void: "Void" };
-    const log = (golden.history || []).map((ticket) => `<p class="golden-log"><b>${escHtml(ticket.label || "")}</b><i class="${escHtml(ticket.result || "open")}">${escHtml(word[ticket.result] || "Open")}</i><span>${escHtml(when(ticket.markedAt))}</span></p>`).join("");
+    startGolden = golden;
     const score = document.createElement("div");
     score.className = "find-start-stats-score";
     score.innerHTML = [
@@ -658,14 +659,48 @@ function startRecStats() {
       row("Live", pace, all, "Recommended bets in games on now that have hit or are on pace to hit", " on pace"),
       row("Today", today.won + won, today.won + today.lost + won + lost, "Recommended bets won today, out of the ones already decided"),
       row("All time", ever.won + won, ever.won + ever.lost + won + lost, "Every recommended bet that has finished"),
-      row("Golden Ticket", golden.won, golden.won + golden.lost, "Each Golden Ticket from the moment it was marked, once the game is final."),
-      log ? `<div class="golden-log-list">${log}</div>` : "",
+      row("Golden Ticket", golden.won, golden.won + golden.lost, "Open the saved Golden Tickets.", "", true),
       kinds((tally.kinds || {}).all || {}),
     ].join("");
     box.replaceChildren(score);
   }).catch(() => {
     if (box.isConnected) box.innerHTML = `<p class="quiet">Could not load hit rates.</p>`;
   });
+  return [box];
+}
+
+function startGoldenList() {
+  const box = document.createElement("div");
+  box.className = "find-start-stats golden-tab";
+  const escHtml = (text) => (typeof esc === "function" ? esc(text) : String(text == null ? "" : text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])));
+  const when = (ms) => {
+    const at = new Date(ms);
+    return Number.isNaN(at.getTime()) ? "" : at.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  };
+  const price = (odds) => { const n = Number(odds); return Number.isFinite(n) ? (n > 0 ? `+${n}` : String(n)) : ""; };
+  const word = { won: "Won", lost: "Lost", void: "Void" };
+  const paint = (golden) => {
+    const rows = (golden && golden.history) || [];
+    const cards = rows.map((ticket) => {
+      const result = ticket.result || "open";
+      const meta = [price(ticket.odds), ticket.match].filter(Boolean).join(" · ");
+      return `<article class="golden-card"><div class="golden-card-top"><b>${escHtml(ticket.label || "")}</b><i class="${escHtml(result)}">${escHtml(word[result] || "Open")}</i></div>${meta ? `<p class="golden-card-meta">${escHtml(meta)}</p>` : ""}${ticket.markedAt ? `<p class="golden-card-when">Marked ${escHtml(when(ticket.markedAt))}</p>` : ""}${ticket.how ? `<p class="golden-card-how">${escHtml(ticket.how)}</p>` : ""}</article>`;
+    }).join("");
+    const list = document.createElement("div");
+    list.className = "golden-list";
+    list.innerHTML = cards || `<p class="quiet">No Golden Ticket has been marked yet.</p>`;
+    box.replaceChildren(list);
+  };
+  if (startGolden) paint(startGolden);
+  else box.innerHTML = `<p class="find-start-stats-load quiet">Looking up Golden Tickets.</p>`;
+  if (!startGolden) {
+    fetch("/api/live?all=1", { credentials: "same-origin" }).then((res) => res.json()).then((data) => {
+      startGolden = (data.tally && data.tally.golden) || { won: 0, lost: 0, history: [] };
+      if (box.isConnected) paint(startGolden);
+    }).catch(() => {
+      if (box.isConnected) box.innerHTML = `<p class="quiet">Could not load Golden Tickets.</p>`;
+    });
+  }
   return [box];
 }
 
@@ -698,6 +733,7 @@ function startPaint(again) {
     ["games", "Games", gameN],
     ["stacks", "Strategies", null],
     ["stats", "Hit Rates", null],
+    ["golden", "Golden", startGolden && Array.isArray(startGolden.history) ? startGolden.history.length : null],
   ].forEach(([id, label, count]) => {
     const tab = document.createElement("button");
     tab.type = "button";
@@ -717,7 +753,7 @@ function startPaint(again) {
   const leagues = typeof homeLeagues === "function" ? homeLeagues(box, leftGames()) : [];
   const td = startTab === "rec" ? startTdButton(board) : null;
   row.append(tabs);
-  if (startTab !== "stats") {
+  if (startTab !== "stats" && startTab !== "golden") {
     row.append(startSpanBar(), ...leagues);
     if (startTab === "rec") row.append(startRandomBar(board, picks));
     if ((window.memberTeams || []).length || startFavOnly) row.append(startFavBox());
@@ -730,7 +766,9 @@ function startPaint(again) {
       ? startStacks()
       : startTab === "stats"
         ? startRecStats()
-        : games;
+        : startTab === "golden"
+          ? startGoldenList()
+          : games;
   box.append(row, ...body);
   spot.after(box);
   if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 1, { quiet: true });

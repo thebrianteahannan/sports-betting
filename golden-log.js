@@ -82,15 +82,21 @@ async function settle() {
 async function tally() {
   const rows = [...(await load().catch(() => new Map())).values()];
   const decided = rows.filter((row) => row.result === "won" || row.result === "lost");
-  const history = rows.slice().sort((a, b) => (b.markedAt || 0) - (a.markedAt || 0)).slice(0, 20).map((row) => ({
+  const history = rows.slice().sort((a, b) => (b.markedAt || 0) - (a.markedAt || 0)).map((row) => ({
     id: row.id,
     markedAt: row.markedAt,
+    who: row.who || "",
     label: row.label,
+    market: row.market || "",
+    text: row.text || "",
     odds: row.odds,
     match: row.match,
     kickoff: row.kickoff,
-    how: row.how,
-    sport: row.sport,
+    how: row.how || "",
+    sport: row.sport || "",
+    kind: row.kind || "",
+    hits: row.hits,
+    n: row.n,
     result: row.result || "",
     got: row.got,
   }));

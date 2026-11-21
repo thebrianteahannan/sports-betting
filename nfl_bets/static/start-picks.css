@@ -97,13 +97,17 @@
 .find-board .find-start .hit-rate.hit-ok .hit-rate-bar > i { background: linear-gradient(90deg, #a8842a, #e7c15a); }
 .find-board .find-start .hit-rate.hit-cold .hit-rate-bar > i { background: linear-gradient(90deg, #a34545, #ff8f8f); }
 .find-board .find-start .hit-rate-count { color: #9fb3c8; font-size: 13px; font-weight: 600; }
-.find-board .find-start .golden-log-list { display: grid; gap: 0.35rem; margin: -0.35rem 0 0; }
-.find-board .find-start .golden-log { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.6rem; margin: 0; color: #d5deea; font-size: 13px; }
-.find-board .find-start .golden-log b { font-weight: 800; }
-.find-board .find-start .golden-log i { font-style: normal; font-weight: 800; color: #9fb3c8; }
-.find-board .find-start .golden-log i.won { color: #3dff6e; }
-.find-board .find-start .golden-log i.lost { color: #ff8f8f; }
-.find-board .find-start .golden-log span { color: #8b97a3; }
+:is(.rec-board, #choice-result) .find-start button.hit-rate { display: grid !important; width: 100% !important; min-height: 0 !important; margin: 0 !important; padding: 0 0 0.75rem !important; border: 0 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; color: inherit !important; font: inherit !important; letter-spacing: normal !important; text-align: left !important; text-transform: none !important; cursor: pointer; }
+:is(.rec-board, #choice-result) .find-start button.hit-rate:hover { filter: none !important; border-bottom-color: #e7c15a !important; }
+.find-board .find-start .golden-list { display: grid; gap: 0.65rem; }
+.find-board .find-start .golden-card { display: grid; gap: 0.25rem; margin: 0; padding: 0.75rem 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.find-board .find-start .golden-card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
+.find-board .find-start .golden-card-top b { color: #f4f7fb; font-size: 15px; font-weight: 800; }
+.find-board .find-start .golden-card-top i { font-style: normal; font-weight: 800; color: #9fb3c8; }
+.find-board .find-start .golden-card-top i.won { color: #3dff6e; }
+.find-board .find-start .golden-card-top i.lost { color: #ff8f8f; }
+.find-board .find-start .golden-card-meta, .find-board .find-start .golden-card-when { margin: 0; color: #9fb3c8; font-size: 13px; }
+.find-board .find-start .golden-card-how { margin: 0.15rem 0 0; color: #d5deea; font-size: 13px; line-height: 1.4; }
 :is(.rec-board, #choice-result) .find-start button.desk-game { display: grid !important; width: 100% !important; min-height: 0 !important; margin: 0 0 10px !important; padding: 12px 14px !important; border: 1px solid rgba(61, 255, 110, 0.35) !important; border-radius: 12px !important; background: #041018 !important; box-shadow: none !important; color: #f4f7fb !important; font: inherit !important; text-align: left !important; text-transform: none !important; letter-spacing: normal !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-game:hover { border-color: #3dff6e !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-rec { margin: 0 0 12px !important; }
