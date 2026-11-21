@@ -132,13 +132,19 @@ function liveLeagueBar(data, count) {
   return chips || go ? `<div class="live-leagues">${chips}${go}</div>` : "";
 }
 
-const LIVE_ZOOM_MAX = 7;
+const LIVE_ZOOM_MAX = 5;
 let liveZoom = (() => {
   try {
     const n = Number(localStorage.getItem("liveZoom"));
-    if (Number.isFinite(n)) return Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(n)));
+    if (!Number.isFinite(n)) return LIVE_ZOOM_MAX;
+    if (localStorage.getItem("liveZoomScale") === "6") return Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(n)));
+    const old = Math.max(0, Math.min(7, Math.round(n)));
+    const next = old <= 1 ? old : old <= 4 ? 2 : old - 2;
+    localStorage.setItem("liveZoomScale", "6");
+    localStorage.setItem("liveZoom", String(next));
+    return next;
   } catch (error) {}
-  return 7;
+  return LIVE_ZOOM_MAX;
 })();
 
 let liveZoomDrag = false;
@@ -151,7 +157,7 @@ function liveZoomApply(next, opts) {
   const quiet = !!(opts && opts.quiet);
   liveZoom = Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(Number(next) || 0)));
   document.body.dataset.liveZoom = String(liveZoom);
-  const mine = liveZoom >= 5, recs = liveZoom >= 6;
+  const mine = liveZoom >= 3, recs = liveZoom >= 4;
   document.body.classList.toggle("live-mine-off", !mine);
   document.body.classList.toggle("live-recs-on", recs);
   document.querySelectorAll("input.live-mine-box").forEach((box) => { box.checked = mine; });
@@ -185,7 +191,7 @@ function liveSoonCard(game) {
   const until = liveNow ? "" : (typeof gameUntilText === "function" ? gameUntilText(game.kickoff) : "");
   const meta = `<span class="live-meta">${game.total ? `<span class="live-total">O/U ${liveEsc(game.total)}</span>` : ""}${until ? `<span class="find-until live-until" data-kick="${liveEsc(game.kickoff)}">${liveEsc(until)}</span>` : ""}<a class="live-week-game" href="/?${liveEsc(new URLSearchParams({ game: game.match, from: "live" }).toString())}" title="Open this game in Build a bet">Build a bet ›</a></span>`;
   const sides = game.sport === "PGA" ? `<span class="live-side"><b>${liveEsc(game.match || "")}</b></span>` : `${liveSide(like.away, false, `${like.id}|away`)}<span class="live-at-sign">@</span>${liveSide(like.home, false, `${like.id}|home`)}`;
-  return `<div class="live-game live-soon${liveNow ? " live-pga-on" : ""}${picks.length ? " has-mine" : ""}"><div class="live-head"><span class="live-sport">${liveEsc(game.sport)}</span>${sides}<span class="live-clock live-when">${liveEsc(day)}</span>${tag}${meta}${liveRoot(like, picks)}${liveRecRow(like, picks, open)}</div></div>`;
+  return `<div class="live-game live-soon${liveNow ? " live-pga-on" : ""}${picks.length ? " has-mine" : ""}" data-id="${liveEsc(like.id)}"><div class="live-head"><span class="live-sport">${liveEsc(game.sport)}</span>${sides}<span class="live-clock live-when">${liveEsc(day)}</span>${tag}${meta}${liveRoot(like, picks)}${liveRecRow(like, picks, open)}</div></div>`;
 }
 
 function liveWeekList(week) {
@@ -230,8 +236,19 @@ function livePaint(data, quiet) {
     box.querySelectorAll("[data-k]").forEach((node) => { if (was.has(node.dataset.k) && was.get(node.dataset.k) !== node.textContent) node.classList.add("live-flash"); });
     box.querySelectorAll(".live-game[data-id]:not(.live-final)").forEach((node) => { if (!games.has(node.dataset.id)) node.classList.add("live-flash"); });
   }
+  box.querySelectorAll(".live-game[data-id]").forEach((node) => { if (liveZoomUp.has(node.dataset.id)) node.dataset.zoom = "2"; });
   document.getElementById("live-at").textContent = `Updated ${new Date(data.at || Date.now()).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}`;
   liveWhoPlace();
+}
+
+const liveZoomUp = new Set();
+
+function liveZoomLift(game) {
+  const id = game && game.dataset.id;
+  if (!id) return;
+  if (liveZoomUp.has(id)) { liveZoomUp.delete(id); delete game.dataset.zoom; return; }
+  liveZoomUp.add(id);
+  game.dataset.zoom = "2";
 }
 
 const liveWhoOpen = new Set();
@@ -366,7 +383,7 @@ document.getElementById("live").addEventListener("change", (event) => {
     return;
   }
   if (!event.target.matches("input.live-mine-box")) return;
-  liveZoomApply(event.target.checked ? Math.max(liveZoom, 5) : Math.min(liveZoom, 4));
+  liveZoomApply(event.target.checked ? Math.max(liveZoom, 3) : Math.min(liveZoom, 2));
 });
 
 document.getElementById("live").addEventListener("click", (event) => {
@@ -384,6 +401,12 @@ document.getElementById("live").addEventListener("click", (event) => {
     const id = recTag.dataset.recOpen;
     if (liveRecOpen.has(id)) liveRecOpen.delete(id); else liveRecOpen.add(id);
     if (liveLast) livePaint(liveLast, true);
+    return;
+  }
+  const lifted = liveZoom === 0 && event.target.closest(".live-game");
+  if (lifted && !event.target.closest("a, button, input, label")) {
+    event.preventDefault();
+    liveZoomLift(lifted);
     return;
   }
   const span = event.target.closest("[data-week]");

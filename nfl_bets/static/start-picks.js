@@ -191,8 +191,9 @@ function startGameOpen(board, game) {
 }
 
 function startRandomPool(board, picks) {
+  const shown = (picks || []).filter((pick) => typeof recDialOk !== "function" || recDialOk(pick));
   const index = typeof legBoostFind === "function" ? legBoostFind(board.people) : new Map(), seen = new Set();
-  return picks.map((pick) => index.get(`${pick.label}|${pick.market}|${pick.match}`) || [...index.values()].find((row) => row.bet.label === pick.label && row.bet.match === pick.match)).filter((hit) => hit && !seen.has(hit.person.key) && seen.add(hit.person.key));
+  return shown.map((pick) => index.get(`${pick.label}|${pick.market}|${pick.match}`) || [...index.values()].find((row) => row.bet.label === pick.label && row.bet.match === pick.match)).filter((hit) => hit && !seen.has(hit.person.key) && seen.add(hit.person.key));
 }
 
 function startRandomSig(legs) {
@@ -327,7 +328,7 @@ function startRandomShow(board, picks, n, legs) {
   box.querySelector(".start-random-again").addEventListener("click", () => {
     if (!startRandomAt) return;
     const next = startRandomDraw(startRandomAt.board, startRandomAt.picks, startRandomAt.n, startRandomAt.sig);
-    if (next.length) startRandomFill(box, next);
+    if (next.length >= startRandomAt.n) startRandomFill(box, next);
   });
   box.querySelector(".start-random-add").addEventListener("click", () => {
     if (!startRandomAt || !startRandomAt.legs.length) return;
@@ -339,13 +340,22 @@ function startRandomShow(board, picks, n, legs) {
 
 function startRandom(board, picks, n) {
   const legs = startRandomDraw(board, picks, n);
-  if (!legs.length) return;
+  if (legs.length < n) return;
   startRandomShow(board, picks, n, legs);
+}
+
+function startRandomSync() {
+  const old = document.querySelector("#desk-glass-in .find-start-random");
+  if (!old || !old._picks) return;
+  const board = old.closest(".find-board") || document.querySelector("#desk-glass-in .find-board");
+  if (!board) return;
+  old.replaceWith(startRandomBar(board, old._picks));
 }
 
 function startRandomBar(board, picks) {
   const most = startRandomPool(board, picks).length, bar = document.createElement("span");
   bar.className = "find-start-random";
+  bar._picks = picks;
   if (most < 2) return bar;
   bar.append(Object.assign(document.createElement("i"), { textContent: "Random parlay" }));
   [2, 3, 4, 5].filter((n) => n <= most).forEach((n) => {
@@ -416,6 +426,7 @@ function startTdButton(board) {
 
 function startDialCommit() {
   // Dial already filtered the list with CSS while dragging — do not rebuild the board (that made the thumb choppy).
+  startRandomSync();
 }
 
 const START_REC_PAGE = 24;

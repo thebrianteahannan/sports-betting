@@ -54,8 +54,13 @@ function legBoostRecLoad() {
 }
 
 function legBoostFind(people) {
-  if (legBoostRecs.people !== people) {
-    legBoostRecs.people = people; legBoostRecs.index = new Map();
+  let bets = 0;
+  (people || []).forEach((person) => { bets += (person.bets || []).length; });
+  const stamp = `${(people || []).length}:${bets}`;
+  if (legBoostRecs.people !== people || legBoostRecs.stamp !== stamp) {
+    legBoostRecs.people = people;
+    legBoostRecs.stamp = stamp;
+    legBoostRecs.index = new Map();
     (people || []).forEach((person) => person.kind === "player" && (person.bets || []).forEach((bet) => legBoostRecs.index.set(`${bet.label}|${bet.market}|${bet.match}`, { person, bet })));
   }
   return legBoostRecs.index;
