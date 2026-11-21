@@ -97,6 +97,13 @@
 .find-board .find-start .hit-rate.hit-ok .hit-rate-bar > i { background: linear-gradient(90deg, #a8842a, #e7c15a); }
 .find-board .find-start .hit-rate.hit-cold .hit-rate-bar > i { background: linear-gradient(90deg, #a34545, #ff8f8f); }
 .find-board .find-start .hit-rate-count { color: #9fb3c8; font-size: 13px; font-weight: 600; }
+.find-board .find-start .golden-log-list { display: grid; gap: 0.35rem; margin: -0.35rem 0 0; }
+.find-board .find-start .golden-log { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.6rem; margin: 0; color: #d5deea; font-size: 13px; }
+.find-board .find-start .golden-log b { font-weight: 800; }
+.find-board .find-start .golden-log i { font-style: normal; font-weight: 800; color: #9fb3c8; }
+.find-board .find-start .golden-log i.won { color: #3dff6e; }
+.find-board .find-start .golden-log i.lost { color: #ff8f8f; }
+.find-board .find-start .golden-log span { color: #8b97a3; }
 :is(.rec-board, #choice-result) .find-start button.desk-game { display: grid !important; width: 100% !important; min-height: 0 !important; margin: 0 0 10px !important; padding: 12px 14px !important; border: 1px solid rgba(61, 255, 110, 0.35) !important; border-radius: 12px !important; background: #041018 !important; box-shadow: none !important; color: #f4f7fb !important; font: inherit !important; text-align: left !important; text-transform: none !important; letter-spacing: normal !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-game:hover { border-color: #3dff6e !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-rec { margin: 0 0 12px !important; }

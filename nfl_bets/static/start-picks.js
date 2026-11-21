@@ -644,6 +644,13 @@ function startRecStats() {
       });
     });
     const tally = data.tally || {}, today = tally.today || { won: 0, lost: 0 }, ever = tally.all || { won: 0, lost: 0 };
+    const golden = tally.golden || { won: 0, lost: 0, history: [] };
+    const when = (ms) => {
+      const at = new Date(ms);
+      return Number.isNaN(at.getTime()) ? "" : at.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    };
+    const word = { won: "Won", lost: "Lost", void: "Void" };
+    const log = (golden.history || []).map((ticket) => `<p class="golden-log"><b>${escHtml(ticket.label || "")}</b><i class="${escHtml(ticket.result || "open")}">${escHtml(word[ticket.result] || "Open")}</i><span>${escHtml(when(ticket.markedAt))}</span></p>`).join("");
     const score = document.createElement("div");
     score.className = "find-start-stats-score";
     score.innerHTML = [
@@ -651,6 +658,8 @@ function startRecStats() {
       row("Live", pace, all, "Recommended bets in games on now that have hit or are on pace to hit", " on pace"),
       row("Today", today.won + won, today.won + today.lost + won + lost, "Recommended bets won today, out of the ones already decided"),
       row("All time", ever.won + won, ever.won + ever.lost + won + lost, "Every recommended bet that has finished"),
+      row("Golden Ticket", golden.won, golden.won + golden.lost, "Each Golden Ticket from the moment it was marked, once the game is final."),
+      log ? `<div class="golden-log-list">${log}</div>` : "",
       kinds((tally.kinds || {}).all || {}),
     ].join("");
     box.replaceChildren(score);

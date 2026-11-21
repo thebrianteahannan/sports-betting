@@ -219,6 +219,7 @@ async function recSample() {
   let picks = oneEach(pool, sports);
   const golden = marked.golden ? (await withSport([marked.golden]))[0] : null;
   if (golden && !picks.some((pick) => pick.golden)) picks = [golden, ...picks];
+  if (golden) require("./golden-log").note(golden).catch((error) => console.error("golden note failed:", error));
   const pick = golden || picks[0] || null;
   return { span, pick, picks, golden, more: Math.max(0, ranked.length - picks.length) };
 }
@@ -239,23 +240,20 @@ async function recTopPack(ranked, count) {
 }
 
 async function recTop(count, when) {
-  if (when === "week") {
-    const pack = await recTopPack((await recRanked(14)).ranked, count);
-    return { span: "week", ...pack };
-  }
+  const picked = await recRankedList(when);
+  const pack = await recTopPack(picked.ranked, count);
+  if (pack.golden) require("./golden-log").note(pack.golden).catch((error) => console.error("golden note failed:", error));
+  return { span: picked.span, ...pack };
+}
+
+async function recRankedList(when) {
+  if (when === "week") return { span: "week", ranked: (await recRanked(14)).ranked };
   const today = (await recRanked()).ranked;
-  if (today.length) {
-    const pack = await recTopPack(today, count);
-    return { span: "today", ...pack };
-  }
+  if (today.length) return { span: "today", ranked: today };
   const day = (at) => new Date(at - 6 * 3600000).toLocaleDateString("en-CA", { timeZone: "America/New_York" }), next = day(Date.now() + 86400000);
   const ahead = (await recRanked(14)).ranked, tomorrow = ahead.filter((pick) => day(Date.parse(pick.kickoff)) === next);
-  if (tomorrow.length) {
-    const pack = await recTopPack(tomorrow, count);
-    return { span: "tomorrow", ...pack };
-  }
-  const pack = await recTopPack(ahead, count);
-  return { span: "week", ...pack };
+  if (tomorrow.length) return { span: "tomorrow", ranked: tomorrow };
+  return { span: "week", ranked: ahead };
 }
 
 async function recLazy() {

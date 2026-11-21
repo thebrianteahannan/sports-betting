@@ -11,6 +11,16 @@ const PATHS = ["basketball/nba", "hockey/nhl", "football/nfl"];
 const KEY = "bets/live-recs-graded/";
 const NBA = { points: ["PTS"], rebounds: ["REB"], assists: ["AST"], threes: ["3PT"], "made threes": ["3PT"], steals: ["STL"], blocks: ["BLK"], "pts + reb": ["PTS", "REB"], "pts + ast": ["PTS", "AST"], "reb + ast": ["REB", "AST"], "pts + reb + ast": ["PTS", "REB", "AST"] };
 const NHL = { points: ["G", "A"], goals: ["G"], assists: ["A"], "shots on goal": ["S"], "blocked shots": ["BS"], saves: ["SV"] };
+const NFL = {
+  "receiving yards": [/receiv/i, ["YDS"]],
+  "rushing yards": [/rush/i, ["YDS"]],
+  "passing yards": [/pass/i, ["YDS"]],
+  receptions: [/receiv/i, ["REC"]],
+  "rushing attempts": [/rush/i, ["CAR"]],
+  "passing touchdowns": [/pass/i, ["TD"]],
+  "rushing touchdowns": [/rush/i, ["TD"]],
+  "receiving touchdowns": [/receiv/i, ["TD"]],
+};
 let tickAt = 0, done = null, doneAt = 0;
 
 function fold(name) {
@@ -29,22 +39,36 @@ function grade(teams, pick) {
   const label = String(pick.label || ""), market = String(pick.market || "");
   const who = fold(label.split(/\s+(?=\d+\+|Over\b|Under\b)/)[0].replace(/\s+-$/, ""));
   const plus = market.match(/^(\d+)\+\s+(.+)$/), named = market.match(/\s-\s(?:Alt\s+)?(.+)$/), line = label.match(/\b(Over|Under)\s+(\d+(?:\.\d+)?)/i);
-  const stat = ((plus && plus[2]) || (named && named[1]) || (label.match(/\b(?:Over|Under)\s+\d+(?:\.\d+)?\s+(.+)$/i) || [])[1] || "").toLowerCase();
-  const need = plus ? Number(plus[1]) : line ? Number(line[2]) : null;
+  const plusLabel = !plus && label.match(/(\d+(?:\.\d+)?)\s*\+/);
+  const stat = statName(((plus && plus[2]) || (named && named[1]) || (label.match(/\b(?:Over|Under)\s+\d+(?:\.\d+)?\s+(.+)$/i) || [])[1] || ""));
+  const need = plus ? Number(plus[1]) : plusLabel ? Number(plusLabel[1]) : line ? Number(line[2]) : null;
   if (need === null) return { result: "void" };
+  const isPlus = !!(plus || plusLabel);
   for (const team of teams) for (const group of team.groups) {
     const row = group.rows.find((one) => fold(one.name) === who);
     if (!row) continue;
-    const keys = [NBA[stat], NHL[stat]].find((set) => set && set.every((key) => group.labels.includes(key)));
-    if (!keys) return { result: "void" };
+    const nfl = NFL[stat];
+    let keys = null;
+    if (nfl) {
+      if (!nfl[0].test(group.name || "")) continue;
+      if (!nfl[1].every((key) => group.labels.includes(key))) continue;
+      keys = nfl[1];
+    } else {
+      keys = [NBA[stat], NHL[stat]].find((set) => set && set.every((key) => group.labels.includes(key)));
+      if (!keys) continue;
+    }
     const now = keys.reduce((sum, key) => sum + (Number(String(row.stats[group.labels.indexOf(key)] || "0").split("-")[0]) || 0), 0);
-    if (!plus && now === need) return { result: "void", got: now };
-    const under = line && /under/i.test(line[1]), bar = plus ? need : under ? Math.ceil(need) - 1 : Math.floor(need) + 1, short = under ? now - bar : bar - now;
+    if (!isPlus && now === need) return { result: "void", got: now };
+    const under = line && /under/i.test(line[1]), bar = isPlus ? need : under ? Math.ceil(need) - 1 : Math.floor(need) + 1, short = under ? now - bar : bar - now;
     const out = { got: now, bar, under: !!under };
     if (short <= 0) return { ...out, result: "won" };
-    return { ...out, result: "lost", short, close: short <= (keys.includes("PTS") ? 2 : 1) && (under || now >= 1) };
+    return { ...out, result: "lost", short, close: short <= (keys.includes("PTS") || keys.includes("YDS") ? 2 : 1) && (under || now >= 1) };
   }
   return { result: "void" };
+}
+
+function statName(stat) {
+  return String(stat || "").toLowerCase().replace(/\byds\b/g, "yards").replace(/\brec\b/g, "receptions").replace(/\s+/g, " ").trim();
 }
 
 async function graded() {
@@ -91,6 +115,7 @@ async function gradeTick() {
     have.set(ev.id, row);
   }
   await gradeFill().catch((error) => console.error("live recs fill failed:", error));
+  await require("./golden-log").settle().catch((error) => console.error("golden grade failed:", error));
 }
 
 async function gradeFill() {
@@ -131,7 +156,16 @@ async function gradeTally() {
   };
   const history = rows.slice().sort((a, b) => Date.parse(b.kickoff) - Date.parse(a.kickoff)).map((row) => ({ id: row.id, match: row.match, kickoff: row.kickoff, picks: row.picks || [], review: row.review || null }));
   const mine = rows.filter((row) => row.day === today);
-  return { today: count(mine), all: count(rows), kinds: { today: kinds(mine), all: kinds(rows) }, history };
+  const golden = await require("./golden-log").tally().catch(() => ({ won: 0, lost: 0, history: [] }));
+  return { today: count(mine), all: count(rows), kinds: { today: kinds(mine), all: kinds(rows) }, history, golden };
 }
 
-module.exports = { gradeTick, gradeTally };
+module.exports = { gradeTick, gradeTally, gradeSaved };
+
+async function gradeSaved(pick) {
+  const ev = await eventFor(pick.match, pick.kickoff);
+  if (!ev || ev.state !== "post") return null;
+  const teams = boxOf(await json(`${BASE}/${ev.path}/summary?event=${ev.id}`));
+  if (!teams.some((team) => team.groups.some((group) => group.rows.length))) return null;
+  return grade(teams, pick);
+}

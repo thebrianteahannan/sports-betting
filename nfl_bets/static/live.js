@@ -132,16 +132,21 @@ function liveLeagueBar(data, count) {
   return chips || go ? `<div class="live-leagues">${chips}${go}</div>` : "";
 }
 
-const LIVE_ZOOM_MAX = 5;
+const LIVE_ZOOM_MAX = 4;
 let liveZoom = (() => {
   try {
     const n = Number(localStorage.getItem("liveZoom"));
     if (!Number.isFinite(n)) return LIVE_ZOOM_MAX;
-    if (localStorage.getItem("liveZoomScale") === "6") return Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(n)));
-    const old = Math.max(0, Math.min(7, Math.round(n)));
-    const next = old <= 1 ? old : old <= 4 ? 2 : old - 2;
-    localStorage.setItem("liveZoomScale", "6");
-    localStorage.setItem("liveZoom", String(next));
+    const scale = localStorage.getItem("liveZoomScale");
+    let next = Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(n)));
+    if (scale !== "5") {
+      const old = Math.max(0, Math.min(scale === "6" ? 5 : 7, Math.round(n)));
+      next = scale === "6"
+        ? (old <= 1 ? 0 : old - 1)
+        : (old <= 1 ? 0 : old <= 4 ? 1 : old - 3);
+      localStorage.setItem("liveZoomScale", "5");
+      localStorage.setItem("liveZoom", String(next));
+    }
     return next;
   } catch (error) {}
   return LIVE_ZOOM_MAX;
@@ -157,7 +162,7 @@ function liveZoomApply(next, opts) {
   const quiet = !!(opts && opts.quiet);
   liveZoom = Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(Number(next) || 0)));
   document.body.dataset.liveZoom = String(liveZoom);
-  const mine = liveZoom >= 3, recs = liveZoom >= 4;
+  const mine = liveZoom >= 2, recs = liveZoom >= 3;
   document.body.classList.toggle("live-mine-off", !mine);
   document.body.classList.toggle("live-recs-on", recs);
   document.querySelectorAll("input.live-mine-box").forEach((box) => { box.checked = mine; });
@@ -383,7 +388,7 @@ document.getElementById("live").addEventListener("change", (event) => {
     return;
   }
   if (!event.target.matches("input.live-mine-box")) return;
-  liveZoomApply(event.target.checked ? Math.max(liveZoom, 3) : Math.min(liveZoom, 2));
+  liveZoomApply(event.target.checked ? Math.max(liveZoom, 2) : Math.min(liveZoom, 1));
 });
 
 document.getElementById("live").addEventListener("click", (event) => {

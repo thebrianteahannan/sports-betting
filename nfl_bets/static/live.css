@@ -47,7 +47,7 @@ a { color: #3dff6e; }
 .live-zoom input[type="range"]:active::-webkit-slider-thumb { cursor: grabbing; }
 .live-zoom input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border: 2px solid #04140c; border-radius: 50%; background: #3dff6e; box-shadow: 0 0 10px rgba(61, 255, 110, 0.45); cursor: grab; }
 .live-zoom input[type="range"]:active::-moz-range-thumb { cursor: grabbing; }
-/* 0 game blocks · 1 fuller rows · 2 sport and buttons · 3 my bets · 4 recommended · 5 last play
+/* 0 game blocks · 1 sport and buttons · 2 my bets · 3 recommended · 4 last play
    Only .live-pack goes multi-column — never #live, or the Less/More bar jumps when blocks become rows. */
 body[data-live-zoom="0"] .live-pack { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 8px; align-items: start; }
 body[data-live-zoom="0"] .live-pack > .live-game { margin: 0; }
@@ -66,12 +66,12 @@ body[data-live-zoom="0"] .live-game[data-zoom="2"] .live-side b { font-size: 16p
 body[data-live-zoom="0"] .live-game[data-zoom="2"] .live-side i { font-size: 22px; }
 body[data-live-zoom="0"] .live-game[data-zoom="2"] .live-clock { font-size: 13px; letter-spacing: normal; }
 body[data-live-zoom="0"] .live-game[data-zoom="2"] :is(.live-sport, .live-open, .live-stats, .live-meta) { display: inline-flex !important; }
-body[data-live-zoom="0"] .live-sport, body[data-live-zoom="1"] .live-sport { display: none !important; }
-body[data-live-zoom="0"] .live-open, body[data-live-zoom="1"] .live-open,
-body[data-live-zoom="0"] .live-stats, body[data-live-zoom="1"] .live-stats,
-body[data-live-zoom="0"] .live-meta, body[data-live-zoom="1"] .live-meta { display: none !important; }
-body[data-live-zoom="0"] .live-last, body[data-live-zoom="1"] .live-last, body[data-live-zoom="2"] .live-last, body[data-live-zoom="3"] .live-last, body[data-live-zoom="4"] .live-last,
-body[data-live-zoom="0"] .live-hurt, body[data-live-zoom="1"] .live-hurt, body[data-live-zoom="2"] .live-hurt, body[data-live-zoom="3"] .live-hurt, body[data-live-zoom="4"] .live-hurt { display: none !important; }
+body[data-live-zoom="0"] .live-sport { display: none !important; }
+body[data-live-zoom="0"] .live-open,
+body[data-live-zoom="0"] .live-stats,
+body[data-live-zoom="0"] .live-meta { display: none !important; }
+body[data-live-zoom="0"] .live-last, body[data-live-zoom="1"] .live-last, body[data-live-zoom="2"] .live-last, body[data-live-zoom="3"] .live-last,
+body[data-live-zoom="0"] .live-hurt, body[data-live-zoom="1"] .live-hurt, body[data-live-zoom="2"] .live-hurt, body[data-live-zoom="3"] .live-hurt { display: none !important; }
 .live-court { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; color: #c4cde0; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .live-court input { accent-color: #3dff6e; width: 15px; height: 15px; margin: 0; cursor: pointer; }
 .live-court.live-court-next { margin-left: 0; }
@@ -183,7 +183,6 @@ a.live-mine-leg:hover { border-color: #e7c15a; background: rgba(231, 193, 90, 0.
 .live-table tr.mine td:first-child { background: #2a2614; box-shadow: inset 3px 0 0 #e7c15a; }
 .live-table tr.mine .live-name { color: #e7c15a; }
 body.live-mine-off .live-mine:not(.live-rec) { display: none; }
-body.live-mine-off .live-game.has-mine { border-color: rgba(61, 255, 110, 0.35); }
 body.live-mine-off .live-table tr.mine td { background: none; }
 body.live-mine-off .live-table tr.mine td:first-child { background: #041018; box-shadow: none; }
 body.live-mine-off .live-table tr.mine .live-name { color: inherit; }
