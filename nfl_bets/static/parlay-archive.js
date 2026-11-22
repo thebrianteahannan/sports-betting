@@ -95,6 +95,28 @@ function archiveKeep(node, key) {
   node.addEventListener("toggle", () => { if (node.open) archiveOpenKeys.add(key); else archiveOpenKeys.delete(key); });
 }
 
+function archiveUnit(leg) {
+  const text = String(leg.text || leg.label || "");
+  const hit = text.match(/\d+(?:\.\d+)?\s*\+?\s+([a-z][a-z ]{2,30})$/i);
+  if (hit) return hit[1].replace(/\s+/g, " ").trim();
+  if (/touchdown|\btd\b/i.test(text)) return "touchdowns";
+  if (/reception/i.test(text)) return "receptions";
+  return "";
+}
+
+function archiveGot(leg) {
+  if (!leg || leg.result === "check") return "";
+  if (leg.result === "void") return leg.note || "Did not play";
+  const note = String(leg.note || "").trim();
+  if (note && !/^-?\d+(?:\.\d+)?$/.test(note)) return note;
+  const n = Number(leg.have != null && leg.have !== "" ? leg.have : note);
+  if (!Number.isFinite(n)) return "";
+  const said = Math.abs(n - Math.round(n)) < 0.05 ? String(Math.round(n)) : String(Math.round(n * 10) / 10);
+  let unit = archiveUnit(leg);
+  if (unit && Math.abs(n - 1) < 0.05 && /s$/.test(unit) && !/ss$/.test(unit)) unit = unit.slice(0, -1);
+  return `had ${said}${unit ? ` ${unit}` : ""}`;
+}
+
 function archiveCard(row) {
   const card = document.createElement("details");
   card.className = `find-done-card ${row.done.result}`;
@@ -103,13 +125,14 @@ function archiveCard(row) {
   const games = typeof gameShortList === "function" ? gameShortList(row.legs) : "";
   const price = savePrice(row.legs);
   const sum = row.legs.map((leg) => leg.text || leg.label || "").filter(Boolean).join(" · ");
-  card.innerHTML = `<summary class="find-done-head"><b>${esc(word)}</b>${price ? `<i>${esc(price)}</i>` : ""}${games ? `<span>${esc(games)}</span>` : ""}${sum ? `<em class="find-done-sum">${esc(sum)}</em>` : ""}</summary>`;
+  const got = row.legs.map(archiveGot).filter(Boolean).join(" · ");
+  card.innerHTML = `<summary class="find-done-head"><b>${esc(word)}</b>${price ? `<i>${esc(price)}</i>` : ""}${games ? `<span>${esc(games)}</span>` : ""}${sum ? `<em class="find-done-sum">${esc(sum)}</em>` : ""}${got ? `<em class="find-done-got">${esc(got)}</em>` : ""}</summary>`;
   const list = document.createElement("ul");
   row.legs.forEach((leg) => {
     const item = document.createElement("li");
     item.className = leg.result;
     const mark = { won: "✓", lost: "✗", push: "–", void: "Void", check: "?" }[leg.result] || "?";
-    const note = leg.result === "check" ? "Not in the box score" : leg.note;
+    const note = leg.result === "check" ? "Not in the box score" : archiveGot(leg);
     item.innerHTML = `<b>${esc(mark)}</b><span>${esc(leg.text || leg.label || "")}</span>${note ? `<em>${esc(note)}</em>` : ""}${leg.why ? `<p class="find-done-why">${esc(leg.why)}</p>` : ""}`;
     list.append(item);
   });

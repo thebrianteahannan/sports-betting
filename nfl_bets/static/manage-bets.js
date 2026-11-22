@@ -1,23 +1,23 @@
 /** Manage My Bets: every saved ticket, lock-as-placed, stake and line edits. */
 
 let manageFilter = "all";
-const MANAGE_ZOOM_MAX = 2;
+const MANAGE_ZOOM_MAX = 1;
 let manageZoom = (() => {
   try {
     const raw = localStorage.getItem("manageZoom");
     const ver = localStorage.getItem("manageZoomVer");
     let n = Number(raw);
     if (Number.isFinite(n)) {
-      // v5: list → squares → squares+buttons. Drop old legs/full slides.
-      if (ver !== "5") {
-        n = Math.min(MANAGE_ZOOM_MAX, Math.round(n));
+      // v6: one line, or that line plus each leg. The middle squares stop is gone.
+      if (ver !== "6") {
+        n = n >= 1 ? 1 : 0;
         localStorage.setItem("manageZoom", String(n));
-        localStorage.setItem("manageZoomVer", "5");
+        localStorage.setItem("manageZoomVer", "6");
       }
       return Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(n)));
     }
   } catch (error) {}
-  return MANAGE_ZOOM_MAX;
+  return 0;
 })();
 let manageZoomDrag = false;
 
@@ -116,162 +116,69 @@ function manageRefresh() {
   document.querySelectorAll(".find-saved .manage-pick").forEach((host) => manageFill(host));
 }
 
+function manageAmerican(odds) {
+  const n = Number(odds);
+  if (!Number.isFinite(n) || !n) return "";
+  return n > 0 ? `+${n}` : String(n);
+}
+
+function manageLegRead(leg) {
+  const raw = String(leg.label || "").split(/\s+—\s+/)[0].trim();
+  const who = String(leg.player || "").trim() || raw.split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "").trim();
+  let prop = raw;
+  if (who && prop.toLowerCase().startsWith(who.toLowerCase())) prop = prop.slice(who.length).trim();
+  if (prop.toLowerCase() === who.toLowerCase()) prop = "";
+  const game = typeof gameShort === "function" && leg.match ? gameShort(leg.match) : String(leg.match || "");
+  const when = leg.kickoff && typeof window.when === "function" ? `${window.when(leg.kickoff)} ET` : "";
+  return {
+    who,
+    prop,
+    game,
+    when,
+    odds: manageAmerican(leg.odds),
+    pct: typeof findPct === "function" ? findPct(leg.odds) : "",
+  };
+}
+
+function manageReadLine(bits, pay, mark) {
+  const line = document.createElement("p");
+  line.className = "manage-read";
+  line.innerHTML = [
+    bits.odds && `<i class="px">${esc(bits.odds)}</i>`,
+    bits.pct && `<i class="pct">${esc(bits.pct)}</i>`,
+    bits.who && `<i class="who">${esc(bits.who)}</i>`,
+    bits.prop && `<i class="prop">${esc(bits.prop)}</i>`,
+    bits.game && `<em class="game">${esc(bits.game)}</em>`,
+    bits.when && `<em class="when">${esc(bits.when)}</em>`,
+    pay && `<i class="pay">${esc(pay)}</i>`,
+    mark && `<i class="mk">${esc(mark)}</i>`,
+  ].filter(Boolean).join("");
+  return line;
+}
+
 function manageCard(row) {
   const card = document.createElement("article");
   card.className = `manage-card${row.locked ? " locked" : ""}${row.id === window.parlayOpenId ? " on" : ""}`;
   card.dataset.id = row.id;
-
-  const head = document.createElement("header");
-  head.className = "manage-card-head";
-  const title = document.createElement("h3");
-  title.textContent = manageTitle(row);
-  const badge = document.createElement("span");
-  badge.className = "manage-badge";
-  badge.textContent = row.locked ? "Locked" : "Open";
-  head.append(title, badge);
-
+  const legs = row.legs || [];
   const stake = Number(row.stake) > 0 ? Number(row.stake) : 5;
   const odds = manageOddsSaid(row);
-  const win = manageCash(stake, row.legs);
-  const games = manageGames(row);
-  const legsN = (row.legs || []).length;
   const oddsNum = manageParseOdds(odds);
-  const ticketPct = typeof findPct === "function" && oddsNum != null ? findPct(oddsNum) : "";
-  const ticketCash = typeof findCash === "function" && oddsNum != null ? findCash(oddsNum, stake) : (win > 0 ? `$${manageMoney(win)}` : "");
-  const compactWho = (leg) => {
-    const who = String(leg.player || "").trim() || String(leg.label || "").split(/\s+(?:\d|\+|Over\b|Under\b)/i)[0].trim();
-    const last = who ? who.split(/\s+/).pop() : "";
-    let prop = String(leg.label || "").trim();
-    if (who && prop.toLowerCase().startsWith(who.toLowerCase())) prop = prop.slice(who.length).trim();
-    prop = prop.replace(/\s+/g, " ").trim();
-    const game = typeof gameShort === "function" && leg.match ? gameShort(leg.match) : "";
-    return [last || who, prop].filter(Boolean).join(" ") || game || "Leg";
-  };
-  const line = document.createElement("div");
-  line.className = "manage-line";
-  const gameParts = String(games || "").split(/\s*[·,]\s*/).map((part) => part.trim()).filter(Boolean);
-  const gameSaid = !gameParts.length
-    ? ""
-    : gameParts.length === 1
-      ? gameParts[0]
-      : `${gameParts[0]} +${gameParts.length - 1}`;
-  const main = document.createElement("span");
-  main.className = "manage-line-main";
-  main.innerHTML = [
-    `<i class="who">${esc(manageTitle(row))}</i>`,
-    odds && `<b>${esc(odds)}</b>`,
-    `<em>$${esc(manageMoney(stake))}</em>`,
-    row.locked ? `<i class="lock">Locked</i>` : "",
-  ].filter(Boolean).join("");
-  const sub = document.createElement("span");
-  sub.className = "manage-line-sub";
-  sub.textContent = [legsN > 1 ? `${legsN}-leg` : (legsN === 1 ? "1-leg" : ""), gameSaid].filter(Boolean).join(" · ");
-  line.append(main);
-  if (sub.textContent) line.append(sub);
-
-  const compact = document.createElement("div");
-  compact.className = "manage-compact";
-  const top = document.createElement("div");
-  top.className = "manage-compact-top";
-  top.innerHTML = [
-    odds && `<b>${esc(odds)}</b>`,
-    ticketPct && `<i class="pct">${esc(ticketPct)}</i>`,
-    ticketCash && `<em class="pay">$${esc(String(ticketCash).replace(/^\$/, ""))}</em>`,
-    `<span class="n">${legsN}-leg · $${esc(manageMoney(stake))}</span>`,
-  ].filter(Boolean).join("");
-  const compactLegs = document.createElement("ul");
-  compactLegs.className = "manage-compact-legs";
-  (row.legs || []).forEach((leg) => {
-    const item = document.createElement("li");
-    const american = Number(leg.odds) > 0 ? `+${leg.odds}` : String(leg.odds ?? "");
-    const pct = typeof findPct === "function" ? findPct(leg.odds) : "";
-    const cash = typeof findCash === "function" ? findCash(leg.odds, stake) : "";
-    item.innerHTML = `<span class="leg-who">${esc(compactWho(leg))}</span><span class="leg-pay"><b>${esc(american)}</b>${pct ? ` · ${esc(pct)}` : ""}${cash ? ` · ${esc(cash)}` : ""}</span>`;
-    compactLegs.append(item);
-  });
-  compact.append(top, compactLegs);
-
-  const meta = document.createElement("p");
-  meta.className = "manage-meta";
-  meta.innerHTML = [
-    `${legsN}-leg`,
-    games && esc(games),
-    manageKick(row) && esc(manageKick(row)),
-    odds && `<b>${esc(odds)}</b>`,
-    `Stake $${esc(manageMoney(stake))}`,
-    win > 0 && `To win $${esc(manageMoney(win))}`,
-  ].filter(Boolean).join(" · ");
-
-  const stakeRow = document.createElement("label");
-  stakeRow.className = "manage-stake";
-  stakeRow.innerHTML = `<span>Stake $</span>`;
-  const stakeIn = document.createElement("input");
-  stakeIn.type = "number";
-  stakeIn.min = "0.01";
-  stakeIn.step = "0.01";
-  stakeIn.value = String(stake);
-  stakeIn.addEventListener("change", () => {
-    const amount = Math.round(Math.min(Math.max(Number(stakeIn.value) || 5, 0.01), 100000) * 100) / 100;
-    stakeIn.value = String(amount);
-    if (typeof savePatch === "function") savePatch(row.id, { stake: amount });
-    if (row.id === window.parlayOpenId) window.parlayStake = amount;
-    manageRefresh();
-  });
-  stakeRow.append(stakeIn);
-
-  const legs = document.createElement("ul");
-  legs.className = "manage-legs";
-  (row.legs || []).forEach((leg, index) => {
-    const item = document.createElement("li");
-    item.className = "manage-leg";
-    const top = document.createElement("div");
-    top.className = "manage-leg-top";
-    const match = document.createElement("span");
-    match.className = "manage-leg-match";
-    match.textContent = (typeof gameShort === "function" && leg.match ? gameShort(leg.match) : leg.match) || "";
-    top.append(match);
-    if (leg.market) {
-      const market = document.createElement("span");
-      market.className = "manage-leg-market";
-      market.textContent = `· ${leg.market}`;
-      top.append(market);
-    }
-
-    if (row.locked) {
-      const edits = document.createElement("div");
-      edits.className = "manage-leg-edits";
-      const labelIn = document.createElement("input");
-      labelIn.type = "text";
-      labelIn.className = "manage-leg-label";
-      labelIn.value = leg.label || "";
-      labelIn.setAttribute("aria-label", "Prop / line");
-      labelIn.addEventListener("change", () => {
-        if (typeof saveLegPatch === "function") saveLegPatch(row.id, index, { label: labelIn.value.trim() || leg.label });
-        manageRefresh();
-      });
-      const oddsIn = document.createElement("input");
-      oddsIn.type = "text";
-      oddsIn.className = "manage-leg-odds";
-      oddsIn.value = Number(leg.odds) > 0 ? `+${leg.odds}` : String(leg.odds ?? "");
-      oddsIn.setAttribute("aria-label", "Odds");
-      oddsIn.addEventListener("change", () => {
-        const n = manageParseOdds(oddsIn.value);
-        if (n == null) { oddsIn.value = Number(leg.odds) > 0 ? `+${leg.odds}` : String(leg.odds ?? ""); return; }
-        if (typeof saveLegPatch === "function") saveLegPatch(row.id, index, { odds: n });
-        manageRefresh();
-      });
-      edits.append(labelIn, oddsIn);
-      item.append(top, edits);
-    } else {
-      const line = document.createElement("p");
-      line.className = "manage-leg-line";
-      const american = Number(leg.odds) > 0 ? `+${leg.odds}` : String(leg.odds ?? "");
-      line.textContent = [leg.label, american].filter(Boolean).join(" · ");
-      item.append(top, line);
-    }
-    legs.append(item);
-  });
-
+  const pct = oddsNum != null && typeof findPct === "function" ? findPct(oddsNum) : "";
+  const cash = oddsNum != null && typeof findCash === "function" ? findCash(oddsNum, stake) : "";
+  const pay = cash ? `$${manageMoney(stake)} profits ${cash}` : "";
+  const bits = legs.length === 1
+    ? manageLegRead(legs[0])
+    : { who: manageTitle(row), prop: legs.length ? `${legs.length}-leg` : "", game: manageGames(row), when: manageKick(row), odds, pct };
+  if (legs.length === 1) { bits.odds = odds || bits.odds; bits.pct = pct || bits.pct; }
+  const more = document.createElement("div");
+  more.className = "manage-more";
+  if (legs.length > 1) legs.forEach((leg) => more.append(manageReadLine(manageLegRead(leg))));
+  const open = document.createElement("button");
+  open.type = "button";
+  open.className = "manage-open";
+  open.textContent = "Open";
+  card.append(manageReadLine(bits, pay, row.locked ? "Locked" : ""), more, open);
   const openBet = () => {
     if (row.id === window.parlayOpenId) {
       if (typeof saveCollapseForBet === "function") saveCollapseForBet();
@@ -280,71 +187,19 @@ function manageCard(row) {
     }
     if (typeof saveOpen === "function") saveOpen(row.id);
   };
-  const dropBet = () => {
-    if (typeof saveDrop === "function") saveDrop(row.id);
-    manageRefresh();
-  };
-
-  const kill = document.createElement("button");
-  kill.type = "button";
-  kill.className = "manage-x";
-  kill.setAttribute("aria-label", "Delete");
-  kill.title = "Delete";
-  kill.textContent = "×";
-  kill.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    dropBet();
-  });
-
-  const acts = document.createElement("div");
-  acts.className = "manage-acts";
-  const lock = document.createElement("button");
-  lock.type = "button";
-  lock.className = row.locked ? "manage-act unlock" : "manage-act lock";
-  lock.textContent = row.locked ? "Unlock" : "Lock in";
-  lock.addEventListener("click", () => {
-    if (row.locked) { if (typeof saveUnlock === "function") saveUnlock(row.id); }
-    else if (typeof saveLock === "function") saveLock(row.id);
-    manageRefresh();
-  });
-  const open = document.createElement("button");
-  open.type = "button";
-  open.className = "manage-act";
-  open.textContent = "Open";
-  open.addEventListener("click", openBet);
-  const track = document.createElement("button");
-  track.type = "button";
-  track.className = "manage-act";
-  track.textContent = "Track";
-  track.addEventListener("click", () => { window.location.href = "/live"; });
-  const drop = document.createElement("button");
-  drop.type = "button";
-  drop.className = "manage-act danger";
-  drop.textContent = "Delete";
-  drop.addEventListener("click", dropBet);
-  acts.append(lock, open, track, drop);
-
   card.tabIndex = 0;
   card.setAttribute("role", "button");
   card.title = "Open bet";
-  card.addEventListener("click", (event) => {
-    if (event.target.closest(".manage-x, .manage-acts, .manage-stake, .manage-leg-edits, input, button, label, a")) return;
-    const zoom = Number((card.closest(".manage-board") || {}).dataset.manageZoom);
-    if (zoom === 0 || zoom === 1) openBet();
-  });
+  card.addEventListener("click", openBet);
   card.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
     if (event.target !== card) return;
-    const zoom = Number((card.closest(".manage-board") || {}).dataset.manageZoom);
-    if (zoom !== 0 && zoom !== 1) return;
     event.preventDefault();
     openBet();
   });
-
-  card.append(kill, line, head, compact, meta, stakeRow, legs, acts);
   return card;
 }
+
 
 function manageFill(board) {
   const list = typeof saveList === "function" ? saveList() : [];

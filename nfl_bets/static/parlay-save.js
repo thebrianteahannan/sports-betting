@@ -504,9 +504,8 @@ function savePaint() {
     shut.addEventListener("click", () => { saveBetsRest(); paintParlay(); });
     const acts = document.createElement("span");
     acts.className = "find-saved-acts";
-    acts.append(fold);
-    if (betOpen || folded) acts.append(quick);
-    else acts.append(share, shut);
+    acts.append(fold, quick);
+    if (!(betOpen || folded)) acts.append(share, shut);
     head.append(acts); box.append(head);
     const bag = document.createElement("div");
     bag.className = "find-saved-list manage-pick";

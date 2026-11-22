@@ -501,6 +501,7 @@
 .find-done .find-done-card[open] > summary.find-done-head::before { content: "▾"; }
 .find-done .find-done-card:not([open]) > summary.find-done-head { margin-bottom: 0; }
 .find-done .find-done-head .find-done-sum { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: normal; font-size: 12px; color: #c9d6e3; }
+.find-done .find-done-head .find-done-got { flex: none; font-style: normal; font-weight: 800; font-size: 13px; color: #f4f7fb; white-space: nowrap; }
 .find-done ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; }
 .find-done li { display: flex; gap: 0.5rem; align-items: baseline; font-size: 13px; color: #d6e0ea; }
 .find-done li > b { min-width: 1.2rem; text-align: center; }
