@@ -93,6 +93,7 @@ function inSpan(game, span) {
   const kick = Date.parse(game.kickoff || "");
   if (!Number.isFinite(kick) || (kick <= Date.now() - 6 * 60 * 60 * 1000 && !game.kept && !(game.sport === "PGA" && kick > Date.now() - 5 * 24 * 60 * 60 * 1000))) return false;
   if (game.sport === "PGA" && kick > Date.now() - 5 * 24 * 60 * 60 * 1000) return true;
+  if (span === "open") return true;
   if (span !== "today" && span !== "week") return true;
   const day = etDay(kick);
   const today = etDay(Date.now());

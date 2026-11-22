@@ -600,7 +600,7 @@ async function loadLineupContext(season, week, board) {
     loadProjections(season, week).catch(() => ({})),
     loadWeekStats(season, week).catch(() => ({})),
     loadOwnership(season, week).catch(() => new Map()),
-    require("./choose-api").chooseBet({ list: "lookup", when: "week" }, board).catch(() => ({ people: [] })),
+    require("./choose-api").chooseBet({ list: "lookup", when: "open", sports: ["NFL"] }, board).catch(() => ({ people: [] })),
     loadPlayers().catch(() => ({})),
   ]);
   const people = ((peopleBook && peopleBook.people) || []).filter((person) => person.kind === "player");
