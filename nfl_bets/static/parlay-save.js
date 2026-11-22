@@ -2,7 +2,7 @@
 
 const SAVE_KEY = "pod-saved-parlays", SAVE_WHO = "pod-saved-parlays-who";
 window.parlayOpenId = window.parlayOpenId || "";
-let saveSendTimer = 0, saveHeld = "";
+let saveSendTimer = 0, saveHeld = "", saveRev = 0, savePending = 0;
 
 function saveList() {
   try { return JSON.parse(localStorage.getItem(SAVE_KEY) || "[]"); } catch (error) { return []; }
@@ -10,23 +10,28 @@ function saveList() {
 
 function saveStore(list) {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(list.slice(0, 20))); } catch (error) { console.log("[parlay-save] could not store", error); }
+  saveRev += 1;
   saveSend(list.slice(0, 20));
 }
 
 function saveSend(list) {
   if (!window.saveWho) return;
   clearTimeout(saveSendTimer);
-  saveSendTimer = setTimeout(() => fetch("/api/parlays", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ parlays: list }) }).catch((error) => console.log("[parlay-save] could not send", error)), 300);
+  const rev = saveRev;
+  savePending = 1;
+  saveSendTimer = setTimeout(() => fetch("/api/parlays", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ parlays: list }) }).catch((error) => console.log("[parlay-save] could not send", error)).finally(() => { if (rev === saveRev) savePending = 0; }), 300);
 }
 
 async function saveSync() {
+  const rev = saveRev;
   try {
     const response = await fetch("/api/parlays");
-    if (!response.ok) return;
+    if (!response.ok || rev !== saveRev || savePending) return;
     const { who, parlays } = await response.json();
     const local = saveList(), owner = localStorage.getItem(SAVE_WHO) || "";
     window.saveWho = who;
     localStorage.setItem(SAVE_WHO, who);
+    if (rev !== saveRev || savePending) return;
     if (!parlays.length && local.length && (!owner || owner === who)) { saveSend(local); return; }
     if (JSON.stringify(parlays) === JSON.stringify(local)) return;
     localStorage.setItem(SAVE_KEY, JSON.stringify(parlays));
@@ -504,7 +509,8 @@ function savePaint() {
     shut.addEventListener("click", () => { saveBetsRest(); paintParlay(); });
     const acts = document.createElement("span");
     acts.className = "find-saved-acts";
-    acts.append(fold, quick);
+    if (betOpen || folded) acts.append(fold);
+    acts.append(quick);
     if (!(betOpen || folded)) acts.append(share, shut);
     head.append(acts); box.append(head);
     const bag = document.createElement("div");
@@ -579,7 +585,11 @@ if (typeof paintParlay === "function") {
   paintParlay = function () {
     paintParlayBase.apply(this, arguments);
     const sig = saveSig([...parlayLeg.values()]), open = saveList().find((row) => row.id === window.parlayOpenId);
-    if (parlayLeg.size && sig !== saveHeld && (!open || saveSig(open.legs) !== sig)) { saveHeld = ""; saveNow(); }
+    if (window.parlayOpenId && open && !parlayLeg.size) {
+      saveStore(saveList().filter((row) => row.id !== window.parlayOpenId));
+      window.parlayOpenId = "";
+      saveHeld = "";
+    } else if (parlayLeg.size && sig !== saveHeld && (!open || saveSig(open.legs) !== sig)) { saveHeld = ""; saveNow(); }
     savePaint();
   };
 }
