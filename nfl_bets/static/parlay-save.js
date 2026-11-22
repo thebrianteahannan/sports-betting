@@ -477,11 +477,10 @@ function savePaint() {
     fold.className = "find-fold";
     fold.textContent = "Pick your bet …";
     fold.addEventListener("click", () => {
-      if (betOpen) {
-        window.savePeek = true;
-      } else {
-        window.saveShut = false;
-        try { localStorage.setItem("savedShut", "0"); } catch (error) { console.log("[parlay-save] could not keep fold", error); }
+      if (betOpen) window.savePeek = !window.savePeek;
+      else {
+        window.saveShut = !window.saveShut;
+        try { localStorage.setItem("savedShut", window.saveShut ? "1" : "0"); } catch (error) { console.log("[parlay-save] could not keep fold", error); }
       }
       paintParlay();
     });
@@ -508,55 +507,13 @@ function savePaint() {
     shut.addEventListener("click", () => { window.saveGone = true; box.classList.add("find-saved-gone"); });
     const acts = document.createElement("span");
     acts.className = "find-saved-acts";
-    if (folded) acts.append(fold, manage, quick);
+    acts.append(fold);
+    if (betOpen || folded) acts.append(manage, quick);
     else acts.append(share, shut);
     head.append(acts); box.append(head);
     const bag = document.createElement("div");
-    bag.className = "find-saved-list";
-    const stacks = document.createDocumentFragment(), groups = new Map();
-    list.forEach((row) => {
-      const chip = document.createElement("span");
-      chip.className = "find-saved-chip"; chip.dataset.id = row.id;
-      chip.classList.toggle("on", row.id === window.parlayOpenId);
-      chip.classList.toggle("locked", !!row.locked);
-      const go = document.createElement("button");
-      go.type = "button";
-      const games = typeof gameShortList === "function" ? gameShortList(row.legs) : "";
-      const said = saveChipSaid(row);
-      const price = row.locked && row.lockedOdds ? row.lockedOdds : savePrice(row.legs);
-      go.innerHTML = [row.locked && `<i class="lock" title="Locked in">Locked</i>`, games && `<i>${esc(games)}</i>`, `<span>${esc(said)}</span>`, price && `<b>${esc(price)}</b>`].filter(Boolean).join("");
-      go.addEventListener("click", () => { if (row.id === window.parlayOpenId) { saveNew(); return; } saveOpen(row.id); document.querySelectorAll(".find-tray.find-shut").forEach((node) => { const foldBtn = node.querySelector(".find-fold"); if (!foldBtn) return; saveAutoShut.delete(node); foldBtn.click(); }); });
-      const drop = document.createElement("button");
-      drop.type = "button";
-      drop.className = "find-saved-x";
-      drop.textContent = "×";
-      drop.setAttribute("aria-label", "Delete this saved parlay");
-      drop.addEventListener("click", () => saveDrop(row.id));
-      chip.append(go, drop);
-      if (!row.group || !row.group.id) { bag.append(chip); return; }
-      if (!groups.has(row.group.id)) {
-        const wrap = document.createElement("span");
-        wrap.className = "find-saved-group";
-        const name = document.createElement("b");
-        name.textContent = row.group.name || "Stack";
-        const wipe = document.createElement("button");
-        wipe.type = "button";
-        wipe.className = "find-saved-x";
-        wipe.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5"/></svg>`;
-        wipe.setAttribute("aria-label", "Delete this whole stack");
-        wipe.addEventListener("click", () => { const ids = saveList().filter((one) => one.group && one.group.id === row.group.id).map((one) => one.id); if (ids.includes(window.parlayOpenId)) { window.parlayOpenId = ""; parlayPick.clear(); parlayLeg.clear(); if (typeof trayRoster === "function") trayRoster(); } saveStore(saveList().filter((one) => !ids.includes(one.id))); paintParlay(); });
-        wrap.append(name, wipe);
-        groups.set(row.group.id, wrap);
-        stacks.append(wrap);
-      }
-      groups.get(row.group.id).append(chip);
-    });
-    if (groups.size) {
-      const top = document.createElement("p");
-      top.textContent = "MY STACKS";
-      stacks.prepend(top);
-      bag.append(stacks);
-    }
+    bag.className = "find-saved-list manage-pick";
+    if (typeof manageFill === "function") manageFill(bag, { inline: true });
     box.append(bag);
   });
 }

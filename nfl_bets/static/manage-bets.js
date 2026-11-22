@@ -115,11 +115,12 @@ function manageParseOdds(text) {
 function manageRefresh() {
   const board = document.querySelector('.rec-board[data-page="manage"]');
   if (board) paintManage(board);
+  document.querySelectorAll(".find-saved .manage-pick").forEach((host) => manageFill(host, { inline: true }));
 }
 
 function manageCard(row) {
   const card = document.createElement("article");
-  card.className = `manage-card${row.locked ? " locked" : ""}`;
+  card.className = `manage-card${row.locked ? " locked" : ""}${row.id === window.parlayOpenId ? " on" : ""}`;
   card.dataset.id = row.id;
 
   const head = document.createElement("header");
@@ -274,6 +275,15 @@ function manageCard(row) {
   });
 
   const openBet = () => {
+    if (card.closest(".manage-pick")) {
+      if (row.id === window.parlayOpenId) {
+        if (typeof saveCollapseForBet === "function") saveCollapseForBet();
+        if (typeof paintParlay === "function") paintParlay();
+        return;
+      }
+      if (typeof saveOpen === "function") saveOpen(row.id);
+      return;
+    }
     if (typeof birdMenu === "function") birdMenu("find");
     setTimeout(() => { if (typeof saveOpen === "function") saveOpen(row.id); }, 80);
   };
@@ -376,25 +386,32 @@ function paintManage(keep) {
     row.scrollTop = 0;
   }
 
+  manageFill(board);
+}
+
+function manageFill(board, opts) {
+  const inline = !!(opts && opts.inline);
   const list = typeof saveList === "function" ? saveList() : [];
   const shown = list.filter((item) => {
     if (manageFilter === "locked") return !!item.locked;
     if (manageFilter === "open") return !item.locked;
     return true;
   });
-
+  board.classList.add("manage-board");
   board.replaceChildren();
-  const head = document.createElement("div");
-  head.className = "manage-head";
-  const title = document.createElement("h2");
-  title.textContent = "Manage my bets";
-  const back = document.createElement("button");
-  back.type = "button";
-  back.className = "manage-back";
-  back.textContent = "← Build a bet";
-  back.addEventListener("click", () => { if (typeof birdMenu === "function") birdMenu("find"); });
-  head.append(title, back);
-
+  if (!inline) {
+    const head = document.createElement("div");
+    head.className = "manage-head";
+    const title = document.createElement("h2");
+    title.textContent = "Manage my bets";
+    const back = document.createElement("button");
+    back.type = "button";
+    back.className = "manage-back";
+    back.textContent = "← Build a bet";
+    back.addEventListener("click", () => { if (typeof birdMenu === "function") birdMenu("find"); });
+    head.append(title, back);
+    board.append(head);
+  }
   const filters = document.createElement("div");
   filters.className = "manage-filters";
   [["all", "All"], ["locked", "Locked"], ["open", "Open"]].forEach(([key, label]) => {
@@ -406,25 +423,25 @@ function paintManage(keep) {
     filters.append(chip);
   });
   filters.append(manageZoomBar());
-
-  board.append(head, filters);
+  board.append(filters);
   manageZoomApply(manageZoom, { quiet: true });
-
   if (!shown.length) {
     const none = document.createElement("div");
     none.className = "manage-empty";
     const say = document.createElement("p");
     say.textContent = list.length ? "Nothing in this filter." : "No bets saved yet.";
-    const go = document.createElement("button");
-    go.type = "button";
-    go.className = "manage-act lock";
-    go.textContent = "Build a bet";
-    go.addEventListener("click", () => { if (typeof birdMenu === "function") birdMenu("find"); });
-    none.append(say, go);
+    none.append(say);
+    if (!inline) {
+      const go = document.createElement("button");
+      go.type = "button";
+      go.className = "manage-act lock";
+      go.textContent = "Build a bet";
+      go.addEventListener("click", () => { if (typeof birdMenu === "function") birdMenu("find"); });
+      none.append(go);
+    }
     board.append(none);
     return;
   }
-
   const bag = document.createElement("div");
   bag.className = "manage-list";
   shown.forEach((item) => bag.append(manageCard(item)));

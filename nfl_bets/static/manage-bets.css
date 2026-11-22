@@ -850,3 +850,19 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+
+.rec-board > .find-saved > .find-saved-list.manage-board {
+  display: grid !important;
+  align-items: stretch;
+  align-content: start;
+  max-height: min(68vh, 34rem);
+  gap: 0.7rem;
+  padding: 0.15rem 0.1rem 0.45rem !important;
+}
+.rec-board > .find-saved.find-saved-panel > .find-saved-list.manage-board {
+  max-height: min(72vh, 36rem);
+}
+.find-saved .manage-card.on {
+  border-color: #e7c15a;
+  box-shadow: 0 0 0 1px rgba(231, 193, 90, 0.45);
+}
