@@ -82,7 +82,9 @@ if (saveSeek.get("go") === "rec") {
 if (saveSeek.get("go") === "manage") {
   window.deskGoing = true;
   history.replaceState(null, "", "/");
-  const wait = setInterval(() => { if (!window.memberReady || typeof window.birdMenu !== "function") return; clearInterval(wait); birdMenu("manage"); }, 250);
+  window.saveGone = false;
+  window.saveShut = false;
+  const wait = setInterval(() => { if (!window.memberReady || typeof window.birdMenu !== "function") return; clearInterval(wait); birdMenu("find"); }, 250);
 }
 if (saveSeek.get("td") === "1") {
   window.deskGoing = true;
@@ -440,7 +442,7 @@ function savePaint() {
       close.className = "find-close";
       close.textContent = "×";
       close.setAttribute("aria-label", "Close this parlay"); close.title = "Close this parlay";
-      close.addEventListener("click", saveNew);
+      close.addEventListener("click", () => { saveBetsRest(); saveNew(); });
       say.append(close);
     }
     const board = tray.closest(".find-board");
@@ -484,11 +486,6 @@ function savePaint() {
       }
       paintParlay();
     });
-    const manage = document.createElement("button");
-    manage.type = "button";
-    manage.className = "find-saved-manage";
-    manage.textContent = "Manage my bets";
-    manage.addEventListener("click", () => { if (typeof birdMenu === "function") birdMenu("manage"); });
     const quick = document.createElement("button");
     quick.type = "button";
     quick.className = "find-saved-quick";
@@ -504,11 +501,11 @@ function savePaint() {
     share.dataset.shareId = String((window.recTickets = window.recTickets || []).push({ ticket: pack, name: "My bets" }) - 1);
     share.hidden = !pack.legs.length;
     const shut = document.createElement("button"); shut.type = "button"; shut.className = "find-close"; shut.textContent = "×"; shut.title = "Close saved parlays"; shut.setAttribute("aria-label", shut.title);
-    shut.addEventListener("click", () => { window.saveGone = true; box.classList.add("find-saved-gone"); });
+    shut.addEventListener("click", () => { saveBetsRest(); paintParlay(); });
     const acts = document.createElement("span");
     acts.className = "find-saved-acts";
     acts.append(fold);
-    if (betOpen || folded) acts.append(manage, quick);
+    if (betOpen || folded) acts.append(quick);
     else acts.append(share, shut);
     head.append(acts); box.append(head);
     const bag = document.createElement("div");
@@ -594,10 +591,15 @@ function saveBetOpen(tray) {
   return !!(tray && !tray.hidden && !tray.classList.contains("find-shut") && (typeof parlayLeg !== "undefined" && parlayLeg.size || typeof parlayPick !== "undefined" && parlayPick.size));
 }
 
-function saveCollapseForBet() {
+function saveBetsRest() {
+  window.saveGone = false;
   window.savePeek = false;
   window.saveShut = true;
   try { localStorage.setItem("savedShut", "1"); } catch (error) { console.log("[parlay-save] could not keep fold", error); }
+}
+
+function saveCollapseForBet() {
+  saveBetsRest();
 }
 
 window.saveCollapseForBet = saveCollapseForBet;

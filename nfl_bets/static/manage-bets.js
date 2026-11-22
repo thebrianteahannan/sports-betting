@@ -113,9 +113,7 @@ function manageParseOdds(text) {
 }
 
 function manageRefresh() {
-  const board = document.querySelector('.rec-board[data-page="manage"]');
-  if (board) paintManage(board);
-  document.querySelectorAll(".find-saved .manage-pick").forEach((host) => manageFill(host, { inline: true }));
+  document.querySelectorAll(".find-saved .manage-pick").forEach((host) => manageFill(host));
 }
 
 function manageCard(row) {
@@ -275,17 +273,12 @@ function manageCard(row) {
   });
 
   const openBet = () => {
-    if (card.closest(".manage-pick")) {
-      if (row.id === window.parlayOpenId) {
-        if (typeof saveCollapseForBet === "function") saveCollapseForBet();
-        if (typeof paintParlay === "function") paintParlay();
-        return;
-      }
-      if (typeof saveOpen === "function") saveOpen(row.id);
+    if (row.id === window.parlayOpenId) {
+      if (typeof saveCollapseForBet === "function") saveCollapseForBet();
+      if (typeof paintParlay === "function") paintParlay();
       return;
     }
-    if (typeof birdMenu === "function") birdMenu("find");
-    setTimeout(() => { if (typeof saveOpen === "function") saveOpen(row.id); }, 80);
+    if (typeof saveOpen === "function") saveOpen(row.id);
   };
   const dropBet = () => {
     if (typeof saveDrop === "function") saveDrop(row.id);
@@ -353,44 +346,7 @@ function manageCard(row) {
   return card;
 }
 
-function paintManage(keep) {
-  window.asking = true;
-  if (document.body.classList.contains("tv-zoom-on") && typeof tvZoomShut === "function") tvZoomShut();
-  if (window.goFull) goFull();
-  if (window.birdQuiet) birdQuiet();
-  const desk = document.getElementById("desk");
-  if (!desk || !desk.classList.contains("tv-full")) { if (window.goFull) goFull(); }
-  if (!desk || !desk.classList.contains("tv-full")) { window.asking = false; return; }
-  desk.classList.remove("bird-on", "solo", "dug");
-  if (window.tvForce) tvForce();
-  if (window.tvPush) tvPush();
-  window.recOpen = false;
-  const guide = document.getElementById("bird-guide");
-  if (guide) guide.hidden = true;
-  if (window.tvTickStay) tvTickStay();
-  else {
-    const tick = document.getElementById("tv-tick");
-    if (tick) tick.hidden = true;
-  }
-  const row = document.getElementById("desk-glass-in");
-  if (!row) return;
-  let board = keep && keep.isConnected ? keep : null;
-  if (!board) {
-    document.querySelectorAll(".rec-board").forEach((node) => node.remove());
-    board = document.createElement("div");
-    board.className = "rec-board find-board manage-board";
-    board.dataset.page = "manage";
-    const hold = document.getElementById("desk-hold");
-    if (hold) [...row.children].forEach((node) => hold.append(node));
-    row.append(board);
-    row.scrollTop = 0;
-  }
-
-  manageFill(board);
-}
-
-function manageFill(board, opts) {
-  const inline = !!(opts && opts.inline);
+function manageFill(board) {
   const list = typeof saveList === "function" ? saveList() : [];
   const shown = list.filter((item) => {
     if (manageFilter === "locked") return !!item.locked;
@@ -399,19 +355,6 @@ function manageFill(board, opts) {
   });
   board.classList.add("manage-board");
   board.replaceChildren();
-  if (!inline) {
-    const head = document.createElement("div");
-    head.className = "manage-head";
-    const title = document.createElement("h2");
-    title.textContent = "Manage my bets";
-    const back = document.createElement("button");
-    back.type = "button";
-    back.className = "manage-back";
-    back.textContent = "← Build a bet";
-    back.addEventListener("click", () => { if (typeof birdMenu === "function") birdMenu("find"); });
-    head.append(title, back);
-    board.append(head);
-  }
   const filters = document.createElement("div");
   filters.className = "manage-filters";
   [["all", "All"], ["locked", "Locked"], ["open", "Open"]].forEach(([key, label]) => {
@@ -431,14 +374,6 @@ function manageFill(board, opts) {
     const say = document.createElement("p");
     say.textContent = list.length ? "Nothing in this filter." : "No bets saved yet.";
     none.append(say);
-    if (!inline) {
-      const go = document.createElement("button");
-      go.type = "button";
-      go.className = "manage-act lock";
-      go.textContent = "Build a bet";
-      go.addEventListener("click", () => { if (typeof birdMenu === "function") birdMenu("find"); });
-      none.append(go);
-    }
     board.append(none);
     return;
   }
@@ -448,4 +383,3 @@ function manageFill(board, opts) {
   board.append(bag);
 }
 
-window.paintManage = paintManage;

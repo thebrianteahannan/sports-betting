@@ -851,6 +851,13 @@
   text-transform: uppercase;
 }
 
+#desk.tv-full #desk-glass .find-saved.find-saved-shut > .manage-pick,
+.find-saved.find-saved-shut > .manage-pick,
+#desk.tv-full #desk-glass .find-saved.find-saved-gone > .manage-pick,
+.find-saved.find-saved-gone > .manage-pick {
+  display: none !important;
+}
+
 .rec-board > .find-saved > .find-saved-list.manage-board {
   display: grid !important;
   align-items: stretch;

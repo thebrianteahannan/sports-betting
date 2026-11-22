@@ -155,7 +155,8 @@ function hangAct(kind) {
   if (kind === "mine") {
     window.saveGone = false;
     window.saveShut = false;
-    if (window.birdMenu) birdMenu("manage");
+    if (window.birdMenu) birdMenu("find");
+    if (typeof hangMine === "function") hangMine();
     return;
   }
   if (kind === "fantasy" && window.birdMenu) { birdMenu("fantasy"); return; }
