@@ -165,25 +165,26 @@ function liveZoomApply(next, opts) {
   const mine = liveZoom >= 2, recs = liveZoom >= 3;
   document.body.classList.toggle("live-mine-off", !mine);
   document.body.classList.toggle("live-recs-on", recs);
-  document.querySelectorAll("input.live-mine-box").forEach((box) => { box.checked = mine; });
   // While dragging, leave the thumb where the finger is — rewriting value makes it choppy.
   if (!quiet && !liveZoomDrag) {
     document.querySelectorAll("input.live-zoom-range").forEach((box) => { box.value = String(liveZoom); });
   }
   try {
     localStorage.setItem("liveZoom", String(liveZoom));
-    localStorage.setItem("liveMine", mine ? "1" : "0");
     localStorage.setItem("liveRecs", recs ? "1" : "0");
   } catch (error) { console.log("[live] could not keep the detail slider", error); }
 }
 
+let liveOnlyMine = false;
+try { liveOnlyMine = localStorage.getItem("liveOnlyMine") === "1"; } catch (error) {}
+
 function liveFilters() {
-  const mine = document.body.classList.contains("live-mine-off") ? "" : " checked";
+  const mine = liveOnlyMine ? " checked" : "";
   const td = (!liveLeagues.size || liveLeagues.has("NFL"))
     ? `<a class="live-td-go" href="/?${liveEsc(new URLSearchParams({ td: "1", from: "live" }).toString())}" title="See who is most likely to score a touchdown">Anytime TDs ›</a>`
     : "";
   const zoom = `<label class="live-zoom"><span>Less</span><input type="range" class="live-zoom-range" min="0" max="${LIVE_ZOOM_MAX}" step="any" value="${liveZoom}" aria-valuemin="0" aria-valuemax="${LIVE_ZOOM_MAX}" aria-valuenow="${liveZoom}" aria-label="Show more or less on each game"/><span>More</span></label>`;
-  return `<p class="live-filters">${td}${zoom}<label class="live-court"><input type="checkbox" class="live-mine-box"${mine}/> My bets</label></p>`;
+  return `<p class="live-filters">${td}${zoom}<label class="live-court"><input type="checkbox" class="live-mine-box"${mine}/> Show only my bets</label></p>`;
 }
 
 const liveDayKey = (when) => new Date(when).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
@@ -214,6 +215,10 @@ function liveHasMine(game) {
   return liveMine(like).length > 0;
 }
 
+function liveOnly(list) {
+  return liveOnlyMine ? (list || []).filter(liveHasMine) : (list || []);
+}
+
 function livePaint(data, quiet) {
   liveLast = data;
   liveParlayTally([...(data.live || []), ...(data.done || [])]);
@@ -221,21 +226,29 @@ function livePaint(data, quiet) {
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => liveSlide.set(node.dataset.slide, node.scrollLeft));
   const was = new Map([...box.querySelectorAll("[data-k]")].map((node) => [node.dataset.k, node.textContent])), games = new Set([...box.querySelectorAll(".live-game[data-id]")].map((node) => node.dataset.id)), first = quiet || !box.querySelector(".live-game, h2");
   const keep = (game) => !liveLeagues.size || liveLeagues.has(game.sport);
-  const live = (data.live || []).filter(keep), done = (data.done || []).filter(keep);
+  const liveAll = (data.live || []).filter(keep), doneAll = (data.done || []).filter(keep);
   const board = (data.week || []).filter(keep), today = liveDayKey(Date.now());
   const pgaOn = (game) => game.sport === "PGA" && Date.parse(game.kickoff) <= Date.now();
-  const pgaLive = board.filter(pgaOn);
-  const week = board.filter((game) => liveDayKey(game.kickoff) > today || pgaOn(game));
-  const soon = board.filter((game) => liveDayKey(game.kickoff) === today && Date.parse(game.kickoff) > Date.now());
-  const next = (data.week || []).length ? (soon.length ? `<h2>Up next today, ${soon.length} ${soon.length === 1 ? "game" : "games"}</h2>${livePack(soon.map(liveSoonCard).join(""))}` : "") : liveNext((data.next || []).filter(keep));
-  const past = done.filter((game) => liveDayKey(game.when) !== today), ended = done.filter((game) => liveDayKey(game.when) === today);
+  const pgaAll = board.filter(pgaOn);
+  const weekAll = board.filter((game) => liveDayKey(game.kickoff) > today || pgaOn(game));
+  const soonAll = board.filter((game) => liveDayKey(game.kickoff) === today && Date.parse(game.kickoff) > Date.now());
+  const nextAll = (data.week || []).length ? [] : (data.next || []).filter(keep);
+  const pastAll = doneAll.filter((game) => liveDayKey(game.when) !== today), endedAll = doneAll.filter((game) => liveDayKey(game.when) === today);
+  const live = liveOnly(liveAll), pgaLive = liveOnly(pgaAll), week = liveOnly(weekAll), soon = liveOnly(soonAll), past = liveOnly(pastAll), ended = liveOnly(endedAll);
+  const none = `<p class="live-note">None of these games are in your bets.</p>`;
+  const next = (data.week || []).length ? (soon.length ? `<h2>Up next today, ${soon.length} ${soon.length === 1 ? "game" : "games"}</h2>${livePack(soon.map(liveSoonCard).join(""))}` : "") : liveNext(liveOnly(nextAll));
   const final = (day, list) => list.length ? `<h2>Final ${day}, ${list.length} ${list.length === 1 ? "game" : "games"}</h2>${livePack(list.map(liveGame).join(""))}` : "";
   const hist = ((data.tally || {}).history || []), histIds = new Set(hist.map((row) => String(row.id)));
   const liveCount = live.length + pgaLive.length;
-  const bar = liveLeagueBar(data, { past: past.filter((game) => !histIds.has(String(game.id))).length + hist.length, today: liveCount + ended.length + ((data.week || []).length ? soon.length : (data.next || []).filter(keep).length), week: week.length });
+  const todayCount = liveAll.length + pgaAll.length + endedAll.length + ((data.week || []).length ? soonAll.length : nextAll.length);
+  const bar = liveLeagueBar(data, { past: pastAll.filter((game) => !histIds.has(String(game.id))).length + hist.length, today: todayCount, week: weekAll.length });
   const filters = liveFilters();
-  const liveBlock = liveCount ? `<h2>Live now, ${liveCount} ${liveCount === 1 ? "game" : "games"}</h2>${livePack(live.map(liveGame).join("") + pgaLive.map(liveSoonCard).join(""))}` : `<p class="live-note">No games are live right now.</p>`;
-  box.innerHTML = liveSpan === "week" ? `${bar}${filters}${week.length ? liveWeekList(week) : `<p class="live-note">No games this week.</p>`}` : liveSpan === "past" ? `${bar}${filters}${(final("yesterday", past) + liveHistory(hist)) || `<p class="live-note">No past games to show.</p>`}` : `${bar}${filters}${liveBlock}${next}<div class="live-today-recap">${liveHistory(hist.filter((row) => liveDayKey(row.kickoff) === today), true)}</div>${final("today", ended)}`;
+  const liveBlock = liveCount ? `<h2>Live now, ${liveCount} ${liveCount === 1 ? "game" : "games"}</h2>${livePack(live.map(liveGame).join("") + pgaLive.map(liveSoonCard).join(""))}` : (liveOnlyMine ? "" : `<p class="live-note">No games are live right now.</p>`);
+  const recap = liveOnlyMine ? "" : `<div class="live-today-recap">${liveHistory(hist.filter((row) => liveDayKey(row.kickoff) === today), true)}</div>`;
+  const todayBody = `${liveBlock}${next}${recap}${final("today", ended)}`;
+  const weekBody = week.length ? liveWeekList(week) : (liveOnlyMine && weekAll.length ? none : `<p class="live-note">No games this week.</p>`);
+  const pastBody = (final("yesterday", past) + (liveOnlyMine ? "" : liveHistory(hist))) || (liveOnlyMine && pastAll.length ? none : `<p class="live-note">No past games to show.</p>`);
+  box.innerHTML = liveSpan === "week" ? `${bar}${filters}${weekBody}` : liveSpan === "past" ? `${bar}${filters}${pastBody}` : `${bar}${filters}${todayBody || (liveOnlyMine ? none : `<p class="live-note">No games are live right now.</p>`)}`;
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => { const left = liveSlide.get(node.dataset.slide); if (left) node.scrollLeft = left; });
   if (!first) {
     box.querySelectorAll("[data-k]").forEach((node) => { if (was.has(node.dataset.k) && was.get(node.dataset.k) !== node.textContent) node.classList.add("live-flash"); });
@@ -388,7 +401,9 @@ document.getElementById("live").addEventListener("change", (event) => {
     return;
   }
   if (!event.target.matches("input.live-mine-box")) return;
-  liveZoomApply(event.target.checked ? Math.max(liveZoom, 2) : Math.min(liveZoom, 1));
+  liveOnlyMine = event.target.checked;
+  try { localStorage.setItem("liveOnlyMine", liveOnlyMine ? "1" : "0"); } catch (error) {}
+  if (liveLast) livePaint(liveLast, true);
 });
 
 document.getElementById("live").addEventListener("click", (event) => {
