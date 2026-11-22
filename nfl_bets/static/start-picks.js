@@ -82,6 +82,7 @@ function startTeam(board, pick) {
   const fold = (text) => typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase();
   const want = fold(side), nickFold = fold(nick);
   const team = (board.people || []).find((person) => person.kind === "team" && (fold(person.name) === want || (nickFold && fold(person.name).endsWith(` ${nickFold}`))));
+  if (!board || typeof board.querySelector !== "function") { if (side && typeof legSeek === "function") legSeek(side); return; }
   const list = board.querySelector(".find-list"), hits = board.querySelector(":scope > .find-hits:not(.find-tray)"), roster = board.querySelector(":scope > .find-roster");
   if (team && list && hits && typeof showFind === "function") { showFind(list, hits, team, roster, board.people); return; }
   if (side && typeof legSeek === "function") legSeek(side);
@@ -169,7 +170,7 @@ function startBetGo(board, pick, mode) {
 
 function startBetAsk(board, pick, card) {
   const open = card.querySelector(".desk-rec-ask");
-  document.querySelectorAll(".find-start .desk-rec-ask").forEach((node) => node.remove());
+  document.querySelectorAll(".find-start .desk-rec-ask, #desk-games .desk-rec-ask").forEach((node) => node.remove());
   if (open) return;
   if (!parlayLeg.size) { startBetGo(board, pick, "new"); return; }
   const ask = document.createElement("span");
@@ -185,6 +186,7 @@ function startBet(board, pick) {
 }
 
 function startGameOpen(board, game) {
+  if (!board || typeof board.querySelector !== "function") { if (typeof homeGamesOpen === "function") homeGamesOpen(game); return; }
   let bet = null;
   (board.people || []).some((person) => (person.bets || []).some((one) => (one.match === game.match ? (bet = one) : false)));
   if (bet) startOpen(board, bet); else homeGamesOpen(game);
@@ -345,11 +347,12 @@ function startRandom(board, picks, n) {
 }
 
 function startRandomSync() {
-  const old = document.querySelector("#desk-glass-in .find-start-random");
-  if (!old || !old._picks) return;
-  const board = old.closest(".find-board") || document.querySelector("#desk-glass-in .find-board");
-  if (!board) return;
-  old.replaceWith(startRandomBar(board, old._picks));
+  document.querySelectorAll("#desk-glass-in .find-start-random, #desk-games .find-start-random").forEach((old) => {
+    if (!old._picks) return;
+    const board = old.closest(".find-board") || document.querySelector("#desk-glass-in .find-board") || (typeof homePickBoardNow === "function" ? homePickBoardNow() : null);
+    if (!board) return;
+    old.replaceWith(startRandomBar(board, old._picks));
+  });
 }
 
 function startRandomBar(board, picks) {
@@ -473,6 +476,7 @@ function startRecCard(board, pick, index) {
   card.append(actions);
   card.addEventListener("click", (event) => {
     if (event.target.closest(".bet-kind, .desk-rec-golden-tag")) return;
+    if (document.body.classList.contains("needs-member")) { const join = document.getElementById("gate-join"); if (join) join.click(); return; }
     const go = event.target.closest("[data-bet-go]");
     if (go) { card.querySelectorAll(".desk-rec-ask").forEach((node) => node.remove()); startBetGo(board, pick, go.dataset.betGo); return; }
     if (event.target.closest(".desk-rec-team")) { startTeam(board, pick); return; }
@@ -503,7 +507,7 @@ function startRecMoreSync(wrap, more, pool, shown) {
   more.dataset.scroll = "1";
 }
 
-function startRecFeed(board, box) {
+function startRecFeed(board, box, root) {
   const games = leftGames();
   const pool = startRecPool(games);
   const when = startSpan === "week" ? "this week" : "tonight";
@@ -541,7 +545,7 @@ function startRecFeed(board, box) {
   wrap._recMoreSync = () => startRecMoreSync(wrap, more, pool, shown);
   paintChunk();
   if (pool.picks.length > START_REC_PAGE) {
-    const glass = document.getElementById("desk-glass-in");
+    const glass = root || document.getElementById("desk-glass-in");
     const watch = new IntersectionObserver((rows) => {
       if (!rows.some((row) => row.isIntersecting) || !wrap.isConnected) return;
       if (more.dataset.scroll !== "1") return;
@@ -554,9 +558,9 @@ function startRecFeed(board, box) {
   return { recs, picks: pool.picks, all: pool.picks };
 }
 
-function startRecs(board, box) {
+function startRecs(board, box, root) {
   const left = leftGames(), when = startSpan === "week" ? "this week" : "today";
-  const { recs, picks, all } = startRecFeed(board, box);
+  const { recs, picks, all } = startRecFeed(board, box, root);
   const games = homeGameRows(left, box).filter((node) => !startFavOnly || !node.startGame || startFavGame(node.startGame.match)).map((node) => {
     if (!node.classList.contains("desk-game") || node.classList.contains("desk-game-live")) return node;
     const copy = node.cloneNode(true), game = node.startGame;
@@ -747,6 +751,7 @@ function startGoldenList() {
 
 function startPaint(again) {
   if (startTdOpen()) return;
+  if (typeof startHomeStrip === "function") startHomeStrip();
   document.querySelectorAll(".find-start").forEach((node) => node.remove());
   const spot = startSpot(), board = spot && spot.closest(".find-board");
   if (!spot || !board || typeof homeRecRows !== "function") return;
@@ -785,7 +790,7 @@ function startPaint(again) {
       tab.innerHTML = `${label} <i class="desk-tab-n">${count}</i>`;
       tab.setAttribute("aria-label", `${label} ${count}`);
     }
-    tab.addEventListener("click", () => { startTab = id; startPaint(1); });
+    tab.addEventListener("click", () => { startTab = id; if ((id === "rec" || id === "games") && typeof homeGamesTab !== "undefined") homeGamesTab = id; startPaint(1); });
     tabs.append(tab);
   });
   box.dataset.stacks = startStackKey();

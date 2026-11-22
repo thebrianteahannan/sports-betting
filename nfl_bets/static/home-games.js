@@ -24,7 +24,9 @@ function homeGamesLoad() {
   if (typeof loadFind !== "function") return;
   homeGamesAt = Date.now();
   loadFind("today").then((data) => {
-    homeGamesList = loadedGames(Array.isArray(data && data.people) ? data.people : [], "today");
+    const people = Array.isArray(data && data.people) ? data.people : [];
+    homeGamesList = loadedGames(people, "today");
+    if (startSpan !== "week") homePickBoard = { span: "today", at: Date.now(), people };
     homeGamesPaint();
   }).catch((error) => { homeGamesAt = 0; console.log("[home-games] could not load", error); });
 }
@@ -89,8 +91,9 @@ function startSpanBar() {
       startSpan = id;
       try { localStorage.setItem("startSpan", id === "week" ? "week" : ""); } catch (error) {}
       homeRecs = null;
-      if (id === "week") { chip.textContent = "Looking up…"; startWeekLoad(() => { if (typeof startPaint === "function") startPaint(1); }); return; }
+      if (id === "week") startWeekLoad(() => { if (typeof startPaint === "function") startPaint(1); });
       if (typeof startPaint === "function") startPaint(1);
+      else startHomeStrip();
     });
     bar.append(chip);
   });
@@ -190,7 +193,38 @@ function homeSharedRow(item) {
   return row;
 }
 
-let homeGamesTab = "rec", homeRecs = null;
+let homeGamesTab = "rec", homeRecs = null, homePickBoard = null;
+
+function homePickBoardNow() {
+  const live = document.querySelector("#desk-glass-in .find-board");
+  if (live && (live.people || []).length) return live;
+  if (homePickBoard && (homePickBoard.people || []).length) return homePickBoard;
+  return { people: [] };
+}
+
+function homePickBoardLoad() {
+  if (typeof loadFind !== "function") return;
+  const span = startSpan === "week" ? "week" : "today";
+  const live = document.querySelector("#desk-glass-in .find-board");
+  if (live && (live.people || []).length) return;
+  if (homePickBoard && homePickBoard.span === span && (homePickBoard.loading || ((homePickBoard.people || []).length && Date.now() - homePickBoard.at < 10 * 60 * 1000))) return;
+  homePickBoard = { span, loading: true, at: Date.now(), people: (homePickBoard && homePickBoard.span === span && homePickBoard.people) || [] };
+  loadFind(span).then((data) => {
+    if (!homePickBoard || homePickBoard.span !== span) return;
+    homePickBoard = { span, at: Date.now(), people: (data && data.people) || [] };
+    const box = document.getElementById("desk-games");
+    if (!box || box.hidden || startHomeStrip.busy) { if (box) box.dataset.sig = ""; return; }
+    box.dataset.sig = "";
+    homeGamesPaint();
+  }).catch(() => { if (homePickBoard && homePickBoard.span === span) homePickBoard.loading = false; });
+}
+
+function startHomeStrip() {
+  const home = document.getElementById("desk-games");
+  if (!home || home.hidden || startHomeStrip.busy) return;
+  startHomeStrip.busy = true;
+  try { homeGamesPaint(); } finally { startHomeStrip.busy = false; }
+}
 
 function homeRecsLoad(forceWhen) {
   const guest = document.body.classList.contains("needs-member");
@@ -428,7 +462,9 @@ function homeLeagueCounts(games) {
 function homeLeagues(box, games) {
   const leagues = homeLeagueList(games), on = homeLeagueOn(games);
   if (leagues.length < 2) return [];
-  const counts = homeGamesTab === "rec" || (typeof startTab === "string" && startTab === "rec") ? homeLeagueCounts(games) : null;
+  const onHome = box && box.id === "desk-games";
+  const showCounts = onHome ? homeGamesTab === "rec" : (homeGamesTab === "rec" || (typeof startTab === "string" && startTab === "rec"));
+  const counts = showCounts ? homeLeagueCounts(games) : null;
   const row = document.createElement("span");
   row.className = "desk-games-leagues";
   ["", ...leagues].forEach((league) => {
@@ -530,6 +566,55 @@ function homeGamesLeft() {
   return homeGamesList.some((game) => { const kick = Date.parse(game.kickoff || ""); return kick > now || (game.sport === "PGA" && kick > now - 5 * 24 * 60 * 60 * 1000); });
 }
 
+function startStrip(box) {
+  const tab = homeGamesTab === "games" ? "games" : "rec";
+  const board = homePickBoardNow();
+  const built = startRecs(board, box, box);
+  const gameNodes = built.games, picks = built.picks, all = built.all, recs = built.recs;
+  const head = document.createElement("div");
+  head.className = "desk-games-head";
+  const tabs = document.createElement("span");
+  tabs.className = "desk-games-tabs";
+  const gameN = gameNodes.filter((node) => node.classList.contains("desk-game")).length;
+  [["rec", "Recommended", picks.length], ["games", "Games", gameN]].forEach(([id, label, count]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `desk-games-tab${tab === id ? " on" : ""}`;
+    button.innerHTML = `${label} <i class="desk-tab-n">${count}</i>`;
+    button.setAttribute("aria-pressed", String(tab === id));
+    button.setAttribute("aria-label", `${label} ${count}`);
+    button.addEventListener("click", () => {
+      if (homeGamesTab === id) return;
+      homeGamesTab = id;
+      if (typeof startTab !== "undefined") startTab = id;
+      box.dataset.sig = "";
+      box.scrollTop = 0;
+      homeGamesPaint();
+    });
+    tabs.append(button);
+  });
+  head.append(tabs, startSpanBar());
+  const leagues = homeLeagues(box, leftGames());
+  if (leagues.length) head.append(...leagues);
+  if (tab === "rec" && typeof startRandomBar === "function") {
+    const random = startRandomBar(board, picks);
+    if (random) head.append(random);
+  }
+  if ((typeof startFavOnly !== "undefined" && startFavOnly) || (window.memberTeams || []).length) {
+    if (typeof startFavBox === "function") head.append(startFavBox());
+  }
+  if (tab === "rec") {
+    const live = document.querySelector("#desk-glass-in .find-board");
+    const td = (live && (live.people || []).length && typeof startTdButton === "function" && startTdButton(live)) || homeTdChip(leftGames());
+    if (td) head.append(td);
+  }
+  const dial = tab === "rec" && typeof recDialBar === "function" ? recDialBar(typeof startDialCommit === "function" ? startDialCommit : null) : null;
+  const body = tab === "games" ? gameNodes : [...(dial ? [dial] : []), ...(all.length && typeof startKindBar === "function" ? [startKindBar(all)] : []), ...recs];
+  box.replaceChildren(head, ...body);
+  if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 1, { quiet: true });
+  if (tab === "rec" && typeof recDialCountPaint === "function") recDialCountPaint(typeof recDialCountOf === "function" ? recDialCountOf(all) : { golden: 0, all: all.length });
+}
+
 function homeGamesTabs(box, games) {
   const tabs = document.createElement("span");
   tabs.className = "desk-games-tabs";
@@ -567,12 +652,20 @@ function homeGamesPaint() {
   const menu = document.getElementById("desk-menu"), at = box.classList.contains("desk-games-tall") && menu ? Math.ceil(menu.getBoundingClientRect().bottom - desk.getBoundingClientRect().top) + 8 : top;
   box.style.top = `${at}px`;
   document.body.style.setProperty("--home-games-top", `${at + 12}px`);
-  if (!fresh.length && homeGamesTab === "rec") homeRecsLoad();
+  if (!fresh.length) {
+    if (startSpan === "week") startWeekLoad();
+    homeRecsLoad(startSpan === "week" ? "week" : "auto");
+    homePickBoardLoad();
+  }
   homeLogosLoad();
   homeLeagueSync();
-  const sig = `${homeLeagueOpen}|` + `${homeLeagueOn(games)}|${homeGamesTab}|${(window.memberTeams || []).join(",")}|${homeRecs ? `${homeRecs.at}${homeRecs.loading ? "…" : ""}` : ""}|${fresh.length ? `shared:${fresh.map((item) => item.id).join(";")}` : games.map((game) => `${game.match}|${game.kickoff}`).join(";")}${left.length ? "" : `|${homeLater.at}`}`;
+  const kinds = typeof startKinds !== "undefined" ? [...startKinds].sort().join(",") : "";
+  const favOn = typeof startFavOnly !== "undefined" && startFavOnly ? "f" : "";
+  const peopleN = homePickBoard && (homePickBoard.people || []).length;
+  const sig = `${homeLeagueOpen}|${homeLeague}|${homeGamesTab}|${startSpan}|${startWeekLoading ? "w" : ""}|${startWeekAt}|${favOn}|${kinds}|${peopleN}|${(window.memberTeams || []).join(",")}|${homeRecs ? `${homeRecs.at}${homeRecs.loading ? "…" : ""}:${(homeRecs.picks || []).length}` : ""}|${fresh.length ? `shared:${fresh.map((item) => item.id).join(";")}` : games.map((game) => `${game.match}|${game.kickoff}`).join(";")}${left.length ? "" : `|${homeLater.at}`}`;
   if (box.dataset.sig === sig) { if (wasHidden) homeGamesWake(box); return; }
   box.dataset.sig = sig;
+  if (!fresh.length && typeof startRecs === "function") { startStrip(box); homeGamesWake(box); return; }
   const head = document.createElement("p");
   head.className = "desk-games-head";
   const names = [...new Set(fresh.map((item) => item.fromName))];
