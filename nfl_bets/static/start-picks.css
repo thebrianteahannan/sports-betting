@@ -57,6 +57,9 @@
 .find-tray .find-new .quick-add-head > b { display: none; }
 .find-board:has(.find-guide, .find-match:not([data-parlay-match])):not(:has(.find-start.find-start-open)) .find-start { display: none; }
 .find-board .find-start.find-start-open { display: block !important; }
+.find-board.find-rec-page > .find-tray,
+.find-board.find-rec-page > .find-teams[data-parlay-games] { display: none !important; }
+.find-board.find-rec-page:not(:has(.find-match:not([data-parlay-match]))) > .find-start { display: block !important; }
 .find-board.find-rec-page > label.find,
 .find-board.find-rec-page > .find-span,
 .find-board.find-rec-page > .find-shot-row,
