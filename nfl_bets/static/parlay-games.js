@@ -201,7 +201,7 @@ document.addEventListener("click", (event) => {
 
 document.addEventListener("click", (event) => {
   if (!event.target.closest) return;
-  if (event.target.closest("button.find-out, button.find-leg-hist, button.find-leg-swap, button.find-leg-to, button.find-leg-seek, button.find-leg-more, button.find-name, a, input, label, i.prop, i.who, .find-tray-swap, .find-tray-read, .find-leg-menu, .leg-boost-box")) return;
+  if (event.target.closest("button.find-out, button.find-leg-lock, button.find-leg-hist, button.find-leg-swap, button.find-leg-to, button.find-leg-seek, button.find-leg-more, button.find-name, a, input, label, i.prop, i.who, .find-tray-swap, .find-tray-read, .find-leg-menu, .leg-boost-box")) return;
   const line = event.target.closest(".find-tray .find-chose");
   if (!line) return;
   const teams = document.querySelector("#desk-glass-in .find-teams[data-parlay-games]");

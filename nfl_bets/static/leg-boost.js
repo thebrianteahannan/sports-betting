@@ -121,7 +121,7 @@ function legBoostSteady(legs) {
 
 function legBoostDrop(key) {
   const old = parlayLeg.get(key);
-  if (!old) return;
+  if (!old || (typeof legLockOn === "function" && legLockOn(old))) return;
   parlayLeg.delete(key);
   [...parlayPick.entries()].forEach(([pick, who]) => { if (String(old.label || "").startsWith(who.name) && ![...parlayLeg.values()].some((row) => String(row.label || "").startsWith(who.name))) parlayPick.delete(pick); });
   paintParlay();

@@ -220,7 +220,7 @@ function parlayStakeSet(amount) {
 function saveNow() {
   if (!parlayLeg.size) return null;
   const list = saveList();
-  const entry = { id: window.parlayOpenId || `p${Date.now()}`, at: Date.now(), legs: [...parlayLeg.values()], picks: [...parlayPick.values()].map(({ bets, ...rest }) => rest) };
+  const entry = { id: window.parlayOpenId || `p${Date.now()}`, at: Date.now(), legs: [...parlayLeg.values()].map((bet) => { const on = typeof legLockOn === "function" && legLockOn(bet); if (on === !!bet.held) return bet; const next = { ...bet }; if (on) next.held = true; else delete next.held; return next; }), picks: [...parlayPick.values()].map(({ bets, ...rest }) => rest) };
   const at = list.findIndex((row) => row.id === entry.id);
   if (at >= 0 && list[at].group) entry.group = list[at].group;
   if (at >= 0 && list[at].locked) {
@@ -304,6 +304,7 @@ function saveOpen(id) {
   (entry.picks || []).forEach((lite) => { const bare = String(lite.key || "").replace(/[\s\-–—:]+$/, ""), live = people.find((who) => who.key === lite.key || who.key === bare) || { ...lite, bets: [] }; parlayPick.set(live.key, live); });
   const known = saveList().flatMap((row) => row.picks || []);
   (entry.legs || []).forEach((bet) => { const label = String(bet.label || ""); if ([...parlayPick.values()].some((one) => one.name && label.startsWith(one.name))) return; const lite = known.find((one) => one.name && label.startsWith(one.name)); if (lite) parlayPick.set(lite.key, people.find((who) => who.key === lite.key) || { ...lite, bets: [] }); });
+  if (typeof legLockUse === "function") legLockUse(entry.legs);
   (entry.legs || []).forEach((bet) => {
     const live = entry.locked ? bet : (people.flatMap((who) => who.bets || []).find((row) => row.label === bet.label && row.market === bet.market && row.match === bet.match) || bet);
     parlayLeg.set(parlayKey(live), live);

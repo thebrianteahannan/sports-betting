@@ -59,7 +59,7 @@ function legSteadyRows(legs) {
 
 function legSteadyCut(bets) {
   const gone = bets.map((bet) => String(bet.label || ""));
-  bets.forEach((bet) => parlayLeg.delete(parlayKey(bet)));
+  bets.forEach((bet) => { if (typeof legLockOn === "function" && legLockOn(bet)) return; parlayLeg.delete(parlayKey(bet)); });
   [...parlayPick.entries()].forEach(([pick, who]) => { if (gone.some((label) => label.startsWith(who.name)) && ![...parlayLeg.values()].some((row) => String(row.label || "").startsWith(who.name))) parlayPick.delete(pick); });
   paintParlay();
 }
