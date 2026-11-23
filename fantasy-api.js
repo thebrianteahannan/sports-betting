@@ -861,6 +861,9 @@ function rosterPoints(settings) {
 function playoffOdds(rosters, mineId, league) {
   const spots = Number(league && league.settings && league.settings.playoff_teams) || 0;
   const start = Number(league && league.settings && league.settings.playoff_week_start) || 0;
+  // A median league records a second win or loss each week. Points are still once a week.
+  const perWeek = Number(league && league.settings && league.settings.league_average_match) === 1 ? 2 : 1;
+  const season = start > 1 ? (start - 1) * perWeek : 0;
   const teams = (rosters || []).map((row) => {
     const bag = row.settings || {};
     const wins = Number(bag.wins) || 0;
@@ -868,8 +871,9 @@ function playoffOdds(rosters, mineId, league) {
     const ties = Number(bag.ties) || 0;
     const played = wins + losses + ties;
     const pf = rosterPoints(bag);
-    const left = start > 1 ? Math.max(0, start - 1 - played) : 0;
-    return { id: row.roster_id, wins, losses, ties, pf, played, left, ppg: played ? pf / played : 0 };
+    const weeks = perWeek > 1 ? played / perWeek : played;
+    const left = season ? Math.max(0, season - played) : 0;
+    return { id: row.roster_id, wins, losses, ties, pf, played, left, ppg: weeks ? pf / weeks : 0 };
   });
   const mine = teams.find((row) => row.id === mineId);
   if (!mine) return null;
