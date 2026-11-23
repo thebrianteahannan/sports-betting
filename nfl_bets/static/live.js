@@ -2,7 +2,8 @@
 
 try { sessionStorage.setItem("fromLive", "1"); } catch (error) {}
 const liveOpen = new Set((() => { try { return JSON.parse(localStorage.getItem("liveOpen") || "[]"); } catch (error) { return []; } })());
-const liveCard = Object.fromEntries(["court", "mine"].map((kind) => [kind, new Set((() => { try { return JSON.parse(localStorage.getItem(`liveCard-${kind}`) || "[]"); } catch (error) { return []; } })())]));
+const liveCard = Object.fromEntries(["court", "mine", "off"].map((kind) => [kind, new Set((() => { try { return JSON.parse(localStorage.getItem(`liveCard-${kind}`) || "[]"); } catch (error) { return []; } })())]));
+const liveCardClass = { court: "live-court-only", mine: "live-mine-only", off: "live-off-only" };
 const liveSlide = new Map();
 
 function liveEsc(text) {
@@ -59,10 +60,14 @@ function liveRecRow(game, picks, show) {
   return liveRoot(game, liveRecPicks(game, picks), true, show);
 }
 
+function liveOff(name) {
+  return /passing|rushing|receiving/i.test(name);
+}
+
 function liveGroup(group, key, many, mine, recs, known) {
   const head = `<tr><th>${liveEsc(many ? group.name : "Player")}</th>${group.labels.map((label) => `<th>${liveEsc(label)}</th>`).join("")}</tr>`;
   const rows = group.rows.map((row) => { const bet = mine.has(liveFold(row.name)), star = bet ? `<svg class="live-star" viewBox="0 0 16 16" width="8" height="8" aria-label="In my bets"><path fill="#e7c15a" d="M8 1.2 9.8 4.9l4.1.6-3 2.9.7 4.1L8 10.6 4.4 12.5l.7-4.1-3-2.9 4.1-.6z"/></svg>` : ""; return `<tr class="${row.on ? "on" : known ? "" : "all"}${row.starter ? " start" : ""}${bet ? " mine" : recs.has(liveFold(row.name)) ? " rec" : ""}"><td><button type="button" class="live-name" data-who="${liveEsc(row.name)}">${liveEsc(row.name)}</button>${row.pos ? `<span class="live-pos">${liveEsc(row.pos)}</span>` : ""}${star}</td>${row.stats.map((stat, at) => `<td data-k="${liveEsc(`${key}|${row.name}|${group.labels[at] || at}`)}">${liveEsc(stat)}</td>`).join("")}</tr>`; }).join("");
-  return `<div class="live-table" data-slide="${liveEsc(key)}"><table>${head}${rows}</table></div>`;
+  return `<div class="live-table" data-slide="${liveEsc(key)}"${liveOff(group.name) ? ` data-side="off"` : ""}><table>${head}${rows}</table></div>`;
 }
 
 function liveGame(game) {
@@ -73,12 +78,14 @@ function liveGame(game) {
     const many = team.groups.length > 1;
     return `<section class="live-team" style="border-left-color: ${liveEsc(side.color || "#3dff6e")}"><h3>${liveEsc(team.name)}</h3>${team.groups.map((group, at) => liveGroup(group, `${game.id}|${team.short}|${at}`, many, mine, recs, known)).join("")}</section>`;
   }).join("");
+  const groups = (game.teams || []).flatMap((team) => team.groups || []);
+  const split = groups.some((group) => liveOff(group.name)) && groups.some((group) => !liveOff(group.name));
   const box = (kind, say) => `<label class="live-court"><input type="checkbox" data-card="${kind}"${liveCard[kind].has(game.id) ? " checked" : ""}/> ${say}</label>`;
-  const bar = teams && (known || picks.length) ? `<p class="live-card-bar">${known ? box("court", "In play") : ""}${picks.length ? box("mine", "Only players in my bets") : ""}</p>` : "";
+  const bar = teams && (known || picks.length || split) ? `<p class="live-card-bar">${known ? box("court", "In play") : ""}${picks.length ? box("mine", "Only players in my bets") : ""}${split ? box("off", "Offense only") : ""}</p>` : "";
   const body = teams ? `${bar}${teams}` : `<p class="live-note">ESPN has not posted player stats for this game yet.</p>`;
   const match = (liveMine(game, liveRecs)[0] || {}).match || `${game.away.name} @ ${game.home.name}`;
   const page = `/?${new URLSearchParams({ game: match, sport: game.sport, from: "live", ...(game.when ? { kick: game.when } : {}), ...(game.id ? { espn: game.id } : {}) })}`;
-  return `<details class="live-game${picks.length ? " has-mine" : ""}${game.final ? " live-final" : ""}${known && liveCard.court.has(game.id) ? " live-court-only" : ""}${picks.length && liveCard.mine.has(game.id) ? " live-mine-only" : ""}" data-id="${liveEsc(game.id)}" data-sport="${liveEsc(game.sport)}" data-match="${liveEsc(match)}"${liveOpen.has(game.id) ? " open" : ""}><summary><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(game.away, away > home, `${game.id}|away`)}<span class="live-at-sign">@</span>${liveSide(game.home, home > away, `${game.id}|home`)}<span class="live-clock">${liveEsc(game.clock)}</span>${game.last ? `<span class="live-last" data-k="${liveEsc(`${game.id}|last`)}">${liveEsc(game.last)}</span>` : ""}${liveHurt(game)}${liveRoot(game, picks)}${liveRecRow(game, picks)}<a class="live-open" href="${liveEsc(page)}">Open Game Page</a><button type="button" class="live-stats" aria-label="Live stats"></button></summary>${body}</details>`;
+  return `<details class="live-game${picks.length ? " has-mine" : ""}${game.final ? " live-final" : ""}${known && liveCard.court.has(game.id) ? " live-court-only" : ""}${picks.length && liveCard.mine.has(game.id) ? " live-mine-only" : ""}${split && liveCard.off.has(game.id) ? " live-off-only" : ""}" data-id="${liveEsc(game.id)}" data-sport="${liveEsc(game.sport)}" data-match="${liveEsc(match)}"${liveZoom > 1 && liveOpen.has(game.id) ? " open" : ""}><summary><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(game.away, away > home, `${game.id}|away`)}<span class="live-at-sign">@</span>${liveSide(game.home, home > away, `${game.id}|home`)}<span class="live-clock">${liveEsc(game.clock)}</span>${game.last ? `<span class="live-last" data-k="${liveEsc(`${game.id}|last`)}">${liveEsc(game.last)}</span>` : ""}${liveHurt(game)}${liveRoot(game, picks)}${liveRecRow(game, picks)}<a class="live-open" href="${liveEsc(page)}">Open Game Page</a><button type="button" class="live-stats" aria-label="Live stats"></button></summary>${body}</details>`;
 }
 
 function liveNext(next) {
@@ -165,6 +172,15 @@ function liveZoomApply(next, opts) {
   const mine = liveZoom >= 2, recs = liveZoom >= 3;
   document.body.classList.toggle("live-mine-off", !mine);
   document.body.classList.toggle("live-recs-on", recs);
+  if (liveZoom <= 1) {
+    liveZoomUp.clear();
+    document.querySelectorAll(".live-game[open], .live-game[data-zoom]").forEach((game) => {
+      game.open = false;
+      delete game.dataset.zoom;
+      if (game.dataset.id) liveOpen.delete(game.dataset.id);
+    });
+    try { localStorage.setItem("liveOpen", JSON.stringify([...liveOpen].slice(-40))); } catch (error) {}
+  }
   // While dragging, leave the thumb where the finger is — rewriting value makes it choppy.
   if (!quiet && !liveZoomDrag) {
     document.querySelectorAll("input.live-zoom-range").forEach((box) => { box.value = String(liveZoom); });
@@ -361,7 +377,8 @@ document.getElementById("live").addEventListener("change", (event) => {
   const kind = event.target.dataset && event.target.dataset.card, game = kind && event.target.closest(".live-game");
   if (!game) return;
   if (event.target.checked) liveCard[kind].add(game.dataset.id); else liveCard[kind].delete(game.dataset.id);
-  game.classList.toggle(kind === "court" ? "live-court-only" : "live-mine-only", event.target.checked);
+  if (!liveCardClass[kind]) return;
+  game.classList.toggle(liveCardClass[kind], event.target.checked);
   try { localStorage.setItem(`liveCard-${kind}`, JSON.stringify([...liveCard[kind]].slice(-40))); } catch (error) { console.log("[live] could not keep the card filter", kind, error); }
 });
 

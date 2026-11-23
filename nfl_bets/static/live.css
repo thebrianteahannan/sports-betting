@@ -67,10 +67,11 @@ body[data-live-zoom="0"] .live-game[data-zoom="2"] .live-side img { width: 26px;
 body[data-live-zoom="0"] .live-game[data-zoom="2"] .live-side b { font-size: 16px; }
 body[data-live-zoom="0"] .live-game[data-zoom="2"] .live-side i { font-size: 22px; }
 body[data-live-zoom="0"] .live-game[data-zoom="2"] .live-clock { font-size: 13px; letter-spacing: normal; }
-body[data-live-zoom="0"] .live-game[data-zoom="2"] :is(.live-sport, .live-open, .live-stats, .live-meta) { display: inline-flex !important; }
+body[data-live-zoom="0"] .live-game[data-zoom="2"] :is(.live-sport, .live-open, .live-meta) { display: inline-flex !important; }
 body[data-live-zoom="0"] .live-sport { display: none !important; }
 body[data-live-zoom="0"] .live-open,
 body[data-live-zoom="0"] .live-stats,
+body[data-live-zoom="1"] .live-stats,
 body[data-live-zoom="0"] .live-meta { display: none !important; }
 body[data-live-zoom="0"] .live-last, body[data-live-zoom="1"] .live-last, body[data-live-zoom="2"] .live-last, body[data-live-zoom="3"] .live-last,
 body[data-live-zoom="0"] .live-hurt, body[data-live-zoom="1"] .live-hurt, body[data-live-zoom="2"] .live-hurt, body[data-live-zoom="3"] .live-hurt { display: none !important; }
@@ -85,6 +86,7 @@ body.live-mine-games .live-next li:not(.has-mine) { display: none; }
 .live-game.live-mine-only .live-table tr[class]:not(.mine) { display: none; }
 .live-game.live-mine-only .live-table tr.live-player-row.mine { display: table-row; }
 .live-game.live-mine-only .live-table:not(:has(tr.mine)), .live-game.live-mine-only .live-team:not(:has(tr.mine)) { display: none; }
+.live-game.live-off-only .live-table:not([data-side="off"]) { display: none; }
 .live-card-bar { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 4px; }
 .live-card-bar .live-court { margin-left: 0; }
 .live-at { color: #9fb3c8; font-size: 13px; }
