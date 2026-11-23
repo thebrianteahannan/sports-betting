@@ -105,7 +105,9 @@ async function liveWeek(board) {
 
 async function lineWeek(games) {
   const clock = require("./line-clock");
-  await clock.ready();
+  const ready = clock.ready().then(() => true).catch(() => false);
+  const beat = await Promise.race([ready, new Promise((resolve) => setTimeout(() => resolve(false), 300))]);
+  if (!beat) return games;
   return games.map((game) => ({ ...game, lines: clock.lineSay(game) }));
 }
 

@@ -482,16 +482,33 @@ function liveFocus(data) {
   game.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
+let liveLoading = null;
+
+function liveLegsFrom(mine) {
+  liveLegs = (mine.parlays || []).flatMap((row) => (row.legs || []).map((leg) => ({ ...leg, parlay: row.id, parlaySize: (row.legs || []).length })));
+}
+
 async function liveLoad() {
+  if (liveLoading) return liveLoading;
+  liveLoading = liveFetch().finally(() => { liveLoading = null; });
+  return liveLoading;
+}
+
+async function liveFetch(again) {
+  const legsJob = fetch("/api/parlays", { credentials: "same-origin", signal: AbortSignal.timeout(8000) }).then((reply) => (reply.ok ? reply.json() : null)).catch(() => null);
   try {
-    const [res, mine] = await Promise.all([fetch("/api/live?all=1", { credentials: "same-origin" }), fetch("/api/parlays", { credentials: "same-origin" }).then((reply) => (reply.ok ? reply.json() : null)).catch(() => null)]);
+    const res = await fetch("/api/live?all=1", { credentials: "same-origin", signal: AbortSignal.timeout(8000) });
     if (res.status === 401) { document.getElementById("live").innerHTML = `<p class="live-note">Sign in on <a href="/">Parlay of the Day</a> to see live games.</p>`; return; }
-    if (mine) liveLegs = (mine.parlays || []).flatMap((row) => (row.legs || []).map((leg) => ({ ...leg, parlay: row.id, parlaySize: (row.legs || []).length })));
+    if (!res.ok) throw new Error(`live ${res.status}`);
     const data = await res.json();
+    const mine = await Promise.race([legsJob, new Promise((resolve) => setTimeout(() => resolve(null), 200))]);
+    if (mine) liveLegsFrom(mine);
     liveRecs = data.recs || [];
     livePaint(data);
     liveFocus(data);
+    if (!mine) legsJob.then((got) => { if (!got || !liveLast) return; liveLegsFrom(got); livePaint(liveLast, true); });
   } catch (error) {
+    if (!again) return liveFetch(true);
     console.log("[live] could not load", error);
     document.getElementById("live-at").textContent = "Could not reach the live feed. Trying again.";
   }

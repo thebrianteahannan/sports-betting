@@ -62,19 +62,25 @@ function shortMatch(match) {
   return `${nick(parts[0])} @ ${nick(parts[1])}`;
 }
 
-function freshNote(now) {
+function freshGames(now) {
   const at = now || Date.now();
-  const names = [];
+  const rows = [];
   Object.values(clock.games).forEach((row) => {
     const kick = Date.parse(row.kickoff || "");
     if (!row.propsAt || at - row.propsAt >= FRESH || !Number.isFinite(kick)) return;
     if (kick < at - 2 * HOUR || kick > at + 18 * HOUR) return;
     const name = shortMatch(row.match);
-    if (name && !names.includes(name)) names.push(name);
+    if (!name || rows.some((item) => item.name === name)) return;
+    rows.push({ match: row.match, name, sport: row.sport || "", kickoff: row.kickoff || "" });
   });
-  if (!names.length) return "";
-  if (names.length === 1) return `New lines on ${names[0]}.`;
-  return `New lines on ${names.slice(0, 2).join(" and ")}.`;
+  return rows.slice(0, 2);
+}
+
+function freshNote(now) {
+  const rows = freshGames(now);
+  if (!rows.length) return "";
+  if (rows.length === 1) return `New lines on ${rows[0].name}.`;
+  return `New lines on ${rows.map((row) => row.name).join(" and ")}.`;
 }
 
 async function lineTick(board) {
@@ -111,4 +117,4 @@ async function lineTick(board) {
   } finally { ticking = false; }
 }
 
-module.exports = { ready, lineSay, freshNote, lineTick };
+module.exports = { ready, lineSay, freshNote, freshGames, lineTick };

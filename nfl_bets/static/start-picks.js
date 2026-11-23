@@ -683,15 +683,57 @@ function startLineShut() {
   try { return JSON.parse(localStorage.getItem("lineNoteShut") || "[]"); } catch (error) { return []; }
 }
 
+function startLineGo(game) {
+  const match = String((game && game.match) || "");
+  if (!match) return;
+  if (document.body.classList.contains("needs-member")) { const join = document.getElementById("gate-join"); if (join) join.click(); return; }
+  const desk = document.getElementById("desk");
+  if (window.saveNew && desk && !desk.classList.contains("tv-full")) saveNew();
+  window.asking = true;
+  if (window.goFull) goFull();
+  if (window.birdMenu) birdMenu("find");
+  let tries = 0;
+  const wait = setInterval(() => {
+    const same = (node) => {
+      const name = String(node.textContent || "").split(",")[0];
+      return name.startsWith(match) || (typeof findSameGame === "function" && findSameGame(name, match));
+    };
+    const hit = [...document.querySelectorAll(".find-board .find-games button")].find(same);
+    if (!hit && ++tries < 60) return;
+    clearInterval(wait);
+    if (hit) { hit.click(); return; }
+    const board = document.querySelector(".find-board");
+    if (board && typeof seekPaintGame === "function") seekPaintGame(board, match, game.sport || "", game.kickoff || "", "");
+  }, 150);
+}
+
+function startLineSay(games) {
+  const text = document.createElement("p");
+  const rows = (games || []).filter((game) => game && game.match && game.name).slice(0, 2);
+  text.append("New lines on ");
+  rows.forEach((game, index) => {
+    if (index) text.append(" and ");
+    const go = document.createElement("button");
+    go.type = "button";
+    go.className = "start-line-go";
+    go.textContent = game.name;
+    go.title = "Open this game";
+    go.addEventListener("click", () => startLineGo(game));
+    text.append(go);
+  });
+  text.append(".");
+  return text;
+}
+
 function startLineNote() {
   const note = document.createElement("div");
   note.className = "start-line-note";
   note.hidden = true;
   fetch("/api/lines", { cache: "no-store" }).then((res) => (res.ok ? res.json() : {})).then((data) => {
     const say = data && data.note;
+    const games = data && data.games;
     if (!note.isConnected || !say || startLineShut().includes(say)) return;
-    const text = document.createElement("p");
-    text.textContent = say;
+    const text = games && games.length ? startLineSay(games) : Object.assign(document.createElement("p"), { textContent: say });
     const close = document.createElement("button");
     close.type = "button";
     close.setAttribute("aria-label", "Close");

@@ -663,10 +663,26 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/lines") {
       const clock = require("./line-clock");
       await clock.ready();
-      sendJson(res, { note: clock.freshNote() });
+      sendJson(res, { note: clock.freshNote(), games: clock.freshGames() });
       return;
     }
-    if (req.method === "GET" && url.pathname === "/api/live") { const who = await memberFrom(req); if (refuseBoard(res, who)) return; const recs = require("./live-recs"); board().then((now) => recs.recWarm(now)).catch((error) => console.error("live recs warm failed:", error)); sendJson(res, { ...(await require("./live-api").liveBoard(url.searchParams.get("all") === "1")), recs: await recs.recsList(), week: await require("./live-api").liveWeek(board).catch(() => []), tally: await require("./live-grade").gradeTally() }); require("./live-grade").gradeTick().catch((error) => console.error("live recs grade failed:", error)); return; }
+    if (req.method === "GET" && url.pathname === "/api/live") {
+      const who = await memberFrom(req);
+      if (refuseBoard(res, who)) return;
+      const recs = require("./live-recs");
+      const live = require("./live-api");
+      const all = url.searchParams.get("all") === "1";
+      const [boardNow, list, week, tally] = await Promise.all([
+        live.liveBoard(all),
+        recs.recsList(),
+        live.liveWeek(board).catch(() => []),
+        require("./live-grade").gradeTally(),
+      ]);
+      sendJson(res, { ...boardNow, recs: list, week, tally });
+      board().then((now) => recs.recWarm(now)).catch((error) => console.error("live recs warm failed:", error));
+      require("./live-grade").gradeTick().catch((error) => console.error("live recs grade failed:", error));
+      return;
+    }
     if (req.method === "GET" && url.pathname === "/api/board") {
       const who = await memberFrom(req);
       if (refuseBoard(res, who)) return;
