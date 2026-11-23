@@ -510,7 +510,7 @@ function startRecMoreSync(wrap, more, pool, shown) {
     more.hidden = true;
     return;
   }
-  if (typeof recDial === "number" && recDial < 2 && !moreMatch) {
+  if (typeof recDial === "number" && recDial < 3 && !moreMatch) {
     more.hidden = false;
     more.textContent = "Slide toward All for more picks.";
     more.dataset.scroll = "0";
@@ -547,7 +547,7 @@ function startRecFeed(board, box, root) {
     chunk.forEach((pick, i) => wrap.insertBefore(startRecCard(board, pick, shown + i), more));
     shown += chunk.length;
     startRecMoreSync(wrap, more, pool, shown);
-    if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 1, { quiet: true });
+    if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 2, { quiet: true });
     startRecMoreSync(wrap, more, pool, shown);
   };
   wrap.append(more);
@@ -846,11 +846,11 @@ function startPaint(again) {
           : games;
   box.append(row, ...body);
   spot.after(box);
-  if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 1, { quiet: true });
   if (startTab === "rec" && typeof recDialCountPaint === "function") {
     const counts = typeof recDialCountOf === "function" ? recDialCountOf(all) : { golden: 0, all: all.length };
     recDialCountPaint(counts);
   }
+  if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 2, { quiet: true });
   const waiting = (typeof startNeedsWeek === "function" && startNeedsWeek() && startWeekLoading) || !homeRecs || homeRecs.loading;
   if (waiting && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
 }

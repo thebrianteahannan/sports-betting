@@ -135,7 +135,8 @@
 :is(.rec-board, #choice-result) .find-start button.desk-game:hover { border-color: #3dff6e !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-rec { margin: 0 0 12px !important; }
 :is(.rec-board, #choice-result) .find-start[data-rec-dial="0"] button.desk-rec:not([data-rec-golden]),
-:is(.rec-board, #choice-result) .find-start[data-rec-dial="1"] button.desk-rec:not([data-rec-band]) { display: none !important; }
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="1"] button.desk-rec:not([data-rec-metal]),
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="2"] button.desk-rec:not([data-rec-band]) { display: none !important; }
 .find-start .find-start-recs { display: flex; flex-direction: column; gap: 0; }
 .find-start .find-start-recs-more { margin: 0.2rem 0 0.8rem; }
 .find-start .rec-dial,

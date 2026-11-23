@@ -1,15 +1,20 @@
-/** Recommended dial: Less = Golden Ticket, middle = +100 to −250 (default), More = all recommended.
+/** Recommended dial: Golden, then Golden/Silver/Bronze, then +100 to −250, then all.
  * Same drag pattern as Live Less↔More: step any, pointer capture, no rebuild while the thumb moves. */
 
-const REC_DIAL_MAX = 2;
-const REC_DIAL_DEFAULT = 1;
+const REC_DIAL_MAX = 3;
+const REC_DIAL_DEFAULT = 2;
 
 let recDial = (() => {
   try {
     const raw = localStorage.getItem("rec-dial");
-    if (raw == null || raw === "") return REC_DIAL_DEFAULT;
-    const n = Math.round(Number(raw));
-    if (n === 0 || n === 1 || n === 2) return n;
+    const stops = localStorage.getItem("rec-dial-stops");
+    let n = raw == null || raw === "" ? 1 : Math.round(Number(raw));
+    if (stops !== "4") {
+      n = n <= 0 ? 0 : n === 1 ? 2 : 3;
+      localStorage.setItem("rec-dial", String(n));
+      localStorage.setItem("rec-dial-stops", "4");
+    }
+    if (n === 0 || n === 1 || n === 2 || n === 3) return n;
   } catch (error) {}
   return REC_DIAL_DEFAULT;
 })();
@@ -25,16 +30,19 @@ function recDialSay(level, showing) {
   const n = Number(showing);
   const count = Number.isFinite(n) ? ` · ${Math.max(0, Math.round(n))}` : "";
   if (level <= 0) return `Golden Ticket${count}`;
-  if (level >= 2) return `All picks${count}`;
+  if (level === 1) return `Golden, Silver, and Bronze${count}`;
+  if (level >= 3) return `All picks${count}`;
   return `+100 to −250${count}`;
 }
 
 function recDialShowingOf(level, counts) {
   const golden = Math.max(0, Number(counts && counts.golden) || 0);
+  const metal = Math.max(0, Number(counts && counts.metal) || 0);
   const band = Math.max(0, Number(counts && counts.band) || 0);
   const all = Math.max(0, Number(counts && counts.all) || 0);
   if (level <= 0) return golden;
-  if (level >= 2) return all;
+  if (level === 1) return metal;
+  if (level >= 3) return all;
   return band;
 }
 
@@ -47,14 +55,74 @@ function recDialSave(level) {
 
 function recDialOk(pick) {
   if (!pick) return false;
-  if (recDial >= 2) return true;
+  if (recDial >= 3) return true;
   if (recDial <= 0) return !!pick.golden;
+  if (recDial === 1) return !!(pick.golden || pick.silver || pick.bronze);
   return recDialInBand(pick.odds);
 }
 
+function recDialPrice(odds) {
+  const n = Number(odds);
+  if (!Number.isFinite(n) || !n) return "";
+  return n > 0 ? `+${n}` : `−${Math.abs(n)}`;
+}
+
+function recDialEven(odds) {
+  const o = Number(odds);
+  return Number.isFinite(o) && o >= -120 && o <= 120;
+}
+
+function recDialRate(pick) {
+  const hits = Number(pick && pick.hits);
+  const n = Number(pick && pick.n);
+  if (!(n >= 5) || !Number.isFinite(hits)) return null;
+  return hits / n;
+}
+
+function recDialGap(odds) {
+  const o = Number(odds);
+  if (o < -120) return -120 - o;
+  if (o > 120) return o - 120;
+  return 0;
+}
+
+function recDialDay(pick) {
+  const at = Date.parse(pick && pick.kickoff);
+  if (!Number.isFinite(at)) return "";
+  return new Date(at - 6 * 3600000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+}
+
+function recDialWhen(pick) {
+  const at = Date.parse(pick && pick.kickoff);
+  if (!Number.isFinite(at)) return "";
+  return new Date(at).toLocaleDateString("en-US", { weekday: "short", timeZone: "America/New_York" });
+}
+
+let recDialPicks = [];
+
+function recDialWhy(kind) {
+  const rows = (recDialPicks || []).filter((pick) => pick && pick.label && recDialRate(pick) != null);
+  const days = rows.map(recDialDay).filter(Boolean).sort();
+  const slate = days[0] || "";
+  const here = slate ? rows.filter((pick) => recDialDay(pick) === slate) : rows;
+  const hot = here.filter((pick) => recDialRate(pick) >= 0.6).sort((a, b) => recDialGap(a.odds) - recDialGap(b.odds) || recDialRate(b) - recDialRate(a));
+  const even = here.filter((pick) => recDialEven(pick.odds)).sort((a, b) => recDialRate(b) - recDialRate(a));
+  const later = rows.filter((pick) => recDialEven(pick.odds) && recDialRate(pick) >= 0.6 && (!slate || recDialDay(pick) !== slate));
+  let lead = "No pick on the next slate has 5 games on the record.";
+  if (hot[0] && recDialGap(hot[0].odds) > 0) lead = `${hot[0].label} has hit in ${hot[0].hits} of ${hot[0].n}, but the price is ${recDialPrice(hot[0].odds)}.`;
+  else if (even[0]) lead = `${even[0].label} is ${recDialPrice(even[0].odds)}, but that has hit ${Math.round(recDialRate(even[0]) * 100)}%.`;
+  const rule = kind === "metals"
+    ? "A Golden, Silver, or Bronze ticket has to be between −120 and +120, and it has to have hit 60% or more."
+    : "A Golden Ticket has to be between −120 and +120, and it has to have hit 60% or more.";
+  const next = later[0];
+  const after = next ? ` ${next.label} is ${recDialPrice(next.odds)} and has hit in ${next.hits} of ${next.n}${recDialWhen(next) ? ` on ${recDialWhen(next)}` : ""}.` : "";
+  return `${lead} ${rule}${after}`;
+}
+
 function recDialEmptySay() {
-  if (recDial <= 0) return "No Golden Ticket right now. Slide toward More for the rest.";
-  if (recDial === 1) return "Nothing in +100 to −250 right now. Slide toward More for the rest.";
+  if (recDial <= 0) return recDialWhy("golden");
+  if (recDial === 1) return recDialWhy("metals");
+  if (recDial === 2) return "Nothing in +100 to −250 right now. Slide toward More for the rest.";
   return "No picks are posted yet.";
 }
 
@@ -62,6 +130,8 @@ function recDialMark(card, pick) {
   if (!card || !pick) return card;
   if (pick.golden) card.dataset.recGolden = "1";
   else delete card.dataset.recGolden;
+  if (pick.golden || pick.silver || pick.bronze) card.dataset.recMetal = "1";
+  else delete card.dataset.recMetal;
   if (recDialInBand(pick.odds)) card.dataset.recBand = "1";
   else delete card.dataset.recBand;
   return card;
@@ -88,6 +158,7 @@ function recDialShowingPaint(level) {
   document.querySelectorAll(".rec-dial").forEach((bar) => {
     const counts = {
       golden: Number(bar.dataset.golden) || 0,
+      metal: Number(bar.dataset.metal) || 0,
       band: Number(bar.dataset.band) || 0,
       all: Number(bar.dataset.all) || 0,
     };
@@ -109,7 +180,8 @@ function recDialApply(next, opts) {
   document.querySelectorAll(".rec-dial-empty").forEach((node) => {
     const host = node.closest(".find-start, #desk-games");
     if (!host) return;
-    const show = recDial < 2 && !host.querySelector(`.desk-rec${recDial <= 0 ? "[data-rec-golden]" : "[data-rec-band]"}`);
+    const mark = recDial <= 0 ? "[data-rec-golden]" : recDial === 1 ? "[data-rec-metal]" : "[data-rec-band]";
+    const show = recDial < 3 && !host.querySelector(`.desk-rec${mark}`);
     node.hidden = !show;
     if (show) node.textContent = recDialEmptySay();
   });
@@ -128,8 +200,10 @@ function recDialEmptyNote() {
 
 function recDialCountOf(picks) {
   const rows = picks || [];
+  recDialPicks = rows;
   return {
     golden: rows.filter((pick) => pick && pick.golden).length,
+    metal: rows.filter((pick) => pick && (pick.golden || pick.silver || pick.bronze)).length,
     band: rows.filter((pick) => pick && recDialInBand(pick.odds)).length,
     all: rows.length,
   };
@@ -137,6 +211,7 @@ function recDialCountOf(picks) {
 
 function recDialCountPaint(counts) {
   const golden = Math.max(0, Number(counts && counts.golden) || 0);
+  const metal = Math.max(0, Number(counts && counts.metal) || 0);
   const band = Math.max(0, Number(counts && counts.band) || 0);
   const all = Math.max(0, Number(counts && counts.all) || 0);
   document.querySelectorAll(".rec-dial").forEach((bar) => {
@@ -145,10 +220,15 @@ function recDialCountPaint(counts) {
     if (less) less.textContent = String(golden);
     if (more) more.textContent = String(all);
     bar.dataset.golden = String(golden);
+    bar.dataset.metal = String(metal);
     bar.dataset.band = String(band);
     bar.dataset.all = String(all);
   });
   recDialShowingPaint(recDial);
+  document.querySelectorAll(".rec-dial-empty").forEach((node) => {
+    if (node.hidden) return;
+    node.textContent = recDialEmptySay();
+  });
 }
 
 function recDialBar(onCommit) {

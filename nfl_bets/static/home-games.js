@@ -660,8 +660,8 @@ function startStrip(box) {
   const dial = tab === "rec" && typeof recDialBar === "function" ? recDialBar(typeof startDialCommit === "function" ? startDialCommit : null) : null;
   const body = tab === "games" ? gameNodes : [...(dial ? [dial] : []), ...(all.length && typeof startKindBar === "function" ? [startKindBar(all)] : []), ...recs];
   box.replaceChildren(head, ...body);
-  if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 1, { quiet: true });
   if (tab === "rec" && typeof recDialCountPaint === "function") recDialCountPaint(typeof recDialCountOf === "function" ? recDialCountOf(all) : { golden: 0, all: all.length });
+  if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 2, { quiet: true });
 }
 
 function homeGamesTabs(box, games) {
@@ -733,7 +733,7 @@ function homeGamesPaint() {
   }
   head.append(fresh.length ? said : homeGamesTabs(box, games), ...leagues);
   box.replaceChildren(head, ...(fresh.length ? fresh.map(homeSharedRow) : homeGamesTab === "rec" ? homeRecRows(games, box) : homeGameRows(games, box)));
-  if (homeGamesTab === "rec" && typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 1, { quiet: true });
+  if (homeGamesTab === "rec" && typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 2, { quiet: true });
   homeGamesWake(box);
 }
 
