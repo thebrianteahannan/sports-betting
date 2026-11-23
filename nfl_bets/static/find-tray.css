@@ -194,6 +194,12 @@
 .rec-board .find-roster .find-names > .desk-rec-ask [data-bet-go="new"],
 .rec-board .find-roster .find-names > .roster-props .desk-rec-ask [data-bet-go="new"],
 .rec-board .find-tray-swap .desk-rec-ask [data-bet-go="new"] { background: transparent; color: #3dff6e; }
+.rec-board .find-roster .find-names .find-group > .desk-rec-ask,
+#desk.tv-full #desk-glass .rec-board .find-roster .find-names .find-group > .desk-rec-ask { display: flex; flex: 1 0 100%; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.85rem; margin: 0.1rem 0; padding: 0.15rem 0.1rem; border-radius: 0; background: none; box-shadow: none; color: #f4f7fb; }
+.rec-board .find-roster .find-names .find-group > .desk-rec-ask i,
+#desk.tv-full #desk-glass .rec-board .find-roster .find-names .find-group > .desk-rec-ask i { padding: 0; border-radius: 0; background: none; color: #f4f7fb; font-style: normal; font-weight: 700; }
+.rec-board .find-roster .find-names .find-group > .desk-rec-ask [data-bet-go],
+#desk.tv-full #desk-glass .rec-board .find-roster .find-names .find-group > .desk-rec-ask [data-bet-go] { padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: #e7c15a; font-size: 13px; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .find-roster .find-names .find-chip > button, #desk.tv-full #desk-glass .find-board .find-roster .find-names .find-chip > button { margin: 0 !important; border-radius: 0 !important; }
 .find-roster .find-names button.find-info, #desk.tv-full #desk-glass .find-board .find-roster .find-names button.find-info { width: 1.7rem; min-width: 1.7rem; min-height: 0; padding: 0; border: 0 !important; border-left: 1px solid rgba(255, 255, 255, 0.16) !important; background: rgba(61, 255, 110, 0.18) !important; color: #3dff6e !important; box-shadow: none !important; font-family: Georgia, "Times New Roman", serif; font-size: 13px; font-weight: 700; font-style: italic; line-height: 1; opacity: 0.95; cursor: pointer; }
 .find-roster .find-names button.find-info::before { content: "i"; }
@@ -251,18 +257,24 @@
 .rec-board > h2 button.find-fantasy-go,
 .rec-board > h2 button.find-quick-go,
 .rec-board > h2 button.find-games-go,
+.rec-board > h2 button.find-hist-go,
 #desk.tv-full #desk-glass .rec-board > h2 button.find-rec-go,
 #desk.tv-full #desk-glass .rec-board > h2 button.find-build-go,
 #desk.tv-full #desk-glass .rec-board > h2 button.find-mine-go,
 #desk.tv-full #desk-glass .rec-board > h2 button.find-fantasy-go,
 #desk.tv-full #desk-glass .rec-board > h2 button.find-quick-go,
-#desk.tv-full #desk-glass .rec-board > h2 button.find-games-go { display: inline-flex; align-items: center; gap: 0.4rem; flex: none; width: auto; height: auto; min-height: 0; margin: 0; padding: 0.28rem 0.75rem; border: 1px solid #3dff6e; border-radius: 999px; background: #07140f; box-shadow: none; color: #3dff6e; font-family: Outfit, system-ui, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: normal; text-transform: none; cursor: pointer; }
+#desk.tv-full #desk-glass .rec-board > h2 button.find-games-go,
+#desk.tv-full #desk-glass .rec-board > h2 button.find-hist-go { display: inline-flex; align-items: center; gap: 0.4rem; flex: none; width: auto; height: auto; min-height: 0; margin: 0; padding: 0.28rem 0.75rem; border: 1px solid #3dff6e; border-radius: 999px; background: #07140f; box-shadow: none; color: #3dff6e; font-family: Outfit, system-ui, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: normal; text-transform: none; cursor: pointer; }
 .rec-board > h2 button.find-mine-go b, #desk.tv-full #desk-glass .rec-board > h2 button.find-mine-go b { min-width: 1.15rem; padding: 0 0.35rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-style: normal; font-weight: 800; line-height: 1.35; text-align: center; }
 .find-board.find-rec-page > h2 > button.find-quick-go,
 .find-board.find-rec-page > h2 > button.find-build-go,
 .rec-board:not(.find-rec-page) > h2 > button.find-rec-go,
 #desk.tv-full #desk-glass .rec-board.find-rec-page > h2 > button.find-build-go,
 #desk.tv-full #desk-glass .rec-board:not(.find-rec-page) > h2 > button.find-rec-go { margin-left: auto; }
+.find-board.find-hist-page > h2 > button.find-build-go,
+#desk.tv-full #desk-glass .rec-board.find-hist-page > h2 > button.find-build-go { margin-left: 0; }
+.find-board.find-hist-page > h2 > button.find-rec-go,
+#desk.tv-full #desk-glass .rec-board.find-hist-page > h2 > button.find-rec-go { margin-left: auto; }
 .rec-board > h2 button.find-games-go.on-live, #desk.tv-full #desk-glass .rec-board > h2 button.find-games-go.on-live { display: inline-flex; align-items: center; gap: 0.4rem; border-color: #3dff6e; background: rgba(61, 255, 110, 0.12); }
 .rec-board > h2 button.find-games-go .find-games-live, #desk.tv-full #desk-glass .rec-board > h2 button.find-games-go .find-games-live { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.05rem 0.45rem 0.05rem 0.35rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
 .rec-board > h2 button.find-games-go .find-games-pulse { flex: none; width: 0.45rem; height: 0.45rem; border-radius: 50%; background: #ff2d2d; box-shadow: 0 0 0 0 rgba(255, 45, 45, 0.75); animation: find-games-pulse 1.35s ease-out infinite; }

@@ -80,8 +80,8 @@ if (saveSeek.get("go") === "rec") {
   const wait = setInterval(() => {
     if (!window.memberReady || typeof window.birdMenu !== "function") return;
     clearInterval(wait);
-    if (tab === "stats") startTab = "stats";
-    birdMenu("rec");
+    if (tab === "stats" || tab === "golden") startHistTab = tab;
+    birdMenu(tab === "stats" || tab === "golden" ? "history" : "rec");
   }, 250);
 }
 if (saveSeek.get("go") === "manage") {

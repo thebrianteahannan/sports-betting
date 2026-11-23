@@ -2,6 +2,7 @@
 
 let startTab = "rec", startBack = null, startUndo = null, startRandomAt = null, startGolden = null, startMetals = null;
 let startFavOnly = false;
+let startHistTab = "stats";
 let startPickGames = new Set();
 const startKinds = new Set(), START_KINDS = [["safe", "Safe"], ["balanced", "Balanced"], ["payout", "Payout"], ["good", "Good bet"], ["math", "Math"], ["script", "Script"], ["solid", "Steady role"], ["cushion", "Cushion"]];
 
@@ -435,23 +436,41 @@ function startTdGo(board, people) {
 }
 window.startTdGo = startTdGo;
 
-function startTdButton(board) {
+function startTdButton(board, inline) {
   const games = leftGames();
   const league = typeof homeLeagueOn === "function" ? homeLeagueOn(games) : "";
   if (league && league !== "NFL") return null;
   const hasNfl = games.some((game) => String(game.sport || "") === "NFL") || ((homeRecs && homeRecs.picks) || []).some((pick) => (typeof homePickSport === "function" ? homePickSport(pick) : pick.sport) === "NFL");
   if (!hasNfl || typeof openTdPage !== "function") return null;
-  const go = Object.assign(document.createElement("button"), { type: "button", className: "find-start-td", textContent: "Anytime TDs" });
+  const go = Object.assign(document.createElement("button"), { type: "button", className: `find-start-td${inline && startTab === "td" ? " on" : ""}`, textContent: "Anytime TDs" });
   go.title = "See who is most likely to score a touchdown";
+  go.setAttribute("aria-pressed", String(inline && startTab === "td"));
   go.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
+    if (inline) { startTab = "td"; startPaint(1); return; }
     const live = document.querySelector("#desk-glass-in .find-board") || board;
     if (!live || typeof startTdGo !== "function") return;
     if (!(live.people || []).some((person) => person.kind === "player" && (person.bets || []).length)) return;
     startTdGo(live);
   });
   return go;
+}
+
+function startTdInline(board) {
+  const host = document.createElement("div");
+  host.className = "find-start-td-page";
+  const list = document.createElement("div");
+  list.className = "find-list";
+  const hits = document.createElement("div");
+  hits.className = "find-hits";
+  hits.hidden = true;
+  host.append(list, hits);
+  queueMicrotask(() => {
+    if (!host.isConnected || typeof openTdPage !== "function") return;
+    openTdPage(list, board.people || [], hits, null, null, typeof startNeedsWeek === "function" && startNeedsWeek() ? "week" : "today");
+  });
+  return host;
 }
 
 function startDialCommit() {
@@ -698,8 +717,10 @@ function startRecStats() {
   };
   box.addEventListener("click", (event) => {
     if (!event.target.closest(".hit-rate-open")) return;
-    startTab = "golden";
-    startPaint(1);
+    startHistTab = "golden";
+    const here = document.querySelector("#desk-glass-in .find-board");
+    if (here && here.dataset.page === "history") startPaint(1);
+    else if (typeof birdMenu === "function") birdMenu("history");
   });
   const kinds = (bag) => {
     const boxOf = (key) => (bag && bag[key]) || { won: 0, lost: 0 };
@@ -832,13 +853,20 @@ function startGoldenList() {
 }
 
 function startPaint(again) {
-  if (startTdOpen()) return;
+  const inlineTd = document.querySelector("#desk-glass-in .find-start .find-list.find-td-board");
+  if (startTdOpen() && !inlineTd) return;
+  if (startTab !== "td") {
+    document.querySelectorAll("#desk-glass-in .find-board.find-td-on").forEach((node) => {
+      if (!node.querySelector(":scope > .find-list.find-td-board")) node.classList.remove("find-td-on");
+    });
+  }
   if (typeof startHomeStrip === "function") startHomeStrip();
   document.querySelectorAll(".find-start").forEach((node) => node.remove());
   const spot = startSpot(), board = spot && spot.closest(".find-board");
   if (!spot || !board || typeof homeRecRows !== "function") return;
   const input = board.querySelector("label.find input");
-  const panel = board.dataset.page === "rec";
+  const history = board.dataset.page === "history";
+  const panel = board.dataset.page === "rec" || history;
   if (typeof startNeedsWeek === "function" && startNeedsWeek()) startWeekLoad();
   homeRecsLoad(typeof startNeedsWeek === "function" && startNeedsWeek() ? "week" : "auto"); homeLogosLoad(); homeLeagueSync();
   const box = document.createElement("div");
@@ -852,32 +880,38 @@ function startPaint(again) {
     if (typeof quickAddPendingOpen === "function") quickAddPendingOpen();
     return;
   }
-  if (startTab === "shared") startTab = "rec";
+  if (startTab === "shared" || startTab === "games" || startTab === "stats" || startTab === "golden") startTab = "rec";
+  if (history && startHistTab !== "stats" && startHistTab !== "golden") startHistTab = "stats";
+  const tabNow = history ? startHistTab : startTab;
   const tabs = document.createElement("span");
   tabs.className = "desk-games-tabs";
   const { recs, games, picks, all } = startRecs(board, box);
-  const gameN = games.filter((node) => node.classList.contains("desk-game")).length;
-  [
-    ["rec", "Players", picks.length],
-    ["games", "Games", gameN],
-    ["parlays", "Parlays", typeof recParlayCount === "function" ? recParlayCount(board) : null],
-    ["stacks", "Strategies", null],
-    ["stats", "Hit Rates", null],
-    ["golden", "Golden", startMetals ? ["golden", "silver", "bronze"].reduce((sum, key) => sum + (((startMetals[key] || {}).history || []).length), 0) : (startGolden && Array.isArray(startGolden.history) ? startGolden.history.length : null)],
-  ].forEach(([id, label, count]) => {
+  const goldenN = startMetals ? ["golden", "silver", "bronze"].reduce((sum, key) => sum + (((startMetals[key] || {}).history || []).length), 0) : (startGolden && Array.isArray(startGolden.history) ? startGolden.history.length : null);
+  const tabList = history
+    ? [["stats", "Hit Rates", null], ["golden", "Golden", goldenN]]
+    : [
+      ["rec", "Players", picks.length],
+      ["parlays", "Parlays", typeof recParlayCount === "function" ? recParlayCount(board) : null],
+      ["stacks", "Strategies", null],
+    ];
+  tabList.forEach(([id, label, count]) => {
     const tab = document.createElement("button");
     tab.type = "button";
-    tab.className = `desk-games-tab${startTab === id ? " on" : ""}`;
-    tab.setAttribute("aria-pressed", String(startTab === id));
+    tab.className = `desk-games-tab${tabNow === id ? " on" : ""}`;
+    tab.setAttribute("aria-pressed", String(tabNow === id));
     if (count == null) tab.textContent = label;
     else {
       tab.innerHTML = `${label} <i class="desk-tab-n">${count}</i>`;
       tab.setAttribute("aria-label", `${label} ${count}`);
     }
-    tab.addEventListener("click", () => { startTab = id; if ((id === "rec" || id === "games") && typeof homeGamesTab !== "undefined") homeGamesTab = id; startPaint(1); });
+    tab.addEventListener("click", () => {
+      if (history) startHistTab = id;
+      else { startTab = id; if (id === "rec" && typeof homeGamesTab !== "undefined") homeGamesTab = id; }
+      startPaint(1);
+    });
     tabs.append(tab);
   });
-  const td = startTdButton(board);
+  const td = history ? null : startTdButton(board, true);
   if (td) {
     td.classList.remove("find-start-td");
     td.classList.add("desk-games-tab");
@@ -892,29 +926,29 @@ function startPaint(again) {
   });
   const gameBar = startGameBar(typeof leftGames === "function" ? leftGames() : []);
   row.append(tabs);
-  if (startTab !== "stats" && startTab !== "golden") {
+  if (!history && tabNow !== "td") {
     row.append(startSpanBar(), ...leagues, ...(gameBar ? [gameBar] : []));
-    if (startTab === "rec") row.append(startRandomBar(board, picks));
+    if (tabNow === "rec") row.append(startRandomBar(board, picks));
   }
-  const dial = (startTab === "rec" || startTab === "parlays") && typeof recDialBar === "function" ? recDialBar(startDialCommit) : null;
-  const body = startTab === "rec"
+  const dial = (tabNow === "rec" || tabNow === "parlays") && typeof recDialBar === "function" ? recDialBar(startDialCommit) : null;
+  const body = tabNow === "rec"
     ? [...(dial ? [dial] : []), ...(all.length ? [startKindBar(all)] : []), ...recs]
-    : startTab === "parlays"
+    : tabNow === "parlays"
       ? [...(dial ? [dial] : []), ...(typeof recParlayBody === "function" ? recParlayBody(board) : [])]
-      : startTab === "stacks"
+      : tabNow === "stacks"
       ? startStacks()
-      : startTab === "stats"
+      : tabNow === "stats"
         ? startRecStats()
-        : startTab === "golden"
-          ? startGoldenList()
-          : games;
+        : tabNow === "td"
+          ? [startTdInline(board)]
+          : startGoldenList();
   box.append(row, ...body);
   spot.after(box);
-  if (startTab === "rec" && typeof recDialCountPaint === "function") {
+  if (tabNow === "rec" && typeof recDialCountPaint === "function") {
     const counts = typeof recDialCountOf === "function" ? recDialCountOf(all) : { golden: 0, all: all.length };
     recDialCountPaint(counts);
   }
-  if (startTab === "parlays" && typeof recDialCountPaint === "function" && typeof recParlayBuild === "function" && typeof recParlayDialCounts === "function") {
+  if (tabNow === "parlays" && typeof recDialCountPaint === "function" && typeof recParlayBuild === "function" && typeof recParlayDialCounts === "function") {
     recDialCountPaint(recParlayDialCounts(recParlayBuild(board).rows));
   }
   if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 2, { quiet: true });

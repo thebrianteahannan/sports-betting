@@ -141,11 +141,19 @@ function recParlayStackRow(name, stack, tier) {
   return row;
 }
 
+function recParlayIsParlay(name) {
+  const row = typeof STACKS === "undefined" ? null : STACKS.find((item) => item[0] === name);
+  const tickets = row && row[2];
+  if (!tickets || !tickets.length) return true;
+  return tickets.some((ticket) => /parlay/i.test(ticket[0] || ""));
+}
+
 function recParlayStrategies(data) {
   const found = (data && data.found) || {};
   const games = recParlayGames();
   const rows = [];
   Object.entries(found).forEach(([name, stacks]) => {
+    if (!recParlayIsParlay(name)) return;
     const grade = typeof STACK_GRADE === "undefined" ? null : STACK_GRADE[name];
     const tier = grade ? grade[0] : "";
     if (tier !== "edge" && tier !== "pick") return;

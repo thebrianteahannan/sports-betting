@@ -1,6 +1,7 @@
 /** Recommended page: picks, games, and strategies — moved off Build a bet. */
 
-function paintRec() {
+function paintRec(page) {
+  const history = page === "history";
   window.asking = true;
   if (document.body.classList.contains("tv-zoom-on") && typeof tvZoomShut === "function") tvZoomShut();
   if (window.goFull) goFull();
@@ -24,7 +25,8 @@ function paintRec() {
   document.querySelectorAll(".rec-board").forEach((node) => node.remove());
   const board = document.createElement("div");
   board.className = "rec-board find-board find-rec-page";
-  board.dataset.page = "rec";
+  board.dataset.page = history ? "history" : "rec";
+  if (history) board.classList.add("find-hist-page");
   const saved = findParts.today && findParts.today.data && Date.now() - findParts.today.at < 30 * 60 * 1000;
   if (!saved) board.innerHTML = `<div class="bet-load"><span class="bet-bird"><img src="/scene/parrot-head.webp?v=1" alt=""></span><p>Looking up the board.</p></div>`;
   const hold = document.getElementById("desk-hold");
@@ -61,9 +63,14 @@ function paintRec() {
   }).catch(() => { if (board.isConnected && !board.querySelector("h2")) fillFind(board, {}); });
 }
 
+function paintHistory() {
+  paintRec("history");
+}
+
 function recPageOpen() {
   if (typeof paintRec === "function") paintRec();
 }
 
 window.paintRec = paintRec;
+window.paintHistory = paintHistory;
 window.recPageOpen = recPageOpen;
