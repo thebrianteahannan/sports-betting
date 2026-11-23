@@ -161,7 +161,7 @@ const LIVE_WHEN = [["done", "Finished Today"], ["live", "Live"], ["next", "Upcom
 const liveAsked = new URLSearchParams(location.search).get("span");
 const liveSaved = (() => { try { return localStorage.getItem("liveSpan") || ""; } catch (error) { return ""; } })();
 const liveSpanAlias = { past: "done", today: "", week: "week" };
-let liveLast = null, liveSpan = LIVE_WHEN.some(([id]) => id === (liveAsked || liveSaved)) ? (liveAsked || liveSaved) : (liveSpanAlias[liveAsked || liveSaved] || ""), liveSpanHeld = Boolean(liveSpan);
+let liveLast = null, liveSpan = LIVE_WHEN.some(([id]) => id === (liveAsked || liveSaved)) ? (liveAsked || liveSaved) : (liveSpanAlias[liveAsked || liveSaved] || ""), liveSpanHeld = Boolean(liveSpan), liveSpanChosen = liveSpanHeld, liveFiltersOpen = false;
 if (liveAsked && !new URLSearchParams(location.search).get("game")) history.replaceState(null, "", location.pathname);
 const liveRecOpen = new Set(), liveHistOpen = new Set();
 document.addEventListener("toggle", (event) => { const key = event.target.dataset && event.target.dataset.hk; if (key) { if (event.target.open) liveHistOpen.add(key); else liveHistOpen.delete(key); } }, true);
@@ -234,6 +234,58 @@ try { liveOnlyMine = localStorage.getItem("liveOnlyMine") === "1"; } catch (erro
 
 function liveCardSlider() {
   return `<label class="live-zoom live-card-zoom"><span>Less</span><input type="range" class="live-card-range" min="0" max="${LIVE_ZOOM_MAX}" step="any" value="${liveZoom}" aria-valuemin="0" aria-valuemax="${LIVE_ZOOM_MAX}" aria-valuenow="${liveZoom}" aria-label="Show more or less on this game"/><span>More</span></label>`;
+}
+
+function liveFilterBits() {
+  const names = [...liveLeagues];
+  const bits = [];
+  if (names.length === 1 && liveSpan === "live") bits.push(`Live ${names[0]}`);
+  else if (names.length === 1 && liveSpan === "next") bits.push(`Upcoming ${names[0]} today`);
+  else if (names.length === 1 && liveSpan === "tomorrow") bits.push(`${names[0]} tomorrow`);
+  else if (names.length === 1 && liveSpan === "week") bits.push(`${names[0]} this week`);
+  else if (names.length === 1 && liveSpan === "done") bits.push(`${names[0]} that finished today`);
+  else {
+    if (liveSpan === "live") bits.push("Live");
+    else if (liveSpan === "tomorrow") bits.push("Tomorrow");
+    else if (liveSpan === "week") bits.push("This week");
+    else if (liveSpan === "done") bits.push("Finished today");
+    else bits.push("Upcoming today");
+    if (names.length > 1) bits.push(names.join(" and "));
+    else if (!names.length) bits.push("All leagues");
+  }
+  bits.push(liveOnlyMine ? "Only your bets" : "All games");
+  return bits;
+}
+
+let liveBetN = 0;
+function liveNav() {
+  return `<nav class="live-nav"><a href="/build">Build a bet</a><a href="/history">History</a><a href="/bets">My Bets <b>${liveBetN}</b></a><a href="/recommended">Recommended</a></nav>`;
+}
+fetch("/api/parlays", { credentials: "same-origin" }).then((res) => res.ok ? res.json() : null).then((data) => {
+  liveBetN = data && Array.isArray(data.parlays) ? data.parlays.length : 0;
+  const badge = document.querySelector(".live-nav b");
+  if (badge) badge.textContent = String(liveBetN);
+}).catch(() => {});
+
+function liveFilterBar(bar, filters) {
+  const bits = liveFilterBits();
+  const clear = liveLeagues.size || liveOnlyMine || liveSpanChosen ? ` <button type="button" data-live-clear>Clear</button>` : "";
+  const say = `<p class="live-filter-say">${liveEsc(bits.join(". "))}.${clear}</p>`;
+  return `${say}<details class="live-filter-fold"${liveFiltersOpen ? " open" : ""}><summary>Filters</summary>${bar}${filters}</details>`;
+}
+
+function liveFiltersClear() {
+  liveLeagues.clear();
+  liveOnlyMine = false;
+  liveSpan = "";
+  liveSpanHeld = false;
+  liveSpanChosen = false;
+  try {
+    localStorage.removeItem("liveSpan");
+    localStorage.setItem("liveLeagues", "[]");
+    localStorage.setItem("liveOnlyMine", "0");
+  } catch (error) {}
+  if (liveLast) livePaint(liveLast, true);
 }
 
 function liveFilters() {
@@ -312,7 +364,7 @@ function livePaint(data, quiet) {
   const tomorrowBody = tomorrow.length ? `<h2>Tomorrow, ${say(tomorrow.length)}</h2>${livePack(tomorrow.map(liveSoonCard).join(""))}` : empty(liveOnlyMine, tomorrowAll, "No games tomorrow.");
   const weekBody = later.length ? `<h2>This week, ${say(later.length)}</h2>${livePack(later.map(liveSoonCard).join(""))}` : empty(liveOnlyMine, laterAll, "No games the rest of this week.");
   const body = { done: doneBody, live: liveBody, next: nextBody, tomorrow: tomorrowBody, week: weekBody }[liveSpan] || liveBody;
-  box.innerHTML = `${bar}${filters}${body}`;
+  box.innerHTML = `${liveNav()}${liveFilterBar(bar, filters)}${body}`;
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => { const left = liveSlide.get(node.dataset.slide); if (left) node.scrollLeft = left; });
   if (!first) {
     box.querySelectorAll("[data-k]").forEach((node) => { if (was.has(node.dataset.k) && was.get(node.dataset.k) !== node.textContent) node.classList.add("live-flash"); });
@@ -504,7 +556,12 @@ document.getElementById("live").addEventListener("change", (event) => {
   if (liveLast) livePaint(liveLast, true);
 });
 
+document.getElementById("live").addEventListener("toggle", (event) => {
+  if (event.target.classList && event.target.classList.contains("live-filter-fold")) liveFiltersOpen = event.target.open;
+}, true);
+
 document.getElementById("live").addEventListener("click", (event) => {
+  if (event.target.closest("[data-live-clear]")) { liveFiltersClear(); return; }
   if (event.target.closest(".live-card-zoom")) { event.preventDefault(); event.stopPropagation(); return; }
   const who = event.target.closest("button.live-name");
   if (who) {
@@ -532,6 +589,7 @@ document.getElementById("live").addEventListener("click", (event) => {
   if (span) {
     liveSpan = span.dataset.week;
     liveSpanHeld = true;
+    liveSpanChosen = true;
     try { localStorage.setItem("liveSpan", liveSpan); } catch (error) { console.log("[live] could not keep this week", error); }
     if (liveLast) livePaint(liveLast, true);
     return;

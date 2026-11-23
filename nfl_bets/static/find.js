@@ -85,6 +85,7 @@ function loadFind(span) {
 }
 
 function paintFind() {
+  if (!window.pageUrlHold && typeof pageUrl === "function") pageUrl("find");
   window.asking = true;
   if (document.body.classList.contains("tv-zoom-on") && typeof tvZoomShut === "function") tvZoomShut();
   if (window.goFull) goFull();

@@ -460,9 +460,30 @@ function recLine(leg) {
   return `<span class="leg-line" data-player="${esc(leg.player || "")}" data-sport="${esc(leg.sport || "")}" data-market="${esc(market)}" data-label="${esc(head)}"><b>${named}</b><i>${esc([tag, leg.pct, where].filter(Boolean).join(" · "))}</i></span>`;
 }
 
+const PAGE_URL = { find: "/build", rec: "/recommended", history: "/history", manage: "/bets", bets: "/strategies" };
+const PAGE_FROM = { "/build": "find", "/recommended": "rec", "/history": "history", "/bets": "manage", "/strategies": "bets" };
+let pageUrlQuiet = false;
+
+function pageUrl(kind, replace) {
+  const path = PAGE_URL[kind];
+  if (!path || pageUrlQuiet || location.pathname === path) return;
+  history[replace ? "replaceState" : "pushState"]({ page: kind }, "", path);
+}
+
+function pageUrlHome() {
+  if (pageUrlQuiet || !PAGE_FROM[location.pathname]) return;
+  history.replaceState({ page: "home" }, "", "/");
+}
+
+function pageOpen(kind) {
+  if (kind === "manage") { window.saveGone = false; window.saveShut = false; window.pageUrlHold = true; birdMenu("find"); window.pageUrlHold = false; return; }
+  birdMenu(kind);
+}
+
 function birdMenu(kind) {
   if (kind === "live" || kind === "guide") { window.location.href = `/${kind}`; return; }
-  if (kind === "shared" && window.sharedOpenFresh) { sharedOpenFresh(); return; } if (kind === "how" && window.paintHow) { paintHow(); return; } if (kind === "stack" && window.trayStackOpen) { trayStackOpen(""); return; } if (kind === "pick" || kind === "ones") { if (window.birdMenu) birdMenu("bets"); return; } if (kind === "rec" && window.paintRec) { if (window.saveNew && !document.getElementById("desk").classList.contains("tv-full")) saveNew(); paintRec(); return; } if (kind === "history" && window.paintHistory) { if (window.saveNew && !document.getElementById("desk").classList.contains("tv-full")) saveNew(); paintHistory(); return; } if (kind === "fantasy" && window.paintFantasy) { paintFantasy(); return; } if (kind === "manage") { window.saveGone = false; window.saveShut = false; birdMenu("find"); return; } if (kind === "find" && window.paintFind) { if (window.saveNew && !document.getElementById("desk").classList.contains("tv-full")) saveNew(); paintFind(); return; } if (kind !== "bets") return;
+  if (kind === "shared" && window.sharedOpenFresh) { sharedOpenFresh(); return; } if (kind === "how" && window.paintHow) { paintHow(); return; } if (kind === "stack" && window.trayStackOpen) { trayStackOpen(""); return; } if (kind === "pick" || kind === "ones") { if (window.birdMenu) birdMenu("bets"); return; } if (kind === "rec" && window.paintRec) { if (window.saveNew && !document.getElementById("desk").classList.contains("tv-full")) saveNew(); paintRec(); return; } if (kind === "history" && window.paintHistory) { if (window.saveNew && !document.getElementById("desk").classList.contains("tv-full")) saveNew(); paintHistory(); return; } if (kind === "fantasy" && window.paintFantasy) { paintFantasy(); return; } if (kind === "manage") { window.saveGone = false; window.saveShut = false; pageUrl("manage"); window.pageUrlHold = true; birdMenu("find"); window.pageUrlHold = false; return; } if (kind === "find" && window.paintFind) { if (window.saveNew && !document.getElementById("desk").classList.contains("tv-full")) saveNew(); paintFind(); return; } if (kind !== "bets") return;
+  pageUrl("bets");
   window.asking = true; if (window.goFull) goFull(); if (window.birdQuiet) birdQuiet(); if (window.tvPush && (document.querySelector("#desk-glass-in .rec-board") || { dataset: { page: "" } }).dataset.page !== "bets") tvPush();
   const desk = document.getElementById("desk");
   if (!desk || !desk.classList.contains("tv-full")) { if (window.goFull) goFull(); }
@@ -572,6 +593,35 @@ function openRecommended(id) {
 }
 
 window.birdMenu = birdMenu;
+window.pageUrl = pageUrl;
+window.pageUrlHome = pageUrlHome;
+
+function pageFromUrl() {
+  const kind = PAGE_FROM[location.pathname];
+  if (!kind) return;
+  window.deskGoing = true;
+  const wait = setInterval(() => {
+    if (!window.memberReady || typeof birdMenu !== "function") return;
+    clearInterval(wait);
+    pageUrlQuiet = true;
+    try { pageOpen(kind); } finally { pageUrlQuiet = false; }
+  }, 250);
+}
+pageFromUrl();
+
+window.addEventListener("popstate", () => {
+  if (location.pathname === "/fantasy" || location.pathname === "/live" || location.pathname === "/guide") return;
+  const kind = PAGE_FROM[location.pathname];
+  pageUrlQuiet = true;
+  try {
+    if (kind) pageOpen(kind);
+    else if (location.pathname === "/") {
+      const desk = document.getElementById("desk");
+      const btn = document.getElementById("desk-full");
+      if (desk && desk.classList.contains("tv-full") && btn) { window.tvSkip = true; btn.click(); window.tvSkip = false; }
+    }
+  } finally { pageUrlQuiet = false; }
+});
 
 document.getElementById("bird-guide").addEventListener("pointerdown", (event) => {
   const star = event.target.closest("#greet-rate [data-card]"); if (star && window.openStrategy) { event.preventDefault(); openStrategy(star.dataset.card, star.dataset.part || ""); return; } const menu = event.target.closest("[data-menu]");

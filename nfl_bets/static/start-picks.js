@@ -4,7 +4,7 @@ let startTab = "rec", startBack = null, startUndo = null, startRandomAt = null, 
 let startFavOnly = false;
 let startHistTab = "stats";
 let startPickGames = new Set();
-let startFoldOpen = { league: false, games: false };
+let startFoldOpen = { league: false, games: false, filters: false };
 const startKinds = new Set(), START_KINDS = [["safe", "Safe"], ["balanced", "Balanced"], ["payout", "Payout"], ["good", "Good bet"], ["math", "Math"], ["script", "Script"], ["solid", "Steady role"], ["cushion", "Cushion"]];
 
 function startKindOf(pick) {
@@ -587,6 +587,7 @@ function startRecFeed(board, box, root) {
     startRecMoreSync(wrap, more, pool, shown);
   };
   wrap.append(more);
+  if (typeof recDialNext === "function") wrap.append(recDialNext());
   wrap._recMoreSync = () => startRecMoreSync(wrap, more, pool, shown);
   paintChunk();
   if (pool.picks.length > START_REC_PAGE) {
@@ -642,6 +643,86 @@ function startGameBar(games) {
     bar.append(button);
   });
   return bar;
+}
+
+function startFilterLead(league) {
+  if (league && startSpan === "live") return `Live ${league}`;
+  if (league && startSpan === "next") return `Upcoming ${league} today`;
+  if (league && startSpan === "tomorrow") return `${league} tomorrow`;
+  if (league && startSpan === "week") return `${league} this week`;
+  if (league && startSpan === "done") return `${league} that finished today`;
+  if (startSpan === "live") return "Live";
+  if (startSpan === "next") return "Upcoming today";
+  if (startSpan === "tomorrow") return "Tomorrow";
+  if (startSpan === "week") return "This week";
+  if (startSpan === "done") return "Finished today";
+  return "Upcoming today";
+}
+
+function startFilterBits(games) {
+  const league = typeof homeLeagueOn === "function" ? homeLeagueOn(games) : "";
+  const bits = [];
+  bits.push(startFilterLead(league));
+  if (!league) bits.push("All leagues");
+  if (startPickGames.size) {
+    const names = [...startPickGames].map((match) => typeof gameShort === "function" ? gameShort(match) : match);
+    bits.push(names.length <= 2 ? names.join(" and ") : `${names.length} games`);
+  } else bits.push("All games");
+  if (startKinds.size) {
+    const labels = START_KINDS.filter(([id]) => startKinds.has(id)).map(([, label]) => label);
+    if (labels.length) bits.push(labels.join(" and "));
+  }
+  if (startTab === "parlays" && typeof recParlaySize === "number" && recParlaySize) bits.push(`${recParlaySize}-leg parlays`);
+  return bits;
+}
+
+function startFiltersClear(box) {
+  startPickGames.clear();
+  startKinds.clear();
+  if (typeof recParlaySize === "number") recParlaySize = 0;
+  const spanChanged = startSpan !== "next";
+  startSpan = "next";
+  try { localStorage.setItem("startSpan", "next"); } catch (error) {}
+  if (spanChanged && typeof homeRecs !== "undefined") homeRecs = null;
+  if (typeof homeLeague !== "undefined" && homeLeague) {
+    homeLeague = "";
+    if (typeof homeLeagueSave === "function") { homeLeagueSave(box); return; }
+  }
+  if (typeof startPaint === "function") startPaint(1);
+}
+
+function startFilterChanged() {
+  const league = typeof homeLeague === "string" ? homeLeague : "";
+  return !!(league || startPickGames.size || startKinds.size || startSpan !== "next" || (startTab === "parlays" && typeof recParlaySize === "number" && recParlaySize));
+}
+
+function startFilterSay(games, box) {
+  const line = document.createElement("p");
+  line.className = "start-filter-say";
+  line.append(document.createTextNode(`${startFilterBits(games).join(". ")}.`));
+  if (startFilterChanged()) {
+    const clear = document.createElement("button");
+    clear.type = "button";
+    clear.className = "desk-games-link";
+    clear.textContent = "Clear";
+    clear.addEventListener("click", () => startFiltersClear(box));
+    line.append(clear);
+  }
+  return line;
+}
+
+function startFilterPack(box, leagues, gameBar, board, picks, tabNow) {
+  const fold = document.createElement("details");
+  fold.className = "start-filter-fold start-filter-pack";
+  fold.open = !!startFoldOpen.filters;
+  const summary = document.createElement("summary");
+  summary.textContent = "Filters";
+  fold.append(summary, startSpanBar());
+  if (leagues && leagues[0]) fold.append(leagues[0]);
+  if (gameBar) fold.append(gameBar);
+  if (tabNow === "rec") fold.append(startRandomBar(board, picks));
+  fold.addEventListener("toggle", () => { startFoldOpen.filters = fold.open; });
+  return fold;
 }
 
 function startFilterFold(name, row, say) {
@@ -933,14 +1014,10 @@ function startPaint(again) {
   row.className = "find-start-row";
   const gamesNow = typeof leftGames === "function" ? leftGames() : [];
   const leagues = typeof homeLeagues === "function" ? homeLeagues(box, gamesNow) : [];
-  const leagueOn = typeof homeLeagueOn === "function" ? homeLeagueOn(gamesNow) : "";
   const gameBar = startGameBar(gamesNow);
   row.append(tabs);
   if (!history && tabNow !== "td") {
-    const leagueFold = leagues[0] ? startFilterFold("league", leagues[0], leagueOn ? `Leagues · ${leagueOn}` : "Leagues") : null;
-    const gameFold = gameBar ? startFilterFold("games", gameBar, startPickGames.size ? `Games · ${startPickGames.size}` : "Games") : null;
-    row.append(startSpanBar(), ...(leagueFold ? [leagueFold] : []), ...(gameFold ? [gameFold] : []));
-    if (tabNow === "rec") row.append(startRandomBar(board, picks));
+    row.append(startFilterSay(gamesNow, box), startFilterPack(box, leagues, gameBar, board, picks, tabNow));
   }
   const dial = (tabNow === "rec" || tabNow === "parlays") && typeof recDialBar === "function" ? recDialBar(startDialCommit) : null;
   const body = tabNow === "rec"

@@ -499,7 +499,7 @@ function tvUnbuild() {
 function tvBack() {
   let prev = tvStack.pop(); while (prev && prev.tab === "build" && !prev.built) prev = tvStack.pop();
   const desk = document.getElementById("desk"); const btn = document.getElementById("desk-full");
-  if (!prev) { window.asking = false; if (btn && desk && desk.classList.contains("tv-full")) { tvSkip = true; btn.click(); tvSkip = false; return; } birdHide(); if (window.state && state.tab === "build") { tvSkip = true; showTab("today"); tvSkip = false; } return; }
+  if (!prev) { window.asking = false; if (btn && desk && desk.classList.contains("tv-full")) { tvSkip = true; btn.click(); tvSkip = false; if (typeof pageUrlHome === "function") pageUrlHome(); return; } birdHide(); if (window.state && state.tab === "build") { tvSkip = true; showTab("today"); tvSkip = false; } if (typeof pageUrlHome === "function") pageUrlHome(); return; }
   tvPaint();
   tvSkip = true;
   if (btn && desk && !prev.full && desk.classList.contains("tv-full")) btn.click();

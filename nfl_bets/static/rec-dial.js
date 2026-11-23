@@ -185,7 +185,21 @@ function recDialApply(next, opts) {
   document.querySelectorAll(".find-start-recs").forEach((wrap) => {
     if (typeof wrap._recMoreSync === "function") wrap._recMoreSync();
   });
+  document.querySelectorAll("button.rec-dial-next").forEach((node) => { node.hidden = recDial >= REC_DIAL_MAX; });
   if (!quiet && typeof opts?.onCommit === "function") opts.onCommit(recDial);
+}
+
+function recDialNext() {
+  const go = document.createElement("button");
+  go.type = "button";
+  go.className = "rec-dial-next";
+  go.textContent = "More";
+  go.hidden = recDial >= REC_DIAL_MAX;
+  go.addEventListener("click", () => {
+    if (recDial >= REC_DIAL_MAX) return;
+    recDialApply(recDial + 1);
+  });
+  return go;
 }
 
 function recDialEmptyNote() {
@@ -286,6 +300,7 @@ window.recDialBar = recDialBar;
 window.recDialApply = recDialApply;
 window.recDialEmptySay = recDialEmptySay;
 window.recDialEmptyNote = recDialEmptyNote;
+window.recDialNext = recDialNext;
 window.recDialInBand = recDialInBand;
 window.recDialMark = recDialMark;
 window.recDialSave = recDialSave;

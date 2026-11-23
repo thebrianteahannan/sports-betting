@@ -327,6 +327,8 @@ function recParlayPaint(board, box) {
   list.className = "rec-parlay-list";
   made.rows.forEach((row) => list.append(recParlayCard(board, row)));
   box.append(list);
+  const next = box.querySelector("button.rec-dial-next") || (typeof recDialNext === "function" ? recDialNext() : null);
+  if (next) box.append(next);
   if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 2, { quiet: true });
 }
 

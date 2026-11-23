@@ -2,6 +2,7 @@
 
 function paintRec(page) {
   const history = page === "history";
+  if (typeof pageUrl === "function") pageUrl(history ? "history" : "rec");
   window.asking = true;
   if (document.body.classList.contains("tv-zoom-on") && typeof tvZoomShut === "function") tvZoomShut();
   if (window.goFull) goFull();
