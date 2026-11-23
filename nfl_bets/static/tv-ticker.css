@@ -66,6 +66,9 @@
 #desk.bird-on:not(.tv-full) #bird-guide:has(button[data-menu]) #greet-legal .age { margin: 0; font-size: 1.5rem; }
 #desk.bird-on:not(.tv-full) #bird-guide:has(button[data-menu]) #greet-legal span:last-child { max-width: none; }
 #tv-tick-help .tv-lazy-head { color: #ff9a2e; text-shadow: 0 0 14px rgba(255, 154, 46, 0.55); }
+:is(#tv-tick-book, #tv-tick-risk) .tv-how-alert { padding: 1.15rem 1.2rem 1.25rem; border: 2px solid #ff4d4d; border-radius: 14px; background: rgba(48, 8, 8, 0.82); box-shadow: 0 0 28px rgba(255, 50, 50, 0.45); }
+:is(#tv-tick-book, #tv-tick-risk) .tv-lazy-head { color: #ff4d4d; text-shadow: 0 0 18px rgba(255, 60, 60, 0.85); }
+:is(#tv-tick-book, #tv-tick-risk) .tv-how-strong { color: #ffd2d2; font-size: 1.15rem; }
 #desk-glass #tv-tick-help .tv-how-go { background: #ff9a2e; color: #1a0d00; }
 #desk-glass #tv-tick-help .tv-how-go:hover { background: #ffb35c; }
 .tv-how { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; width: 100%; max-width: 30rem; margin: auto 0; font-family: "Outfit", sans-serif; color: #f4fff6; text-align: center; }

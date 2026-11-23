@@ -413,6 +413,37 @@ function legSwapBox(key, mode) {
   return box;
 }
 
+let betActs = 4;
+try {
+  const saved = Number(localStorage.getItem("betActs"));
+  if (Number.isFinite(saved)) betActs = Math.max(0, Math.min(4, Math.round(saved)));
+} catch (error) {}
+
+function betActsApply() {
+  document.querySelectorAll(".find-tray").forEach((tray) => {
+    const say = tray.querySelector(":scope > .find-say");
+    if (say && !say.querySelector(".bet-acts")) {
+      const bar = document.createElement("label");
+      bar.className = "bet-acts";
+      bar.innerHTML = `<span>Less</span><input type="range" min="0" max="4" step="1" value="${betActs}" aria-label="Show more of the leg tools"><span>More</span>`;
+      bar.querySelector("input").addEventListener("input", (event) => {
+        betActs = Number(event.target.value);
+        try { localStorage.setItem("betActs", String(betActs)); } catch (error) {}
+        document.querySelectorAll(".find-tray").forEach((node) => { node.dataset.acts = String(betActs); });
+        document.querySelectorAll(".bet-acts input").forEach((box) => { box.value = String(betActs); });
+      });
+      const fold = say.querySelector(".find-fold");
+      if (fold) fold.before(bar); else say.append(bar);
+    }
+    tray.dataset.acts = String(betActs);
+    tray.querySelectorAll(".find-chose > button").forEach((button) => {
+      const say = button.classList.contains("find-leg-seek") ? "Search" : button.classList.contains("find-leg-hist") ? "History" : button.classList.contains("find-leg-to") ? "Add" : button.classList.contains("find-leg-swap") ? "Swap" : "";
+      if (say) button.dataset.say = say;
+    });
+  });
+}
+window.betActsApply = betActsApply;
+
 function legSwapPaint() {
   document.querySelectorAll(".find-tray button.find-leg-hist").forEach((hist) => {
     const key = hist.dataset.key;
@@ -465,6 +496,7 @@ function legSwapPaint() {
     document.querySelectorAll(".find-tray .find-tray-swap").forEach((box) => { if (box.dataset.key === key) box.remove(); });
     if (on) { const box = legSwapBox(key, "who"); box.dataset.key = key; name.closest(".find-in").after(box); }
   });
+  betActsApply();
 }
 
 const legMoreOpen = new Set();

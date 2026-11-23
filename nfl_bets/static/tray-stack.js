@@ -1,4 +1,10 @@
 // The parlay tray names the ST strategy its legs belong to, and the legs that would finish it.
+function trayAnyTd(leg) {
+  const text = `${leg.market || ""} ${leg.label || ""}`.toLowerCase();
+  if (/1st touchdown|first touchdown/.test(text)) return false;
+  return /touchdown scorer|to score \d\+ touchdowns|\banytime\b|any time touchdown/.test(text);
+}
+
 function trayStack(tray, legs) {
   const stamp = (tray.stackStamp = (tray.stackStamp || 0) + 1);
   trayUndoLine(tray);
@@ -13,6 +19,7 @@ function trayStack(tray, legs) {
     STACKS.forEach((row, index) => {
       const rank = ((typeof STACK_RANK !== "undefined" && STACK_RANK[row[0]]) || [99])[0];
       (found[row[0]] || []).forEach((stack) => {
+        if (row[0] === "Dutching" && rows.every(trayAnyTd)) return;
         const bets = stack.bets || [];
         const theirs = new Set(bets.map((bet) => key(bet.label)));
         const shared = [...mine].filter((label) => theirs.has(label)).length;

@@ -629,7 +629,7 @@ function startGameBar(games) {
   all.type = "button";
   all.className = `desk-games-league${startPickGames.size ? "" : " on"}`;
   all.textContent = "All";
-  all.addEventListener("click", () => { if (!startPickGames.size) return; startPickGames.clear(); startPaint(1); });
+  all.addEventListener("click", () => { if (!startPickGames.size) return; startPickGames.clear(); startShow(); });
   bar.append(all);
   rows.forEach((game) => {
     const button = document.createElement("button");
@@ -640,7 +640,7 @@ function startGameBar(games) {
       if (startPickGames.has(game.match)) startPickGames.delete(game.match);
       else startPickGames.add(game.match);
       if (startPickGames.size === rows.length) startPickGames.clear();
-      startPaint(1);
+      startShow();
     });
     bar.append(button);
   });
@@ -678,6 +678,13 @@ function startFilterBits(games) {
   return bits;
 }
 
+function startShow() {
+  const home = document.getElementById("desk-games");
+  if (home && typeof homeGamesPaint === "function") { home.dataset.sig = ""; homeGamesPaint(); }
+  if (document.querySelector(".find-start")) startPaint(1);
+}
+window.startShow = startShow;
+
 function startFiltersClear(box) {
   startPickGames.clear();
   startKinds.clear();
@@ -690,7 +697,7 @@ function startFiltersClear(box) {
     homeLeague = "";
     if (typeof homeLeagueSave === "function") { homeLeagueSave(box); return; }
   }
-  if (typeof startPaint === "function") startPaint(1);
+  startShow();
 }
 
 function startFilterChanged() {
@@ -1089,8 +1096,8 @@ document.addEventListener("scroll", () => {
   const row = document.querySelector("#desk-glass-in .find-start-row"), tray = row && row.closest(".find-board").querySelector(":scope > .find-tray:not([hidden])");
   if (row) row.style.top = tray && tray.classList.contains("find-shut") && getComputedStyle(tray).position === "sticky" ? `${tray.offsetHeight + 8}px` : "";
 }, true);
-function startFiltersTuck() {
-  const box = document.getElementById("desk-glass-in");
+function startFiltersTuck(box) {
+  box = box || document.getElementById("desk-glass-in");
   if (!box || box.dataset.filterTuck) return;
   box.dataset.filterTuck = "1";
   let touchY = 0;

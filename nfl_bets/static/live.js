@@ -271,7 +271,7 @@ function liveFilterBar(bar, filters) {
   const bits = liveFilterBits();
   const clear = liveLeagues.size || liveOnlyMine || liveSpanChosen ? ` <button type="button" data-live-clear>Clear</button>` : "";
   const say = `<p class="live-filter-say">${liveEsc(bits.join(". "))}.${clear}</p>`;
-  return `${say}<details class="live-filter-fold"${liveFiltersOpen ? " open" : ""}><summary>Filters</summary>${bar}${filters}</details>`;
+  return `${say}<details class="live-filter-fold"${liveFiltersOpen ? " open" : ""}><summary>Filters</summary>${bar}${filters}</details>${liveZoomBar()}`;
 }
 
 function liveFiltersClear() {
@@ -288,10 +288,13 @@ function liveFiltersClear() {
   if (liveLast) livePaint(liveLast, true);
 }
 
+function liveZoomBar() {
+  return `<p class="live-filters live-zoom-bar"><label class="live-zoom"><span>Less</span><input type="range" class="live-zoom-range" min="0" max="${LIVE_ZOOM_MAX}" step="any" value="${liveZoom}" aria-valuemin="0" aria-valuemax="${LIVE_ZOOM_MAX}" aria-valuenow="${liveZoom}" aria-label="Show more or less on each game"/><span>More</span></label></p>`;
+}
+
 function liveFilters() {
   const mine = liveOnlyMine ? " checked" : "";
-  const zoom = `<label class="live-zoom"><span>Less</span><input type="range" class="live-zoom-range" min="0" max="${LIVE_ZOOM_MAX}" step="any" value="${liveZoom}" aria-valuemin="0" aria-valuemax="${LIVE_ZOOM_MAX}" aria-valuenow="${liveZoom}" aria-label="Show more or less on each game"/><span>More</span></label>`;
-  return `<p class="live-filters">${zoom}<label class="live-court"><input type="checkbox" class="live-mine-box"${mine}/> Show only my bets</label></p>`;
+  return `<p class="live-filters"><label class="live-court"><input type="checkbox" class="live-mine-box"${mine}/> Show only my bets</label></p>`;
 }
 
 const liveDayKey = (when) => new Date(when).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
@@ -364,7 +367,7 @@ function livePaint(data, quiet) {
   const tomorrowBody = tomorrow.length ? `<h2>Tomorrow, ${say(tomorrow.length)}</h2>${livePack(tomorrow.map(liveSoonCard).join(""))}` : empty(liveOnlyMine, tomorrowAll, "No games tomorrow.");
   const weekBody = later.length ? `<h2>This week, ${say(later.length)}</h2>${livePack(later.map(liveSoonCard).join(""))}` : empty(liveOnlyMine, laterAll, "No games the rest of this week.");
   const body = { done: doneBody, live: liveBody, next: nextBody, tomorrow: tomorrowBody, week: weekBody }[liveSpan] || liveBody;
-  box.innerHTML = `${liveNav()}${liveFilterBar(bar, filters)}${body}`;
+  box.innerHTML = `${liveFilterBar(bar, filters)}${body}`;
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => { const left = liveSlide.get(node.dataset.slide); if (left) node.scrollLeft = left; });
   if (!first) {
     box.querySelectorAll("[data-k]").forEach((node) => { if (was.has(node.dataset.k) && was.get(node.dataset.k) !== node.textContent) node.classList.add("live-flash"); });

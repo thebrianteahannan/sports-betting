@@ -92,6 +92,7 @@ function legHistPaint() {
       queueMicrotask(() => { if (to.isConnected && button.isConnected) button.after(to); });
     }
   });
+  if (typeof betActsApply === "function") betActsApply();
 }
 
 function legSeekPerson(name) {

@@ -1,6 +1,6 @@
 /** "Feeling lazy?" on the TV ticker: roll the die and the parrot picks one of the best recommended bets, leaning toward your teams. */
 
-const tvLazy = { picks: null, span: "today", at: 0, last: "", pick: null, leagues: new Set((() => { try { return JSON.parse(localStorage.getItem("lazyLeagues") || "[]"); } catch (error) { return []; } })()), fav: localStorage.getItem("lazyFavOnly") === "1" };
+const tvLazy = { picks: null, span: "today", at: 0, last: "", pick: null, leagues: new Set((() => { try { return JSON.parse(localStorage.getItem("lazyLeagues") || "[]"); } catch (error) { return []; } })()) };
 const TV_LAZY_PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 
 function tvLazyFace(n) {
@@ -27,12 +27,6 @@ function tvLazyPaint() {
       try { localStorage.setItem("lazyLeagues", JSON.stringify([...tvLazy.leagues])); } catch (error) { console.log("[tv-lazy] could not keep the leagues", error); }
       tvLazyFilters(slot);
     }
-    if (event.target.closest(".tv-lazy-fav")) event.stopPropagation();
-  });
-  slot.addEventListener("change", (event) => {
-    if (!event.target.matches(".tv-lazy-fav input")) return;
-    tvLazy.fav = event.target.checked;
-    try { localStorage.setItem("lazyFavOnly", tvLazy.fav ? "1" : ""); } catch (error) { console.log("[tv-lazy] could not keep the checkbox", error); }
   });
   tvLazyLoad().then(() => tvLazyFilters(slot));
 }
@@ -46,13 +40,9 @@ function tvLazyGuest() {
   return document.body.classList.contains("needs-member");
 }
 
-function tvLazyFavOn() {
-  return !!(tvLazy.fav && !tvLazyGuest() && (window.memberTeams || []).length && typeof favTeamsHas === "function");
-}
-
 function tvLazyFits(pick) {
   const game = tvLazyGame(pick);
-  return (!tvLazy.leagues.size || tvLazy.leagues.has(String(game.sport || "").toUpperCase())) && (!tvLazyFavOn() || favTeamsHas(game));
+  return !tvLazy.leagues.size || tvLazy.leagues.has(String(game.sport || "").toUpperCase());
 }
 
 function tvLazyFilters(slot) {
@@ -60,8 +50,7 @@ function tvLazyFilters(slot) {
   if (!bar) return;
   const leagues = [...new Set([...(tvLazy.picks || []).map((pick) => String(tvLazyGame(pick).sport || "").toUpperCase()).filter(Boolean), ...tvLazy.leagues])].sort();
   const chips = leagues.length > 1 || tvLazy.leagues.size ? `<span class="tv-lazy-leagues"><button type="button" class="tv-lazy-league${tvLazy.leagues.size ? "" : " on"}" data-lazy-league="all">All</button>${leagues.map((id) => `<button type="button" class="tv-lazy-league${tvLazy.leagues.has(id) ? " on" : ""}" data-lazy-league="${esc(id)}" aria-pressed="${tvLazy.leagues.has(id)}">${esc(id)}</button>`).join("")}</span>` : "";
-  const fav = !tvLazyGuest() && ((window.memberTeams || []).length || tvLazy.fav) ? `<label class="tv-lazy-fav"><input type="checkbox"${tvLazy.fav ? " checked" : ""}/> Only my teams</label>` : "";
-  bar.innerHTML = chips + fav;
+  bar.innerHTML = chips;
 }
 
 function tvLazyAdd(pick) {
@@ -145,7 +134,7 @@ async function tvLazyRoll(die) {
   lazy.classList.add("rolled");
   tvLazyFilters(lazy.closest("#tv-tick-lazy") || lazy);
   const none = (tvLazy.picks || []).length
-    ? (tvLazyGuest() ? "Tonight's lazy picks are warming up. Sign in and I'll roll you one." : "No pick fits these filters. Pick another league or uncheck Only my teams.")
+    ? (tvLazyGuest() ? "Tonight's lazy picks are warming up. Sign in and I'll roll you one." : "No pick fits these leagues. Pick another one.")
     : "Tonight's picks are not posted yet.";
   out.innerHTML = tvLazy.pick ? tvLazyCard(tvLazy.pick) : `<p class="tv-lazy-none">${none}</p>`;
   out.animate([{ opacity: 0, transform: "translateY(12px)" }, { opacity: 1, transform: "none" }], { duration: 380, easing: "ease-out" });

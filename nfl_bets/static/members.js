@@ -281,7 +281,7 @@ function birdGreet() {
   if (!called) return birdAskName();
   if (!window.memberBorn) return birdAskBorn();
   window.asking = false;
-  const shared = window.sharedGreet ? sharedGreet() : ""; birdSay(`Hey, ${called}. ${shared || "How are we going to find your favorite bet for today?"}`, [...(shared ? [["menu", window.sharedLabel ? sharedLabel() : "See the bets", "shared"]] : []), ["menu", "Build A Bet", "find"], ["menu", "The Games", "live"]]);
+  const shared = window.sharedGreet ? sharedGreet() : ""; birdSay(`Hey, ${called}. ${shared || "How are we going to find your favorite bet for today?"}`, [...(shared ? [["menu", window.sharedLabel ? sharedLabel() : "See the bets", "shared"]] : []), ["menu", "Build A Bet", "find"], ["menu", "The Games", "live"], ["menu", "My Bets", "manage"]]);
 }
 
 function birdLaw() {

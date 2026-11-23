@@ -490,7 +490,7 @@ function savePaint() {
     const fold = document.createElement("button");
     fold.type = "button";
     fold.className = "find-fold";
-    fold.textContent = "My bets …";
+    fold.textContent = `My bets (${list.length}) …`;
     fold.addEventListener("click", () => {
       window.savePeek = !window.savePeek;
       window.saveShut = !window.savePeek;

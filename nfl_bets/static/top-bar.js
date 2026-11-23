@@ -66,18 +66,27 @@ function findUpPaint() {
     go.setAttribute("aria-label", "Back to the search box");
     go.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`;
     go.addEventListener("click", () => {
+      const board = document.querySelector("#desk-glass-in .find-board");
+      if (!board || board.dataset.page !== "find") {
+        if (typeof birdMenu === "function") birdMenu("find");
+        else if (typeof paintFind === "function") paintFind();
+        return;
+      }
       const row = document.getElementById("desk-glass-in");
-      const input = document.querySelector(".find-board > label.find input");
+      const input = board.querySelector(":scope > label.find input");
       if (row) row.scrollTo({ top: 0, behavior: "smooth" });
       if (input) { input.focus({ preventScroll: true }); input.select(); }
     });
     desk.append(go);
   }
   const row = document.getElementById("desk-glass-in");
-  const label = desk.classList.contains("tv-full") && document.querySelector("#desk-glass-in .find-board > label.find");
-  const up = !!(label && row && label.getBoundingClientRect().bottom < row.getBoundingClientRect().top + 80);
-  go.hidden = !up;
-  desk.classList.toggle("find-up", up);
+  const board = document.querySelector("#desk-glass-in .find-board");
+  const onBuild = board && board.dataset.page === "find";
+  const label = onBuild && board.querySelector(":scope > label.find");
+  go.setAttribute("aria-label", onBuild ? "Search" : "Build a bet");
+  const away = desk.classList.contains("tv-full") && !!(label && row && label.getBoundingClientRect().bottom < row.getBoundingClientRect().top + 80);
+  go.hidden = !(desk.classList.contains("tv-full") && board);
+  desk.classList.toggle("find-up", away);
 }
 
 (() => {

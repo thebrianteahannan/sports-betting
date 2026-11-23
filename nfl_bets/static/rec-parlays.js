@@ -37,7 +37,7 @@ function recParlayWho(pick) {
   return cut || "This pick";
 }
 
-function recParlayPool(board) {
+function recParlayLegs(board) {
   if (typeof startRecPool !== "function") return [];
   const pool = startRecPool(typeof leftGames === "function" ? leftGames() : []);
   return (pool.picks || []).map((pick) => {
@@ -47,7 +47,25 @@ function recParlayPool(board) {
     const gap = (rate - book) * 100;
     if (!(gap > 0)) return null;
     return { pick, rate, book, gap, who: recParlayWho(pick) };
-  }).filter(Boolean).sort((a, b) => b.gap - a.gap).slice(0, 14);
+  }).filter(Boolean).sort((a, b) => b.gap - a.gap);
+}
+
+function recParlayPools(legs) {
+  const byLeague = new Map();
+  const byGame = new Map();
+  legs.forEach((leg) => {
+    const sport = typeof homePickSport === "function" ? homePickSport(leg.pick) : "";
+    const match = String(leg.pick.match || "");
+    if (!byLeague.has(sport)) byLeague.set(sport, []);
+    byLeague.get(sport).push(leg);
+    if (!byGame.has(match)) byGame.set(match, []);
+    byGame.get(match).push(leg);
+  });
+  const pools = [];
+  byLeague.forEach((group) => pools.push(group.slice(0, 14)));
+  byGame.forEach((group) => { if (group.length >= 2) pools.push(group.slice(0, 10)); });
+  pools.push(legs.slice(0, 14));
+  return pools;
 }
 
 function recParlayPrice(legs) {
@@ -181,8 +199,8 @@ function recParlayStamp(rows) {
   const known = rows.filter((row) => row.known && row.place === "known");
   const rest = rows.filter((row) => !known.includes(row));
   const tickets = rest.filter((row) => row.place === "golden" || row.place === "silver" || row.place === "bronze");
-  const others = rest.filter((row) => !tickets.includes(row)).slice(0, 24);
-  return [...tickets, ...known, ...others].slice(0, 24 + known.length);
+  const others = rest.filter((row) => !tickets.includes(row));
+  return [...tickets, ...known, ...others];
 }
 
 function recParlayJoin(rows) {
@@ -204,27 +222,60 @@ function recParlayJoin(rows) {
   return recParlayStamp(merged);
 }
 
+function recParlaySport(row) {
+  const sports = [...new Set(row.legs.map((leg) => (typeof homePickSport === "function" ? homePickSport(leg.pick) : "") || ""))];
+  return sports.length === 1 ? sports[0] : "";
+}
+
+function recParlayKeep(rows) {
+  const by = new Map();
+  rows.forEach((row) => {
+    const sport = recParlaySport(row);
+    if (!by.has(sport)) by.set(sport, []);
+    by.get(sport).push(row);
+  });
+  const kept = [];
+  const seen = new Set();
+  const add = (row) => {
+    const id = row.legs.map((leg) => String(leg.pick.label || "").toLowerCase()).sort().join("~");
+    if (seen.has(id)) return;
+    seen.add(id);
+    kept.push(row);
+  };
+  by.forEach((group) => group.sort((a, b) => (Number(b.gap) || 0) - (Number(a.gap) || 0)).slice(0, 8).forEach(add));
+  rows.slice().sort((a, b) => (Number(b.gap) || 0) - (Number(a.gap) || 0)).slice(0, 12).forEach(add);
+  return kept;
+}
+
 function recParlayRanked(board) {
-  const pool = recParlayPool(board);
-  const key = pool.map((leg) => `${leg.pick.label}|${leg.pick.odds}|${leg.pick.hits}`).join("~");
+  const all = recParlayLegs(board);
+  const key = all.map((leg) => `${leg.pick.label}|${leg.pick.odds}|${leg.pick.hits}|${leg.pick.match}`).join("~");
   if (recParlayMade.key !== key) {
     let raw = [];
     let best = null;
-    [2, 3, 4, 5].forEach((n) => {
-      if (pool.length < n) return;
-      const found = recParlayWalk(pool, n, 8);
-      raw = raw.concat(found.rows);
-      if (found.best && (!best || found.best.gap > best.gap)) best = found.best;
+    const seen = new Set();
+    recParlayPools(all).forEach((pool) => {
+      [2, 3, 4, 5].forEach((n) => {
+        if (pool.length < n) return;
+        const found = recParlayWalk(pool, n, 8);
+        found.rows.forEach((row) => {
+          const id = row.legs.map((leg) => String(leg.pick.label || "").toLowerCase()).sort().join("~");
+          if (seen.has(id)) return;
+          seen.add(id);
+          raw.push(row);
+        });
+        if (found.best && (!best || found.best.gap > best.gap)) best = found.best;
+      });
     });
-    recParlayMade = { key, raw, best, pool };
+    recParlayMade = { key, raw, best, pool: all };
   }
-  return { ...recParlayMade, rows: recParlayJoin(recParlayMade.raw || []) };
+  return recParlayMade;
 }
 
 function recParlayBuild(board) {
   const made = recParlayRanked(board);
-  const rows = recParlaySize ? made.rows.filter((row) => row.legs.length === recParlaySize) : made.rows;
-  return { ...made, rows };
+  const source = recParlaySize ? (made.raw || []).filter((row) => row.legs.length === recParlaySize) : (made.raw || []);
+  return { ...made, rows: recParlayJoin(recParlayKeep(source)) };
 }
 
 function recParlayCount(board) {

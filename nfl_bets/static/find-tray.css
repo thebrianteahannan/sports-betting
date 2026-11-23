@@ -1085,3 +1085,23 @@
   .rec-board .find-list.find-td-board .td-more > .find-card .find-log { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 .rec-board .find-tray.find-flow, #choice-result .find-tray.find-flow { position: relative; }
+:is(.rec-board, #choice-result) .find-tray .find-say .bet-acts { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; color: #9fb3c8; font: 700 11px Outfit, system-ui, sans-serif; letter-spacing: 0.04em; text-transform: uppercase; cursor: default; }
+:is(.rec-board, #choice-result) .find-tray .find-say button.find-fold { margin-left: 0.45rem !important; }
+:is(.rec-board, #choice-result) .find-tray .bet-acts input[type="range"] { -webkit-appearance: none; appearance: none; width: 92px; height: 22px; margin: 0; padding: 0; border: 0; background: transparent; outline: none; cursor: pointer; accent-color: #3dff6e; }
+:is(.rec-board, #choice-result) .find-tray .bet-acts input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 999px; background: #1c2a36; }
+:is(.rec-board, #choice-result) .find-tray .bet-acts input[type="range"]::-moz-range-track { height: 4px; border-radius: 999px; background: #1c2a36; border: 0; }
+:is(.rec-board, #choice-result) .find-tray .bet-acts input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; margin-top: -5px; border: 2px solid #04140c; border-radius: 50%; background: #3dff6e; cursor: grab; }
+:is(.rec-board, #choice-result) .find-tray .bet-acts input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 2px solid #04140c; border-radius: 50%; background: #3dff6e; cursor: grab; }
+:is(.rec-board, #choice-result) .find-tray[data-acts] .find-chose > button.find-leg-more { display: none !important; }
+:is(.rec-board, #choice-result) .find-tray[data-acts="0"] .find-chose > button:not(.find-out),
+:is(.rec-board, #choice-result) .find-tray[data-acts="1"] .find-chose > button:not(.find-out, .find-leg-seek),
+:is(.rec-board, #choice-result) .find-tray[data-acts="2"] .find-chose > button:not(.find-out, .find-leg-seek, .find-leg-hist),
+:is(.rec-board, #choice-result) .find-tray[data-acts="3"] .find-chose > button:not(.find-out, .find-leg-seek, .find-leg-hist, .find-leg-to) { display: none !important; }
+:is(.rec-board, #choice-result) .find-tray[data-acts="1"] .find-chose > button.find-leg-seek,
+:is(.rec-board, #choice-result) .find-tray[data-acts="2"] .find-chose > button:is(.find-leg-seek, .find-leg-hist),
+:is(.rec-board, #choice-result) .find-tray[data-acts="3"] .find-chose > button:is(.find-leg-seek, .find-leg-hist, .find-leg-to),
+:is(.rec-board, #choice-result) .find-tray[data-acts="4"] .find-chose > button:is(.find-leg-seek, .find-leg-hist, .find-leg-to, .find-leg-swap) { display: inline-flex !important; align-items: center; justify-content: center; }
+:is(.rec-board, #choice-result) .find-tray[data-acts="4"] .find-chose { flex-wrap: wrap; justify-content: flex-end; }
+:is(.rec-board, #choice-result) .find-tray[data-acts="4"] .find-chose > span { flex: 1 1 calc(100% - 2rem); }
+:is(.rec-board, #choice-result) .find-tray[data-acts="4"] .find-chose > button[data-say] { width: auto !important; height: auto !important; padding: 0.15rem 0.5rem 0.15rem 1.45rem !important; background-position: 0.28rem center !important; color: #c9d4dd !important; font-size: 11px !important; font-weight: 800 !important; letter-spacing: 0 !important; text-transform: none !important; }
+:is(.rec-board, #choice-result) .find-tray[data-acts="4"] .find-chose > button[data-say]::after { content: attr(data-say); }
