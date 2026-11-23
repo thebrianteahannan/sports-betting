@@ -178,12 +178,12 @@ function paintStack() {
   board.append(title);
   const filters = document.createElement("div");
   filters.className = "rec-filters"; if (window.stackOpen) filters.classList.add("open");
-  window.stackWhen = window.stackWhen || "today";
+  window.stackWhen = ["done", "live", "next", "tomorrow", "week"].includes(window.stackWhen) ? window.stackWhen : "next";
   window.stackLeagues = window.stackLeagues || [];
   window.stackGames = window.stackGames || [];
   window.stackTeams = window.stackTeams || [];
   window.stackPlayers = window.stackPlayers || [];
-  filters.innerHTML = `<div class="rec-head"><span class="rec-tools"><button type="button" class="rec-fold" data-stack-fold>Filters</button><button type="button" class="stack-fit-go">With a bet <span class="n"></span></button></span><span class="rec-sort"><span class="name">Sort</span><button type="button" data-stack-sort="rank">Rank</button><button type="button" data-stack-sort="st">ST number</button><button type="button" data-stack-sort="bets">Bets</button></span></div><div class="row stack-when"><span class="name">When</span><button type="button" data-stack-when="today">Today <span class="n"></span></button><button type="button" data-stack-when="week">This week <span class="n"></span></button></div><div class="row stack-league" hidden><span class="name">League</span></div><div class="row stack-game" hidden><span class="name">Game</span></div><div class="row stack-team" hidden><span class="name">Team</span></div><div class="row stack-player" hidden><span class="name">Player</span></div><div class="row"><button type="button" class="stack-beat-go">Beats the price <span class="n"></span></button></div><p class="stack-none quiet" hidden>None of the current FanDuel prices fit a stack.</p>`;
+  filters.innerHTML = `<div class="rec-head"><span class="rec-tools"><button type="button" class="rec-fold" data-stack-fold>Filters</button><button type="button" class="stack-fit-go">With a bet <span class="n"></span></button></span><span class="rec-sort"><span class="name">Sort</span><button type="button" data-stack-sort="rank">Rank</button><button type="button" data-stack-sort="st">ST number</button><button type="button" data-stack-sort="bets">Bets</button></span></div><div class="row stack-when"><span class="name">When</span><button type="button" data-stack-when="done">Finished Today <span class="n"></span></button><button type="button" data-stack-when="live">Live <span class="n"></span></button><button type="button" data-stack-when="next">Upcoming Today <span class="n"></span></button><button type="button" data-stack-when="tomorrow">Tomorrow <span class="n"></span></button><button type="button" data-stack-when="week">This Week <span class="n"></span></button></div><div class="row stack-league" hidden><span class="name">League</span></div><div class="row stack-game" hidden><span class="name">Game</span></div><div class="row stack-team" hidden><span class="name">Team</span></div><div class="row stack-player" hidden><span class="name">Player</span></div><div class="row"><button type="button" class="stack-beat-go">Beats the price <span class="n"></span></button></div><p class="stack-none quiet" hidden>None of the current FanDuel prices fit a stack.</p>`;
   filters.addEventListener("click", (event) => {
     const button = event.target.closest("button");
     if (!button) return;
@@ -275,8 +275,7 @@ window.stackToggle = stackToggle;
 
 function stackKeep(set, when, leagues, games = [], teams = [], players = []) {
   if (window.stackBeats && set.dataset.beats !== "1") return false;
-  if (when === "today" && set.dataset.span !== "today") return false;
-  if (when === "week" && set.dataset.span === "later") return false;
+  if (when && set.dataset.span !== when) return false;
   const sports = String(set.dataset.sport || "").split("|").filter(Boolean);
   const matches = String(set.dataset.games || "").split("|").filter(Boolean);
   if (games.length && !(matches.length && matches.every((match) => games.includes(match)))) return false;
@@ -479,7 +478,9 @@ function fillStacks(board) {
           set.dataset.sport = [...new Set(hit.map((game) => String(game.sport || "")).filter(Boolean))].join("|");
           set.dataset.games = hit.map((game) => game.match).join("|");
           set.dataset.labels = (stack.bets || []).map((bet) => String(bet.label || "").replace(/\|/g, " ")).join("|");
-          set.dataset.span = !days.length ? "week" : days.every((day) => day === today) ? "today" : days.every((day) => day <= end) ? "week" : "later";
+          const order = ["live", "next", "tomorrow", "week", "done"];
+          const found = hit.map((game) => { const ms = Date.parse(game.kickoff || ""); return Number.isFinite(ms) && typeof whenBucket === "function" ? whenBucket(ms, game.match) : ""; });
+          set.dataset.span = order.find((id) => found.includes(id)) || (!days.length ? "week" : days.every((day) => day <= end) ? "week" : "later");
           set.dataset.n = String((stack.bets || []).length);
           set.dataset.beats = stack.beats ? "1" : "0";
           const name = document.createElement("p");

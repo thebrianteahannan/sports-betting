@@ -404,7 +404,7 @@ function startTdGo(board, people) {
   if (span) { span.classList.add("find-picked"); span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); }
   if (more) more.hidden = false;
   document.querySelectorAll(".find-start").forEach((node) => node.remove());
-  openTdPage(list, people || board.people || [], hits, null, null, startSpan === "week" ? "week" : "today");
+  openTdPage(list, people || board.people || [], hits, null, null, typeof startNeedsWeek === "function" && startNeedsWeek() ? "week" : "today");
 }
 window.startTdGo = startTdGo;
 
@@ -510,13 +510,8 @@ function startRecMoreSync(wrap, more, pool, shown) {
 function startRecFeed(board, box, root) {
   const games = leftGames();
   const pool = startRecPool(games);
-  const when = startSpan === "week" ? "this week" : "tonight";
+  const when = typeof startWhenSay === "function" ? startWhenSay() : (startSpan === "week" ? "this week" : "tonight");
   const recs = [];
-  if (pool.span && pool.span !== "today" && startSpan !== "week") {
-    recs.push(Object.assign(document.createElement("p"), { className: "desk-games-note desk-games-label", textContent: pool.span === "tomorrow" ? "Tomorrow" : "Coming up" }));
-  } else if (startSpan === "week") {
-    recs.push(Object.assign(document.createElement("p"), { className: "desk-games-note desk-games-label", textContent: "This week" }));
-  }
   if (pool.status === "loading") return { recs: [...recs, Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: "Looking up the picks." })], picks: [], all: [] };
   if (pool.status === "tonight") return { recs: [...recs, typeof homeWeekNote === "function" ? homeWeekNote(box, pool.league || "") : Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: "No picks tonight." })], picks: [], all: [] };
   if (pool.status === "empty" || !pool.picks.length) {
@@ -559,7 +554,7 @@ function startRecFeed(board, box, root) {
 }
 
 function startRecs(board, box, root) {
-  const left = leftGames(), when = startSpan === "week" ? "this week" : "today";
+  const left = leftGames(), when = typeof startWhenSay === "function" ? startWhenSay() : "today";
   const { recs, picks, all } = startRecFeed(board, box, root);
   const games = homeGameRows(left, box).filter((node) => !startFavOnly || !node.startGame || startFavGame(node.startGame.match)).map((node) => {
     if (!node.classList.contains("desk-game") || node.classList.contains("desk-game-live")) return node;
@@ -757,8 +752,8 @@ function startPaint(again) {
   if (!spot || !board || typeof homeRecRows !== "function") return;
   const input = board.querySelector("label.find input");
   const panel = board.dataset.page === "rec";
-  if (startSpan === "week") startWeekLoad();
-  homeRecsLoad(startSpan === "week" ? "week" : "auto"); homeLogosLoad(); homeLeagueSync();
+  if (typeof startNeedsWeek === "function" && startNeedsWeek()) startWeekLoad();
+  homeRecsLoad(typeof startNeedsWeek === "function" && startNeedsWeek() ? "week" : "auto"); homeLogosLoad(); homeLeagueSync();
   const box = document.createElement("div");
   box.className = `find-start${panel ? " find-start-panel" : " find-start-quick"}`;
   if (!panel) {
@@ -822,7 +817,7 @@ function startPaint(again) {
     const counts = typeof recDialCountOf === "function" ? recDialCountOf(all) : { golden: 0, all: all.length };
     recDialCountPaint(counts);
   }
-  const waiting = (startSpan === "week" && startWeekLoading) || !homeRecs || homeRecs.loading;
+  const waiting = (typeof startNeedsWeek === "function" && startNeedsWeek() && startWeekLoading) || !homeRecs || homeRecs.loading;
   if (waiting && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
 }
 

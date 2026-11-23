@@ -1,8 +1,9 @@
 /** Quick add above Recommended: today/week → league → team or player → player → prop → value → current or new bet. */
-const quickAdd = { when: "today", sport: "", team: "", side: "", player: "", prop: "", value: "", q: "" };
+const QUICK_WHEN = [["done", "Finished Today"], ["live", "Live"], ["next", "Upcoming Today"], ["tomorrow", "Tomorrow"], ["week", "This Week"]];
+const quickAdd = { when: "next", sport: "", team: "", side: "", player: "", prop: "", value: "", q: "" };
 
 function quickAddReset(keep) {
-  const when = keep && keep.when ? quickAdd.when : "today";
+  const when = keep && keep.when ? quickAdd.when : "next";
   const sport = keep && keep.sport ? quickAdd.sport : "";
   quickAdd.when = when;
   quickAdd.sport = sport;
@@ -18,9 +19,13 @@ function quickAddPeople(board) {
   return (board && board.people) || [];
 }
 
+function quickAddSpan(when) {
+  return when === "tomorrow" || when === "week" ? "week" : "today";
+}
+
 function quickAddScope(people, when) {
   if (!when || !people.length) return [];
-  const games = typeof loadedGames === "function" ? loadedGames(people, when) : [];
+  const games = (typeof loadedGames === "function" ? loadedGames(people, quickAddSpan(when)) : []).filter((game) => typeof whenBucket !== "function" || whenBucket(Date.parse(game.kickoff || ""), game.match) === when);
   const keys = new Set(games.map((game) => `${game.match}|${game.kickoff}`));
   if (!keys.size) return [];
   return people.map((person) => {
@@ -38,8 +43,9 @@ function quickAddOnSport(bet, sport) {
 }
 
 function quickAddGames(people, sport, when) {
-  const rows = typeof loadedGames === "function" ? loadedGames(people, when || quickAdd.when || "today") : [];
-  return (rows || []).filter((game) => quickAddOnSport(game, sport) && String(game.match || "").trim())
+  const want = when || quickAdd.when || "next";
+  const rows = typeof loadedGames === "function" ? loadedGames(people, quickAddSpan(want)) : [];
+  return (rows || []).filter((game) => quickAddOnSport(game, sport) && String(game.match || "").trim() && (typeof whenBucket !== "function" || whenBucket(Date.parse(game.kickoff || ""), game.match) === want))
     .sort((a, b) => Date.parse(a.kickoff || "") - Date.parse(b.kickoff || "") || String(a.match).localeCompare(String(b.match)));
 }
 
@@ -626,7 +632,7 @@ function quickAddBox(board) {
   box.className = "quick-add";
   const head = document.createElement("div");
   head.className = "quick-add-head";
-  head.innerHTML = `<b>Quick add</b><span>Today or this week → league → game → team or player → prop → value</span>`;
+  head.innerHTML = `<b>Quick add</b><span>When → league → game → team or player → prop → value</span>`;
   box.append(head);
 
   const paint = (focusSearch) => {
@@ -646,21 +652,13 @@ function quickAddBox(board) {
     quickAddReveal(next);
   };
 
-  if (!quickAdd.when) quickAdd.when = "today";
-  box.append(quickAddStep("When", [
-    quickAddChip("Today", quickAdd.when === "today", () => {
-      if (quickAdd.when === "today") return;
-      quickAdd.when = "today";
-      quickAddReset({ when: true });
-      paint();
-    }),
-    quickAddChip("This week", quickAdd.when === "week", () => {
-      if (quickAdd.when === "week") return;
-      quickAdd.when = "week";
-      quickAddReset({ when: true });
-      paint();
-    }),
-  ], "when"));
+  if (!QUICK_WHEN.some(([id]) => id === quickAdd.when)) quickAdd.when = "next";
+  box.append(quickAddStep("When", QUICK_WHEN.map(([id, label]) => quickAddChip(label, quickAdd.when === id, () => {
+    if (quickAdd.when === id) return;
+    quickAdd.when = id;
+    quickAddReset({ when: true });
+    paint();
+  })), "when"));
 
   const all = quickAddPeople(board);
   const people = quickAddScope(all, quickAdd.when);
@@ -668,7 +666,8 @@ function quickAddBox(board) {
   if (!sports.length) {
     const none = document.createElement("p");
     none.className = "quick-add-none";
-    const loaded = !!(all.length || (typeof findParts !== "undefined" && findParts[quickAdd.when] && findParts[quickAdd.when].data));
+    const span = quickAddSpan(quickAdd.when);
+    const loaded = !!(all.length || (typeof findParts !== "undefined" && findParts[span] && findParts[span].data));
     none.textContent = !loaded
       ? "Looking up the board."
       : "No games on the board.";

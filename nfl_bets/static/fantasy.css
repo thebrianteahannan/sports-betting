@@ -180,11 +180,13 @@
   gap: 0.35rem 0.75rem;
 }
 
+#desk.tv-full #desk-glass .fantasy-board .fantasy-zoom.fantasy-match-zoom,
 .fantasy-board .fantasy-match-zoom {
-  flex: 1 1 auto;
+  flex: 0 1 28rem;
   width: 100%;
   max-width: 28rem;
   margin: 0.1rem 0 0.2rem;
+  margin-left: 0;
 }
 
 .fantasy-board .fantasy-match-zoom input[type="range"] {

@@ -26,13 +26,39 @@ function homeGamesLoad() {
   loadFind("today").then((data) => {
     const people = Array.isArray(data && data.people) ? data.people : [];
     homeGamesList = loadedGames(people, "today");
-    if (startSpan !== "week") homePickBoard = { span: "today", at: Date.now(), people };
+    if (!startNeedsWeek()) homePickBoard = { span: "today", at: Date.now(), people };
     homeGamesPaint();
   }).catch((error) => { homeGamesAt = 0; console.log("[home-games] could not load", error); });
 }
 
-let homeLater = { at: 0, weekAt: 0, loading: false, live: [], tomorrow: [], week: [] };
-let startSpan = localStorage.getItem("startSpan") === "week" ? "week" : "today";
+let homeLater = { at: 0, weekAt: 0, loading: false, live: [], done: [], tomorrow: [], week: [] };
+const START_WHEN = [["done", "Finished Today"], ["live", "Live"], ["next", "Upcoming Today"], ["tomorrow", "Tomorrow"], ["week", "This Week"]];
+let startSpan = START_WHEN.some(([id]) => id === localStorage.getItem("startSpan")) ? localStorage.getItem("startSpan") : "next";
+function startNeedsWeek() { return startSpan === "tomorrow" || startSpan === "week"; }
+function startKickDay(ms) { return new Date(ms).toLocaleDateString("en-CA", { timeZone: "America/New_York" }); }
+function startWhenSay() { return { done: "finished today", live: "live", next: "later today", tomorrow: "tomorrow", week: "this week" }[startSpan] || "today"; }
+function whenNick(name) { return String(name || "").toLowerCase().replace(/[^a-z0-9 ]/g, "").trim().split(/\s+/).pop(); }
+function whenSides(game) {
+  if (game && game.match && String(game.match).includes(" @ ")) return String(game.match).split(/\s+@\s+/).map(whenNick);
+  const away = game && game.away && game.away.name, home = game && game.home && game.home.name;
+  return away && home ? [whenNick(away), whenNick(home)] : [];
+}
+function whenSame(a, b) {
+  const left = whenSides(a), right = whenSides(b);
+  return left.length === 2 && right.length === 2 && left[0] === right[0] && left[1] === right[1];
+}
+function whenBucket(ms, match) {
+  if (!Number.isFinite(ms)) return "";
+  const now = Date.now(), today = startKickDay(now), day = startKickDay(ms), tomorrow = startKickDay(now + 86400000), end = startKickDay(now + 14 * 86400000);
+  const row = { match: match || "" };
+  if (day === today && ms > now) return "next";
+  if (day === today && (homeLater.live || []).some((game) => whenSame(game, row))) return "live";
+  if (day === today && ms <= now) return (homeLater.live || []).length || homeLater.at ? "done" : (ms > now - 4 * 3600000 ? "live" : "done");
+  if (day === tomorrow) return "tomorrow";
+  if (day > tomorrow && day <= end) return "week";
+  return "";
+}
+window.whenBucket = whenBucket;
 let startWeekGames = [], startWeekAt = 0, startWeekLoading = false;
 
 function homeLaterLoad() {
@@ -42,6 +68,7 @@ function homeLaterLoad() {
   const week = Date.now() - homeLater.weekAt < 5 * 60 * 1000 ? Promise.resolve(null) : loadFind("week").then((data) => loadedGames(Array.isArray(data && data.people) ? data.people : [], "week"));
   Promise.all([fetch("/api/live?all=1", { credentials: "same-origin" }).then((reply) => (reply.ok ? reply.json() : null)), week]).then(([live, games]) => {
     homeLater.live = (live && live.live) || [];
+    homeLater.done = (live && live.done) || [];
     if (games) {
       homeLater.weekAt = Date.now();
       homeLater.week = games;
@@ -65,7 +92,7 @@ function startWeekMerge(board, people) {
 }
 
 function startWeekLoad(done) {
-  if (startSpan !== "week") { if (done) done(); return; }
+  if (!startNeedsWeek()) { if (done) done(); return; }
   if (Date.now() - startWeekAt < 5 * 60 * 1000 && startWeekGames.length) { if (done) done(); return; }
   if (homeLater.week.length && Date.now() - homeLater.weekAt < 5 * 60 * 1000) { startWeekGames = homeLater.week; startWeekAt = homeLater.weekAt; if (done) done(); return; }
   if (startWeekLoading || typeof loadFind !== "function") { if (done) done(); return; }
@@ -83,15 +110,17 @@ function startWeekLoad(done) {
 function startSpanBar() {
   const bar = document.createElement("span");
   bar.className = "find-start-span desk-games-leagues";
-  [["today", "Today"], ["week", "This week"]].forEach(([id, label]) => {
-    const on = startSpan === id, chip = Object.assign(document.createElement("button"), { type: "button", className: `desk-games-league find-start-when${on ? " on" : ""}`, textContent: startWeekLoading && id === "week" && on ? "Looking up…" : label });
+  if (!document.body.classList.contains("needs-member")) homeLaterLoad();
+  START_WHEN.forEach(([id, label]) => {
+    const on = startSpan === id, looking = on && startWeekLoading && (id === "week" || id === "tomorrow");
+    const chip = Object.assign(document.createElement("button"), { type: "button", className: `desk-games-league find-start-when${on ? " on" : ""}`, textContent: looking ? "Looking up…" : label });
     chip.setAttribute("aria-pressed", String(on));
     chip.addEventListener("click", () => {
       if (startSpan === id) return;
       startSpan = id;
-      try { localStorage.setItem("startSpan", id === "week" ? "week" : ""); } catch (error) {}
+      try { localStorage.setItem("startSpan", id); } catch (error) {}
       homeRecs = null;
-      if (id === "week") startWeekLoad(() => { if (typeof startPaint === "function") startPaint(1); });
+      if (startNeedsWeek()) startWeekLoad(() => { if (typeof startPaint === "function") startPaint(1); });
       if (typeof startPaint === "function") startPaint(1);
       else startHomeStrip();
     });
@@ -102,19 +131,26 @@ function startSpanBar() {
 
 function startPickSpanOk(pick) {
   const kick = Date.parse(pick.kickoff || "");
-  if (!Number.isFinite(kick)) return startSpan !== "today";
-  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
-  const day = fmt.format(kick), now = fmt.format(Date.now());
-  if (startSpan === "week") return day >= now;
-  return day === now;
+  if (!Number.isFinite(kick)) return startSpan === "week";
+  return whenBucket(kick, pick.match) === startSpan;
+}
+
+function startGamesFor(span) {
+  const now = Date.now(), today = startKickDay(now), tomorrow = startKickDay(now + 86400000);
+  const dayOf = (game) => startKickDay(Date.parse(game.kickoff || game.when || ""));
+  const fromLive = (row, final) => ({ match: row.match || `${(row.away && row.away.name) || ""} @ ${(row.home && row.home.name) || ""}`, kickoff: row.when || row.kickoff || "", sport: row.sport || "", clock: row.clock || "", away: row.away, home: row.home, id: row.id, live: !final, final: !!final });
+  if (span === "live") return (homeLater.live || []).map((row) => fromLive(row, false));
+  if (span === "done") {
+    const seen = new Set();
+    return (homeLater.done || []).filter((row) => dayOf(row) === today).map((row) => fromLive(row, true)).concat(homeGamesList.filter((game) => dayOf(game) === today && Date.parse(game.kickoff || "") <= now && !(homeLater.live || []).some((row) => whenSame(row, game)))).filter((game) => { const key = game.match; if (!key || seen.has(key)) return false; seen.add(key); return true; });
+  }
+  if (span === "next") return homeGamesList.filter((game) => dayOf(game) === today && Date.parse(game.kickoff || "") > now);
+  if (span === "tomorrow") return (homeLater.tomorrow.length ? homeLater.tomorrow : startWeekGames).filter((game) => dayOf(game) === tomorrow);
+  return startWeekGames.filter((game) => dayOf(game) > tomorrow);
 }
 
 function leftGames() {
-  const now = Date.now(), list = startSpan === "week" ? startWeekGames : homeGamesList;
-  return list.filter((game) => {
-    const kick = Date.parse(game.kickoff || "");
-    return kick > now || (game.sport === "PGA" && kick > now - 5 * 24 * 60 * 60 * 1000);
-  });
+  return startGamesFor(startSpan);
 }
 
 function homeLiveRow(game) {
@@ -170,7 +206,7 @@ function homeGamesRow(game) {
   const row = document.createElement("button");
   row.type = "button";
   row.className = "desk-game";
-  const when = game.kickoff ? `${new Date(game.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET` : "";
+  const when = game.final ? "Final" : (game.kickoff ? `${new Date(game.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET` : "");
   row.innerHTML = `<span class="desk-game-sport">${esc(game.sport || "")}</span><span class="desk-game-match">${homeTeamStar(game)}${game.match.includes(" @ ") ? game.match.split(" @ ").map(homeTeam).join(" @ ") : esc(game.match)}</span><span class="desk-game-when">${esc(when)}</span>`;
   const until = document.createElement("span");
   until.className = "find-until desk-game-until";
@@ -204,7 +240,7 @@ function homePickBoardNow() {
 
 function homePickBoardLoad() {
   if (typeof loadFind !== "function") return;
-  const span = startSpan === "week" ? "week" : "today";
+  const span = startNeedsWeek() ? "week" : "today";
   const live = document.querySelector("#desk-glass-in .find-board");
   if (live && (live.people || []).length) return;
   if (homePickBoard && homePickBoard.span === span && (homePickBoard.loading || ((homePickBoard.people || []).length && Date.now() - homePickBoard.at < 10 * 60 * 1000))) return;
@@ -550,15 +586,9 @@ function homeMoreNote() {
 }
 
 function homeGameRows(games, box) {
-  const league = homeLeagueOn(games), rows = games.filter((game) => !league || game.sport === league), when = (typeof startSpan === "string" && startSpan === "week") ? "this week" : "today";
-  if (rows.length) return rows.map(homeGamesRow);
-  if (!homeGamesLeft() && when === "today") {
-    const live = homeLater.live.filter((game) => !league || game.sport === league), next = homeLater.tomorrow.filter((game) => !league || game.sport === league);
-    const label = (text) => Object.assign(document.createElement("p"), { className: "desk-games-note desk-games-label", textContent: text });
-    const list = [...(live.length ? [label("Live now"), ...live.map(homeLiveRow)] : []), ...(next.length ? [label("Tomorrow"), ...next.map(homeGamesRow)] : [])];
-    if (list.length) return list;
-  }
-  return [league ? homeLeagueClearNote(box, `No ${league} games left ${when}.`) : Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: `No games left ${when}.` })];
+  const league = homeLeagueOn(games), rows = games.filter((game) => !league || game.sport === league), when = startWhenSay();
+  if (rows.length) return rows.map((game) => game.live ? homeLiveRow(game) : homeGamesRow(game));
+  return [league ? homeLeagueClearNote(box, `No ${league} games ${when}.`) : Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: `No games ${when}.` })];
 }
 
 function homeGamesLeft() {
@@ -653,8 +683,9 @@ function homeGamesPaint() {
   box.style.top = `${at}px`;
   document.body.style.setProperty("--home-games-top", `${at + 12}px`);
   if (!fresh.length) {
-    if (startSpan === "week") startWeekLoad();
-    homeRecsLoad(startSpan === "week" ? "week" : "auto");
+    if (startNeedsWeek()) startWeekLoad();
+    if (!guest) homeLaterLoad();
+    homeRecsLoad(startNeedsWeek() ? "week" : "auto");
     homePickBoardLoad();
   }
   homeLogosLoad();
