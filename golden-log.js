@@ -9,6 +9,27 @@ function idOf(pick) {
   return `${pick.label}|${pick.market || ""}|${pick.match}|${pick.kickoff || ""}`;
 }
 
+function dayKey(when) {
+  const at = typeof when === "number" ? when : Date.parse(when || "");
+  const stamp = Number.isFinite(at) ? at : Date.now();
+  return new Date(stamp - 6 * 3600000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+}
+
+function inBand(odds) {
+  const o = Number(odds);
+  return Number.isFinite(o) && o >= -250 && o <= 100;
+}
+
+function oneEachDay(rows) {
+  const byDay = new Map();
+  [...(rows || [])].forEach((row) => {
+    const day = dayKey(row.kickoff || row.markedAt);
+    const prev = byDay.get(day);
+    if (!prev || (row.markedAt || 0) < (prev.markedAt || 0)) byDay.set(day, row);
+  });
+  return byDay;
+}
+
 function snap(pick) {
   return {
     id: idOf(pick),
@@ -58,10 +79,41 @@ async function save(row) {
 
 async function note(pick) {
   if (!pick || !pick.label || !pick.match) return;
-  const have = await load();
+  const have = await load(true);
+  const day = dayKey(pick.kickoff || Date.now());
+  if ([...have.values()].some((row) => dayKey(row.kickoff || row.markedAt) === day)) return;
   const id = idOf(pick);
   if (have.has(id)) return;
   await save(snap(pick));
+}
+
+async function choose(ranked) {
+  const list = ranked || [];
+  let have = new Map();
+  try { have = await load(); } catch (error) { have = new Map(); }
+  const held = oneEachDay(have.values());
+  const today = dayKey(Date.now());
+  const saved = held.get(today);
+  if (saved) {
+    const live = list.find((pick) => idOf(pick) === saved.id);
+    const golden = { ...(live || saved), golden: true };
+    return {
+      picks: list.map((pick) => ({ ...pick, golden: idOf(pick) === saved.id })),
+      golden,
+    };
+  }
+  const days = new Map();
+  list.forEach((pick) => {
+    const day = dayKey(pick.kickoff);
+    if (!days.has(day)) days.set(day, []);
+    days.get(day).push(pick);
+  });
+  const slate = [...days.keys()].sort()[0] || today;
+  const next = (days.get(slate) || days.get(today) || []).find((pick) => inBand(pick.odds));
+  return {
+    picks: list.map((pick) => ({ ...pick, golden: !!next && idOf(pick) === idOf(next) })),
+    golden: next ? { ...next, golden: true } : null,
+  };
 }
 
 async function settle() {
@@ -80,7 +132,7 @@ async function settle() {
 }
 
 async function tally() {
-  const rows = [...(await load().catch(() => new Map())).values()];
+  const rows = [...oneEachDay((await load().catch(() => new Map())).values()).values()];
   const decided = rows.filter((row) => row.result === "won" || row.result === "lost");
   const history = rows.slice().sort((a, b) => (b.markedAt || 0) - (a.markedAt || 0)).map((row) => ({
     id: row.id,
@@ -108,4 +160,4 @@ async function tally() {
   };
 }
 
-module.exports = { note, settle, tally };
+module.exports = { note, choose, settle, tally };

@@ -214,6 +214,29 @@ async function pgaOffer(game) {
   return { rows, live: false };
 }
 
+const lastProps = new Map();
+
+function rememberProps(id, rows) {
+  if (!id || !rows.length) return;
+  lastProps.set(id, rows);
+  try {
+    const { kv } = require("./live-recs");
+    kv("", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { k: `bets/props/${id}`, v: { at: Date.now(), rows } } }).catch(() => {});
+  } catch (error) {}
+}
+
+async function keptProps(id) {
+  if (!id) return [];
+  if (lastProps.has(id)) return lastProps.get(id);
+  try {
+    const { kv } = require("./live-recs");
+    const found = await kv(`?k=eq.${encodeURIComponent(`bets/props/${id}`)}&select=v`);
+    const rows = found && found[0] && found[0].v && found[0].v.rows;
+    if (Array.isArray(rows) && rows.length) { lastProps.set(id, rows); return rows; }
+  } catch (error) {}
+  return [];
+}
+
 async function offerLegs(game) {
   if (game.sport === "PGA") return pgaOffer(game);
   if (Array.isArray(game.props) && game.props.length) return { rows: game.props.filter((leg) => leg && typeof leg === "object"), live: !!game.live };
@@ -242,6 +265,18 @@ async function offerLegs(game) {
       seen.add(key);
       rows.push(row);
     });
+  }
+  const id = String(game.id || "");
+  const started = Date.parse(game.kickoff || "") <= Date.now();
+  if (rows.length) {
+    const prev = lastProps.get(id) || [];
+    const use = started && prev.length > rows.length ? prev : rows;
+    if (use === rows) rememberProps(id, rows);
+    return { rows: use, live };
+  }
+  if (started) {
+    const kept = await keptProps(id);
+    if (kept.length) return { rows: kept, live: true };
   }
   return { rows, live };
 }

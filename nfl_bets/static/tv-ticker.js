@@ -27,7 +27,9 @@ function tvTickCardHtml(pick, guest) {
   const price = odds > 0 ? `+${odds}` : String(odds);
   const win = (odds > 0 ? (5 * odds) / 100 : (5 * 100) / Math.abs(odds)).toFixed(2);
   const when = pick.kickoff ? new Date(pick.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }) + " ET" : "";
+  const share = `<button type="button" class="tv-tick-share" data-tick-share>Share with a friend</button>`;
   const open = guest ? `<p class="gate-sample-more">Sign up or sign in to open the game and the rest of tonight's picks.</p><button type="button" class="tv-tick-open" data-tick-join>Start free for 7 days</button>` : `<button type="button" class="tv-tick-open" data-tick-open>Open the game &#8250;</button>`;
+  const acts = guest ? `${share}${open}` : `<div class="tv-tick-acts">${share}${open}</div>`;
   const more = guest ? `<button type="button" class="tv-tick-more" data-tick-login>Sign in</button>` : `<button type="button" class="tv-tick-more" data-tick-more>View more recommended bets &#8250;</button>`;
   const betIt = guest ? "" : `<button type="button" class="tv-tick-bet" data-tick-bet>Bet it</button>`;
   const isParlay = Array.isArray(pick.bets) && pick.bets.length;
@@ -48,7 +50,7 @@ function tvTickCardHtml(pick, guest) {
   const legs = isParlay ? `<ul class="gate-sample-legs">${pick.bets.map((bet, at) => `<li><span class="gate-sample-role">${at === juiceAt || /anytime|touchdown|goal/i.test(`${bet.rung || ""} ${bet.label || ""}`) ? "Juice" : "Anchor"}</span><span class="gate-sample-leg">${esc(bet.label)}</span><b>${esc(Number(bet.odds) > 0 ? `+${bet.odds}` : String(bet.odds))}</b></li>`).join("")}</ul>` : "";
   const head = isParlay ? "Parlay of the Day" : "Today's free pick";
   const bet = isParlay ? `4-leg · 3 players + game bet <b>${esc(price)}</b>` : `${esc(pick.label)} <b>${esc(price)}</b>`;
-  return `<div class="tv-tick-stack"><div class="tv-tick-card">${betIt}<p class="gate-sample-head">${head}</p><p class="gate-sample-bet">${bet}</p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p>${legs}<p class="gate-sample-why">${esc(pick.how || "")}</p><p class="gate-sample-pay">$5 wins $${win}.</p><button type="button" class="tv-tick-share" data-tick-share>Share with a friend</button>${open}</div>${more}</div>`;
+  return `<div class="tv-tick-stack"><div class="tv-tick-card">${betIt}<p class="gate-sample-head">${head}</p><p class="gate-sample-bet">${bet}</p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p>${legs}<p class="gate-sample-why">${esc(pick.how || "")}</p><p class="gate-sample-pay">$5 wins $${win}.</p>${acts}</div>${more}</div>`;
 }
 
 function tvTickHit(board, pick) {

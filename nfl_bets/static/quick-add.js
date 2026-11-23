@@ -18,14 +18,9 @@ function quickAddPeople(board) {
   return (board && board.people) || [];
 }
 
-function quickAddUpcoming(kickoff) {
-  const kick = Date.parse(kickoff || "");
-  return Number.isFinite(kick) && kick > Date.now();
-}
-
 function quickAddScope(people, when) {
   if (!when || !people.length) return [];
-  const games = (typeof loadedGames === "function" ? loadedGames(people, when) : []).filter((game) => quickAddUpcoming(game.kickoff));
+  const games = typeof loadedGames === "function" ? loadedGames(people, when) : [];
   const keys = new Set(games.map((game) => `${game.match}|${game.kickoff}`));
   if (!keys.size) return [];
   return people.map((person) => {
@@ -44,7 +39,7 @@ function quickAddOnSport(bet, sport) {
 
 function quickAddGames(people, sport, when) {
   const rows = typeof loadedGames === "function" ? loadedGames(people, when || quickAdd.when || "today") : [];
-  return (rows || []).filter((game) => quickAddUpcoming(game.kickoff) && quickAddOnSport(game, sport) && String(game.match || "").trim())
+  return (rows || []).filter((game) => quickAddOnSport(game, sport) && String(game.match || "").trim())
     .sort((a, b) => Date.parse(a.kickoff || "") - Date.parse(b.kickoff || "") || String(a.match).localeCompare(String(b.match)));
 }
 
@@ -559,6 +554,55 @@ function quickAddReveal(box) {
   requestAnimationFrame(() => requestAnimationFrame(go));
 }
 
+function quickAddLive(game) {
+  const kick = Date.parse((game && game.kickoff) || "");
+  return Number.isFinite(kick) && kick <= Date.now();
+}
+
+function quickAddLock(person, game, said, odds) {
+  const name = person && person.name ? String(person.name).trim() : "";
+  if (!name || !said || !Number.isFinite(odds) || !odds || typeof parlayLeg === "undefined" || typeof parlayKey !== "function") return false;
+  const label = said.toLowerCase().startsWith(name.toLowerCase()) ? said : `${name} ${said}`;
+  const bet = { label, market: said, odds, match: (game && game.match) || "", kickoff: (game && game.kickoff) || "", sport: (game && game.sport) || "" };
+  const id = parlayKey(bet);
+  if (parlayLeg.has(id) || parlayLeg.size >= 8) return false;
+  if (typeof parlayPick !== "undefined" && person.key && !parlayPick.has(person.key) && parlayPick.size < 8) parlayPick.set(person.key, person);
+  if (typeof legOwner !== "undefined") legOwner.set(id, name);
+  if (typeof trayLockHold === "function") trayLockHold(id);
+  parlayLeg.set(id, bet);
+  if (typeof paintParlay === "function") paintParlay();
+  return true;
+}
+
+function quickAddLiveForm(person, game) {
+  const form = document.createElement("form");
+  form.className = "quick-add-live";
+  const prop = document.createElement("input");
+  prop.name = "prop";
+  prop.placeholder = "Prop you bet";
+  prop.setAttribute("aria-label", "Prop you bet");
+  const oddsBox = document.createElement("input");
+  oddsBox.name = "odds";
+  oddsBox.placeholder = "-360";
+  oddsBox.setAttribute("aria-label", "The price you got");
+  oddsBox.inputMode = "decimal";
+  const go = document.createElement("button");
+  go.type = "submit";
+  go.className = "quick-add-go";
+  go.textContent = "Lock it in";
+  form.append(prop, oddsBox, go);
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const said = prop.value.trim();
+    const odds = Number(String(oddsBox.value).trim().replace(/^\+/, ""));
+    if (!quickAddLock(person, game, said, odds)) return;
+    quickAddReset({ when: true, sport: true });
+    if (typeof legNewClose === "function") legNewClose();
+    if (typeof parlayOpenTray === "function") parlayOpenTray();
+  });
+  return form;
+}
+
 function quickAddPut(board, fresh) {
   const people = quickAddPeople(board), person = quickAddPerson(people);
   const bet = person && (person.bets || []).find((row) => typeof parlayKey === "function" && parlayKey(row) === quickAdd.value);
@@ -627,7 +671,7 @@ function quickAddBox(board) {
     const loaded = !!(all.length || (typeof findParts !== "undefined" && findParts[quickAdd.when] && findParts[quickAdd.when].data));
     none.textContent = !loaded
       ? "Looking up the board."
-      : "We don’t support live odds or building live bets yet.";
+      : "No games on the board.";
     box.append(none);
     return box;
   }
@@ -783,11 +827,12 @@ function quickAddBox(board) {
   if (!person) return box;
 
   const props = quickAddPropList(person, quickAdd.sport, quickAdd.team);
+  const propEmpty = props.length ? [] : [quickAddLive(game) ? quickAddLiveForm(person, game) : Object.assign(document.createElement("p"), { className: "quick-add-none", textContent: "No props posted." })];
   box.append(quickAddStep("1. Prop", props.length ? props.map(([key, row]) => quickAddChip(row.label, quickAdd.prop === key, () => {
     quickAdd.prop = key;
     quickAdd.value = "";
     paint();
-  }, { rec: row.rec })) : [Object.assign(document.createElement("p"), { className: "quick-add-none", textContent: "No props posted." })], "prop"));
+  }, { rec: row.rec })) : propEmpty, "prop"));
 
   if (!quickAdd.prop) return box;
 
@@ -802,7 +847,7 @@ function quickAddBox(board) {
     const none = document.createElement("p");
     none.className = "quick-add-none";
     none.textContent = "No lines left for that prop.";
-    valueStep.append(none);
+    valueStep.append(quickAddLive(game) ? quickAddLiveForm(person, game) : none);
   } else {
     const lines = document.createElement("div");
     lines.className = "quick-add-lines";

@@ -175,9 +175,52 @@
   width: 100% !important;
   max-width: 28rem;
   justify-content: space-between !important;
+  flex-wrap: wrap !important;
   border-radius: 12px !important;
-  gap: 0.75rem;
+  gap: 0.35rem 0.75rem;
 }
+
+.fantasy-board .fantasy-match-zoom {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 28rem;
+  margin: 0.1rem 0 0.2rem;
+}
+
+.fantasy-board .fantasy-match-zoom input[type="range"] {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 28px;
+  accent-color: #3dff6e;
+  cursor: pointer;
+}
+
+.fantasy-board .league-match {
+  display: none;
+  font-style: normal;
+}
+
+.fantasy-board[data-match-zoom="1"] .league-match,
+.fantasy-board[data-match-zoom="2"] .league-match,
+.fantasy-board[data-match-zoom="3"] .league-match {
+  display: flex;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.7rem;
+  color: #d5deea;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.fantasy-board .league-pts { color: #3dff6e; font-style: normal; }
+.fantasy-board .league-proj { color: #e7c15a; font-style: normal; }
+.fantasy-board .league-win { color: #f4f7fb; font-style: normal; }
+.fantasy-board .league-who { color: #d5deea; font-style: normal; }
+
+.fantasy-board[data-match-zoom="1"] .league-proj,
+.fantasy-board[data-match-zoom="1"] .league-win,
+.fantasy-board[data-match-zoom="2"] .league-win { display: none; }
 
 #desk.tv-full #desk-glass .fantasy-board button.fantasy-league.on,
 .fantasy-board button.fantasy-league.on {

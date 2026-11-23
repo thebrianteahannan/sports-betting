@@ -91,12 +91,13 @@ function etDay(ms) {
 
 function inSpan(game, span) {
   const kick = Date.parse(game.kickoff || "");
-  if (!Number.isFinite(kick) || (kick <= Date.now() - 6 * 60 * 60 * 1000 && !game.kept && !(game.sport === "PGA" && kick > Date.now() - 5 * 24 * 60 * 60 * 1000))) return false;
+  const day = Number.isFinite(kick) ? etDay(kick) : "";
+  const today = etDay(Date.now());
+  const recent = Number.isFinite(kick) && (day === today || kick > Date.now() - 18 * 60 * 60 * 1000);
+  if (!Number.isFinite(kick) || (!recent && !game.kept && !(game.sport === "PGA" && kick > Date.now() - 5 * 24 * 60 * 60 * 1000))) return false;
   if (game.sport === "PGA" && kick > Date.now() - 5 * 24 * 60 * 60 * 1000) return true;
   if (span === "open") return true;
   if (span !== "today" && span !== "week") return true;
-  const day = etDay(kick);
-  const today = etDay(Date.now());
   if (span === "today") return day === today || kick <= Date.now();
   return kick > Date.now() && day > today && day <= etDay(Date.now() + 14 * 24 * 60 * 60 * 1000);
 }

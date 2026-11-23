@@ -102,6 +102,9 @@
 .tv-tick-bet, #desk.tv-full #desk-glass .tv-tick-bet { position: absolute; top: 0.7rem; right: 0.75rem; width: auto; min-height: 0; margin: 0; padding: 0.25rem 0.8rem; border: 1px solid #3dff6e; border-radius: 999px; box-shadow: none; background: #3dff6e; color: #04140c; font-family: "Rajdhani", sans-serif; font-size: 0.9rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
 .tv-tick-bet:hover, #desk.tv-full #desk-glass .tv-tick-bet:hover { background: #6bff92; }
 .tv-tick-stack { display: flex; flex-direction: column; align-items: center; gap: 0.8rem; width: 100%; max-width: 34rem; margin: auto 0; }
+#desk:not(.tv-full) :is(#tv-tick-day, #tv-tick-pick) .tv-tick-stack { transform: translateY(1.6rem); }
+.tv-tick-acts { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.45rem; margin-top: 0.65rem; }
+#desk-glass .tv-tick-acts .tv-tick-share, #desk-glass .tv-tick-acts .tv-tick-open, #desk.tv-full #desk-glass .tv-tick-acts .tv-tick-open { flex: 1 1 0; margin: 0; white-space: nowrap; }
 #desk-glass .tv-tick-more { display: block; width: 100%; min-height: 0; margin: 0; padding: 0.75rem 1rem; border: 1px solid #3dff6e; border-radius: 10px; box-shadow: none; background: transparent; color: #3dff6e; font-family: "Rajdhani", sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
 #desk-glass .tv-tick-more:hover { background: rgba(61, 255, 110, 0.12); }
 #desk.tv-full .tv-tick-card .gate-sample-head { font-size: 1.15rem; }

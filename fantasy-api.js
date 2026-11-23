@@ -811,4 +811,99 @@ async function leagueCheck(body, board) {
   return { user, season, week, leagues: rows };
 }
 
-module.exports = { sleeper, startSit, leagueCheck, samePlayer, fillLineup };
+function teamName(user) {
+  const named = user && user.metadata && String(user.metadata.team_name || "").trim();
+  return named || (user && user.display_name) || "Opponent";
+}
+
+function erf(x) {
+  const sign = Math.sign(x);
+  const a = Math.abs(x);
+  const t = 1 / (1 + 0.3275911 * a);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-a * a);
+  return sign * y;
+}
+
+function winPct(mine, opp) {
+  if (!Number.isFinite(mine) || !Number.isFinite(opp)) return null;
+  const z = (mine - opp) / 18;
+  const p = 0.5 * (1 + erf(z / Math.SQRT2));
+  return Math.round(Math.min(99, Math.max(1, p * 100)));
+}
+
+function sideScore(matchup, scoring, projections, stats) {
+  const starters = (matchup && matchup.starters) || [];
+  const got = (matchup && matchup.starters_points) || [];
+  let now = Number(matchup && matchup.points);
+  if (!Number.isFinite(now)) now = got.reduce((sum, n) => sum + (Number(n) || 0), 0);
+  let proj = 0;
+  let used = false;
+  starters.forEach((id, i) => {
+    if (!id || id === "0") return;
+    used = true;
+    const actual = Number(got[i]);
+    if (hasPlayed(stats && stats[id]) && Number.isFinite(actual)) proj += actual;
+    else {
+      const p = sleeperPts(projections && projections[id], scoring);
+      proj += Number.isFinite(p) ? p : (Number.isFinite(actual) ? actual : 0);
+    }
+  });
+  if (!used) proj = now;
+  return { pts: +now.toFixed(1), proj: +proj.toFixed(1) };
+}
+
+let matchupCache = { key: "", at: 0, data: null };
+
+async function matchups(body) {
+  const state = await nflState();
+  const season = String((body && body.season) || state.league_season || state.season || new Date().getFullYear());
+  const week = Number(state.display_week || state.week) || null;
+  const user = await resolveUser((body && (body.user || body.username)) || "");
+  const key = `${user.user_id}:${season}:${week}`;
+  if (matchupCache.data && matchupCache.key === key && Date.now() - matchupCache.at < 90 * 1000) return matchupCache.data;
+  const leagues = await leaguesFor(user.user_id, season);
+  const live = week && leagues.some((row) => row.status === "in_season");
+  const projections = live ? await loadProjections(season, week).catch(() => ({})) : {};
+  const stats = live ? await loadWeekStats(season, week).catch(() => ({})) : {};
+  const rows = await mapPool(leagues, 3, async (league) => {
+    if (league.status !== "in_season" || !week) {
+      return { league_id: league.league_id, name: league.name, skip: true };
+    }
+    try {
+      const [settings, users, rosters, games] = await Promise.all([
+        sleeperGet(`/league/${encodeURIComponent(league.league_id)}`),
+        sleeperGet(`/league/${encodeURIComponent(league.league_id)}/users`),
+        sleeperGet(`/league/${encodeURIComponent(league.league_id)}/rosters`),
+        sleeperGet(`/league/${encodeURIComponent(league.league_id)}/matchups/${week}`),
+      ]);
+      const mine = (rosters || []).find((row) => String(row.owner_id) === String(user.user_id));
+      const mineGame = mine && (games || []).find((row) => row.roster_id === mine.roster_id);
+      const oppGame = mineGame && mineGame.matchup_id != null
+        ? (games || []).find((row) => row.matchup_id === mineGame.matchup_id && row.roster_id !== mine.roster_id)
+        : null;
+      if (!mineGame || !oppGame) return { league_id: league.league_id, name: league.name, bye: true };
+      const oppRoster = (rosters || []).find((row) => row.roster_id === oppGame.roster_id);
+      const oppUser = oppRoster && (users || []).find((row) => String(row.user_id) === String(oppRoster.owner_id));
+      const scoring = (settings && settings.scoring_settings) || {};
+      const me = sideScore(mineGame, scoring, projections, stats);
+      const them = sideScore(oppGame, scoring, projections, stats);
+      return {
+        league_id: league.league_id,
+        name: league.name,
+        opponent: teamName(oppUser),
+        pts: me.pts,
+        proj: me.proj,
+        oppPts: them.pts,
+        oppProj: them.proj,
+        win: winPct(me.proj, them.proj),
+      };
+    } catch (error) {
+      return { league_id: league.league_id, name: league.name, error: String((error && error.message) || error) };
+    }
+  });
+  const data = { user, season, week, leagues: rows };
+  matchupCache = { key, at: Date.now(), data };
+  return data;
+}
+
+module.exports = { sleeper, startSit, leagueCheck, matchups, samePlayer, fillLineup };

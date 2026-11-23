@@ -1,5 +1,8 @@
-// Once any game in a bet has started, picking a new player starts a new bet.
-// The open ticket can still be corrected: change the prop, type the price you actually got, or take a leg off.
+// A started or finished game can still take a player. Type the price you got and lock it in.
+// The open ticket can still be corrected: change the prop, type the price, or take a leg off.
+
+let trayLockWas = null;
+const trayLockAsk = new Set();
 
 function trayLockStarted(legs) {
   const now = Date.now();
@@ -48,31 +51,68 @@ function trayLockPropEdit(open) {
 }
 
 function trayLockGuard() {
+  const keys = [...parlayLeg.keys()];
+  if (!trayLockWas) trayLockWas = new Set(keys);
+  const added = keys.filter((key) => !trayLockWas.has(key)).map((key) => [key, parlayLeg.get(key)]);
+  const finish = () => { trayLockWas = new Set(parlayLeg.keys()); };
   const open = typeof saveList === "function" && saveList().find((row) => row.id === window.parlayOpenId);
-  if (!open || !parlayLeg.size || !trayLockStarted(open.legs)) return;
-  const was = new Set(open.legs.map((bet) => parlayKey(bet))), now = [...parlayLeg.keys()];
-  const added = [...parlayLeg.entries()].filter(([key]) => !was.has(key)), kept = [...was].every((key) => parlayLeg.has(key));
-  if (now.length === was.size && now.every((key) => was.has(key))) return;
-  if (!added.length) return;
-  if (trayLockPropEdit(open)) return;
-  const named = (person, legs) => legs.some((bet) => person.name && String(bet.label || "").startsWith(person.name));
-  if (kept && added.length) {
-    console.log("[tray-lock] bet is locked, starting a new bet with", added.length, "leg(s)");
-    window.parlayOpenId = "";
-    parlayLeg.clear(); added.forEach(([key, bet]) => parlayLeg.set(key, bet));
-    [...parlayPick.entries()].forEach(([key, person]) => { if (named(person, open.legs) && !named(person, [...parlayLeg.values()])) parlayPick.delete(key); });
+  if (open && parlayLeg.size && trayLockStarted(open.legs)) {
+    const was = new Set(open.legs.map((bet) => parlayKey(bet)));
+    const kept = [...was].every((key) => parlayLeg.has(key));
+    const same = keys.length === was.size && keys.every((key) => was.has(key));
+    if (same || !added.length || trayLockPropEdit(open)) { finish(); return; }
+    if (kept) {
+      added.forEach(([key, bet]) => { if (trayLockStarted([bet])) trayLockAsk.add(key); });
+      finish();
+      return;
+    }
+    console.log("[tray-lock] bet is locked, putting it back");
+    const people = (document.querySelector(".find-board") || {}).people || [];
+    parlayLeg.clear(); open.legs.forEach((bet) => parlayLeg.set(parlayKey(bet), bet));
+    (open.picks || []).forEach((lite) => { if (!parlayPick.has(lite.key)) parlayPick.set(lite.key, people.find((who) => who.key === lite.key) || { ...lite, bets: [] }); });
+    window.trayUndo = null;
+    finish();
     return;
   }
-  console.log("[tray-lock] bet is locked, putting it back");
-  const people = (document.querySelector(".find-board") || {}).people || [];
-  parlayLeg.clear(); open.legs.forEach((bet) => parlayLeg.set(parlayKey(bet), bet));
-  (open.picks || []).forEach((lite) => { if (!parlayPick.has(lite.key)) parlayPick.set(lite.key, people.find((who) => who.key === lite.key) || { ...lite, bets: [] }); });
-  window.trayUndo = null;
+  added.forEach(([key, bet]) => { if (bet && trayLockStarted([bet])) trayLockAsk.add(key); });
+  finish();
+}
+
+function trayLockPrice(line, key) {
+  const old = parlayLeg.get(key);
+  if (!old) { trayLockAsk.delete(key); return; }
+  const form = document.createElement("form");
+  form.className = "find-lock-edit";
+  const oddsBox = document.createElement("input");
+  oddsBox.name = "odds";
+  oddsBox.setAttribute("aria-label", "The price you got");
+  oddsBox.placeholder = "Price you got, like -360";
+  oddsBox.inputMode = "decimal";
+  oddsBox.value = Number(old.odds) > 0 ? `+${old.odds}` : String(old.odds || "");
+  const go = document.createElement("button");
+  go.type = "submit";
+  go.textContent = "Lock it in";
+  form.append(oddsBox, go);
+  form.addEventListener("click", (event) => event.stopPropagation());
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const odds = Number(String(oddsBox.value).trim().replace(/^\+/, ""));
+    if (!Number.isFinite(odds) || !odds) return;
+    const next = { ...old, odds };
+    const id = parlayKey(next);
+    parlayLeg.delete(key);
+    parlayLeg.set(id, next);
+    if (typeof legOwner !== "undefined" && legOwner.has(key)) { legOwner.set(id, legOwner.get(key)); legOwner.delete(key); }
+    if (trayLockWas) { trayLockWas.delete(key); trayLockWas.add(id); }
+    trayLockAsk.delete(key);
+    paintParlay();
+  });
+  line.append(form);
 }
 
 function trayLockPaint() {
   const locked = trayLockStarted([...parlayLeg.values()]);
-  const lockTip = "The game has started. Tap the prop to change it, or take a leg off.";
+  const lockTip = "The game has started. Type the price you got, or take a leg off.";
   document.querySelectorAll(".find-tray").forEach((tray) => {
     tray.classList.toggle("find-locked", locked);
     tray.title = locked ? lockTip : "";
@@ -84,6 +124,59 @@ function trayLockPaint() {
     });
   });
   if (locked && typeof legSwapOpen !== "undefined") [...legSwapOpen.entries()].forEach(([key, mode]) => { if (mode !== "line" && mode !== "kind") legSwapOpen.delete(key); });
+  document.querySelectorAll(".find-chose[data-key]").forEach((line) => {
+    if (!trayLockAsk.has(line.dataset.key) || line.querySelector(".find-lock-edit")) return;
+    trayLockPrice(line, line.dataset.key);
+  });
+}
+
+function trayLockHold(id) {
+  if (trayLockWas && id) trayLockWas.add(id);
+}
+
+function trayLockPast(match, game) {
+  if (!match || !game || !trayLockStarted([game])) return;
+  const form = document.createElement("form");
+  form.className = "find-lock-edit find-past-add";
+  const who = document.createElement("input");
+  who.name = "player";
+  who.placeholder = "Player";
+  who.setAttribute("aria-label", "Player");
+  const prop = document.createElement("input");
+  prop.name = "prop";
+  prop.placeholder = "Prop you bet";
+  prop.setAttribute("aria-label", "Prop you bet");
+  const oddsBox = document.createElement("input");
+  oddsBox.name = "odds";
+  oddsBox.placeholder = "-360";
+  oddsBox.setAttribute("aria-label", "The price you got");
+  oddsBox.inputMode = "decimal";
+  const go = document.createElement("button");
+  go.type = "submit";
+  go.textContent = "Lock it in";
+  form.append(who, prop, oddsBox, go);
+  form.addEventListener("click", (event) => event.stopPropagation());
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const name = who.value.trim();
+    const said = prop.value.trim();
+    const odds = Number(String(oddsBox.value).trim().replace(/^\+/, ""));
+    if (!name || !said || !Number.isFinite(odds) || !odds || typeof parlayLeg === "undefined") return;
+    const label = said.toLowerCase().startsWith(name.toLowerCase()) ? said : `${name} ${said}`;
+    const bet = { label, market: said, odds, match: game.match || "", kickoff: game.kickoff || "", sport: game.sport || "" };
+    const id = parlayKey(bet);
+    if (parlayLeg.has(id) || parlayLeg.size >= 8) return;
+    const keyName = name.toLowerCase();
+    if (typeof parlayPick !== "undefined" && !parlayPick.has(keyName) && parlayPick.size < 8) parlayPick.set(keyName, { key: keyName, name, kind: "player", bets: [] });
+    if (typeof legOwner !== "undefined") legOwner.set(id, name);
+    if (trayLockWas) trayLockWas.add(id);
+    parlayLeg.set(id, bet);
+    paintParlay();
+    who.value = "";
+    prop.value = "";
+    oddsBox.value = "";
+  });
+  match.append(form);
 }
 
 if (typeof paintParlay === "function") {

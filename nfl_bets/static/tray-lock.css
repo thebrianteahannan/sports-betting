@@ -3,9 +3,12 @@
   opacity: 0.38;
   cursor: not-allowed;
 }
-.find-tray .find-lock-edit { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0.35rem 0 0.15rem; }
-#desk.tv-full #desk-glass .find-tray .find-lock-edit input, .find-tray .find-lock-edit input { width: auto !important; flex: 1 1 8rem; min-height: 0 !important; height: auto !important; margin: 0 !important; padding: 0.3rem 0.55rem !important; border: 1px solid rgba(255, 255, 255, 0.28) !important; border-radius: 8px !important; background: #041018 !important; box-shadow: none !important; color: #f4f7fb !important; font-size: 14px !important; }
-#desk.tv-full #desk-glass .find-tray .find-lock-edit input[name="odds"], .find-tray .find-lock-edit input[name="odds"] { flex: 0 0 5.5rem; }
-#desk.tv-full #desk-glass .find-tray .find-lock-edit button, .find-tray .find-lock-edit button { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.28rem 0.7rem !important; border: 1px solid #3dff6e !important; border-radius: 999px !important; background: #3dff6e !important; box-shadow: none !important; color: #04140c !important; font-size: 13px !important; font-weight: 800 !important; text-transform: none !important; letter-spacing: normal !important; cursor: pointer; }
+.find-tray .find-lock-edit, .find-match .find-past-add { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0.35rem 0 0.15rem; }
+.find-tray .find-chose:has(> .find-lock-edit) { display: flex; flex-wrap: wrap; align-items: center; }
+.find-tray .find-chose > .find-lock-edit { flex: 1 0 100%; }
+.find-match .find-past-add { margin: 0.55rem 0 0.2rem; }
+#desk.tv-full #desk-glass .find-tray .find-lock-edit input, .find-tray .find-lock-edit input, #desk.tv-full #desk-glass .find-match .find-past-add input, .find-match .find-past-add input { width: auto !important; flex: 1 1 8rem; min-height: 0 !important; height: auto !important; margin: 0 !important; padding: 0.3rem 0.55rem !important; border: 1px solid rgba(255, 255, 255, 0.28) !important; border-radius: 8px !important; background: #041018 !important; box-shadow: none !important; color: #f4f7fb !important; font-size: 14px !important; }
+#desk.tv-full #desk-glass .find-tray .find-lock-edit input[name="odds"], .find-tray .find-lock-edit input[name="odds"], .find-match .find-past-add input[name="odds"] { flex: 0 0 5.5rem; }
+#desk.tv-full #desk-glass .find-tray .find-lock-edit button, .find-tray .find-lock-edit button, #desk.tv-full #desk-glass .find-match .find-past-add button, .find-match .find-past-add button { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.28rem 0.7rem !important; border: 1px solid #3dff6e !important; border-radius: 999px !important; background: #3dff6e !important; box-shadow: none !important; color: #04140c !important; font-size: 13px !important; font-weight: 800 !important; text-transform: none !important; letter-spacing: normal !important; cursor: pointer; }
 .find-tray.find-locked :is(.find-in button.find-out, .find-new, .find-leg-menu, .find-undo, .find-swap-add) { display: none !important; }
 .find-tray.find-locked .find-in button.find-name { cursor: default !important; text-decoration: none !important; }

@@ -700,6 +700,14 @@ const server = http.createServer(async (req, res) => {
         }
         return;
       }
+      if (url.pathname === "/api/fantasy/matchups") {
+        try {
+          sendJson(res, await require("./fantasy-api").matchups(body || {}));
+        } catch (error) {
+          sendJson(res, { error: String((error && error.message) || error) }, 400);
+        }
+        return;
+      }
       if (url.pathname === "/api/fantasy/league-check") {
         try {
           const data = await require("./fantasy-api").leagueCheck(body || {}, await board().catch(() => ({})));

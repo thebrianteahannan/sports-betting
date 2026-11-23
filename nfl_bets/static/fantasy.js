@@ -1,6 +1,27 @@
 /** Fantasy Sports · Start/Sit from Sleeper + Vegas-implied fantasy points. */
 
-let fantasyState = { user: "", leagues: [], leagueId: "", result: null, openId: "", showVegas: false, wantConnect: false, pulling: false, pullError: "", checks: null, checking: false, checkError: "", pickupSlot: "" };
+let fantasyState = { user: "", leagues: [], leagueId: "", result: null, openId: "", showVegas: false, wantConnect: false, pulling: false, pullError: "", checks: null, checking: false, checkError: "", pickupSlot: "", matchups: null, matchAsked: false, matching: false, matchError: "" };
+
+const FANTASY_MATCH_MAX = 3;
+let fantasyMatchZoom = (() => {
+  try {
+    const n = Number(localStorage.getItem("fantasyMatchZoom"));
+    if (Number.isFinite(n)) return Math.max(0, Math.min(FANTASY_MATCH_MAX, Math.round(n)));
+  } catch (error) {}
+  return 0;
+})();
+function fantasyVisit() {
+  if (fantasyState.matching) return;
+  fantasyState.matchups = null;
+  fantasyState.matchAsked = false;
+  fantasyState.matchError = "";
+}
+function fantasyMatchApply(next) {
+  fantasyMatchZoom = Math.max(0, Math.min(FANTASY_MATCH_MAX, Math.round(Number(next) || 0)));
+  document.querySelectorAll(".fantasy-board").forEach((board) => { board.dataset.matchZoom = String(fantasyMatchZoom); });
+  try { localStorage.setItem("fantasyMatchZoom", String(fantasyMatchZoom)); } catch (error) {}
+  if (fantasyMatchZoom > 0) fantasyAskMatchups();
+}
 
 const FANTASY_ZOOM_MAX = 2;
 let fantasyZoom = (() => {
@@ -229,6 +250,63 @@ function fantasyConnect(board) {
   board.append(box);
 }
 
+function fantasyMatchBar() {
+  const bar = document.createElement("div");
+  bar.className = "fantasy-zoom fantasy-match-zoom";
+  const less = document.createElement("span");
+  less.textContent = "Less";
+  const more = document.createElement("span");
+  more.textContent = "More";
+  const range = document.createElement("input");
+  range.type = "range";
+  range.min = "0";
+  range.max = String(FANTASY_MATCH_MAX);
+  range.step = "1";
+  range.value = String(fantasyMatchZoom);
+  range.setAttribute("aria-label", "Show matchup score, projection, and win chance");
+  range.addEventListener("input", () => fantasyMatchApply(range.value));
+  bar.append(less, range, more);
+  return bar;
+}
+
+function fantasyMatchLine(id) {
+  const row = fantasyState.matchups && fantasyState.matchups[id];
+  if (fantasyState.matching && !row) return `<i class="league-match">Checking the score.</i>`;
+  if (!row) return "";
+  if (row.bye) return `<i class="league-match">No matchup this week.</i>`;
+  if (row.error) return `<i class="league-match">Score did not load.</i>`;
+  const pts = Number.isFinite(row.pts) ? row.pts.toFixed(1) : "—";
+  const opp = Number.isFinite(row.oppPts) ? row.oppPts.toFixed(1) : "—";
+  const proj = Number.isFinite(row.proj) ? row.proj.toFixed(1) : "—";
+  const win = Number.isFinite(row.win) ? `${row.win}% to win` : "";
+  return `<i class="league-match"><em class="league-who">vs ${fantasyEsc(row.opponent || "Opponent")}</em><em class="league-pts">${pts}–${opp}</em><em class="league-proj">proj ${proj}</em><em class="league-win">${fantasyEsc(win)}</em></i>`;
+}
+
+async function fantasyAskMatchups() {
+  if (fantasyState.matchAsked || fantasyState.matching || !fantasyState.user || !fantasyState.leagues.length) return;
+  fantasyState.matchAsked = true;
+  fantasyState.matching = true;
+  const user = fantasyState.user;
+  const board = fantasyBoard();
+  try {
+    const data = await fantasyPost("/api/fantasy/matchups", { user });
+    if (fantasyState.user !== user) return;
+    const map = {};
+    (data.leagues || []).forEach((row) => { if (row && row.league_id) map[row.league_id] = row; });
+    fantasyState.matchups = map;
+    fantasyState.matchError = data.error || "";
+  } catch (error) {
+    if (fantasyState.user !== user) return;
+    fantasyState.matchups = {};
+    fantasyState.matchError = "Matchups did not load.";
+  }
+  if (fantasyState.user !== user) return;
+  fantasyState.matching = false;
+  const live = fantasyBoard();
+  if (live && live.isConnected && !fantasyState.result) paintFantasy(live);
+  else if (board && board.isConnected && !fantasyState.result) paintFantasy(board);
+}
+
 function fantasyLeaguePicker(board) {
   if (!fantasyState.leagues.length) {
     const none = document.createElement("p");
@@ -267,6 +345,8 @@ function fantasyLeaguePicker(board) {
     else say.textContent = "Every league is all set.";
     box.append(say);
   }
+  box.append(fantasyMatchBar());
+  fantasyAskMatchups();
   fantasyState.leagues.forEach((league) => {
     const btn = document.createElement("button");
     btn.type = "button";
@@ -279,7 +359,7 @@ function fantasyLeaguePicker(board) {
         ? `<span class="league-tags">${tags.map((tag) => `<i class="league-tag ${fantasyEsc(tag.id)}">${fantasyEsc(tag.label)}</i>`).join("")}</span>`
         : `<span class="league-tags"><i class="league-tag ok">All set</i></span>`)
       : `<span>${fantasyEsc(league.status || "in season")}</span>`;
-    btn.innerHTML = `<b>${fantasyEsc(league.name)}</b>${tagHtml}`;
+    btn.innerHTML = `<b>${fantasyEsc(league.name)}</b>${fantasyMatchLine(league.league_id)}${tagHtml}`;
     btn.addEventListener("click", () => fantasyRun(board, league.league_id));
     box.append(btn);
   });
@@ -302,6 +382,10 @@ function fantasyLeaguePicker(board) {
       checking: false,
       checkError: "",
       pickupSlot: "",
+      matchups: null,
+      matchAsked: false,
+      matching: false,
+      matchError: "",
     };
     paintFantasy(board);
   });
@@ -702,6 +786,7 @@ function fantasyLineup(board, result) {
 }
 
 function paintFantasy(keep, opts) {
+  if (!keep) fantasyVisit();
   window.asking = true;
   if (document.body.classList.contains("tv-zoom-on") && typeof tvZoomShut === "function") tvZoomShut();
   const desk = document.getElementById("desk");
@@ -739,6 +824,7 @@ function paintFantasy(keep, opts) {
 
   board.replaceChildren();
   board.dataset.fantasyZoom = String(fantasyZoom);
+  board.dataset.matchZoom = String(fantasyMatchZoom);
   fantasyHead(board);
 
   if (opts && opts.loading) {

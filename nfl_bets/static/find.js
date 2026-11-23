@@ -145,7 +145,8 @@ function loadedGames(people, span) {
   const buckets = { today: new Map(), week: new Map() };
   people.forEach((person) => (person.bets || []).forEach((bet) => {
     const kick = Date.parse(bet.kickoff || "");
-    if (!bet.match || kick !== kick || (kick <= now - 6 * 60 * 60 * 1000 && bet.sport !== "PGA" && !(typeof saveSeekGame === "string" && findSameGame(bet.match, saveSeekGame))) || (bet.sport === "PGA" && kick <= now - 5 * 24 * 60 * 60 * 1000) || !keep.test(bet.sport || "")) return;
+    const fresh = fmt.format(kick) === today || kick > now - 18 * 60 * 60 * 1000;
+    if (!bet.match || kick !== kick || (!fresh && bet.sport !== "PGA" && !(typeof saveSeekGame === "string" && findSameGame(bet.match, saveSeekGame))) || (bet.sport === "PGA" && kick <= now - 5 * 24 * 60 * 60 * 1000) || !keep.test(bet.sport || "")) return;
     const day = fmt.format(kick), key = `${bet.match}|${bet.kickoff}`;
     const bucket = day === today || kick <= now ? buckets.today : day > today && day <= end ? buckets.week : null;
     if (bucket && !bucket.has(key)) bucket.set(key, bet);
@@ -205,7 +206,15 @@ function fillFind(board, data) {
     if (typeof birdMenu === "function") birdMenu("rec");
     else if (typeof paintRec === "function") paintRec();
   });
-  heading.append(jumpGo, games);
+  const mine = document.createElement("button");
+  mine.type = "button";
+  mine.className = "find-mine-go";
+  mine.textContent = "My Bets";
+  mine.addEventListener("click", () => {
+    if (typeof birdMenu === "function") birdMenu("manage");
+    else if (typeof paintFind === "function") { window.saveGone = false; window.saveShut = false; paintFind(); }
+  });
+  heading.append(jumpGo, mine, games);
   findGamesLive(games);
   const pickSpan = (name) => { const on = name === "today"; today.classList.toggle("find-on", on); week.classList.toggle("find-on", !on); if (today.open !== on) today.open = on; if (week.open === on) week.open = !on; };
   today.className = "find-games find-on"; today.dataset.span = "today"; today.open = true; week.className = "find-games find-week"; week.dataset.span = "week";
@@ -1073,7 +1082,7 @@ function paintMatch(holder, game, people, list, hits, noted) {
     if (match.querySelector(".find-side-go")) { const at = document.createElement("b"); at.className = "find-at"; at.textContent = "@"; match.append(at); }
     match.append(pick); body.append(panel); pick.addEventListener("click", () => { const show = panel.hidden; match.querySelectorAll(".find-side").forEach((node) => { node.hidden = true; }); match.querySelectorAll(".find-side-go").forEach((node) => node.classList.remove("on")); panel.hidden = !show; body.hidden = !show; if (show) { pick.classList.add("on"); if (playerPane.hidden && teamPane.hidden) swap(playerPane, playerGo); players.open = true; } });
   });
-  const stamp = document.createElement("p"); stamp.className = "find-when"; stamp.textContent = game.kickoff && window.when ? `${window.when(game.kickoff)} ET` : ""; if (stamp.textContent) match.append(stamp); if (typeof gameGuide === "function") gameGuide(match, people, list, hits, noted); match.append(body); holder.append(match); if (typeof paintTotal === "function") paintTotal(holder, game, people); if (typeof paintScores === "function") paintScores(holder, game, people, list, hits); if (typeof paintGameStacks === "function") paintGameStacks(holder, game, noted === "shut" ? holder.dataset.who : ""); if (typeof paintGameFour === "function") paintGameFour(holder, game); if (noted) loadGame(holder, game, false); if (noted === true && typeof clubGame === "function") clubGame(holder, game);
+  const stamp = document.createElement("p"); stamp.className = "find-when"; stamp.textContent = game.kickoff && window.when ? `${window.when(game.kickoff)} ET` : ""; if (stamp.textContent) match.append(stamp); if (typeof gameGuide === "function") gameGuide(match, people, list, hits, noted); if (typeof trayLockPast === "function") trayLockPast(match, game); match.append(body); holder.append(match); if (typeof paintTotal === "function") paintTotal(holder, game, people); if (typeof paintScores === "function") paintScores(holder, game, people, list, hits); if (typeof paintGameStacks === "function") paintGameStacks(holder, game, noted === "shut" ? holder.dataset.who : ""); if (typeof paintGameFour === "function") paintGameFour(holder, game); if (noted) loadGame(holder, game, false); if (noted === true && typeof clubGame === "function") clubGame(holder, game);
 }
 
 function loadGame(holder, game, open) {

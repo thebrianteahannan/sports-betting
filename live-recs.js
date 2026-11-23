@@ -90,18 +90,8 @@ function inGoldenBand(odds) {
   return Number.isFinite(o) && o >= -250 && o <= 100;
 }
 
-function pickKey(pick) {
-  return `${pick.label}|${pick.market}|${pick.match}|${pick.odds}`;
-}
-
 function markGolden(ranked) {
-  const list = ranked || [];
-  const golden = list.find((pick) => inGoldenBand(pick.odds)) || null;
-  const key = golden ? pickKey(golden) : "";
-  return {
-    picks: list.map((pick) => ({ ...pick, golden: key ? pickKey(pick) === key : false })),
-    golden: golden ? { ...golden, golden: true } : null,
-  };
+  return require("./golden-log").choose(ranked);
 }
 
 async function recRanked(days) {
@@ -212,7 +202,7 @@ async function recSample() {
     span = tomorrow.length ? "tomorrow" : "week";
     ranked = tomorrow.length ? tomorrow : ahead.ranked;
   }
-  const marked = markGolden(ranked);
+  const marked = await markGolden(ranked);
   const sports = await sportMap().catch(() => new Map());
   const band = marked.picks.filter((pick) => inGoldenBand(pick.odds));
   const pool = band.length ? band : marked.picks;
@@ -233,7 +223,7 @@ async function withSport(picks) {
 }
 
 async function recTopPack(ranked, count) {
-  const marked = markGolden(ranked);
+  const marked = await markGolden(ranked);
   const picks = await withSport(marked.picks.slice(0, count));
   const golden = marked.golden ? (await withSport([marked.golden]))[0] : null;
   return { picks, golden };

@@ -464,11 +464,10 @@ function savePaint() {
     if (window.saveShut === undefined) window.saveShut = localStorage.getItem("savedShut") === "1";
     const betOpen = saveBetOpen(tray);
     if (betOpen && !window.savePeek) window.saveShut = true;
-    if (!betOpen) window.savePeek = false;
-    const peeking = betOpen && !!window.savePeek;
-    const folded = betOpen ? !window.savePeek : !!window.saveShut;
-    box.classList.toggle("find-saved-shut", folded);
-    box.classList.toggle("find-saved-slim", betOpen || folded);
+    if (!window.saveShut) window.savePeek = true;
+    const peeking = !!window.savePeek;
+    box.classList.toggle("find-saved-shut", !peeking);
+    box.classList.toggle("find-saved-slim", !!betOpen);
     box.classList.toggle("find-saved-panel", peeking);
     const head = document.createElement("p"); head.className = "find-say";
     const title = document.createElement("b"); title.className = "find-saved-title"; title.textContent = "MY BETS"; head.append(title);
@@ -482,13 +481,11 @@ function savePaint() {
     const fold = document.createElement("button");
     fold.type = "button";
     fold.className = "find-fold";
-    fold.textContent = "Pick your bet …";
+    fold.textContent = "My bets …";
     fold.addEventListener("click", () => {
-      if (betOpen) window.savePeek = !window.savePeek;
-      else {
-        window.saveShut = !window.saveShut;
-        try { localStorage.setItem("savedShut", window.saveShut ? "1" : "0"); } catch (error) { console.log("[parlay-save] could not keep fold", error); }
-      }
+      window.savePeek = !window.savePeek;
+      window.saveShut = !window.savePeek;
+      try { localStorage.setItem("savedShut", window.saveShut ? "1" : "0"); } catch (error) { console.log("[parlay-save] could not keep fold", error); }
       paintParlay();
     });
     const quick = document.createElement("button");
@@ -509,9 +506,8 @@ function savePaint() {
     shut.addEventListener("click", () => { saveBetsRest(); paintParlay(); });
     const acts = document.createElement("span");
     acts.className = "find-saved-acts";
-    if (betOpen || folded) acts.append(fold);
-    acts.append(quick);
-    if (!(betOpen || folded)) acts.append(share, shut);
+    acts.append(fold, quick);
+    if (!betOpen) acts.append(share, shut);
     head.append(acts); box.append(head);
     const bag = document.createElement("div");
     bag.className = "find-saved-list manage-pick";
@@ -656,6 +652,8 @@ document.addEventListener("click", (event) => {
   if (tip && tip.closest && (tip.closest(".find-saved") || tip.closest(".find-fold"))) return;
   if (tip && tip.classList && tip.classList.contains("find-fold")) return;
   window.savePeek = false;
+  window.saveShut = true;
+  try { localStorage.setItem("savedShut", "1"); } catch (error) { console.log("[parlay-save] could not keep fold", error); }
   if (typeof paintParlay === "function") paintParlay();
 });
 
