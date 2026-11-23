@@ -1,7 +1,8 @@
 /** Build a bet keeps Quick add. Recommended / Games / Strategies live on the Recommended page. */
 
 let startTab = "rec", startBack = null, startUndo = null, startRandomAt = null, startGolden = null, startMetals = null;
-let startFavOnly = localStorage.getItem("startFavOnly") === "1";
+let startFavOnly = false;
+let startPickGames = new Set();
 const startKinds = new Set(), START_KINDS = [["safe", "Safe"], ["balanced", "Balanced"], ["payout", "Payout"], ["good", "Good bet"], ["math", "Math"], ["script", "Script"], ["solid", "Steady role"], ["cushion", "Cushion"]];
 
 function startKindOf(pick) {
@@ -475,6 +476,7 @@ function startRecPool(games, opts) {
     if (seen.has(key)) return;
     if (typeof startPickSpanOk === "function" && !startPickSpanOk(pick)) return;
     if (league && typeof homePickSport === "function" && homePickSport(pick) !== league) return;
+    if (!startGameOk(pick.match)) return;
     if (!startKindOk(pick)) return;
     if (startFavOnly && !startFavGame(pick.match)) return;
     seen.add(key);
@@ -545,7 +547,7 @@ function startRecFeed(board, box, root) {
   if (pool.status === "empty" || !pool.picks.length) {
     const say = pool.league
       ? (typeof homeLeagueClearNote === "function" ? homeLeagueClearNote(box, `No ${pool.league} picks ${when}.`) : Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: `No ${pool.league} picks ${when}.` }))
-      : Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: startKinds.size ? "No picks match these filters. Tap Clear for the rest." : startFavOnly ? "None of your teams have a pick. Uncheck Only my teams for the rest." : `No picks ${when}.` });
+      : Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: startKinds.size ? "No picks match these filters. Tap Clear for the rest." : startPickGames.size ? "No picks in the games you picked." : `No picks ${when}.` });
     return { recs: [...recs, say], picks: [], all: [] };
   }
   const wrap = document.createElement("div");
@@ -581,8 +583,50 @@ function startRecFeed(board, box, root) {
   return { recs, picks: pool.picks, all: pool.picks };
 }
 
+function startGameOk(match) {
+  if (!startPickGames.size) return true;
+  return startPickGames.has(String(match || ""));
+}
+
+function startGameBar(games) {
+  const league = typeof homeLeagueOn === "function" ? homeLeagueOn(games) : "";
+  const rows = [];
+  const seen = new Set();
+  (games || []).forEach((game) => {
+    if (!game || !game.match || seen.has(game.match)) return;
+    if (league && game.sport !== league) return;
+    seen.add(game.match);
+    rows.push(game);
+  });
+  [...startPickGames].forEach((match) => { if (!seen.has(match)) startPickGames.delete(match); });
+  if (rows.length < 2) return null;
+  const bar = document.createElement("span");
+  bar.className = "desk-games-leagues start-game-picks";
+  bar.append(Object.assign(document.createElement("i"), { className: "start-filter-label", textContent: "Games" }));
+  const all = document.createElement("button");
+  all.type = "button";
+  all.className = `desk-games-league${startPickGames.size ? "" : " on"}`;
+  all.textContent = "All";
+  all.addEventListener("click", () => { if (!startPickGames.size) return; startPickGames.clear(); startPaint(1); });
+  bar.append(all);
+  rows.forEach((game) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `desk-games-league${startPickGames.has(game.match) ? " on" : ""}`;
+    button.textContent = typeof gameShort === "function" ? gameShort(game.match) : game.match;
+    button.addEventListener("click", () => {
+      if (startPickGames.has(game.match)) startPickGames.delete(game.match);
+      else startPickGames.add(game.match);
+      if (startPickGames.size === rows.length) startPickGames.clear();
+      startPaint(1);
+    });
+    bar.append(button);
+  });
+  return bar;
+}
+
 function startRecs(board, box, root) {
-  const left = leftGames(), when = typeof startWhenSay === "function" ? startWhenSay() : "today";
+  const left = leftGames().filter((game) => startGameOk(game.match)), when = typeof startWhenSay === "function" ? startWhenSay() : "today";
   const { recs, picks, all } = startRecFeed(board, box, root);
   const games = homeGameRows(left, box).filter((node) => !startFavOnly || !node.startGame || startFavGame(node.startGame.match)).map((node) => {
     if (!node.classList.contains("desk-game") || node.classList.contains("desk-game-live")) return node;
@@ -843,17 +887,20 @@ function startPaint(again) {
   const row = document.createElement("div");
   row.className = "find-start-row";
   const leagues = typeof homeLeagues === "function" ? homeLeagues(box, leftGames()) : [];
+  leagues.forEach((node) => {
+    if (!node.querySelector(".start-filter-label")) node.prepend(Object.assign(document.createElement("i"), { className: "start-filter-label", textContent: "Leagues" }));
+  });
+  const gameBar = startGameBar(typeof leftGames === "function" ? leftGames() : []);
   row.append(tabs);
   if (startTab !== "stats" && startTab !== "golden") {
-    row.append(startSpanBar(), ...leagues);
+    row.append(startSpanBar(), ...leagues, ...(gameBar ? [gameBar] : []));
     if (startTab === "rec") row.append(startRandomBar(board, picks));
-    if ((window.memberTeams || []).length || startFavOnly) row.append(startFavBox());
   }
-  const dial = startTab === "rec" && typeof recDialBar === "function" ? recDialBar(startDialCommit) : null;
+  const dial = (startTab === "rec" || startTab === "parlays") && typeof recDialBar === "function" ? recDialBar(startDialCommit) : null;
   const body = startTab === "rec"
     ? [...(dial ? [dial] : []), ...(all.length ? [startKindBar(all)] : []), ...recs]
     : startTab === "parlays"
-      ? (typeof recParlayBody === "function" ? recParlayBody(board) : [])
+      ? [...(dial ? [dial] : []), ...(typeof recParlayBody === "function" ? recParlayBody(board) : [])]
       : startTab === "stacks"
       ? startStacks()
       : startTab === "stats"
@@ -866,6 +913,9 @@ function startPaint(again) {
   if (startTab === "rec" && typeof recDialCountPaint === "function") {
     const counts = typeof recDialCountOf === "function" ? recDialCountOf(all) : { golden: 0, all: all.length };
     recDialCountPaint(counts);
+  }
+  if (startTab === "parlays" && typeof recDialCountPaint === "function" && typeof recParlayBuild === "function" && typeof recParlayDialCounts === "function") {
+    recDialCountPaint(recParlayDialCounts(recParlayBuild(board).rows));
   }
   if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 2, { quiet: true });
   const waiting = (typeof startNeedsWeek === "function" && startNeedsWeek() && startWeekLoading) || !homeRecs || homeRecs.loading;

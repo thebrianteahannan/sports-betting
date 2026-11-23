@@ -7,6 +7,8 @@
 .find-board .quick-add-step { margin: 0 0 0.85rem; }
 .find-board .quick-add-step > b { display: block; margin: 0 0 0.5rem; color: #e7c15a; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .find-board .quick-add-search { box-sizing: border-box; width: 100%; max-width: 22rem; margin: 0 0 0.55rem; padding: 0.5rem 0.75rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 8px; background: #07140f; color: #f4f7fb; font: inherit; font-size: 14px; }
+.quick-add-hide { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0 0 0.55rem; color: #c4cde0; font-size: 13px; font-weight: 650; cursor: pointer; }
+.quick-add-hide input { accent-color: #3dff6e; }
 .find-board .quick-add-picks { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: flex-start; }
 /* Matchup chip owns the first row so team cards never sit beside it on a narrow screen. */
 .find-board .quick-add-picks:has(> .quick-add-team-card) > .quick-add-chip {
@@ -81,6 +83,7 @@
 .find-start-random { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
 .find-start-random:empty { display: none; }
 .find-start-random > i { margin-right: 0.15rem; color: #9fb3c8; font-size: 13px; font-style: normal; font-weight: 800; }
+.find-start .desk-games-leagues > i.start-filter-label { margin-right: 0.2rem; color: #9fb3c8; font-size: 13px; font-style: normal; font-weight: 800; align-self: center; }
 :is(.rec-board, #choice-result, #desk-games) .find-start-random > button, :is(.rec-board, #choice-result, #desk-games) .find-start-random > select { width: auto !important; min-width: 2.1rem; min-height: 0 !important; margin: 0 !important; padding: 0.28rem 0.6rem !important; border: 1px solid #3dff6e !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #3dff6e !important; font: inherit; font-size: 13px !important; font-weight: 800 !important; letter-spacing: normal !important; text-transform: none !important; cursor: pointer; }
 :is(.rec-board, #choice-result) .find-start-random > button:hover, :is(.rec-board, #choice-result) .find-start-random > select:hover { background: rgba(61, 255, 110, 0.12) !important; }
 .find-start-random > select option { background: #07090e; color: #f4f7fb; }
@@ -140,7 +143,10 @@
 :is(.rec-board, #choice-result) .find-start button.desk-rec { margin: 0 0 12px !important; }
 :is(.rec-board, #choice-result) .find-start[data-rec-dial="0"] button.desk-rec:not([data-rec-golden]),
 :is(.rec-board, #choice-result) .find-start[data-rec-dial="1"] button.desk-rec:not([data-rec-metal]),
-:is(.rec-board, #choice-result) .find-start[data-rec-dial="2"] button.desk-rec:not([data-rec-band]) { display: none !important; }
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="2"] button.desk-rec:not([data-rec-band]),
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="0"] .rec-parlay-card:not([data-rec-golden]),
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="1"] .rec-parlay-card:not([data-rec-metal]),
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="2"] .rec-parlay-card:not([data-rec-band]) { display: none !important; }
 .find-start .find-start-recs { display: flex; flex-direction: column; gap: 0; }
 .find-start .find-start-recs-more { margin: 0.2rem 0 0.8rem; }
 .find-start .rec-dial,
@@ -293,6 +299,7 @@
 .rec-parlay-card.m-silver { border-color: #d5deea; }
 .rec-parlay-card.m-bronze { border-color: #d0894f; }
 .rec-parlay-card.m-edge { border-color: #2a3a48; }
+.rec-parlay-card.m-known { border-color: #3dff6e; }
 .rec-parlay-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.55rem; margin: 0; }
 .rec-parlay-head > b { color: #f4f7fb; font-size: 15px; }
 .rec-parlay-head > span { color: #9fb3c8; font-size: 13px; font-weight: 700; }
@@ -301,6 +308,7 @@
 .rec-parlay-mark.m-silver { color: #d5deea; }
 .rec-parlay-mark.m-bronze { color: #d0894f; }
 .rec-parlay-mark.m-edge { color: #9aa6b2; }
+.rec-parlay-mark.m-known { color: #3dff6e; }
 .rec-parlay-pay { display: flex; flex-wrap: wrap; gap: 0.3rem 0.7rem; margin: 0; font-size: 14px; font-weight: 700; }
 .rec-parlay-pay i { font-style: normal; }
 .rec-parlay-pay .px, .rec-parlay-pay .pay { color: #3dff6e; }

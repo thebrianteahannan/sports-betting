@@ -1,6 +1,8 @@
 /** Quick add above Recommended: today/week → league → team or player → player → prop → value → current or new bet. */
 const QUICK_WHEN = [["done", "Finished Today"], ["live", "Live"], ["next", "Upcoming Today"], ["tomorrow", "Tomorrow"], ["week", "This Week"]];
 const quickAdd = { when: "next", sport: "", team: "", side: "", player: "", prop: "", value: "", q: "" };
+let quickAddHideDef = true;
+try { quickAddHideDef = localStorage.getItem("quickAddHideDef") !== "0"; } catch (error) {}
 
 function quickAddReset(keep) {
   const when = keep && keep.when ? quickAdd.when : "next";
@@ -308,7 +310,7 @@ function quickAddResolveSide(person, game, sport, people) {
   const fromTd = quickAddTdSide(people, person, game);
   if (fromTd) return fromTd;
   const bare = quickAddBare(person && person.name);
-  const bag = quickAddGameRosters.get(quickAddRosterBag(game, sport || quickAdd.sport));
+  const bag = quickAddGameRosters.get(quickAddRosterBag(game, sport || quickAdd.sport || game.sport));
   if (bag) {
     const ready = sides.every((side) => bag.has(side));
     if (ready) {
@@ -318,6 +320,14 @@ function quickAddResolveSide(person, game, sport, people) {
     }
   }
   return "";
+}
+
+const quickAddDefPos = new Set(["CB", "S", "FS", "SS", "DB", "LB", "ILB", "OLB", "MLB", "DT", "DE", "DL", "NT", "EDGE"]);
+
+function quickAddIsDefense(person) {
+  if (!person) return false;
+  if (/defense|special teams/i.test(person.name || "")) return true;
+  return quickAddDefPos.has(String(quickAddPersonPos(person) || "").toUpperCase());
 }
 
 function quickAddPersonPos(person) {
@@ -379,6 +389,7 @@ const quickAddRosterJobs = new Set();
 const quickAddGameRosters = new Map();
 
 function quickAddLoadRosters(game, sport, paint) {
+  sport = sport || (game && game.sport) || "";
   if (!game || !game.match || !sport) return;
   const gameKey = quickAddRosterBag(game, sport);
   let bag = quickAddGameRosters.get(gameKey);
@@ -808,6 +819,17 @@ function quickAddBox(board) {
   search.placeholder = quickAdd.team ? "Filter teams or players" : "Type a player, or pick a game";
   search.value = quickAdd.q;
   search.addEventListener("input", () => { quickAdd.q = search.value; paint(search.selectionStart); });
+  const hide = document.createElement("label");
+  hide.className = "quick-add-hide";
+  const hideBox = document.createElement("input");
+  hideBox.type = "checkbox";
+  hideBox.checked = quickAddHideDef;
+  hideBox.addEventListener("change", () => {
+    quickAddHideDef = hideBox.checked;
+    try { localStorage.setItem("quickAddHideDef", hideBox.checked ? "1" : "0"); } catch (error) {}
+    paint();
+  });
+  hide.append(hideBox, " Exclude defense");
   const picks = document.createElement("div");
   picks.className = "quick-add-picks";
   if (!quickAdd.team && !quickAdd.q.trim()) {
@@ -836,7 +858,7 @@ function quickAddBox(board) {
     }, game ? { html: `◂ ${quickAddGameHtml(game)}` } : null));
     quickAddLoadRosters(game, quickAdd.sport, paint);
   }
-  const playerCap = quickAdd.when === "done" && quickAdd.team ? 140 : (quickAdd.q.trim() || quickAdd.team ? 60 : 24);
+  const playerCap = quickAdd.team ? 160 : (quickAdd.q.trim() ? 60 : 24);
   const splitTeams = !!(quickAdd.team && game && game.match);
   // Both team cards always list their own players; selecting a side only highlights the header.
   const listed = quickAddPlayers(people, quickAdd.sport, quickAdd.team, game, splitTeams);
@@ -880,6 +902,7 @@ function quickAddBox(board) {
       row.className = "quick-add-team-picks";
       const sidePlayers = (bySide.get(side) || []).slice().sort((a, b) => Number(quickAddPersonRec(b, quickAdd.sport, quickAdd.team)) - Number(quickAddPersonRec(a, quickAdd.sport, quickAdd.team)) || a.name.localeCompare(b.name));
       sidePlayers.forEach((person) => {
+        if (quickAddHideDef && quickAddIsDefense(person)) return;
         const rec = quickAddPersonRec(person, quickAdd.sport, quickAdd.team);
         row.append(quickAddChip(quickAddPersonSay(person), quickAdd.player === person.key, () => {
           quickAdd.side = side;
@@ -901,6 +924,7 @@ function quickAddBox(board) {
       const row = document.createElement("div");
       row.className = "quick-add-team-picks";
       group.people.forEach((person) => {
+        if (quickAddHideDef && quickAddIsDefense(person)) return;
         const rec = quickAddPersonRec(person, quickAdd.sport, quickAdd.team);
         row.append(quickAddChip(quickAddPersonSay(person), quickAdd.player === person.key, () => {
           quickAdd.player = person.key;
@@ -922,7 +946,7 @@ function quickAddBox(board) {
     none.textContent = quickAdd.q.trim() ? "No one by that name." : "No games posted.";
     picks.append(none);
   }
-  who.append(whoHead, search, picks);
+  who.append(whoHead, search, ...(quickAdd.team ? [hide] : []), picks);
   box.append(who);
 
   const person = quickAddPerson(people.concat(past));

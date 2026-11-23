@@ -2,6 +2,7 @@
 
 let recParlaySize = 0;
 let recParlayMade = { key: "", rows: [], best: null };
+let recParlayStrats = [];
 
 function recParlayRank(odds) {
   const n = Number(odds);
@@ -107,24 +108,109 @@ function recParlayWalk(pool, n, take) {
   return { rows: out.slice(0, take), best };
 }
 
+function recParlayGames() {
+  const games = typeof leftGames === "function" ? leftGames() : [];
+  const league = typeof homeLeagueOn === "function" ? homeLeagueOn(games) : "";
+  return new Set(games.filter((game) => (!league || game.sport === league) && (typeof startGameOk !== "function" || startGameOk(game.match))).map((game) => game.match).filter(Boolean));
+}
+
+function recParlayStackRow(name, stack, tier) {
+  const bets = stack.bets || [];
+  if (bets.length < 2 || bets.length > 5) return null;
+  const no = typeof STACKS === "undefined" ? 0 : STACKS.findIndex((row) => row[0] === name) + 1;
+  const legs = bets.map((bet) => {
+    const n = Number(bet.games);
+    const hits = Number(bet.hits);
+    const book = recParlayChance(bet.odds);
+    const recorded = n >= 5 && Number.isFinite(hits);
+    return {
+      who: recParlayWho({ label: bet.label }),
+      rate: recorded ? hits / n : (book == null ? 0 : book),
+      pick: { label: bet.label, odds: bet.odds, market: bet.market || "", match: bet.game || stack.game || "", hits, n, text: bet.label },
+    };
+  });
+  const scored = tier === "pick" ? recParlayScore(legs) : null;
+  if (tier === "pick" && !(scored && scored.score)) return null;
+  const price = recParlayPrice(legs);
+  const row = scored || { price, need: recParlayChance(price), ours: null, gap: 0, score: null, place: "known", legs };
+  row.strategy = name;
+  row.no = no;
+  row.read = stack.read || "";
+  row.known = tier === "edge";
+  if (row.known) row.place = "known";
+  return row;
+}
+
+function recParlayStrategies(data) {
+  const found = (data && data.found) || {};
+  const games = recParlayGames();
+  const rows = [];
+  Object.entries(found).forEach(([name, stacks]) => {
+    const grade = typeof STACK_GRADE === "undefined" ? null : STACK_GRADE[name];
+    const tier = grade ? grade[0] : "";
+    if (tier !== "edge" && tier !== "pick") return;
+    const live = (stacks || []).filter((stack) => {
+      const match = stack.game || ((stack.bets || [])[0] || {}).game || "";
+      if (typeof startFavOnly !== "undefined" && startFavOnly && typeof startFavGame === "function" && match && !startFavGame(match)) return false;
+      return !match || !games.size || games.has(match);
+    });
+    const fits = tier === "edge" ? live.slice(0, 1) : live.filter((stack) => stack.beats);
+    const made = fits.map((stack) => recParlayStackRow(name, stack, tier)).filter(Boolean);
+    made.sort((a, b) => (Number(b.gap) || 0) - (Number(a.gap) || 0));
+    if (made[0]) rows.push(made[0]);
+  });
+  return rows;
+}
+
+function recParlayStamp(rows) {
+  rows.sort((a, b) => (Number(b.gap) || 0) - (Number(a.gap) || 0) || (b.known === a.known ? 0 : b.known ? -1 : 1) || a.legs.length - b.legs.length);
+  const spots = ["golden", "silver", "bronze"];
+  let ticket = 0;
+  rows.forEach((row) => {
+    if (row.score) row.place = spots[ticket++] || "edge";
+    else row.place = row.known ? "known" : "edge";
+  });
+  const known = rows.filter((row) => row.known && row.place === "known");
+  const rest = rows.filter((row) => !known.includes(row));
+  const tickets = rest.filter((row) => row.place === "golden" || row.place === "silver" || row.place === "bronze");
+  const others = rest.filter((row) => !tickets.includes(row)).slice(0, 24);
+  return [...tickets, ...known, ...others].slice(0, 24 + known.length);
+}
+
+function recParlayJoin(rows) {
+  const keyOf = (row) => row.legs.map((leg) => String(leg.pick.label || "").toLowerCase()).sort().join("~");
+  const merged = rows.slice();
+  const have = new Map(merged.map((row) => [keyOf(row), row]));
+  recParlayStrats.forEach((row) => {
+    const prior = have.get(keyOf(row));
+    if (prior) {
+      prior.strategy = row.strategy;
+      prior.no = row.no;
+      prior.read = row.read;
+      prior.known = row.known || prior.known;
+      return;
+    }
+    have.set(keyOf(row), row);
+    merged.push(row);
+  });
+  return recParlayStamp(merged);
+}
+
 function recParlayRanked(board) {
   const pool = recParlayPool(board);
   const key = pool.map((leg) => `${leg.pick.label}|${leg.pick.odds}|${leg.pick.hits}`).join("~");
-  if (recParlayMade.key === key) return recParlayMade;
-  let rows = [];
-  let best = null;
-  [2, 3, 4, 5].forEach((n) => {
-    if (pool.length < n) return;
-    const found = recParlayWalk(pool, n, 8);
-    rows = rows.concat(found.rows);
-    if (found.best && (!best || found.best.gap > best.gap)) best = found.best;
-  });
-  rows.sort((a, b) => b.gap - a.gap || a.legs.length - b.legs.length);
-  const spots = ["golden", "silver", "bronze"];
-  rows.forEach((row, at) => { row.place = spots[at] || "edge"; });
-  if (rows.length > 24) rows = rows.slice(0, 24);
-  recParlayMade = { key, rows, best, pool };
-  return recParlayMade;
+  if (recParlayMade.key !== key) {
+    let raw = [];
+    let best = null;
+    [2, 3, 4, 5].forEach((n) => {
+      if (pool.length < n) return;
+      const found = recParlayWalk(pool, n, 8);
+      raw = raw.concat(found.rows);
+      if (found.best && (!best || found.best.gap > best.gap)) best = found.best;
+    });
+    recParlayMade = { key, raw, best, pool };
+  }
+  return { ...recParlayMade, rows: recParlayJoin(recParlayMade.raw || []) };
 }
 
 function recParlayBuild(board) {
@@ -147,29 +233,34 @@ function recParlayName(place) {
 function recParlayCard(board, row) {
   const card = document.createElement("article");
   card.className = `rec-parlay-card m-${row.place}`;
-  const price = row.price > 0 ? `+${row.price}` : String(row.price);
+  if (row.place === "golden") card.dataset.recGolden = "1";
+  if (row.place === "golden" || row.place === "silver" || row.place === "bronze") card.dataset.recMetal = "1";
+  if (typeof recDialInBand === "function" && recDialInBand(row.price)) card.dataset.recBand = "1";
+  const price = Number.isFinite(row.price) ? (row.price > 0 ? `+${row.price}` : String(row.price)) : "";
   const need = `${(row.need * 100).toFixed(1)}%`;
   const ours = `${(row.ours * 100).toFixed(1)}%`;
-  const cash = typeof findCash === "function" ? findCash(row.price) : "";
+  const cash = row.score && typeof findCash === "function" ? findCash(row.price) : "";
   const games = row.legs.map((leg) => String(leg.pick.match || ""));
   const same = games.every(Boolean) && new Set(games).size === 1;
   const head = document.createElement("p");
   head.className = "rec-parlay-head";
   const name = recParlayName(row.place);
-  head.innerHTML = `<i class="rec-parlay-mark m-${row.place}">Edge ${row.score}</i>${name ? `<b>${name}</b>` : ""}<span>${row.legs.length} legs</span>`;
+  const strategy = row.strategy ? `${row.no ? `ST-${String(row.no).padStart(2, "0")} ` : ""}${row.strategy}` : "";
+  head.innerHTML = `<i class="rec-parlay-mark m-${row.place}">${row.place === "known" ? "Known edge" : `Edge ${row.score}`}</i>${name ? `<b>${name}</b>` : ""}${strategy ? `<b>${strategy}</b>` : ""}<span>${row.legs.length} legs</span>`;
   const pay = document.createElement("p");
   pay.className = "rec-parlay-pay";
-  pay.innerHTML = `<i class="px">${price}</i><i class="pct">${need}</i>${cash ? `<i class="pay">$5 profits ${cash}</i>` : ""}<i class="hit">We have it at ${ours}</i>`;
+  if (row.place !== "known") pay.innerHTML = `${price ? `<i class="px">${price}</i>` : ""}${row.score ? `<i class="pct">${need}</i>` : ""}${cash ? `<i class="pay">$5 profits ${cash}</i>` : ""}${row.score ? `<i class="hit">We have it at ${ours}</i>` : ""}`;
   const why = document.createElement("p");
   why.className = "rec-parlay-why";
-  why.textContent = `${same ? "Same game. " : ""}${row.gap.toFixed(1)} points over FanDuel's ${need}.`;
+  const knownSay = row.read || (typeof STACK_GRADE !== "undefined" && STACK_GRADE[row.strategy] && STACK_GRADE[row.strategy][1]) || "Known edge.";
+  why.textContent = row.place === "known" ? knownSay : `${same ? "Same game. " : ""}${Number(row.gap) ? `${row.gap.toFixed(1)} points over FanDuel's ${need}.` : ""}`;
   const list = document.createElement("ul");
   list.className = "rec-parlay-legs";
   row.legs.forEach((leg) => {
     const item = document.createElement("li");
     const shown = Number(leg.pick.odds) > 0 ? `+${leg.pick.odds}` : String(leg.pick.odds);
     const title = typeof homeRecTitle === "function" ? homeRecTitle(leg.pick) : `${leg.who} ${leg.pick.text || leg.pick.label || ""}`;
-    item.textContent = `${title} ${shown}, hit ${leg.pick.hits} of ${leg.pick.n}`;
+    item.textContent = Number(leg.pick.n) >= 5 ? `${title} ${shown}, hit ${leg.pick.hits} of ${leg.pick.n}` : `${title} ${shown}`;
     list.append(item);
   });
   const go = document.createElement("button");
@@ -182,15 +273,53 @@ function recParlayCard(board, row) {
       if (join) join.click();
       return;
     }
-    const legs = row.legs.map((leg) => (typeof startHit === "function" ? startHit(board, leg.pick) : null));
+    const legs = row.legs.map((leg) => recParlayHit(board, leg.pick));
     if (legs.some((leg) => !leg) || typeof startRandomAdd !== "function") return;
     if (!startRandomAdd(board, legs, 5, true)) return;
     go.textContent = "Added to My Bets";
     go.disabled = true;
     go.classList.add("on");
   });
-  card.append(head, pay, why, list, go);
+  card.append(head, ...(pay.innerHTML ? [pay] : []), why, list, go);
   return card;
+}
+
+function recParlayHit(board, pick) {
+  const hit = typeof startHit === "function" ? startHit(board, pick) : null;
+  if (hit) return hit;
+  const label = String(pick.label || "").toLowerCase();
+  const match = String(pick.match || "");
+  const person = (board.people || []).find((who) => (who.bets || []).some((bet) => String(bet.label || "").toLowerCase() === label && (!match || bet.match === match)));
+  const bet = person && person.bets.find((row) => String(row.label || "").toLowerCase() === label && (!match || row.match === match));
+  if (person && bet) return { person, bet };
+  return { person: { key: label, name: recParlayWho(pick), bets: [] }, bet: { label: pick.label, odds: pick.odds, market: pick.market || "", match } };
+}
+
+function recParlayDialCounts(rows) {
+  return {
+    golden: rows.filter((row) => row.place === "golden").length,
+    metal: rows.filter((row) => row.place === "golden" || row.place === "silver" || row.place === "bronze").length,
+    band: rows.filter((row) => typeof recDialInBand === "function" && recDialInBand(row.price)).length,
+    all: rows.length,
+  };
+}
+
+function recParlayPaint(board, box) {
+  box.querySelectorAll(":scope > .rec-parlay-list, :scope > .desk-games-note:not(.rec-dial-empty)").forEach((node) => node.remove());
+  const made = recParlayBuild(board);
+  if (typeof recDialCountPaint === "function") recDialCountPaint(recParlayDialCounts(made.rows));
+  const tab = document.querySelector(".desk-games-tab.on .desk-tab-n");
+  if (tab && tab.parentElement && tab.parentElement.textContent.startsWith("Parlays")) tab.textContent = String(made.rows.length);
+  if (!made.rows.length) {
+    const say = made.pool.length ? "None of these parlays clear a ticket, and no strategy on the board is a known edge or a good pick that beats the price." : "A parlay needs two recommended picks that beat FanDuel, or a strategy that is already a known edge.";
+    box.append(Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: say }));
+    return;
+  }
+  const list = document.createElement("div");
+  list.className = "rec-parlay-list";
+  made.rows.forEach((row) => list.append(recParlayCard(board, row)));
+  box.append(list);
+  if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 2, { quiet: true });
 }
 
 function recParlayBody(board) {
@@ -209,26 +338,16 @@ function recParlayBody(board) {
   });
   const note = document.createElement("p");
   note.className = "rec-parlay-note";
-  note.textContent = "Golden is the best parlay. Silver is second. Bronze is third.";
+  note.textContent = "Golden is the best parlay. Silver is second. Bronze is third. A known-edge strategy is included. One that needs a good pick is included when the legs beat the price.";
   box.append(sizes, note);
-  const made = recParlayBuild(board);
-  if (!made.pool.length) {
-    box.append(Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: "A parlay ticket needs two recommended picks that have hit more often than FanDuel's price." }));
-    return [box];
+  if (typeof recDialEmptyNote === "function") box.append(recDialEmptyNote());
+  recParlayPaint(board, box);
+  if (typeof gameStackData === "function") {
+    gameStackData().then((data) => {
+      if (!box.isConnected) return;
+      recParlayStrats = recParlayStrategies(data);
+      recParlayPaint(board, box);
+    });
   }
-  if (!made.rows.length) {
-    const miss = made.best;
-    const say = !miss
-      ? "None of these parlays clear a Bronze parlay."
-      : miss.gap < 0
-        ? `The best ${miss.legs.length}-leg sits ${Math.abs(miss.gap).toFixed(1)} points under FanDuel's ${(miss.need * 100).toFixed(1)}%. A Bronze parlay needs 1 point over.`
-        : `The best ${miss.legs.length}-leg is ${miss.gap.toFixed(1)} points over FanDuel's ${(miss.need * 100).toFixed(1)}%. A Bronze parlay needs 1 point over.`;
-    box.append(Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: say }));
-    return [box];
-  }
-  const list = document.createElement("div");
-  list.className = "rec-parlay-list";
-  made.rows.forEach((row) => list.append(recParlayCard(board, row)));
-  box.append(list);
   return [box];
 }

@@ -178,7 +178,7 @@ function recDialApply(next, opts) {
     const host = node.closest(".find-start, #desk-games");
     if (!host) return;
     const mark = recDial <= 0 ? "[data-rec-golden]" : recDial === 1 ? "[data-rec-metal]" : "[data-rec-band]";
-    const show = recDial < 3 && !host.querySelector(`.desk-rec${mark}`);
+    const show = recDial < 3 && !host.querySelector(`.desk-rec${mark}, .rec-parlay-card${mark}`);
     node.hidden = !show;
     if (show) node.textContent = recDialEmptySay();
   });

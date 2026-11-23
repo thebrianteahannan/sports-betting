@@ -514,7 +514,7 @@ function homeLeagueCounts(games) {
 
 function homeLeagues(box, games) {
   const leagues = homeLeagueList(games), on = homeLeagueOn(games);
-  if (leagues.length < 2) return [];
+  if (!leagues.length) return [];
   const onHome = box && box.id === "desk-games";
   const showCounts = onHome ? homeGamesTab === "rec" : (homeGamesTab === "rec" || (typeof startTab === "string" && startTab === "rec"));
   const counts = showCounts ? homeLeagueCounts(games) : null;
@@ -648,9 +648,6 @@ function startStrip(box) {
   if (tab === "rec" && typeof startRandomBar === "function") {
     const random = startRandomBar(board, picks);
     if (random) head.append(random);
-  }
-  if ((typeof startFavOnly !== "undefined" && startFavOnly) || (window.memberTeams || []).length) {
-    if (typeof startFavBox === "function") head.append(startFavBox());
   }
   if (tab === "rec") {
     const live = document.querySelector("#desk-glass-in .find-board");
