@@ -44,83 +44,16 @@ function fantasyZoomBar() {
   less.textContent = "Less";
   const more = document.createElement("span");
   more.textContent = "More";
-  const track = document.createElement("div");
-  track.className = "fantasy-zoom-track";
-  track.tabIndex = 0;
-  track.setAttribute("role", "slider");
-  track.setAttribute("aria-valuemin", "0");
-  track.setAttribute("aria-valuemax", String(FANTASY_ZOOM_MAX));
-  track.setAttribute("aria-valuenow", String(fantasyZoom));
-  track.setAttribute("aria-label", "Show more or less on each player");
-  const fill = document.createElement("span");
-  fill.className = "fantasy-zoom-fill";
-  const thumb = document.createElement("span");
-  thumb.className = "fantasy-zoom-thumb";
-  track.append(fill, thumb);
-
-  const setPos = (raw) => {
-    const shown = Math.max(0, Math.min(FANTASY_ZOOM_MAX, raw));
-    track.style.setProperty("--zoom-pos", String(shown / FANTASY_ZOOM_MAX));
-    return shown;
-  };
-  const applyLevel = (raw) => {
-    const level = Math.max(0, Math.min(FANTASY_ZOOM_MAX, Math.round(raw)));
-    track.setAttribute("aria-valuenow", String(level));
-    if (level !== fantasyZoom) fantasyZoomApply(level);
-  };
-  setPos(fantasyZoom);
-
-  const ratioFrom = (event) => {
-    const box = track.getBoundingClientRect();
-    if (!box.width) return fantasyZoom;
-    const thumbW = thumb.offsetWidth || 0;
-    const travel = Math.max(1, box.width - thumbW);
-    const x = Math.min(Math.max(event.clientX - box.left - thumbW / 2, 0), travel);
-    return (x / travel) * FANTASY_ZOOM_MAX;
-  };
-
-  let dragId = null;
-  let settleToken = 0;
-  track.addEventListener("pointerdown", (event) => {
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-    settleToken += 1;
-    dragId = event.pointerId;
-    track.classList.add("dragging");
-    try { track.setPointerCapture(event.pointerId); } catch (error) {}
-    applyLevel(setPos(ratioFrom(event)));
-  });
-  track.addEventListener("pointermove", (event) => {
-    if (dragId !== event.pointerId) return;
-    applyLevel(setPos(ratioFrom(event)));
-  });
-  const settle = (raw) => {
-    const token = ++settleToken;
-    const snapped = Math.max(0, Math.min(FANTASY_ZOOM_MAX, Math.round(raw)));
-    track.classList.remove("dragging");
-    requestAnimationFrame(() => {
-      if (token !== settleToken) return;
-      setPos(snapped);
-      track.setAttribute("aria-valuenow", String(snapped));
-      fantasyZoomApply(snapped);
-    });
-  };
-  track.addEventListener("pointerup", (event) => {
-    if (dragId !== event.pointerId) return;
-    dragId = null;
-    settle(ratioFrom(event));
-  });
-  track.addEventListener("pointercancel", (event) => {
-    if (dragId !== event.pointerId) return;
-    dragId = null;
-    settle(fantasyZoom);
-  });
-  track.addEventListener("keydown", (event) => {
-    if (event.key !== "ArrowRight" && event.key !== "ArrowUp" && event.key !== "ArrowLeft" && event.key !== "ArrowDown") return;
-    event.preventDefault();
-    const step = event.key === "ArrowRight" || event.key === "ArrowUp" ? 1 : -1;
-    settle(fantasyZoom + step);
-  });
-  bar.append(less, track, more);
+  const input = document.createElement("input");
+  input.type = "range";
+  input.min = "0";
+  input.max = String(FANTASY_ZOOM_MAX);
+  input.step = "1";
+  input.value = String(fantasyZoom);
+  input.setAttribute("aria-label", "Show more or less on each player");
+  input.addEventListener("input", () => fantasyZoomApply(input.value));
+  bar.append(less, input, more);
+  if (typeof rowSlide === "function") rowSlide(input);
   return bar;
 }
 
@@ -266,6 +199,7 @@ function fantasyMatchBar() {
   range.setAttribute("aria-label", "Show matchup score, projection, win chance, record, and playoff chance");
   range.addEventListener("input", () => fantasyMatchApply(range.value));
   bar.append(less, range, more);
+  if (typeof rowSlide === "function") rowSlide(range);
   return bar;
 }
 

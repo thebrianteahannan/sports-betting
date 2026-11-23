@@ -472,7 +472,9 @@ function betActsApply() {
       const bar = document.createElement("label");
       bar.className = "bet-acts";
       bar.innerHTML = `<span>Less</span><input type="range" min="0" max="5" step="1" value="${betActs}" aria-label="Show more of the leg tools"><span>More</span>`;
-      bar.querySelector("input").addEventListener("input", (event) => {
+      const box = bar.querySelector("input");
+      if (typeof rowSlide === "function") rowSlide(box);
+      box.addEventListener("input", (event) => {
         betActs = Number(event.target.value);
         try { localStorage.setItem("betActsVer", "2"); localStorage.setItem("betActs", String(betActs)); } catch (error) {}
         document.querySelectorAll(".find-tray").forEach((node) => { node.dataset.acts = String(betActs); });

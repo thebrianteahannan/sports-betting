@@ -368,6 +368,7 @@ function livePaint(data, quiet) {
   const weekBody = later.length ? `<h2>This week, ${say(later.length)}</h2>${livePack(later.map(liveSoonCard).join(""))}` : empty(liveOnlyMine, laterAll, "No games the rest of this week.");
   const body = { done: doneBody, live: liveBody, next: nextBody, tomorrow: tomorrowBody, week: weekBody }[liveSpan] || liveBody;
   box.innerHTML = `${liveFilterBar(bar, filters)}${body}`;
+  box.querySelectorAll("input.live-zoom-range, input.live-card-range").forEach((node) => { if (typeof rowSlide === "function") rowSlide(node); });
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => { const left = liveSlide.get(node.dataset.slide); if (left) node.scrollLeft = left; });
   if (!first) {
     box.querySelectorAll("[data-k]").forEach((node) => { if (was.has(node.dataset.k) && was.get(node.dataset.k) !== node.textContent) node.classList.add("live-flash"); });

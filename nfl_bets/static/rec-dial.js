@@ -301,6 +301,7 @@ function recDialBar(onCommit) {
   input.addEventListener("change", end);
   slide.append(input, now);
   bar.append(less, slide, more);
+  if (typeof rowSlide === "function") rowSlide(input);
   return bar;
 }
 

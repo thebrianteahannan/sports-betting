@@ -76,6 +76,7 @@ function manageZoomBar() {
   });
   input.addEventListener("change", end);
   bar.append(less, input, more);
+  if (typeof rowSlide === "function") rowSlide(input);
   return bar;
 }
 

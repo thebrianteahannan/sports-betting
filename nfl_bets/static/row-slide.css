@@ -1,0 +1,8 @@
+.row-slide-row { touch-action: none; user-select: none; -webkit-user-select: none; cursor: pointer; }
+.row-slide-row > span { display: flex; align-items: center; align-self: stretch; }
+.row-slide { position: relative; flex: 1 1 9rem; width: min(11rem, 46vw); min-width: 5.5rem; height: 48px; touch-action: none; }
+.row-slide::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 6px; border-radius: 999px; background: #1c2a36; transform: translateY(-50%); }
+.row-slide > i { position: absolute; left: 0; top: 50%; height: 6px; border-radius: 999px; background: #3dff6e; transform: translateY(-50%); pointer-events: none; }
+.row-slide > b { position: absolute; top: 50%; width: 32px; height: 32px; border: 2px solid #04140c; border-radius: 50%; background: #3dff6e; box-shadow: 0 0 10px rgba(61, 255, 110, 0.45); transform: translate(-50%, -50%); pointer-events: none; }
+.row-slide:focus-within > b { box-shadow: 0 0 0 6px rgba(61, 255, 110, 0.2), 0 0 10px rgba(61, 255, 110, 0.45); }
+.row-slide-input, #desk.tv-full #desk-glass .row-slide-input { position: absolute; width: 1px; height: 1px; min-height: 0; margin: 0; padding: 0; border: 0; opacity: 0; pointer-events: none; }
