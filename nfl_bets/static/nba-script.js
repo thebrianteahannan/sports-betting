@@ -10,13 +10,33 @@ function scriptRecKeep(bets, game) {
   if (typeof parlayLeg !== "undefined" && parlayLeg.size && typeof paintParlay === "function") paintParlay();
 }
 
+function scriptRecExtras(bet) {
+  const info = bet && scriptRecAll.get(`${bet.label}|${bet.market}`);
+  if (!info) return [];
+  const hold = document.createElement("span");
+  hold.innerHTML = `${scriptRoleTag(info)}${scriptCushionTag({ ...info, label: bet.label, market: bet.market })}`;
+  return [...hold.children];
+}
+
 function scriptRecTag() {
   const recLegs = new Set([...scriptRecSigs].flatMap((sig) => sig.split("||")));
   if (typeof parlayLeg !== "undefined") document.querySelectorAll(".find-tray .find-chose").forEach((line) => {
     const hist = line.querySelector("button.find-leg-hist"), key = (hist && hist.dataset.key) || line.dataset.key, prop = line.querySelector("span i.prop"), bet = key && parlayLeg.get(key);
     if (!prop || !bet) return;
-    const pill = line.querySelector(".find-rec-pill") || scriptRecPill(bet) || (recLegs.has(scriptRecSig([bet])) && scriptRecPill({ ...bet, rec: true }));
-    if (pill) prop.after(pill);
+    line.querySelectorAll(".bet-kind").forEach((node) => node.remove());
+    const fresh = scriptRecPill(bet) || (recLegs.has(scriptRecSig([bet])) && scriptRecPill({ ...bet, rec: true }));
+    let pill = line.querySelector(".find-rec-pill");
+    if (fresh && pill) {
+      pill.className = fresh.className;
+      pill.textContent = fresh.textContent;
+      pill.title = fresh.title;
+    } else if (fresh) {
+      prop.after(fresh);
+      pill = fresh;
+    }
+    if (!pill) return;
+    let spot = pill;
+    scriptRecExtras(bet).forEach((node) => { spot.after(node); spot = node; });
   });
   if (typeof parlayLeg === "undefined" || !parlayLeg.size || !scriptRecSigs.has(scriptRecSig([...parlayLeg.values()]))) return;
   document.querySelectorAll(".find-tray .find-ticket > b").forEach((head) => {
@@ -31,7 +51,7 @@ const scriptRecAll = new Map(), legRecAll = new Map();
 function scriptRecLearn(bets) {
   (bets.records || []).forEach((row) => legRecAll.set(`${row.label}|${row.market}`, { hits: row.hits, n: row.n }));
   const picks = [bets, bets.stars].filter(Boolean).flatMap((set) => set.picks || []);
-  picks.forEach((pick) => scriptRecAll.set(`${pick.label}|${pick.market}`, { kind: pick.kind, basis: pick.basis, tier: pick.tier, drop: pick.drop, hits: pick.hits, n: pick.n, role: pick.role, cushion: !!pick.cushion }));
+  picks.forEach((pick) => scriptRecAll.set(`${pick.label}|${pick.market}`, { kind: pick.kind, basis: pick.basis, tier: pick.tier, drop: pick.drop, hits: pick.hits, n: pick.n, role: pick.role, cushion: !!pick.cushion, cushionRoom: pick.cushionRoom, cushionPct: pick.cushionPct, avg: pick.avg, reach: pick.reach, how: pick.how || "", text: pick.text || "", label: pick.label }));
   return picks;
 }
 const SCRIPT_KIND = { safe: ["Safe", "Picked to hit. Judged by how often it wins."], balanced: ["Balanced", "Near even money. Judged by wins and dollars both."], payout: ["Payout", "Picked for the price. Judged by the dollars it makes over many bets."] };
@@ -147,7 +167,7 @@ function scriptRecPill(bet) {
   if (!bet || !(bet.rec || info)) return null;
   const say = scriptKindSay({ odds: bet.odds, ...(info || {}) }), good = say.key === "good";
   const pill = document.createElement("i");
-  pill.className = `find-rec-pill${good ? " good" : ""}`; pill.textContent = good ? "Good bet" : `Recommended · ${say.text.split(" · ")[0]}`; pill.title = say.tip;
+  pill.className = `find-rec-pill${good ? " good" : ""}`; pill.textContent = good ? "Good bet" : `Recommended · ${say.text}`; pill.title = say.tip;
   return pill;
 }
 
