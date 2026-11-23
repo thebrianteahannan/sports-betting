@@ -5,10 +5,11 @@
 .find-tray .find-chose i.leg-role.r-dead { color: #ff6b6b; border-style: dashed; }
 .find-tray p.leg-role-say { margin: 0.15rem 0 0.45rem; color: #c9d4dd; font-size: 0.82rem; font-weight: 600; line-height: 1.35; }
 .find-tray .find-chose i.leg-metal { flex: none; align-self: center; margin: 0 0 0 0.35rem; padding: 0 0.42rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.62rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.5; text-transform: uppercase; white-space: nowrap; cursor: help; }
-.find-tray i.leg-metal.m-golden, .find-tray p.leg-metal-say.m-golden { color: #e7c15a; }
-.find-tray i.leg-metal.m-silver, .find-tray p.leg-metal-say.m-silver { color: #d5deea; }
-.find-tray i.leg-metal.m-bronze, .find-tray p.leg-metal-say.m-bronze { color: #d0894f; }
-.find-tray i.leg-metal.m-out, .find-tray p.leg-metal-say.m-out { color: #9aa6b2; }
+.find-tray i.leg-metal.m-golden, .find-tray p.leg-metal-say.m-golden, .find-tray i.leg-edge.m-golden { color: #e7c15a; }
+.find-tray i.leg-metal.m-silver, .find-tray p.leg-metal-say.m-silver, .find-tray i.leg-edge.m-silver { color: #d5deea; }
+.find-tray i.leg-metal.m-bronze, .find-tray p.leg-metal-say.m-bronze, .find-tray i.leg-edge.m-bronze { color: #d0894f; }
+.find-tray i.leg-metal.m-out, .find-tray p.leg-metal-say.m-out, .find-tray i.leg-edge.m-out { color: #9aa6b2; }
+.find-tray p.leg-metal-say i.leg-edge { margin: 0 0.4rem 0 0; padding: 0 0.42rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.68rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.5; text-transform: uppercase; white-space: nowrap; cursor: help; }
 .find-tray p.leg-metal-say { margin: 0.15rem 0 0.45rem; font-size: 0.82rem; font-weight: 600; line-height: 1.35; }
 .find-tray .find-new { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
 .find-tray .find-new.on { display: block; }
