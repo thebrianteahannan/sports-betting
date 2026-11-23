@@ -86,7 +86,7 @@ async function liveBoard(all) {
 let weekMem = { at: 0, games: [] };
 
 async function liveWeek(board) {
-  if (Date.now() - weekMem.at < 5 * 60000) return weekMem.games;
+  if (Date.now() - weekMem.at < 5 * 60000) return lineWeek(weekMem.games);
   const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
   const today = fmt.format(Date.now()), end = fmt.format(Date.now() + 14 * 24 * 3600000);
   const games = ((await board()).games || []).filter((game) => { const kick = Date.parse(game.kickoff || ""); const sport = game.sport || ""; return /^(NFL|NBA|MLB|NHL|WNBA|PGA)$/.test(sport) && fmt.format(kick) <= end && (kick > Date.now() || (sport === "PGA" && kick > Date.now() - 5 * 24 * 3600000)); })
@@ -100,7 +100,13 @@ async function liveWeek(board) {
     game.home = hit ? { ...hit.home, score: "" } : { name: game.homeName || home || "" };
   });
   weekMem = { at: Date.now(), games };
-  return games;
+  return lineWeek(games);
+}
+
+async function lineWeek(games) {
+  const clock = require("./line-clock");
+  await clock.ready();
+  return games.map((game) => ({ ...game, lines: clock.lineSay(game) }));
 }
 
 async function teamLogos() {

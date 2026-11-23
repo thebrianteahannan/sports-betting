@@ -37,6 +37,7 @@ body[data-live-zoom="0"] .live-game[data-card-zoom="0"] .live-rec-tag { position
 .live-meta { margin-left: auto; display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 12px; }
 .live-total { color: #e7c15a; font-size: 14px; font-weight: 700; white-space: nowrap; }
 .live-until { color: #3dff6e; font-size: 14px; font-weight: 700; white-space: nowrap; }
+.live-lines { color: #e7c15a; font-size: 13px; font-weight: 700; white-space: nowrap; }
 .live-week-game { color: #3dff6e; font-size: 13px; font-weight: 700; text-decoration: none; }
 .live-week-game:hover { text-decoration: underline; }
 .live-leagues button.on { border-color: #3dff6e; background: #3dff6e; color: #04140c; }

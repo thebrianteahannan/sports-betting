@@ -660,6 +660,12 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/why") { serveStatic(res, "why.html"); return; }
     if (req.method === "GET" && url.pathname.startsWith("/guide/") && !url.pathname.includes("..")) { serveStatic(res, url.pathname.slice(1), keepFor(url)); return; }
     if (req.method === "GET" && url.pathname === "/api/logos") { sendJson(res, await require("./live-api").teamLogos()); return; }
+    if (req.method === "GET" && url.pathname === "/api/lines") {
+      const clock = require("./line-clock");
+      await clock.ready();
+      sendJson(res, { note: clock.freshNote() });
+      return;
+    }
     if (req.method === "GET" && url.pathname === "/api/live") { const who = await memberFrom(req); if (refuseBoard(res, who)) return; const recs = require("./live-recs"); board().then((now) => recs.recWarm(now)).catch((error) => console.error("live recs warm failed:", error)); sendJson(res, { ...(await require("./live-api").liveBoard(url.searchParams.get("all") === "1")), recs: await recs.recsList(), week: await require("./live-api").liveWeek(board).catch(() => []), tally: await require("./live-grade").gradeTally() }); require("./live-grade").gradeTick().catch((error) => console.error("live recs grade failed:", error)); return; }
     if (req.method === "GET" && url.pathname === "/api/board") {
       const who = await memberFrom(req);
@@ -969,6 +975,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log("Parlay of the Day site on port " + PORT);
-  const warm = () => { board().then((now) => Promise.all([require("./live-recs").recWarm(now), require("./game-keep").keepWarm(now)])).catch((error) => console.error("live recs warm failed:", error)); require("./live-grade").gradeTick().catch((error) => console.error("live recs grade failed:", error)); };
+  const warm = () => { board().then((now) => Promise.all([require("./live-recs").recWarm(now), require("./game-keep").keepWarm(now), require("./line-clock").lineTick(now)])).catch((error) => console.error("live recs warm failed:", error)); require("./live-grade").gradeTick().catch((error) => console.error("live recs grade failed:", error)); };
   setTimeout(warm, 30000); setInterval(warm, 10 * 60000);
 });

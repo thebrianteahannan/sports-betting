@@ -117,16 +117,46 @@ function paintFind() {
   row.append(board);
   row.scrollTop = 0;
   loadFind("today").then((data) => {
-    if (!board.isConnected) return null;
+    if (!board.isConnected) return;
     fillFind(board, data);
-    if (!(findParts.week && findParts.week.data)) { const note = document.createElement("p"); note.className = "quiet"; note.textContent = "Looking up the rest of the week."; const week = board.querySelector(".find-week"); if (week) week.append(note); }
-    return loadFind("week");
-  }).then((more) => {
-    if (!more || !board.isConnected || !board.people) return;
-    const seen = new Map(board.people.map((person) => [person.key, person]));
-    (more.people || []).forEach((person) => { const have = seen.get(person.key); if (!have) { board.people.push(person); return; } const ids = new Set((have.bets || []).map((bet) => `${bet.label}|${bet.odds}|${bet.match}`)); (person.bets || []).forEach((bet) => { if (!ids.has(`${bet.label}|${bet.odds}|${bet.match}`)) have.bets.push(bet); }); });
-    setTimeout(() => { if (!board.isConnected || !board.paintSlate) return; board.querySelectorAll(".find-games").forEach((node) => { node.games = null; }); board.people.games = null; board.paintSlate(board.querySelector(".find-week")); const field = board.querySelector("input"); if (field && field.value.trim().length >= 2 && !board.querySelector(".find-match")) field.dispatchEvent(new Event("input")); }, 50);
   }).catch(() => { if (board.isConnected && !board.querySelector("h2")) fillFind(board, {}); });
+}
+
+function mergeFindWeek(board, more) {
+  if (!more || !board || !board.people) return;
+  const seen = new Map(board.people.map((person) => [person.key, person]));
+  unpackFind(more).forEach((person) => {
+    const have = seen.get(person.key);
+    if (!have) { board.people.push(person); return; }
+    const ids = new Set((have.bets || []).map((bet) => `${bet.label}|${bet.odds}|${bet.match}`));
+    (person.bets || []).forEach((bet) => { if (!ids.has(`${bet.label}|${bet.odds}|${bet.match}`)) have.bets.push(bet); });
+  });
+  board.people.games = null;
+  board.querySelectorAll(".find-games").forEach((node) => { node.games = null; });
+  if (board.paintSlate) board.paintSlate(board.querySelector(".find-week"));
+  const field = board.querySelector("input");
+  if (field && field.value.trim().length >= 2 && !board.querySelector(".find-match")) field.dispatchEvent(new Event("input"));
+}
+
+function loadFindWeek(board) {
+  if (!board || board.weekLoading || (findParts.week && findParts.week.data && Date.now() - findParts.week.at < 30 * 60 * 1000 && board.weekReady)) return;
+  board.weekLoading = true;
+  const week = board.querySelector(".find-week");
+  let note = week && week.querySelector(".find-week-load");
+  if (week && !note) {
+    note = document.createElement("p");
+    note.className = "quiet find-week-load";
+    note.textContent = "Looking up the rest of the week.";
+    week.append(note);
+  }
+  loadFind("week").then((more) => {
+    if (!board.isConnected) return;
+    if (note && note.isConnected) note.remove();
+    mergeFindWeek(board, more);
+    board.weekReady = true;
+  }).catch(() => {
+    if (note && note.isConnected) note.textContent = "Could not load the rest of the week.";
+  }).finally(() => { board.weekLoading = false; });
 }
 
 function findSameGame(match, want) {
@@ -171,6 +201,22 @@ function findGamesLive(button) {
   }).catch(() => {});
 }
 
+function unpackFind(data) {
+  const raw = data && Array.isArray(data.people) ? data.people : [];
+  if (!(data && data.pack === 1 && Array.isArray(data.games))) return raw;
+  const games = data.games;
+  return raw.map((person) => ({
+    key: person.key,
+    name: person.name,
+    kind: person.kind,
+    bets: (person.bets || []).map((bet) => {
+      if (!Array.isArray(bet)) return bet;
+      const game = games[bet[2]] || ["", "", ""];
+      return { label: bet[0], odds: bet[1], match: game[0], sport: game[1], kickoff: game[2], market: bet[3] || "" };
+    }),
+  }));
+}
+
 function fillFind(board, data) {
   const load = board.querySelector(".bet-load");
   if (load) load.remove();
@@ -180,7 +226,7 @@ function fillFind(board, data) {
   heading.textContent = history ? "Recommended History" : recPage ? "Recommended" : "Build a bet";
   board.classList.toggle("find-rec-page", recPage);
   board.classList.toggle("find-hist-page", history);
-  const people = Array.isArray(data.people) ? data.people : [];
+  const people = unpackFind(data);
   const label = document.createElement("label");
   label.className = "find";
   const input = document.createElement("input");
@@ -242,7 +288,8 @@ function fillFind(board, data) {
   findGamesLive(games);
   const pickSpan = (name) => { const on = name === "today"; today.classList.toggle("find-on", on); week.classList.toggle("find-on", !on); if (today.open !== on) today.open = on; if (week.open === on) week.open = !on; };
   today.className = "find-games find-on"; today.dataset.span = "today"; today.open = true; week.className = "find-games find-week"; week.dataset.span = "week";
-  today.addEventListener("toggle", () => { if (today.open) pickSpan("today"); }); week.addEventListener("toggle", () => { if (week.open) pickSpan("week"); });
+  today.addEventListener("toggle", () => { if (today.open) pickSpan("today"); });
+  week.addEventListener("toggle", () => { if (week.open) { pickSpan("week"); loadFindWeek(board); } });
   board.paintSlate = (box) => {
     if (!box) return;
     const rows = box.games = loadedGames(people, box.dataset.span);

@@ -167,6 +167,24 @@ function propTabs(layout) {
   return slugs;
 }
 
+function playerOpen(id, data) {
+  const markets = (data && data.attachments && data.attachments.markets) || {};
+  return Object.values(markets).some((market) => {
+    if (!market || String(market.eventId || "") !== String(id)) return false;
+    if (String(market.marketStatus || "OPEN").toUpperCase() !== "OPEN") return false;
+    const name = String(market.marketName || "");
+    return / - /.test(name) || /touchdown scorer|shots on goal/i.test(name);
+  });
+}
+
+async function propsPosted(id) {
+  const page = await eventPage(id, "popular");
+  if (playerOpen(id, page)) return true;
+  const tabs = propTabs((page && page.layout) || {});
+  if (!tabs.length) return false;
+  return playerOpen(id, await eventPage(id, tabs[0]));
+}
+
 function pgaKeep(name) {
   const low = String(name || "").toLowerCase();
   return low === "win only" || low === "top 5" || low === "top 10" || low === "top 20" || low.startsWith("3 ball") || low.includes("matchbet");
@@ -648,4 +666,4 @@ async function chooseBet(body, board) {
   await addSway(built.legs, games);
   return built;
 }
-module.exports = { chooseBet, eventPage, offerLegs };
+module.exports = { chooseBet, eventPage, offerLegs, propsPosted };

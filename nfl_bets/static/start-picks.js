@@ -679,6 +679,18 @@ function startFilterBits(games) {
   return bits;
 }
 
+function startLineNote() {
+  const note = document.createElement("p");
+  note.className = "desk-games-note start-line-note";
+  note.hidden = true;
+  fetch("/api/lines", { cache: "no-store" }).then((res) => (res.ok ? res.json() : {})).then((data) => {
+    if (!note.isConnected || !data || !data.note) return;
+    note.hidden = false;
+    note.textContent = data.note;
+  }).catch(() => {});
+  return note;
+}
+
 function startShow() {
   const home = document.getElementById("desk-games");
   if (home && typeof homeGamesPaint === "function") { home.dataset.sig = ""; homeGamesPaint(); }
@@ -1034,11 +1046,12 @@ function startPaint(again) {
   if (!history && tabNow !== "td") {
     row.append(startFilterSay(gamesNow, box), startFilterPack(box, leagues, gameBar, board, picks, tabNow));
   }
+  const lineNote = !history && (tabNow === "rec" || tabNow === "parlays") ? startLineNote() : null;
   const dial = (tabNow === "rec" || tabNow === "parlays") && typeof recDialBar === "function" ? recDialBar(startDialCommit) : null;
   const body = tabNow === "rec"
-    ? [...(dial ? [dial] : []), ...(all.length ? [startKindBar(all)] : []), ...recs]
+    ? [...(lineNote ? [lineNote] : []), ...(dial ? [dial] : []), ...(all.length ? [startKindBar(all)] : []), ...recs]
     : tabNow === "parlays"
-      ? [...(dial ? [dial] : []), ...(typeof recParlayBody === "function" ? recParlayBody(board) : [])]
+      ? [...(lineNote ? [lineNote] : []), ...(dial ? [dial] : []), ...(typeof recParlayBody === "function" ? recParlayBody(board) : [])]
       : tabNow === "stacks"
       ? startStacks()
       : tabNow === "stats"

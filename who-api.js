@@ -66,10 +66,12 @@ function bookOf(pools) {
       if (over && under && Number.isFinite(line)) teams.forEach((team) => { put(team.key, team.name, "team", { ...where, label: `Over ${line}`, odds: over.odds, market: "Total" }); put(team.key, team.name, "team", { ...where, label: `Under ${line}`, odds: under.odds, market: "Total" }); });
     }
     (legs || []).forEach((leg) => {
-      const blob = `${leg.runner || ""} ${leg.label || ""} ${leg.market || ""}`;
+      const market = String(leg.market || "").trim();
+      // Alternate totals were copied onto both teams (~90 lines each) and froze Build a bet.
+      if (/^alternate total\b/i.test(market)) return;
+      const blob = `${leg.runner || ""} ${leg.label || ""} ${market}`;
       const team = teams.find((item) => { const name = item.name.toLowerCase(); const nick = name.split(/\s+/).pop().replace(/[^a-z]/g, ""); return blob.toLowerCase().includes(name) || (nick.length > 3 && blob.toLowerCase().includes(nick)); });
-      const bet = { ...where, label: String(leg.label || leg.runner || ""), odds: leg.odds, market: leg.market || "" };
-      if (!team && /^alternate total (points|runs|goals)$/i.test(String(leg.market || "").trim())) { teams.forEach((item) => put(item.key, item.name, "team", bet)); return; }
+      const bet = { ...where, label: String(leg.label || leg.runner || ""), odds: leg.odds, market };
       if (team) { put(team.key, team.name, "team", bet); return; }
       if (/\bto\b/i.test(`${leg.runner || ""} ${leg.label || ""}`)) return;
       const key = who(leg).replace(/\s+to\b.*$/, "").trim();
@@ -79,8 +81,34 @@ function bookOf(pools) {
       put(key, shown || key, "player", bet);
     });
   });
+  const mainLine = (bet) => /^(spread|moneyline|total)$/i.test(String(bet.market || "").trim());
+  const rows = [...people.values()].map((row) => {
+    const keep = 48;
+    const mains = row.bets.filter(mainLine);
+    const rest = row.bets.filter((bet) => !mainLine(bet)).sort((a, b) => rank(b.odds) - rank(a.odds));
+    row.bets = mains.concat(rest).slice(0, keep);
+    return row;
+  }).filter((row) => row.bets.length).sort((a, b) => a.name.localeCompare(b.name));
+  // Compact wire shape: shared game list, short bet tuples. Cuts the Build a bet freeze.
+  const games = [];
+  const gameAt = new Map();
+  const gameId = (bet) => {
+    const key = `${bet.match || ""}|${bet.kickoff || ""}|${bet.sport || ""}`;
+    if (gameAt.has(key)) return gameAt.get(key);
+    const at = games.length;
+    gameAt.set(key, at);
+    games.push([bet.match || "", bet.sport || "", bet.kickoff || ""]);
+    return at;
+  };
   return {
-    people: [...people.values()].map((row) => { row.bets.sort((a, b) => rank(b.odds) - rank(a.odds)); row.bets = row.bets.slice(0, row.kind === "team" ? 400 : 200); return row; }).filter((row) => row.bets.length).sort((a, b) => a.name.localeCompare(b.name)),
+    pack: 1,
+    games,
+    people: rows.map((row) => ({
+      key: row.key,
+      name: row.name,
+      kind: row.kind,
+      bets: row.bets.map((bet) => [bet.label, bet.odds, gameId(bet), bet.market || ""]),
+    })),
   };
 }
 
