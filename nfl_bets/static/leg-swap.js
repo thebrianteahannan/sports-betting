@@ -338,6 +338,7 @@ function legSwapBox(key, mode) {
   else if (usedRec) { rows = recRows; listMode = "line"; }
   else if (cats) { rows = legCatFind(key, mode); listMode = "cat"; }
   else rows = mode === "line" ? legLineFind(key) : legSwapFind(key);
+  if (typeof trayLockEdit === "function" && (mode === "line" || mode === "kind")) trayLockEdit(box, key);
   if (!rows.length || (mode === "swap" && !rows.some((row) => !row.now))) {
     const none = document.createElement("p");
     none.textContent = usedRec ? "No recommended props for this player in this game." : mode === "who" ? "FanDuel has no props posted for this player." : mode === "line" || listMode === "line" ? "FanDuel has no other numbers on this prop." : mode === "kind" || listMode === "cat" ? "FanDuel has no other props for this player in this game." : "Nothing else in this game sits at this price.";

@@ -226,7 +226,7 @@ function saveNow() {
   if (at >= 0 && list[at].locked) {
     entry.locked = true;
     if (list[at].lockedAt) entry.lockedAt = list[at].lockedAt;
-    entry.lockedOdds = list[at].lockedOdds || savePrice(entry.legs) || "";
+    entry.lockedOdds = saveSig(entry.legs) === saveSig(list[at].legs) ? (list[at].lockedOdds || savePrice(entry.legs) || "") : (savePrice(entry.legs) || "");
   }
   const stake = Number(window.parlayStake) > 0 ? Number(window.parlayStake) : (at >= 0 && Number(list[at].stake)) || 5;
   entry.stake = stake;

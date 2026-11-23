@@ -1,6 +1,5 @@
-// Once any game in a bet has started, the bet is locked. Legs cannot be removed, swapped for another player, or added.
-// The prop on a leg can still change: the number, or another prop for the same player. A wrong line can be corrected after kickoff.
-// A leg picked while a locked bet is open starts a new bet instead.
+// Once any game in a bet has started, picking a new player starts a new bet.
+// The open ticket can still be corrected: change the prop, type the price you actually got, or take a leg off.
 
 function trayLockStarted(legs) {
   const now = Date.now();
@@ -41,7 +40,7 @@ function trayLockPropEdit(open) {
   if (!removed.length || removed.length !== added.length) return false;
   const pool = added.map(([, bet]) => ({ bet, used: false }));
   return removed.every(([, oldBet]) => {
-    const hit = pool.find((row) => !row.used && trayLockSameLeg(oldBet, row.bet));
+    const hit = pool.find((row) => !row.used && (trayLockSameLeg(oldBet, row.bet) || (oldBet.match === row.bet.match && String(oldBet.kickoff || "") === String(row.bet.kickoff || ""))));
     if (!hit) return false;
     hit.used = true;
     return true;
@@ -52,9 +51,10 @@ function trayLockGuard() {
   const open = typeof saveList === "function" && saveList().find((row) => row.id === window.parlayOpenId);
   if (!open || !parlayLeg.size || !trayLockStarted(open.legs)) return;
   const was = new Set(open.legs.map((bet) => parlayKey(bet))), now = [...parlayLeg.keys()];
-  if (now.length === was.size && now.every((key) => was.has(key))) return;
-  if (trayLockPropEdit(open)) return;
   const added = [...parlayLeg.entries()].filter(([key]) => !was.has(key)), kept = [...was].every((key) => parlayLeg.has(key));
+  if (now.length === was.size && now.every((key) => was.has(key))) return;
+  if (!added.length) return;
+  if (trayLockPropEdit(open)) return;
   const named = (person, legs) => legs.some((bet) => person.name && String(bet.label || "").startsWith(person.name));
   if (kept && added.length) {
     console.log("[tray-lock] bet is locked, starting a new bet with", added.length, "leg(s)");
@@ -72,7 +72,7 @@ function trayLockGuard() {
 
 function trayLockPaint() {
   const locked = trayLockStarted([...parlayLeg.values()]);
-  const lockTip = "The game has started. Tap a prop to change it.";
+  const lockTip = "The game has started. Tap the prop to change it, or take a leg off.";
   document.querySelectorAll(".find-tray").forEach((tray) => {
     tray.classList.toggle("find-locked", locked);
     tray.title = locked ? lockTip : "";
@@ -110,9 +110,48 @@ if (typeof legMenuPaint === "function") {
 }
 
 document.addEventListener("click", (event) => {
-  const hit = event.target.closest && event.target.closest(".find-tray.find-locked :is(.find-chose button.find-out, button.find-leg-swap, button.find-leg-to, .find-in button.find-name, .find-in button.find-out, .find-new-add, .find-undo button, .find-swap-add)");
+  const hit = event.target.closest && event.target.closest(".find-tray.find-locked :is(button.find-leg-to, .find-in button.find-name, .find-in button.find-out, .find-new-add, .find-undo button, .find-swap-add)");
   if (!hit) return;
   event.stopImmediatePropagation(); event.preventDefault();
 }, true);
+
+function trayLockEdit(box, key) {
+  const old = typeof parlayLeg !== "undefined" && parlayLeg.get(key);
+  if (!box || !old || !trayLockStarted([old])) return;
+  const who = trayLockWho(old);
+  const raw = String(old.label || "").split(/\s+—\s+/)[0].trim();
+  const prop = who && raw.toLowerCase().startsWith(who.toLowerCase()) ? raw.slice(who.length).trim() : raw;
+  const form = document.createElement("form");
+  form.className = "find-lock-edit";
+  const propBox = document.createElement("input");
+  propBox.name = "prop";
+  propBox.setAttribute("aria-label", "The prop you bet");
+  propBox.placeholder = "The prop you bet";
+  propBox.value = prop;
+  const oddsBox = document.createElement("input");
+  oddsBox.name = "odds";
+  oddsBox.setAttribute("aria-label", "The price you bet");
+  oddsBox.placeholder = "Price";
+  oddsBox.inputMode = "decimal";
+  oddsBox.value = Number(old.odds) > 0 ? `+${old.odds}` : String(old.odds || "");
+  const go = document.createElement("button");
+  go.type = "submit";
+  go.textContent = "Use this";
+  form.append(propBox, oddsBox, go);
+  form.addEventListener("click", (event) => event.stopPropagation());
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const said = propBox.value.trim();
+    const odds = Number(String(oddsBox.value).trim().replace(/^\+/, ""));
+    if (!said || !Number.isFinite(odds) || !odds) return;
+    const label = who && !said.toLowerCase().startsWith(who.toLowerCase()) ? `${who} ${said}` : said;
+    const next = { ...old, label, odds, market: said };
+    parlayLeg.delete(key);
+    parlayLeg.set(parlayKey(next), next);
+    if (typeof legSwapOpen !== "undefined") legSwapOpen.delete(key);
+    paintParlay();
+  });
+  box.append(form);
+}
 
 setInterval(() => { if (typeof parlayLeg !== "undefined" && parlayLeg.size && document.querySelector(".find-tray:not(.find-locked)") && trayLockStarted([...parlayLeg.values()])) trayLockPaint(); }, 30000);
