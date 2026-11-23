@@ -1,18 +1,19 @@
 /** Manage My Bets: every saved ticket, lock-as-placed, stake and line edits. */
 
 let manageFilter = "all";
-const MANAGE_ZOOM_MAX = 1;
+const MANAGE_ZOOM_MAX = 2;
 let manageZoom = (() => {
   try {
     const raw = localStorage.getItem("manageZoom");
     const ver = localStorage.getItem("manageZoomVer");
     let n = Number(raw);
     if (Number.isFinite(n)) {
-      // v6: one line, or that line plus each leg. The middle squares stop is gone.
-      if (ver !== "6") {
-        n = n >= 1 ? 1 : 0;
+      // v7: Less, the game line, then tags and the recommendation.
+      if (ver !== "7") {
+        if (ver !== "6") n = n >= 1 ? 1 : 0;
+        n = Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(n)));
         localStorage.setItem("manageZoom", String(n));
-        localStorage.setItem("manageZoomVer", "6");
+        localStorage.setItem("manageZoomVer", "7");
       }
       return Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(n)));
     }
@@ -24,7 +25,9 @@ let manageZoomDrag = false;
 function manageZoomApply(next, opts) {
   const quiet = !!(opts && opts.quiet);
   manageZoom = Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(Number(next) || 0)));
-  document.querySelectorAll(".manage-board").forEach((board) => { board.dataset.manageZoom = String(manageZoom); });
+  const mark = (board) => { if (board) board.dataset.manageZoom = String(manageZoom); };
+  document.querySelectorAll(".manage-board").forEach(mark);
+  if (opts && opts.board) mark(opts.board);
   if (!quiet && !manageZoomDrag) {
     document.querySelectorAll("input.manage-zoom-range").forEach((box) => {
       box.value = String(manageZoom);
@@ -140,6 +143,53 @@ function manageLegRead(leg) {
   };
 }
 
+function managePickOf(leg) {
+  if (!leg || typeof homeRecs === "undefined" || !homeRecs) return null;
+  const picks = [homeRecs.golden, ...(homeRecs.picks || [])].filter(Boolean);
+  const label = String(leg.label || "");
+  const market = String(leg.market || "");
+  const match = String(leg.match || "");
+  return picks.find((pick) => pick.label === label && String(pick.market || "") === market && (!match || !pick.match || pick.match === match))
+    || picks.find((pick) => pick.label === label && (!match || !pick.match || pick.match === match))
+    || null;
+}
+
+function manageTags(legs) {
+  const box = document.createElement("div");
+  box.className = "manage-tags";
+  const seen = new Set();
+  (legs || []).forEach((leg) => {
+    const pick = managePickOf(leg);
+    if (!pick || seen.has(`${pick.label}|${pick.market}|${pick.match}`)) return;
+    seen.add(`${pick.label}|${pick.market}|${pick.match}`);
+    const row = document.createElement("p");
+    row.className = "manage-tag-row";
+    const tags = typeof scriptPickTags === "function" ? scriptPickTags(pick) : "";
+    const how = String(pick.how || "").trim();
+    const rec = pick.tier === "good" ? "" : `<i class="manage-rec">Recommended</i>`;
+    row.innerHTML = `${rec}${tags}${how ? `<span class="manage-how">${esc(how)}</span>` : ""}`;
+    if (row.textContent.trim()) box.append(row);
+  });
+  if (!box.childElementCount) box.hidden = true;
+  box.addEventListener("click", (event) => event.stopPropagation());
+  return box;
+}
+
+function manageTagsWait(board) {
+  if (!board || board.dataset.tagsWait) return;
+  if (typeof homeRecs !== "undefined" && homeRecs && !homeRecs.loading) return;
+  board.dataset.tagsWait = "1";
+  if (typeof homeRecsLoad === "function") homeRecsLoad("auto");
+  let tries = 0;
+  const wait = setInterval(() => {
+    const ready = typeof homeRecs !== "undefined" && homeRecs && !homeRecs.loading;
+    if (!board.isConnected || ready || ++tries > 20) {
+      clearInterval(wait);
+      if (board.isConnected && ready) manageFill(board);
+    }
+  }, 300);
+}
+
 function manageReadLine(bits, pay, mark) {
   const line = document.createElement("p");
   line.className = "manage-read";
@@ -178,7 +228,18 @@ function manageCard(row) {
   open.type = "button";
   open.className = "manage-open";
   open.textContent = "Open";
-  card.append(manageReadLine(bits, pay, row.locked ? "Locked" : ""), more, open);
+  const drop = document.createElement("button");
+  drop.type = "button";
+  drop.className = "manage-drop";
+  drop.textContent = "Delete";
+  drop.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (typeof saveDrop === "function") saveDrop(row.id);
+  });
+  const acts = document.createElement("span");
+  acts.className = "manage-card-acts";
+  acts.append(drop, open);
+  card.append(manageReadLine(bits, pay, row.locked ? "Locked" : ""), manageTags(legs), more, acts);
   const openBet = () => {
     if (row.id === window.parlayOpenId) {
       if (typeof saveCollapseForBet === "function") saveCollapseForBet();
@@ -222,7 +283,7 @@ function manageFill(board) {
   });
   filters.append(manageZoomBar());
   board.append(filters);
-  manageZoomApply(manageZoom, { quiet: true });
+  manageZoomApply(manageZoom, { quiet: true, board });
   if (!shown.length) {
     const none = document.createElement("div");
     none.className = "manage-empty";
@@ -236,5 +297,6 @@ function manageFill(board) {
   bag.className = "manage-list";
   shown.forEach((item) => bag.append(manageCard(item)));
   board.append(bag);
+  manageTagsWait(board);
 }
 

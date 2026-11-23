@@ -478,8 +478,9 @@
 .rec-board .find-saved .find-saved-group > button.find-saved-x:hover { color: #ff6b6b; }
 .find-saved .find-saved-stacks .find-score { margin: 0.3rem 0 0; }
 .find-saved .find-done { flex: 1 0 100%; min-width: 0; display: grid; gap: 0.5rem; margin-top: 0.3rem; padding: 0.6rem 0.7rem 0.7rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 14px; background: #08130e; }
-.find-done .find-done-top, .find-friends .find-done-top { display: flex; align-items: center; gap: 0.6rem; margin: 0; }
-.find-done .find-done-top b, .find-friends .find-done-top b { color: #f4f7fb; font-size: 17px; font-weight: 800; }
+.find-done .find-done-top, .find-friends .find-done-top, #profile-history > .find-done-top { display: flex; align-items: center; gap: 0.6rem; margin: 0; }
+#profile-history > .find-done { margin: 0; padding: 0; border: 0; background: transparent; }
+.find-done .find-done-top b, .find-friends .find-done-top b, #profile-history > .find-done-top b { color: #f4f7fb; font-size: 17px; font-weight: 800; }
 .find-done .find-done-top span, .find-friends .find-done-top span { color: #9fb3c8; font-size: 13px; }
 #desk.tv-full #desk-glass .find-done button.find-done-x, #desk-glass .find-done button.find-done-x, #desk.tv-full #desk-glass .find-friends button.find-done-x, #desk-glass .find-friends button.find-done-x { width: 2rem; height: 2rem; min-height: 0; margin: 0 0 0 auto; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 999px; background: transparent; box-shadow: none; color: #d6e0ea; font-size: 20px; line-height: 1; cursor: pointer; }
 #desk-glass .find-done button.find-done-x:hover, #desk-glass .find-friends button.find-done-x:hover { border-color: #3dff6e; color: #3dff6e; }

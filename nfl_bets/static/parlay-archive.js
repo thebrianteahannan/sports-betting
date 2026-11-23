@@ -47,10 +47,10 @@ function archiveNotify(rows) {
       tag: `bet-${row.id}`,
       data: { bet: row.id },
       click: () => {
-        window.archiveOpen = true;
-        if (typeof birdMenu === "function") birdMenu("find");
-        if (typeof paintParlay === "function") paintParlay();
-        else if (typeof archivePaint === "function") archivePaint();
+        if (typeof goFull === "function") goFull();
+        if (typeof showTab === "function") showTab("profile");
+        const box = document.getElementById("profile-history");
+        if (box) box.scrollIntoView({ block: "start" });
       },
     });
   });
@@ -167,8 +167,7 @@ function archivePanel() {
   panel.className = "find-done";
   const top = document.createElement("p");
   top.className = "find-done-top";
-  top.innerHTML = `<b>Finished bets</b><span>${esc(archiveTally(window.archiveRows.filter((row) => row.done)))}</span><button type="button" class="find-done-x" aria-label="Close finished bets">×</button>`;
-  top.querySelector("button").addEventListener("click", () => { window.archiveOpen = false; archivePaint(); });
+  top.innerHTML = `<b>Bet history</b><span>${esc(archiveTally(window.archiveRows.filter((row) => row.done)))}</span>`;
   panel.append(top);
   const days = new Map();
   window.archiveRows.filter((row) => row.done).forEach((row) => { if (!days.has(row.done.day)) days.set(row.done.day, []); days.get(row.done.day).push(row); });
@@ -195,17 +194,16 @@ function archivePanel() {
 function archivePaint() {
   document.querySelectorAll(".find-saved").forEach((box) => {
     box.querySelectorAll(":scope > .find-saved-done, :scope > p.find-say > .find-saved-done, :scope > .find-done").forEach((node) => node.remove());
-    if (!window.archiveRows.length) return;
-    const go = document.createElement("button");
-    go.type = "button";
-    go.className = "find-saved-st find-saved-done";
-    go.textContent = window.archiveOpen ? "Hide finished" : `Bet History (${window.archiveRows.length})`;
-    go.setAttribute("aria-expanded", String(window.archiveOpen));
-    go.addEventListener("click", () => { window.archiveOpen = !window.archiveOpen; if (window.archiveOpen && window.saveShut) { window.saveShut = false; paintParlay(); } else archivePaint(); });
-    const fresh = box.querySelector(":scope > p.find-say > .find-saved-new");
-    if (fresh) fresh.after(go); else box.append(go);
-    if (window.archiveOpen) box.append(archivePanel());
   });
+  const host = document.getElementById("profile-history");
+  if (!host) return;
+  host.replaceChildren();
+  const done = window.archiveRows.filter((row) => row.done);
+  if (!done.length) {
+    host.innerHTML = `<p class="find-done-top"><b>Bet history</b></p><p class="quiet">No finished bets.</p>`;
+    return;
+  }
+  host.append(archivePanel());
 }
 
 if (typeof paintParlay === "function") {
