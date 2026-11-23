@@ -1,6 +1,7 @@
 /** Parlays tab: 2 to 5 leg tickets built from the recommended picks, rated on the edge scale. */
 
 let recParlaySize = 0;
+window.recParlayTeams = false;
 let recParlayMade = { key: "", rows: [], best: null };
 let recParlayStrats = [];
 
@@ -253,10 +254,23 @@ function recParlayRanked(board) {
   return recParlayMade;
 }
 
+function recParlayTeamLeg(leg) {
+  const pick = (leg && leg.pick) || {};
+  const label = String(pick.label || pick.text || "");
+  if (typeof stackLegKind === "function" && stackLegKind(label, pick.match || "") === "team") return true;
+  return /\b(alt(?:ernate)?\s+total|team total|total pts|total points|moneyline|spread)\b/i.test(label);
+}
+
+function recParlayTeamRow(row) {
+  const legs = (row && row.legs) || [];
+  return legs.length > 0 && legs.every(recParlayTeamLeg);
+}
+
 function recParlayBuild(board) {
   const made = recParlayRanked(board);
   const source = recParlaySize ? (made.raw || []).filter((row) => row.legs.length === recParlaySize) : (made.raw || []);
-  return { ...made, rows: recParlayJoin(source) };
+  const rows = recParlayJoin(source);
+  return { ...made, rows: window.recParlayTeams ? rows : rows.filter((row) => !recParlayTeamRow(row)) };
 }
 
 function recParlayCount(board) {
@@ -386,6 +400,15 @@ function recParlayBody(board) {
     button.addEventListener("click", () => { recParlaySize = n; if (typeof startPaint === "function") startPaint(1); });
     sizes.append(button);
   });
+  const team = document.createElement("button");
+  team.type = "button";
+  team.textContent = "Team props";
+  if (window.recParlayTeams) team.className = "on";
+  team.addEventListener("click", () => {
+    window.recParlayTeams = !window.recParlayTeams;
+    if (typeof startPaint === "function") startPaint(1);
+  });
+  sizes.append(team);
   const note = document.createElement("p");
   note.className = "rec-parlay-note";
   note.textContent = "Golden is the best parlay. Silver is second. Bronze is third. A known-edge strategy is included. One that needs a good pick is included when the legs beat the price.";

@@ -675,6 +675,7 @@ function startFilterBits(games) {
     if (labels.length) bits.push(labels.join(" and "));
   }
   if (startTab === "parlays" && typeof recParlaySize === "number" && recParlaySize) bits.push(`${recParlaySize}-leg parlays`);
+  if (startTab === "parlays") bits.push(window.recParlayTeams ? "Team props too" : "Player props");
   return bits;
 }
 
@@ -689,6 +690,7 @@ function startFiltersClear(box) {
   startPickGames.clear();
   startKinds.clear();
   if (typeof recParlaySize === "number") recParlaySize = 0;
+  window.recParlayTeams = false;
   const spanChanged = startSpan !== "next";
   startSpan = "next";
   try { localStorage.setItem("startSpan", "next"); } catch (error) {}
@@ -702,7 +704,7 @@ function startFiltersClear(box) {
 
 function startFilterChanged() {
   const league = typeof homeLeague === "string" ? homeLeague : "";
-  return !!(league || startPickGames.size || startKinds.size || startSpan !== "next" || (startTab === "parlays" && typeof recParlaySize === "number" && recParlaySize));
+  return !!(league || startPickGames.size || startKinds.size || startSpan !== "next" || (startTab === "parlays" && ((typeof recParlaySize === "number" && recParlaySize) || window.recParlayTeams)));
 }
 
 function startFilterSay(games, box) {
