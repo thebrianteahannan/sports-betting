@@ -284,3 +284,28 @@
 #start-random .start-random-again:hover { background: rgba(61, 255, 110, 0.12); }
 #start-random .start-random-add { border: 0; background: #3dff6e; color: #04140c; }
 #start-random .start-random-add:hover { background: #6bff92; }
+.rec-parlay { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 0.35rem; }
+.rec-parlay-sizes > button.on { background: #3dff6e !important; color: #04140c !important; }
+.rec-parlay-note { margin: 0; color: #9fb3c8; font-size: 13px; font-weight: 650; }
+.rec-parlay-list { display: flex; flex-direction: column; gap: 0.7rem; }
+.rec-parlay-card { display: flex; flex-direction: column; gap: 0.35rem; padding: 0.75rem 0.9rem; border: 1px solid #2a3a48; border-radius: 12px; background: #071018; }
+.rec-parlay-card.m-golden { border-color: #e7c15a; }
+.rec-parlay-card.m-silver { border-color: #d5deea; }
+.rec-parlay-card.m-bronze { border-color: #d0894f; }
+.rec-parlay-card.m-edge { border-color: #2a3a48; }
+.rec-parlay-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.55rem; margin: 0; }
+.rec-parlay-head > b { color: #f4f7fb; font-size: 15px; }
+.rec-parlay-head > span { color: #9fb3c8; font-size: 13px; font-weight: 700; }
+.rec-parlay-mark { padding: 0 0.42rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.68rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.5; text-transform: uppercase; }
+.rec-parlay-mark.m-golden { color: #e7c15a; }
+.rec-parlay-mark.m-silver { color: #d5deea; }
+.rec-parlay-mark.m-bronze { color: #d0894f; }
+.rec-parlay-mark.m-edge { color: #9aa6b2; }
+.rec-parlay-pay { display: flex; flex-wrap: wrap; gap: 0.3rem 0.7rem; margin: 0; font-size: 14px; font-weight: 700; }
+.rec-parlay-pay i { font-style: normal; }
+.rec-parlay-pay .px, .rec-parlay-pay .pay { color: #3dff6e; }
+.rec-parlay-pay .pct, .rec-parlay-pay .hit { color: #e7c15a; }
+.rec-parlay-why { margin: 0; color: #d5deea; font-size: 14px; font-weight: 650; line-height: 1.35; }
+.rec-parlay-legs { margin: 0; padding: 0 0 0 1.1rem; color: #c4cde0; font-size: 13px; font-weight: 650; line-height: 1.45; }
+:is(.rec-board, #choice-result) .find-start button.rec-parlay-bet { width: fit-content !important; min-height: 0 !important; margin: 0.2rem 0 0 !important; padding: 0.4rem 0.9rem !important; border: 0 !important; border-radius: 999px !important; background: #3dff6e !important; box-shadow: none !important; color: #04140c !important; font-size: 14px !important; font-weight: 800 !important; letter-spacing: normal !important; text-transform: none !important; cursor: pointer; }
+:is(.rec-board, #choice-result) .find-start button.rec-parlay-bet.on { border: 1px solid #3dff6e !important; background: transparent !important; color: #3dff6e !important; cursor: default; }

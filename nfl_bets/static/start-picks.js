@@ -307,8 +307,8 @@ function startRandomFill(box, legs) {
   if (startRandomAt) Object.assign(startRandomAt, { legs, sig: startRandomSig(legs) });
 }
 
-function startRandomAdd(board, legs, stake) {
-  if (!legs.length) return;
+function startRandomAdd(board, legs, stake, quiet) {
+  if (!legs.length) return false;
   const had = parlayLeg.size > 0;
   if (had && saveSig([...parlayLeg.values()]) !== saveHeld) saveNow();
   const prior = had ? window.parlayOpenId || "" : "", ids = new Set(saveList().map((row) => row.id));
@@ -317,15 +317,29 @@ function startRandomAdd(board, legs, stake) {
   else window.parlayStake = Number(stake) > 0 ? Number(stake) : 5;
   legs.forEach(({ person, bet }) => { parlayLeg.set(parlayKey(bet), bet); if (!parlayPick.has(person.key)) parlayPick.set(person.key, person); });
   if (typeof trayRoster === "function") trayRoster();
-  window.saveGone = false;
-  window.saveShut = false;
-  try { localStorage.setItem("savedShut", "0"); } catch (error) {}
-  saveNow(); paintParlay();
+  if (!quiet) {
+    window.saveGone = false;
+    window.saveShut = false;
+    try { localStorage.setItem("savedShut", "0"); } catch (error) {}
+  }
+  saveNow();
+  if (quiet) {
+    window.parlayOpenId = "";
+    parlayPick.clear();
+    parlayLeg.clear();
+    window.parlayStake = 5;
+    saveHeld = "";
+    if (typeof trayRoster === "function") trayRoster();
+  }
+  paintParlay();
   startUndo = { board, keys: [...parlayLeg.keys()], ids, prior };
+  if (typeof whoBetsPaint === "function") whoBetsPaint();
+  if (quiet) return true;
   startRandomClose();
   document.querySelectorAll(".find-tray.find-shut").forEach((tray) => { const fold = tray.querySelector(".find-fold"); if (fold) fold.click(); });
   const show = document.querySelector("#desk-glass-in .find-saved-chip.on") || document.querySelector("#desk-glass-in .find-saved") || document.querySelector("#desk-glass-in .find-tray");
   if (show) show.scrollIntoView({ block: "start", behavior: "smooth" });
+  return true;
 }
 
 function startRandomShow(board, picks, n, legs) {
@@ -802,6 +816,7 @@ function startPaint(again) {
   [
     ["rec", "Players", picks.length],
     ["games", "Games", gameN],
+    ["parlays", "Parlays", typeof recParlayCount === "function" ? recParlayCount(board) : null],
     ["stacks", "Strategies", null],
     ["stats", "Hit Rates", null],
     ["golden", "Golden", startMetals ? ["golden", "silver", "bronze"].reduce((sum, key) => sum + (((startMetals[key] || {}).history || []).length), 0) : (startGolden && Array.isArray(startGolden.history) ? startGolden.history.length : null)],
@@ -837,7 +852,9 @@ function startPaint(again) {
   const dial = startTab === "rec" && typeof recDialBar === "function" ? recDialBar(startDialCommit) : null;
   const body = startTab === "rec"
     ? [...(dial ? [dial] : []), ...(all.length ? [startKindBar(all)] : []), ...recs]
-    : startTab === "stacks"
+    : startTab === "parlays"
+      ? (typeof recParlayBody === "function" ? recParlayBody(board) : [])
+      : startTab === "stacks"
       ? startStacks()
       : startTab === "stats"
         ? startRecStats()

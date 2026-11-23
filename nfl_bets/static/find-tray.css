@@ -256,7 +256,8 @@
 #desk.tv-full #desk-glass .rec-board > h2 button.find-mine-go,
 #desk.tv-full #desk-glass .rec-board > h2 button.find-fantasy-go,
 #desk.tv-full #desk-glass .rec-board > h2 button.find-quick-go,
-#desk.tv-full #desk-glass .rec-board > h2 button.find-games-go { display: inline-flex; align-items: center; flex: none; width: auto; height: auto; min-height: 0; margin: 0; padding: 0.28rem 0.75rem; border: 1px solid #3dff6e; border-radius: 999px; background: #07140f; box-shadow: none; color: #3dff6e; font-family: Outfit, system-ui, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: normal; text-transform: none; cursor: pointer; }
+#desk.tv-full #desk-glass .rec-board > h2 button.find-games-go { display: inline-flex; align-items: center; gap: 0.4rem; flex: none; width: auto; height: auto; min-height: 0; margin: 0; padding: 0.28rem 0.75rem; border: 1px solid #3dff6e; border-radius: 999px; background: #07140f; box-shadow: none; color: #3dff6e; font-family: Outfit, system-ui, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: normal; text-transform: none; cursor: pointer; }
+.rec-board > h2 button.find-mine-go b, #desk.tv-full #desk-glass .rec-board > h2 button.find-mine-go b { min-width: 1.15rem; padding: 0 0.35rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-style: normal; font-weight: 800; line-height: 1.35; text-align: center; }
 .find-board.find-rec-page > h2 > button.find-quick-go,
 .find-board.find-rec-page > h2 > button.find-build-go,
 .rec-board:not(.find-rec-page) > h2 > button.find-rec-go,

@@ -1,7 +1,13 @@
 /** "My Bets" pill over the member's name: the saved bet count, and a tap opens Build a bet. */
 
 function whoBetsPaint() {
-  const who = document.getElementById("who"), count = typeof saveList === "function" ? saveList().length : 0;
+  const count = typeof saveList === "function" ? saveList().length : 0;
+  document.querySelectorAll("button.find-mine-go").forEach((button) => {
+    const text = `My Bets ${count}`;
+    if (button.textContent !== text) button.innerHTML = `My Bets <b>${count}</b>`;
+    button.setAttribute("aria-label", `My Bets, ${count}`);
+  });
+  const who = document.getElementById("who");
   if (!who || !who.querySelector("#member-profile")) return;
   let pill = who.querySelector(".who-bets");
   if (!pill) {
