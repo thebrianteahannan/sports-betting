@@ -38,8 +38,6 @@ body[data-live-zoom="0"] .live-game:not([data-zoom="2"]) .live-rec-tag { positio
 #live, #live .live-game, #live .live-pack, #live .live-filters { overflow-anchor: none; }
 .live-filters { position: sticky; top: 0; z-index: 6; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 10px; padding: 0.45rem 0; background: #02080c; box-sizing: border-box; }
 .live-pack { display: flex; flex-direction: column; gap: 0; }
-.live-filters .live-td-go { display: inline-flex; align-items: center; padding: 5px 14px; border: 1px solid #3dff6e; border-radius: 999px; background: rgba(61, 255, 110, 0.1); color: #3dff6e; font: 800 13px Outfit, system-ui, sans-serif; letter-spacing: 0.02em; text-decoration: none; white-space: nowrap; }
-.live-filters .live-td-go:hover { background: rgba(61, 255, 110, 0.2); color: #f4f7fb; }
 .live-filters .live-court { margin-left: 0; }
 .live-zoom { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; color: #9fb3c8; font: 700 12px Outfit, system-ui, sans-serif; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
 .live-zoom input[type="range"] { -webkit-appearance: none; appearance: none; width: min(180px, 42vw); height: 28px; margin: 0; background: transparent; outline: none; cursor: pointer; accent-color: #3dff6e; touch-action: none; }

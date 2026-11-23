@@ -2,7 +2,7 @@
 
 let fantasyState = { user: "", leagues: [], leagueId: "", result: null, openId: "", showVegas: false, wantConnect: false, pulling: false, pullError: "", checks: null, checking: false, checkError: "", pickupSlot: "", matchups: null, matchAsked: false, matching: false, matchError: "" };
 
-const FANTASY_MATCH_MAX = 3;
+const FANTASY_MATCH_MAX = 4;
 let fantasyMatchZoom = (() => {
   try {
     const n = Number(localStorage.getItem("fantasyMatchZoom"));
@@ -263,7 +263,7 @@ function fantasyMatchBar() {
   range.max = String(FANTASY_MATCH_MAX);
   range.step = "1";
   range.value = String(fantasyMatchZoom);
-  range.setAttribute("aria-label", "Show matchup score, projection, and win chance");
+  range.setAttribute("aria-label", "Show matchup score, projection, win chance, record, and playoff chance");
   range.addEventListener("input", () => fantasyMatchApply(range.value));
   bar.append(less, range, more);
   return bar;
@@ -279,7 +279,12 @@ function fantasyMatchLine(id) {
   const opp = Number.isFinite(row.oppPts) ? row.oppPts.toFixed(1) : "—";
   const proj = Number.isFinite(row.proj) ? row.proj.toFixed(1) : "—";
   const win = Number.isFinite(row.win) ? `${row.win}% to win` : "";
-  return `<i class="league-match"><em class="league-who">vs ${fantasyEsc(row.opponent || "Opponent")}</em><em class="league-pts">${pts}–${opp}</em><em class="league-proj">proj ${proj}</em><em class="league-win">${fantasyEsc(win)}</em></i>`;
+  const record = row.record ? `<em class="league-record">${fantasyEsc(row.record)}</em>` : "";
+  const playoff = Number.isFinite(row.playoff) ? `<em class="league-playoff">${row.playoff}% playoffs</em>` : "";
+  const season = record || playoff ? `<span class="league-season">${record}${playoff}</span>` : "";
+  const who = row.bye ? "No matchup this week." : `vs ${row.opponent || "Opponent"}`;
+  const score = row.bye ? "" : `<em class="league-pts">${pts}–${opp}</em><em class="league-proj">proj ${proj}</em><em class="league-win">${fantasyEsc(win)}</em>`;
+  return `<i class="league-match"><em class="league-who">${fantasyEsc(who)}</em>${score}${season}</i>`;
 }
 
 async function fantasyAskMatchups() {

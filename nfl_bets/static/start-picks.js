@@ -188,8 +188,18 @@ function startBet(board, pick) {
 function startGameOpen(board, game) {
   if (!board || typeof board.querySelector !== "function") { if (typeof homeGamesOpen === "function") homeGamesOpen(game); return; }
   let bet = null;
-  (board.people || []).some((person) => (person.bets || []).some((one) => (one.match === game.match ? (bet = one) : false)));
-  if (bet) startOpen(board, bet); else homeGamesOpen(game);
+  (board.people || []).some((person) => (person.bets || []).some((one) => {
+    const same = one.match === game.match || (typeof whenSame === "function" && whenSame(one, game));
+    if (same) bet = one;
+    return same;
+  }));
+  if (bet) { startOpen(board, bet); return; }
+  const kick = Date.parse(game.kickoff || game.when || "");
+  if (game.final || (Number.isFinite(kick) && kick <= Date.now())) {
+    startOpen(board, { match: game.match, kickoff: game.kickoff || game.when || "", sport: game.sport || "" });
+    return;
+  }
+  homeGamesOpen(game);
 }
 
 function startRandomPool(board, picks) {
@@ -788,17 +798,21 @@ function startPaint(again) {
     tab.addEventListener("click", () => { startTab = id; if ((id === "rec" || id === "games") && typeof homeGamesTab !== "undefined") homeGamesTab = id; startPaint(1); });
     tabs.append(tab);
   });
+  const td = startTdButton(board);
+  if (td) {
+    td.classList.remove("find-start-td");
+    td.classList.add("desk-games-tab");
+    tabs.append(td);
+  }
   box.dataset.stacks = startStackKey();
   const row = document.createElement("div");
   row.className = "find-start-row";
   const leagues = typeof homeLeagues === "function" ? homeLeagues(box, leftGames()) : [];
-  const td = startTab === "rec" ? startTdButton(board) : null;
   row.append(tabs);
   if (startTab !== "stats" && startTab !== "golden") {
     row.append(startSpanBar(), ...leagues);
     if (startTab === "rec") row.append(startRandomBar(board, picks));
     if ((window.memberTeams || []).length || startFavOnly) row.append(startFavBox());
-    if (td) row.append(td);
   }
   const dial = startTab === "rec" && typeof recDialBar === "function" ? recDialBar(startDialCommit) : null;
   const body = startTab === "rec"

@@ -852,6 +852,54 @@ function sideScore(matchup, scoring, projections, stats) {
   return { pts: +now.toFixed(1), proj: +proj.toFixed(1) };
 }
 
+function rosterPoints(settings) {
+  const whole = Number(settings && settings.fpts) || 0;
+  const dec = Number(settings && settings.fpts_decimal) || 0;
+  return whole + (dec > 0 && dec < 1 ? dec : dec / 100);
+}
+
+function playoffOdds(rosters, mineId, league) {
+  const spots = Number(league && league.settings && league.settings.playoff_teams) || 0;
+  const start = Number(league && league.settings && league.settings.playoff_week_start) || 0;
+  const teams = (rosters || []).map((row) => {
+    const bag = row.settings || {};
+    const wins = Number(bag.wins) || 0;
+    const losses = Number(bag.losses) || 0;
+    const ties = Number(bag.ties) || 0;
+    const played = wins + losses + ties;
+    const pf = rosterPoints(bag);
+    const left = start > 1 ? Math.max(0, start - 1 - played) : 0;
+    return { id: row.roster_id, wins, losses, ties, pf, played, left, ppg: played ? pf / played : 0 };
+  });
+  const mine = teams.find((row) => row.id === mineId);
+  if (!mine) return null;
+  const record = mine.ties ? `${mine.wins}-${mine.losses}-${mine.ties}` : `${mine.wins}-${mine.losses}`;
+  if (!spots) return { record, playoff: null };
+  if (!mine.left && teams.every((row) => !row.left)) {
+    const ranked = teams.slice().sort((a, b) => b.wins - a.wins || b.ties - a.ties || b.pf - a.pf);
+    const place = ranked.findIndex((row) => row.id === mineId);
+    return { record, playoff: place >= 0 && place < spots ? 99 : 1 };
+  }
+  const avg = teams.reduce((sum, row) => sum + row.ppg, 0) / (teams.length || 1);
+  teams.forEach((row) => {
+    const z = (row.ppg - avg) / (18 * Math.SQRT2);
+    const p = 0.5 * (1 + erf(z));
+    row.p = Math.min(0.82, Math.max(0.18, p));
+  });
+  const trials = 600;
+  let made = 0;
+  for (let n = 0; n < trials; n += 1) {
+    const table = teams.map((row) => {
+      let extra = 0;
+      for (let g = 0; g < row.left; g += 1) if (Math.random() < row.p) extra += 1;
+      return { id: row.id, wins: row.wins + extra, pf: row.pf };
+    });
+    table.sort((a, b) => b.wins - a.wins || b.pf - a.pf);
+    if (table.findIndex((row) => row.id === mineId) < spots) made += 1;
+  }
+  return { record, playoff: Math.round(Math.min(99, Math.max(1, (made / trials) * 100))) };
+}
+
 let matchupCache = { key: "", at: 0, data: null };
 
 async function matchups(body) {
@@ -881,7 +929,9 @@ async function matchups(body) {
       const oppGame = mineGame && mineGame.matchup_id != null
         ? (games || []).find((row) => row.matchup_id === mineGame.matchup_id && row.roster_id !== mine.roster_id)
         : null;
-      if (!mineGame || !oppGame) return { league_id: league.league_id, name: league.name, bye: true };
+      const standing = playoffOdds(rosters, mine && mine.roster_id, settings);
+      const season = { record: standing && standing.record, playoff: standing && standing.playoff };
+      if (!mineGame || !oppGame) return { league_id: league.league_id, name: league.name, bye: true, ...season };
       const oppRoster = (rosters || []).find((row) => row.roster_id === oppGame.roster_id);
       const oppUser = oppRoster && (users || []).find((row) => String(row.user_id) === String(oppRoster.owner_id));
       const scoring = (settings && settings.scoring_settings) || {};
@@ -896,6 +946,7 @@ async function matchups(body) {
         oppPts: them.pts,
         oppProj: them.proj,
         win: winPct(me.proj, them.proj),
+        ...season,
       };
     } catch (error) {
       return { league_id: league.league_id, name: league.name, error: String((error && error.message) || error) };

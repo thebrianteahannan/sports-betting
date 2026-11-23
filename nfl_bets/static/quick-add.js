@@ -42,8 +42,40 @@ function quickAddOnSport(bet, sport) {
   return !sport || bet.sport === sport;
 }
 
+function quickAddDoneList(sport) {
+  if (typeof startGamesFor !== "function") return [];
+  return startGamesFor("done").filter((game) => game && String(game.match || "").trim() && (!sport || game.sport === sport))
+    .sort((a, b) => Date.parse(a.kickoff || a.when || "") - Date.parse(b.kickoff || b.when || "") || String(a.match).localeCompare(String(b.match)));
+}
+
+function quickAddRosterReady(game, sport) {
+  const bag = game && quickAddGameRosters.get(quickAddRosterBag(game, sport));
+  if (!bag) return false;
+  const sides = quickAddGameSides(game);
+  return sides.length > 0 && sides.every((side) => bag.has(side));
+}
+
+function quickAddPastPeople(game, sport, have) {
+  const bag = game && quickAddGameRosters.get(quickAddRosterBag(game, sport));
+  if (!bag) return [];
+  const q = quickAdd.q.trim().toLowerCase();
+  const seen = new Set((have || []).map((person) => quickAddBare(person.name)));
+  const out = [];
+  bag.forEach((set) => {
+    set.forEach((name) => {
+      if (q && !String(name).toLowerCase().includes(q)) return;
+      const bare = quickAddBare(name);
+      if (!bare || seen.has(bare)) return;
+      seen.add(bare);
+      out.push({ key: bare, name, kind: "player", bets: [], past: true });
+    });
+  });
+  return out;
+}
+
 function quickAddGames(people, sport, when) {
   const want = when || quickAdd.when || "next";
+  if (want === "done") return quickAddDoneList(sport);
   const rows = typeof loadedGames === "function" ? loadedGames(people, quickAddSpan(want)) : [];
   return (rows || []).filter((game) => quickAddOnSport(game, sport) && String(game.match || "").trim() && (typeof whenBucket !== "function" || whenBucket(Date.parse(game.kickoff || ""), game.match) === want))
     .sort((a, b) => Date.parse(a.kickoff || "") - Date.parse(b.kickoff || "") || String(a.match).localeCompare(String(b.match)));
@@ -140,6 +172,7 @@ function quickAddPlayers(people, sport, gameKey, game, anySide) {
   return people.filter((person) => {
     if (person.kind !== "player" || /^(any other|no )/i.test(person.name || "")) return false;
     if (q && !person.name.toLowerCase().includes(q)) return false;
+    if (person.past) return anySide ? true : quickAddOnSide(person, quickAdd.side, game, people);
     const bets = (person.bets || []).filter((bet) => Number(bet.odds) && quickAddOnSport(bet, sport));
     if (!bets.length) return false;
     if (!quickAddOnGame(person, gameKey, sport)) return false;
@@ -561,6 +594,7 @@ function quickAddReveal(box) {
 }
 
 function quickAddLive(game) {
+  if (game && game.final) return true;
   const kick = Date.parse((game && game.kickoff) || "");
   return Number.isFinite(kick) && kick <= Date.now();
 }
@@ -583,6 +617,12 @@ function quickAddLock(person, game, said, odds) {
 function quickAddLiveForm(person, game) {
   const form = document.createElement("form");
   form.className = "quick-add-live";
+  const who = document.createElement("input");
+  who.name = "player";
+  who.placeholder = "Player";
+  who.setAttribute("aria-label", "Player");
+  if (person && person.name) who.value = person.name;
+  const showWho = !person || person.past || !person.name;
   const prop = document.createElement("input");
   prop.name = "prop";
   prop.placeholder = "Prop you bet";
@@ -596,12 +636,14 @@ function quickAddLiveForm(person, game) {
   go.type = "submit";
   go.className = "quick-add-go";
   go.textContent = "Lock it in";
-  form.append(prop, oddsBox, go);
+  form.append(...(showWho ? [who] : []), prop, oddsBox, go);
   form.addEventListener("submit", (event) => {
     event.preventDefault();
+    const name = who.value.trim();
     const said = prop.value.trim();
     const odds = Number(String(oddsBox.value).trim().replace(/^\+/, ""));
-    if (!quickAddLock(person, game, said, odds)) return;
+    const whoPerson = name ? { ...(person || {}), name, key: (person && person.key) || name.toLowerCase(), kind: "player", bets: (person && person.bets) || [] } : person;
+    if (!quickAddLock(whoPerson, game, said, odds)) return;
     quickAddReset({ when: true, sport: true });
     if (typeof legNewClose === "function") legNewClose();
     if (typeof parlayOpenTray === "function") parlayOpenTray();
@@ -662,7 +704,8 @@ function quickAddBox(board) {
 
   const all = quickAddPeople(board);
   const people = quickAddScope(all, quickAdd.when);
-  const sports = quickAddSports(people);
+  const doneGames = quickAdd.when === "done" ? quickAddDoneList("") : [];
+  const sports = doneGames.length ? [...new Set(doneGames.map((game) => game.sport).filter(Boolean))].sort() : quickAddSports(people);
   if (!sports.length) {
     const none = document.createElement("p");
     none.className = "quick-add-none";
@@ -738,10 +781,12 @@ function quickAddBox(board) {
     }, game ? { html: `◂ ${quickAddGameHtml(game)}` } : null));
     quickAddLoadRosters(game, quickAdd.sport, paint);
   }
-  const playerCap = quickAdd.q.trim() || quickAdd.team ? 60 : 24;
+  const playerCap = quickAdd.when === "done" && quickAdd.team ? 140 : (quickAdd.q.trim() || quickAdd.team ? 60 : 24);
   const splitTeams = !!(quickAdd.team && game && game.match);
   // Both team cards always list their own players; selecting a side only highlights the header.
-  const players = quickAddPlayers(people, quickAdd.sport, quickAdd.team, game, splitTeams).slice(0, playerCap);
+  const listed = quickAddPlayers(people, quickAdd.sport, quickAdd.team, game, splitTeams);
+  const past = quickAdd.when === "done" && game ? quickAddPastPeople(game, quickAdd.sport, listed) : [];
+  const players = listed.concat(past).slice(0, playerCap);
   if (splitTeams) {
     const sides = quickAddGameSides(game);
     const teams = quickAddTeams(people, quickAdd.sport, quickAdd.team);
@@ -813,6 +858,9 @@ function quickAddBox(board) {
       picks.append(block);
     });
   }
+  if (splitTeams && !players.length && quickAdd.when === "done" && game && !quickAddRosterReady(game, quickAdd.sport)) {
+    picks.append(Object.assign(document.createElement("p"), { className: "quick-add-none", textContent: "Looking up the players." }));
+  }
   if (!picks.childElementCount) {
     const none = document.createElement("p");
     none.className = "quick-add-none";
@@ -822,8 +870,13 @@ function quickAddBox(board) {
   who.append(whoHead, search, picks);
   box.append(who);
 
-  const person = quickAddPerson(people);
-  if (!person) return box;
+  const person = quickAddPerson(people.concat(past));
+  if (!person) {
+    if (quickAdd.when === "done" && game && quickAddLive(game) && quickAddRosterReady(game, quickAdd.sport) && !players.length) {
+      box.append(quickAddStep("1. Prop", [quickAddLiveForm(null, game)], "prop"));
+    }
+    return box;
+  }
 
   const props = quickAddPropList(person, quickAdd.sport, quickAdd.team);
   const propEmpty = props.length ? [] : [quickAddLive(game) ? quickAddLiveForm(person, game) : Object.assign(document.createElement("p"), { className: "quick-add-none", textContent: "No props posted." })];

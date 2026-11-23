@@ -135,7 +135,7 @@ function trayLockHold(id) {
 }
 
 function trayLockPast(match, game) {
-  if (!match || !game || !trayLockStarted([game])) return;
+  if (!match || !game || !(game.final || trayLockStarted([game]))) return;
   const form = document.createElement("form");
   form.className = "find-lock-edit find-past-add";
   const who = document.createElement("input");

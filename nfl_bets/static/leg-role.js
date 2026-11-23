@@ -45,7 +45,7 @@ function legRolePaint() {
   const byKey = new Map(rows.map((row) => [parlayKey(row.bet), row]));
   document.querySelectorAll(".find-tray .find-chose").forEach((line) => {
     const hist = line.querySelector("button.find-leg-hist"), key = (hist && hist.dataset.key) || line.dataset.key, row = key && byKey.get(key), prop = line.querySelector("span i.prop");
-    if (!row || !prop) return;
+    if (!row || !prop || (rows.length < 2 && row.role === "anchor")) return;
     const tag = document.createElement("i"), [name, tip] = LEG_ROLE[row.role];
     tag.className = `leg-role r-${row.role}`; tag.textContent = name;
     tag.title = `${tip} Our chance ${Math.round(100 * row.chance)}%${row.n ? ` from ${row.hits} of ${row.n}, shrunk toward the price` : " from the price"}.${rows.length > 1 ? ` ${Math.round(100 * row.payShare)}% of the payout, ${Math.round(100 * row.riskShare)}% of the risk.` : ""}`;

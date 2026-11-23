@@ -204,7 +204,8 @@
 
 .fantasy-board[data-match-zoom="1"] .league-match,
 .fantasy-board[data-match-zoom="2"] .league-match,
-.fantasy-board[data-match-zoom="3"] .league-match {
+.fantasy-board[data-match-zoom="3"] .league-match,
+.fantasy-board[data-match-zoom="4"] .league-match {
   display: flex;
   flex: 1 0 100%;
   flex-wrap: wrap;
@@ -215,14 +216,26 @@
   font-size: 13px;
 }
 
+.fantasy-board .league-season {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.7rem;
+}
+.fantasy-board:not([data-match-zoom="4"]) .league-season { display: none; }
+
 .fantasy-board .league-pts { color: #3dff6e; font-style: normal; }
 .fantasy-board .league-proj { color: #e7c15a; font-style: normal; }
-.fantasy-board .league-win { color: #f4f7fb; font-style: normal; }
+.fantasy-board .league-win,
+.fantasy-board .league-record { color: #f4f7fb; font-style: normal; }
+.fantasy-board .league-playoff { color: #e7c15a; font-style: normal; }
 .fantasy-board .league-who { color: #d5deea; font-style: normal; }
 
 .fantasy-board[data-match-zoom="1"] .league-proj,
 .fantasy-board[data-match-zoom="1"] .league-win,
-.fantasy-board[data-match-zoom="2"] .league-win { display: none; }
+.fantasy-board[data-match-zoom="2"] .league-win,
+.fantasy-board:not([data-match-zoom="4"]) .league-record,
+.fantasy-board:not([data-match-zoom="4"]) .league-playoff { display: none; }
 
 #desk.tv-full #desk-glass .fantasy-board button.fantasy-league.on,
 .fantasy-board button.fantasy-league.on {

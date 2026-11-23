@@ -199,11 +199,8 @@ try { liveOnlyMine = localStorage.getItem("liveOnlyMine") === "1"; } catch (erro
 
 function liveFilters() {
   const mine = liveOnlyMine ? " checked" : "";
-  const td = (!liveLeagues.size || liveLeagues.has("NFL"))
-    ? `<a class="live-td-go" href="/?${liveEsc(new URLSearchParams({ td: "1", from: "live" }).toString())}" title="See who is most likely to score a touchdown">Anytime TDs ›</a>`
-    : "";
   const zoom = `<label class="live-zoom"><span>Less</span><input type="range" class="live-zoom-range" min="0" max="${LIVE_ZOOM_MAX}" step="any" value="${liveZoom}" aria-valuemin="0" aria-valuemax="${LIVE_ZOOM_MAX}" aria-valuenow="${liveZoom}" aria-label="Show more or less on each game"/><span>More</span></label>`;
-  return `<p class="live-filters">${td}${zoom}<label class="live-court"><input type="checkbox" class="live-mine-box"${mine}/> Show only my bets</label></p>`;
+  return `<p class="live-filters">${zoom}<label class="live-court"><input type="checkbox" class="live-mine-box"${mine}/> Show only my bets</label></p>`;
 }
 
 const liveDayKey = (when) => new Date(when).toLocaleDateString("en-CA", { timeZone: "America/New_York" });

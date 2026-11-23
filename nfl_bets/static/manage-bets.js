@@ -267,7 +267,7 @@ function manageSlip(row) {
     line.innerHTML = [
       bits.odds && `<i class="px">${esc(bits.odds)}</i>`,
       bits.pct && `<i class="pct">${esc(bits.pct)}</i>`,
-      role && MANAGE_ROLE[role.role] && `<i class="leg-role r-${esc(role.role)}">${esc(MANAGE_ROLE[role.role])}</i>`,
+      role && MANAGE_ROLE[role.role] && !(legs.length < 2 && role.role === "anchor") && `<i class="leg-role r-${esc(role.role)}">${esc(MANAGE_ROLE[role.role])}</i>`,
       bits.who && `<i class="who">${esc(bits.who)}</i>`,
       bits.prop && `<i class="prop">${esc(bits.prop)}</i>`,
       pace && `<i class="tray-now">${esc(pace)}</i>`,
@@ -298,7 +298,7 @@ function manageCard(row) {
   const open = document.createElement("button");
   open.type = "button";
   open.className = "manage-open";
-  open.textContent = "View";
+  open.textContent = "Edit";
   const drop = document.createElement("button");
   drop.type = "button";
   drop.className = "manage-drop";
