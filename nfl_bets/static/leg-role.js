@@ -103,9 +103,49 @@ function metalEdgeRead(gap) {
   return { score, id: score ? metalEdgeId(score) : "out" };
 }
 
+function metalCount(n) {
+  return ["", "one", "two", "three", "four", "five", "six", "seven", "eight"][n] || String(n);
+}
+
+function metalJuiceSay(row) {
+  const bet = row.bet || {};
+  const loose = typeof legLoose === "function" ? legLoose(bet) : { who: "", prop: "" };
+  const blob = `${bet.label || ""} ${bet.market || ""}`;
+  let who = loose.who && !String(loose.who).includes("@") ? loose.who : "";
+  if (!who) {
+    const cut = String(bet.label || "").match(/^(.+?)\s+(?:\d+\+|any\s*time|anytime|over\b|under\b|first\b)/i);
+    who = cut ? cut[1].trim() : "";
+  }
+  const last = who.split(/\s+/).filter((word) => word && !/^(jr\.?|sr\.?|ii|iii|iv|v)$/i.test(word)).pop() || "";
+  const low = blob.toLowerCase();
+  const what = /touchdown/.test(low) ? "anytime touchdown" : /receiv/.test(low) ? "receiving yards" : /rush/.test(low) ? "rushing yards" : /pass/.test(low) ? "passing yards" : /total|points/.test(low) ? "the total" : "";
+  if (what === "the total") return "The total";
+  if (last && what) return `${last}'s ${what}`;
+  return last ? `${last}'s leg` : "The paying leg";
+}
+
+function metalScriptSay(rows, odds, need) {
+  const games = rows.map((row) => String((row.bet && (row.bet.match || row.bet.gameId)) || ""));
+  if (!(games.length === rows.length && games.every(Boolean) && new Set(games).size === 1)) return null;
+  const juice = rows.filter((row) => row.role === "juice");
+  const anchors = rows.filter((row) => row.role === "anchor");
+  if (juice.length !== 1 || anchors.length < 2 || anchors.length + juice.length !== rows.length) return null;
+  const payChance = metalChance(juice[0].odds);
+  if (payChance == null || payChance < need + 0.05) return null;
+  const gap = Math.round((payChance - need) * 1000) / 10;
+  const chances = anchors.map((row) => metalChance(row.odds)).filter((n) => n != null);
+  const low = Math.round(Math.min(...chances) * 100);
+  const high = Math.round(Math.max(...chances) * 100);
+  const band = low === high ? `${low}%` : `${low}% to ${high}%`;
+  const text = `Same game. ${metalJuiceSay(juice[0])} pays it, priced at ${(payChance * 100).toFixed(1)}%. The other ${metalCount(anchors.length)} are anchors at ${band}. ${metalPrice(odds)} only has to hit ${(need * 100).toFixed(1)}%.`;
+  return { ...metalEdgeRead(gap), text };
+}
+
 function metalParlaySay(rows, odds) {
   const need = metalChance(odds);
   if (rows.length < 2 || need == null) return null;
+  const script = metalScriptSay(rows, odds, need);
+  if (script) return script;
   const ours = rows.map((row) => {
     const book = metalChance(row.odds);
     const have = row.n >= 5 && Number.isFinite(row.hits) ? row.hits / row.n : book;
