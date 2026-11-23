@@ -383,8 +383,9 @@ function shotBox(board) {
     pick.textContent = "Choose a file";
     pick.addEventListener("click", () => { const file = board.querySelector(".find-shot-file"); if (file) file.click(); });
     row.append(box, pick);
+    const quick = board.querySelector(".find-start .quick-add-head");
     const head = board.querySelector(":scope > h2");
-    if (head) head.after(row); else board.prepend(row);
+    if (quick) quick.after(row); else if (head) head.after(row); else board.prepend(row);
   }
   row.hidden = false;
   row.querySelector(".find-shot-box").focus();
@@ -408,9 +409,10 @@ function shotPick(board) {
 
 function betShotMount() {
   const board = document.querySelector("#desk-glass-in .find-board") || document.querySelector(".find-board");
-  const head = board && board.querySelector(":scope > h2");
+  if (!board || board.dataset.page === "rec" || board.classList.contains("find-rec-page")) return;
+  const head = board.querySelector(".find-start .quick-add-head");
   if (!head || head.querySelector(".find-shot")) return;
-  if (board.dataset.page === "rec" || board.classList.contains("find-rec-page")) return;
+  board.querySelectorAll("h2 .find-shot, h2 .find-shot-file").forEach((node) => node.remove());
   const go = document.createElement("button");
   go.type = "button";
   go.className = "find-shot";
@@ -421,8 +423,7 @@ function betShotMount() {
   file.type = "file"; file.accept = "image/*"; file.hidden = true; file.className = "find-shot-file";
   file.addEventListener("change", () => { const pick = file.files && file.files[0]; file.value = ""; if (pick) shotRead(board, pick); });
   go.addEventListener("click", () => shotPick(board));
-  const tip = head.querySelector(".find-quick-go, .find-rec-go, .find-games-go");
-  if (tip) tip.before(go, file); else head.append(go, file);
+  head.append(go, file);
 }
 
 window.addEventListener("paste", (event) => {

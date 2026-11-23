@@ -705,7 +705,13 @@ function quickAddBox(board) {
     // Roster callbacks outlive this box — always swap the live Quick Add node.
     const live = box.isConnected ? box : board.querySelector(".quick-add");
     if (!live || !live.parentNode) return;
+    const shot = live.querySelector(":scope > .find-shot-row");
     live.replaceWith(next);
+    if (shot) {
+      const shotHead = next.querySelector(".quick-add-head");
+      if (shotHead) shotHead.after(shot);
+    }
+    if (typeof betShotMount === "function") betShotMount();
     if (keep != null) {
       const field = next.querySelector(".quick-add-search");
       if (!field) return;

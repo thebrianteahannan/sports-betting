@@ -241,7 +241,10 @@
 .find-board > label.find button.find-wipe, #desk.tv-full #desk-glass .find-board > label.find button.find-wipe { position: absolute; left: 0.35rem; top: 50%; z-index: 1; width: 1.8rem; height: 1.8rem; min-height: 0; margin: 0; padding: 0; transform: translateY(-50%); border: 0; border-radius: 50%; background: transparent; color: #9fb3c8; box-shadow: none; font-size: 22px; font-weight: 400; line-height: 1; cursor: pointer; }
 .find-board > label.find button.find-wipe:hover, #desk.tv-full #desk-glass .find-board > label.find button.find-wipe:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
 .find-board > label.find:has(input:placeholder-shown) button.find-wipe { visibility: hidden; }
-.rec-board > h2 button.find-shot, #desk.tv-full #desk-glass .rec-board > h2 button.find-shot { display: inline-flex; align-items: center; gap: 0.4rem; flex: none; width: auto; height: auto; min-height: 0; margin: 0 0 0 auto; padding: 0.3rem 0.8rem; border: 1px solid #3dff6e; border-radius: 999px; background: #07140f; box-shadow: none; color: #3dff6e; font-family: Outfit, system-ui, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: normal; text-transform: none; cursor: pointer; }
+.rec-board > h2 button.find-shot,
+.quick-add-head button.find-shot,
+#desk.tv-full #desk-glass .rec-board > h2 button.find-shot,
+#desk.tv-full #desk-glass .quick-add-head button.find-shot { display: inline-flex; align-items: center; gap: 0.4rem; flex: none; width: auto; height: auto; min-height: 0; margin: 0 0 0 auto; padding: 0.3rem 0.8rem; border: 1px solid #3dff6e; border-radius: 999px; background: #07140f; box-shadow: none; color: #3dff6e; font-family: Outfit, system-ui, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: normal; text-transform: none; cursor: pointer; }
 .rec-board > h2 button.find-rec-go,
 .rec-board > h2 button.find-build-go,
 .rec-board > h2 button.find-mine-go,
@@ -256,7 +259,9 @@
 #desk.tv-full #desk-glass .rec-board > h2 button.find-games-go { display: inline-flex; align-items: center; flex: none; width: auto; height: auto; min-height: 0; margin: 0; padding: 0.28rem 0.75rem; border: 1px solid #3dff6e; border-radius: 999px; background: #07140f; box-shadow: none; color: #3dff6e; font-family: Outfit, system-ui, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: normal; text-transform: none; cursor: pointer; }
 .find-board.find-rec-page > h2 > button.find-quick-go,
 .find-board.find-rec-page > h2 > button.find-build-go,
-#desk.tv-full #desk-glass .rec-board.find-rec-page > h2 > button.find-build-go { margin-left: auto; }
+.rec-board:not(.find-rec-page) > h2 > button.find-rec-go,
+#desk.tv-full #desk-glass .rec-board.find-rec-page > h2 > button.find-build-go,
+#desk.tv-full #desk-glass .rec-board:not(.find-rec-page) > h2 > button.find-rec-go { margin-left: auto; }
 .rec-board > h2 button.find-games-go.on-live, #desk.tv-full #desk-glass .rec-board > h2 button.find-games-go.on-live { display: inline-flex; align-items: center; gap: 0.4rem; border-color: #3dff6e; background: rgba(61, 255, 110, 0.12); }
 .rec-board > h2 button.find-games-go .find-games-live, #desk.tv-full #desk-glass .rec-board > h2 button.find-games-go .find-games-live { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.05rem 0.45rem 0.05rem 0.35rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
 .rec-board > h2 button.find-games-go .find-games-pulse { flex: none; width: 0.45rem; height: 0.45rem; border-radius: 50%; background: #ff2d2d; box-shadow: 0 0 0 0 rgba(255, 45, 45, 0.75); animation: find-games-pulse 1.35s ease-out infinite; }
@@ -265,15 +270,21 @@
   70% { box-shadow: 0 0 0 0.45rem rgba(255, 45, 45, 0); }
   100% { box-shadow: 0 0 0 0 rgba(255, 45, 45, 0); }
 }
-.rec-board > h2:has(button.find-shot), .rec-board > h2:has(button.find-rec-go), .rec-board > h2:has(button.find-build-go), .rec-board > h2:has(button.find-quick-go) { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
-.rec-board > h2 button.find-shot.busy { opacity: 0.6; cursor: progress; }
+.rec-board > h2:has(button.find-shot), .rec-board > h2:has(button.find-rec-go), .rec-board > h2:has(button.find-build-go), .rec-board > h2:has(button.find-quick-go) { display: flex; align-items: center; justify-content: flex-start; gap: 0.7rem; flex-wrap: wrap; }
+.rec-board > h2 button.find-shot.busy,
+.quick-add-head button.find-shot.busy { opacity: 0.6; cursor: progress; }
 .rec-board > p.find-shot-note { margin: 0.2rem 0 0.6rem; }
-.rec-board > .find-shot-row { display: flex; align-items: stretch; gap: 0.5rem; margin: 0.4rem 0 0.2rem; }
-.rec-board > .find-shot-row[hidden] { display: none; }
+.rec-board > .find-shot-row,
+.quick-add > .find-shot-row { display: flex; align-items: stretch; gap: 0.5rem; margin: 0.4rem 0 0.2rem; }
+.rec-board > .find-shot-row[hidden],
+.quick-add > .find-shot-row[hidden] { display: none; }
 .find-shot-row .find-shot-box { flex: 1; min-height: 3.2rem; padding: 0.6rem 0.8rem; border: 2px dashed #3dff6e; border-radius: 10px; background: #041018; color: #f4f7fb; caret-color: transparent; outline: none; overflow: hidden; }
 .find-shot-row .find-shot-box:empty::before { content: attr(data-say); color: #9fb3c8; font-weight: 600; }
 .find-shot-row .find-shot-box:focus { box-shadow: 0 0 0 3px rgba(61, 255, 110, 0.25); }
-.rec-board > .find-shot-row button.find-shot-pick, #desk.tv-full #desk-glass .rec-board > .find-shot-row button.find-shot-pick { width: auto; min-height: 0; margin: 0; padding: 0 0.9rem; border: 1px solid #3dff6e; border-radius: 10px; background: #07140f; box-shadow: none; color: #3dff6e; font-size: 14px; font-weight: 700; text-transform: none; letter-spacing: normal; cursor: pointer; }
+.rec-board > .find-shot-row button.find-shot-pick,
+.quick-add > .find-shot-row button.find-shot-pick,
+#desk.tv-full #desk-glass .rec-board > .find-shot-row button.find-shot-pick,
+#desk.tv-full #desk-glass .quick-add > .find-shot-row button.find-shot-pick { width: auto; min-height: 0; margin: 0; padding: 0 0.9rem; border: 1px solid #3dff6e; border-radius: 10px; background: #07140f; box-shadow: none; color: #3dff6e; font-size: 14px; font-weight: 700; text-transform: none; letter-spacing: normal; cursor: pointer; }
 .rec-board > .find-shot-wait { display: flex; align-items: center; gap: 0.8rem; margin: 0.4rem 0 0.6rem; padding: 0.7rem 0.9rem; border: 1px solid rgba(61, 255, 110, 0.55); border-radius: 12px; background: #041018; }
 .find-shot-wait img { width: 3.2rem; height: 3.2rem; object-fit: cover; object-position: top; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.15); }
 .find-shot-wait-text { flex: 1; display: grid; gap: 0.3rem; min-width: 0; }

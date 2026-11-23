@@ -17,7 +17,14 @@ function dayKey(when) {
 
 function inBand(odds) {
   const o = Number(odds);
-  return Number.isFinite(o) && o >= -250 && o <= 100;
+  // A coin flip at the book: about 45% to 55%, so the profit is close to the stake.
+  return Number.isFinite(o) && o >= -120 && o <= 120;
+}
+
+function ticketOk(pick) {
+  const hits = Number(pick && pick.hits);
+  const n = Number(pick && pick.n);
+  return inBand(pick && pick.odds) && n >= 5 && hits / n >= 0.6;
 }
 
 function placeOf(row) {
@@ -93,12 +100,24 @@ async function save(row) {
   await kv("", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { k: KEY + encodeURIComponent(row.id), v: row } });
 }
 
+async function retireOpen() {
+  const have = await load(true);
+  for (const row of [...have.values()]) {
+    if (row.result || ticketOk(row)) continue;
+    const k = KEY + encodeURIComponent(row.id);
+    await kv(`?k=eq.${encodeURIComponent(k)}`, { method: "DELETE", prefer: "return=minimal" });
+    book.delete(row.id);
+  }
+  return book;
+}
+
 async function note(pick, place) {
   if (!pick || !pick.label || !pick.match) return;
   const spot = place === "silver" || place === "bronze" ? place : "golden";
   const have = await load(true);
   const day = dayKey(pick.kickoff || Date.now());
-  if ([...have.values()].some((row) => placeOf(row) === spot && dayKey(row.kickoff || row.markedAt) === day)) return;
+  if ([...have.values()].some((row) => placeOf(row) === spot && dayKey(row.kickoff || row.markedAt) === day && (row.result || ticketOk(row)))) return;
+  if (!ticketOk(pick)) return;
   const id = idOf(pick);
   if (have.has(id)) return;
   await save({ ...snap(pick), place: spot });
@@ -107,7 +126,7 @@ async function note(pick, place) {
 async function choose(ranked) {
   const list = ranked || [];
   let have = new Map();
-  try { have = await load(); } catch (error) { have = new Map(); }
+  try { have = await retireOpen(); } catch (error) { have = new Map(); }
   const today = dayKey(Date.now());
   const days = new Map();
   list.forEach((pick) => {
@@ -118,11 +137,11 @@ async function choose(ranked) {
   const savedToday = heldDay(have.values(), today);
   const slate = (savedToday.golden || savedToday.silver || savedToday.bronze) ? today : ([...days.keys()].sort()[0] || today);
   const saved = heldDay(have.values(), slate);
-  const pool = (days.get(slate) || []).filter((pick) => inBand(pick.odds));
+  const pool = (days.get(slate) || []).filter((pick) => ticketOk(pick));
   const taken = new Set();
   const pickFor = (spot) => {
     const row = saved[spot];
-    if (row) {
+    if (row && (row.result || ticketOk(row))) {
       const live = list.find((pick) => idOf(pick) === row.id) || row;
       taken.add(row.id || idOf(live));
       return live;

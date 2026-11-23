@@ -92,9 +92,9 @@ function startRecWhy(pick) {
   const box = document.createElement("div");
   box.className = "desk-rec-why";
   const tips = [];
-  if (pick && pick.golden) tips.push({ label: "Golden Ticket", tip: "Golden Ticket: the top recommended pick from +100 to −250." });
-  if (pick && pick.silver) tips.push({ label: "Silver Ticket", tip: "Silver Ticket: the second best recommended pick from +100 to −250." });
-  if (pick && pick.bronze) tips.push({ label: "Bronze Ticket", tip: "Bronze Ticket: the third best recommended pick from +100 to −250." });
+  if (pick && pick.golden) tips.push({ label: "Golden Ticket", tip: "Golden Ticket: even money at the book, and it has hit 60% or more." });
+  if (pick && pick.silver) tips.push({ label: "Silver Ticket", tip: "Silver Ticket: the next even-money pick that has hit 60% or more." });
+  if (pick && pick.bronze) tips.push({ label: "Bronze Ticket", tip: "Bronze Ticket: the third even-money pick that has hit 60% or more." });
   if (typeof scriptKindSay === "function" && pick) {
     const say = scriptKindSay(pick);
     if (say && say.text && say.tip) tips.push({ label: say.text, tip: say.tip });
@@ -790,6 +790,7 @@ function startPaint(again) {
     if (quick) box.append(quick);
     box.hidden = Boolean(input && input.value.trim());
     spot.after(box);
+    if (typeof betShotMount === "function") betShotMount();
     if (typeof quickAddPendingOpen === "function") quickAddPendingOpen();
     return;
   }

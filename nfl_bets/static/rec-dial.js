@@ -53,7 +53,7 @@ function recDialOk(pick) {
 }
 
 function recDialEmptySay() {
-  if (recDial <= 0) return "No Golden Ticket in +100 to −250 right now. Slide toward More for the rest.";
+  if (recDial <= 0) return "No Golden Ticket right now. Slide toward More for the rest.";
   if (recDial === 1) return "Nothing in +100 to −250 right now. Slide toward More for the rest.";
   return "No picks are posted yet.";
 }
