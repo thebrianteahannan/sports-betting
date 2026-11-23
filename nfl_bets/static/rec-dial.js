@@ -185,15 +185,25 @@ function recDialApply(next, opts) {
   document.querySelectorAll(".find-start-recs").forEach((wrap) => {
     if (typeof wrap._recMoreSync === "function") wrap._recMoreSync();
   });
-  document.querySelectorAll("button.rec-dial-next").forEach((node) => { node.hidden = recDial >= REC_DIAL_MAX; });
+  document.querySelectorAll("button.rec-dial-next").forEach((node) => {
+    node.hidden = recDial >= REC_DIAL_MAX;
+    node.textContent = recDialNextSay(recDial);
+  });
   if (!quiet && typeof opts?.onCommit === "function") opts.onCommit(recDial);
+}
+
+function recDialNextSay(level) {
+  const next = Math.round(Number(level) || 0) + 1;
+  if (next <= 1) return "Show silver and bronze";
+  if (next === 2) return "Show +100 to −250";
+  return "Show the rest";
 }
 
 function recDialNext() {
   const go = document.createElement("button");
   go.type = "button";
   go.className = "rec-dial-next";
-  go.textContent = "More";
+  go.textContent = recDialNextSay(recDial);
   go.hidden = recDial >= REC_DIAL_MAX;
   go.addEventListener("click", () => {
     if (recDial >= REC_DIAL_MAX) return;

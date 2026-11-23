@@ -273,19 +273,23 @@ function recParlayCard(board, row) {
   const ours = `${(row.ours * 100).toFixed(1)}%`;
   const cash = row.score && typeof findCash === "function" ? findCash(row.price) : "";
   const games = row.legs.map((leg) => String(leg.pick.match || ""));
-  const same = games.every(Boolean) && new Set(games).size === 1;
+  const named = [...new Set(games.filter(Boolean))];
+  const same = games.every(Boolean) && named.length === 1;
+  const game = named.length === 1 ? named[0] : (typeof gameShortList === "function" ? gameShortList(named.map((match) => ({ match }))) : named.join(", "));
   const head = document.createElement("p");
   head.className = "rec-parlay-head";
   const name = recParlayName(row.place);
   const strategy = row.strategy ? `${row.no ? `ST-${String(row.no).padStart(2, "0")} ` : ""}${row.strategy}` : "";
   head.innerHTML = `<i class="rec-parlay-mark m-${row.place}">${row.place === "known" ? "Known edge" : `Edge ${row.score}`}</i>${name ? `<b>${name}</b>` : ""}${strategy ? `<b>${strategy}</b>` : ""}<span>${row.legs.length} legs</span>`;
+  if (game) head.append(Object.assign(document.createElement("b"), { textContent: game }));
   const pay = document.createElement("p");
   pay.className = "rec-parlay-pay";
   if (row.place !== "known") pay.innerHTML = `${price ? `<i class="px">${price}</i>` : ""}${row.score ? `<i class="pct">${need}</i>` : ""}${cash ? `<i class="pay">$5 profits ${cash}</i>` : ""}${row.score ? `<i class="hit">We have it at ${ours}</i>` : ""}`;
   const why = document.createElement("p");
   why.className = "rec-parlay-why";
   const knownSay = row.read || (typeof STACK_GRADE !== "undefined" && STACK_GRADE[row.strategy] && STACK_GRADE[row.strategy][1]) || "Known edge.";
-  why.textContent = row.place === "known" ? knownSay : `${same ? "Same game. " : ""}${Number(row.gap) ? `${row.gap.toFixed(1)} points over FanDuel's ${need}.` : ""}`;
+  const where = game ? `${game}. ` : (same ? "Same game. " : "");
+  why.textContent = row.place === "known" ? `${where}${knownSay}` : `${where}${Number(row.gap) ? `${row.gap.toFixed(1)} points over FanDuel's ${need}.` : ""}`;
   const list = document.createElement("ul");
   list.className = "rec-parlay-legs";
   row.legs.forEach((leg) => {
