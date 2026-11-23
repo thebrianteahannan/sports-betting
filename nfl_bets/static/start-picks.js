@@ -679,14 +679,29 @@ function startFilterBits(games) {
   return bits;
 }
 
+function startLineShut() {
+  try { return JSON.parse(localStorage.getItem("lineNoteShut") || "[]"); } catch (error) { return []; }
+}
+
 function startLineNote() {
-  const note = document.createElement("p");
-  note.className = "desk-games-note start-line-note";
+  const note = document.createElement("div");
+  note.className = "start-line-note";
   note.hidden = true;
   fetch("/api/lines", { cache: "no-store" }).then((res) => (res.ok ? res.json() : {})).then((data) => {
-    if (!note.isConnected || !data || !data.note) return;
+    const say = data && data.note;
+    if (!note.isConnected || !say || startLineShut().includes(say)) return;
+    const text = document.createElement("p");
+    text.textContent = say;
+    const close = document.createElement("button");
+    close.type = "button";
+    close.setAttribute("aria-label", "Close");
+    close.textContent = "×";
+    close.addEventListener("click", () => {
+      try { localStorage.setItem("lineNoteShut", JSON.stringify([say, ...startLineShut()].filter((item, index, list) => list.indexOf(item) === index).slice(0, 20))); } catch (error) {}
+      note.remove();
+    });
+    note.append(text, close);
     note.hidden = false;
-    note.textContent = data.note;
   }).catch(() => {});
   return note;
 }

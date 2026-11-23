@@ -176,7 +176,6 @@ function recParlayIsParlay(name) {
 
 function recParlayStrategies(data) {
   const found = (data && data.found) || {};
-  const games = recParlayGames();
   const rows = [];
   Object.entries(found).forEach(([name, stacks]) => {
     if (!recParlayIsParlay(name)) return;
@@ -184,9 +183,9 @@ function recParlayStrategies(data) {
     const tier = grade ? grade[0] : "";
     if (tier !== "edge" && tier !== "pick") return;
     const live = (stacks || []).filter((stack) => {
-      const match = stack.game || ((stack.bets || [])[0] || {}).game || "";
-      if (typeof startFavOnly !== "undefined" && startFavOnly && typeof startFavGame === "function" && match && !startFavGame(match)) return false;
-      return !match || !games.size || games.has(match);
+      const names = [stack.game, ...(stack.bets || []).map((bet) => bet.game)].filter(Boolean);
+      if (typeof startFavOnly !== "undefined" && startFavOnly && typeof startFavGame === "function" && names.length && !names.some(startFavGame)) return false;
+      return names.length && names.every((match) => recParlayLegOn({ pick: { match, kickoff: stack.kickoff || "" } }));
     });
     const fits = tier === "edge" ? live : live.filter((stack) => stack.beats);
     fits.map((stack) => recParlayStackRow(name, stack, tier)).filter(Boolean).forEach((row) => rows.push(row));
@@ -266,10 +265,36 @@ function recParlayTeamRow(row) {
   return legs.length > 0 && legs.every(recParlayTeamLeg);
 }
 
+function recParlayKick(pick) {
+  const kick = Date.parse(pick && pick.kickoff || "");
+  if (Number.isFinite(kick)) return kick;
+  const match = String((pick && pick.match) || "");
+  const lists = [typeof homeGamesList !== "undefined" ? homeGamesList : [], typeof startWeekGames !== "undefined" ? startWeekGames : [], (window.state && state.board && state.board.games) || []];
+  const game = lists.flat().find((row) => row && row.match === match);
+  return game ? Date.parse(game.kickoff || "") : NaN;
+}
+
+function recParlayLegOn(leg) {
+  const pick = (leg && leg.pick) || {};
+  const match = String(pick.match || "");
+  if (!match) return false;
+  const games = recParlayGames();
+  if (games.has(match)) return true;
+  const kick = recParlayKick(pick);
+  if (!Number.isFinite(kick) || typeof whenBucket !== "function") return false;
+  if (whenBucket(kick, match) !== (typeof startSpan === "string" ? startSpan : "next")) return false;
+  const league = typeof homeLeague === "string" ? homeLeague : "";
+  if (league && typeof homePickSport === "function") {
+    const sport = homePickSport(pick);
+    if (sport && sport !== league) return false;
+  }
+  return true;
+}
+
 function recParlayBuild(board) {
   const made = recParlayRanked(board);
   const source = recParlaySize ? (made.raw || []).filter((row) => row.legs.length === recParlaySize) : (made.raw || []);
-  const rows = recParlayJoin(source);
+  const rows = recParlayJoin(source).filter((row) => (row.legs || []).every(recParlayLegOn));
   return { ...made, rows: window.recParlayTeams ? rows : rows.filter((row) => !recParlayTeamRow(row)) };
 }
 
