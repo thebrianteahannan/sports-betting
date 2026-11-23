@@ -5,6 +5,8 @@ let startFavOnly = false;
 let startHistTab = "stats";
 let startPickGames = new Set();
 let startFoldOpen = { league: false, games: false, filters: false };
+let startFiltersAuto = false;
+let startFiltersMute = 0;
 const startKinds = new Set(), START_KINDS = [["safe", "Safe"], ["balanced", "Balanced"], ["payout", "Payout"], ["good", "Good bet"], ["math", "Math"], ["script", "Script"], ["solid", "Steady role"], ["cushion", "Cushion"]];
 
 function startKindOf(pick) {
@@ -721,7 +723,11 @@ function startFilterPack(box, leagues, gameBar, board, picks, tabNow) {
   if (leagues && leagues[0]) fold.append(leagues[0]);
   if (gameBar) fold.append(gameBar);
   if (tabNow === "rec") fold.append(startRandomBar(board, picks));
-  fold.addEventListener("toggle", () => { startFoldOpen.filters = fold.open; });
+  fold.addEventListener("toggle", () => {
+    startFoldOpen.filters = fold.open;
+    if (startFiltersMute) { startFiltersMute -= 1; return; }
+    startFiltersAuto = false;
+  });
   return fold;
 }
 
@@ -1083,3 +1089,17 @@ document.addEventListener("scroll", () => {
   const row = document.querySelector("#desk-glass-in .find-start-row"), tray = row && row.closest(".find-board").querySelector(":scope > .find-tray:not([hidden])");
   if (row) row.style.top = tray && tray.classList.contains("find-shut") && getComputedStyle(tray).position === "sticky" ? `${tray.offsetHeight + 8}px` : "";
 }, true);
+function startFiltersTuck() {
+  const box = document.getElementById("desk-glass-in");
+  if (!box || box.dataset.filterTuck) return;
+  box.dataset.filterTuck = "1";
+  let touchY = 0;
+  const pack = () => box.querySelector(".start-filter-pack");
+  const shut = () => { const fold = pack(); if (!fold || !fold.open) return; startFiltersAuto = true; startFoldOpen.filters = false; startFiltersMute += 1; fold.open = false; };
+  const open = () => { const fold = pack(); if (!fold || !startFiltersAuto || fold.open) return; startFiltersMute += 1; startFiltersAuto = false; startFoldOpen.filters = true; fold.open = true; };
+  box.addEventListener("scroll", () => { if (box.scrollTop > 8) shut(); }, { passive: true });
+  box.addEventListener("wheel", (event) => { if (event.deltaY < 0 && box.scrollTop <= 0) open(); }, { passive: true });
+  box.addEventListener("touchstart", (event) => { touchY = event.touches[0].clientY; }, { passive: true });
+  box.addEventListener("touchmove", (event) => { if (event.touches[0].clientY > touchY + 12 && box.scrollTop <= 0) open(); }, { passive: true });
+}
+startFiltersTuck();
