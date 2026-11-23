@@ -235,16 +235,18 @@ function nextName(person, doc, gone, football) {
     const keyed = (row) => String((row.athletes[0] || {}).key || "");
     const fit = rule ? hits.filter((row) => rule.test(keyed(row))) : hits.filter((row) => !/^(pr|kr)$/.test(keyed(row)));
     const hit = (fit.length ? fit : hits).slice().sort((a, b) => a.at - b.at)[0];
-    if (!hit) return "";
+    if (!hit) return { next: "", ahead: "" };
     const next = hit.athletes.slice(hit.at + 1).find((ath) => !gone.has(ath.id));
-    return next ? next.name : "";
+    const top = hit.athletes[0];
+    const ahead = hit.at > 0 && top && top.name && top.name !== person.name && !gone.has(top.id) ? top.name : "";
+    return { next: next ? next.name : "", ahead };
   }
   const fit = hits.filter((row) => { const spot = row.athletes[row.at].spot; return spot === person.role || spot.endsWith(` ${person.role}`) || person.role.endsWith(` ${spot}`); }).sort((a, b) => a.at - b.at);
   const hit = fit[0] || hits.slice().sort((a, b) => a.at - b.at)[0];
-  if (!hit) return "";
+  if (!hit) return { next: "", ahead: "" };
   const healthy = hit.athletes.filter((ath) => !gone.has(ath.id));
   const next = hit.at === 0 ? healthy.find((ath) => ath.id !== person.id) : healthy[0];
-  return next ? next.name : "";
+  return { next: next ? next.name : "", ahead: "" };
 }
 
 function minuteValue(raw) {
@@ -365,8 +367,11 @@ async function outCols(data, teams, docs, path) {
     title: team.short || team.name,
     lines: people.filter((person) => person.teamId === team.id).sort((a, b) => rank[a.status] - rank[b.status]).flatMap((person) => {
       const out = person.status === "out" || person.status === "injured reserve";
-      const next = out ? nextName(person, (docs || [])[index], gone, football) : "";
-      const line = `${[person.name, person.pos, person.status].filter(Boolean).join(", ")}${next ? ` (${next})` : ""}`;
+      const spot = out ? nextName(person, (docs || [])[index], gone, football) : { next: "", ahead: "" };
+      const next = (spot && spot.next) || "";
+      const ahead = (spot && spot.ahead) || "";
+      const tail = ahead ? `${next}; ${ahead}` : next;
+      const line = `${[person.name, person.pos, person.status].filter(Boolean).join(", ")}${tail ? ` (${tail})` : ""}`;
       const log = logs.get(person.id) || (out ? playText(snaps, person.name) : "");
       return log ? [line, log] : [line];
     }),

@@ -12,7 +12,10 @@ function outsOf(read, team) {
   const col = colFor(sectionOf(read, "Who's out"), team);
   return ((col && col.lines) || []).map((line) => {
     const hit = String(line).match(/^(.+?), ([A-Z]{1,4}), (out|doubtful|questionable|injured reserve)(?: \((.+)\))?$/);
-    return hit ? { name: hit[1], pos: hit[2], status: hit[3], next: hit[4] || "" } : null;
+    if (!hit) return null;
+    let next = hit[4] || "", ahead = "";
+    if (next.includes("; ")) { const bits = next.split("; "); ahead = bits.pop(); next = bits.join("; ").trim(); }
+    return { name: hit[1], pos: hit[2], status: hit[3], next, ahead };
   }).filter(Boolean);
 }
 

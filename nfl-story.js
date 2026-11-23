@@ -97,6 +97,11 @@ function missing(boxes, outs) {
       if (!was) return;
       const load = was.passAtt >= 15 ? `${n1(was.passAtt)} throws` : was.tgt >= 4 ? `${n1(was.tgt)} targets` : was.rushAtt >= 8 ? `${n1(was.rushAtt)} carries` : "";
       if (!load) return;
+      const role = { QB: "quarterback", WR: "wide receiver", RB: "running back", TE: "tight end", FB: "fullback" }[String(row.pos || "").toUpperCase()];
+      if (row.ahead && role) {
+        out.push({ w: 2, text: `${row.name} is out. ${row.ahead} is the starting ${role}, so ${last(row.name)} would be the backup ${role}.`, brief: `${row.name} would be the backup ${role} behind ${row.ahead}` });
+        return;
+      }
       const next = row.next && team.players[row.next];
       const nextLoad = next ? (was.passAtt >= 15 ? `${n1(next.passAtt)} throws` : was.tgt >= 4 ? `${n1(next.tgt)} targets` : `${n1(next.rushAtt)} carries`) : "";
       out.push({ w: (was.passAtt >= 15 ? 6 : 2) + (was.tgt || 0) / 3 + (was.rushAtt || 0) / 6, text: `${row.name} is out, ${load} a game.${row.next ? ` ${row.next} is next at his spot${nextLoad ? ` and has ${nextLoad} a game now` : ""}.` : ""}`, brief: `${row.name} is out${row.next ? `, so ${row.next} steps in` : ""}` });
