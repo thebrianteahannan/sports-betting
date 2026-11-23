@@ -227,7 +227,7 @@ function manageCard(row) {
   const open = document.createElement("button");
   open.type = "button";
   open.className = "manage-open";
-  open.textContent = "Open";
+  open.textContent = "View";
   const drop = document.createElement("button");
   drop.type = "button";
   drop.className = "manage-drop";
@@ -239,7 +239,7 @@ function manageCard(row) {
   const acts = document.createElement("span");
   acts.className = "manage-card-acts";
   acts.append(drop, open);
-  card.append(manageReadLine(bits, pay, row.locked ? "Locked" : ""), manageTags(legs), more, acts);
+  card.append(manageReadLine(bits, pay, row.locked ? "Locked" : ""), acts, manageTags(legs), more);
   const openBet = () => {
     if (row.id === window.parlayOpenId) {
       if (typeof saveCollapseForBet === "function") saveCollapseForBet();
@@ -250,7 +250,7 @@ function manageCard(row) {
   };
   card.tabIndex = 0;
   card.setAttribute("role", "button");
-  card.title = "Open bet";
+  card.title = "View bet";
   card.addEventListener("click", openBet);
   card.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;

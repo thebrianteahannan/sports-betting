@@ -217,30 +217,29 @@
 #desk.tv-full #desk-glass .manage-board .manage-read .who,
 .manage-board .manage-read .who {
   display: inline !important;
-  flex: 0 1 auto;
-  min-width: 0;
+  flex: none;
   margin: 0 !important;
   color: #f4f7fb !important;
   font-weight: 800;
   justify-content: flex-start;
+  white-space: nowrap;
 }
 
 #desk.tv-full #desk-glass .manage-board .manage-read .prop,
 .manage-board .manage-read .prop {
-  flex: 0 1 auto;
-  min-width: 0;
+  flex: none;
   color: #3dff6e;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 #desk.tv-full #desk-glass .manage-board .manage-read em,
 .manage-board .manage-read em {
-  flex: 0 1 auto;
-  min-width: 0;
+  flex: none;
   color: #9fb3c8;
   font-style: normal;
   font-weight: 600;
-  white-space: normal;
+  white-space: nowrap;
 }
 
 #desk.tv-full #desk-glass .manage-board .manage-read .pay,
@@ -295,9 +294,8 @@
 .manage-board[data-manage-zoom="1"] .manage-card,
 #desk.tv-full #desk-glass .manage-board[data-manage-zoom="2"] .manage-card,
 .manage-board[data-manage-zoom="2"] .manage-card {
-  display: flex !important;
-  flex-direction: row;
-  flex-wrap: nowrap;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.35rem 0.55rem;
   width: 100%;
@@ -333,6 +331,8 @@
 .manage-board[data-manage-zoom="0"] .manage-read em,
 #desk.tv-full #desk-glass .manage-board[data-manage-zoom="0"] .manage-read .who,
 .manage-board[data-manage-zoom="0"] .manage-read .who {
+  flex: 0 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -348,8 +348,14 @@
 .manage-board[data-manage-zoom="0"] .manage-more { display: none !important; }
 
 .manage-board .manage-tags { display: none; }
-#desk.tv-full #desk-glass .manage-board[data-manage-zoom="2"] .manage-card,
-.manage-board[data-manage-zoom="2"] .manage-card { flex-wrap: wrap; }
+#desk.tv-full #desk-glass .manage-board .manage-card > .manage-read,
+.manage-board .manage-card > .manage-read { grid-column: 1; grid-row: 1; }
+#desk.tv-full #desk-glass .manage-board .manage-card > .manage-card-acts,
+.manage-board .manage-card > .manage-card-acts { grid-column: 2; grid-row: 1; align-self: center; }
+#desk.tv-full #desk-glass .manage-board .manage-card > .manage-tags,
+#desk.tv-full #desk-glass .manage-board .manage-card > .manage-more,
+.manage-board .manage-card > .manage-tags,
+.manage-board .manage-card > .manage-more { grid-column: 1 / -1; }
 #desk.tv-full #desk-glass .manage-board[data-manage-zoom="2"] .manage-tags:not([hidden]),
 .manage-board[data-manage-zoom="2"] .manage-tags:not([hidden]) {
   display: grid;
