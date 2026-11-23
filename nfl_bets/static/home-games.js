@@ -278,9 +278,11 @@ function homeRecsLoad(forceWhen) {
     if (!homeRecs || homeRecs.want !== want) return;
     const sample = (data && data.picks && data.picks.length) ? data.picks : (data && data.pick ? [data.pick] : []);
     const golden = (data && data.golden) || sample.find((pick) => pick && pick.golden) || null;
+    const silver = (data && data.silver) || sample.find((pick) => pick && pick.silver) || null;
+    const bronze = (data && data.bronze) || sample.find((pick) => pick && pick.bronze) || null;
     homeRecs = stillGuest
-      ? { at: Date.now(), span: (data && data.span) || (want === "week" ? "week" : "today"), picks: sample, golden, more: Number(data && data.more) || 0, guest: true, want }
-      : { at: Date.now(), span: (data && data.span) || (want === "week" ? "week" : "today"), picks: (data && data.picks) || [], golden, guest: false, want };
+      ? { at: Date.now(), span: (data && data.span) || (want === "week" ? "week" : "today"), picks: sample, golden, silver, bronze, more: Number(data && data.more) || 0, guest: true, want }
+      : { at: Date.now(), span: (data && data.span) || (want === "week" ? "week" : "today"), picks: (data && data.picks) || [], golden, silver, bronze, guest: false, want };
     const box = document.getElementById("desk-games");
     if (box) box.dataset.sig = "";
     homeGamesPaint();
@@ -317,8 +319,12 @@ function homeRecRow(pick, index, opts) {
   const span = (homeRecs && homeRecs.span) || "today";
   const guest = document.body.classList.contains("needs-member");
   const golden = !!pick.golden;
+  const silver = !!pick.silver;
+  const bronze = !!pick.bronze;
   if (golden) card.classList.add("desk-rec-golden");
-  const lead = golden ? "Golden Ticket" : guest ? `${homePickSport(pick) || "Top"} pick` : index ? `#${index + 1}` : span === "today" ? "Today's free pick" : span === "tomorrow" ? "Tomorrow's top pick" : "Top pick";
+  if (silver) card.classList.add("desk-rec-silver");
+  if (bronze) card.classList.add("desk-rec-bronze");
+  const lead = golden ? "Golden Ticket" : silver ? "Silver Ticket" : bronze ? "Bronze Ticket" : guest ? `${homePickSport(pick) || "Top"} pick` : index ? `#${index + 1}` : span === "today" ? "Today's free pick" : span === "tomorrow" ? "Tomorrow's top pick" : "Top pick";
   const when = pick.kickoff ? `${span === "week" ? `${new Date(pick.kickoff).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short" })} ` : ""}${new Date(pick.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET` : "";
   const side = String(pick.match || "").split(" @ ").find((name) => pick.team && (name === pick.team || name.endsWith(` ${pick.team}`))) || "", logo = (side && homeLogos && homeLogos[side]) || "", dark = logo.replace("/500/", "/500-dark/");
   const hits = Number(pick.hits), games = Number(pick.n);
@@ -329,10 +335,19 @@ function homeRecRow(pick, index, opts) {
   const clearText = clear == null ? "" : `${clear > 0 ? "+" : ""}${clear.toFixed(1)}%`;
   const pay = [record && `<i class="hit">${esc(record)}</i>`, clearText && `<i class="clear ${clear > 0 ? "up" : clear < 0 ? "down" : ""}">${esc(clearText)}</i>`, `<i class="px">${esc(price)}</i>`, pct && `<i class="pct">${esc(pct)}</i>`, cash && `<i class="pay">${esc(`$5 profits ${cash}`)}</i>`, star].filter(Boolean).join("");
   const goldenTip = "Golden Ticket: the top recommended pick from +100 to −250.";
-  const tags = [golden ? `<i class="desk-rec-golden-tag" title="${esc(goldenTip)}" data-tip="${esc(goldenTip)}">Golden Ticket</i>` : "", typeof scriptKindTag === "function" ? scriptKindTag(pick) : "", typeof scriptRoleTag === "function" ? scriptRoleTag(pick) : "", typeof scriptCushionTag === "function" ? scriptCushionTag(pick) : ""].filter(Boolean).join("");
+  const silverTip = "Silver Ticket: the second best recommended pick from +100 to −250.";
+  const bronzeTip = "Bronze Ticket: the third best recommended pick from +100 to −250.";
+  const ticketTag = golden
+    ? `<i class="desk-rec-golden-tag" title="${esc(goldenTip)}" data-tip="${esc(goldenTip)}">Golden Ticket</i>`
+    : silver
+      ? `<i class="desk-rec-silver-tag" title="${esc(silverTip)}" data-tip="${esc(silverTip)}">Silver Ticket</i>`
+      : bronze
+        ? `<i class="desk-rec-bronze-tag" title="${esc(bronzeTip)}" data-tip="${esc(bronzeTip)}">Bronze Ticket</i>`
+        : "";
+  const tags = [ticketTag, typeof scriptKindTag === "function" ? scriptKindTag(pick) : "", typeof scriptRoleTag === "function" ? scriptRoleTag(pick) : "", typeof scriptCushionTag === "function" ? scriptCushionTag(pick) : ""].filter(Boolean).join("");
   card.innerHTML = `<span class="desk-rec-name">${logo ? `<img class="desk-team-logo desk-rec-logo" src="${esc(dark)}" alt="${esc(side)}" loading="lazy"${dark !== logo ? ` onerror="this.onerror=null;this.src='${esc(logo)}'"` : ""}>` : ""}${esc(homeRecTitle(pick))}</span><span class="desk-rec-pay">${pay}</span><span class="desk-rec-how">${lead}${tags}</span><span class="desk-rec-legs">${esc(when)}</span><span class="desk-rec-read">${esc(`${pick.match}. Hit in ${pick.hits} of his last ${pick.n}.`)}</span>`;
   card.addEventListener("click", (event) => {
-    const tag = event.target.closest(".bet-kind, .desk-rec-golden-tag");
+    const tag = event.target.closest(".bet-kind, .desk-rec-golden-tag, .desk-rec-silver-tag, .desk-rec-bronze-tag");
     if (tag && card.contains(tag)) {
       event.preventDefault();
       event.stopPropagation();
@@ -485,7 +500,9 @@ function homeLeagueCounts(games) {
     return by;
   }
   const picks = ((homeRecs && homeRecs.picks) || []).slice();
-  if (homeRecs && homeRecs.golden && !picks.some((pick) => pick && pick.golden)) picks.unshift(homeRecs.golden);
+  [homeRecs && homeRecs.bronze, homeRecs && homeRecs.silver, homeRecs && homeRecs.golden].filter(Boolean).forEach((ticket) => {
+    if (!picks.some((pick) => pick && pick.label === ticket.label && pick.match === ticket.match)) picks.unshift(ticket);
+  });
   picks.forEach((pick) => {
     if (!pick) return;
     by[""] += 1;
@@ -548,7 +565,9 @@ function homeRecRows(games, box) {
   const league = homeLeagueOn(games), span = homeRecs.span || "today";
   // Keep the full featured set in the DOM so the dial can hide/show with CSS (like Live Less↔More).
   const featured = typeof corrHomeFeatured === "function" ? corrHomeFeatured(homeRecs.picks) : homeRecs.picks.slice();
-  if (homeRecs.golden && !featured.some((pick) => pick && pick.golden)) featured.unshift(homeRecs.golden);
+  [homeRecs.bronze, homeRecs.silver, homeRecs.golden].filter(Boolean).forEach((ticket) => {
+    if (!featured.some((pick) => pick && pick.label === ticket.label && pick.match === ticket.match)) featured.unshift(ticket);
+  });
   const pool = featured
     .map((pick, index) => [pick, index])
     .filter(([pick]) => !league || homePickSport(pick) === league);

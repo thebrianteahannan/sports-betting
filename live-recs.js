@@ -94,10 +94,15 @@ function markGolden(ranked) {
   return require("./golden-log").choose(ranked);
 }
 
-async function recRanked(days) {
+async function recRanked(days, keepStarted) {
   await pull();
   const now = Date.now(), day = (when) => new Date(when - 6 * 3600000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-  const tonight = Object.values(recs).filter((row) => Date.parse(row.kickoff) > now && (days ? Date.parse(row.kickoff) - now < days * 86400000 : day(Date.parse(row.kickoff)) === day(now)));
+  const tonight = Object.values(recs).filter((row) => {
+    const kick = Date.parse(row.kickoff);
+    if (days) return kick > now && kick - now < days * 86400000;
+    if (keepStarted) return day(kick) === day(now) && (kick > now || now - kick < 36 * 3600000);
+    return kick > now && day(kick) === day(now);
+  });
   const picks = tonight.flatMap((row) => (((row.story || {}).bets || {}).picks || []).map((pick) => ({ ...pick, match: row.match, kickoff: row.kickoff })));
   const cleared = (pick) => {
     if (pick.tier !== "good" || !/^his record is only \d+ games$/.test(pick.drop || "")) return pick;
@@ -202,16 +207,48 @@ async function recSample() {
     span = tomorrow.length ? "tomorrow" : "week";
     ranked = tomorrow.length ? tomorrow : ahead.ranked;
   }
-  const marked = await markGolden(ranked);
+  const marked = await markGolden(dedupePicks((await recRanked(null, true)).ranked.concat(ranked)));
   const sports = await sportMap().catch(() => new Map());
-  const band = marked.picks.filter((pick) => inGoldenBand(pick.odds));
-  const pool = band.length ? band : marked.picks;
+  const flagged = flagMetals(ranked, marked);
+  const band = flagged.filter((pick) => inGoldenBand(pick.odds));
+  const pool = band.length ? band : flagged;
   let picks = oneEach(pool, sports);
+  const tickets = await stampMetals(marked);
+  picks = frontTickets(picks, tickets);
+  const pick = tickets.golden || picks[0] || null;
+  return { span, pick, picks, ...tickets, more: Math.max(0, ranked.length - picks.length) };
+}
+
+function dedupePicks(rows) {
+  const seen = new Set();
+  return (rows || []).filter((pick) => {
+    const id = `${pick && pick.label}|${(pick && pick.market) || ""}|${pick && pick.match}|${(pick && pick.kickoff) || ""}`;
+    if (!pick || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
+function flagMetals(ranked, marked) {
+  const byId = new Map((marked.picks || []).map((pick) => [`${pick.label}|${pick.market || ""}|${pick.match}|${pick.kickoff || ""}`, pick]));
+  return (ranked || []).map((pick) => byId.get(`${pick.label}|${pick.market || ""}|${pick.match}|${pick.kickoff || ""}`) || pick);
+}
+
+function frontTickets(picks, tickets) {
+  const front = [tickets.golden, tickets.silver, tickets.bronze].filter(Boolean);
+  const rest = (picks || []).filter((pick) => !front.some((ticket) => ticket.label === pick.label && ticket.match === pick.match && ticket.kickoff === pick.kickoff));
+  return front.concat(rest);
+}
+
+async function stampMetals(marked) {
   const golden = marked.golden ? (await withSport([marked.golden]))[0] : null;
-  if (golden && !picks.some((pick) => pick.golden)) picks = [golden, ...picks];
-  if (golden) require("./golden-log").note(golden).catch((error) => console.error("golden note failed:", error));
-  const pick = golden || picks[0] || null;
-  return { span, pick, picks, golden, more: Math.max(0, ranked.length - picks.length) };
+  const silver = marked.silver ? (await withSport([marked.silver]))[0] : null;
+  const bronze = marked.bronze ? (await withSport([marked.bronze]))[0] : null;
+  const note = require("./golden-log").note;
+  if (golden) note(golden).catch((error) => console.error("golden note failed:", error));
+  if (silver) note(silver, "silver").catch((error) => console.error("silver note failed:", error));
+  if (bronze) note(bronze, "bronze").catch((error) => console.error("bronze note failed:", error));
+  return { golden, silver, bronze };
 }
 
 async function withSport(picks) {
@@ -222,18 +259,13 @@ async function withSport(picks) {
   });
 }
 
-async function recTopPack(ranked, count) {
-  const marked = await markGolden(ranked);
-  const picks = await withSport(marked.picks.slice(0, count));
-  const golden = marked.golden ? (await withSport([marked.golden]))[0] : null;
-  return { picks, golden };
-}
-
 async function recTop(count, when) {
   const picked = await recRankedList(when);
-  const pack = await recTopPack(picked.ranked, count);
-  if (pack.golden) require("./golden-log").note(pack.golden).catch((error) => console.error("golden note failed:", error));
-  return { span: picked.span, ...pack };
+  const dayRanked = picked.span === "today" ? (await recRanked(null, true)).ranked : [];
+  const marked = await markGolden(dedupePicks(dayRanked.concat(picked.ranked)));
+  const picks = await withSport(flagMetals(picked.ranked, marked).slice(0, count));
+  const tickets = await stampMetals(marked);
+  return { span: picked.span, picks: frontTickets(picks, tickets), ...tickets };
 }
 
 async function recRankedList(when) {

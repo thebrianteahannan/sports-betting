@@ -231,6 +231,8 @@ function manageSlipRec(legs) {
   const pick = (legs || []).map(managePickOf).find(Boolean);
   if (!pick) return "";
   if (pick.golden) return `<i class="rc">Golden Ticket</i>`;
+  if (pick.silver) return `<i class="rc">Silver Ticket</i>`;
+  if (pick.bronze) return `<i class="rc">Bronze Ticket</i>`;
   if (pick.tier !== "good") return `<i class="rc">Recommended</i>`;
   return "";
 }
@@ -322,7 +324,10 @@ function manageCard(row) {
   card.tabIndex = 0;
   card.setAttribute("role", "button");
   card.title = "View bet";
-  card.addEventListener("click", openBet);
+  card.addEventListener("click", (event) => {
+    if (event.target.closest("button, a, input, form")) return;
+    openBet();
+  });
   card.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
     if (event.target !== card) return;

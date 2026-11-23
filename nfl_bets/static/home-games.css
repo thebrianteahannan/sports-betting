@@ -70,11 +70,15 @@ body.home-games-on #who { top: var(--home-games-top); right: 16px; bottom: auto;
 :is(#desk-games, #rec-page, .find-start) .desk-rec-pay i.pay { color: #3dff6e; font-weight: 700; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec-how { grid-area: how; font-size: 13px; font-weight: 700; line-height: 1.35; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec-golden { border-color: #e7c15a !important; box-shadow: 0 0 0 1px rgba(231, 193, 90, 0.35); }
+:is(#desk-games, #rec-page, .find-start) .desk-rec-silver { border-color: #d5deea !important; box-shadow: 0 0 0 1px rgba(213, 222, 234, 0.35); }
+:is(#desk-games, #rec-page, .find-start) .desk-rec-bronze { border-color: #d0894f !important; box-shadow: 0 0 0 1px rgba(208, 137, 79, 0.35); }
 /* Dial filters in place — never rebuild the list while the thumb moves. */
 :is(#desk-games, .find-start)[data-rec-dial="0"] .desk-rec:not([data-rec-golden]) { display: none !important; }
 :is(#desk-games, .find-start)[data-rec-dial="1"] .desk-rec:not([data-rec-band]) { display: none !important; }
 :is(#desk-games, .find-start) .rec-dial-empty[hidden] { display: none !important; }
-:is(#desk-games, #rec-page, .find-start) .desk-rec-golden-tag {
+:is(#desk-games, #rec-page, .find-start) .desk-rec-golden-tag,
+:is(#desk-games, #rec-page, .find-start) .desk-rec-silver-tag,
+:is(#desk-games, #rec-page, .find-start) .desk-rec-bronze-tag {
   display: inline-block;
   margin-left: 0.4rem;
   padding: 0.05rem 0.4rem;
@@ -89,6 +93,8 @@ body.home-games-on #who { top: var(--home-games-top); right: 16px; bottom: auto;
   vertical-align: 0.1em;
   cursor: pointer;
 }
+:is(#desk-games, #rec-page, .find-start) .desk-rec-silver-tag { background: #d5deea; color: #12181f; }
+:is(#desk-games, #rec-page, .find-start) .desk-rec-bronze-tag { background: #d0894f; color: #1a1006; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec .bet-kind { cursor: pointer; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec-tag-why {
   grid-area: why;

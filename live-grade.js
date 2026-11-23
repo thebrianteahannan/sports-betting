@@ -156,8 +156,8 @@ async function gradeTally() {
   };
   const history = rows.slice().sort((a, b) => Date.parse(b.kickoff) - Date.parse(a.kickoff)).map((row) => ({ id: row.id, match: row.match, kickoff: row.kickoff, picks: row.picks || [], review: row.review || null }));
   const mine = rows.filter((row) => row.day === today);
-  const golden = await require("./golden-log").tally().catch(() => ({ won: 0, lost: 0, history: [] }));
-  return { today: count(mine), all: count(rows), kinds: { today: kinds(mine), all: kinds(rows) }, history, golden };
+  const metals = await require("./golden-log").metals().catch(() => ({ golden: { won: 0, lost: 0, history: [] }, silver: { won: 0, lost: 0, history: [] }, bronze: { won: 0, lost: 0, history: [] } }));
+  return { today: count(mine), all: count(rows), kinds: { today: kinds(mine), all: kinds(rows) }, history, golden: metals.golden, silver: metals.silver, bronze: metals.bronze };
 }
 
 module.exports = { gradeTick, gradeTally, gradeSaved };

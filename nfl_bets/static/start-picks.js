@@ -1,6 +1,6 @@
 /** Build a bet keeps Quick add. Recommended / Games / Strategies live on the Recommended page. */
 
-let startTab = "rec", startBack = null, startUndo = null, startRandomAt = null, startGolden = null;
+let startTab = "rec", startBack = null, startUndo = null, startRandomAt = null, startGolden = null, startMetals = null;
 let startFavOnly = localStorage.getItem("startFavOnly") === "1";
 const startKinds = new Set(), START_KINDS = [["safe", "Safe"], ["balanced", "Balanced"], ["payout", "Payout"], ["good", "Good bet"], ["math", "Math"], ["script", "Script"], ["solid", "Steady role"], ["cushion", "Cushion"]];
 
@@ -93,6 +93,8 @@ function startRecWhy(pick) {
   box.className = "desk-rec-why";
   const tips = [];
   if (pick && pick.golden) tips.push({ label: "Golden Ticket", tip: "Golden Ticket: the top recommended pick from +100 to −250." });
+  if (pick && pick.silver) tips.push({ label: "Silver Ticket", tip: "Silver Ticket: the second best recommended pick from +100 to −250." });
+  if (pick && pick.bronze) tips.push({ label: "Bronze Ticket", tip: "Bronze Ticket: the third best recommended pick from +100 to −250." });
   if (typeof scriptKindSay === "function" && pick) {
     const say = scriptKindSay(pick);
     if (say && say.text && say.tip) tips.push({ label: say.text, tip: say.tip });
@@ -465,6 +467,8 @@ function startRecPool(games, opts) {
     picks.push(pick);
   };
   if (homeRecs.golden) push(homeRecs.golden);
+  if (homeRecs.silver) push(homeRecs.silver);
+  if (homeRecs.bronze) push(homeRecs.bronze);
   (homeRecs.picks || []).forEach(push);
   return { status: "ok", picks: picks.slice(0, START_REC_CAP), league, span: homeRecs.span || "today" };
 }
@@ -660,7 +664,10 @@ function startRecStats() {
     });
     const tally = data.tally || {}, today = tally.today || { won: 0, lost: 0 }, ever = tally.all || { won: 0, lost: 0 };
     const golden = tally.golden || { won: 0, lost: 0, history: [] };
+    const silver = tally.silver || { won: 0, lost: 0, history: [] };
+    const bronze = tally.bronze || { won: 0, lost: 0, history: [] };
     startGolden = golden;
+    startMetals = { golden, silver, bronze };
     const score = document.createElement("div");
     score.className = "find-start-stats-score";
     score.innerHTML = [
@@ -669,6 +676,8 @@ function startRecStats() {
       row("Today", today.won + won, today.won + today.lost + won + lost, "Recommended bets won today, out of the ones already decided"),
       row("All time", ever.won + won, ever.won + ever.lost + won + lost, "Every recommended bet that has finished"),
       row("Golden Ticket", golden.won, golden.won + golden.lost, "Open the saved Golden Tickets.", ` · ${startMoney(startGoldenCash(golden))}`, true),
+      row("Silver Ticket", silver.won, silver.won + silver.lost, "Open the saved Silver Tickets.", ` · ${startMoney(startGoldenCash(silver))}`, true),
+      row("Bronze Ticket", bronze.won, bronze.won + bronze.lost, "Open the saved Bronze Tickets.", ` · ${startMoney(startGoldenCash(bronze))}`, true),
       kinds((tally.kinds || {}).all || {}),
     ].join("");
     box.replaceChildren(score);
@@ -712,13 +721,13 @@ function startGoldenList() {
   };
   const price = (odds) => { const n = Number(odds); return Number.isFinite(n) ? (n > 0 ? `+${n}` : String(n)) : ""; };
   const word = { won: "Won", lost: "Lost", void: "Void" };
-  const paint = (golden) => {
-    const rows = (golden && golden.history) || [];
-    const won = Number(golden && golden.won) || rows.filter((ticket) => ticket.result === "won").length;
-    const lost = Number(golden && golden.lost) || rows.filter((ticket) => ticket.result === "lost").length;
+  const block = (name, bag) => {
+    const rows = (bag && bag.history) || [];
+    const won = Number(bag && bag.won) || rows.filter((ticket) => ticket.result === "won").length;
+    const lost = Number(bag && bag.lost) || rows.filter((ticket) => ticket.result === "lost").length;
     const of = won + lost;
     const pct = of > 0 ? `${Math.round((100 * won) / of)}%` : "—";
-    const cash = startGoldenCash(golden);
+    const cash = startGoldenCash(bag);
     const tone = cash > 0 ? "up" : cash < 0 ? "down" : "flat";
     const cards = rows.map((ticket) => {
       const result = ticket.result || "open";
@@ -736,17 +745,27 @@ function startGoldenList() {
       const meta = [price(ticket.odds), need, ticket.match].filter(Boolean).join(" · ");
       return `<article class="golden-card"><div class="golden-card-top"><b>${escHtml(ticket.label || "")}</b><i class="${escHtml(result)}">${escHtml(word[result] || "Open")}</i></div><p class="golden-card-pay"><span class="golden-card-edge"><b>${escHtml(record)}</b>${clearText ? `<i class="${clear > 0 ? "up" : clear < 0 ? "down" : ""}">${escHtml(clearText)}</i>` : ""}</span><span class="${escHtml(result)}">${escHtml(pay)}</span></p>${meta ? `<p class="golden-card-meta">${escHtml(meta)}</p>` : ""}${ticket.markedAt ? `<p class="golden-card-when">Marked ${escHtml(when(ticket.markedAt))}</p>` : ""}${ticket.how ? `<p class="golden-card-how">${escHtml(ticket.how)}</p>` : ""}</article>`;
     }).join("");
+    return `<h3 class="golden-place">${escHtml(name)}</h3><div class="golden-sum"><div><b>${escHtml(pct)}</b><span>${of ? `${won} of ${of}` : "0 settled"}</span></div><div><strong class="${tone}">${escHtml(startMoney(cash))}</strong><span>$5 on each settled ticket</span></div></div>${cards || `<p class="quiet">No ${escHtml(name)} has been marked yet.</p>`}`;
+  };
+  const paint = (metals) => {
+    const bag = metals || {};
     const list = document.createElement("div");
     list.className = "golden-list";
-    list.innerHTML = `<div class="golden-sum"><div><b>${escHtml(pct)}</b><span>${of ? `${won} of ${of}` : "0 settled"}</span></div><div><strong class="${tone}">${escHtml(startMoney(cash))}</strong><span>$5 on each settled ticket</span></div></div>${cards || `<p class="quiet">No Golden Ticket has been marked yet.</p>`}`;
+    list.innerHTML = [
+      block("Golden Ticket", bag.golden || startGolden),
+      block("Silver Ticket", bag.silver),
+      block("Bronze Ticket", bag.bronze),
+    ].join("");
     box.replaceChildren(list);
   };
-  if (startGolden) paint(startGolden);
+  if (startMetals || startGolden) paint(startMetals || { golden: startGolden });
   else box.innerHTML = `<p class="find-start-stats-load quiet">Looking up Golden Tickets.</p>`;
-  if (!startGolden) {
+  if (!startMetals) {
     fetch("/api/live?all=1", { credentials: "same-origin" }).then((res) => res.json()).then((data) => {
-      startGolden = (data.tally && data.tally.golden) || { won: 0, lost: 0, history: [] };
-      if (box.isConnected) paint(startGolden);
+      const tally = (data && data.tally) || {};
+      startGolden = tally.golden || { won: 0, lost: 0, history: [] };
+      startMetals = { golden: startGolden, silver: tally.silver || { won: 0, lost: 0, history: [] }, bronze: tally.bronze || { won: 0, lost: 0, history: [] } };
+      if (box.isConnected) paint(startMetals);
     }).catch(() => {
       if (box.isConnected) box.innerHTML = `<p class="quiet">Could not load Golden Tickets.</p>`;
     });
@@ -784,7 +803,7 @@ function startPaint(again) {
     ["games", "Games", gameN],
     ["stacks", "Strategies", null],
     ["stats", "Hit Rates", null],
-    ["golden", "Golden", startGolden && Array.isArray(startGolden.history) ? startGolden.history.length : null],
+    ["golden", "Golden", startMetals ? ["golden", "silver", "bronze"].reduce((sum, key) => sum + (((startMetals[key] || {}).history || []).length), 0) : (startGolden && Array.isArray(startGolden.history) ? startGolden.history.length : null)],
   ].forEach(([id, label, count]) => {
     const tab = document.createElement("button");
     tab.type = "button";

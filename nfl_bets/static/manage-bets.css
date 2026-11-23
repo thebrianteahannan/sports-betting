@@ -355,7 +355,7 @@
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-read,
 .manage-board .manage-card > .manage-read { grid-column: 1; grid-row: 1; }
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-card-acts,
-.manage-board .manage-card > .manage-card-acts { grid-column: 2; grid-row: 1; align-self: center; }
+.manage-board .manage-card > .manage-card-acts { position: relative; z-index: 3; grid-column: 2; grid-row: 1; align-self: center; }
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-tags,
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-more,
 .manage-board .manage-card > .manage-tags,

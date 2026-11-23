@@ -312,7 +312,7 @@ function quickAddResolveSide(person, game, sport, people) {
   if (bag) {
     const ready = sides.every((side) => bag.has(side));
     if (ready) {
-      const hits = sides.filter((side) => bag.get(side).has(bare));
+      const hits = sides.filter((side) => [...bag.get(side)].some((one) => one === bare || quickAddBare(one) === bare));
       if (hits.length === 1) return hits[0];
       return "";
     }
@@ -400,7 +400,7 @@ function quickAddLoadRosters(game, sport, paint) {
           if (!name) return;
           const bare = quickAddBare(name);
           if (!bare) return;
-          set.add(bare);
+          set.add(name);
           if (typeof clubOf !== "undefined") clubOf.set(bare, side);
           if (row && row.pos && typeof clubSpot !== "undefined") clubSpot.set(bare, String(row.pos));
         });
@@ -599,9 +599,10 @@ function quickAddLive(game) {
   return Number.isFinite(kick) && kick <= Date.now();
 }
 
-function quickAddLock(person, game, said, odds) {
+function quickAddLock(person, game, said, odds, fresh) {
   const name = person && person.name ? String(person.name).trim() : "";
   if (!name || !said || !Number.isFinite(odds) || !odds || typeof parlayLeg === "undefined" || typeof parlayKey !== "function") return false;
+  if (fresh && parlayLeg.size && typeof saveNew === "function") saveNew();
   const label = said.toLowerCase().startsWith(name.toLowerCase()) ? said : `${name} ${said}`;
   const bet = { label, market: said, odds, match: (game && game.match) || "", kickoff: (game && game.kickoff) || "", sport: (game && game.sport) || "" };
   const id = parlayKey(bet);
@@ -643,10 +644,31 @@ function quickAddLiveForm(person, game) {
     const said = prop.value.trim();
     const odds = Number(String(oddsBox.value).trim().replace(/^\+/, ""));
     const whoPerson = name ? { ...(person || {}), name, key: (person && person.key) || name.toLowerCase(), kind: "player", bets: (person && person.bets) || [] } : person;
-    if (!quickAddLock(whoPerson, game, said, odds)) return;
-    quickAddReset({ when: true, sport: true });
-    if (typeof legNewClose === "function") legNewClose();
-    if (typeof parlayOpenTray === "function") parlayOpenTray();
+    if (!name || !said || !Number.isFinite(odds) || !odds) return;
+    const finish = (fresh) => {
+      if (!quickAddLock(whoPerson, game, said, odds, fresh)) return;
+      quickAddReset({ when: true, sport: true });
+      if (typeof legNewClose === "function") legNewClose();
+      if (typeof parlayOpenTray === "function") parlayOpenTray();
+    };
+    if (typeof parlayLeg !== "undefined" && parlayLeg.size) {
+      const acts = document.createElement("div");
+      acts.className = "quick-add-acts";
+      const current = document.createElement("button");
+      current.type = "button";
+      current.className = "quick-add-go";
+      current.textContent = "Add to Current Bet";
+      current.addEventListener("click", () => finish(false));
+      const fresh = document.createElement("button");
+      fresh.type = "button";
+      fresh.className = "quick-add-go new";
+      fresh.textContent = "Add to New Bet";
+      fresh.addEventListener("click", () => finish(true));
+      acts.append(current, fresh);
+      form.replaceChildren(acts);
+      return;
+    }
+    finish(false);
   });
   return form;
 }

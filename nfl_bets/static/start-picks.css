@@ -106,6 +106,8 @@
 :is(.rec-board, #choice-result) .find-start button.hit-rate { display: grid !important; width: 100% !important; min-height: 0 !important; margin: 0 !important; padding: 0 0 0.75rem !important; border: 0 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; color: inherit !important; font: inherit !important; letter-spacing: normal !important; text-align: left !important; text-transform: none !important; cursor: pointer; }
 :is(.rec-board, #choice-result) .find-start button.hit-rate:hover { filter: none !important; border-bottom-color: #e7c15a !important; }
 .find-board .find-start .golden-list { display: grid; gap: 0.65rem; }
+.find-board .find-start .golden-place { margin: 0.85rem 0 0; color: #e7c15a; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.find-board .find-start .golden-place:first-child { margin-top: 0; }
 .find-board .find-start .golden-card { display: grid; gap: 0.25rem; margin: 0; padding: 0.75rem 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
 .find-board .find-start .golden-card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
 .find-board .find-start .golden-card-top b { color: #f4f7fb; font-size: 15px; font-weight: 800; }

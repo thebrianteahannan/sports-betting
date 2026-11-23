@@ -320,8 +320,17 @@ let saveDropAt = 0;
 function saveDrop(id) {
   if (Date.now() - saveDropAt > 5 * 60 * 1000 && !window.confirm("Delete this saved parlay?")) return;
   saveDropAt = Date.now();
-  saveStore(saveList().filter((row) => row.id !== id));
-  if (window.parlayOpenId === id) { window.parlayOpenId = ""; window.parlayStake = 5; parlayPick.clear(); parlayLeg.clear(); if (typeof trayRoster === "function") trayRoster(); }
+  const row = saveList().find((item) => item.id === id);
+  const same = row && typeof parlayLeg !== "undefined" && saveSig(row.legs || []) && saveSig(row.legs || []) === saveSig([...parlayLeg.values()]);
+  saveStore(saveList().filter((item) => item.id !== id));
+  if (window.parlayOpenId === id || same) {
+    window.parlayOpenId = "";
+    window.parlayStake = 5;
+    saveHeld = "";
+    parlayPick.clear();
+    parlayLeg.clear();
+    if (typeof trayRoster === "function") trayRoster();
+  }
   paintParlay();
 }
 
@@ -648,9 +657,10 @@ document.addEventListener("click", (event) => { const fold = event.target.closes
 document.addEventListener("click", (event) => {
   if (!window.savePeek) return;
   const tip = event.target;
-  // Fold rebuilds MY BETS mid-click; the button is detached so .find-saved closest fails.
-  if (tip && tip.closest && (tip.closest(".find-saved") || tip.closest(".find-fold"))) return;
-  if (tip && tip.classList && tip.classList.contains("find-fold")) return;
+  // A filter click rebuilds the list before this runs, so the button is already detached.
+  if (!tip || tip.isConnected === false) return;
+  if (tip.closest && (tip.closest(".find-saved") || tip.closest(".find-fold"))) return;
+  if (tip.classList && tip.classList.contains("find-fold")) return;
   window.savePeek = false;
   window.saveShut = true;
   try { localStorage.setItem("savedShut", "1"); } catch (error) { console.log("[parlay-save] could not keep fold", error); }

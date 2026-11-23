@@ -122,10 +122,20 @@ function scriptGoldenOf(pick, game) {
   return g.label === pick.label && g.market === pick.market && (!g.match || g.match === match);
 }
 
+function scriptMetalOf(pick, game, spot) {
+  if (!pick) return false;
+  if (pick[spot]) return true;
+  const saved = (typeof homeRecs !== "undefined" && homeRecs && homeRecs[spot]) || null;
+  if (!saved) return false;
+  const match = (game && game.match) || pick.match || "";
+  return saved.label === pick.label && saved.market === pick.market && (!saved.match || saved.match === match);
+}
+
 function scriptGoldenTag(pick, game) {
-  if (!scriptGoldenOf(pick, game)) return "";
-  const tip = "Golden Ticket: the top recommended pick from +100 to −250.";
-  return `<i class="desk-rec-golden-tag" title="${esc(tip)}" data-tip="${esc(tip)}">Golden Ticket</i>`;
+  const metal = scriptGoldenOf(pick, game) ? "golden" : scriptMetalOf(pick, game, "silver") ? "silver" : scriptMetalOf(pick, game, "bronze") ? "bronze" : "";
+  if (!metal) return "";
+  const say = { golden: ["Golden Ticket", "Golden Ticket: the top recommended pick from +100 to −250.", "desk-rec-golden-tag"], silver: ["Silver Ticket", "Silver Ticket: the second best recommended pick from +100 to −250.", "desk-rec-silver-tag"], bronze: ["Bronze Ticket", "Bronze Ticket: the third best recommended pick from +100 to −250.", "desk-rec-bronze-tag"] }[metal];
+  return `<i class="${say[2]}" title="${esc(say[1])}" data-tip="${esc(say[1])}">${say[0]}</i>`;
 }
 
 function scriptPickTags(pick, game) {
@@ -598,7 +608,7 @@ function nbaScript(holder, game, people) {
 }
 
 document.addEventListener("click", (event) => {
-  const tag = event.target.closest(".find-script-leg .bet-kind, .find-script-leg .desk-rec-golden-tag, .find-script-pick .bet-kind, .find-script-pick .desk-rec-golden-tag");
+  const tag = event.target.closest(".find-script-leg .bet-kind, .find-script-leg .desk-rec-golden-tag, .find-script-leg .desk-rec-silver-tag, .find-script-leg .desk-rec-bronze-tag, .find-script-pick .bet-kind, .find-script-pick .desk-rec-golden-tag, .find-script-pick .desk-rec-silver-tag, .find-script-pick .desk-rec-bronze-tag");
   const row = tag && tag.closest(".find-script-leg, .find-script-pick");
   if (row && typeof deskRecTagWhy === "function") {
     event.preventDefault();

@@ -613,7 +613,9 @@
 .rec-board .find-script .find-script-leg .who { color: #f4f7fb; font-weight: 700; }
 .rec-board .find-script .find-script-leg .tm { color: #8b97a3; font-size: 0.85em; }
 .rec-board .find-script .find-script-leg .prop { color: #e7c15a; }
-.rec-board .find-script .desk-rec-golden-tag {
+.rec-board .find-script .desk-rec-golden-tag,
+.rec-board .find-script .desk-rec-silver-tag,
+.rec-board .find-script .desk-rec-bronze-tag {
   display: inline-block;
   margin: 0 0.15rem;
   padding: 0.05rem 0.4rem;
@@ -628,8 +630,12 @@
   vertical-align: 0.1em;
   cursor: pointer;
 }
+.rec-board .find-script .desk-rec-silver-tag { background: #d5deea; color: #12181f; }
+.rec-board .find-script .desk-rec-bronze-tag { background: #d0894f; color: #1a1006; }
 .rec-board .find-script .bet-kind,
-.rec-board .find-script .desk-rec-golden-tag { cursor: pointer; }
+.rec-board .find-script .desk-rec-golden-tag,
+.rec-board .find-script .desk-rec-silver-tag,
+.rec-board .find-script .desk-rec-bronze-tag { cursor: pointer; }
 .rec-board .find-script .find-script-leg .desk-rec-tag-why,
 .rec-board .find-script .find-script-pick .desk-rec-tag-why {
   flex: 1 0 100%;
