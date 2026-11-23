@@ -153,6 +153,8 @@ function escape(text) {
 }
 
 function teamCount(text, game, logs) {
+  // The logs are full-game scores. A quarter, half, or period line is a different bet.
+  if (/\b(quarter|qtr|half|period|inning)\b/i.test(text)) return null;
   const sport = String(game.sport || "");
   const pair = ["homeName", "awayName"].map((side) => String(game[side] || ""));
   text = text.trim();

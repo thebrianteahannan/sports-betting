@@ -131,6 +131,14 @@ function recParlayGames() {
   return new Set(games.filter((game) => (!league || game.sport === league) && (typeof startGameOk !== "function" || startGameOk(game.match))).map((game) => game.match).filter(Boolean));
 }
 
+function recParlayRecorded(bet) {
+  const label = String((bet && bet.label) || "");
+  if (/\b(quarter|qtr|half|period|inning)\b/i.test(label)) return false;
+  const n = Number(bet && bet.games);
+  const hits = Number(bet && bet.hits);
+  return n >= 5 && Number.isFinite(hits);
+}
+
 function recParlayStackRow(name, stack, tier) {
   const bets = stack.bets || [];
   if (bets.length < 2 || bets.length > 5) return null;
@@ -139,11 +147,11 @@ function recParlayStackRow(name, stack, tier) {
     const n = Number(bet.games);
     const hits = Number(bet.hits);
     const book = recParlayChance(bet.odds);
-    const recorded = n >= 5 && Number.isFinite(hits);
+    const recorded = recParlayRecorded(bet);
     return {
       who: recParlayWho({ label: bet.label }),
       rate: recorded ? hits / n : (book == null ? 0 : book),
-      pick: { label: bet.label, odds: bet.odds, market: bet.market || "", match: bet.game || stack.game || "", hits, n, text: bet.label },
+      pick: { label: bet.label, odds: bet.odds, market: bet.market || "", match: bet.game || stack.game || "", hits: recorded ? hits : null, n: recorded ? n : null, text: bet.label },
     };
   });
   const scored = tier === "pick" ? recParlayScore(legs) : null;
