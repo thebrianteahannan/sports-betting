@@ -77,16 +77,18 @@
 .find-board.find-rec-page > .find-saved { display: none !important; }
 .find-board.find-rec-page > h2 { margin-bottom: 0.75rem; }
 .find-board.find-rec-page > .find-start { margin-top: 0; }
-.find-board .find-start .find-start-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; margin: 0 0 0.6rem; position: sticky; top: 0.4rem; z-index: 6; background: #000; box-shadow: 0 0 0 8px #000, 0 14px 12px -2px rgba(0, 0, 0, 0.85); }
+.find-board .find-start .find-start-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.1rem 0.9rem; margin: 0 0 0.2rem; position: sticky; top: 0.4rem; z-index: 6; background: #000; box-shadow: 0 0 0 8px #000, 0 14px 12px -2px rgba(0, 0, 0, 0.85); }
 .find-board .find-start .desk-games-tabs { display: flex; width: fit-content; margin: 0; }
 .find-board .find-start .find-start-span { flex: 1 0 100%; }
 .find-start-random { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
 .find-start-random:empty { display: none; }
 .find-start-random > i { margin-right: 0.15rem; color: #9fb3c8; font-size: 13px; font-style: normal; font-weight: 800; }
 .find-start .desk-games-leagues > i.start-filter-label { margin-right: 0.2rem; color: #9fb3c8; font-size: 13px; font-style: normal; font-weight: 800; align-self: center; }
-.find-start .start-filter-say, #desk-games .start-filter-say { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.75rem; margin: 0.15rem 0 0; color: #d5deea; font-size: 14px; font-weight: 650; }
-.find-start .start-filter-fold, #desk-games .start-filter-fold { flex: 1 0 100%; }
-.find-start .start-filter-fold > summary, #desk-games .start-filter-fold > summary { width: fit-content; margin: 0; padding: 0.15rem 0; color: #9fb3c8; font-size: 13px; font-weight: 800; list-style: none; cursor: pointer; }
+.find-start .start-filter-say, #desk-games .start-filter-say, #desk.tv-full #desk-glass .start-filter-say { flex: 1 0 100%; display: flex; flex-wrap: nowrap; align-items: baseline; gap: 0.45rem; min-width: 0; margin: 0; color: #d5deea; font-size: 14px; font-weight: 650; line-height: 1.3; }
+.find-start .start-filter-say > span, #desk-games .start-filter-say > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.find-start .start-filter-say > button, #desk-games .start-filter-say > button, #desk.tv-full #desk-glass .start-filter-say > button { flex: none; width: auto; min-height: 0; margin: 0; padding: 0; font-size: inherit; line-height: inherit; white-space: nowrap; }
+.find-start .start-filter-fold, #desk-games .start-filter-fold { flex: 1 0 100%; margin: 0; }
+.find-start .start-filter-fold > summary, #desk-games .start-filter-fold > summary { width: fit-content; margin: 0; padding: 0; color: #9fb3c8; font-size: 13px; font-weight: 800; line-height: 1.3; list-style: none; cursor: pointer; }
 .find-start .start-filter-fold > summary::-webkit-details-marker, #desk-games .start-filter-fold > summary::-webkit-details-marker { display: none; }
 .find-start .start-filter-fold > summary::before, #desk-games .start-filter-fold > summary::before { content: "▸ "; }
 .find-start .start-filter-fold[open] > summary::before, #desk-games .start-filter-fold[open] > summary::before { content: "▾ "; }
@@ -165,7 +167,7 @@ button.rec-dial-next[hidden] { display: none !important; }
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 0.7rem;
+  margin: 0.15rem 0 0.35rem;
   color: #9fb3c8;
   font: 700 12px Outfit, system-ui, sans-serif;
   letter-spacing: 0.04em;

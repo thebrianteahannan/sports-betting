@@ -722,7 +722,9 @@ function startFilterChanged() {
 function startFilterSay(games, box) {
   const line = document.createElement("p");
   line.className = "start-filter-say";
-  line.append(document.createTextNode(`${startFilterBits(games).join(". ")}.`));
+  const text = document.createElement("span");
+  text.textContent = `${startFilterBits(games).join(". ")}.`;
+  line.append(text);
   if (startFilterChanged()) {
     const clear = document.createElement("button");
     clear.type = "button";
