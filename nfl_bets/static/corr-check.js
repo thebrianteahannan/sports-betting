@@ -35,17 +35,37 @@ function corrLegs(bets) {
   }));
 }
 
+function corrSpread(label, market) {
+  const raw = `${label || ""} ${market || ""}`;
+  if (/\b(over|under|moneyline|\bml\b)\b/i.test(raw) && !/spread/i.test(raw)) return null;
+  const found = raw.match(/([+-]\d+(?:\.\d+)?)/);
+  if (!found) return null;
+  const n = Number(found[1]);
+  return Number.isFinite(n) && n ? n : null;
+}
+
+function corrMiddle(a, b) {
+  const left = corrSpread(a.label, a.market);
+  const right = corrSpread(b.label, b.market);
+  if (left == null || right == null || Math.sign(left) === Math.sign(right)) return false;
+  const fav = Math.abs(Math.min(left, right));
+  const dog = Math.max(left, right);
+  // Both sides cash when the margin lands in the gap, which is the key-number middle.
+  return Math.floor(fav) + 1 <= Math.ceil(dog) - 1;
+}
+
 function corrPairRate(a, b) {
   if (a.player && b.player && a.player === b.player && a.side && b.side && a.side !== b.side && /over|under/.test(`${a.side}${b.side}`)) {
     return { rate: "conflict", line: `${a.label.split(/\s+Over|\s+Under/)[0].trim() || "This player"} is on both sides of the same prop.` };
   }
-  if (a.match && a.match === b.match && a.side && b.side && ((a.side === "fav" && b.side === "dog") || (a.side === "dog" && b.side === "fav") || (a.side === "over" && b.side === "under" && /total/.test(`${a.market} ${b.market}`)))) {
+  const middle = !!(a.match && a.match === b.match && corrMiddle(a, b));
+  if (!middle && a.match && a.match === b.match && a.side && b.side && ((a.side === "fav" && b.side === "dog") || (a.side === "dog" && b.side === "fav") || (a.side === "over" && b.side === "under" && /total/.test(`${a.market} ${b.market}`)))) {
     return { rate: "low", line: "These two need opposite games in the same matchup." };
   }
   if (a.player && a.player === b.player && a.match === b.match) {
     return { rate: "moderate", line: "Two legs ride the same player tonight." };
   }
-  if (a.match && a.match === b.match) {
+  if (!middle && a.match && a.match === b.match) {
     return { rate: "moderate", line: "Heavy on one game — one script swings both legs." };
   }
   return null;
