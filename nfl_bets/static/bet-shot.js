@@ -16,10 +16,11 @@ function shotOdds(text) {
 function shotTdKind(text) {
   const low = String(text || "").toLowerCase().replace(/\btds\b/g, "touchdowns").replace(/\btd\b/g, "touchdown");
   if (!/touchdown/.test(low) || /rush|receiv|pass/.test(low)) return "";
-  if (/\bfirst\b/.test(low)) return "first";
+  if (/any\s*time|anytime/.test(low)) return "anytime";
+  if (/\b(first|1st)\b/.test(low) && !/half|quarter/.test(low)) return "first";
   const plus = low.match(/(?:to score\s*)?(\d+)\+\s*touchdown/) || low.match(/to score\s*(\d+)\+/);
   if (plus) return `${Number(plus[1])}+`;
-  if (/any\s*time|anytime|touchdown scorer/.test(low)) return "anytime";
+  if (/touchdown scorer/.test(low)) return "anytime";
   return "td";
 }
 

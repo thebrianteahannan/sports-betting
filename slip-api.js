@@ -13,7 +13,7 @@ const SWIFT = "/Users/brianhannan/Documents/PilotFish Sandbox/tools/sandbox_cont
 const KEY = "bets/slips.json";
 const ASK = `Read every leg on this bet slip. A 3-bet parlay has 3 legs. Do not merge legs into one.
 A team to win is its own leg: player is the team, market is "to win", side is "win", line is null.
-Anytime touchdown / any time touchdown scorer: market is "anytime touchdown", side is "", line is null. Do not read that as 2+ or 3+ touchdowns.
+The line under the player name is the market. "ANY TIME TOUCHDOWN SCORER" is market "anytime touchdown", side is "", line is null. That is not a first touchdown, and it is not 2+ or 3+ touchdowns. "1ST TOUCHDOWN SCORER" is market "first touchdown", side is "", line is null. Do not swap those two.
 To score 2+ or 3+ touchdowns only when the slip says that many: market is "to score 2+ touchdowns" or "to score 3+ touchdowns", side is "over", line is 2 or 3.
 A player prop: player is the person in normal case, market is only the stat ("rushing yards"), side is over or under, line is the number.
 match is the game line as printed, Away @ Home. when is "" when the slip says Today, otherwise YYYY-MM-DD.

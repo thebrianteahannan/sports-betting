@@ -7,7 +7,7 @@ Each card gets its own ticket number, starting at 1. Do not stop after the first
 A team to win: player is the team, market is "to win", side is "win", line is null.
 A spread: market is "spread", line is the points with the sign, side is "spread".
 A total: market is "total", side is over or under, line is the number.
-Anytime touchdown / any time touchdown scorer: market is "anytime touchdown", side is "", line is null. Never turn that into 2+ or 3+ touchdowns.
+The line under the player name is the market. "ANY TIME TOUCHDOWN SCORER" is market "anytime touchdown", side is "", line is null. That is not a first touchdown, and it is not 2+ or 3+ touchdowns. "1ST TOUCHDOWN SCORER" is market "first touchdown", side is "", line is null. Do not swap those two.
 To score 2+ or 3+ touchdowns only when the slip says that many: market is "to score 2+ touchdowns" or "to score 3+ touchdowns", side is "over", line is 2 or 3.
 A player prop: player is the person, market is only the stat, side is over or under, line is the number. odds is that card's price. stake is that card's wager. Use "" when a number is not printed.
 kind is single when there is one card. kind is stack when there is more than one card.
@@ -85,8 +85,8 @@ function td(leg) {
 function normTd(leg) {
   if (!leg) return leg;
   const market = stat(leg);
-  if (/any\s*time|anytime/.test(market) && /td|touchdown/.test(market)) return { ...leg, market: "anytime touchdown", side: "", line: null };
-  if (/\bfirst\b/.test(market) && /td|touchdown/.test(market) && !/rush|receiv|pass/.test(market)) return { ...leg, market: "first touchdown", side: "", line: null };
+  if (/any\s*time|anytime/.test(market) && /td|touchdown|scorer/.test(market)) return { ...leg, market: "anytime touchdown", side: "", line: null };
+  if (/\b(first|1st)\b/.test(market) && /td|touchdown|scorer/.test(market) && !/rush|receiv|pass|half|quarter/.test(market)) return { ...leg, market: "first touchdown", side: "", line: null };
   const plus = market.match(/(?:to score\s*)?(\d+)\+\s*(?:td|touchdown)/) || market.match(/to score\s*(\d+)\+/);
   if (plus) return { ...leg, market: `to score ${plus[1]}+ touchdowns`, side: "over", line: Number(plus[1]) };
   if (/^(?:td|touchdowns?)$/.test(market) && !/rush|receiv|pass/.test(market)) {
@@ -415,6 +415,7 @@ async function howsPost(body) {
   let read = await readShot(image, mime, prompt);
   const got = new Set((read.legs || []).map((leg) => Number(leg.ticket) || 1)).size;
   if (cards > 1 && got < cards) read = await readShot(image, mime, `${HOW}\nYou missed a card. There are ${cards} bet cards. Ticket 1 is the top card. Number every card after it. Return all ${cards}.`);
+  if (read && Array.isArray(read.legs)) read.legs = read.legs.map(normTd);
   const legs = read.legs || [];
   const sameStake = new Set(legs.map((leg) => dollars(leg.stake)).filter(Boolean)).size <= 1;
   const noLegOdds = legs.every((leg) => american(leg.odds) == null);
