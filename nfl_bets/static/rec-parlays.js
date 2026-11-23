@@ -101,17 +101,6 @@ function recParlayOk(legs) {
   return true;
 }
 
-function recParlayWays(n, k) {
-  if (k > n || k < 0) return 0;
-  let count = 1;
-  for (let i = 1; i <= k; i += 1) count = (count * (n - k + i)) / i;
-  return count;
-}
-
-function recParlayOneGame(pool) {
-  return new Set(pool.map((leg) => String(leg.pick.match || ""))).size <= 1;
-}
-
 function recParlayWalk(pool, n) {
   const out = [];
   let best = null;
@@ -238,11 +227,11 @@ function recParlayRanked(board) {
     let best = null;
     const seen = new Set();
     recParlayPools(all).forEach((pool) => {
+      const use = pool.length > 8 ? pool.slice(0, 8) : pool;
       [2, 3, 4, 5].forEach((n) => {
-        if (pool.length < n) return;
-        if (!recParlayOneGame(pool) && recParlayWays(pool.length, n) > 60000) return;
-        const found = recParlayWalk(pool, n);
-        found.rows.forEach((row) => {
+        if (use.length < n) return;
+        const found = recParlayWalk(use, n);
+        found.rows.slice(0, 3).forEach((row) => {
           const id = row.legs.map((leg) => String(leg.pick.label || "").toLowerCase()).sort().join("~");
           if (seen.has(id)) return;
           seen.add(id);
