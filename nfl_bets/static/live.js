@@ -118,7 +118,7 @@ function liveGame(game) {
   const body = teams ? `${bar}${teams}` : `<p class="live-note">ESPN has not posted player stats for this game yet.</p>`;
   const match = (liveMine(game, liveRecs)[0] || {}).match || `${game.away.name} @ ${game.home.name}`;
   const page = `/?${new URLSearchParams({ game: match, sport: game.sport, from: "live", ...(game.when ? { kick: game.when } : {}), ...(game.id ? { espn: game.id } : {}) })}`;
-  return `<details class="live-game${picks.length ? " has-mine" : ""}${game.final ? " live-final" : ""}${known && liveCard.court.has(game.id) ? " live-court-only" : ""}${picks.length && liveCard.mine.has(game.id) ? " live-mine-only" : ""}${split && liveCard.off.has(game.id) ? " live-off-only" : ""}" data-id="${liveEsc(game.id)}" data-sport="${liveEsc(game.sport)}" data-match="${liveEsc(match)}"${liveZoom > 1 && liveOpen.has(game.id) ? " open" : ""}><summary><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(game.away, away > home, `${game.id}|away`)}<span class="live-at-sign">@</span>${liveSide(game.home, home > away, `${game.id}|home`)}<span class="live-clock">${liveEsc(game.clock)}</span>${game.last ? `<span class="live-last" data-k="${liveEsc(`${game.id}|last`)}">${liveEsc(game.last)}</span>` : ""}${liveHurt(game)}${liveRoot(game, picks)}${liveRecRow(game, picks)}<a class="live-open" href="${liveEsc(page)}">Open Game Page</a><button type="button" class="live-stats" aria-label="Live stats"></button></summary>${body}</details>`;
+  return `<details class="live-game${picks.length ? " has-mine" : ""}${game.final ? " live-final" : ""}${known && liveCard.court.has(game.id) ? " live-court-only" : ""}${picks.length && liveCard.mine.has(game.id) ? " live-mine-only" : ""}${split && liveCard.off.has(game.id) ? " live-off-only" : ""}" data-id="${liveEsc(game.id)}" data-sport="${liveEsc(game.sport)}" data-match="${liveEsc(match)}"${liveZoom > 1 && liveOpen.has(game.id) ? " open" : ""}><summary><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(game.away, away > home, `${game.id}|away`)}<span class="live-at-sign">@</span>${liveSide(game.home, home > away, `${game.id}|home`)}<span class="live-clock">${liveEsc(game.clock)}</span>${game.last ? `<span class="live-last" data-k="${liveEsc(`${game.id}|last`)}">${liveEsc(game.last)}</span>` : ""}${liveHurt(game)}${liveRoot(game, picks)}${liveRecRow(game, picks)}<a class="live-open" href="${liveEsc(page)}">Open Game Page</a><button type="button" class="live-stats" aria-label="Live stats"></button>${liveCardSlider()}</summary>${body}</details>`;
 }
 
 function liveNext(next) {
@@ -208,11 +208,13 @@ function liveZoomApply(next, opts) {
   const mine = liveZoom >= 2, recs = liveZoom >= 3;
   document.body.classList.toggle("live-mine-off", !mine);
   document.body.classList.toggle("live-recs-on", recs);
+  if (opts && opts.master) {
+    liveCardZoom.clear();
+    document.querySelectorAll(".live-game[data-card-zoom]").forEach((game) => { delete game.dataset.cardZoom; });
+  }
   if (liveZoom <= 1) {
-    liveZoomUp.clear();
-    document.querySelectorAll(".live-game[open], .live-game[data-zoom]").forEach((game) => {
+    document.querySelectorAll(".live-game[open]").forEach((game) => {
       game.open = false;
-      delete game.dataset.zoom;
       if (game.dataset.id) liveOpen.delete(game.dataset.id);
     });
     try { localStorage.setItem("liveOpen", JSON.stringify([...liveOpen].slice(-40))); } catch (error) {}
@@ -230,6 +232,10 @@ function liveZoomApply(next, opts) {
 let liveOnlyMine = false;
 try { liveOnlyMine = localStorage.getItem("liveOnlyMine") === "1"; } catch (error) {}
 
+function liveCardSlider() {
+  return `<label class="live-zoom live-card-zoom"><span>Less</span><input type="range" class="live-card-range" min="0" max="${LIVE_ZOOM_MAX}" step="any" value="${liveZoom}" aria-valuemin="0" aria-valuemax="${LIVE_ZOOM_MAX}" aria-valuenow="${liveZoom}" aria-label="Show more or less on this game"/><span>More</span></label>`;
+}
+
 function liveFilters() {
   const mine = liveOnlyMine ? " checked" : "";
   const zoom = `<label class="live-zoom"><span>Less</span><input type="range" class="live-zoom-range" min="0" max="${LIVE_ZOOM_MAX}" step="any" value="${liveZoom}" aria-valuemin="0" aria-valuemax="${LIVE_ZOOM_MAX}" aria-valuenow="${liveZoom}" aria-label="Show more or less on each game"/><span>More</span></label>`;
@@ -246,7 +252,7 @@ function liveSoonCard(game) {
   const until = liveNow ? "" : (typeof gameUntilText === "function" ? gameUntilText(game.kickoff) : "");
   const meta = `<span class="live-meta">${game.total ? `<span class="live-total">O/U ${liveEsc(game.total)}</span>` : ""}${until ? `<span class="find-until live-until" data-kick="${liveEsc(game.kickoff)}">${liveEsc(until)}</span>` : ""}<a class="live-week-game" href="/?${liveEsc(new URLSearchParams({ game: game.match, from: "live" }).toString())}" title="Open this game in Build a bet">Build a bet ›</a></span>`;
   const sides = game.sport === "PGA" ? `<span class="live-side"><b>${liveEsc(game.match || "")}</b></span>` : `${liveSide(like.away, false, `${like.id}|away`)}<span class="live-at-sign">@</span>${liveSide(like.home, false, `${like.id}|home`)}`;
-  return `<div class="live-game live-soon${liveNow ? " live-pga-on" : ""}${picks.length ? " has-mine" : ""}" data-id="${liveEsc(like.id)}"><div class="live-head"><span class="live-sport">${liveEsc(game.sport)}</span>${sides}<span class="live-clock live-when">${liveEsc(day)}</span>${tag}${meta}${liveRoot(like, picks)}${liveRecRow(like, picks, open)}</div></div>`;
+  return `<div class="live-game live-soon${liveNow ? " live-pga-on" : ""}${picks.length ? " has-mine" : ""}" data-id="${liveEsc(like.id)}"><div class="live-head"><span class="live-sport">${liveEsc(game.sport)}</span>${sides}<span class="live-clock live-when">${liveEsc(day)}</span>${tag}${meta}${liveRoot(like, picks)}${liveRecRow(like, picks, open)}${liveCardSlider()}</div></div>`;
 }
 
 function liveWeekList(week) {
@@ -312,19 +318,47 @@ function livePaint(data, quiet) {
     box.querySelectorAll("[data-k]").forEach((node) => { if (was.has(node.dataset.k) && was.get(node.dataset.k) !== node.textContent) node.classList.add("live-flash"); });
     box.querySelectorAll(".live-game[data-id]:not(.live-final)").forEach((node) => { if (!games.has(node.dataset.id)) node.classList.add("live-flash"); });
   }
-  box.querySelectorAll(".live-game[data-id]").forEach((node) => { if (liveZoomUp.has(node.dataset.id)) node.dataset.zoom = "2"; });
+  box.querySelectorAll(".live-game[data-id]").forEach((node) => {
+    const level = liveCardZoom.get(node.dataset.id);
+    if (level == null) return;
+    node.dataset.cardZoom = String(level);
+    const range = node.querySelector("input.live-card-range");
+    if (range) { range.value = String(level); range.setAttribute("aria-valuenow", String(level)); }
+  });
   document.getElementById("live-at").textContent = `Updated ${new Date(data.at || Date.now()).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}`;
   liveWhoPlace();
 }
 
-const liveZoomUp = new Set();
+const liveCardZoom = new Map();
 
 function liveZoomLift(game) {
   const id = game && game.dataset.id;
   if (!id) return;
-  if (liveZoomUp.has(id)) { liveZoomUp.delete(id); delete game.dataset.zoom; return; }
-  liveZoomUp.add(id);
-  game.dataset.zoom = "2";
+  if (liveCardZoom.has(id)) { liveCardZoom.delete(id); delete game.dataset.cardZoom; return; }
+  const level = Math.min(LIVE_ZOOM_MAX, liveZoom + 1);
+  if (level === liveZoom) return;
+  liveCardZoom.set(id, level);
+  game.dataset.cardZoom = String(level);
+  const range = game.querySelector("input.live-card-range");
+  if (range) { range.value = String(level); range.setAttribute("aria-valuenow", String(level)); }
+}
+
+function liveCardMove(game, box) {
+  if (!game || !box) return;
+  const level = Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(Number(box.value) || 0)));
+  box.setAttribute("aria-valuenow", String(level));
+  game.dataset.cardZoom = String(level);
+  if (game.dataset.id) liveCardZoom.set(game.dataset.id, level);
+}
+
+function liveCardSnap(game, box) {
+  if (!game || !box) return;
+  const level = Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(Number(box.value) || 0)));
+  box.value = String(level);
+  box.setAttribute("aria-valuenow", String(level));
+  if (level === liveZoom) { if (game.dataset.id) liveCardZoom.delete(game.dataset.id); delete game.dataset.cardZoom; return; }
+  if (game.dataset.id) liveCardZoom.set(game.dataset.id, level);
+  game.dataset.cardZoom = String(level);
 }
 
 const liveWhoOpen = new Set();
@@ -427,20 +461,23 @@ document.getElementById("live").addEventListener("change", (event) => {
 document.body.classList.remove("live-mine-games");
 liveZoomApply(liveZoom);
 document.getElementById("live").addEventListener("pointerdown", (event) => {
+  if (event.target.matches("input.live-card-range")) { try { event.target.setPointerCapture(event.pointerId); } catch (error) {} return; }
   if (!event.target.matches("input.live-zoom-range")) return;
   liveZoomDrag = true;
   try { event.target.setPointerCapture(event.pointerId); } catch (error) {}
 });
 const liveZoomEnd = (event) => {
-  const box = event.target && event.target.matches && event.target.matches("input.live-zoom-range")
-    ? event.target
-    : document.querySelector("#live input.live-zoom-range");
+  const cardRange = event.target && event.target.matches && event.target.matches("input.live-card-range");
+  if (cardRange) { liveCardSnap(cardRange.closest(".live-game"), cardRange); return; }
+  const fromTop = event.target && event.target.matches && event.target.matches("input.live-zoom-range");
+  if (!fromTop && !liveZoomDrag) return;
+  const box = fromTop ? event.target : document.querySelector("#live input.live-zoom-range");
   liveZoomDrag = false;
   if (!box) return;
   const snapped = Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(Number(box.value) || 0)));
   box.value = String(snapped);
   box.setAttribute("aria-valuenow", String(snapped));
-  liveZoomApply(snapped);
+  liveZoomApply(snapped, { master: true });
 };
 document.getElementById("live").addEventListener("pointerup", liveZoomEnd);
 document.getElementById("live").addEventListener("pointercancel", liveZoomEnd);
@@ -448,13 +485,15 @@ document.getElementById("live").addEventListener("lostpointercapture", (event) =
   if (event.target.matches("input.live-zoom-range")) liveZoomEnd(event);
 });
 document.getElementById("live").addEventListener("input", (event) => {
+  if (event.target.matches("input.live-card-range")) { liveCardMove(event.target.closest(".live-game"), event.target); return; }
   if (!event.target.matches("input.live-zoom-range")) return;
   liveZoomDrag = true;
   const level = Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(Number(event.target.value) || 0)));
   event.target.setAttribute("aria-valuenow", String(level));
-  liveZoomApply(level, { quiet: true });
+  liveZoomApply(level, { quiet: true, master: true });
 });
 document.getElementById("live").addEventListener("change", (event) => {
+  if (event.target.matches("input.live-card-range")) { liveCardSnap(event.target.closest(".live-game"), event.target); return; }
   if (event.target.matches("input.live-zoom-range")) {
     liveZoomEnd(event);
     return;
@@ -466,6 +505,7 @@ document.getElementById("live").addEventListener("change", (event) => {
 });
 
 document.getElementById("live").addEventListener("click", (event) => {
+  if (event.target.closest(".live-card-zoom")) { event.preventDefault(); event.stopPropagation(); return; }
   const who = event.target.closest("button.live-name");
   if (who) {
     const game = who.closest(".live-game"), row = who.closest("tr"), id = game && liveWhoId(game.dataset.id, who.dataset.who);
@@ -496,7 +536,7 @@ document.getElementById("live").addEventListener("click", (event) => {
     if (liveLast) livePaint(liveLast, true);
     return;
   }
-  const card = event.target.closest(".live-soon"), go = card && !event.target.closest("a, button") && card.querySelector("a.live-week-game");
+  const card = event.target.closest(".live-soon"), go = card && !event.target.closest("a, button, .live-card-zoom") && card.querySelector("a.live-week-game");
   if (go) { window.location.href = go.href; return; }
   const page = event.target.closest("a.live-open");
   if (page) { event.preventDefault(); window.location.href = page.href; return; }

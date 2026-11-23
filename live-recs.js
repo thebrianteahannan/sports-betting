@@ -65,10 +65,27 @@ async function recWarm(board) {
     const games = ((board && board.games) || []).filter((game) => /^(NBA|NFL|NHL)$/.test(game.sport) && Date.parse(game.kickoff) > now && Date.parse(game.kickoff) - now < 14 * 24 * 3600000);
     const todo = games.filter((game) => { const kept = recs[`${game.match}|${game.kickoff}`]; return !kept || now - kept.at > (near(game) ? 30 * 60000 : 6 * 3600000); }).sort((a, b) => Boolean(recs[`${a.match}|${a.kickoff}`]) - Boolean(recs[`${b.match}|${b.kickoff}`]) || Date.parse(a.kickoff) - Date.parse(b.kickoff));
     if (!todo.length) return;
-    const book = await require("./choose-api").chooseBet({ list: "lookup", when: "week" }, board);
-    const people = ((book && book.people) || []).filter((person) => person.kind === "player");
+    const choose = require("./choose-api").chooseBet;
+    const [today, week] = await Promise.all([
+      choose({ list: "lookup", when: "today" }, board),
+      choose({ list: "lookup", when: "week" }, board),
+    ]);
+    const people = new Map();
+    [today, week].forEach((book) => {
+      ((book && book.people) || []).forEach((person) => {
+        if (!person || person.kind !== "player") return;
+        const have = people.get(person.key);
+        if (!have) { people.set(person.key, { ...person, bets: (person.bets || []).slice() }); return; }
+        const seen = new Set(have.bets.map((bet) => `${bet.label}|${bet.odds}|${bet.match}`));
+        (person.bets || []).forEach((bet) => {
+          const id = `${bet.label}|${bet.odds}|${bet.match}`;
+          if (!seen.has(id)) { seen.add(id); have.bets.push(bet); }
+        });
+      });
+    });
+    const players = [...people.values()];
     for (const game of todo) {
-      const props = people.flatMap((person) => (person.bets || []).filter((bet) => bet.match === game.match && /\d/.test(`${bet.market} ${bet.label}`) && !SKIP.test(`${bet.market} ${bet.label}`)).map((bet) => ({ label: bet.label, market: bet.market, odds: bet.odds, who: person.name })));
+      const props = players.flatMap((person) => (person.bets || []).filter((bet) => bet.match === game.match && /\d/.test(`${bet.market} ${bet.label}`) && !SKIP.test(`${bet.market} ${bet.label}`)).map((bet) => ({ label: bet.label, market: bet.market, odds: bet.odds, who: person.name })));
       if (!props.length) continue;
       try { await require("./game-story").gameStory({ match: game.match, kickoff: game.kickoff, props }, board); } catch (error) { console.error("live recs warm failed:", game.match, error); }
     }

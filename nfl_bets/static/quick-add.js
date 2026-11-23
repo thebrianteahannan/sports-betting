@@ -172,7 +172,7 @@ function quickAddSideOn(person) {
 function quickAddPlayers(people, sport, gameKey, game, anySide) {
   const q = quickAdd.q.trim().toLowerCase();
   return people.filter((person) => {
-    if (person.kind !== "player" || /^(any other|no )/i.test(person.name || "")) return false;
+    if (person.kind !== "player" || /^(any other|any quarter|either team|both teams|no )/i.test(person.name || "") || /\bto\b/i.test(person.name || "")) return false;
     if (q && !person.name.toLowerCase().includes(q)) return false;
     if (person.past) return anySide ? true : quickAddOnSide(person, quickAdd.side, game, people);
     const bets = (person.bets || []).filter((bet) => Number(bet.odds) && quickAddOnSport(bet, sport));
@@ -860,8 +860,8 @@ function quickAddBox(board) {
   }
   const playerCap = quickAdd.team ? 160 : (quickAdd.q.trim() ? 60 : 24);
   const splitTeams = !!(quickAdd.team && game && game.match);
-  // Both team cards always list their own players; selecting a side only highlights the header.
-  const listed = quickAddPlayers(people, quickAdd.sport, quickAdd.team, game, splitTeams);
+  // Games only, until a game is picked or a name is typed.
+  const listed = !quickAdd.team && !quickAdd.q.trim() ? [] : quickAddPlayers(people, quickAdd.sport, quickAdd.team, game, splitTeams);
   const past = quickAdd.when === "done" && game ? quickAddPastPeople(game, quickAdd.sport, listed) : [];
   const players = listed.concat(past).slice(0, playerCap);
   if (splitTeams) {

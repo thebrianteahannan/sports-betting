@@ -324,6 +324,10 @@ function manageCard(row) {
   card.tabIndex = 0;
   card.setAttribute("role", "button");
   card.title = "View bet";
+  open.addEventListener("click", (event) => {
+    event.stopPropagation();
+    openBet();
+  });
   card.addEventListener("click", (event) => {
     if (event.target.closest("button, a, input, form")) return;
     openBet();

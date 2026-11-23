@@ -4,6 +4,7 @@ let startTab = "rec", startBack = null, startUndo = null, startRandomAt = null, 
 let startFavOnly = false;
 let startHistTab = "stats";
 let startPickGames = new Set();
+let startFoldOpen = { league: false, games: false };
 const startKinds = new Set(), START_KINDS = [["safe", "Safe"], ["balanced", "Balanced"], ["payout", "Payout"], ["good", "Good bet"], ["math", "Math"], ["script", "Script"], ["solid", "Steady role"], ["cushion", "Cushion"]];
 
 function startKindOf(pick) {
@@ -439,9 +440,9 @@ window.startTdGo = startTdGo;
 function startTdButton(board, inline) {
   const games = leftGames();
   const league = typeof homeLeagueOn === "function" ? homeLeagueOn(games) : "";
-  if (league && league !== "NFL") return null;
+  if (!inline && league && league !== "NFL") return null;
   const hasNfl = games.some((game) => String(game.sport || "") === "NFL") || ((homeRecs && homeRecs.picks) || []).some((pick) => (typeof homePickSport === "function" ? homePickSport(pick) : pick.sport) === "NFL");
-  if (!hasNfl || typeof openTdPage !== "function") return null;
+  if ((!hasNfl && !(inline && startTab === "td")) || typeof openTdPage !== "function") return null;
   const go = Object.assign(document.createElement("button"), { type: "button", className: `find-start-td${inline && startTab === "td" ? " on" : ""}`, textContent: "Anytime TDs" });
   go.title = "See who is most likely to score a touchdown";
   go.setAttribute("aria-pressed", String(inline && startTab === "td"));
@@ -618,10 +619,9 @@ function startGameBar(games) {
     rows.push(game);
   });
   [...startPickGames].forEach((match) => { if (!seen.has(match)) startPickGames.delete(match); });
-  if (rows.length < 2) return null;
+  if (!rows.length) return null;
   const bar = document.createElement("span");
   bar.className = "desk-games-leagues start-game-picks";
-  bar.append(Object.assign(document.createElement("i"), { className: "start-filter-label", textContent: "Games" }));
   const all = document.createElement("button");
   all.type = "button";
   all.className = `desk-games-league${startPickGames.size ? "" : " on"}`;
@@ -642,6 +642,17 @@ function startGameBar(games) {
     bar.append(button);
   });
   return bar;
+}
+
+function startFilterFold(name, row, say) {
+  const fold = document.createElement("details");
+  fold.className = "start-filter-fold";
+  fold.open = !!startFoldOpen[name];
+  const summary = document.createElement("summary");
+  summary.textContent = say;
+  fold.append(summary, row);
+  fold.addEventListener("toggle", () => { startFoldOpen[name] = fold.open; });
+  return fold;
 }
 
 function startRecs(board, box, root) {
@@ -920,14 +931,15 @@ function startPaint(again) {
   box.dataset.stacks = startStackKey();
   const row = document.createElement("div");
   row.className = "find-start-row";
-  const leagues = typeof homeLeagues === "function" ? homeLeagues(box, leftGames()) : [];
-  leagues.forEach((node) => {
-    if (!node.querySelector(".start-filter-label")) node.prepend(Object.assign(document.createElement("i"), { className: "start-filter-label", textContent: "Leagues" }));
-  });
-  const gameBar = startGameBar(typeof leftGames === "function" ? leftGames() : []);
+  const gamesNow = typeof leftGames === "function" ? leftGames() : [];
+  const leagues = typeof homeLeagues === "function" ? homeLeagues(box, gamesNow) : [];
+  const leagueOn = typeof homeLeagueOn === "function" ? homeLeagueOn(gamesNow) : "";
+  const gameBar = startGameBar(gamesNow);
   row.append(tabs);
   if (!history && tabNow !== "td") {
-    row.append(startSpanBar(), ...leagues, ...(gameBar ? [gameBar] : []));
+    const leagueFold = leagues[0] ? startFilterFold("league", leagues[0], leagueOn ? `Leagues · ${leagueOn}` : "Leagues") : null;
+    const gameFold = gameBar ? startFilterFold("games", gameBar, startPickGames.size ? `Games · ${startPickGames.size}` : "Games") : null;
+    row.append(startSpanBar(), ...(leagueFold ? [leagueFold] : []), ...(gameFold ? [gameFold] : []));
     if (tabNow === "rec") row.append(startRandomBar(board, picks));
   }
   const dial = (tabNow === "rec" || tabNow === "parlays") && typeof recDialBar === "function" ? recDialBar(startDialCommit) : null;

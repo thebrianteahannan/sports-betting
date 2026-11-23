@@ -71,6 +71,7 @@ function bookOf(pools) {
       const bet = { ...where, label: String(leg.label || leg.runner || ""), odds: leg.odds, market: leg.market || "" };
       if (!team && /^alternate total (points|runs|goals)$/i.test(String(leg.market || "").trim())) { teams.forEach((item) => put(item.key, item.name, "team", bet)); return; }
       if (team) { put(team.key, team.name, "team", bet); return; }
+      if (/\bto\b/i.test(`${leg.runner || ""} ${leg.label || ""}`)) return;
       const key = who(leg).replace(/\s+to\b.*$/, "").trim();
       const words = key.split(" ").filter(Boolean);
       const shown = String(leg.runner || leg.label || "").split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "").replace(/\s+to\b.*$/i, "").replace(/[\s\-–—:]+$/, "").trim();
