@@ -684,18 +684,19 @@ function profileTdBet(person, kind, tip) {
   return { person, bet, label };
 }
 
-function openPlayerPop(person, list, bets, prefer) {
+function openPlayerPop(person, list, bets, prefer, anchor) {
   if (!person || person.kind !== "player") return null;
   const rows = (bets || person.bets || []).slice().sort((a, b) => findRank(b.odds) - findRank(a.odds));
   const golf = rows.some((bet) => bet.sport === "PGA");
   const key = String(person.key || person.name || "");
-  const open = document.getElementById("find-profile-pop");
-  if (open && open.dataset.key === key) { closePlayerPop(); return null; }
-  closePlayerPop();
+  if (!anchor) {
+    const open = document.getElementById("find-profile-pop");
+    if (open && open.dataset.key === key) { closePlayerPop(); return null; }
+    closePlayerPop();
+  }
   const board = list && list.closest(".find-board");
-  const pop = document.createElement("div");
-  pop.id = "find-profile-pop";
-  pop.dataset.key = key;
+  const pop = anchor ? null : document.createElement("div");
+  if (pop) { pop.id = "find-profile-pop"; pop.dataset.key = key; }
   const profile = document.createElement("div");
   profile.className = "find-profile";
   profile.setAttribute("role", "dialog");
@@ -806,11 +807,14 @@ function openPlayerPop(person, list, bets, prefer) {
     acts.append(betIt, scriptGo);
     profile.append(acts);
   }
-  pop.append(profile);
-  pop.addEventListener("click", (event) => { if (event.target === pop) closePlayerPop(); });
-  closePlayerPop.onKey = (event) => { if (event.key === "Escape") closePlayerPop(); };
-  document.addEventListener("keydown", closePlayerPop.onKey);
-  document.body.append(pop);
+  if (anchor) anchor.replaceChildren(profile);
+  else {
+    pop.append(profile);
+    pop.addEventListener("click", (event) => { if (event.target === pop) closePlayerPop(); });
+    closePlayerPop.onKey = (event) => { if (event.key === "Escape") closePlayerPop(); };
+    document.addEventListener("keydown", closePlayerPop.onKey);
+    document.body.append(pop);
+  }
   if (window.paintCard && !golf) {
     heading.after = (...nodes) => profile.append(...nodes);
     paintCard(list || profile, heading, person);

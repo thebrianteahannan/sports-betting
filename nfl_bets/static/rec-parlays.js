@@ -62,9 +62,8 @@ function recParlayPools(legs) {
     byGame.get(match).push(leg);
   });
   const pools = [];
-  byLeague.forEach((group) => pools.push(group.slice(0, 14)));
-  byGame.forEach((group) => { if (group.length >= 2) pools.push(group.slice(0, 10)); });
-  pools.push(legs.slice(0, 14));
+  byGame.forEach((group) => { if (group.length >= 2) pools.push(group); });
+  byLeague.forEach((group) => { if (group.length >= 2) pools.push(group); });
   return pools;
 }
 
@@ -102,7 +101,18 @@ function recParlayOk(legs) {
   return true;
 }
 
-function recParlayWalk(pool, n, take) {
+function recParlayWays(n, k) {
+  if (k > n || k < 0) return 0;
+  let count = 1;
+  for (let i = 1; i <= k; i += 1) count = (count * (n - k + i)) / i;
+  return count;
+}
+
+function recParlayOneGame(pool) {
+  return new Set(pool.map((leg) => String(leg.pick.match || ""))).size <= 1;
+}
+
+function recParlayWalk(pool, n) {
   const out = [];
   let best = null;
   const chosen = [];
@@ -123,7 +133,7 @@ function recParlayWalk(pool, n, take) {
   };
   walk(0);
   out.sort((a, b) => b.gap - a.gap);
-  return { rows: out.slice(0, take), best };
+  return { rows: out, best };
 }
 
 function recParlayGames() {
@@ -180,10 +190,8 @@ function recParlayStrategies(data) {
       if (typeof startFavOnly !== "undefined" && startFavOnly && typeof startFavGame === "function" && match && !startFavGame(match)) return false;
       return !match || !games.size || games.has(match);
     });
-    const fits = tier === "edge" ? live.slice(0, 1) : live.filter((stack) => stack.beats);
-    const made = fits.map((stack) => recParlayStackRow(name, stack, tier)).filter(Boolean);
-    made.sort((a, b) => (Number(b.gap) || 0) - (Number(a.gap) || 0));
-    if (made[0]) rows.push(made[0]);
+    const fits = tier === "edge" ? live : live.filter((stack) => stack.beats);
+    fits.map((stack) => recParlayStackRow(name, stack, tier)).filter(Boolean).forEach((row) => rows.push(row));
   });
   return rows;
 }
@@ -222,31 +230,6 @@ function recParlayJoin(rows) {
   return recParlayStamp(merged);
 }
 
-function recParlaySport(row) {
-  const sports = [...new Set(row.legs.map((leg) => (typeof homePickSport === "function" ? homePickSport(leg.pick) : "") || ""))];
-  return sports.length === 1 ? sports[0] : "";
-}
-
-function recParlayKeep(rows) {
-  const by = new Map();
-  rows.forEach((row) => {
-    const sport = recParlaySport(row);
-    if (!by.has(sport)) by.set(sport, []);
-    by.get(sport).push(row);
-  });
-  const kept = [];
-  const seen = new Set();
-  const add = (row) => {
-    const id = row.legs.map((leg) => String(leg.pick.label || "").toLowerCase()).sort().join("~");
-    if (seen.has(id)) return;
-    seen.add(id);
-    kept.push(row);
-  };
-  by.forEach((group) => group.sort((a, b) => (Number(b.gap) || 0) - (Number(a.gap) || 0)).slice(0, 8).forEach(add));
-  rows.slice().sort((a, b) => (Number(b.gap) || 0) - (Number(a.gap) || 0)).slice(0, 12).forEach(add);
-  return kept;
-}
-
 function recParlayRanked(board) {
   const all = recParlayLegs(board);
   const key = all.map((leg) => `${leg.pick.label}|${leg.pick.odds}|${leg.pick.hits}|${leg.pick.match}`).join("~");
@@ -257,7 +240,8 @@ function recParlayRanked(board) {
     recParlayPools(all).forEach((pool) => {
       [2, 3, 4, 5].forEach((n) => {
         if (pool.length < n) return;
-        const found = recParlayWalk(pool, n, 8);
+        if (!recParlayOneGame(pool) && recParlayWays(pool.length, n) > 60000) return;
+        const found = recParlayWalk(pool, n);
         found.rows.forEach((row) => {
           const id = row.legs.map((leg) => String(leg.pick.label || "").toLowerCase()).sort().join("~");
           if (seen.has(id)) return;
@@ -275,7 +259,7 @@ function recParlayRanked(board) {
 function recParlayBuild(board) {
   const made = recParlayRanked(board);
   const source = recParlaySize ? (made.raw || []).filter((row) => row.legs.length === recParlaySize) : (made.raw || []);
-  return { ...made, rows: recParlayJoin(recParlayKeep(source)) };
+  return { ...made, rows: recParlayJoin(source) };
 }
 
 function recParlayCount(board) {

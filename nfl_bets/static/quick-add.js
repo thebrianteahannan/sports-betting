@@ -1013,6 +1013,13 @@ function quickAddOpen() {
   const board = document.querySelector("#desk-glass-in .find-board");
   if (!board || board.dataset.page === "rec" || board.classList.contains("find-rec-page")) return;
   window.quickAddPending = false;
+  window.savePeek = false;
+  window.saveShut = true;
+  try { localStorage.setItem("savedShut", "1"); } catch (error) {}
+  quickAddReset();
+  const live = board.querySelector(".quick-add");
+  if (live) live.replaceWith(quickAddBox(board));
+  if (typeof paintParlay === "function") paintParlay();
   if (typeof startPlace === "function") startPlace();
   if (typeof startPaint === "function" && !board.querySelector(".find-start .quick-add")) startPaint();
   const box = board.querySelector(".find-start");

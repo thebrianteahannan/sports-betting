@@ -265,7 +265,8 @@
 #desk.tv-full #desk-glass .rec-board > h2 button.find-quick-go,
 #desk.tv-full #desk-glass .rec-board > h2 button.find-games-go,
 #desk.tv-full #desk-glass .rec-board > h2 button.find-hist-go { display: inline-flex; align-items: center; gap: 0.4rem; flex: none; width: auto; height: auto; min-height: 0; margin: 0; padding: 0.28rem 0.75rem; border: 1px solid #3dff6e; border-radius: 999px; background: #07140f; box-shadow: none; color: #3dff6e; font-family: Outfit, system-ui, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: normal; text-transform: none; cursor: pointer; }
-.rec-board > h2 button.find-mine-go b, #desk.tv-full #desk-glass .rec-board > h2 button.find-mine-go b { min-width: 1.15rem; padding: 0 0.35rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-style: normal; font-weight: 800; line-height: 1.35; text-align: center; }
+.rec-board > h2 button.find-mine-go, #desk.tv-full #desk-glass .rec-board > h2 button.find-mine-go { position: relative; overflow: visible; }
+.rec-board > h2 button.find-mine-go b, #desk.tv-full #desk-glass .rec-board > h2 button.find-mine-go b { position: absolute; top: 0; right: 0; z-index: 1; transform: translate(35%, -55%); min-width: 1.15rem; height: 1.15rem; padding: 0 0.28rem; border-radius: 999px; background: #3dff6e; box-shadow: 0 0 0 2px #07131a; color: #04140c; font-size: 11px; font-style: normal; font-weight: 800; line-height: 1.15rem; text-align: center; }
 .find-board.find-rec-page > h2 > button.find-quick-go,
 .find-board.find-rec-page > h2 > button.find-build-go,
 .rec-board:not(.find-rec-page) > h2 > button.find-rec-go,
@@ -331,9 +332,9 @@
 .rec-board > .find-saved > .find-saved-list { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; max-height: min(40vh, 16rem); overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .rec-board > .find-saved.find-saved-panel > .find-saved-list {
   position: absolute; top: 100%; left: 0; right: 0; z-index: 40;
-  box-sizing: border-box; margin: 0.35rem 0 0; padding: 0.55rem 0.7rem;
-  border: 1px solid rgba(61, 255, 110, 0.28); border-radius: 12px;
-  background: #07140f; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box; margin: 0.45rem 0 0; padding: 0.7rem 0.8rem;
+  border: 1px solid #3dff6e; border-radius: 12px;
+  background: #020806; box-shadow: 0 18px 48px rgba(0, 0, 0, 0.78), 0 0 0 4px rgba(2, 8, 6, 0.92);
 }
 .find-saved > p.find-say { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.5rem; min-width: 0; max-width: 100%; }
 .find-saved > p.find-say > .find-saved-pay { color: #d5deea; font-size: 0.85rem; font-weight: 600; letter-spacing: 0; text-transform: none; white-space: nowrap; }
@@ -884,40 +885,40 @@
 @media (max-width: 699px) { .find-match .find-card-inline .find-card .find-log { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .find-match .find-score .find-card-inline { margin-top: 0.45rem; }
 #find-profile-pop { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, 0.72); }
-#find-profile-pop > .find-profile { position: relative; box-sizing: border-box; width: min(560px, 100%); max-height: min(82vh, 720px); margin: 0; padding: 1rem 1rem 1.1rem; overflow: auto; overscroll-behavior: contain; border: 1px solid rgba(61, 255, 110, 0.5); border-radius: 14px; background: #07090e; box-shadow: 0 0 24px rgba(61, 255, 110, 0.2); color: #f4f7fb; }
-#find-profile-pop > .find-profile > .find-profile-x { position: absolute; top: 10px; right: 10px; width: 2.2rem; height: 2.2rem; margin: 0; padding: 0; border: 1px solid rgba(61, 255, 110, 0.7); border-radius: 8px; background: rgba(4, 16, 12, 0.92); color: #3dff6e; font-size: 1.5rem; line-height: 1; cursor: pointer; }
-#find-profile-pop > .find-profile > h3 { margin: 0 3rem 0.35rem 0; padding: 0; color: #f4f7fb; font-size: 1.35rem; font-weight: 800; line-height: 1.25; }
-#find-profile-pop > .find-profile > h3.find-profile-title { display: flex; align-items: center; gap: 0.65rem; }
-#find-profile-pop > .find-profile > h3.find-profile-title > .desk-team-logo { width: 28px; height: 28px; margin: 0; object-fit: contain; flex: none; }
-#find-profile-pop > .find-profile > h3.find-profile-title > .find-profile-who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.55rem; min-width: 0; }
-#find-profile-pop > .find-profile > h3.find-profile-title > .find-profile-who > b { font-weight: 800; }
-#find-profile-pop > .find-profile > h3 .rec-count { color: #e7c15a; font-size: 0.85em; font-weight: 700; }
-#find-profile-pop > .find-profile > .find-profile-meta { margin: 0 3rem 0.65rem 0; color: #9fb3c8; font-size: 13px; font-weight: 700; line-height: 1.35; }
-#find-profile-pop > .find-profile > .find-live.find-live-go { text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-#find-profile-pop > .find-profile > .find-profile-acts { position: static; display: flex; flex-wrap: wrap; gap: 0.4rem; max-width: none; margin: 0 0 0.75rem; }
-#find-profile-pop > .find-profile > .desk-rec-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; margin: 0 0 0.75rem; padding: 0.55rem 0 0; border-top: 1px solid rgba(61, 255, 110, 0.25); }
-#find-profile-pop > .find-profile > .desk-rec-ask i { color: #f4f7fb; font-size: 13px; font-style: normal; font-weight: 700; }
-#find-profile-pop > .find-profile > .desk-rec-ask [data-bet-go] { padding: 0.25rem 0.8rem; border: 1px solid #3dff6e; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 13px; font-weight: 800; cursor: pointer; }
-#find-profile-pop > .find-profile > .desk-rec-ask [data-bet-go="new"] { background: transparent; color: #3dff6e; }
-#find-profile-pop .find-profile > h3 i.find-rec-tag,
+:is(#find-profile-pop, .find-tray .bet-acts-seek) > .find-profile { position: relative; box-sizing: border-box; width: min(560px, 100%); max-height: min(82vh, 720px); margin: 0; padding: 1rem 1rem 1.1rem; overflow: auto; overscroll-behavior: contain; border: 1px solid rgba(61, 255, 110, 0.5); border-radius: 14px; background: #07090e; box-shadow: 0 0 24px rgba(61, 255, 110, 0.2); color: #f4f7fb; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) > .find-profile > .find-profile-x { position: absolute; top: 10px; right: 10px; width: 2.2rem; height: 2.2rem; margin: 0; padding: 0; border: 1px solid rgba(61, 255, 110, 0.7); border-radius: 8px; background: rgba(4, 16, 12, 0.92); color: #3dff6e; font-size: 1.5rem; line-height: 1; cursor: pointer; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) > .find-profile > h3 { margin: 0 3rem 0.35rem 0; padding: 0; color: #f4f7fb; font-size: 1.35rem; font-weight: 800; line-height: 1.25; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) > .find-profile > h3.find-profile-title { display: flex; align-items: center; gap: 0.65rem; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) > .find-profile > h3.find-profile-title > .desk-team-logo { width: 28px; height: 28px; margin: 0; object-fit: contain; flex: none; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) > .find-profile > h3.find-profile-title > .find-profile-who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.55rem; min-width: 0; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) > .find-profile > h3.find-profile-title > .find-profile-who > b { font-weight: 800; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) > .find-profile > h3 .rec-count { color: #e7c15a; font-size: 0.85em; font-weight: 700; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) > .find-profile > .find-profile-meta { margin: 0 3rem 0.65rem 0; color: #9fb3c8; font-size: 13px; font-weight: 700; line-height: 1.35; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) > .find-profile > .find-live.find-live-go { text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) > .find-profile > .find-profile-acts { position: static; display: flex; flex-wrap: wrap; gap: 0.4rem; max-width: none; margin: 0 0 0.75rem; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) > .find-profile > .desk-rec-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; margin: 0 0 0.75rem; padding: 0.55rem 0 0; border-top: 1px solid rgba(61, 255, 110, 0.25); }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) > .find-profile > .desk-rec-ask i { color: #f4f7fb; font-size: 13px; font-style: normal; font-weight: 700; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) > .find-profile > .desk-rec-ask [data-bet-go] { padding: 0.25rem 0.8rem; border: 1px solid #3dff6e; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 13px; font-weight: 800; cursor: pointer; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) > .find-profile > .desk-rec-ask [data-bet-go="new"] { background: transparent; color: #3dff6e; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile > h3 i.find-rec-tag,
 .rec-board .find-profile > h3 i.find-rec-tag { display: inline-flex; align-items: center; gap: 0.3rem; margin-left: 0.55rem; padding: 0.1rem 0.55rem 0.1rem 0.3rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-family: inherit; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0.04em; line-height: 1.5; text-transform: uppercase; vertical-align: middle; cursor: pointer; }
-#find-profile-pop .find-profile > h3 i.find-rec-tag::before,
+:is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile > h3 i.find-rec-tag::before,
 .rec-board .find-profile > h3 i.find-rec-tag::before { content: ""; width: 1.4em; height: 1.4em; background: url("/scene/parrot-head.webp?v=1") center / contain no-repeat; }
-#find-profile-pop .find-profile-acts > button.find-parlay,
-#find-profile-pop .find-profile-acts > button.find-game-script-go,
-#find-profile-pop .find-profile-acts > button.find-profile-bet,
-#desk.tv-full #desk-glass #find-profile-pop .find-profile-acts > button.find-parlay,
-#desk.tv-full #desk-glass #find-profile-pop .find-profile-acts > button.find-game-script-go,
-#desk.tv-full #desk-glass #find-profile-pop .find-profile-acts > button.find-profile-bet { position: static; width: auto; min-height: 0; height: auto; margin: 0; padding: 0.3rem 0.75rem; border-radius: 999px; box-shadow: none; font-size: 12px; font-weight: 800; line-height: 1.2; letter-spacing: 0; text-transform: none; cursor: pointer; }
-#find-profile-pop .find-profile-acts > button.find-profile-bet,
-#desk.tv-full #desk-glass #find-profile-pop .find-profile-acts > button.find-profile-bet { border: 1px solid #3dff6e; background: #3dff6e; color: #04140c; }
-#find-profile-pop .find-profile-acts > button.find-profile-bet:hover { background: #6bff92; }
-#find-profile-pop .find-profile-acts > button.find-parlay,
-#desk.tv-full #desk-glass #find-profile-pop .find-profile-acts > button.find-parlay { border: 0; background: #e7c15a; color: #1a1208; }
-#find-profile-pop .find-profile-acts > button.find-parlay:disabled,
-#desk.tv-full #desk-glass #find-profile-pop .find-profile-acts > button.find-parlay:disabled { background: transparent; color: #e7c15a; border: 1px solid #e7c15a; cursor: default; }
-#find-profile-pop .find-profile-acts > button.find-game-script-go,
-#desk.tv-full #desk-glass #find-profile-pop .find-profile-acts > button.find-game-script-go { border: 1px solid #3dff6e; background: transparent; color: #3dff6e; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile-acts > button.find-parlay,
+:is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile-acts > button.find-game-script-go,
+:is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile-acts > button.find-profile-bet,
+#desk.tv-full #desk-glass :is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile-acts > button.find-parlay,
+#desk.tv-full #desk-glass :is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile-acts > button.find-game-script-go,
+#desk.tv-full #desk-glass :is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile-acts > button.find-profile-bet { position: static; width: auto; min-height: 0; height: auto; margin: 0; padding: 0.3rem 0.75rem; border-radius: 999px; box-shadow: none; font-size: 12px; font-weight: 800; line-height: 1.2; letter-spacing: 0; text-transform: none; cursor: pointer; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile-acts > button.find-profile-bet,
+#desk.tv-full #desk-glass :is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile-acts > button.find-profile-bet { border: 1px solid #3dff6e; background: #3dff6e; color: #04140c; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile-acts > button.find-profile-bet:hover { background: #6bff92; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile-acts > button.find-parlay,
+#desk.tv-full #desk-glass :is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile-acts > button.find-parlay { border: 0; background: #e7c15a; color: #1a1208; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile-acts > button.find-parlay:disabled,
+#desk.tv-full #desk-glass :is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile-acts > button.find-parlay:disabled { background: transparent; color: #e7c15a; border: 1px solid #e7c15a; cursor: default; }
+:is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile-acts > button.find-game-script-go,
+#desk.tv-full #desk-glass :is(#find-profile-pop, .find-tray .bet-acts-seek) .find-profile-acts > button.find-game-script-go { border: 1px solid #3dff6e; background: transparent; color: #3dff6e; }
 #find-profile-pop .find-card { margin: 0; }
 #find-profile-pop .find-card .find-why { margin: 0 0 0.45rem; color: #e7c15a; font-size: 15px; line-height: 1.4; }
 #find-profile-pop .find-card .quiet { margin: 0 0 0.35rem; color: #9fb3c8; font-size: 14px; }
@@ -1093,15 +1094,14 @@
 :is(.rec-board, #choice-result) .find-tray .bet-acts input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; margin-top: -5px; border: 2px solid #04140c; border-radius: 50%; background: #3dff6e; cursor: grab; }
 :is(.rec-board, #choice-result) .find-tray .bet-acts input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 2px solid #04140c; border-radius: 50%; background: #3dff6e; cursor: grab; }
 :is(.rec-board, #choice-result) .find-tray[data-acts] .find-chose > button.find-leg-more { display: none !important; }
-:is(.rec-board, #choice-result) .find-tray[data-acts="0"] .find-chose > button:not(.find-out),
-:is(.rec-board, #choice-result) .find-tray[data-acts="1"] .find-chose > button:not(.find-out, .find-leg-seek),
-:is(.rec-board, #choice-result) .find-tray[data-acts="2"] .find-chose > button:not(.find-out, .find-leg-seek, .find-leg-hist),
-:is(.rec-board, #choice-result) .find-tray[data-acts="3"] .find-chose > button:not(.find-out, .find-leg-seek, .find-leg-hist, .find-leg-to) { display: none !important; }
-:is(.rec-board, #choice-result) .find-tray[data-acts="1"] .find-chose > button.find-leg-seek,
-:is(.rec-board, #choice-result) .find-tray[data-acts="2"] .find-chose > button:is(.find-leg-seek, .find-leg-hist),
-:is(.rec-board, #choice-result) .find-tray[data-acts="3"] .find-chose > button:is(.find-leg-seek, .find-leg-hist, .find-leg-to),
-:is(.rec-board, #choice-result) .find-tray[data-acts="4"] .find-chose > button:is(.find-leg-seek, .find-leg-hist, .find-leg-to, .find-leg-swap) { display: inline-flex !important; align-items: center; justify-content: center; }
-:is(.rec-board, #choice-result) .find-tray[data-acts="4"] .find-chose { flex-wrap: wrap; justify-content: flex-end; }
-:is(.rec-board, #choice-result) .find-tray[data-acts="4"] .find-chose > span { flex: 1 1 calc(100% - 2rem); }
-:is(.rec-board, #choice-result) .find-tray[data-acts="4"] .find-chose > button[data-say] { width: auto !important; height: auto !important; padding: 0.15rem 0.5rem 0.15rem 1.45rem !important; background-position: 0.28rem center !important; color: #c9d4dd !important; font-size: 11px !important; font-weight: 800 !important; letter-spacing: 0 !important; text-transform: none !important; }
-:is(.rec-board, #choice-result) .find-tray[data-acts="4"] .find-chose > button[data-say]::after { content: attr(data-say); }
+:is(.rec-board, #choice-result) .find-tray[data-acts="0"] .find-chose > button:not(.find-out) { display: none !important; }
+:is(.rec-board, #choice-result) .find-tray[data-acts="1"] .find-chose > button:is(.find-leg-seek, .find-leg-hist, .find-leg-to, .find-leg-swap),
+:is(.rec-board, #choice-result) .find-tray[data-acts="2"] .find-chose > button:is(.find-leg-seek, .find-leg-hist, .find-leg-to, .find-leg-swap),
+:is(.rec-board, #choice-result) .find-tray[data-acts="3"] .find-chose > button:is(.find-leg-seek, .find-leg-hist, .find-leg-to, .find-leg-swap),
+:is(.rec-board, #choice-result) .find-tray[data-acts="4"] .find-chose > button:is(.find-leg-seek, .find-leg-hist, .find-leg-to, .find-leg-swap),
+:is(.rec-board, #choice-result) .find-tray[data-acts="5"] .find-chose > button:is(.find-leg-seek, .find-leg-hist, .find-leg-to, .find-leg-swap) { display: inline-flex !important; align-items: center; justify-content: center; }
+.find-tray .bet-acts-seek { margin: 0.35rem 0 0.7rem; }
+.find-tray .bet-acts-seek > .find-profile > .find-profile-x { display: none; }
+:is(.rec-board, #choice-result) .find-tray[data-acts] .find-chose:has(> button.find-leg-more) > button.find-out,
+:is(.rec-board, #choice-result) .find-tray[data-acts] .find-chose > button.find-out { display: inline-flex !important; align-items: center; justify-content: center; }
+:is(.rec-board, #choice-result) .find-tray[data-acts]:not([data-acts="0"]) .find-chose:has(> button.find-leg-more) > button:is(.find-leg-seek, .find-leg-hist, .find-leg-to, .find-leg-swap) { display: inline-flex !important; align-items: center; justify-content: center; }

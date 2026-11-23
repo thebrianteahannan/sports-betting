@@ -413,11 +413,57 @@ function legSwapBox(key, mode) {
   return box;
 }
 
-let betActs = 4;
+let betActs = 1;
 try {
-  const saved = Number(localStorage.getItem("betActs"));
-  if (Number.isFinite(saved)) betActs = Math.max(0, Math.min(4, Math.round(saved)));
+  if (localStorage.getItem("betActsVer") === "2") {
+    const saved = Number(localStorage.getItem("betActs"));
+    if (Number.isFinite(saved)) betActs = Math.max(0, Math.min(5, Math.round(saved)));
+  } else {
+    localStorage.setItem("betActsVer", "2");
+    localStorage.setItem("betActs", "1");
+  }
 } catch (error) {}
+let betActsHeld = false;
+
+function betActsSync() {
+  window.betActsNow = betActs;
+  if (typeof legSwapOpen === "undefined") return;
+  const keys = [...document.querySelectorAll(".find-tray .find-chose[data-key]")].map((line) => line.dataset.key).filter((key) => key && typeof parlayLeg !== "undefined" && parlayLeg.has(key));
+  keys.forEach((key) => {
+    if (betActs === 5) legSwapOpen.set(key, "swap");
+    else if (betActsHeld && legSwapOpen.get(key) === "swap") legSwapOpen.delete(key);
+  });
+  betActsHeld = betActs === 5;
+}
+
+function betActsSeek() {
+  if (betActs !== 2) {
+    document.querySelectorAll(".find-tray .bet-acts-seek").forEach((node) => node.remove());
+    return;
+  }
+  const keep = new Set();
+  document.querySelectorAll(".find-tray .find-chose[data-key]").forEach((line) => {
+    const who = line.querySelector("span i.who");
+    const name = who ? who.textContent : "";
+    if (!name || !line.dataset.key) return;
+    keep.add(line.dataset.key);
+    let box = line.nextElementSibling;
+    if (!box || !box.classList.contains("bet-acts-seek")) {
+      box = document.createElement("div");
+      box.className = "bet-acts-seek";
+      line.after(box);
+    }
+    if (box.dataset.who === name && box.querySelector(".find-profile")) return;
+    box.dataset.who = name;
+    const person = typeof legSeekPerson === "function" ? legSeekPerson(name) : null;
+    const board = line.closest(".find-board");
+    if (person && typeof openPlayerPop === "function") openPlayerPop(person, board && board.querySelector(".find-list"), null, null, box);
+  });
+  document.querySelectorAll(".find-tray .bet-acts-seek").forEach((node) => {
+    const line = node.previousElementSibling;
+    if (!line || !keep.has(line.dataset.key)) node.remove();
+  });
+}
 
 function betActsApply() {
   document.querySelectorAll(".find-tray").forEach((tray) => {
@@ -425,12 +471,15 @@ function betActsApply() {
     if (say && !say.querySelector(".bet-acts")) {
       const bar = document.createElement("label");
       bar.className = "bet-acts";
-      bar.innerHTML = `<span>Less</span><input type="range" min="0" max="4" step="1" value="${betActs}" aria-label="Show more of the leg tools"><span>More</span>`;
+      bar.innerHTML = `<span>Less</span><input type="range" min="0" max="5" step="1" value="${betActs}" aria-label="Show more of the leg tools"><span>More</span>`;
       bar.querySelector("input").addEventListener("input", (event) => {
         betActs = Number(event.target.value);
-        try { localStorage.setItem("betActs", String(betActs)); } catch (error) {}
+        try { localStorage.setItem("betActsVer", "2"); localStorage.setItem("betActs", String(betActs)); } catch (error) {}
         document.querySelectorAll(".find-tray").forEach((node) => { node.dataset.acts = String(betActs); });
         document.querySelectorAll(".bet-acts input").forEach((box) => { box.value = String(betActs); });
+        if (typeof legSwapPaint === "function") legSwapPaint();
+        if (typeof legHistPaint === "function") legHistPaint();
+        if (typeof legMenuPaint === "function") legMenuPaint();
       });
       const fold = say.querySelector(".find-fold");
       if (fold) fold.before(bar); else say.append(bar);
@@ -441,10 +490,14 @@ function betActsApply() {
       if (say) button.dataset.say = say;
     });
   });
+  betActsSeek();
+  if (betActs === 4 && typeof legMenuPaint === "function") legMenuPaint();
 }
+window.betActsNow = betActs;
 window.betActsApply = betActsApply;
 
 function legSwapPaint() {
+  betActsSync();
   document.querySelectorAll(".find-tray button.find-leg-hist").forEach((hist) => {
     const key = hist.dataset.key;
     let swap = hist.parentElement.querySelector("button.find-leg-swap");
