@@ -490,6 +490,15 @@ function quickAddValues(person, sport, prop, gameKey) {
   return rows.sort((a, b) => Number(quickAddBetRec(b.bet)) - Number(quickAddBetRec(a.bet)) || a.num - b.num || Number(a.under) - Number(b.under) || Number(a.bet.odds) - Number(b.bet.odds));
 }
 
+function quickAddRecPick(bet) {
+  if (!bet) return null;
+  const stored = typeof scriptRecAll !== "undefined" ? scriptRecAll.get(`${bet.label}|${bet.market}`) : null;
+  const picks = (typeof homeRecs !== "undefined" && homeRecs && homeRecs.picks) || [];
+  const pick = picks.find((row) => row && row.label === bet.label && String(row.market || "") === String(bet.market || ""));
+  if (!stored && !pick) return null;
+  return { odds: bet.odds, label: bet.label, market: bet.market, match: bet.match, ...(pick || {}), ...(stored || {}) };
+}
+
 function quickAddLineButton(person, bet, on, go) {
   const price = Number(bet.odds);
   const button = document.createElement("button");
@@ -509,13 +518,31 @@ function quickAddLineButton(person, bet, on, go) {
     `<i class="prop">${esc(what)}</i>`,
   ].filter(Boolean).join("");
   button.append(inner);
-  const rec = typeof scriptRecPill === "function" && scriptRecPill(bet);
-  if (rec) inner.append(rec);
-  else if (quickAddBetRec(bet)) {
+  const pick = quickAddRecPick(bet);
+  if (pick && typeof scriptKindTag === "function") {
+    const good = pick.tier === "good";
     const pill = document.createElement("i");
-    pill.className = "find-rec-pill";
-    pill.textContent = "Recommended";
+    pill.className = `find-rec-pill${good ? " good" : ""}`;
+    pill.textContent = good ? "Good bet" : "Recommended";
+    if (typeof scriptKindSay === "function") pill.title = scriptKindSay(pick).tip;
     inner.append(pill);
+    const hold = document.createElement("span");
+    hold.innerHTML = [
+      scriptKindTag(pick),
+      typeof scriptRoleTag === "function" ? scriptRoleTag(pick) : "",
+      typeof scriptCushionTag === "function" ? scriptCushionTag(pick) : "",
+      typeof scriptGoldenTag === "function" ? scriptGoldenTag(pick) : "",
+    ].filter(Boolean).join("");
+    [...hold.children].forEach((node) => inner.append(node));
+  } else {
+    const rec = typeof scriptRecPill === "function" && scriptRecPill(bet);
+    if (rec) inner.append(rec);
+    else if (quickAddBetRec(bet)) {
+      const pill = document.createElement("i");
+      pill.className = "find-rec-pill";
+      pill.textContent = "Recommended";
+      inner.append(pill);
+    }
   }
   if (bet.sport === "NBA" && person.kind !== "team" && typeof proofOf === "function" && typeof proofPill === "function") {
     const tip = proofOf(person.name, bet.market, bet.label, bet.odds);

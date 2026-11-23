@@ -334,9 +334,9 @@ function homeRecRow(pick, index, opts) {
   const clear = recordShown != null && Number.isFinite(needN) ? Math.round((recordShown - needN) * 10) / 10 : null;
   const clearText = clear == null ? "" : `${clear > 0 ? "+" : ""}${clear.toFixed(1)}%`;
   const pay = [record && `<i class="hit">${esc(record)}</i>`, clearText && `<i class="clear ${clear > 0 ? "up" : clear < 0 ? "down" : ""}">${esc(clearText)}</i>`, `<i class="px">${esc(price)}</i>`, pct && `<i class="pct">${esc(pct)}</i>`, cash && `<i class="pay">${esc(`$5 profits ${cash}`)}</i>`, star].filter(Boolean).join("");
-  const goldenTip = "Golden Ticket: even money at the book, and it has hit 60% or more.";
-  const silverTip = "Silver Ticket: the next even-money pick that has hit 60% or more.";
-  const bronzeTip = "Bronze Ticket: the third even-money pick that has hit 60% or more.";
+  const goldenTip = "Golden Ticket: −120 to +120, and it has hit 60% or more.";
+  const silverTip = "Silver Ticket: −150 to +150, and it has hit 55% or more.";
+  const bronzeTip = "Bronze Ticket: −200 to +200, and it has hit 50% or more.";
   const ticketTag = golden
     ? `<i class="desk-rec-golden-tag" title="${esc(goldenTip)}" data-tip="${esc(goldenTip)}">Golden Ticket</i>`
     : silver

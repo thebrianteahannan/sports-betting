@@ -67,11 +67,6 @@ function recDialPrice(odds) {
   return n > 0 ? `+${n}` : `−${Math.abs(n)}`;
 }
 
-function recDialEven(odds) {
-  const o = Number(odds);
-  return Number.isFinite(o) && o >= -120 && o <= 120;
-}
-
 function recDialRate(pick) {
   const hits = Number(pick && pick.hits);
   const n = Number(pick && pick.n);
@@ -79,10 +74,11 @@ function recDialRate(pick) {
   return hits / n;
 }
 
-function recDialGap(odds) {
+function recDialFit(odds, min, max) {
   const o = Number(odds);
-  if (o < -120) return -120 - o;
-  if (o > 120) return o - 120;
+  if (!Number.isFinite(o)) return Infinity;
+  if (o < min) return min - o;
+  if (o > max) return o - max;
   return 0;
 }
 
@@ -101,18 +97,19 @@ function recDialWhen(pick) {
 let recDialPicks = [];
 
 function recDialWhy(kind) {
+  const bar = kind === "metals" ? { min: -200, max: 200, rate: 0.5 } : { min: -120, max: 120, rate: 0.6 };
   const rows = (recDialPicks || []).filter((pick) => pick && pick.label && recDialRate(pick) != null);
   const days = rows.map(recDialDay).filter(Boolean).sort();
   const slate = days[0] || "";
   const here = slate ? rows.filter((pick) => recDialDay(pick) === slate) : rows;
-  const hot = here.filter((pick) => recDialRate(pick) >= 0.6).sort((a, b) => recDialGap(a.odds) - recDialGap(b.odds) || recDialRate(b) - recDialRate(a));
-  const even = here.filter((pick) => recDialEven(pick.odds)).sort((a, b) => recDialRate(b) - recDialRate(a));
-  const later = rows.filter((pick) => recDialEven(pick.odds) && recDialRate(pick) >= 0.6 && (!slate || recDialDay(pick) !== slate));
+  const hot = here.filter((pick) => recDialRate(pick) >= bar.rate).sort((a, b) => recDialFit(a.odds, bar.min, bar.max) - recDialFit(b.odds, bar.min, bar.max) || recDialRate(b) - recDialRate(a));
+  const inside = here.filter((pick) => recDialFit(pick.odds, bar.min, bar.max) === 0).sort((a, b) => recDialRate(b) - recDialRate(a));
+  const later = rows.filter((pick) => recDialFit(pick.odds, bar.min, bar.max) === 0 && recDialRate(pick) >= bar.rate && (!slate || recDialDay(pick) !== slate));
   let lead = "No pick on the next slate has 5 games on the record.";
-  if (hot[0] && recDialGap(hot[0].odds) > 0) lead = `${hot[0].label} has hit in ${hot[0].hits} of ${hot[0].n}, but the price is ${recDialPrice(hot[0].odds)}.`;
-  else if (even[0]) lead = `${even[0].label} is ${recDialPrice(even[0].odds)}, but that has hit ${Math.round(recDialRate(even[0]) * 100)}%.`;
+  if (hot[0] && recDialFit(hot[0].odds, bar.min, bar.max) > 0) lead = `${hot[0].label} has hit in ${hot[0].hits} of ${hot[0].n}, but the price is ${recDialPrice(hot[0].odds)}.`;
+  else if (inside[0]) lead = `${inside[0].label} is ${recDialPrice(inside[0].odds)}, but that has hit ${Math.round(recDialRate(inside[0]) * 100)}%.`;
   const rule = kind === "metals"
-    ? "A Golden, Silver, or Bronze ticket has to be between −120 and +120, and it has to have hit 60% or more."
+    ? "Golden is −120 to +120 and 60% or more. Silver is −150 to +150 and 55% or more. Bronze is −200 to +200 and 50% or more."
     : "A Golden Ticket has to be between −120 and +120, and it has to have hit 60% or more.";
   const next = later[0];
   const after = next ? ` ${next.label} is ${recDialPrice(next.odds)} and has hit in ${next.hits} of ${next.n}${recDialWhen(next) ? ` on ${recDialWhen(next)}` : ""}.` : "";

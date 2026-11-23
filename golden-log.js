@@ -15,16 +15,18 @@ function dayKey(when) {
   return new Date(stamp - 6 * 3600000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 }
 
-function inBand(odds) {
-  const o = Number(odds);
-  // A coin flip at the book: about 45% to 55%, so the profit is close to the stake.
-  return Number.isFinite(o) && o >= -120 && o <= 120;
-}
+const TICKET = {
+  golden: { min: -120, max: 120, rate: 0.6 },
+  silver: { min: -150, max: 150, rate: 0.55 },
+  bronze: { min: -200, max: 200, rate: 0.5 },
+};
 
-function ticketOk(pick) {
+function ticketOk(pick, place) {
+  const bar = TICKET[place] || TICKET.golden;
   const hits = Number(pick && pick.hits);
   const n = Number(pick && pick.n);
-  return inBand(pick && pick.odds) && n >= 5 && hits / n >= 0.6;
+  const odds = Number(pick && pick.odds);
+  return Number.isFinite(odds) && odds >= bar.min && odds <= bar.max && n >= 5 && hits / n >= bar.rate;
 }
 
 function placeOf(row) {
@@ -103,7 +105,7 @@ async function save(row) {
 async function retireOpen() {
   const have = await load(true);
   for (const row of [...have.values()]) {
-    if (row.result || ticketOk(row)) continue;
+    if (row.result || ticketOk(row, placeOf(row))) continue;
     const k = KEY + encodeURIComponent(row.id);
     await kv(`?k=eq.${encodeURIComponent(k)}`, { method: "DELETE", prefer: "return=minimal" });
     book.delete(row.id);
@@ -116,8 +118,8 @@ async function note(pick, place) {
   const spot = place === "silver" || place === "bronze" ? place : "golden";
   const have = await load(true);
   const day = dayKey(pick.kickoff || Date.now());
-  if ([...have.values()].some((row) => placeOf(row) === spot && dayKey(row.kickoff || row.markedAt) === day && (row.result || ticketOk(row)))) return;
-  if (!ticketOk(pick)) return;
+  if ([...have.values()].some((row) => placeOf(row) === spot && dayKey(row.kickoff || row.markedAt) === day && (row.result || ticketOk(row, spot)))) return;
+  if (!ticketOk(pick, spot)) return;
   const id = idOf(pick);
   if (have.has(id)) return;
   await save({ ...snap(pick), place: spot });
@@ -137,16 +139,16 @@ async function choose(ranked) {
   const savedToday = heldDay(have.values(), today);
   const slate = (savedToday.golden || savedToday.silver || savedToday.bronze) ? today : ([...days.keys()].sort()[0] || today);
   const saved = heldDay(have.values(), slate);
-  const pool = (days.get(slate) || []).filter((pick) => ticketOk(pick));
+  const slatePicks = days.get(slate) || [];
   const taken = new Set();
   const pickFor = (spot) => {
     const row = saved[spot];
-    if (row && (row.result || ticketOk(row))) {
+    if (row && (row.result || ticketOk(row, spot))) {
       const live = list.find((pick) => idOf(pick) === row.id) || row;
       taken.add(row.id || idOf(live));
       return live;
     }
-    const next = pool.find((pick) => !taken.has(idOf(pick)));
+    const next = slatePicks.find((pick) => !taken.has(idOf(pick)) && ticketOk(pick, spot));
     if (next) taken.add(idOf(next));
     return next || null;
   };

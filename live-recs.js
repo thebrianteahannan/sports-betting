@@ -47,7 +47,7 @@ function recRecord(match, kickoff, story) {
     const id = `${pick.label}|${pick.market}`;
     if (!pick.label || seen.has(id)) return false;
     seen.add(id); return true;
-  }).map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, who: pick.who, kind: pick.kind || "", basis: pick.basis || "", tier: pick.tier || "", drop: pick.drop || "", hits: pick.hits, n: pick.n, need: pick.need }));
+  }).map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, who: pick.who, kind: pick.kind || "", basis: pick.basis || "", tier: pick.tier || "", drop: pick.drop || "", hits: pick.hits, n: pick.n, need: pick.need, role: pick.role || "", cushion: !!pick.cushion, cushionRoom: pick.cushion ? pick.cushionRoom : null, cushionPct: pick.cushion ? pick.cushionPct : null, avg: pick.avg, reach: pick.reach, how: pick.how || "" }));
   if (!picks.length) return;
   recs[`${match}|${kickoff}`] = { match, kickoff, at: Date.now(), picks, story };
   save(`${match}|${kickoff}`);
@@ -77,7 +77,13 @@ async function recWarm(board) {
 
 async function recsList() {
   await pull();
-  return Object.values(recs).flatMap((row) => (row.picks || []).map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, kind: pick.kind || "", basis: pick.basis || "", tier: pick.tier || "", drop: pick.drop || "", hits: pick.hits, n: pick.n, need: pick.need, match: row.match, kickoff: row.kickoff })));
+  return Object.values(recs).flatMap((row) => {
+    const full = new Map(((((row.story || {}).bets || {}).picks) || []).map((pick) => [`${pick.label}|${pick.market}`, pick]));
+    return (row.picks || []).map((pick) => {
+      const src = full.get(`${pick.label}|${pick.market}`) || pick;
+      return { label: pick.label, market: pick.market, odds: pick.odds, kind: src.kind || pick.kind || "", basis: src.basis || pick.basis || "", tier: src.tier || pick.tier || "", drop: src.drop || pick.drop || "", hits: src.hits != null ? src.hits : pick.hits, n: src.n != null ? src.n : pick.n, need: src.need != null ? src.need : pick.need, role: src.role || pick.role || "", cushion: !!(src.cushion || pick.cushion), cushionRoom: (src.cushion || pick.cushion) ? (src.cushionRoom != null ? src.cushionRoom : pick.cushionRoom) : null, cushionPct: (src.cushion || pick.cushion) ? (src.cushionPct != null ? src.cushionPct : pick.cushionPct) : null, avg: src.avg != null ? src.avg : pick.avg, reach: src.reach != null ? src.reach : pick.reach, how: src.how || pick.how || "", match: row.match, kickoff: row.kickoff };
+    });
+  });
 }
 
 function recStory(match, kickoff) {

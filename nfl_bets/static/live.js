@@ -29,12 +29,45 @@ function liveKindTag(pick) {
   return `<i class="bet-kind k-${pick.kind || liveKindOf(pick.odds)}" title="${liveEsc(`${kind[1]}${basis ? ` ${basis[1]}` : ""}`)}">${liveEsc(`${kind[0]}${basis ? ` · ${basis[0]}` : ""}`)}</i>`;
 }
 
+function liveRoleTag(pick) {
+  if (!pick || (pick.role !== "solid" && pick.role !== "thin")) return "";
+  const solid = pick.role === "solid";
+  const tip = solid ? "His minutes and role look locked in." : "His minutes are thin, so the opportunity can vanish.";
+  return `<i class="bet-kind k-role-${solid ? "solid" : "thin"}" title="${liveEsc(tip)}">${solid ? "Steady role" : "Thin role"}</i>`;
+}
+
+function liveCushionTag(pick) {
+  if (!pick || !pick.cushion) return "";
+  const n1 = (value) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return "";
+    return Math.abs(n - Math.round(n)) < 0.05 ? String(Math.round(n)) : n.toFixed(1).replace(/\.0$/, "");
+  };
+  const avg = Number(pick.avg), line = Number(pick.reach), room = Number(pick.cushionRoom), pct = Number(pick.cushionPct);
+  const tip = [avg, line, room, pct].every(Number.isFinite)
+    ? `Cushion: averages ${n1(avg)} vs line ${n1(line)} (+${n1(room)}, ${Math.round(pct * 100)}%). Soft night can still cash.`
+    : "Cushion: he has room above the line, so a soft night can still cash.";
+  return `<i class="bet-kind k-cushion" title="${liveEsc(tip)}">Cushion</i>`;
+}
+
+function liveTags(pick) {
+  if (!pick) return "";
+  return `${liveKindTag(pick)}${liveRoleTag(pick)}${liveCushionTag(pick)}`;
+}
+
+function liveRecTwin(game, pick) {
+  const rows = liveMine(game, liveRecs);
+  return rows.find((row) => row.label === pick.label && String(row.market || "") === String(pick.market || ""))
+    || rows.find((row) => liveFold(row.who) === liveFold(pick.who) && row.text === pick.text)
+    || null;
+}
+
 function liveRoot(game, picks, rec, show) {
   if (!picks.length) return "";
   const one = (pick) => {
     const price = Number.isFinite(pick.odds) ? ` ${pick.odds > 0 ? `+${pick.odds}` : pick.odds}` : "";
     const { state, say, level, tip } = liveLegState(game, pick);
-    const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${rec ? liveKindTag(pick) : ""}${say ? `<i class="now${level ? ` pace-${level}` : ""}"${tip ? ` title="${liveEsc(tip)}"` : ""} data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}`;
+    const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${liveTags(rec ? pick : liveRecTwin(game, pick))}${say ? `<i class="now${level ? ` pace-${level}` : ""}"${tip ? ` title="${liveEsc(tip)}"` : ""} data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}`;
     const href = `/?${new URLSearchParams({ game: pick.match, ...(pick.parlay ? { bet: pick.parlay } : {}), label: pick.label, market: pick.market, from: "live" })}`;
     return `<a class="live-mine-leg ${state}" href="${liveEsc(href)}" title="Open this bet in Build a bet">${inner}</a>`;
   };

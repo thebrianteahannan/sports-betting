@@ -36,6 +36,10 @@
 .find-board .quick-add-line i.find-rec-pill.good { background: #e7c15a; color: #1a1400; }
 .find-board .quick-add-line i.find-rec-pill::before { content: ""; width: 1.3em; height: 1.3em; background: url("/scene/parrot-head-tight.webp?v=1") center / contain no-repeat; }
 .find-board .quick-add-line i.prop:has(+ i.find-rec-pill) { flex: 0 1 auto; }
+.find-board .quick-add-line i.bet-kind { margin: 0; }
+.find-board .quick-add-line :is(.desk-rec-golden-tag, .desk-rec-silver-tag, .desk-rec-bronze-tag) { display: inline-block; margin: 0; padding: 0 0.45rem; border-radius: 999px; background: #e7c15a; color: #1a1400; font-size: 0.66rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.5; text-transform: uppercase; }
+.find-board .quick-add-line .desk-rec-silver-tag { background: #d5deea; color: #12181f; }
+.find-board .quick-add-line .desk-rec-bronze-tag { background: #d0894f; color: #1a1006; }
 .find-board .quick-add-line i.find-proof { display: inline-block; align-self: center; margin: 0 0 0 0.3rem; padding: 0 0.4rem; border: 1px solid #49d3ff; border-radius: 999px; color: #49d3ff; font-size: 0.66rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.45; text-transform: uppercase; white-space: nowrap; cursor: help; }
 :is(.rec-board, #choice-result) :is(.find-start, .find-new) .quick-add-chip { display: inline-flex !important; align-items: center; gap: 0.35rem; width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.4rem 0.85rem !important; border: 1px solid rgba(61, 255, 110, 0.45) !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #d8ffe4 !important; font-size: 13px !important; font-weight: 700 !important; letter-spacing: normal !important; line-height: 1.3 !important; text-transform: none !important; cursor: pointer; }
 :is(.rec-board, #choice-result) :is(.find-start, .find-new) .quick-add-chip.on { background: #3dff6e !important; color: #04140c !important; }
