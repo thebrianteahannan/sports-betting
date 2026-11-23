@@ -327,4 +327,5 @@ button.rec-dial-next[hidden] { display: none !important; }
 .rec-parlay-why { margin: 0; color: #d5deea; font-size: 14px; font-weight: 650; line-height: 1.35; }
 .rec-parlay-legs { margin: 0; padding: 0 0 0 1.1rem; color: #c4cde0; font-size: 13px; font-weight: 650; line-height: 1.45; }
 :is(.rec-board, #choice-result) .find-start button.rec-parlay-bet { width: fit-content !important; min-height: 0 !important; margin: 0.2rem 0 0 !important; padding: 0.4rem 0.9rem !important; border: 0 !important; border-radius: 999px !important; background: #3dff6e !important; box-shadow: none !important; color: #04140c !important; font-size: 14px !important; font-weight: 800 !important; letter-spacing: normal !important; text-transform: none !important; cursor: pointer; }
-:is(.rec-board, #choice-result) .find-start button.rec-parlay-bet.on { border: 1px solid #3dff6e !important; background: transparent !important; color: #3dff6e !important; cursor: default; }
+:is(.rec-board, #choice-result) .find-start button.rec-parlay-bet.on { border: 1px solid #3dff6e !important; background: transparent !important; color: #3dff6e !important; cursor: pointer; }
+:is(.rec-board, #choice-result) .find-start button.rec-parlay-bet.on:hover { background: rgba(61, 255, 110, 0.12) !important; }

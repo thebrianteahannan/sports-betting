@@ -370,6 +370,14 @@ function manageFill(board) {
     const say = document.createElement("p");
     say.textContent = list.length ? "Nothing in this filter." : "No bets saved yet.";
     none.append(say);
+    if (!list.length) {
+      const start = document.createElement("button");
+      start.type = "button";
+      start.className = "manage-start";
+      start.textContent = "Start a new bet";
+      start.addEventListener("click", () => { if (typeof quickAddOpen === "function") quickAddOpen(); });
+      none.append(start);
+    }
     board.append(none);
     return;
   }

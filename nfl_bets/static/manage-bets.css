@@ -756,6 +756,28 @@
   color: #9fb3c8 !important;
   font-size: 15px !important;
 }
+#desk.tv-full #desk-glass .manage-board button.manage-start,
+.manage-board button.manage-start {
+  width: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0.35rem 0.9rem !important;
+  border: 1px solid #3dff6e !important;
+  border-radius: 999px !important;
+  background: #3dff6e !important;
+  box-shadow: none !important;
+  color: #04140c !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  cursor: pointer;
+}
+#desk.tv-full #desk-glass .manage-board button.manage-start:hover,
+.manage-board button.manage-start:hover {
+  background: #6bff92 !important;
+  filter: none !important;
+}
 
 .find-saved-chip.locked > button > i.lock {
   color: #e7c15a;

@@ -327,6 +327,11 @@ function recParlayCard(board, row) {
   go.className = "rec-parlay-bet";
   go.textContent = "Bet it";
   go.addEventListener("click", () => {
+    if (go.classList.contains("on")) {
+      if (typeof birdMenu === "function") birdMenu("manage");
+      else if (typeof paintFind === "function") { window.saveGone = false; window.saveShut = false; paintFind(); }
+      return;
+    }
     if (document.body.classList.contains("needs-member")) {
       const join = document.getElementById("gate-join");
       if (join) join.click();
@@ -336,7 +341,6 @@ function recParlayCard(board, row) {
     if (legs.some((leg) => !leg) || typeof startRandomAdd !== "function") return;
     if (!startRandomAdd(board, legs, 5, true)) return;
     go.textContent = "Added to My Bets";
-    go.disabled = true;
     go.classList.add("on");
   });
   card.append(head, ...(pay.innerHTML ? [pay] : []), why, list, go);
