@@ -297,7 +297,7 @@ function fantasyLeaguePicker(board) {
       ? (needs
         ? `<span class="league-tags">${tags.map((tag) => `<i class="league-tag ${fantasyEsc(tag.id)}">${fantasyEsc(tag.label)}</i>`).join("")}</span>`
         : `<span class="league-tags"><i class="league-tag ok">All set</i></span>`)
-      : `<span>${fantasyEsc(league.status || "in season")}</span>`;
+      : "";
     btn.innerHTML = `<b>${fantasyEsc(league.name)}</b>${fantasyMatchLine(league.league_id)}${tagHtml}`;
     btn.addEventListener("click", () => fantasyRun(board, league.league_id));
     box.append(btn);
@@ -791,6 +791,7 @@ function paintFantasy(keep, opts) {
 
   if (fantasyState.leagues.length) {
     fantasyLeaguePicker(board);
+    if (!fantasyState.checks && !fantasyState.checking) fantasyCheckAll(board);
     return;
   }
 

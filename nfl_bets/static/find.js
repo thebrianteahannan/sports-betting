@@ -396,6 +396,7 @@ function plainName(name) {
 function closePlayerPop() {
   const pop = document.getElementById("find-profile-pop");
   if (pop) pop.remove();
+  document.querySelectorAll(".manage-search-keep").forEach((host) => host.replaceChildren());
   if (closePlayerPop.onKey) {
     document.removeEventListener("keydown", closePlayerPop.onKey);
     closePlayerPop.onKey = null;
@@ -1198,7 +1199,8 @@ function showFind(list, hits, person, roster, people, keep, kind, tip) {
   const board = list && list.closest(".find-board"); if (board) board.classList.remove("find-td-on");
   list.replaceChildren(); list.classList.remove("find-only-on", "find-td-board");
   if (person.kind === "player" && !golf) {
-    openPlayerPop(person, list, bets, profileTdBet(person, kind, tip));
+    const profile = openPlayerPop(person, list, bets, profileTdBet(person, kind, tip));
+    if (profile && typeof manageSearchTake === "function") manageSearchTake(profile);
     return;
   }
   // Team / game search: THE GAME above already has team bets and player bets.

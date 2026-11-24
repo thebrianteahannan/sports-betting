@@ -1,24 +1,29 @@
 /** Manage My Bets: every saved ticket, lock-as-placed, stake and line edits. */
 
 let manageFilter = "all";
-const MANAGE_ZOOM_MAX = 4;
+const MANAGE_ZOOM_MAX = 5;
 let manageZoom = (() => {
   try {
     const raw = localStorage.getItem("manageZoom");
     const ver = localStorage.getItem("manageZoomVer");
     let n = Number(raw);
     if (Number.isFinite(n)) {
-      // v8 adds a collapsed parlay in front of the leg list.
-      if (ver !== "8") {
+      // v8 adds a collapsed parlay. v9 added history, then search. v10 moves history to the profile.
+      if (ver !== "10" && ver !== "9" && ver !== "8") {
         if (ver !== "7") {
           if (ver !== "6") n = n >= 1 ? 1 : 0;
           n = Math.max(0, Math.min(3, Math.round(n)));
         }
         n = Math.min(4, Math.round(n) + 1);
-        localStorage.setItem("manageZoom", String(n));
-        localStorage.setItem("manageZoomVer", "8");
       }
-      return Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(n)));
+      if (ver === "9") {
+        if (n >= 6) n = 5;
+        else if (n === 5) n = 4;
+      }
+      n = Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(n)));
+      localStorage.setItem("manageZoom", String(n));
+      localStorage.setItem("manageZoomVer", "10");
+      return n;
     }
   } catch (error) {}
   return 0;
@@ -38,6 +43,7 @@ function manageZoomApply(next, opts) {
     });
   }
   try { localStorage.setItem("manageZoom", String(manageZoom)); } catch (error) {}
+  if (!(opts && opts.filling)) manageZoomExtras();
 }
 
 function manageZoomBar() {
@@ -361,6 +367,7 @@ function manageCard(row, n) {
   num.textContent = String(n);
   card.append(num, legsBox, acts, manageTags(legs), manageSlip(row));
   if (fold) card.insertBefore(fold, acts);
+  if (typeof bankCard === "function") bankCard(card, row);
   const openBet = () => {
     if (row.id === window.parlayOpenId) {
       if (typeof saveCollapseForBet === "function") saveCollapseForBet();
@@ -391,6 +398,9 @@ function manageCard(row, n) {
 
 
 function manageFill(board) {
+  const page = board.closest(".find-board");
+  const kept = page && page.querySelector(".manage-search-keep");
+  if (kept) page.append(kept);
   const list = typeof saveList === "function" ? saveList() : [];
   const shown = list.filter((item) => {
     if (manageFilter === "locked") return !!item.locked;
@@ -411,7 +421,8 @@ function manageFill(board) {
   });
   filters.append(manageZoomBar());
   board.append(filters);
-  manageZoomApply(manageZoom, { quiet: true, board });
+  if (typeof bankBar === "function") board.append(bankBar());
+  manageZoomApply(manageZoom, { quiet: true, board, filling: true });
   if (!shown.length) {
     const none = document.createElement("div");
     none.className = "manage-empty";
@@ -427,6 +438,7 @@ function manageFill(board) {
       none.append(start);
     }
     board.append(none);
+    manageZoomExtra(board);
     return;
   }
   const bag = document.createElement("div");
@@ -436,5 +448,6 @@ function manageFill(board) {
   manageTagsWait(board);
   if (typeof trayLive !== "undefined" && trayLive.at) board.dataset.liveAt = String(trayLive.at);
   if (manageZoom === 4 && typeof trayLiveLoad === "function") trayLiveLoad();
+  manageZoomExtra(board);
 }
 

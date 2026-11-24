@@ -66,6 +66,7 @@ async function archiveCheck() {
     window.archiveRows = Array.isArray(archive) ? archive : [];
     window.archiveReviews = reviews || {};
     archiveNotify(window.archiveRows);
+    if (typeof bankLoad === "function") bankLoad();
     const gone = new Set(window.archiveRows.map((row) => row.id)), local = saveList();
     if (local.some((row) => gone.has(row.id))) {
       localStorage.setItem(SAVE_KEY, JSON.stringify(local.filter((row) => !gone.has(row.id))));

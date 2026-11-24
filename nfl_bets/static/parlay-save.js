@@ -211,8 +211,9 @@ function parlayStakeOf() {
   return Number(row && row.stake) > 0 ? Number(row.stake) : 5;
 }
 
-function parlayStakeSet(amount) {
+function parlayStakeSet(amount, typed) {
   window.parlayStake = Number.isFinite(amount) && amount > 0 ? Math.round(Math.min(amount, 100000) * 100) / 100 : 5;
+  if (typed) window.parlayStakeTyped = true;
   if (parlayLeg.size) saveNow();
   return window.parlayStake;
 }
@@ -230,6 +231,7 @@ function saveNow() {
   }
   const stake = Number(window.parlayStake) > 0 ? Number(window.parlayStake) : (at >= 0 && Number(list[at].stake)) || 5;
   entry.stake = stake;
+  if (window.parlayStakeTyped || (at >= 0 && list[at].stakeTyped)) entry.stakeTyped = true;
   window.parlayStake = stake;
   if (at >= 0) list[at] = entry; else list.unshift(entry);
   saveStore(list);
@@ -250,14 +252,16 @@ function saveLock(id) {
   const list = saveList();
   const row = list.find((item) => item.id === id);
   if (!row || !(row.legs || []).length) return null;
+  if (typeof bankCanLock === "function" && !bankCanLock(saveRowStake(row), id)) return null;
   row.locked = true;
   row.lockedAt = Date.now();
   row.lockedOdds = savePrice(row.legs) || "";
   saveStore(list);
+  if (typeof bankSpend === "function") bankSpend(row);
   return row;
 }
 
-function saveUnlock(id) {
+function saveUnlock(id, opts) {
   const list = saveList();
   const row = list.find((item) => item.id === id);
   if (!row) return null;
@@ -265,6 +269,7 @@ function saveUnlock(id) {
   delete row.lockedAt;
   delete row.lockedOdds;
   saveStore(list);
+  if (!(opts && opts.quiet) && typeof bankReturn === "function") bankReturn(id);
   return row;
 }
 
@@ -310,6 +315,7 @@ function saveOpen(id) {
   });
   window.parlayOpenId = id;
   window.parlayStake = Number(entry.stake) > 0 ? Number(entry.stake) : 5;
+  window.parlayStakeTyped = !!entry.stakeTyped;
   saveCollapseForBet();
   if (typeof trayRoster === "function") trayRoster();
   paintParlay();
@@ -321,11 +327,13 @@ function saveDrop(id) {
   if (Date.now() - saveDropAt > 5 * 60 * 1000 && !window.confirm("Delete this saved parlay?")) return;
   saveDropAt = Date.now();
   const row = saveList().find((item) => item.id === id);
+  if (row && row.locked && typeof bankReturn === "function") bankReturn(id);
   const same = row && typeof parlayLeg !== "undefined" && saveSig(row.legs || []) && saveSig(row.legs || []) === saveSig([...parlayLeg.values()]);
   saveStore(saveList().filter((item) => item.id !== id));
   if (window.parlayOpenId === id || same) {
     window.parlayOpenId = "";
     window.parlayStake = 5;
+    window.parlayStakeTyped = false;
     saveHeld = "";
     parlayPick.clear();
     parlayLeg.clear();
@@ -338,6 +346,7 @@ function saveNew() {
   saveLeave();
   parlayPick.clear(); parlayLeg.clear();
   window.parlayStake = 5;
+  window.parlayStakeTyped = false;
   if (typeof trayRoster === "function") trayRoster();
   paintParlay();
 }
@@ -512,16 +521,10 @@ function savePaint() {
     if (!box) { box = document.createElement("div"); box.className = "find-saved"; } if (box.nextElementSibling !== tray) tray.before(box);
     box.replaceChildren();
     box.hidden = false; box.classList.toggle("find-saved-gone", !!window.saveGone);
+    box.classList.remove("find-saved-shut", "find-saved-slim", "find-saved-panel");
     const back = document.createElement("button"); back.type = "button"; back.className = "find-saved-back"; back.textContent = `My bets (${list.length}) ▾`;
     back.addEventListener("click", () => { window.saveGone = false; paintParlay(); }); box.append(back);
-    if (window.saveShut === undefined) window.saveShut = localStorage.getItem("savedShut") === "1";
     const betOpen = saveBetOpen(tray);
-    if (betOpen && !window.savePeek) window.saveShut = true;
-    if (!window.saveShut) window.savePeek = true;
-    const peeking = !!window.savePeek;
-    box.classList.toggle("find-saved-shut", !peeking);
-    box.classList.toggle("find-saved-slim", !!betOpen);
-    box.classList.toggle("find-saved-panel", peeking);
     const head = document.createElement("p"); head.className = "find-say";
     const title = document.createElement("b"); title.className = "find-saved-title"; title.textContent = "MY BETS"; head.append(title);
     const tally = savePackTally(list);
@@ -531,16 +534,6 @@ function savePaint() {
       pay.innerHTML = `<i class="pay">$${esc(saveMoneySaid(tally.stake))}</i> · profits <i class="pay">$${esc(saveMoneySaid(tally.profit))}</i> if all hit`;
       head.append(pay);
     }
-    const fold = document.createElement("button");
-    fold.type = "button";
-    fold.className = "find-fold";
-    fold.textContent = `My bets (${list.length}) …`;
-    fold.addEventListener("click", () => {
-      window.savePeek = !window.savePeek;
-      window.saveShut = !window.savePeek;
-      try { localStorage.setItem("savedShut", window.saveShut ? "1" : "0"); } catch (error) { console.log("[parlay-save] could not keep fold", error); }
-      paintParlay();
-    });
     const quick = document.createElement("button");
     quick.type = "button";
     quick.className = "find-saved-quick";
@@ -555,12 +548,10 @@ function savePaint() {
     const pack = saveAllShareTicket(list);
     share.dataset.shareId = String((window.recTickets = window.recTickets || []).push({ ticket: pack, name: "My bets" }) - 1);
     share.hidden = !pack.legs.length;
-    const shut = document.createElement("button"); shut.type = "button"; shut.className = "find-close"; shut.textContent = "×"; shut.title = "Close saved parlays"; shut.setAttribute("aria-label", shut.title);
-    shut.addEventListener("click", () => { saveBetsRest(); paintParlay(); });
     const acts = document.createElement("span");
     acts.className = "find-saved-acts";
-    acts.append(fold, quick);
-    if (!betOpen) acts.append(share, shut);
+    acts.append(quick);
+    if (!betOpen) acts.append(share);
     head.append(acts); box.append(head);
     const bag = document.createElement("div");
     bag.className = "find-saved-list manage-pick";
@@ -656,9 +647,7 @@ function saveBetsRest() {
   try { localStorage.setItem("savedShut", "1"); } catch (error) { console.log("[parlay-save] could not keep fold", error); }
 }
 
-function saveCollapseForBet() {
-  saveBetsRest();
-}
+function saveCollapseForBet() {}
 
 window.saveCollapseForBet = saveCollapseForBet;
 window.saveBetOpen = saveBetOpen;
@@ -697,19 +686,6 @@ document.addEventListener("click", (event) => {
   setTimeout(() => { const span = document.querySelector("#desk-glass-in .find-span"); if (span) span.scrollIntoView({ block: "start", behavior: "smooth" }); }, 50);
 });
 document.addEventListener("click", (event) => { const fold = event.target.closest && event.target.closest(".find-fold"); if (!fold) return; if (event.isTrusted) saveAutoShut.delete(fold.closest(".find-tray")); for (let node = fold; node; node = node.parentElement) saveScrollTop.delete(node); }, true);
-
-document.addEventListener("click", (event) => {
-  if (!window.savePeek) return;
-  const tip = event.target;
-  // A filter click rebuilds the list before this runs, so the button is already detached.
-  if (!tip || tip.isConnected === false) return;
-  if (tip.closest && (tip.closest(".find-saved") || tip.closest(".find-fold"))) return;
-  if (tip.classList && tip.classList.contains("find-fold")) return;
-  window.savePeek = false;
-  window.saveShut = true;
-  try { localStorage.setItem("savedShut", "1"); } catch (error) { console.log("[parlay-save] could not keep fold", error); }
-  if (typeof paintParlay === "function") paintParlay();
-});
 
 function saveTips() {
   document.querySelectorAll(".find-tips").forEach((node) => node.remove());

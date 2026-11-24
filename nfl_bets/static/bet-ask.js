@@ -46,7 +46,7 @@ function editTrayStake(button) {
   const finish = () => {
     if (!input.isConnected) return;
     const amount = Number(input.value);
-    if (typeof parlayStakeSet === "function") parlayStakeSet(amount);
+    if (typeof parlayStakeSet === "function") parlayStakeSet(amount, true);
     else window.parlayStake = Number.isFinite(amount) && amount > 0 ? Math.round(Math.min(amount, 100000) * 100) / 100 : 5;
     if (typeof paintParlay === "function") paintParlay();
   };

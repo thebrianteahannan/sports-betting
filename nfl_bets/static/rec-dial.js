@@ -148,6 +148,27 @@ function recDialEmptySay() {
   return "Nothing else with an edge right now.";
 }
 
+function recDialEmptyText(node) {
+  const box = node && node.closest(".rec-parlay");
+  const n = Number(box && box.dataset.legs);
+  if (!n) return recDialEmptySay();
+  const word = `${n}-leg`;
+  if (recDial <= 0) return `There is no ${word} Golden Ticket parlay right now.`;
+  if (recDial === 1) return `There is no ${word} Silver Ticket parlay right now.`;
+  if (recDial === 2) return `There is no ${word} Bronze Ticket parlay right now.`;
+  return `There are no ${word} recommended parlays.`;
+}
+
+function recDialCardOn(card) {
+  if (!card) return false;
+  const box = card.closest(".rec-parlay");
+  if (!box) return true;
+  const legs = box.dataset.legs;
+  if (legs && legs !== "0" && card.dataset.legs !== legs) return false;
+  if (box.dataset.teams !== "1" && card.dataset.team === "1") return false;
+  return true;
+}
+
 function recDialMark(card, pick) {
   if (!card || !pick) return card;
   if (pick.golden) card.dataset.recGolden = "1";
@@ -205,11 +226,11 @@ function recDialApply(next, opts) {
   document.querySelectorAll(".rec-dial-empty").forEach((node) => {
     const host = node.closest(".find-start, #desk-games");
     if (!host) return;
-    const seen = (kind) => host.querySelector(`.desk-rec[${kind}], .rec-parlay-card[${kind}]`);
+    const seen = (kind) => [...host.querySelectorAll(`.desk-rec[${kind}], .rec-parlay-card[${kind}]`)].some(recDialCardOn);
     const hit = recDial <= 0 ? seen("data-rec-golden") : recDial === 1 ? (seen("data-rec-golden") || seen("data-rec-silver")) : recDial === 2 ? seen("data-rec-metal") : (seen("data-rec-metal") || seen("data-rec-close"));
     const show = !hit;
     node.hidden = !show;
-    if (show) node.textContent = recDialEmptySay();
+    if (show) node.textContent = recDialEmptyText(node);
   });
   document.querySelectorAll(".find-start-recs").forEach((wrap) => {
     if (typeof wrap._recMoreSync === "function") wrap._recMoreSync();
@@ -278,7 +299,7 @@ function recDialCountPaint(counts) {
   recDialShowingPaint(recDial);
   document.querySelectorAll(".rec-dial-empty").forEach((node) => {
     if (node.hidden) return;
-    node.textContent = recDialEmptySay();
+    node.textContent = recDialEmptyText(node);
   });
 }
 
