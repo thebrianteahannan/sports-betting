@@ -420,6 +420,10 @@ function bankCard(card, row) {
   const stake = typeof saveRowStake === "function" ? saveRowStake(row) : (Number(row.stake) > 0 ? Number(row.stake) : 5);
   const said = bankSay(kelly, stake);
   const call = bankCall(kelly);
+  if (!row.locked && kelly && kelly.edge && kelly.bet > 0 && typeof findCash === "function") {
+    const cash = findCash(kelly.odds, kelly.bet);
+    if (cash) card.querySelectorAll(".pay").forEach((node) => { node.textContent = `$${bankMoney(kelly.bet)} profits ${cash}`; });
+  }
   if (said) {
     const fold = card.querySelector(".manage-fold-line");
     const price = card.querySelector(".manage-legs > .manage-bet-price");
