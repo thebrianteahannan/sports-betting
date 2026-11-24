@@ -83,7 +83,7 @@ function gameLines(fold, game, rows) {
     const main = document.createElement("button"); main.type = "button"; main.textContent = `${text} ${price > 0 ? `+${price}` : price}`; main.dataset.pos = findPct(price); main.title = findCash(price) ? `$5 profits ${findCash(price)}` : "";
     main.classList.toggle("on", parlayLeg.has(key));
     const plus = document.createElement("button"); plus.type = "button"; plus.className = "find-plus"; plus.setAttribute("aria-label", `Add ${bet.label} to the parlay`);
-    const flip = () => { if (parlayLeg.has(key)) { if (typeof legDrop === "function" ? !legDrop(key) : (parlayLeg.delete(key), false)) return; } else if (parlayLeg.size < 8) parlayLeg.set(key, bet); else return; paintParlay(); };
+    const flip = () => { if (parlayLeg.has(key)) parlayLeg.delete(key); else if (parlayLeg.size < 8) parlayLeg.set(key, bet); else return; paintParlay(); };
     main.addEventListener("click", flip); plus.addEventListener("click", flip);
     wrap.append(main, plus);
     return wrap;

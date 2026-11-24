@@ -220,7 +220,7 @@ function parlayStakeSet(amount) {
 function saveNow() {
   if (!parlayLeg.size) return null;
   const list = saveList();
-  const entry = { id: window.parlayOpenId || `p${Date.now()}`, at: Date.now(), legs: [...parlayLeg.values()].map((bet) => { const on = typeof legLockOn === "function" && legLockOn(bet); if (on === !!bet.held) return bet; const next = { ...bet }; if (on) next.held = true; else delete next.held; return next; }), picks: [...parlayPick.values()].map(({ bets, ...rest }) => rest) };
+  const entry = { id: window.parlayOpenId || `p${Date.now()}`, at: Date.now(), legs: [...parlayLeg.values()], picks: [...parlayPick.values()].map(({ bets, ...rest }) => rest) };
   const at = list.findIndex((row) => row.id === entry.id);
   if (at >= 0 && list[at].group) entry.group = list[at].group;
   if (at >= 0 && list[at].locked) {
@@ -304,7 +304,6 @@ function saveOpen(id) {
   (entry.picks || []).forEach((lite) => { const bare = String(lite.key || "").replace(/[\s\-–—:]+$/, ""), live = people.find((who) => who.key === lite.key || who.key === bare) || { ...lite, bets: [] }; parlayPick.set(live.key, live); });
   const known = saveList().flatMap((row) => row.picks || []);
   (entry.legs || []).forEach((bet) => { const label = String(bet.label || ""); if ([...parlayPick.values()].some((one) => one.name && label.startsWith(one.name))) return; const lite = known.find((one) => one.name && label.startsWith(one.name)); if (lite) parlayPick.set(lite.key, people.find((who) => who.key === lite.key) || { ...lite, bets: [] }); });
-  if (typeof legLockUse === "function") legLockUse(entry.legs);
   (entry.legs || []).forEach((bet) => {
     const live = entry.locked ? bet : (people.flatMap((who) => who.bets || []).find((row) => row.label === bet.label && row.market === bet.market && row.match === bet.match) || bet);
     parlayLeg.set(parlayKey(live), live);
@@ -433,18 +432,38 @@ function savePaint() {
         if (typeof trayRoster === "function") trayRoster();
         paintParlay();
       });
+      const locked = Boolean(open && open.locked);
+      const lock = document.createElement("button");
+      lock.type = "button";
+      lock.className = "find-save find-bet-lock";
+      lock.classList.toggle("on", locked);
+      lock.title = locked ? "Locked in" : "Lock this bet in";
+      lock.setAttribute("aria-label", lock.title);
+      lock.setAttribute("aria-pressed", String(locked));
+      lock.addEventListener("click", () => {
+        const row = window.parlayOpenId && saveList().find((item) => item.id === window.parlayOpenId);
+        if (row && row.locked) { saveUnlock(row.id); paintParlay(); return; }
+        const saved = saveNow();
+        const id = (saved && saved.id) || window.parlayOpenId;
+        if (id) saveLock(id);
+        paintParlay();
+      });
       const last = same ? edit : save;
       if (last) last.before(wipe); else ticket.append(wipe);
+      wipe.before(lock);
       const pin = () => {
         if (!edit || getComputedStyle(edit).position !== "absolute") return;
         if (!same) { save.classList.add("find-save-pin"); save.style.right = `${ticket.clientWidth - edit.offsetLeft + 6}px`; }
         wipe.classList.add("find-save-pin"); wipe.style.right = `${ticket.clientWidth - last.offsetLeft + 6}px`;
+        lock.classList.add("find-save-pin"); lock.style.right = `${ticket.clientWidth - wipe.offsetLeft + 6}px`;
         const text = ticket.querySelector(":scope > b");
-        if (text && (text.lastElementChild || text).getBoundingClientRect().right - text.getBoundingClientRect().left > wipe.offsetLeft - text.offsetLeft - 6) {
-          save.style.top = wipe.style.top = `${edit.offsetHeight + 6}px`; save.style.right = "0px";
+        const crowd = lock.offsetLeft - text.offsetLeft - 6;
+        if (text && (text.lastElementChild || text).getBoundingClientRect().right - text.getBoundingClientRect().left > crowd) {
+          save.style.top = wipe.style.top = lock.style.top = `${edit.offsetHeight + 6}px`; save.style.right = "0px";
           wipe.style.right = same ? "0px" : `${ticket.clientWidth - save.offsetLeft + 6}px`;
+          lock.style.right = `${ticket.clientWidth - wipe.offsetLeft + 6}px`;
           ticket.style.paddingBottom = `${edit.offsetHeight + 8}px`;
-        } else ticket.style.paddingRight = `${ticket.clientWidth - wipe.offsetLeft + 6}px`;
+        } else ticket.style.paddingRight = `${ticket.clientWidth - lock.offsetLeft + 6}px`;
       };
       const fold = tray.querySelector(".find-fold");
       if (edit && fold && !edit.getClientRects().length) fold.addEventListener("click", function later() { if (!edit.isConnected || edit.getClientRects().length) { fold.removeEventListener("click", later); if (edit.isConnected) pin(); } });

@@ -128,7 +128,7 @@ function legWhoFind(key) {
 
 function legSwapTrade(key, person, bet) {
   const old = parlayLeg.get(key);
-  if (!old || (typeof legLockOn === "function" && legLockOn(old))) return;
+  if (!old) return;
   const next = parlayKey(bet);
   const keepHist = typeof legHistOpen !== "undefined" && legHistOpen.has(key);
   legSwapOpen.delete(key);

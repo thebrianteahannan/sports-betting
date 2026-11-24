@@ -96,7 +96,7 @@ function rosterPlus(button, person) {
   plus.addEventListener("click", () => {
     if (parlayPick.has(person.key)) {
       parlayPick.delete(person.key);
-      [...parlayLeg.entries()].forEach(([key, bet]) => { if (String(bet.label || "").startsWith(person.name)) (typeof legDrop === "function" ? legDrop(key) : parlayLeg.delete(key)); });
+      [...parlayLeg.entries()].forEach(([key, bet]) => { if (String(bet.label || "").startsWith(person.name)) parlayLeg.delete(key); });
       if (typeof trayRoster === "function") trayRoster();
       paintParlay();
       return;

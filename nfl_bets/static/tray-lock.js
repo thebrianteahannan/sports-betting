@@ -3,73 +3,6 @@
 
 let trayLockWas = null;
 const trayLockAsk = new Set();
-const legLock = new Set();
-
-function legLockId(bet) {
-  return [bet.label, bet.market, bet.match, bet.kickoff].join("|");
-}
-
-function legLockOn(bet) {
-  return !!(bet && legLock.has(legLockId(bet)));
-}
-
-function legLockUse(legs) {
-  legLock.clear();
-  (legs || []).forEach((bet) => { if (bet && bet.held) legLock.add(legLockId(bet)); });
-}
-
-function legLockFlip(key) {
-  const bet = parlayLeg.get(key);
-  if (!bet) return;
-  const id = legLockId(bet);
-  if (legLock.has(id)) legLock.delete(id);
-  else legLock.add(id);
-  if (typeof saveNow === "function") saveNow();
-  paintParlay();
-}
-
-function legDrop(key) {
-  const bet = parlayLeg.get(key);
-  if (legLockOn(bet)) return false;
-  parlayLeg.delete(key);
-  if (typeof legOwner !== "undefined") legOwner.delete(key);
-  return true;
-}
-
-function legLockButtons() {
-  if (!parlayLeg.size) { legLock.clear(); return; }
-  document.querySelectorAll(".find-chose[data-key]").forEach((line) => {
-    const key = line.dataset.key;
-    const out = line.querySelector(":scope > button.find-out");
-    if (out && !line.querySelector(":scope > button.find-leg-lock")) {
-      const lock = document.createElement("button");
-      lock.type = "button";
-      lock.className = "find-leg-lock";
-      lock.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        legLockFlip(line.dataset.key);
-      });
-      out.before(lock);
-    }
-    const on = legLockOn(parlayLeg.get(key));
-    const lock = line.querySelector(":scope > button.find-leg-lock");
-    if (lock) {
-      lock.classList.toggle("on", on);
-      lock.title = on ? "Locked in" : "Lock this leg in";
-      lock.setAttribute("aria-label", lock.title);
-      lock.setAttribute("aria-pressed", String(on));
-    }
-    if (out) {
-      out.disabled = on;
-      out.title = on ? "Locked in" : "";
-    }
-  });
-}
-
-window.legLockOn = legLockOn;
-window.legLockUse = legLockUse;
-window.legDrop = legDrop;
 
 function trayLockStarted(legs) {
   const now = Date.now();
@@ -178,7 +111,6 @@ function trayLockPrice(line, key) {
 }
 
 function trayLockPaint() {
-  legLockButtons();
   const locked = trayLockStarted([...parlayLeg.values()]);
   const lockTip = "The game has started. Type the price you got, or take a leg off.";
   document.querySelectorAll(".find-tray").forEach((tray) => {

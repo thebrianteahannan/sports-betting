@@ -79,7 +79,7 @@ function trayStackAdd(tray, bet) {
 
 function trayStackDrop(leg) {
   const entry = [...parlayLeg.entries()].find(([, bet]) => bet === leg);
-  if (!entry || (typeof legLockOn === "function" && legLockOn(entry[1]))) return;
+  if (!entry) return;
   trayStackDo(`Took out ${String(leg.label).split(/\s+—\s+/)[0]}.`, () => {
     parlayLeg.delete(entry[0]);
     [...parlayPick.entries()].forEach(([key, person]) => { if (String(leg.label || "").startsWith(person.name) && ![...parlayLeg.values()].some((bet) => String(bet.label || "").startsWith(person.name))) parlayPick.delete(key); });
