@@ -344,7 +344,7 @@ function manageCard(row, n) {
   const pay = cash ? `$${manageMoney(stake)} profits ${cash}` : "";
   const legsBox = document.createElement("div");
   legsBox.className = "manage-legs";
-  if (legs.length > 1 && (odds || pct)) {
+  if (odds || pct || pay) {
     const head = document.createElement("p");
     head.className = "manage-bet-price";
     head.innerHTML = [odds && `<i class="px">${esc(odds)}</i>`, pct && `<i class="pct">${esc(pct)}</i>`, pay && `<i class="pay">${esc(pay)}</i>`].filter(Boolean).join("");
