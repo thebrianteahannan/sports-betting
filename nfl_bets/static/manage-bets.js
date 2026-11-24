@@ -282,14 +282,11 @@ function manageFold(legs, odds, pct, pay, byKey) {
   const price = document.createElement("span");
   price.className = "manage-bet-price";
   price.innerHTML = [odds && `<i class="px">${esc(odds)}</i>`, pct && `<i class="pct">${esc(pct)}</i>`, pay && `<i class="pay">${esc(pay)}</i>`].filter(Boolean).join("");
-  top.append(price, manageLegLine(legs[0], legs, byKey));
-  fold.append(top);
-  if (legs.length > 1) {
-    const rest = document.createElement("div");
-    rest.className = "manage-fold-line";
-    legs.slice(1).forEach((leg) => rest.append(manageLegLine(leg, legs, byKey)));
-    fold.append(rest);
-  }
+  top.append(price);
+  const legsLine = document.createElement("div");
+  legsLine.className = "manage-fold-legs";
+  legs.forEach((leg) => legsLine.append(manageLegLine(leg, legs, byKey)));
+  fold.append(top, legsLine);
   return fold;
 }
 
@@ -320,9 +317,9 @@ function manageSlip(row) {
   return slip;
 }
 
-function manageCard(row) {
+function manageCard(row, n) {
   const card = document.createElement("article");
-  card.className = `manage-card${row.locked ? " locked" : ""}${row.id === window.parlayOpenId ? " on" : ""}`;
+  card.className = `manage-card${(row.legs || []).length > 1 ? " parlay" : ""}${row.locked ? " locked" : ""}${row.id === window.parlayOpenId ? " on" : ""}`;
   card.dataset.id = row.id;
   const legs = row.legs || [];
   const stake = Number(row.stake) > 0 ? Number(row.stake) : 5;
@@ -359,7 +356,10 @@ function manageCard(row) {
   const acts = document.createElement("span");
   acts.className = "manage-card-acts";
   acts.append(open, drop);
-  card.append(legsBox, acts, manageTags(legs), manageSlip(row));
+  const num = document.createElement("b");
+  num.className = "manage-n";
+  num.textContent = String(n);
+  card.append(num, legsBox, acts, manageTags(legs), manageSlip(row));
   if (fold) card.insertBefore(fold, acts);
   const openBet = () => {
     if (row.id === window.parlayOpenId) {
@@ -431,7 +431,7 @@ function manageFill(board) {
   }
   const bag = document.createElement("div");
   bag.className = "manage-list";
-  shown.forEach((item) => bag.append(manageCard(item)));
+  shown.forEach((item, at) => bag.append(manageCard(item, at + 1)));
   board.append(bag);
   manageTagsWait(board);
   if (typeof trayLive !== "undefined" && trayLive.at) board.dataset.liveAt = String(trayLive.at);

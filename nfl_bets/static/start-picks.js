@@ -1,4 +1,4 @@
-/** Build a bet keeps Quick add. Recommended / Games / Strategies live on the Recommended page. */
+/** Build a bet keeps Quick add. Recommended lives on the Recommended page. Strategies sit on the admin profile. */
 
 let startTab = "rec", startBack = null, startUndo = null, startRandomAt = null, startGolden = null, startMetals = null;
 let startFavOnly = false;
@@ -760,9 +760,27 @@ function startLineNote() {
   return note;
 }
 
+function startFilterRefresh() {
+  const games = typeof leftGames === "function" ? leftGames() : [];
+  document.querySelectorAll(".start-filter-say").forEach((line) => {
+    const text = line.querySelector("span");
+    if (text) text.textContent = `${startFilterBits(games).join(". ")}.`;
+    let clear = line.querySelector("button.desk-games-link");
+    if (!startFilterChanged()) { if (clear) clear.remove(); return; }
+    if (clear) return;
+    clear = document.createElement("button");
+    clear.type = "button";
+    clear.className = "desk-games-link";
+    clear.textContent = "Clear";
+    clear.addEventListener("click", () => startFiltersClear(line.closest(".find-board") || document.getElementById("desk-glass-in")));
+    line.append(clear);
+  });
+}
+window.startFilterRefresh = startFilterRefresh;
+
 function startShow() {
   const home = document.getElementById("desk-games");
-  if (home && typeof homeGamesPaint === "function") { home.dataset.sig = ""; homeGamesPaint(); }
+  if (home && !home.hidden && typeof homeGamesPaint === "function") { home.dataset.sig = ""; homeGamesPaint(); }
   if (document.querySelector(".find-start")) startPaint(1);
 }
 window.startShow = startShow;
@@ -838,6 +856,12 @@ function startFilterFold(name, row, say) {
 }
 
 function startRecs(board, box, root) {
+  const history = board && board.dataset.page === "history";
+  const tab = history ? startHistTab : startTab;
+  if (tab !== "rec") {
+    const pool = startRecPool(typeof leftGames === "function" ? leftGames() : []);
+    return { recs: [], games: [], picks: pool.picks || [], all: pool.picks || [] };
+  }
   const left = leftGames().filter((game) => startGameOk(game.match)), when = typeof startWhenSay === "function" ? startWhenSay() : "today";
   const { recs, picks, all } = startRecFeed(board, box, root);
   const games = homeGameRows(left, box).filter((node) => !startFavOnly || !node.startGame || startFavGame(node.startGame.match)).map((node) => {
@@ -1074,7 +1098,7 @@ function startPaint(again) {
     if (typeof quickAddPendingOpen === "function") quickAddPendingOpen();
     return;
   }
-  if (startTab === "shared" || startTab === "games" || startTab === "stats" || startTab === "golden") startTab = "rec";
+  if (startTab === "shared" || startTab === "games" || startTab === "stats" || startTab === "golden" || startTab === "stacks") startTab = "rec";
   if (history && startHistTab !== "stats" && startHistTab !== "golden") startHistTab = "stats";
   const tabNow = history ? startHistTab : startTab;
   const tabs = document.createElement("span");
@@ -1084,9 +1108,8 @@ function startPaint(again) {
   const tabList = history
     ? [["stats", "Hit Rates", null], ["golden", "Golden", goldenN]]
     : [
-      ["rec", "Players", picks.length],
+      ["rec", "Players", typeof recDialCountOf === "function" ? recDialCountOf(picks).all : picks.length],
       ["parlays", "Parlays", typeof recParlayCount === "function" ? recParlayCount(board) : null],
-      ["stacks", "Strategies", null],
     ];
   tabList.forEach(([id, label, count]) => {
     const tab = document.createElement("button");
@@ -1125,10 +1148,8 @@ function startPaint(again) {
   const dial = (tabNow === "rec" || tabNow === "parlays") && typeof recDialBar === "function" ? recDialBar(startDialCommit) : null;
   const body = tabNow === "rec"
     ? [...(lineNote ? [lineNote] : []), ...(dial ? [dial] : []), ...recs]
-    : tabNow === "parlays"
+      : tabNow === "parlays"
       ? [...(lineNote ? [lineNote] : []), ...(dial ? [dial] : []), ...(typeof recParlayBody === "function" ? recParlayBody(board) : [])]
-      : tabNow === "stacks"
-      ? startStacks()
       : tabNow === "stats"
         ? startRecStats()
         : tabNow === "td"
@@ -1167,16 +1188,13 @@ if (typeof paintParlay === "function") {
   paintParlay = function () {
     if (window.saveStacksOpen) {
       window.saveStacksOpen = false;
-      startTab = "stacks";
-      document.querySelectorAll(".find-start").forEach((node) => node.remove());
-      if (typeof paintRec === "function" && !document.querySelector('#desk-glass-in .find-board[data-page="rec"]')) {
-        paintRec();
-        return;
-      }
+      if (typeof showTab === "function") showTab("profile");
+      if (typeof showAdminTab === "function") showAdminTab("strategies");
+      if (typeof paintAdminStrategies === "function") paintAdminStrategies();
+      const host = document.getElementById("admin-strategies");
+      if (host) setTimeout(() => host.scrollIntoView({ block: "start" }), 60);
     }
     paintParlayStart.apply(this, arguments); startPlace();
-    const box = document.querySelector("#desk-glass-in .find-start-panel");
-    if (box && startTab === "stacks" && box.dataset.stacks !== startStackKey()) startPaint(1);
   };
 }
 document.addEventListener("input", (event) => { if (event.target.closest && event.target.closest("label.find")) { startBack = startUndo = null; document.querySelectorAll(".find-start").forEach((node) => { node.hidden = Boolean(event.target.value.trim()); }); } });

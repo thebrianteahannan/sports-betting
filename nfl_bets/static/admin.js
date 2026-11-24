@@ -30,7 +30,7 @@ function loginWhen(stamp) {
 }
 
 function showAdminTab(name) {
-  ["members", "notes", "laws", "errors", "fantasy", "sliders"].forEach((id) => {
+  ["members", "notes", "laws", "errors", "fantasy", "sliders", "strategies"].forEach((id) => {
     const pane = document.getElementById(`admin-${id}`);
     if (pane) pane.hidden = id !== name;
     const button = document.querySelector(`[data-admin-tab="${id}"]`);
@@ -306,6 +306,12 @@ async function loadAdmin() {
   watchHere();
 }
 
+function paintAdminStrategies() {
+  const host = document.getElementById("admin-strategies");
+  if (!host || typeof startStacks !== "function") return;
+  host.replaceChildren(...startStacks());
+}
+
 function paintAdminHistory() {
   const host = document.getElementById("admin-history");
   if (!host || typeof startRecStats !== "function") return;
@@ -338,6 +344,7 @@ function bindAdmin() {
       if (button.dataset.adminTab === "laws" && window.paintLaws) window.paintLaws();
       if (button.dataset.adminTab === "fantasy" && window.paintFantasyUse) paintFantasyUse();
       if (button.dataset.adminTab === "sliders" && window.sliderTry) window.sliderTry();
+      if (button.dataset.adminTab === "strategies") paintAdminStrategies();
     }
   });
   const admin = document.getElementById("profile-admin");
@@ -494,5 +501,6 @@ async function shelveStrategy(card, part) {
 }
 window.shelveStrategy = shelveStrategy;
 window.loadAdmin = loadAdmin;
+window.paintAdminStrategies = paintAdminStrategies;
 window.paintRefresh = paintRefresh;
 bindAdmin();

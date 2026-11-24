@@ -34,7 +34,8 @@ function legSwapFind(key) {
     (person.bets || []).forEach((bet) => {
       if (bet.match !== old.match || bet.kickoff !== old.kickoff || parlayLeg.has(parlayKey(bet))) return;
       const chance = legSwapChance(bet.odds);
-      if (!chance || Math.abs(chance - want) > want * 0.06) return;
+      const info = typeof scriptRecAll !== "undefined" && scriptRecAll.get(`${bet.label}|${bet.market}`);
+      if (!chance || Math.abs(chance - want) > want * 0.06 || !info || info.tier === "good") return;
       const gap = Math.abs(chance - want), had = best.get(person.key);
       if (!had || gap < had.gap) best.set(person.key, { person, bet, gap });
     });
@@ -345,7 +346,7 @@ function legSwapBox(key, mode) {
   if (typeof trayLockEdit === "function" && (mode === "line" || mode === "kind")) trayLockEdit(box, key);
   if (!rows.length || (mode === "swap" && !rows.some((row) => !row.now))) {
     const none = document.createElement("p");
-    none.textContent = usedRec ? "No recommended props for this player in this game." : mode === "who" ? "FanDuel has no props posted for this player." : mode === "line" || listMode === "line" ? "FanDuel has no other numbers on this prop." : mode === "kind" || listMode === "cat" ? "FanDuel has no other props for this player in this game." : "Nothing else in this game sits at this price.";
+    none.textContent = usedRec ? "No recommended props for this player in this game." : mode === "who" ? "FanDuel has no props posted for this player." : mode === "line" || listMode === "line" ? "FanDuel has no other numbers on this prop." : mode === "kind" || listMode === "cat" ? "FanDuel has no other props for this player in this game." : "No recommended bet in this game sits at this price.";
     box.append(none);
     return box;
   }
@@ -475,6 +476,33 @@ function betActsSync() {
   });
 }
 
+function betSeekTools(box, line) {
+  const acts = box.querySelector(".find-profile-acts");
+  if (!acts) return;
+  let tools = acts.querySelector(".find-seek-tools");
+  if (!tools) {
+    tools = document.createElement("span");
+    tools.className = "find-seek-tools";
+    acts.append(tools);
+  }
+  [["find-leg-seek", "Search"], ["find-leg-hist", "History"], ["find-leg-to", "Add"], ["find-out", "Remove this leg"]].forEach(([cls, label]) => {
+    if (tools.querySelector(`button.${cls}`)) return;
+    if (!line.querySelector(`button.${cls}`)) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = cls;
+    button.title = label;
+    button.setAttribute("aria-label", label);
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const live = line.querySelector(`button.${cls}`);
+      if (live) live.click();
+    });
+    tools.append(button);
+  });
+}
+
 function betActsSeek() {
   const keep = new Set();
   document.querySelectorAll(".find-tray .find-chose[data-key]").forEach((line) => {
@@ -501,6 +529,7 @@ function betActsSeek() {
       title.textContent = "Search";
       box.prepend(title);
     }
+    betSeekTools(box, line);
   });
   document.querySelectorAll(".find-tray .bet-acts-seek").forEach((node) => {
     const line = node.previousElementSibling;

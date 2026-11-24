@@ -334,6 +334,11 @@ button.rec-dial-next[hidden] { display: none !important; }
 :is(.rec-board, #choice-result, #desk-games) .rec-parlay-sizes > button.on { background: #3dff6e !important; color: #04140c !important; }
 .rec-parlay-note { margin: 0; color: #9fb3c8; font-size: 13px; font-weight: 650; }
 .rec-parlay-list { display: flex; flex-direction: column; gap: 0.7rem; }
+.rec-parlay[data-legs="2"] .rec-parlay-card:not([data-legs="2"]),
+.rec-parlay[data-legs="3"] .rec-parlay-card:not([data-legs="3"]),
+.rec-parlay[data-legs="4"] .rec-parlay-card:not([data-legs="4"]),
+.rec-parlay[data-legs="5"] .rec-parlay-card:not([data-legs="5"]),
+.rec-parlay:not([data-teams="1"]) .rec-parlay-card[data-team="1"] { display: none !important; }
 .rec-parlay-card { display: flex; flex-direction: column; gap: 0.35rem; padding: 0.75rem 0.9rem; border: 1px solid #2a3a48; border-radius: 12px; background: #071018; }
 .rec-parlay-card.m-golden { border-color: #e7c15a; }
 .rec-parlay-card.m-silver { border-color: #d5deea; }

@@ -120,7 +120,7 @@ function trayStackOpen(name, labels = []) {
   window.saveStacksOpen = true;
   if (onFind) paintParlay(); else paintFind();
   gameStackData().then(() => setTimeout(() => {
-    const panel = document.querySelector("#desk-glass-in .find-saved-stacks");
+    const panel = document.querySelector("#admin-strategies .find-saved-stacks");
     if (!panel) return;
     if (!name) { panel.scrollIntoView({ block: "start", behavior: "smooth" }); return; }
     const find = () => [...panel.querySelectorAll(".rec-strategy")].find((node) => node.dataset.name === name);
