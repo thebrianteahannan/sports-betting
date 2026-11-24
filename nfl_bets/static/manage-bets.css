@@ -110,6 +110,7 @@
   align-items: center;
   gap: 0.45rem;
 }
+.manage-board .manage-when { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; margin-left: 0.15rem; padding-left: 0.7rem; border-left: 1px solid #16301f; }
 
 #desk.tv-full #desk-glass .manage-board .manage-zoom,
 .manage-board .manage-zoom {
@@ -415,6 +416,10 @@
 .manage-board .find-chose i.leg-role.r-dead { color: #ff6b6b; border-style: dashed; }
 .manage-board .find-chose i.find-rec-pill { display: inline-flex; align-items: center; gap: 0.25rem; align-self: center; margin: 0 0 0 0.3rem; padding: 0 0.45rem 0 0.25rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.03em; line-height: 1.45; text-transform: uppercase; white-space: nowrap; }
 .manage-board .find-chose i.find-rec-pill::before { content: ""; width: 1.3em; height: 1.3em; background: url("/scene/parrot-head-tight.webp?v=1") center / contain no-repeat; }
+.manage-board .find-chose i.find-rec-pill.ticket { padding-left: 0.45rem; background: #e7c15a; color: #1a1400; }
+.manage-board .find-chose i.find-rec-pill.ticket.silver { background: #d5deea; color: #12181f; }
+.manage-board .find-chose i.find-rec-pill.ticket.bronze { background: #d0894f; color: #1a1006; }
+.manage-board .find-chose i.find-rec-pill.ticket::before { display: none; }
 .manage-board .find-chose i.find-rec-pill.good { background: transparent; border: 1px dashed #c4cde0; color: #c4cde0; }
 .manage-board .find-chose i.find-rec-pill.good::before { display: none; }
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill,
@@ -431,6 +436,12 @@
 }
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill::before,
 .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill::before { width: 1.15rem; height: 1.15rem; }
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill.ticket,
+.manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill.ticket { width: auto; height: auto; padding: 0 0.45rem; overflow: visible; background: #e7c15a; color: #1a1400; font-size: 0.66rem; }
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill.ticket.silver,
+.manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill.ticket.silver { background: #d5deea; color: #12181f; }
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill.ticket.bronze,
+.manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill.ticket.bronze { background: #d0894f; color: #1a1006; }
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.bet-kind,
 .manage-card[data-manage-zoom="0"] .find-chose i.bet-kind,
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.leg-role,
@@ -934,6 +945,8 @@
 .manage-board .manage-stat-line.steady > b { color: #3dff6e; }
 .manage-board .manage-stat-line.vol > b { color: #ff8a2a; }
 .manage-board .manage-stat { color: #d5deea; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.manage-board .manage-stat i.hit { margin-left: 0.28rem; color: #9fb3c8; font-style: normal; font-weight: 800; }
+.manage-board .manage-stat.on i.hit { color: #1a1400; }
 .manage-board .manage-stat-line.vol .manage-stat { color: #ffb26b; }
 .manage-board .manage-stat.on,
 .manage-board .manage-stat-line.vol .manage-stat.on { padding: 0 0.35rem; border-radius: 999px; background: #e7c15a; color: #1a1400; }

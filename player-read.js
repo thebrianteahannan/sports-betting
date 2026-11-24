@@ -2,7 +2,7 @@
 
 const { savedPack } = require("./single-find");
 const { careerPack } = require("./sway-api");
-const { swingTags } = require("./player-swing");
+const { swingTags, series } = require("./player-swing");
 const { blowTags } = require("./player-blowout");
 
 function seasonYear(sport) {
@@ -207,7 +207,14 @@ async function playerCard(name, sport) {
   }
   const built = kind === "hoop" ? hoop(window.rows, names, window.before) : kind === "ball" ? ball(window.rows, names) : kind === "ice" ? ice(window.rows, names) : bat(window.rows, names);
   if (!built.line && !(built.stats || []).length) return { line: "", stats: [], miss: `His games are there, but the numbers did not add up for a card.` };
-  const swing = swingTags(kind, built.stats, (key) => pull(window.rows, names, key));
+  const read = (key) => pull(window.rows, names, key);
+  built.stats.forEach((stat) => {
+    const values = series(stat.label, read);
+    if (values.length < 3) return;
+    stat.played = values.length;
+    stat.hits = values.filter((value) => value >= 1).length;
+  });
+  const swing = swingTags(kind, built.stats, read);
   const blowout = league === "NBA" ? await blowTags(name, built.stats, (rows, cols) => (key) => pull(rows, cols, key)) : null;
   return { line: built.line, span: window.span, stats: built.stats, swing, blowout, games: gameNums(kind, window.rows, names) };
 }
@@ -215,14 +222,18 @@ async function playerCard(name, sport) {
 function gameNums(kind, rows, names) {
   const col = (key) => pull(rows, names, key);
   const cols = kind === "hoop"
-    ? { pts: col("points"), threes: col("threes"), reb: col("reb"), ast: col("assists") }
+    ? { pts: col("points"), threes: col("threes"), reb: col("reb"), ast: col("assists"), min: col("minutes"), stl: col("steals"), blk: col("blocks") }
     : kind === "ball"
-      ? { rushTd: col("rushingTouchdowns"), recTd: col("receivingTouchdowns"), passYds: col("passingYards"), rushYds: col("rushingYards"), recYds: col("receivingYards"), rec: col("receptions") }
-      : null;
+      ? { rushTd: col("rushingTouchdowns"), recTd: col("receivingTouchdowns"), passTd: col("passingTouchdowns"), passYds: col("passingYards"), rushYds: col("rushingYards"), recYds: col("receivingYards"), rec: col("receptions"), car: col("rushingAttempts"), tgt: col("receivingTargets") }
+      : kind === "ice"
+        ? { goals: col("goals"), ast: col("assists"), pts: col("points"), shots: col("shots"), min: col("minutes") }
+        : null;
   if (!cols) return [];
   return rows.map((_, i) => {
     const game = {};
     Object.keys(cols).forEach((key) => { const value = cols[key][i]; if (value != null) game[key] = Math.round(value * 10) / 10; });
+    if (kind === "hoop" && game.pts != null && game.reb != null && game.ast != null) game.pra = Math.round((game.pts + game.reb + game.ast) * 10) / 10;
+    if (kind === "ball" && (game.rushTd != null || game.recTd != null)) game.td = Math.round(((game.rushTd || 0) + (game.recTd || 0)) * 10) / 10;
     return game;
   });
 }

@@ -24,7 +24,7 @@ function manageSearchTake(profile) {
     closePlayerPop.onKey = null;
   }
   host.dataset.from = "search";
-  if (typeof manageZoomApply === "function") manageZoomApply(typeof MANAGE_ZOOM_MAX === "number" ? MANAGE_ZOOM_MAX : 5);
+  if (typeof manageZoomApply === "function") manageZoomApply(typeof MANAGE_ZOOM_MAX === "number" ? MANAGE_ZOOM_MAX : 4);
 }
 
 function manageProfileNames() {
@@ -71,6 +71,50 @@ function manageProfileFill(host, page, board) {
   });
 }
 
+let manageWhen = "all";
+
+function manageEtParts(when) {
+  const at = when == null ? Date.now() : typeof when === "number" ? when : Date.parse(when);
+  if (!Number.isFinite(at)) return null;
+  const bag = {};
+  new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" }).formatToParts(new Date(at)).forEach((part) => { if (part.type !== "literal") bag[part.type] = part.value; });
+  if (!bag.year || !bag.month || !bag.day) return null;
+  return { key: `${bag.year}-${bag.month}-${bag.day}`, weekday: bag.weekday };
+}
+
+function manageWhenOk(row) {
+  if (manageWhen === "all") return true;
+  const now = manageEtParts();
+  const days = (row.legs || []).map((leg) => manageEtParts(leg.kickoff)).filter(Boolean).map((part) => part.key);
+  if (!now || !days.length) return false;
+  if (manageWhen === "today") return days.includes(now.key);
+  const left = { Sun: 0, Mon: 6, Tue: 5, Wed: 4, Thu: 3, Fri: 2, Sat: 1 }[now.weekday] || 0;
+  const end = manageEtParts(Date.parse(`${now.key}T16:00:00Z`) + left * 86400000);
+  return !!end && days.some((key) => key >= now.key && key <= end.key);
+}
+
+function manageShown(row) {
+  if (typeof manageFilter !== "undefined" && manageFilter === "locked" && !(row && row.locked)) return false;
+  if (typeof manageFilter !== "undefined" && manageFilter === "open" && row && row.locked) return false;
+  return manageWhenOk(row);
+}
+
+function manageFilters(box) {
+  const chip = (parent, label, on, pick) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `manage-filter${on ? " on" : ""}`;
+    button.textContent = label;
+    button.addEventListener("click", () => { pick(); if (typeof manageRefresh === "function") manageRefresh(); });
+    parent.append(button);
+  };
+  [["all", "All"], ["locked", "Locked"], ["open", "Still Building"]].forEach(([key, label]) => chip(box, label, manageFilter === key, () => { manageFilter = key; }));
+  const when = document.createElement("span");
+  when.className = "manage-when";
+  [["all", "Any day"], ["today", "Today"], ["week", "This week"]].forEach(([key, label]) => chip(when, label, manageWhen === key, () => { manageWhen = key; }));
+  box.append(when);
+}
+
 function manageZoomExtra() {}
 
 function manageZoomExtras() {
@@ -115,7 +159,36 @@ function manageStatOn(leg, label) {
   return rules.some(([re, hit]) => re.test(text) && name === hit);
 }
 
-function manageStatLine(kind, label, stats, leg) {
+const MANAGE_STAT_GAME = {
+  "pts/game": "pts", "assists/game": "ast", "rebounds/game": "reb", "3pters/game": "threes", "minutes/game": "min", "steals/game": "stl", "blocks/game": "blk", "pra/game": "pra",
+  "td/game": "td", "rush td/game": "rushTd", "pass td/game": "passTd", "pass yds/game": "passYds", "rush yds/game": "rushYds", "rec yds/game": "recYds", "receptions/game": "rec", "carries/game": "car", "targets/game": "tgt",
+  "goals/game": "goals", "points/game": "pts", "shots/game": "shots",
+};
+
+function manageStatCount(leg, stat, games) {
+  const key = MANAGE_STAT_GAME[String(stat.label || "").toLowerCase()];
+  const vals = key && games ? games.map((game) => Number(game[key])).filter((value) => Number.isFinite(value)) : [];
+  const on = manageStatOn(leg, stat.label);
+  const blob = `${(leg && leg.market) || ""} ${(leg && leg.label) || ""}`.toLowerCase();
+  const line = on ? Number((blob.match(/\d+(?:\.\d+)?/) || [])[0]) : NaN;
+  const under = on && /\bunder\b/.test(blob);
+  const plus = on && /\+/.test(blob);
+  if (vals.length >= 3) {
+    const hits = vals.filter((n) => {
+      if (!Number.isFinite(line)) return n >= 1;
+      if (under) return n < line;
+      if (plus) return n >= line;
+      return n > line;
+    }).length;
+    const say = Number.isFinite(line) ? `Cleared ${line} in ${hits} of ${vals.length}` : `Showed up in ${hits} of ${vals.length}`;
+    return { hits, n: vals.length, say };
+  }
+  const hits = Number(stat.hits), n = Number(stat.played);
+  if (!(n >= 3) || !Number.isFinite(hits)) return null;
+  return { hits, n, say: `Showed up in ${hits} of ${n}` };
+}
+
+function manageStatLine(kind, label, stats, leg, games) {
   const line = document.createElement("span");
   line.className = `manage-stat-line ${kind}`;
   const name = document.createElement("b");
@@ -125,7 +198,15 @@ function manageStatLine(kind, label, stats, leg) {
     const bit = document.createElement("span");
     bit.className = "manage-stat";
     if (manageStatOn(leg, stat.label)) bit.classList.add("on");
-    bit.textContent = `${manageStatShort(stat.label)} ${stat.value || ""}`.trim();
+    bit.append(document.createTextNode(`${manageStatShort(stat.label)} ${stat.value || ""}`.trim()));
+    const hit = manageStatCount(leg, stat, games);
+    if (hit) {
+      const mark = document.createElement("i");
+      mark.className = "hit";
+      mark.textContent = ` · ${hit.hits}/${hit.n}`;
+      mark.title = hit.say;
+      bit.append(mark);
+    }
     line.append(bit);
   });
   return line;
@@ -150,8 +231,8 @@ function manageLegNote(leg) {
   const stats = card.stats || [];
   const swings = stats.filter((stat) => stat.tag === "Volatile");
   const steady = stats.filter((stat) => stat.tag !== "Volatile");
-  if (swings.length) row.append(manageStatLine("vol", "Swings", swings, leg));
-  if (steady.length) row.append(manageStatLine("steady", "Steady", steady, leg));
+  if (swings.length) row.append(manageStatLine("vol", "Swings", swings, leg, card.games));
+  if (steady.length) row.append(manageStatLine("steady", "Steady", steady, leg, card.games));
   row.addEventListener("click", (event) => event.stopPropagation());
   return row;
 }

@@ -2,7 +2,7 @@
 
 let manageFilter = "all";
 let manageEditId = "";
-const MANAGE_ZOOM_MAX = 5;
+const MANAGE_ZOOM_MAX = 4;
 let manageZoom = (() => {
   try {
     const raw = localStorage.getItem("manageZoom");
@@ -294,6 +294,7 @@ function manageLegLine(leg, legs, byKey) {
   const role = byKey && byKey.get(typeof parlayKey === "function" ? parlayKey(leg) : "");
   const pick = managePickOf(leg);
   const say = pick && typeof scriptKindSay === "function" ? scriptKindSay(pick) : null;
+  const ticket = pick && (pick.golden ? "Golden" : pick.silver ? "Silver" : pick.bronze ? "Bronze" : "");
   const spot = manageSpot(bits.who);
   const line = document.createElement("div");
   line.className = "find-chose";
@@ -305,7 +306,7 @@ function manageLegLine(leg, legs, byKey) {
     bits.odds && `<i class="px">${esc(bits.odds)}</i>`,
     bits.pct && `<i class="pct">${esc(bits.pct)}</i>`,
     role && MANAGE_ROLE[role.role] && !(legs.length < 2 && role.role === "anchor") && `<i class="leg-role r-${esc(role.role)}">${esc(MANAGE_ROLE[role.role])}</i>`,
-    say && `<i class="find-rec-pill${pick.tier === "good" ? " good" : ""}">${esc(pick.tier === "good" ? "Good bet" : `Recommended · ${say.text}`)}</i>`,
+    (ticket || say) && `<i class="find-rec-pill${ticket ? ` ticket ${ticket.toLowerCase()}` : pick.tier === "good" ? " good" : ""}">${esc(ticket ? `${ticket} Ticket` : pick.tier === "good" ? "Good bet" : `Recommended · ${say.text}`)}</i>`,
     pick && typeof scriptRoleTag === "function" ? scriptRoleTag(pick) : "",
     pick && typeof scriptCushionTag === "function" ? scriptCushionTag(pick) : "",
   ].filter(Boolean).join("");
@@ -447,23 +448,12 @@ function manageFill(board) {
   const kept = page && page.querySelector(".manage-search-keep");
   if (kept) page.append(kept);
   const list = typeof saveList === "function" ? saveList() : [];
-  const shown = list.filter((item) => {
-    if (manageFilter === "locked") return !!item.locked;
-    if (manageFilter === "open") return !item.locked;
-    return true;
-  });
+  const shown = list.filter((item) => typeof manageShown === "function" ? manageShown(item) : true);
   board.classList.add("manage-board");
   board.replaceChildren();
   const filters = document.createElement("div");
   filters.className = "manage-filters";
-  [["all", "All"], ["locked", "Locked"], ["open", "Open"]].forEach(([key, label]) => {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.className = `manage-filter${manageFilter === key ? " on" : ""}`;
-    chip.textContent = label;
-    chip.addEventListener("click", () => { manageFilter = key; manageRefresh(); });
-    filters.append(chip);
-  });
+  if (typeof manageFilters === "function") manageFilters(filters);
   filters.append(manageZoomBar());
   board.append(filters);
   if (typeof bankBar === "function") board.append(bankBar());

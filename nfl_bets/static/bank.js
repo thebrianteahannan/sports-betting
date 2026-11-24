@@ -109,8 +109,9 @@ function bankGameHit(leg, games) {
 function bankLegRate(leg) {
   const who = bankWho(leg);
   const pick = typeof managePickOf === "function" ? managePickOf(leg) : null;
+  const ticket = pick && (pick.golden ? "Golden" : pick.silver ? "Silver" : pick.bronze ? "Bronze" : "");
   const pickHits = Number(pick && pick.hits), pickN = Number(pick && pick.n);
-  if (pickN >= 5 && Number.isFinite(pickHits)) return { hits: pickHits, n: pickN, rate: pickHits / pickN, who, did: "hit in" };
+  if (pickN >= 5 && Number.isFinite(pickHits)) return { hits: pickHits, n: pickN, rate: pickHits / pickN, who, did: "hit in", ticket };
   const rec = typeof metalRecord === "function" ? metalRecord(leg) : null;
   if (rec) return { ...rec, who, did: "hit in" };
   const games = (bankCardOf(leg) || {}).games;
@@ -143,10 +144,7 @@ function bankAskCard(leg) {
     });
 }
 
-function bankPct(rate) {
-  const v = Math.round(Number(rate) * 1000) / 10;
-  return Math.abs(v - Math.round(v)) < 0.05 ? String(Math.round(v)) : v.toFixed(1);
-}
+function bankPct(rate) { const v = Math.round(Number(rate) * 1000) / 10; return Math.abs(v - Math.round(v)) < 0.05 ? String(Math.round(v)) : v.toFixed(1); }
 
 function bankHitSay(kelly) {
   const records = kelly.records || [];
@@ -154,8 +152,10 @@ function bankHitSay(kelly) {
   const list = bits.length < 2 ? (bits[0] || "") : bits.length === 2 ? `${bits[0]} and ${bits[1]}` : `${bits.slice(0, -1).join(", ")}, and ${bits[bits.length - 1]}`;
   const odds = Number(kelly.odds);
   const need = odds < 0 ? Math.abs(odds) / (Math.abs(odds) + 100) : 100 / (odds + 100);
+  const row = records[0];
+  const ticket = bits.length === 1 && row && row.ticket ? `This is the ${row.ticket} Ticket. ` : "";
   const together = bits.length > 1 ? ` Together that is ${bankPct(kelly.p)}%` : ` That is ${bankPct(kelly.p)}%`;
-  return `${list}.${together}, and the price needs ${bankPct(need)}%.`;
+  return `${ticket}${list}.${together}, and the price needs ${bankPct(need)}%.`;
 }
 
 function bankCall(kelly) {
