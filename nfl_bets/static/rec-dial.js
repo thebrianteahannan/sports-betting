@@ -220,6 +220,19 @@ function recDialShowingPaint(level) {
 function recDialApply(next, opts) {
   const quiet = !!(opts && opts.quiet);
   const level = Math.max(0, Math.min(REC_DIAL_MAX, Math.round(Number(next) || 0)));
+  if (quiet && recDialDrag) {
+    recDial = level;
+    window.recDial = recDial;
+    recDialHosts().forEach((box) => { box.dataset.recDial = String(recDial); });
+    const showing = recDialShowingPaint(recDial);
+    document.querySelectorAll(".rec-dial-empty").forEach((node) => {
+      const show = !(showing > 0);
+      if (node.hidden === !show) return;
+      node.hidden = !show;
+      if (show) node.textContent = recDialEmptyText(node);
+    });
+    return;
+  }
   recDialSave(level);
   recDialHosts().forEach((box) => { box.dataset.recDial = String(recDial); });
   recDialSyncInputs(recDial, quiet);

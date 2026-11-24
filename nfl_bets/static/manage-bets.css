@@ -369,7 +369,11 @@
 .manage-board .manage-bet-price .px { min-width: 3.4em; color: #3dff6e; font-weight: 700; }
 .manage-board .manage-bet-price .pct { min-width: 3.4em; color: #c9d4dd; font-size: 0.88em; }
 .manage-board .manage-bet-price .pay { color: #3dff6e; }
-.manage-board .find-chose { display: flex; align-items: baseline; gap: 0.5rem; min-width: 0; padding: 0.2rem 0; }
+.manage-board .find-chose { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; min-width: 0; padding: 0.2rem 0; }
+.manage-board .manage-leg-note { display: none; flex: 1 0 100%; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.45rem; margin: 0.1rem 0 0.35rem; min-width: 0; }
+.manage-board[data-manage-zoom="3"] .manage-leg-note,
+.manage-board[data-manage-zoom="4"] .manage-leg-note,
+.manage-board[data-manage-zoom="5"] .manage-leg-note { display: flex; }
 .manage-board .find-chose > span { display: flex; flex: 1; align-items: baseline; flex-wrap: wrap; gap: 0.1rem 0.5rem; min-width: 0; font-weight: 600; }
 .manage-board .find-chose i { font-style: normal; }
 .manage-board .find-chose i.who { color: #f4f7fb; font-weight: 700; white-space: nowrap; }
@@ -428,12 +432,20 @@
 .manage-board .find-tray-swap { width: 100%; }
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-tags,
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-more,
+#desk.tv-full #desk-glass .manage-board .manage-card > .manage-inline,
 .manage-board .manage-card > .manage-tags,
-.manage-board .manage-card > .manage-more { grid-column: 1 / -1; }
+.manage-board .manage-card > .manage-more,
+.manage-board .manage-card > .manage-inline { grid-column: 1 / -1; min-width: 0; }
 #desk.tv-full #desk-glass .manage-board[data-manage-zoom="3"] .manage-tags:not([hidden]),
 .manage-board[data-manage-zoom="3"] .manage-tags:not([hidden]),
 #desk.tv-full #desk-glass .manage-board[data-manage-zoom="4"] .manage-tags:not([hidden]),
-.manage-board[data-manage-zoom="4"] .manage-tags:not([hidden]) {
+.manage-board[data-manage-zoom="4"] .manage-tags:not([hidden]),
+#desk.tv-full #desk-glass .manage-board[data-manage-zoom="3"] .manage-inline:not([hidden]),
+.manage-board[data-manage-zoom="3"] .manage-inline:not([hidden]),
+#desk.tv-full #desk-glass .manage-board[data-manage-zoom="4"] .manage-inline:not([hidden]),
+.manage-board[data-manage-zoom="4"] .manage-inline:not([hidden]),
+#desk.tv-full #desk-glass .manage-board[data-manage-zoom="5"] .manage-inline:not([hidden]),
+.manage-board[data-manage-zoom="5"] .manage-inline:not([hidden]) {
   display: grid;
   flex: 1 0 100%;
   gap: 0.35rem;
@@ -884,7 +896,13 @@
   gap: 0.7rem;
   padding: 0.15rem 0.1rem 0.45rem !important;
 }
-.manage-board[data-manage-zoom="5"] .manage-list { display: none !important; }
+.manage-board .manage-inline { display: none; min-width: 0; }
+.manage-board[data-manage-zoom="5"] .manage-card { grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; }
+.manage-board .manage-inline-who { color: #f4f7fb; font-size: 13px; }
+.manage-board .manage-stat { display: inline-flex; align-items: center; gap: 0.25rem; color: #d5deea; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.manage-leg-note i.find-swing, .manage-inline i.find-swing { display: inline-block; margin: 0; padding: 0 0.35rem; border: 1px solid #3dff6e; border-radius: 999px; color: #3dff6e; font-size: 0.68rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.35; text-transform: uppercase; }
+.manage-leg-note i.find-swing.vol, .manage-inline i.find-swing.vol { border-color: #ff8a2a; color: #ff8a2a; }
+.manage-leg-note i.find-swing.find-blow, .manage-inline i.find-swing.find-blow { border-style: dashed; color: #b8c4cf; border-color: #8b98a5; text-transform: none; letter-spacing: 0; }
 .find-board > .manage-search-keep { display: none; }
 .manage-board > .manage-search-keep { display: flex; flex-direction: column; gap: 0.8rem; width: 100%; min-width: 0; }
 .manage-search-keep .find-profile-x { display: none !important; }

@@ -209,7 +209,22 @@ async function playerCard(name, sport) {
   if (!built.line && !(built.stats || []).length) return { line: "", stats: [], miss: `His games are there, but the numbers did not add up for a card.` };
   const swing = swingTags(kind, built.stats, (key) => pull(window.rows, names, key));
   const blowout = league === "NBA" ? await blowTags(name, built.stats, (rows, cols) => (key) => pull(rows, cols, key)) : null;
-  return { line: built.line, span: window.span, stats: built.stats, swing, blowout };
+  return { line: built.line, span: window.span, stats: built.stats, swing, blowout, games: gameNums(kind, window.rows, names) };
+}
+
+function gameNums(kind, rows, names) {
+  const col = (key) => pull(rows, names, key);
+  const cols = kind === "hoop"
+    ? { pts: col("points"), threes: col("threes"), reb: col("reb"), ast: col("assists") }
+    : kind === "ball"
+      ? { rushTd: col("rushingTouchdowns"), recTd: col("receivingTouchdowns"), passYds: col("passingYards"), rushYds: col("rushingYards"), recYds: col("receivingYards"), rec: col("receptions") }
+      : null;
+  if (!cols) return [];
+  return rows.map((_, i) => {
+    const game = {};
+    Object.keys(cols).forEach((key) => { const value = cols[key][i]; if (value != null) game[key] = Math.round(value * 10) / 10; });
+    return game;
+  });
 }
 
 module.exports = { playerCard };

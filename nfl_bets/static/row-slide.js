@@ -16,7 +16,9 @@ function rowSlide(input) {
   input.classList.add("row-slide-input");
   const min = () => Number(input.min) || 0;
   const max = () => Number(input.max);
-  const half = () => (thumb.offsetWidth || 36) / 2;
+  let edgePx = (thumb.offsetWidth || 32) / 2;
+  let spanRect = null;
+  const half = () => edgePx;
   const paint = (n) => {
     const lo = min(), hi = Number.isFinite(max()) ? max() : lo;
     const span = hi - lo || 1;
@@ -27,7 +29,7 @@ function rowSlide(input) {
   };
   const fromX = (x) => {
     const lo = min(), hi = Number.isFinite(max()) ? max() : lo;
-    const rect = track.getBoundingClientRect();
+    const rect = spanRect || track.getBoundingClientRect();
     const edge = half();
     const inner = Math.max(1, rect.width - edge * 2);
     const clamped = Math.min(rect.right - edge, Math.max(rect.left + edge, x));
@@ -69,6 +71,7 @@ function rowSlide(input) {
   };
   const finish = (level) => {
     held = false;
+    spanRect = null;
     drop();
     raw = level;
     sent = level;
@@ -89,6 +92,8 @@ function rowSlide(input) {
     if (event.target.closest && event.target.closest("button, a")) return;
     held = true;
     pointer = event.pointerId;
+    edgePx = (thumb.offsetWidth || 32) / 2;
+    spanRect = track.getBoundingClientRect();
     try { row.setPointerCapture(event.pointerId); } catch (error) {}
     event.preventDefault();
     row.addEventListener("pointermove", move);

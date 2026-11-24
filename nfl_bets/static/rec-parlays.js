@@ -443,7 +443,7 @@ function recParlayPaint(board, box) {
   }
   const list = document.createElement("div");
   list.className = "rec-parlay-list";
-  made.rows.forEach((row) => list.append(recParlayCard(board, row)));
+  made.rows.filter((row) => row.place === "golden" || row.place === "silver" || row.place === "bronze" || row.place === "known").forEach((row) => list.append(recParlayCard(board, row)));
   box.append(list);
   const next = box.querySelector("button.rec-dial-next") || (typeof recDialNext === "function" ? recDialNext() : null);
   if (next) box.append(next);

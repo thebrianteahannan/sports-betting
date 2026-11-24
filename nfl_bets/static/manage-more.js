@@ -71,26 +71,47 @@ function manageProfileFill(host, page, board) {
   });
 }
 
-function manageZoomExtra(board) {
-  const page = board.closest(".find-board");
-  if (typeof manageZoom === "undefined" || manageZoom < 4) return;
-  const host = manageSearchHost(page);
-  if (!host) return;
-  manageProfileFill(host, page, board);
-  const list = board.querySelector(".manage-list");
-  if (list) list.before(host);
-  else if (host.parentElement !== board) board.append(host);
-}
+function manageZoomExtra() {}
 
 function manageZoomExtras() {
   document.querySelectorAll(".find-board").forEach((page) => {
     const board = page.querySelector(".find-saved .manage-board");
     const host = page.querySelector(".manage-search-keep");
     if (board) board.querySelectorAll(":scope > .manage-history").forEach((node) => node.remove());
-    if (host && (typeof manageZoom === "undefined" || manageZoom < 4)) page.append(host);
-    if (board && typeof manageZoom !== "undefined" && manageZoom >= 4) manageZoomExtra(board);
+    if (host) page.append(host);
   });
 }
+
+function manageLegNote(leg) {
+  if (typeof bankAskCard === "function") bankAskCard(leg);
+  const card = typeof bankCardOf === "function" ? bankCardOf(leg) : null;
+  if (!card || (!card.line && !(card.stats || []).length)) return null;
+  const row = document.createElement("p");
+  row.className = "manage-leg-note";
+  const how = document.createElement("span");
+  how.className = "manage-how";
+  how.textContent = [card.line, card.span].filter(Boolean).join(" ");
+  row.append(how);
+  const pill = (text, vol, blow) => {
+    const tag = document.createElement("i");
+    tag.className = `find-swing${vol ? " vol" : ""}${blow ? " find-blow flat" : ""}`;
+    tag.textContent = text;
+    return tag;
+  };
+  if (card.swing && card.swing.tag) row.append(pill(card.swing.tag, card.swing.tag === "Volatile"));
+  if (card.blowout && card.blowout.tag) row.append(pill(card.blowout.tag, false, true));
+  (card.stats || []).forEach((stat) => {
+    const bit = document.createElement("span");
+    bit.className = "manage-stat";
+    bit.append(document.createTextNode(`${String(stat.label || "").replace(/\/Game/i, "")} ${stat.value || ""}`));
+    if (stat.tag) bit.append(pill(stat.tag, stat.tag === "Volatile"));
+    row.append(bit);
+  });
+  row.addEventListener("click", (event) => event.stopPropagation());
+  return row;
+}
+
+window.manageLegNote = manageLegNote;
 
 window.manageSearchTake = manageSearchTake;
 

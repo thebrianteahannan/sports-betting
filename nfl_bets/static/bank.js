@@ -59,32 +59,112 @@ function bankKellyCore(p, odds, roll, free) {
 
 function bankKelly(legs) {
   const rows = Array.isArray(legs) ? legs : [];
-  if (!rows.length || typeof metalRecord !== "function") return null;
-  const records = rows.map((leg) => metalRecord(leg));
+  if (!rows.length) return null;
+  const records = rows.map(bankLegRate);
   if (records.some((row) => !row)) return null;
   const p = records.reduce((prod, row) => prod * row.rate, 1);
   const odds = rows.length === 1 ? bankOddsNum(rows[0].odds) : bankPriceNum(rows);
-  return { ...bankKellyCore(p, odds, bankRoll() || 100, bankBook.cash), odds };
+  return { ...bankKellyCore(p, odds, bankRoll() || 100, bankBook.cash), odds, p, records };
 }
 
-function bankSay(kelly, fallback, odds) {
-  const price = bankOddsNum((kelly && kelly.odds) || odds);
-  const stake = kelly && kelly.edge && kelly.bet > 0 ? kelly.bet : (fallback > 0 ? fallback : 0);
-  if (!price || !(stake > 0)) return kelly && !kelly.edge ? "The price has no edge." : "";
-  const need = typeof findPct === "function" ? findPct(price) : "";
-  const win = typeof findCash === "function" ? findCash(price, stake) : "";
-  const bank = bankMoney(bankRoll() || 100);
-  if (kelly && kelly.edge && kelly.bet > 0 && need && win) {
-    const left = kelly.quarter > kelly.bet ? ` $${bankMoney(kelly.bet)} is what's left.` : "";
-    return `Bet $${bankMoney(kelly.bet)} of the $${bank}.${left} It wins ${win}. The hit rate clears the ${need} this price needs.`;
+const bankCards = new Map();
+const bankCardWait = new Set();
+let bankCardRefresh = false;
+
+function bankWho(leg) {
+  const raw = String((leg && leg.label) || "").split(/\s+—\s+/)[0].trim();
+  return String((leg && leg.player) || "").trim() || raw.split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "").trim();
+}
+
+function bankGameHit(leg, games) {
+  const blob = `${leg.market || ""} ${leg.label || ""}`.toLowerCase();
+  const line = Number((blob.match(/\d+(?:\.\d+)?/) || [])[0]);
+  const under = /\bunder\b/.test(blob);
+  const plus = /\+/.test(blob);
+  const count = (pick, did) => {
+    const vals = games.map(pick).filter((value) => value != null && Number.isFinite(Number(value)));
+    if (vals.length < 5) return null;
+    const hits = vals.filter((value) => {
+      const n = Number(value);
+      if (!Number.isFinite(line)) return n >= 1;
+      if (under) return n < line;
+      if (plus) return n >= line;
+      return n > line;
+    }).length;
+    return { hits, n: vals.length, did };
+  };
+  if (/touchdown|anytime|\btd\b/.test(blob)) {
+    const qb = games.some((game) => Number(game.passYds) >= 100);
+    return count((game) => (qb ? Number(game.rushTd) || 0 : (Number(game.rushTd) || 0) + (Number(game.recTd) || 0)), "scored in");
   }
-  if (kelly && !kelly.edge) {
-    const loss = Math.max(0, Math.round((fallback > 0 ? fallback : stake) * Math.abs(Math.min(0, kelly.ev || 0))));
-    if (loss > 0 && need) return `A $${bankMoney(fallback > 0 ? fallback : stake)} bet loses $${bankMoney(loss)}. The price needs ${need}.`;
-    return "The price has no edge.";
-  }
-  if (!need || !win) return "";
-  return `Bet $${bankMoney(stake)} of the $${bank}. It wins ${win}. The price needs ${need}.`;
+  if (/three|3pt|3-pt/.test(blob)) return count((game) => game.threes, Number.isFinite(line) ? `made ${line} or more in` : "made them in");
+  if (/rebound/.test(blob)) return count((game) => game.reb, "cleared it in");
+  if (/assist/.test(blob)) return count((game) => game.ast, "cleared it in");
+  if (/point/.test(blob)) return count((game) => game.pts, Number.isFinite(line) ? `cleared ${line} in` : "cleared it in");
+  if (/receiv/.test(blob)) return count((game) => /yard/.test(blob) ? game.recYds : game.rec, "cleared it in");
+  if (/rush/.test(blob)) return count((game) => game.rushYds, "cleared it in");
+  return null;
+}
+
+function bankLegRate(leg) {
+  const who = bankWho(leg);
+  const rec = typeof metalRecord === "function" ? metalRecord(leg) : null;
+  if (rec) return { ...rec, who, did: "hit in" };
+  const games = (bankCardOf(leg) || {}).games;
+  if (!who || !games) return null;
+  const hit = bankGameHit(leg, games);
+  if (!hit) return null;
+  return { hits: hit.hits, n: hit.n, rate: hit.hits / hit.n, who, did: hit.did };
+}
+
+function bankCardOf(leg) {
+  const who = bankWho(leg);
+  return who ? bankCards.get(who.toLowerCase()) || null : null;
+}
+
+function bankAskCard(leg) {
+  const who = bankWho(leg);
+  const key = who.toLowerCase();
+  if (!who || bankCards.has(key) || bankCardWait.has(key)) return;
+  bankCardWait.add(key);
+  fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "card", name: who, sport: leg.sport || "" }) })
+    .then((res) => res.json())
+    .then((data) => { bankCards.set(key, data || {}); })
+    .catch(() => { bankCards.set(key, {}); })
+    .finally(() => {
+      bankCardWait.delete(key);
+      if (bankCardWait.size || bankCardRefresh || typeof manageRefresh !== "function") return;
+      bankCardRefresh = true;
+      manageRefresh();
+      bankCardRefresh = false;
+    });
+}
+
+function bankPct(rate) {
+  const v = Math.round(Number(rate) * 1000) / 10;
+  return Math.abs(v - Math.round(v)) < 0.05 ? String(Math.round(v)) : v.toFixed(1);
+}
+
+function bankHitSay(kelly) {
+  const records = kelly.records || [];
+  const bits = records.map((row) => `${row.who} ${row.did} ${row.hits} of ${row.n}`);
+  const list = bits.length < 2 ? (bits[0] || "") : bits.length === 2 ? `${bits[0]} and ${bits[1]}` : `${bits.slice(0, -1).join(", ")}, and ${bits[bits.length - 1]}`;
+  const odds = Number(kelly.odds);
+  const need = odds < 0 ? Math.abs(odds) / (Math.abs(odds) + 100) : 100 / (odds + 100);
+  const together = bits.length > 1 ? ` Together that is ${bankPct(kelly.p)}%` : ` That is ${bankPct(kelly.p)}%`;
+  return `${list}.${together}, and the price needs ${bankPct(need)}%.`;
+}
+
+function bankSay(kelly, fallback) {
+  if (!kelly || !(kelly.records || []).length) return "";
+  const roll = bankMoney(bankRoll() || 100);
+  const why = bankHitSay(kelly);
+  if (kelly.edge && kelly.bet > 0) return `Bet $${bankMoney(kelly.bet)} of the $${roll}. ${why} A quarter of that edge is $${bankMoney(kelly.bet)}.`;
+  if (kelly.edge) return `${why} The edge on the $${roll} is $${bankMoney(kelly.full)}. A quarter of that is under $1.`;
+  const stake = fallback > 0 ? fallback : 0;
+  const loss = stake > 0 ? Math.max(0, Math.round(stake * Math.abs(Math.min(0, kelly.ev || 0)))) : 0;
+  if (loss > 0) return `${why} A $${bankMoney(stake)} repeat loses $${bankMoney(loss)}.`;
+  return why;
 }
 
 function bankStoreLocal(book) {
@@ -244,7 +324,8 @@ function bankPaintTicket() {
       ticket.after(note);
     }
     const legs = [...parlayLeg.values()];
-    const said = bankSay(kelly, Number(window.parlayStake) || 5, legs.length === 1 ? legs[0].odds : bankPriceNum(legs));
+    legs.forEach(bankAskCard);
+    const said = bankSay(kelly, Number(window.parlayStake) || 5);
     if (!said) return;
     const line = document.createElement("p");
     line.className = "bank-kelly";
@@ -278,9 +359,12 @@ function bankBar() {
   buck.textContent = "$";
   wrap.append(buck, field);
   const out = bankOutSum(bankBook);
-  const say = document.createElement("span");
-  say.textContent = out > 0 ? ` left to bet. $${bankMoney(out)} is on open bets.` : " left to bet.";
-  line.append(name, wrap, say);
+  line.append(name, wrap);
+  if (out > 0) {
+    const say = document.createElement("span");
+    say.textContent = ` $${bankMoney(out)} is on open bets.`;
+    line.append(say);
+  }
   if (bankNote) {
     const note = document.createElement("span");
     note.className = "bank-note";
@@ -314,15 +398,19 @@ function bankWatchRecords() {
 
 function bankCard(card, row) {
   if (!card || !row) return;
-  const kelly = bankKelly(row.legs || []);
+  const legs = row.legs || [];
+  legs.forEach(bankAskCard);
+  const kelly = bankKelly(legs);
   if (!kelly) bankWatchRecords();
   const stake = typeof saveRowStake === "function" ? saveRowStake(row) : (Number(row.stake) > 0 ? Number(row.stake) : 5);
-  const said = bankSay(kelly, stake, bankRowOdds(row));
+  const said = bankSay(kelly, stake);
   if (said) {
-    bankStamp(card.querySelector(".manage-fold-line"), said);
-    bankStamp(card.querySelector(".manage-legs > .manage-bet-price"), said);
+    const fold = card.querySelector(".manage-fold-line");
+    const price = card.querySelector(".manage-legs > .manage-bet-price");
+    bankStamp(fold, said);
+    bankStamp(price, said);
     bankStamp(card.querySelector(".manage-slip-head"), said);
-    if (!card.querySelector(".bank-kelly")) bankStamp(card.querySelector(".manage-legs .find-chose > span"), said);
+    if (!fold && !price) bankStamp(card.querySelector(".manage-legs .find-chose > span"), said);
   }
   const done = bankBook.settled && bankBook.settled[row.id];
   if (done) {
@@ -373,6 +461,9 @@ if (typeof window !== "undefined") {
   window.bankReturn = bankReturn;
   window.bankBar = bankBar;
   window.bankCard = bankCard;
+  window.bankCardOf = bankCardOf;
+  window.bankAskCard = bankAskCard;
+  window.bankWho = bankWho;
   window.bankLoad = bankLoad;
   const kept = bankReadLocal();
   if (kept && kept.cash != null) bankBook = { ...bankFresh(), ...kept, out: kept.out || {}, settled: kept.settled || {} };

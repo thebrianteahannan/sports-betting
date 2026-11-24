@@ -283,6 +283,8 @@ function manageLegLine(leg, legs, byKey) {
   ].filter(Boolean).join("");
   line.append(said);
   if (typeof manageLegEdit === "function") manageLegEdit(line, said, leg);
+  const note = typeof manageLegNote === "function" ? manageLegNote(leg) : null;
+  if (note) line.append(note);
   return line;
 }
 
