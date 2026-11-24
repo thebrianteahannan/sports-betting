@@ -123,14 +123,13 @@
   text-transform: uppercase;
   white-space: nowrap;
 }
-.manage-board .manage-card > .manage-card-zoom {
-  grid-column: 1 / -1;
-  justify-content: flex-end;
-  width: max-content;
-  max-width: 100%;
-  margin: 0.15rem 0 0.25rem auto;
-}
-.manage-board .manage-card > .manage-card-zoom input[type="range"] { width: 108px; }
+.manage-board .manage-card-zoom { display: none !important; margin: 0; gap: 0; }
+#desk.tv-full #desk-glass .manage-board[data-manage-zoom="1"] .manage-card-zoom,
+.manage-board[data-manage-zoom="1"] .manage-card-zoom { display: inline-flex !important; }
+.manage-board .manage-card-zoom .row-slide { flex: none; width: 4.4rem; min-width: 0; height: 22px; }
+.manage-board .manage-card-zoom .row-slide::before,
+.manage-board .manage-card-zoom .row-slide > i { height: 3px; }
+.manage-board .manage-card-zoom .row-slide > b { width: 16px; height: 16px; border-width: 1px; }
 
 #desk.tv-full #desk-glass .manage-board .manage-zoom input[type="range"],
 .manage-board .manage-zoom input[type="range"] {
@@ -394,6 +393,8 @@
   .manage-board .manage-card > .manage-card-acts { position: absolute !important; top: 0.7rem; right: 0.7rem; grid-column: auto !important; grid-row: auto !important; }
   .manage-board .manage-bet-price,
   .manage-board .manage-fold-line { padding-right: 6.4rem; }
+  .manage-board[data-manage-zoom="1"] .manage-bet-price,
+  .manage-board[data-manage-zoom="1"] .manage-fold-line { padding-right: 11.5rem; }
   .manage-board .find-chose { gap: 0.3rem; padding: 0.05rem 0; }
   .manage-board .find-chose > span { flex-wrap: nowrap; gap: 0.15rem 0.3rem; font-size: 12px; }
   .manage-board .find-chose i.px,

@@ -111,7 +111,8 @@ function manageZoomBar(card) {
     }
   });
   input.addEventListener("change", end);
-  bar.append(less, input, more);
+  if (card) bar.append(input);
+  else bar.append(less, input, more);
   if (typeof rowSlide === "function") rowSlide(input);
   return bar;
 }
@@ -397,11 +398,11 @@ function manageCard(row, n) {
   });
   const acts = document.createElement("span");
   acts.className = "manage-card-acts";
-  acts.append(open, drop);
+  acts.append(manageZoomBar(card), open, drop);
   const num = document.createElement("b");
   num.className = "manage-n";
   num.textContent = String(n);
-  card.append(num, legsBox, acts, manageTags(legs), manageSlip(row), manageZoomBar(card));
+  card.append(num, legsBox, acts, manageTags(legs), manageSlip(row));
   if (fold) card.insertBefore(fold, acts);
   if (typeof bankCard === "function") bankCard(card, row);
   const openBet = () => {
