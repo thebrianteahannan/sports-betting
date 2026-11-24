@@ -417,6 +417,8 @@
 .manage-board .find-chose i.leg-role.r-filler { color: #9aa6b2; }
 .manage-board .find-chose i.leg-role.r-dead { color: #ff6b6b; border-style: dashed; }
 .manage-board .find-chose i.find-rec-pill { display: inline-flex; align-items: center; gap: 0.25rem; align-self: center; margin: 0 0 0 0.3rem; padding: 0 0.45rem 0 0.25rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.03em; line-height: 1.45; text-transform: uppercase; white-space: nowrap; }
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill .kind,
+.manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill .kind { display: none; }
 .manage-board .find-chose i.find-rec-pill::before { content: ""; width: 1.3em; height: 1.3em; background: url("/scene/parrot-head-tight.webp?v=1") center / contain no-repeat; }
 .manage-board .find-chose i.find-rec-pill.ticket { background: #e7c15a; color: #1a1400; }
 .manage-board .find-chose i.find-rec-pill.ticket.silver { background: #d5deea; color: #12181f; }

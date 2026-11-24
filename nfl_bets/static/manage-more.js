@@ -115,6 +115,20 @@ function manageFilters(box) {
   box.append(when);
 }
 
+function manageBankPlan() {
+  const list = typeof saveList === "function" ? saveList() : [];
+  const book = typeof bankBook !== "undefined" ? bankBook : {};
+  const out = book.out || {};
+  const settled = book.settled || {};
+  return Math.round(list.reduce((sum, row) => {
+    if (!row || settled[row.id] || out[row.id]) return sum;
+    if (row.locked) return sum + (typeof saveRowStake === "function" ? saveRowStake(row) : Number(row.stake) || 0);
+    const kelly = typeof bankKelly === "function" ? bankKelly(row.legs || []) : null;
+    const stake = kelly && kelly.edge && kelly.bet > 0 ? Number(kelly.bet) : (typeof saveRowStake === "function" ? saveRowStake(row) : Number(row.stake) || 0);
+    return sum + (Number(stake) || 0);
+  }, 0) * 100) / 100;
+}
+
 function manageClubs(rows) {
   if (typeof clubOf === "undefined" || typeof clubAsked === "undefined") return;
   const sides = [];

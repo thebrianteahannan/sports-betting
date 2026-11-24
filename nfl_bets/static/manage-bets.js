@@ -307,7 +307,7 @@ function manageLegLine(leg, legs, byKey) {
     bits.odds && `<i class="px">${esc(bits.odds)}</i>`,
     bits.pct && `<i class="pct">${esc(bits.pct)}</i>`,
     role && MANAGE_ROLE[role.role] && !(legs.length < 2 && role.role === "anchor") && `<i class="leg-role r-${esc(role.role)}">${esc(MANAGE_ROLE[role.role])}</i>`,
-    (ticket || say) && `<i class="find-rec-pill${ticket ? ` ticket ${ticket.toLowerCase()}` : pick.tier === "good" ? " good" : ""}">${esc(ticket ? `${ticket} Ticket` : pick.tier === "good" ? "Good bet" : `Recommended · ${say.text}`)}</i>`,
+    (ticket || say) && `<i class="find-rec-pill${ticket ? ` ticket ${ticket.toLowerCase()}` : pick.tier === "good" ? " good" : ""}">${ticket ? esc(`${ticket} Ticket`) : pick.tier === "good" ? "Good bet" : `Recommended<i class="kind"> · ${esc(say.text)}</i>`}</i>`,
     pick && typeof scriptRoleTag === "function" ? scriptRoleTag(pick) : "",
     pick && typeof scriptCushionTag === "function" ? scriptCushionTag(pick) : "",
   ].filter(Boolean).join("");

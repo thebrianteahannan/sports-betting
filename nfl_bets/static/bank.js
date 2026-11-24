@@ -346,17 +346,20 @@ function bankPaintTicket() {
 function bankBar() {
   const line = document.createElement("p");
   line.className = "bank-line";
+  const hold = () => (typeof manageBankPlan === "function" ? manageBankPlan() : 0);
+  const left = () => Math.round((Number(bankBook.cash) - hold()) * 100) / 100;
   const field = document.createElement("input");
   field.type = "number";
-  field.min = "0";
   field.step = "1";
   field.className = "bank-cash";
   field.setAttribute("aria-label", "Bankroll left to bet");
-  field.value = bankMoney(bankBook.cash);
+  field.value = bankMoney(left());
   field.addEventListener("click", (event) => event.stopPropagation());
+  field.addEventListener("focus", () => { field.value = bankMoney(bankBook.cash); });
+  field.addEventListener("blur", () => { field.value = bankMoney(left()); });
   field.addEventListener("change", () => {
     const cash = Number(field.value);
-    bankAct({ action: "set", cash }).catch(() => { field.value = bankMoney(bankBook.cash); });
+    bankAct({ action: "set", cash }).catch(() => { field.value = bankMoney(left()); });
   });
   const name = document.createElement("b");
   name.className = "bank-name";
@@ -367,13 +370,7 @@ function bankBar() {
   buck.className = "bank-buck";
   buck.textContent = "$";
   wrap.append(buck, field);
-  const out = bankOutSum(bankBook);
   line.append(name, wrap);
-  if (out > 0) {
-    const say = document.createElement("span");
-    say.textContent = ` $${bankMoney(out)} is on open bets.`;
-    line.append(say);
-  }
   if (bankNote) {
     const note = document.createElement("span");
     note.className = "bank-note";
