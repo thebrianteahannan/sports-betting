@@ -462,6 +462,7 @@
 .find-tray .find-tray-swap { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.1rem 0 0.55rem 1rem; }
 .find-tray .find-tray-swap p { margin: 0; color: #8b97a3; font-size: 0.85rem; }
 .find-tray .find-tray-swap .find-swap-top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem 0.7rem; margin: 0 0 0.25rem; }
+.find-tray .find-swap-name, .find-tray .find-hist-name, .find-tray .find-seek-name, .find-tray .find-leg-menu b.find-tool-name { color: #e7c15a; font-size: 0.85rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .find-tray .find-tray-swap .find-swap-held { color: #3dff6e; font-size: 0.78rem; font-weight: 800; }
 .find-tray .find-tray-swap .find-swap-rec { display: inline-flex; align-items: center; gap: 0.4rem; color: #c9d4dd; font-size: 0.78rem; font-weight: 700; cursor: pointer; user-select: none; }
 #desk.tv-full #desk-glass .find-tray .find-tray-swap .find-swap-rec input, .find-tray .find-tray-swap .find-swap-rec input { width: 0.95rem !important; height: 0.95rem !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; accent-color: #3dff6e; cursor: pointer; }
@@ -947,7 +948,9 @@
 .rec-board .find-script.has-story p.find-script-short { color: #e6edf3; font-size: 15px; line-height: 1.5; }
 .rec-board .find-script.has-story > .find-brief > p.find-dive, .rec-board .find-script.has-story + .find-brief > p.find-dive { display: none; }
 .find-tray .find-tray-read { position: relative; padding: 0.1rem 0 0.55rem; }
-.find-tray .find-tray-read .find-hist-bar { display: flex; justify-content: flex-end; margin: 0 0 0.25rem; }
+.find-tray .find-tray-read .find-hist-bar { display: flex; align-items: center; justify-content: flex-start; gap: 0.6rem; margin: 0 0 0.25rem; }
+.rec-board .find-tray .find-tray-read .find-hist-bar button.find-hist-close, #desk.tv-full #desk-glass .rec-board .find-tray .find-tray-read .find-hist-bar button.find-hist-close { margin-left: auto !important; }
+.find-tray .bet-acts-seek > .find-seek-name { display: block; margin: 0 0 0.35rem; }
 .rec-board .find-tray .find-tray-read button.find-hist-close,
 #desk.tv-full #desk-glass .rec-board .find-tray .find-tray-read button.find-hist-close { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.2rem 0.65rem !important; border: 1px solid rgba(61, 255, 110, 0.55) !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #3dff6e !important; font-size: 12px !important; font-weight: 800 !important; letter-spacing: normal !important; text-transform: none !important; cursor: pointer; }
 .rec-board .find-tray .find-tray-read button.find-hist-close:hover,
@@ -1091,6 +1094,9 @@
 .rec-board .find-tray.find-flow, #choice-result .find-tray.find-flow { position: relative; }
 :is(.rec-board, #choice-result) .find-tray .find-say .bet-acts { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; color: #9fb3c8; font: 700 11px Outfit, system-ui, sans-serif; letter-spacing: 0.04em; text-transform: uppercase; cursor: default; }
 :is(.rec-board, #choice-result) .find-tray .find-say button.find-fold { margin-left: 0.45rem !important; }
+:is(.rec-board, #choice-result) .find-tray .find-say button.find-step,
+#desk.tv-full #desk-glass :is(.rec-board, #choice-result) .find-tray .find-say button.find-step { flex: none; width: auto !important; margin: 0 !important; padding: 0.15rem 0.6rem !important; min-height: 0 !important; border: 0 !important; border-radius: 999px !important; background: transparent !important; color: #c9d4dd !important; box-shadow: inset 0 0 0 1px #3a4652 !important; font-size: 0.8rem !important; font-weight: 700 !important; line-height: inherit !important; letter-spacing: 0 !important; text-transform: none !important; white-space: nowrap; cursor: pointer; }
+:is(.rec-board, #choice-result) .find-tray .find-say button.find-step:disabled { opacity: 0.35; cursor: default; }
 :is(.rec-board, #choice-result) .find-tray .bet-acts input[type="range"] { -webkit-appearance: none; appearance: none; width: 92px; height: 22px; margin: 0; padding: 0; border: 0; background: transparent; outline: none; cursor: pointer; accent-color: #3dff6e; }
 :is(.rec-board, #choice-result) .find-tray .bet-acts input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 999px; background: #1c2a36; }
 :is(.rec-board, #choice-result) .find-tray .bet-acts input[type="range"]::-moz-range-track { height: 4px; border-radius: 999px; background: #1c2a36; border: 0; }

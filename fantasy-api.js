@@ -89,6 +89,14 @@ async function nflState() {
   return (await sleeperGet("/state/nfl")) || {};
 }
 
+function fantasyWeek(state) {
+  const coming = Number(state && (state.leg || state.week));
+  const shown = Number(state && state.display_week);
+  // Sleeper leaves display_week on the week that just ended until waivers run.
+  if (Number.isFinite(coming) && Number.isFinite(shown) && coming === shown + 1) return coming;
+  return Number(shown || coming) || null;
+}
+
 async function loadPlayers() {
   if (playerMap && Date.now() - playerAt < 24 * 3600000) return playerMap;
   const raw = await sleeperGet("/players/nfl");
@@ -518,7 +526,7 @@ async function packRoster(leagueId, ownerId, opts = {}) {
 async function sleeper(query) {
   const state = await nflState();
   const season = String(query.season || state.league_season || state.season || new Date().getFullYear());
-  const week = Number(state.display_week || state.week) || null;
+  const week = fantasyWeek(state) || null;
   const user = await resolveUser(query.user || query.username);
   const leagues = await leaguesFor(user.user_id, season);
   if (!query.league && !query.leagueId) {
@@ -784,7 +792,7 @@ async function leagueCheck(body, board) {
   if (body && (body.refresh || body.reload)) clearCaches();
   const state = await nflState();
   const season = String((body && body.season) || state.league_season || state.season || new Date().getFullYear());
-  const week = Number(state.display_week || state.week) || null;
+  const week = fantasyWeek(state) || null;
   const user = await resolveUser((body && (body.user || body.username)) || "");
   const leagues = await leaguesFor(user.user_id, season);
   const live = leagues.some((row) => row.status === "in_season");
@@ -909,7 +917,7 @@ let matchupCache = { key: "", at: 0, data: null };
 async function matchups(body) {
   const state = await nflState();
   const season = String((body && body.season) || state.league_season || state.season || new Date().getFullYear());
-  const week = Number(state.display_week || state.week) || null;
+  const week = fantasyWeek(state) || null;
   const user = await resolveUser((body && (body.user || body.username)) || "");
   const key = `${user.user_id}:${season}:${week}`;
   if (matchupCache.data && matchupCache.key === key && Date.now() - matchupCache.at < 90 * 1000) return matchupCache.data;

@@ -396,6 +396,14 @@ function saveAllShareTicket(rows) {
   return { title: "My bets", american: "", impliedPct: "", legs, card: "mine", pack: true, stake: tally.stake, profit: tally.profit };
 }
 
+function saveStep(dir) {
+  const list = saveList();
+  const at = list.findIndex((row) => row.id === window.parlayOpenId);
+  const next = at + dir;
+  if (next < 0 || next >= list.length) return;
+  saveOpen(list[next].id);
+}
+
 function savePaint() {
   if (parlayLeg.size || parlayPick.size) document.querySelectorAll(".find-tips").forEach((node) => node.remove());
   else {
@@ -471,6 +479,22 @@ function savePaint() {
     }
     const say = !tray.hidden && tray.querySelector(".find-say");
     if (say && !say.querySelector("button.find-close")) {
+      const mine = saveList();
+      if (mine.length > 1) {
+        const at = mine.findIndex((row) => row.id === window.parlayOpenId);
+        const fold = say.querySelector(".find-fold");
+        [["find-step-prev", "Previous", -1, at <= 0], ["find-step-next", "Next", 1, at >= mine.length - 1]].forEach(([kind, label, dir, off]) => {
+          const go = document.createElement("button");
+          go.type = "button";
+          go.className = `find-step ${kind}`;
+          go.textContent = label;
+          go.title = `${label} bet`;
+          go.setAttribute("aria-label", go.title);
+          go.disabled = off;
+          go.addEventListener("click", () => saveStep(dir));
+          if (fold) fold.before(go); else say.append(go);
+        });
+      }
       const close = document.createElement("button");
       close.type = "button";
       close.className = "find-close";

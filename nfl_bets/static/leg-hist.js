@@ -57,7 +57,10 @@ function legHistFor(key) {
     event.stopPropagation();
     legHistClose(key);
   });
-  bar.append(close);
+  const name = document.createElement("b");
+  name.className = "find-hist-name";
+  name.textContent = "History";
+  bar.append(name, close);
   const wait = document.createElement("p");
   wait.className = "find-leg-wait";
   wait.textContent = "Reading the history.";
@@ -194,7 +197,7 @@ function legMenuBox(key, close) {
   menu.dataset.key = key;
   const shut = close ? `<button type="button" class="find-leg-menu-close" aria-label="Close">Close</button>` : "";
   menu.innerHTML = others.length
-    ? `<b>Add this leg to</b>${others.map((row) => `<button type="button" data-id="${esc(row.id)}">${esc(legToName(row))}</button>`).join("")}${shut}`
+    ? `<b class="find-tool-name">Add</b>${others.map((row) => `<button type="button" data-id="${esc(row.id)}">${esc(legToName(row))}</button>`).join("")}${shut}`
     : `<p>No other saved parlays yet.</p>${shut}`;
   return menu;
 }

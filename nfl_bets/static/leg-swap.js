@@ -291,6 +291,10 @@ function legSwapBox(key, mode) {
   const drill = cats && !usedRec ? legSwapDrill.get(key) || "" : "";
   const top = document.createElement("div");
   top.className = "find-swap-top";
+  const title = document.createElement("b");
+  title.className = "find-swap-name";
+  title.textContent = mode === "swap" ? "Swaps" : mode === "line" ? "Numbers" : "Props";
+  top.append(title);
   const said = legSwapSaid(key, mode);
   if (said && mode !== "swap") {
     const hold = document.createElement("span");
@@ -453,11 +457,18 @@ function betActsSeek() {
       box.className = "bet-acts-seek";
       line.after(box);
     }
-    if (box.dataset.who === name && box.querySelector(".find-profile")) return;
-    box.dataset.who = name;
-    const person = typeof legSeekPerson === "function" ? legSeekPerson(name) : null;
-    const board = line.closest(".find-board");
-    if (person && typeof openPlayerPop === "function") openPlayerPop(person, board && board.querySelector(".find-list"), null, null, box);
+    if (!(box.dataset.who === name && box.querySelector(".find-profile"))) {
+      box.dataset.who = name;
+      const person = typeof legSeekPerson === "function" ? legSeekPerson(name) : null;
+      const board = line.closest(".find-board");
+      if (person && typeof openPlayerPop === "function") openPlayerPop(person, board && board.querySelector(".find-list"), null, null, box);
+    }
+    if (!box.querySelector(":scope > .find-seek-name")) {
+      const title = document.createElement("b");
+      title.className = "find-seek-name";
+      title.textContent = "Search";
+      box.prepend(title);
+    }
   });
   document.querySelectorAll(".find-tray .bet-acts-seek").forEach((node) => {
     const line = node.previousElementSibling;
@@ -474,11 +485,16 @@ function betActsApply() {
       bar.innerHTML = `<span>Less</span><input type="range" min="0" max="5" step="1" value="${betActs}" aria-label="Show more of the leg tools"><span>More</span>`;
       const box = bar.querySelector("input");
       if (typeof rowSlide === "function") rowSlide(box);
-      box.addEventListener("input", (event) => {
-        betActs = Number(event.target.value);
-        try { localStorage.setItem("betActsVer", "2"); localStorage.setItem("betActs", String(betActs)); } catch (error) {}
+      const remember = (event) => {
+        betActs = Math.max(0, Math.min(5, Math.round(Number(event.target.value) || 0)));
+        window.betActsNow = betActs;
         document.querySelectorAll(".find-tray").forEach((node) => { node.dataset.acts = String(betActs); });
-        document.querySelectorAll(".bet-acts input").forEach((box) => { box.value = String(betActs); });
+        document.querySelectorAll(".bet-acts input").forEach((other) => { if (other !== event.target) other.value = String(betActs); });
+      };
+      box.addEventListener("input", remember);
+      box.addEventListener("change", (event) => {
+        remember(event);
+        try { localStorage.setItem("betActsVer", "2"); localStorage.setItem("betActs", String(betActs)); } catch (error) {}
         if (typeof legSwapPaint === "function") legSwapPaint();
         if (typeof legHistPaint === "function") legHistPaint();
         if (typeof legMenuPaint === "function") legMenuPaint();

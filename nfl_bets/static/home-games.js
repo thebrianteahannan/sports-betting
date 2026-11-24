@@ -91,10 +91,16 @@ function startWeekMerge(board, people) {
   board.people = live;
 }
 
+function startWeekFresh(at) {
+  return at && Date.now() - at < 5 * 60 * 1000;
+}
+
 function startWeekLoad(done) {
-  if (!startNeedsWeek()) { if (done) done(); return; }
-  if (Date.now() - startWeekAt < 5 * 60 * 1000 && startWeekGames.length) { if (done) done(); return; }
-  if (homeLater.week.length && Date.now() - homeLater.weekAt < 5 * 60 * 1000) { startWeekGames = homeLater.week; startWeekAt = homeLater.weekAt; if (done) done(); return; }
+  const later = () => { if (done) setTimeout(done, 0); };
+  if (!startNeedsWeek()) { later(); return; }
+  // An empty list is a finished load. Treating it as "not loaded" reloads the same cached week forever and freezes the tab.
+  if (startWeekFresh(startWeekAt)) { later(); return; }
+  if (startWeekFresh(homeLater.weekAt)) { startWeekGames = homeLater.week; startWeekAt = homeLater.weekAt; later(); return; }
   if (done) startWeekWait.push(done);
   if (startWeekLoading || typeof loadFind !== "function") return;
   startWeekLoading = true;
@@ -117,8 +123,8 @@ function startSpanBar() {
   bar.className = "find-start-span desk-games-leagues";
   if (!document.body.classList.contains("needs-member")) homeLaterLoad();
   START_WHEN.forEach(([id, label]) => {
-    const on = startSpan === id, looking = on && startWeekLoading && (id === "week" || id === "tomorrow");
-    const chip = Object.assign(document.createElement("button"), { type: "button", className: `desk-games-league find-start-when${on ? " on" : ""}`, textContent: looking ? "Looking up…" : label });
+    const on = startSpan === id;
+    const chip = Object.assign(document.createElement("button"), { type: "button", className: `desk-games-league find-start-when${on ? " on" : ""}`, textContent: label });
     chip.setAttribute("aria-pressed", String(on));
     chip.addEventListener("click", () => {
       if (startSpan === id) return;
