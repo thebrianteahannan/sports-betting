@@ -65,9 +65,6 @@ function corrPairRate(a, b) {
   if (a.player && a.player === b.player && a.match === b.match) {
     return { rate: "moderate", line: "Two legs ride the same player tonight." };
   }
-  if (!middle && a.match && a.match === b.match) {
-    return { rate: "moderate", line: "Heavy on one game — one script swings both legs." };
-  }
   return null;
 }
 

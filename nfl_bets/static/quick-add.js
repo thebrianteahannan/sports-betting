@@ -25,6 +25,37 @@ function quickAddSpan(when) {
   return when === "tomorrow" || when === "week" ? "week" : "today";
 }
 
+function quickAddWeekFresh() {
+  const part = typeof findParts !== "undefined" && findParts.week;
+  return part && part.data && Date.now() - part.at < 30 * 60 * 1000 ? part : null;
+}
+
+function quickAddPullWeek(board, paint) {
+  if (!board || (quickAdd.when !== "tomorrow" && quickAdd.when !== "week")) return false;
+  const part = quickAddWeekFresh();
+  if (part && board.people && board.people.quickWeekAt === part.at) return false;
+  if (board.quickWeek === "in") return true;
+  if (part) {
+    if (typeof mergeFindWeek === "function") mergeFindWeek(board, part.data);
+    if (board.people) board.people.quickWeekAt = part.at;
+    return false;
+  }
+  if (board.quickWeek === "miss" || typeof loadFind !== "function") return false;
+  board.quickWeek = "in";
+  loadFind("week").then((more) => {
+    board.quickWeek = "";
+    if (!board.isConnected) return;
+    if (typeof mergeFindWeek === "function") mergeFindWeek(board, more);
+    const at = typeof findParts !== "undefined" && findParts.week && findParts.week.at;
+    if (board.people && at) board.people.quickWeekAt = at;
+    paint();
+  }).catch(() => {
+    board.quickWeek = "miss";
+    if (board.isConnected) paint();
+  });
+  return true;
+}
+
 function quickAddScope(people, when) {
   if (!when || !people.length) return [];
   const games = (typeof loadedGames === "function" ? loadedGames(people, quickAddSpan(when)) : []).filter((game) => typeof whenBucket !== "function" || whenBucket(Date.parse(game.kickoff || ""), game.match) === when);
@@ -765,8 +796,24 @@ function quickAddBox(board) {
     if (quickAdd.when === id) return;
     quickAdd.when = id;
     quickAddReset({ when: true });
+    if (board) board.quickWeek = "";
     paint();
   })), "when"));
+
+  if (quickAddPullWeek(board, paint)) {
+    const wait = document.createElement("p");
+    wait.className = "quick-add-none";
+    wait.textContent = "Looking up the board.";
+    box.append(wait);
+    return box;
+  }
+  if (board && board.quickWeek === "miss" && (quickAdd.when === "tomorrow" || quickAdd.when === "week")) {
+    const wait = document.createElement("p");
+    wait.className = "quick-add-none";
+    wait.textContent = "Could not load the rest of the week.";
+    box.append(wait);
+    return box;
+  }
 
   const all = quickAddPeople(board);
   const people = quickAddScope(all, quickAdd.when);

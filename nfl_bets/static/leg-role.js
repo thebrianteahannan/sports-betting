@@ -56,7 +56,7 @@ function metalPrice(odds) {
 
 function metalTagText(place) {
   if (place.kind === "clear") return `Clears ${place.name}`;
-  if (place.kind === "price") return "Not a ticket";
+  if (place.kind === "price") return `${place.name} price`;
   if (place.kind === "short") return "Short of Bronze";
   return place.kind === "shorter" ? "Shorter than bronze" : "Longer than bronze";
 }
@@ -67,7 +67,7 @@ function metalSay(place, pct, odds) {
   const even = price && pct ? ` ${price} breaks even at ${pct}.` : "";
   if (place.kind === "clear") return `Clears a ${place.name} Ticket. Hit ${place.record.hits} of ${place.record.n}.`;
   if (place.kind === "short") return `Hit ${place.record.hits} of ${place.record.n}.${even} A Bronze Ticket needs a ${need} hit rate.`;
-  if (place.kind === "price") return `Not a ${place.name} Ticket.${even} A ${place.name} Ticket needs a ${need} hit rate.`;
+  if (place.kind === "price") return price && pct ? `${price} is a ${place.name} price. It breaks even at ${pct}.` : price ? `${price} is a ${place.name} price.` : `${place.name} price.`;
   const stop = place.kind === "shorter" ? "−200" : "+200";
   return `${place.kind === "shorter" ? "Shorter" : "Longer"} than a Bronze Ticket.${even} Bronze stops at ${stop}.`;
 }
