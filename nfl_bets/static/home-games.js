@@ -299,6 +299,7 @@ function homeRecsLoad(forceWhen) {
     if (box) box.dataset.sig = "";
     homeGamesPaint();
     if (typeof startPaint === "function" && document.querySelector("#desk-glass-in .find-start")) startPaint(1);
+    if (typeof manageRefresh === "function") manageRefresh();
   }).catch((error) => { console.log("[home-games] could not load top picks", error); if (homeRecs && homeRecs.want === want) { homeRecs = { at: Date.now(), picks: [], guest: document.body.classList.contains("needs-member"), want }; homeGamesPaint(); } });
 }
 

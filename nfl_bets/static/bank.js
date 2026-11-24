@@ -108,6 +108,9 @@ function bankGameHit(leg, games) {
 
 function bankLegRate(leg) {
   const who = bankWho(leg);
+  const pick = typeof managePickOf === "function" ? managePickOf(leg) : null;
+  const pickHits = Number(pick && pick.hits), pickN = Number(pick && pick.n);
+  if (pickN >= 5 && Number.isFinite(pickHits)) return { hits: pickHits, n: pickN, rate: pickHits / pickN, who, did: "hit in" };
   const rec = typeof metalRecord === "function" ? metalRecord(leg) : null;
   if (rec) return { ...rec, who, did: "hit in" };
   const games = (bankCardOf(leg) || {}).games;
