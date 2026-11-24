@@ -664,7 +664,7 @@ function startStrip(box) {
     if (td) head.append(td);
   }
   const dial = tab === "rec" && typeof recDialBar === "function" ? recDialBar(typeof startDialCommit === "function" ? startDialCommit : null) : null;
-  const body = tab === "games" ? gameNodes : [...(dial ? [dial] : []), ...(all.length && typeof startKindBar === "function" ? [startKindBar(all)] : []), ...recs];
+  const body = tab === "games" ? gameNodes : [...(dial ? [dial] : []), ...recs];
   box.replaceChildren(head, ...body);
   if (tab === "rec" && typeof recDialCountPaint === "function") recDialCountPaint(typeof recDialCountOf === "function" ? recDialCountOf(all) : { golden: 0, all: all.length });
   if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 2, { quiet: true });

@@ -479,6 +479,8 @@ function startTdInline(board) {
 function startDialCommit() {
   // Dial already filtered the list with CSS while dragging — do not rebuild the board (that made the thumb choppy).
   startRandomSync();
+  const games = typeof leftGames === "function" ? leftGames() : [];
+  document.querySelectorAll(".start-filter-say > span").forEach((node) => { node.textContent = `${startFilterBits(games).join(". ")}.`; });
 }
 
 const START_REC_PAGE = 24;
@@ -670,9 +672,15 @@ function startFilterBits(games) {
     const names = [...startPickGames].map((match) => typeof gameShort === "function" ? gameShort(match) : match);
     bits.push(names.length <= 2 ? names.join(" and ") : `${names.length} games`);
   } else bits.push("All games");
-  if (startKinds.size) {
-    const labels = START_KINDS.filter(([id]) => startKinds.has(id)).map(([, label]) => label);
-    if (labels.length) bits.push(labels.join(" and "));
+  if ((startTab === "rec" || startTab === "parlays") && typeof window.recDialSay === "function") {
+    const level = Number(window.recDial);
+    if (level === 0 || level === 1 || level === 2 || level === 3) bits.push(window.recDialSay(level));
+  }
+  if (startTab === "rec") {
+    if (startKinds.size) {
+      const labels = START_KINDS.filter(([id]) => startKinds.has(id)).map(([, label]) => label);
+      if (labels.length) bits.push(labels.join(" and "));
+    } else bits.push("All tags");
   }
   if (startTab === "parlays" && typeof recParlaySize === "number" && recParlaySize) bits.push(`${recParlaySize}-leg parlays`);
   if (startTab === "parlays") bits.push(window.recParlayTeams ? "Team props too" : "Player props");
@@ -802,7 +810,10 @@ function startFilterPack(box, leagues, gameBar, board, picks, tabNow) {
   fold.append(summary, startSpanBar());
   if (leagues && leagues[0]) fold.append(leagues[0]);
   if (gameBar) fold.append(gameBar);
-  if (tabNow === "rec") fold.append(startRandomBar(board, picks));
+  if (tabNow === "rec") {
+    fold.append(startRandomBar(board, picks));
+    if (picks && picks.length) fold.append(startKindBar(picks));
+  }
   fold.addEventListener("toggle", () => {
     startFoldOpen.filters = fold.open;
     if (startFiltersMute) { startFiltersMute -= 1; return; }
@@ -1108,7 +1119,7 @@ function startPaint(again) {
   const lineNote = !history && (tabNow === "rec" || tabNow === "parlays") ? startLineNote() : null;
   const dial = (tabNow === "rec" || tabNow === "parlays") && typeof recDialBar === "function" ? recDialBar(startDialCommit) : null;
   const body = tabNow === "rec"
-    ? [...(lineNote ? [lineNote] : []), ...(dial ? [dial] : []), ...(all.length ? [startKindBar(all)] : []), ...recs]
+    ? [...(lineNote ? [lineNote] : []), ...(dial ? [dial] : []), ...recs]
     : tabNow === "parlays"
       ? [...(lineNote ? [lineNote] : []), ...(dial ? [dial] : []), ...(typeof recParlayBody === "function" ? recParlayBody(board) : [])]
       : tabNow === "stacks"

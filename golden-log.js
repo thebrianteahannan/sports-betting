@@ -226,4 +226,9 @@ async function metals() {
   };
 }
 
-module.exports = { note, choose, settle, tally, metals };
+async function ticketsNow() {
+  const have = await load().catch(() => new Map());
+  return heldDay(have.values(), dayKey(Date.now()));
+}
+
+module.exports = { note, choose, settle, tally, metals, ticketsNow };

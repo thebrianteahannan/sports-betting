@@ -68,7 +68,7 @@ body[data-live-zoom="0"] .live-game[data-card-zoom="0"] .live-rec-tag { position
 .live-game[data-card-zoom] > .live-head > .live-card-zoom,
 .live-game[data-card-zoom] > summary > .live-card-zoom { display: inline-flex; }
 .live-card-zoom input[type="range"] { width: min(160px, 50%); }
-/* 0 game blocks · 1 sport and buttons · 2 locked bets · 3 every bet · 4 recommended · 5 last play
+/* 0 game blocks · 1 sport and buttons · 2 locked bets · 3 every bet · 4 gold, silver, bronze · 5 every recommended bet and last play
    Only .live-pack goes multi-column — never #live, or the Less/More bar jumps when blocks become rows. */
 body[data-live-zoom="0"] .live-pack { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 8px; align-items: start; }
 body[data-live-zoom="0"] .live-pack > .live-game { margin: 0; }
@@ -130,7 +130,7 @@ body.live-mine-games .live-next li:not(.has-mine) { display: none; }
 @media (max-width: 700px) {
   .live-top {
     display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "back home bird" "page page page" "at at at";
+    grid-template-areas: "back home bird" "page page page";
     align-items: center; column-gap: 10px; row-gap: 8px; padding: 8px 12px 10px;
     background: #07090e; border-bottom: 0;
     background-image: linear-gradient(#000, #000); background-repeat: no-repeat; background-size: 100% 4.15rem;
@@ -143,7 +143,6 @@ body.live-mine-games .live-next li:not(.has-mine) { display: none; }
   .live-page { grid-area: page; display: flex; align-items: flex-start; justify-content: flex-start; flex-wrap: nowrap; gap: 8px; width: 100%; margin: 0; }
   .live-top h1 { flex: 0 0 auto; margin-right: auto; font-family: "Bradley Hand", "Marker Felt", cursive; font-size: 28px; font-weight: 400; letter-spacing: 0; line-height: 1; white-space: nowrap; }
   .live-top .live-nav { flex: 1 1 auto; min-width: 0; margin-left: auto; justify-content: flex-end; }
-  .live-at { grid-area: at; margin: 0; text-align: right; }
   .live-zoom-bar { width: 100%; }
   .live-zoom { width: 100%; max-width: 100%; margin-left: 0; justify-content: flex-end; }
   .live-zoom .row-slide { flex: 1 1 auto; width: auto; min-width: 0; max-width: 11rem; margin-right: 12px; }
@@ -156,7 +155,6 @@ body.live-mine-games .live-next li:not(.has-mine) { display: none; }
 .live-game.live-off-only .live-table:not([data-side="off"]) { display: none; }
 .live-card-bar { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 4px; }
 .live-card-bar .live-court { margin-left: 0; }
-.live-at { color: #9fb3c8; font-size: 13px; }
 #live { max-width: 1100px; margin: 0 auto; padding: 14px 16px 40px; }
 #live h2 { margin: 18px 0 10px; color: #e7c15a; font-size: 18px; font-weight: 800; }
 #live h2:has(> .live-court) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
@@ -210,7 +208,6 @@ body.live-mine-games .live-next li:not(.has-mine) { display: none; }
 .live-next { margin: 0; padding: 0; list-style: none; }
 .live-next li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 8px 0; border-bottom: 1px solid #101a24; }
 .live-next li > i { margin-left: auto; color: #9fb3c8; font-style: normal; font-size: 13px; }
-@media (max-width: 600px) { .live-at { font-size: 11px; } }
 @keyframes live-flash { 0%, 100% { box-shadow: 0 0 0 0 rgba(231, 193, 90, 0); } 20%, 45%, 70% { box-shadow: 0 0 0 2px #e7c15a, 0 0 22px rgba(231, 193, 90, 0.5); } 32%, 58% { box-shadow: 0 0 0 1px rgba(231, 193, 90, 0.4); } }
 @keyframes live-flash-text { 0%, 100% { text-shadow: none; } 20%, 70% { color: #ffe08a; text-shadow: 0 0 12px rgba(231, 193, 90, 0.8); } }
 @keyframes live-flash-cell { 0%, 100% { background: transparent; } 20%, 70% { background: rgba(231, 193, 90, 0.3); color: #ffe08a; } }
@@ -273,6 +270,18 @@ body.live-mine-off .live-table tr.mine td:first-child { background: #041018; box
 body.live-mine-off .live-table tr.mine .live-name { color: inherit; }
 .live-mine.live-rec { display: none; }
 body.live-recs-on .live-mine.live-rec { display: flex; }
+.live-mine.live-rec .live-mine-leg.live-rec-more { display: none; }
+body.live-recs-on .live-mine.live-rec:not(:has(.live-mine-leg:not(.live-rec-more))) { display: none; }
+body.live-recs-all .live-mine.live-rec .live-mine-leg.live-rec-more,
+.live-game[data-card-zoom="5"] .live-mine.live-rec .live-mine-leg.live-rec-more { display: inline-flex; }
+body.live-recs-all .live-mine.live-rec:not(:has(.live-mine-leg:not(.live-rec-more))),
+.live-game[data-card-zoom="5"] .live-mine.live-rec:not(:has(.live-mine-leg:not(.live-rec-more))) { display: flex; }
+body.live-recs-all .live-game[data-card-zoom="0"] .live-mine.live-rec .live-rec-more,
+body.live-recs-all .live-game[data-card-zoom="1"] .live-mine.live-rec .live-rec-more,
+body.live-recs-all .live-game[data-card-zoom="2"] .live-mine.live-rec .live-rec-more,
+body.live-recs-all .live-game[data-card-zoom="3"] .live-mine.live-rec .live-rec-more,
+body.live-recs-all .live-game[data-card-zoom="4"] .live-mine.live-rec .live-rec-more,
+body.live-recs-all .live-game[data-card-zoom="4"] .live-mine.live-rec:not(:has(.live-mine-leg:not(.live-rec-more))) { display: none !important; }
 body:not(.live-recs-on) .live-today-recap { display: none; }
 .live-today-box > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; } .live-today-box > summary::-webkit-details-marker { display: none; }
 .live-today-box > summary::before { content: "▸"; color: #e7c15a; font-size: 14px; } .live-today-box[open] > summary::before { content: "▾"; }

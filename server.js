@@ -672,13 +672,23 @@ const server = http.createServer(async (req, res) => {
       const recs = require("./live-recs");
       const live = require("./live-api");
       const all = url.searchParams.get("all") === "1";
-      const [boardNow, list, week, tally] = await Promise.all([
+      const [boardNow, list, week, tally, tickets] = await Promise.all([
         live.liveBoard(all),
         recs.recsList(),
         live.liveWeek(board).catch(() => []),
         require("./live-grade").gradeTally(),
+        require("./golden-log").ticketsNow().catch(() => ({})),
       ]);
-      sendJson(res, { ...boardNow, recs: list, week, tally });
+      const metal = new Map();
+      ["golden", "silver", "bronze"].forEach((spot) => {
+        const row = tickets && tickets[spot];
+        if (row && row.label && row.match) metal.set(`${row.label}|${row.market || ""}|${row.match}`, spot);
+      });
+      const marked = list.map((pick) => {
+        const spot = metal.get(`${pick.label}|${pick.market || ""}|${pick.match}`);
+        return spot ? { ...pick, golden: spot === "golden", silver: spot === "silver", bronze: spot === "bronze" } : pick;
+      });
+      sendJson(res, { ...boardNow, recs: marked, week, tally });
       board().then((now) => recs.recWarm(now)).catch((error) => console.error("live recs warm failed:", error));
       require("./live-grade").gradeTick().catch((error) => console.error("live recs grade failed:", error));
       return;

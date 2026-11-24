@@ -93,6 +93,7 @@
 .find-start .start-filter-fold > summary::before, #desk-games .start-filter-fold > summary::before { content: "▸ "; }
 .find-start .start-filter-fold[open] > summary::before, #desk-games .start-filter-fold[open] > summary::before { content: "▾ "; }
 .find-start .start-filter-fold > .desk-games-leagues, #desk-games .start-filter-fold > .desk-games-leagues { margin-top: 0.35rem; }
+.find-start .start-filter-fold > .find-start-kinds, #desk-games .start-filter-fold > .find-start-kinds { margin: 0.45rem 0 0.15rem; }
 .find-start .start-line-note, #desk.tv-full #desk-glass .start-line-note { display: flex; align-items: center; gap: 0.65rem; margin: 0.35rem 0 0.4rem; padding: 0.55rem 0.65rem 0.55rem 0.75rem; border: 1px solid #e7c15a; border-radius: 10px; background: rgba(231, 193, 90, 0.16); color: #f4f7fb; }
 .find-start .start-line-note[hidden] { display: none !important; }
 .find-start .start-line-note > p, #desk.tv-full #desk-glass .start-line-note > p { flex: 1; min-width: 0; margin: 0; color: #f4f7fb; font-size: 15px; font-weight: 800; line-height: 1.3; }

@@ -69,7 +69,8 @@ function liveRoot(game, picks, rec, show) {
     const { state, say, level, tip } = liveLegState(game, pick);
     const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${liveTags(rec ? pick : liveRecTwin(game, pick))}${say ? `<i class="now${level ? ` pace-${level}` : ""}"${tip ? ` title="${liveEsc(tip)}"` : ""} data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}`;
     const href = `/?${new URLSearchParams({ game: pick.match, ...(pick.parlay ? { bet: pick.parlay } : {}), label: pick.label, market: pick.market, from: "live" })}`;
-    return `<a class="live-mine-leg ${state}${rec || pick.locked ? "" : " live-open"}" href="${liveEsc(href)}" title="Open this bet in Build a bet">${inner}</a>`;
+    const metal = !!(pick.golden || pick.silver || pick.bronze);
+    return `<a class="live-mine-leg ${state}${rec || pick.locked ? "" : " live-open"}${rec && !metal ? " live-rec-more" : ""}" href="${liveEsc(href)}" title="Open this bet in Build a bet">${inner}</a>`;
   };
   const groups = [];
   picks.forEach((pick) => { const group = !rec && pick.parlay && groups.find((row) => row.id === pick.parlay); if (group) group.picks.push(pick); else groups.push({ id: pick.parlay, picks: [pick] }); });
@@ -209,10 +210,11 @@ function liveZoomApply(next, opts) {
   const quiet = !!(opts && opts.quiet);
   liveZoom = Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(Number(next) || 0)));
   document.body.dataset.liveZoom = String(liveZoom);
-  const mine = liveZoom >= 2, all = liveZoom >= 3, recs = liveZoom >= 4;
+  const mine = liveZoom >= 2, all = liveZoom >= 3, recs = liveZoom >= 4, every = liveZoom >= 5;
   document.body.classList.toggle("live-mine-off", !mine);
   document.body.classList.toggle("live-all-bets", all);
   document.body.classList.toggle("live-recs-on", recs);
+  document.body.classList.toggle("live-recs-all", every);
   if (opts && opts.master) {
     liveCardZoom.clear();
     document.querySelectorAll(".live-game[data-card-zoom]").forEach((game) => { delete game.dataset.cardZoom; });
@@ -386,7 +388,6 @@ function livePaint(data, quiet) {
     const range = node.querySelector("input.live-card-range");
     if (range) { range.value = String(level); range.setAttribute("aria-valuenow", String(level)); }
   });
-  document.getElementById("live-at").textContent = `Updated ${new Date(data.at || Date.now()).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}`;
   liveWhoPlace();
 }
 
@@ -516,7 +517,7 @@ async function liveFetch(again) {
   } catch (error) {
     if (!again) return liveFetch(true);
     console.log("[live] could not load", error);
-    document.getElementById("live-at").textContent = "Could not reach the live feed. Trying again.";
+    if (!liveLast) document.getElementById("live").innerHTML = `<p class="live-note">Could not reach the live feed. Trying again.</p>`;
   }
 }
 
