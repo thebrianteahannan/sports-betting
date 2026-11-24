@@ -23,27 +23,72 @@ function manageSearchTake(profile) {
     document.removeEventListener("keydown", closePlayerPop.onKey);
     closePlayerPop.onKey = null;
   }
+  host.dataset.from = "search";
   if (typeof manageZoomApply === "function") manageZoomApply(typeof MANAGE_ZOOM_MAX === "number" ? MANAGE_ZOOM_MAX : 5);
+}
+
+function manageProfileNames() {
+  const rows = typeof saveList === "function" ? saveList() : [];
+  const names = [];
+  rows.forEach((row) => (row.legs || []).forEach((leg) => {
+    const raw = String(leg.label || "").split(/\s+—\s+/)[0].trim();
+    const who = String(leg.player || "").trim() || raw.split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "").trim();
+    if (who && !names.includes(who)) names.push(who);
+  }));
+  return names;
+}
+
+function manageProfilePerson(page, name) {
+  const fold = typeof plainName === "function" ? plainName(name) : String(name || "").toLowerCase();
+  const found = ((page && page.people) || []).find((person) => person.kind === "player" && (typeof plainName === "function" ? plainName(person.name) : String(person.name || "").toLowerCase()) === fold);
+  return found || null;
+}
+
+function manageProfileFill(host, page, board) {
+  if (host.dataset.from === "search" && host.querySelector(".find-profile")) return;
+  const names = manageProfileNames();
+  const people = names.map((name) => manageProfilePerson(page, name)).filter(Boolean);
+  if (names.length && !(page.people || []).length && host.dataset.wait !== "1") {
+    host.dataset.wait = "1";
+    setTimeout(() => { host.dataset.wait = ""; if (board.isConnected) manageZoomExtra(board); }, 500);
+    return;
+  }
+  if (!people.length) {
+    if (!host.childElementCount) host.append(Object.assign(document.createElement("p"), { className: "manage-empty", textContent: "Type a player, team or game." }));
+    return;
+  }
+  const key = people.map((person) => person.key || person.name).join("|");
+  if (host.dataset.names === key && host.querySelector(".find-profile")) return;
+  host.dataset.names = key;
+  host.dataset.from = "bets";
+  host.replaceChildren();
+  const list = page.querySelector(".find-list");
+  people.forEach((person) => {
+    const slot = document.createElement("div");
+    slot.className = "manage-profile-slot";
+    host.append(slot);
+    if (typeof openPlayerPop === "function") openPlayerPop(person, list, person.bets, null, slot);
+  });
 }
 
 function manageZoomExtra(board) {
   const page = board.closest(".find-board");
-  const last = typeof MANAGE_ZOOM_MAX === "number" ? MANAGE_ZOOM_MAX : 5;
-  if (typeof manageZoom === "undefined" || manageZoom !== last) return;
+  if (typeof manageZoom === "undefined" || manageZoom < 4) return;
   const host = manageSearchHost(page);
   if (!host) return;
-  if (!host.childElementCount) host.append(Object.assign(document.createElement("p"), { className: "manage-empty", textContent: "Type a player, team or game." }));
-  if (host.parentElement !== board) board.append(host);
+  manageProfileFill(host, page, board);
+  const list = board.querySelector(".manage-list");
+  if (list) list.before(host);
+  else if (host.parentElement !== board) board.append(host);
 }
 
 function manageZoomExtras() {
-  const last = typeof MANAGE_ZOOM_MAX === "number" ? MANAGE_ZOOM_MAX : 5;
   document.querySelectorAll(".find-board").forEach((page) => {
     const board = page.querySelector(".find-saved .manage-board");
     const host = page.querySelector(".manage-search-keep");
     if (board) board.querySelectorAll(":scope > .manage-history").forEach((node) => node.remove());
-    if (host && (typeof manageZoom === "undefined" || manageZoom !== last)) page.append(host);
-    if (board && typeof manageZoom !== "undefined" && manageZoom >= last) manageZoomExtra(board);
+    if (host && (typeof manageZoom === "undefined" || manageZoom < 4)) page.append(host);
+    if (board && typeof manageZoom !== "undefined" && manageZoom >= 4) manageZoomExtra(board);
   });
 }
 

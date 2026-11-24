@@ -48,12 +48,13 @@ function bankRoll() {
 function bankKellyCore(p, odds, roll, free) {
   const b = bankMultiple(odds);
   if (!(b > 0) || !(p > 0) || p >= 1) return { full: 0, bet: 0, edge: false };
-  const fraction = (b * p - (1 - p)) / b;
-  if (!(fraction > 0)) return { full: 0, bet: 0, edge: false };
+  const ev = b * p - (1 - p);
+  if (!(ev > 0)) return { full: 0, bet: 0, edge: false, ev };
+  const fraction = ev / b;
   const full = Math.max(0, Math.round(fraction * roll));
   const quarter = Math.max(0, Math.round(fraction * roll * 0.25));
   const room = Math.max(0, Math.floor(Number(free) || 0));
-  return { full, bet: Math.min(quarter, room), edge: true };
+  return { full, bet: Math.min(quarter, room), quarter, edge: true, ev };
 }
 
 function bankKelly(legs) {
@@ -63,13 +64,27 @@ function bankKelly(legs) {
   if (records.some((row) => !row)) return null;
   const p = records.reduce((prod, row) => prod * row.rate, 1);
   const odds = rows.length === 1 ? bankOddsNum(rows[0].odds) : bankPriceNum(rows);
-  return bankKellyCore(p, odds, bankRoll() || 100, bankBook.cash);
+  return { ...bankKellyCore(p, odds, bankRoll() || 100, bankBook.cash), odds };
 }
 
-function bankSay(kelly, fallback) {
-  if (!kelly) return fallback > 0 ? `Bet $${bankMoney(fallback)}` : "";
-  if (!kelly.edge) return "The price has no edge.";
-  return `Bet $${bankMoney(kelly.bet)}. Full Kelly $${bankMoney(kelly.full)}.`;
+function bankSay(kelly, fallback, odds) {
+  const price = bankOddsNum((kelly && kelly.odds) || odds);
+  const stake = kelly && kelly.edge && kelly.bet > 0 ? kelly.bet : (fallback > 0 ? fallback : 0);
+  if (!price || !(stake > 0)) return kelly && !kelly.edge ? "The price has no edge." : "";
+  const need = typeof findPct === "function" ? findPct(price) : "";
+  const win = typeof findCash === "function" ? findCash(price, stake) : "";
+  const bank = bankMoney(bankRoll() || 100);
+  if (kelly && kelly.edge && kelly.bet > 0 && need && win) {
+    const left = kelly.quarter > kelly.bet ? ` $${bankMoney(kelly.bet)} is what's left.` : "";
+    return `Bet $${bankMoney(kelly.bet)} of the $${bank}.${left} It wins ${win}. The hit rate clears the ${need} this price needs.`;
+  }
+  if (kelly && !kelly.edge) {
+    const loss = Math.max(0, Math.round((fallback > 0 ? fallback : stake) * Math.abs(Math.min(0, kelly.ev || 0))));
+    if (loss > 0 && need) return `A $${bankMoney(fallback > 0 ? fallback : stake)} bet loses $${bankMoney(loss)}. The price needs ${need}.`;
+    return "The price has no edge.";
+  }
+  if (!need || !win) return "";
+  return `Bet $${bankMoney(stake)} of the $${bank}. It wins ${win}. The price needs ${need}.`;
 }
 
 function bankStoreLocal(book) {
@@ -228,7 +243,8 @@ function bankPaintTicket() {
       note.textContent = bankNote;
       ticket.after(note);
     }
-    const said = bankSay(kelly, Number(window.parlayStake) || 5);
+    const legs = [...parlayLeg.values()];
+    const said = bankSay(kelly, Number(window.parlayStake) || 5, legs.length === 1 ? legs[0].odds : bankPriceNum(legs));
     if (!said) return;
     const line = document.createElement("p");
     line.className = "bank-kelly";
@@ -255,10 +271,16 @@ function bankBar() {
   const name = document.createElement("b");
   name.className = "bank-name";
   name.textContent = "Bankroll";
+  const wrap = document.createElement("span");
+  wrap.className = "bank-cash-wrap";
+  const buck = document.createElement("span");
+  buck.className = "bank-buck";
+  buck.textContent = "$";
+  wrap.append(buck, field);
   const out = bankOutSum(bankBook);
   const say = document.createElement("span");
   say.textContent = out > 0 ? ` left to bet. $${bankMoney(out)} is on open bets.` : " left to bet.";
-  line.append(name, field, say);
+  line.append(name, wrap, say);
   if (bankNote) {
     const note = document.createElement("span");
     note.className = "bank-note";
@@ -295,7 +317,7 @@ function bankCard(card, row) {
   const kelly = bankKelly(row.legs || []);
   if (!kelly) bankWatchRecords();
   const stake = typeof saveRowStake === "function" ? saveRowStake(row) : (Number(row.stake) > 0 ? Number(row.stake) : 5);
-  const said = bankSay(kelly, stake);
+  const said = bankSay(kelly, stake, bankRowOdds(row));
   if (said) {
     bankStamp(card.querySelector(".manage-fold-line"), said);
     bankStamp(card.querySelector(".manage-legs > .manage-bet-price"), said);
