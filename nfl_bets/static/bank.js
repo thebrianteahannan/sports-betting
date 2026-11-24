@@ -155,6 +155,11 @@ function bankHitSay(kelly) {
   return `${list}.${together}, and the price needs ${bankPct(need)}%.`;
 }
 
+function bankCall(kelly) {
+  if (!kelly || !(kelly.records || []).length) return null;
+  return kelly.edge && kelly.bet > 0 ? { kind: "bet", text: "Bet it" } : { kind: "leave", text: "Leave it" };
+}
+
 function bankSay(kelly, fallback) {
   if (!kelly || !(kelly.records || []).length) return "";
   const roll = bankMoney(bankRoll() || 100);
@@ -326,6 +331,7 @@ function bankPaintTicket() {
     const legs = [...parlayLeg.values()];
     legs.forEach(bankAskCard);
     const said = bankSay(kelly, Number(window.parlayStake) || 5);
+    const call = bankCall(kelly);
     if (!said) return;
     const line = document.createElement("p");
     line.className = "bank-kelly";
@@ -375,11 +381,20 @@ function bankBar() {
 }
 
 function bankStamp(parent, text) {
-  if (!parent || parent.querySelector(":scope > .bank-kelly")) return;
+  if (!parent || !text || parent.querySelector(":scope > .bank-kelly")) return;
   const bit = document.createElement("i");
   bit.className = "bank-kelly";
   bit.textContent = text;
   parent.append(bit);
+}
+
+function bankMark(parent, text, call) {
+  bankStamp(parent, text);
+  if (!parent || !call || parent.querySelector(":scope > .bank-call")) return;
+  const tag = document.createElement("i");
+  tag.className = `bank-call c-${call.kind}`;
+  tag.textContent = call.text;
+  parent.prepend(tag);
 }
 
 let bankRecWait = 0;
@@ -404,13 +419,14 @@ function bankCard(card, row) {
   if (!kelly) bankWatchRecords();
   const stake = typeof saveRowStake === "function" ? saveRowStake(row) : (Number(row.stake) > 0 ? Number(row.stake) : 5);
   const said = bankSay(kelly, stake);
+  const call = bankCall(kelly);
   if (said) {
     const fold = card.querySelector(".manage-fold-line");
     const price = card.querySelector(".manage-legs > .manage-bet-price");
-    bankStamp(fold, said);
-    bankStamp(price, said);
-    bankStamp(card.querySelector(".manage-slip-head"), said);
-    if (!fold && !price) bankStamp(card.querySelector(".manage-legs .find-chose > span"), said);
+    bankMark(fold, said, call);
+    bankMark(price, said, call);
+    bankMark(card.querySelector(".manage-slip-head"), said, call);
+    if (!fold && !price) bankMark(card.querySelector(".manage-legs .find-chose > span"), said, call);
   }
   const done = bankBook.settled && bankBook.settled[row.id];
   if (done) {

@@ -407,7 +407,9 @@
 #desk.tv-full #desk-glass .manage-board[data-manage-zoom="0"] .find-chose i.bet-kind,
 .manage-board[data-manage-zoom="0"] .find-chose i.bet-kind,
 #desk.tv-full #desk-glass .manage-board[data-manage-zoom="0"] .find-chose i.leg-role,
-.manage-board[data-manage-zoom="0"] .find-chose i.leg-role { display: none !important; }
+.manage-board[data-manage-zoom="0"] .find-chose i.leg-role,
+#desk.tv-full #desk-glass .manage-board[data-manage-zoom="0"] .bank-kelly,
+.manage-board[data-manage-zoom="0"] .bank-kelly { display: none !important; }
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-read,
 .manage-board .manage-card > .manage-read { grid-column: 2; grid-row: 1; }
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-card-acts,
@@ -923,6 +925,9 @@
 .manage-board .bank-line .bank-note { flex: 1 0 100%; color: #ffb45a; }
 .manage-board .bank-kelly, .manage-board .bank-result, .manage-board .bank-marks { grid-column: 2; margin: 0; font-size: 13px; font-weight: 700; }
 .manage-board .bank-kelly { color: #3dff6e; font-style: normal; font-weight: 800; white-space: normal; }
+.manage-board .bank-call { flex: none; align-self: center; margin: 0 0.15rem 0 0; padding: 0 0.45rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.62rem; font-style: normal; font-weight: 800; letter-spacing: 0.04em; line-height: 1.5; text-transform: uppercase; }
+.manage-board .bank-call.c-bet { color: #04140c; background: #3dff6e; border-color: #3dff6e; }
+.manage-board .bank-call.c-leave { color: #ff6b6b; }
 .manage-board .bank-result.r-won { color: #3dff6e; }
 .manage-board .bank-result.r-lost { color: #ff6b6b; }
 .manage-board .bank-result.r-push { color: #9fb3c8; }
