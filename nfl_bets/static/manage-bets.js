@@ -2,7 +2,7 @@
 
 let manageFilter = "all";
 let manageEditId = "";
-const MANAGE_ZOOM_MAX = 4;
+const MANAGE_ZOOM_MAX = 3;
 let manageZoom = (() => {
   try {
     const raw = localStorage.getItem("manageZoom");
@@ -302,6 +302,7 @@ function manageLegLine(leg, legs, byKey) {
   said.innerHTML = [
     bits.who && `<i class="who">${esc(bits.who)}</i>`,
     spot && `<i class="spot">${esc(spot)}</i>`,
+    bits.game && `<i class="game">${esc(bits.game)}</i>`,
     bits.prop && `<i class="prop">${esc(bits.prop)}</i>`,
     bits.odds && `<i class="px">${esc(bits.odds)}</i>`,
     bits.pct && `<i class="pct">${esc(bits.pct)}</i>`,
@@ -448,6 +449,7 @@ function manageFill(board) {
   const kept = page && page.querySelector(".manage-search-keep");
   if (kept) page.append(kept);
   const list = typeof saveList === "function" ? saveList() : [];
+  if (typeof manageClubs === "function") manageClubs(list);
   const shown = list.filter((item) => typeof manageShown === "function" ? manageShown(item) : true);
   board.classList.add("manage-board");
   board.replaceChildren();

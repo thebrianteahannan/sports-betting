@@ -386,6 +386,9 @@
 .manage-board .find-chose i { font-style: normal; }
 .manage-board .find-chose i.who { color: #f4f7fb; font-weight: 700; white-space: nowrap; }
 .manage-board .find-chose i.spot { margin-left: -0.15rem; color: #7f8c99; font-size: 0.72em; font-weight: 500; white-space: nowrap; }
+.manage-board .find-chose i.game { display: none; color: #9fb3c8; font-size: 0.72em; font-weight: 700; white-space: nowrap; }
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.game,
+.manage-card[data-manage-zoom="0"] .find-chose i.game { display: inline; }
 .manage-board .find-chose i.prop { flex: 0 1 auto; min-width: 0; color: #e7c15a; font-weight: 700; }
 @media (max-width: 800px) {
   #desk.tv-full #desk-glass .manage-card[data-manage-zoom],
@@ -396,14 +399,13 @@
   .manage-board .manage-fold-line { padding-right: 6.4rem; }
   .manage-board[data-manage-zoom="1"] .manage-bet-price,
   .manage-board[data-manage-zoom="1"] .manage-fold-line { padding-right: 11.5rem; }
-  .manage-board .find-chose { gap: 0.3rem; padding: 0.05rem 0; }
-  .manage-board .find-chose > span { flex-wrap: nowrap; gap: 0.15rem 0.3rem; font-size: 12px; }
-  .manage-board .find-chose i.px,
-  .manage-board .find-chose i.pct,
-  .manage-board .find-chose i.prop { flex-shrink: 0; min-width: 0; overflow: visible; text-overflow: clip; }
+  .manage-board .find-chose { gap: 0.3rem; padding: 0.12rem 0; }
+  .manage-board .find-chose > span { flex-wrap: wrap; align-items: center; gap: 0.2rem 0.35rem; font-size: 14px; }
   .manage-board .find-chose i.who,
-  .manage-board .find-chose i.prop { white-space: nowrap; }
-  .manage-board .find-chose i.who { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .manage-board .find-chose i.spot,
+  .manage-board .find-chose i.game,
+  .manage-board .find-chose i.prop { flex: 0 0 auto; max-width: 100%; overflow: visible; text-overflow: clip; white-space: nowrap; }
+  .manage-board .find-chose i.find-rec-pill { flex: 0 1 auto; max-width: 100%; height: auto; white-space: normal; }
   .manage-board .manage-legs:has(.manage-bet-price) .find-chose,
   .manage-board .manage-fold-legs { margin-left: 0; padding-left: 0.45rem; }
 }
@@ -416,28 +418,15 @@
 .manage-board .find-chose i.leg-role.r-dead { color: #ff6b6b; border-style: dashed; }
 .manage-board .find-chose i.find-rec-pill { display: inline-flex; align-items: center; gap: 0.25rem; align-self: center; margin: 0 0 0 0.3rem; padding: 0 0.45rem 0 0.25rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.03em; line-height: 1.45; text-transform: uppercase; white-space: nowrap; }
 .manage-board .find-chose i.find-rec-pill::before { content: ""; width: 1.3em; height: 1.3em; background: url("/scene/parrot-head-tight.webp?v=1") center / contain no-repeat; }
-.manage-board .find-chose i.find-rec-pill.ticket { padding-left: 0.45rem; background: #e7c15a; color: #1a1400; }
+.manage-board .find-chose i.find-rec-pill.ticket { background: #e7c15a; color: #1a1400; }
 .manage-board .find-chose i.find-rec-pill.ticket.silver { background: #d5deea; color: #12181f; }
 .manage-board .find-chose i.find-rec-pill.ticket.bronze { background: #d0894f; color: #1a1006; }
-.manage-board .find-chose i.find-rec-pill.ticket::before { display: none; }
 .manage-board .find-chose i.find-rec-pill.good { background: transparent; border: 1px dashed #c4cde0; color: #c4cde0; }
 .manage-board .find-chose i.find-rec-pill.good::before { display: none; }
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill,
-.manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill {
-  width: 1.15rem;
-  height: 1.15rem;
-  margin: 0 0 0 0.25rem;
-  padding: 0;
-  gap: 0;
-  overflow: hidden;
-  background: transparent;
-  color: transparent;
-  font-size: 0;
-}
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill::before,
 .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill::before { width: 1.15rem; height: 1.15rem; }
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill.ticket,
-.manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill.ticket { width: auto; height: auto; padding: 0 0.45rem; overflow: visible; background: #e7c15a; color: #1a1400; font-size: 0.66rem; }
+.manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill.ticket { width: auto; height: auto; padding: 0 0.45rem 0 0.25rem; overflow: visible; background: #e7c15a; color: #1a1400; font-size: 0.66rem; }
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill.ticket.silver,
 .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill.ticket.silver { background: #d5deea; color: #12181f; }
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill.ticket.bronze,

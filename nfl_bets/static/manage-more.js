@@ -24,7 +24,7 @@ function manageSearchTake(profile) {
     closePlayerPop.onKey = null;
   }
   host.dataset.from = "search";
-  if (typeof manageZoomApply === "function") manageZoomApply(typeof MANAGE_ZOOM_MAX === "number" ? MANAGE_ZOOM_MAX : 4);
+  if (typeof manageZoomApply === "function") manageZoomApply(typeof MANAGE_ZOOM_MAX === "number" ? MANAGE_ZOOM_MAX : 3);
 }
 
 function manageProfileNames() {
@@ -113,6 +113,43 @@ function manageFilters(box) {
   when.className = "manage-when";
   [["all", "Any day"], ["today", "Today"], ["week", "This week"]].forEach(([key, label]) => chip(when, label, manageWhen === key, () => { manageWhen = key; }));
   box.append(when);
+}
+
+function manageClubs(rows) {
+  if (typeof clubOf === "undefined" || typeof clubAsked === "undefined") return;
+  const sides = [];
+  (rows || []).forEach((row) => (row.legs || []).forEach((leg) => {
+    const sport = String(leg.sport || "");
+    String(leg.match || "").split(/ @ | v /).map((side) => side.trim()).filter(Boolean).forEach((side) => {
+      const key = `${sport}|${side}`;
+      if (clubAsked.has(key)) return;
+      clubAsked.add(key);
+      sides.push({ sport, side, key });
+    });
+  }));
+  if (!sides.length) return;
+  let left = sides.length;
+  let grew = false;
+  sides.forEach(({ sport, side, key }) => {
+    fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "roster", name: side, sport }) })
+      .then((res) => res.json())
+      .then((data) => {
+        (data.players || []).forEach((row) => {
+          const name = String((row && row.name) || row || "").replace(/, out$/, "");
+          if (!name || typeof plainName !== "function") return;
+          const bare = plainName(name).replace(/ (jr|sr|ii|iii|iv|v)$/i, "");
+          if (!clubOf.has(bare)) grew = true;
+          clubOf.set(bare, side);
+          if (row && row.pos && typeof clubSpot !== "undefined") clubSpot.set(bare, String(row.pos));
+        });
+      })
+      .catch(() => { clubAsked.delete(key); })
+      .finally(() => {
+        left -= 1;
+        if (left > 0 || !grew || typeof manageRefresh !== "function") return;
+        manageRefresh();
+      });
+  });
 }
 
 function manageZoomExtra() {}
