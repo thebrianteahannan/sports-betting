@@ -75,11 +75,20 @@ function findPct(odds) {
 
 let findParts = {};
 
+function loadFindReady(data) {
+  // The wire format stores each bet as a short list. Readers that look for match and kickoff see no games unless this is opened first.
+  if (!data || data.pack !== 1 || !Array.isArray(data.games) || typeof unpackFind !== "function") return data;
+  return { ...data, people: unpackFind(data) };
+}
+
 function loadFind(span) {
   const saved = findParts[span];
-  if (saved && saved.data && Date.now() - saved.at < 30 * 60 * 1000) return Promise.resolve(saved.data);
+  if (saved && saved.data && Date.now() - saved.at < 30 * 60 * 1000) {
+    if (saved.data.pack === 1) saved.data = loadFindReady(saved.data);
+    return Promise.resolve(saved.data);
+  }
   if (saved && saved.pending) return saved.pending;
-  const pending = fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "lookup", when: span, game: span === "today" && typeof saveSeekGame === "string" ? saveSeekGame : "", gameSport: typeof saveSeek === "object" ? saveSeek.get("sport") || "" : "" }) }).then((res) => res.json()).then((data) => { findParts[span] = { at: Date.now(), data }; return data; }).catch((error) => { delete findParts[span]; throw error; });
+  const pending = fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "lookup", when: span, game: span === "today" && typeof saveSeekGame === "string" ? saveSeekGame : "", gameSport: typeof saveSeek === "object" ? saveSeek.get("sport") || "" : "" }) }).then((res) => res.json()).then((data) => { const plain = loadFindReady(data); findParts[span] = { at: Date.now(), data: plain }; return plain; }).catch((error) => { delete findParts[span]; throw error; });
   findParts[span] = { pending };
   return pending;
 }
