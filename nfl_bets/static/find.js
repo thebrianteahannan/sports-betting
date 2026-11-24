@@ -682,11 +682,11 @@ function rosterOpenProps(person, anchor) {
 }
 
 function profileBetPut(hit, fresh) {
-  if (!hit || typeof parlayLeg === "undefined" || typeof parlayKey !== "function") return;
+  if (!hit || typeof parlayLeg === "undefined" || typeof parlayKey !== "function") return false;
   if (fresh && parlayLeg.size && typeof saveNew === "function") saveNew();
   if (parlayLeg.has(parlayKey(hit.bet)) || parlayLeg.size >= 8) {
     closePlayerPop();
-    return;
+    return false;
   }
   if (typeof legSwapAdd === "function") legSwapAdd(hit.person, hit.bet);
   else {
@@ -697,13 +697,22 @@ function profileBetPut(hit, fresh) {
   }
   closePlayerPop();
   parlayOpenTray();
+  return true;
+}
+
+function profileMarkAdded(acts) {
+  if (!acts || acts.querySelector(".bet-added")) return;
+  const note = document.createElement("span");
+  note.className = "bet-added";
+  note.textContent = "Added";
+  acts.append(note);
 }
 
 function profileAskPut(acts, hit) {
   if (!acts || !hit) return;
   const ask = acts.querySelector(".desk-rec-ask");
   if (ask) { ask.remove(); return; }
-  if (typeof parlayLeg === "undefined" || !parlayLeg.size) { profileBetPut(hit, false); return; }
+  if (typeof parlayLeg === "undefined" || !parlayLeg.size) { if (profileBetPut(hit, false)) profileMarkAdded(acts); return; }
   const row = document.createElement("span");
   row.className = "desk-rec-ask";
   row.innerHTML = `<i>You have a bet open.</i><span role="button" tabindex="0" data-bet-go="add">Add to this bet</span><span role="button" tabindex="0" data-bet-go="new">Start a new bet</span>`;
@@ -713,7 +722,7 @@ function profileAskPut(acts, hit) {
     event.preventDefault();
     event.stopPropagation();
     row.remove();
-    profileBetPut(hit, go.dataset.betGo === "new");
+    if (profileBetPut(hit, go.dataset.betGo === "new")) profileMarkAdded(acts);
   });
   acts.after(row);
 }
