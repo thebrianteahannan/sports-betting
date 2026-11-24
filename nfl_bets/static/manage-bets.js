@@ -146,6 +146,7 @@ function manageLegRead(leg) {
     const market = String(leg.market || "").replace(who, "").replace(/^\s*-\s*/, "").replace(/^alt(?:ernate)?\s+/i, "").trim();
     if (market && market.toLowerCase() !== who.toLowerCase()) prop = market;
   }
+  if (/any\s*time\s*touchdown/i.test(prop)) prop = "Anytime TD";
   const game = typeof gameShort === "function" && leg.match ? gameShort(leg.match) : String(leg.match || "");
   const when = leg.kickoff && typeof window.when === "function" ? `${window.when(leg.kickoff)} ET` : "";
   return {

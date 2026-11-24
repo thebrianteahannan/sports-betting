@@ -82,6 +82,27 @@ function manageZoomExtras() {
   });
 }
 
+function manageStatShort(label) {
+  const raw = String(label || "").replace(/\s*\/\s*Game/i, "").trim();
+  const known = { points: "Pts", pts: "Pts", assists: "Ast", rebounds: "Reb", "3pters": "3s", "3pt": "3s", "3pm": "3s", minutes: "Min", steals: "Stl", blocks: "Blk", turnovers: "TO", pra: "PRA", carries: "Car", "rec yds": "Rec", receptions: "Recs", targets: "Tgt", "rush yds": "Rush", "pass yds": "Pass", "pass td": "Pass TD", "rush td": "Rush TD" };
+  return known[raw.toLowerCase()] || raw;
+}
+
+function manageStatLine(kind, label, stats) {
+  const line = document.createElement("span");
+  line.className = `manage-stat-line ${kind}`;
+  const name = document.createElement("b");
+  name.textContent = label;
+  line.append(name);
+  stats.forEach((stat) => {
+    const bit = document.createElement("span");
+    bit.className = "manage-stat";
+    bit.textContent = `${manageStatShort(stat.label)} ${stat.value || ""}`.trim();
+    line.append(bit);
+  });
+  return line;
+}
+
 function manageLegNote(leg) {
   if (typeof bankAskCard === "function") bankAskCard(leg);
   const card = typeof bankCardOf === "function" ? bankCardOf(leg) : null;
@@ -92,21 +113,17 @@ function manageLegNote(leg) {
   how.className = "manage-how";
   how.textContent = [card.line, card.span].filter(Boolean).join(" ");
   row.append(how);
-  const pill = (text, vol, blow) => {
-    const tag = document.createElement("i");
-    tag.className = `find-swing${vol ? " vol" : ""}${blow ? " find-blow flat" : ""}`;
-    tag.textContent = text;
-    return tag;
-  };
-  if (card.swing && card.swing.tag) row.append(pill(card.swing.tag, card.swing.tag === "Volatile"));
-  if (card.blowout && card.blowout.tag) row.append(pill(card.blowout.tag, false, true));
-  (card.stats || []).forEach((stat) => {
-    const bit = document.createElement("span");
-    bit.className = "manage-stat";
-    bit.append(document.createTextNode(`${String(stat.label || "").replace(/\/Game/i, "")} ${stat.value || ""}`));
-    if (stat.tag) bit.append(pill(stat.tag, stat.tag === "Volatile"));
-    row.append(bit);
-  });
+  if (card.blowout && card.blowout.tag) {
+    const blow = document.createElement("span");
+    blow.className = "manage-blow";
+    blow.textContent = card.blowout.tag;
+    row.append(blow);
+  }
+  const stats = card.stats || [];
+  const swings = stats.filter((stat) => stat.tag === "Volatile");
+  const steady = stats.filter((stat) => stat.tag !== "Volatile");
+  if (swings.length) row.append(manageStatLine("vol", "Swings", swings));
+  if (steady.length) row.append(manageStatLine("steady", "Steady", steady));
   row.addEventListener("click", (event) => event.stopPropagation());
   return row;
 }

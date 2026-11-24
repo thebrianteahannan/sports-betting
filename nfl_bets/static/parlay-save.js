@@ -534,6 +534,11 @@ function savePaint() {
       pay.innerHTML = `<i class="pay">$${esc(saveMoneySaid(tally.stake))}</i> · profits <i class="pay">$${esc(saveMoneySaid(tally.profit))}</i> if all hit`;
       head.append(pay);
     }
+    const hide = document.createElement("button");
+    hide.type = "button";
+    hide.className = "find-saved-quick find-saved-hide";
+    hide.textContent = "Hide";
+    hide.addEventListener("click", () => { window.saveGone = true; paintParlay(); });
     const quick = document.createElement("button");
     quick.type = "button";
     quick.className = "find-saved-quick";
@@ -550,7 +555,7 @@ function savePaint() {
     share.hidden = !pack.legs.length;
     const acts = document.createElement("span");
     acts.className = "find-saved-acts";
-    acts.append(quick);
+    acts.append(hide, quick);
     if (!betOpen) acts.append(share);
     head.append(acts); box.append(head);
     const bag = document.createElement("div");
