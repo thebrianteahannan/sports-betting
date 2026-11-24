@@ -285,7 +285,7 @@ function fillFind(board, data) {
     if (typeof birdMenu === "function") birdMenu("manage");
     else if (typeof paintFind === "function") { window.saveGone = false; window.saveShut = false; paintFind(); }
   });
-  heading.append(jumpGo, ...(history ? [build] : [hist]), mine, games);
+  heading.append(jumpGo, ...(history ? [build] : []), mine, games);
   findGamesLive(games);
   const pickSpan = (name) => { const on = name === "today"; today.classList.toggle("find-on", on); week.classList.toggle("find-on", !on); if (today.open !== on) today.open = on; if (week.open === on) week.open = !on; };
   today.className = "find-games find-on"; today.dataset.span = "today"; today.open = true; week.className = "find-games find-week"; week.dataset.span = "week";

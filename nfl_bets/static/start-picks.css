@@ -1,6 +1,6 @@
-.find-board .find-start { margin: 0 0 0.8rem; overflow-x: clip; overflow-clip-margin: 8px; }
+:is(.find-board .find-start, #profile-admin .admin-history) { margin: 0 0 0.8rem; overflow-x: clip; overflow-clip-margin: 8px; }
 .find-board .quick-add { margin: 0 0 1.55rem; padding: 0.75rem 0.85rem; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 12px; background: rgba(4, 16, 24, 0.55); }
-.find-board .find-start:has(> .quick-add) > .find-start-row { margin-top: 0.15rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.14); }
+:is(.find-board .find-start, #profile-admin .admin-history):has(> .quick-add) > .find-start-row { margin-top: 0.15rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.14); }
 .find-board .quick-add-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.7rem; margin: 0 0 0.55rem; }
 .find-board .quick-add-head > b { color: #3dff6e; font-size: 13px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
 .find-board .quick-add-head > span { color: #9fb3c8; font-size: 13px; }
@@ -65,7 +65,7 @@
 .find-tray .find-new .quick-add { margin: 0; padding: 0; border: 0; background: transparent; }
 .find-tray .find-new .quick-add-head > b { display: none; }
 .find-board:has(.find-guide, .find-match:not([data-parlay-match])):not(:has(.find-start.find-start-open)) .find-start { display: none; }
-.find-board .find-start.find-start-open { display: block !important; }
+:is(.find-board .find-start, #profile-admin .admin-history).find-start-open { display: block !important; }
 .find-board.find-rec-page > .find-tray,
 .find-board.find-rec-page > .find-teams[data-parlay-games] { display: none !important; }
 .find-board.find-rec-page:not(:has(.find-match:not([data-parlay-match]))) > .find-start { display: block !important; }
@@ -77,9 +77,9 @@
 .find-board.find-rec-page > .find-saved { display: none !important; }
 .find-board.find-rec-page > h2 { margin-bottom: 0.75rem; }
 .find-board.find-rec-page > .find-start { margin-top: 0; }
-.find-board .find-start .find-start-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.1rem 0.9rem; margin: 0 0 0.2rem; position: sticky; top: 0.4rem; z-index: 6; background: #000; box-shadow: 0 0 0 8px #000, 0 14px 12px -2px rgba(0, 0, 0, 0.85); }
-.find-board .find-start .desk-games-tabs { display: flex; width: fit-content; margin: 0; }
-.find-board .find-start .find-start-span { flex: 1 0 100%; }
+:is(.find-board .find-start, #profile-admin .admin-history) .find-start-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.1rem 0.9rem; margin: 0 0 0.2rem; position: sticky; top: 0.4rem; z-index: 6; background: #000; box-shadow: 0 0 0 8px #000, 0 14px 12px -2px rgba(0, 0, 0, 0.85); }
+:is(.find-board .find-start, #profile-admin .admin-history) .desk-games-tabs { display: flex; width: fit-content; margin: 0; }
+:is(.find-board .find-start, #profile-admin .admin-history) .find-start-span { flex: 1 0 100%; }
 .find-start-random { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
 .find-start-random:empty { display: none; }
 .find-start-random > i { margin-right: 0.15rem; color: #9fb3c8; font-size: 13px; font-style: normal; font-weight: 800; }
@@ -107,55 +107,56 @@
 .find-start-random > select option { background: #07090e; color: #f4f7fb; }
 :is(.rec-board, #choice-result) .find-start button.desk-games-tab { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.3rem 0.65rem !important; border: 0 !important; border-radius: 7px !important; background: transparent !important; box-shadow: none !important; color: #9fb3c8 !important; font-size: 14px !important; font-weight: 800 !important; letter-spacing: normal !important; text-transform: none !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-games-tab.on { background: #e7c15a !important; color: #07090e !important; }
-.find-board .find-start button.desk-games-tab > i.desk-tab-n { margin-left: 0.28rem; padding: 0.05rem 0.4rem; border-radius: 999px; background: rgba(255, 255, 255, 0.12); color: #e7c15a; font-size: 12px; font-style: normal; font-weight: 800; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; vertical-align: 0.05em; }
-.find-board .find-start button.desk-games-tab.on > i.desk-tab-n { background: rgba(7, 9, 14, 0.18); color: #07090e; }
-.find-board .find-start .find-start-stats { margin: 0.35rem 0 0.8rem; max-width: 34rem; }
-.find-board .find-start .find-start-stats-load { margin: 0; }
-.find-board .find-start .find-start-stats-score { display: grid; gap: 0.85rem; color: #f4f7fb; }
-.find-board .find-start .find-start-stats-score > i { color: #3dff6e; font-size: 12px; font-style: normal; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
-.find-board .find-start .hit-rate { display: grid; gap: 0.3rem; padding: 0 0 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-.find-board .find-start .hit-rate:last-child { padding-bottom: 0; border-bottom: 0; }
-.find-board .find-start .hit-rate-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
-.find-board .find-start .hit-rate-top > b { color: #9fb3c8; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
-.find-board .find-start .hit-rate-top > strong { color: #f4f7fb; font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
-.find-board .find-start .hit-rate.hit-hot .hit-rate-top > strong { color: #3dff6e; }
-.find-board .find-start .hit-rate.hit-ok .hit-rate-top > strong { color: #e7c15a; }
-.find-board .find-start .hit-rate.hit-cold .hit-rate-top > strong { color: #ff8f8f; }
-.find-board .find-start .hit-rate.hit-empty .hit-rate-top > strong { color: #6b7a88; }
-.find-board .find-start .hit-rate-bar { height: 0.45rem; border-radius: 999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
-.find-board .find-start .hit-rate-bar > i { display: block; height: 100%; width: 0; border-radius: inherit; background: #6b7a88; font-style: normal; }
-.find-board .find-start .hit-rate.hit-hot .hit-rate-bar > i { background: linear-gradient(90deg, #1f9a48, #3dff6e); }
-.find-board .find-start .hit-rate.hit-ok .hit-rate-bar > i { background: linear-gradient(90deg, #a8842a, #e7c15a); }
-.find-board .find-start .hit-rate.hit-cold .hit-rate-bar > i { background: linear-gradient(90deg, #a34545, #ff8f8f); }
-.find-board .find-start .hit-rate-count { color: #9fb3c8; font-size: 13px; font-weight: 600; }
+:is(.find-board .find-start, #profile-admin .admin-history) button.desk-games-tab > i.desk-tab-n { margin-left: 0.28rem; padding: 0.05rem 0.4rem; border-radius: 999px; background: rgba(255, 255, 255, 0.12); color: #e7c15a; font-size: 12px; font-style: normal; font-weight: 800; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; vertical-align: 0.05em; }
+:is(.find-board .find-start, #profile-admin .admin-history) button.desk-games-tab.on > i.desk-tab-n { background: rgba(7, 9, 14, 0.18); color: #07090e; }
+#profile-admin .admin-history { margin: 0 0 1.4rem; max-width: 34rem; }
+:is(.find-board .find-start, #profile-admin .admin-history) .find-start-stats { margin: 0.35rem 0 0.8rem; max-width: 34rem; }
+:is(.find-board .find-start, #profile-admin .admin-history) .find-start-stats-load { margin: 0; }
+:is(.find-board .find-start, #profile-admin .admin-history) .find-start-stats-score { display: grid; gap: 0.85rem; color: #f4f7fb; }
+:is(.find-board .find-start, #profile-admin .admin-history) .find-start-stats-score > i { color: #3dff6e; font-size: 12px; font-style: normal; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+:is(.find-board .find-start, #profile-admin .admin-history) .hit-rate { display: grid; gap: 0.3rem; padding: 0 0 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+:is(.find-board .find-start, #profile-admin .admin-history) .hit-rate:last-child { padding-bottom: 0; border-bottom: 0; }
+:is(.find-board .find-start, #profile-admin .admin-history) .hit-rate-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
+:is(.find-board .find-start, #profile-admin .admin-history) .hit-rate-top > b { color: #9fb3c8; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+:is(.find-board .find-start, #profile-admin .admin-history) .hit-rate-top > strong { color: #f4f7fb; font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+:is(.find-board .find-start, #profile-admin .admin-history) .hit-rate.hit-hot .hit-rate-top > strong { color: #3dff6e; }
+:is(.find-board .find-start, #profile-admin .admin-history) .hit-rate.hit-ok .hit-rate-top > strong { color: #e7c15a; }
+:is(.find-board .find-start, #profile-admin .admin-history) .hit-rate.hit-cold .hit-rate-top > strong { color: #ff8f8f; }
+:is(.find-board .find-start, #profile-admin .admin-history) .hit-rate.hit-empty .hit-rate-top > strong { color: #6b7a88; }
+:is(.find-board .find-start, #profile-admin .admin-history) .hit-rate-bar { height: 0.45rem; border-radius: 999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+:is(.find-board .find-start, #profile-admin .admin-history) .hit-rate-bar > i { display: block; height: 100%; width: 0; border-radius: inherit; background: #6b7a88; font-style: normal; }
+:is(.find-board .find-start, #profile-admin .admin-history) .hit-rate.hit-hot .hit-rate-bar > i { background: linear-gradient(90deg, #1f9a48, #3dff6e); }
+:is(.find-board .find-start, #profile-admin .admin-history) .hit-rate.hit-ok .hit-rate-bar > i { background: linear-gradient(90deg, #a8842a, #e7c15a); }
+:is(.find-board .find-start, #profile-admin .admin-history) .hit-rate.hit-cold .hit-rate-bar > i { background: linear-gradient(90deg, #a34545, #ff8f8f); }
+:is(.find-board .find-start, #profile-admin .admin-history) .hit-rate-count { color: #9fb3c8; font-size: 13px; font-weight: 600; }
 :is(.rec-board, #choice-result) .find-start button.hit-rate { display: grid !important; width: 100% !important; min-height: 0 !important; margin: 0 !important; padding: 0 0 0.75rem !important; border: 0 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; color: inherit !important; font: inherit !important; letter-spacing: normal !important; text-align: left !important; text-transform: none !important; cursor: pointer; }
 :is(.rec-board, #choice-result) .find-start button.hit-rate:hover { filter: none !important; border-bottom-color: #e7c15a !important; }
-.find-board .find-start .golden-list { display: grid; gap: 0.65rem; }
-.find-board .find-start .golden-place { margin: 0.85rem 0 0; color: #e7c15a; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
-.find-board .find-start .golden-place:first-child { margin-top: 0; }
-.find-board .find-start .golden-card { display: grid; gap: 0.25rem; margin: 0; padding: 0.75rem 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-.find-board .find-start .golden-card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
-.find-board .find-start .golden-card-top b { color: #f4f7fb; font-size: 15px; font-weight: 800; }
-.find-board .find-start .golden-card-top i { font-style: normal; font-weight: 800; color: #9fb3c8; }
-.find-board .find-start .golden-card-top i.won { color: #3dff6e; }
-.find-board .find-start .golden-card-top i.lost { color: #ff8f8f; }
-.find-board .find-start .golden-sum { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; padding: 0.2rem 0 0.85rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-.find-board .find-start .golden-sum b, .find-board .find-start .golden-sum strong { display: block; color: #f4f7fb; font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
-.find-board .find-start .golden-sum strong.up { color: #3dff6e; }
-.find-board .find-start .golden-sum strong.down { color: #ff8f8f; }
-.find-board .find-start .golden-sum span { color: #9fb3c8; font-size: 13px; font-weight: 600; }
-.find-board .find-start .golden-sum > div:last-child { text-align: right; }
-.find-board .find-start .golden-card-pay { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; margin: 0; }
-.find-board .find-start .golden-card-pay b { color: #e7c15a; font-size: 14px; font-weight: 800; }
-.find-board .find-start .golden-card-edge { display: inline-flex; align-items: baseline; gap: 0.45rem; }
-.find-board .find-start .golden-card-edge i { font-style: normal; font-weight: 800; font-size: 14px; color: #9fb3c8; }
-.find-board .find-start .golden-card-edge i.up { color: #3dff6e; }
-.find-board .find-start .golden-card-edge i.down { color: #ff8f8f; }
-.find-board .find-start .golden-card-pay span { color: #d5deea; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.find-board .find-start .golden-card-pay span.won { color: #3dff6e; }
-.find-board .find-start .golden-card-pay span.lost { color: #ff8f8f; }
-.find-board .find-start .golden-card-meta, .find-board .find-start .golden-card-when { margin: 0; color: #9fb3c8; font-size: 13px; }
-.find-board .find-start .golden-card-how { margin: 0.15rem 0 0; color: #d5deea; font-size: 13px; line-height: 1.4; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-list { display: grid; gap: 0.65rem; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-place { margin: 0.85rem 0 0; color: #e7c15a; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-place:first-child { margin-top: 0; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card { display: grid; gap: 0.25rem; margin: 0; padding: 0.75rem 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card-top b { color: #f4f7fb; font-size: 15px; font-weight: 800; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card-top i { font-style: normal; font-weight: 800; color: #9fb3c8; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card-top i.won { color: #3dff6e; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card-top i.lost { color: #ff8f8f; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-sum { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; padding: 0.2rem 0 0.85rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-sum b, :is(.find-board .find-start, #profile-admin .admin-history) .golden-sum strong { display: block; color: #f4f7fb; font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-sum strong.up { color: #3dff6e; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-sum strong.down { color: #ff8f8f; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-sum span { color: #9fb3c8; font-size: 13px; font-weight: 600; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-sum > div:last-child { text-align: right; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card-pay { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; margin: 0; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card-pay b { color: #e7c15a; font-size: 14px; font-weight: 800; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card-edge { display: inline-flex; align-items: baseline; gap: 0.45rem; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card-edge i { font-style: normal; font-weight: 800; font-size: 14px; color: #9fb3c8; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card-edge i.up { color: #3dff6e; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card-edge i.down { color: #ff8f8f; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card-pay span { color: #d5deea; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card-pay span.won { color: #3dff6e; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card-pay span.lost { color: #ff8f8f; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card-meta, :is(.find-board .find-start, #profile-admin .admin-history) .golden-card-when { margin: 0; color: #9fb3c8; font-size: 13px; }
+:is(.find-board .find-start, #profile-admin .admin-history) .golden-card-how { margin: 0.15rem 0 0; color: #d5deea; font-size: 13px; line-height: 1.4; }
 :is(.rec-board, #choice-result) .find-start button.desk-game { display: grid !important; width: 100% !important; min-height: 0 !important; margin: 0 0 10px !important; padding: 12px 14px !important; border: 1px solid rgba(61, 255, 110, 0.35) !important; border-radius: 12px !important; background: #041018 !important; box-shadow: none !important; color: #f4f7fb !important; font: inherit !important; text-align: left !important; text-transform: none !important; letter-spacing: normal !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-game:hover { border-color: #3dff6e !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-rec { margin: 0 0 12px !important; }

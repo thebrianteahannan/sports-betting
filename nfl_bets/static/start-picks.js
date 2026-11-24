@@ -889,7 +889,8 @@ function startPlace() {
   if (!box) startPaint(); else if (spot.nextElementSibling !== box) spot.after(box);
 }
 
-function startRecStats() {
+function startRecStats(opts) {
+  const stay = !!(opts && opts.stay);
   const box = document.createElement("div");
   box.className = "find-start-stats";
   box.innerHTML = `<p class="find-start-stats-load quiet">Looking up hit rates.</p>`;
@@ -905,7 +906,7 @@ function startRecStats() {
     return `<${tag}${open ? ` type="button"` : ""} class="hit-rate ${toneOf(pct)}${open ? " hit-rate-open" : ""}" title="${escHtml(tip)}"${open ? ` aria-label="Open Golden Tickets"` : ""}><div class="hit-rate-top"><b>${escHtml(name)}</b><strong>${pct == null ? "—" : `${pct}%`}</strong></div><div class="hit-rate-bar" aria-hidden="true"><i style="width:${width}%"></i></div><span class="hit-rate-count">${escHtml(count)}</span></${tag}>`;
   };
   box.addEventListener("click", (event) => {
-    if (!event.target.closest(".hit-rate-open")) return;
+    if (stay || !event.target.closest(".hit-rate-open")) return;
     startHistTab = "golden";
     const here = document.querySelector("#desk-glass-in .find-board");
     if (here && here.dataset.page === "history") startPaint(1);
@@ -943,9 +944,9 @@ function startRecStats() {
       row("Live", pace, all, "Recommended bets in games on now that have hit or are on pace to hit", " on pace"),
       row("Today", today.won + won, today.won + today.lost + won + lost, "Recommended bets won today, out of the ones already decided"),
       row("All time", ever.won + won, ever.won + ever.lost + won + lost, "Every recommended bet that has finished"),
-      row("Golden Ticket", golden.won, golden.won + golden.lost, "Open the saved Golden Tickets.", ` · ${startMoney(startGoldenCash(golden))}`, true),
-      row("Silver Ticket", silver.won, silver.won + silver.lost, "Open the saved Silver Tickets.", ` · ${startMoney(startGoldenCash(silver))}`, true),
-      row("Bronze Ticket", bronze.won, bronze.won + bronze.lost, "Open the saved Bronze Tickets.", ` · ${startMoney(startGoldenCash(bronze))}`, true),
+      row("Golden Ticket", golden.won, golden.won + golden.lost, "Saved Golden Tickets.", ` · ${startMoney(startGoldenCash(golden))}`, !stay),
+      row("Silver Ticket", silver.won, silver.won + silver.lost, "Saved Silver Tickets.", ` · ${startMoney(startGoldenCash(silver))}`, !stay),
+      row("Bronze Ticket", bronze.won, bronze.won + bronze.lost, "Saved Bronze Tickets.", ` · ${startMoney(startGoldenCash(bronze))}`, !stay),
       kinds((tally.kinds || {}).all || {}),
     ].join("");
     box.replaceChildren(score);

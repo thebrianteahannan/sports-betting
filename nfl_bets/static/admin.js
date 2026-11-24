@@ -302,7 +302,16 @@ async function loadAdmin() {
   }
   if (tab) tab.hidden = false;
   paintAdmin(await response.json());
+  paintAdminHistory();
   watchHere();
+}
+
+function paintAdminHistory() {
+  const host = document.getElementById("admin-history");
+  if (!host || typeof startRecStats !== "function") return;
+  const stats = startRecStats({ stay: true });
+  const golden = typeof startGoldenList === "function" ? startGoldenList() : [];
+  host.replaceChildren(...stats, ...golden);
 }
 
 function watchHere() {

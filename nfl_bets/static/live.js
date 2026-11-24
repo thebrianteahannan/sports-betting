@@ -274,7 +274,7 @@ function liveFilterBits() {
 
 let liveBetN = 0;
 function liveNav() {
-  return `<nav class="live-nav"><a href="/build">Build a bet</a><a href="/history">History</a><a href="/bets">My Bets <b>${liveBetN}</b></a><a href="/recommended">Recommended</a></nav>`;
+  return `<nav class="live-nav"><a href="/build">Build a bet</a><a href="/bets">My Bets <b>${liveBetN}</b></a><a href="/recommended">Recommended</a></nav>`;
 }
 fetch("/api/parlays", { credentials: "same-origin" }).then((res) => res.ok ? res.json() : null).then((data) => {
   liveBetN = data && Array.isArray(data.parlays) ? data.parlays.length : 0;
