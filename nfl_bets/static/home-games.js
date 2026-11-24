@@ -59,7 +59,7 @@ function whenBucket(ms, match) {
   return "";
 }
 window.whenBucket = whenBucket;
-let startWeekGames = [], startWeekAt = 0, startWeekLoading = false;
+let startWeekGames = [], startWeekAt = 0, startWeekLoading = false, startWeekWait = [];
 
 function homeLaterLoad() {
   if (homeLater.loading || Date.now() - homeLater.at < 60 * 1000 || typeof loadFind !== "function") return;
@@ -95,7 +95,8 @@ function startWeekLoad(done) {
   if (!startNeedsWeek()) { if (done) done(); return; }
   if (Date.now() - startWeekAt < 5 * 60 * 1000 && startWeekGames.length) { if (done) done(); return; }
   if (homeLater.week.length && Date.now() - homeLater.weekAt < 5 * 60 * 1000) { startWeekGames = homeLater.week; startWeekAt = homeLater.weekAt; if (done) done(); return; }
-  if (startWeekLoading || typeof loadFind !== "function") { if (done) done(); return; }
+  if (done) startWeekWait.push(done);
+  if (startWeekLoading || typeof loadFind !== "function") return;
   startWeekLoading = true;
   loadFind("week").then((data) => {
     const people = Array.isArray(data && data.people) ? data.people : [];
@@ -104,7 +105,11 @@ function startWeekLoad(done) {
     homeLater.week = startWeekGames;
     homeLater.weekAt = startWeekAt;
     startWeekMerge(document.querySelector("#desk-glass-in .find-board"), people);
-  }).catch(() => {}).finally(() => { startWeekLoading = false; if (done) done(); });
+  }).catch(() => {}).finally(() => {
+    startWeekLoading = false;
+    const wait = startWeekWait.splice(0);
+    wait.forEach((fn) => { try { fn(); } catch (error) {} });
+  });
 }
 
 function startSpanBar() {

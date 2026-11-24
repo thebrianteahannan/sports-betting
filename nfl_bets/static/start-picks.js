@@ -1140,7 +1140,9 @@ function startPaint(again) {
   }
   if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 2, { quiet: true });
   const waiting = (typeof startNeedsWeek === "function" && startNeedsWeek() && startWeekLoading) || !homeRecs || homeRecs.loading;
-  if (waiting && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
+  const shown = box.querySelector("button.desk-rec, .rec-parlay-card, .rec-strategy, .find-start-td-page");
+  if (waiting && shown && typeof startWeekLoad === "function" && typeof startNeedsWeek === "function" && startNeedsWeek() && startWeekLoading) startWeekLoad(() => { if (box.isConnected) startPaint((again || 0) + 1); });
+  else if (waiting && !shown && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
 }
 
 if (typeof homeRecRow === "function") {

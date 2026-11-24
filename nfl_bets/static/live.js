@@ -230,6 +230,8 @@ function liveZoomApply(next, opts) {
   if (!quiet && !liveZoomDrag) {
     document.querySelectorAll("input.live-zoom-range").forEach((box) => { box.value = String(liveZoom); });
   }
+  const say = document.querySelector(".live-filter-say");
+  if (say && say.firstChild) say.firstChild.textContent = `${liveFilterBits().join(". ")}.`;
   try {
     localStorage.setItem("liveZoom", String(liveZoom));
     localStorage.setItem("liveRecs", recs ? "1" : "0");
@@ -241,6 +243,10 @@ try { liveOnlyMine = localStorage.getItem("liveOnlyMine") === "1"; } catch (erro
 
 function liveCardSlider() {
   return `<label class="live-zoom live-card-zoom"><span>Less</span><input type="range" class="live-card-range" min="0" max="${LIVE_ZOOM_MAX}" step="any" value="${liveZoom}" aria-valuemin="0" aria-valuemax="${LIVE_ZOOM_MAX}" aria-valuenow="${liveZoom}" aria-label="Show more or less on this game"/><span>More</span></label>`;
+}
+
+function liveZoomSay(level) {
+  return ["Just the score", "Score and the buttons", "Locked bets", "Every saved bet", "Gold, silver, and bronze", "Every recommended bet and the last play"][level] || "";
 }
 
 function liveFilterBits() {
@@ -261,6 +267,8 @@ function liveFilterBits() {
     else if (!names.length) bits.push("All leagues");
   }
   bits.push(liveOnlyMine ? "Only your bets" : "All games");
+  const zoom = liveZoomSay(liveZoom);
+  if (zoom) bits.push(zoom);
   return bits;
 }
 
