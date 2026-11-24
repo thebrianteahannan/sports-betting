@@ -30,6 +30,7 @@ let manageZoom = (() => {
   return 0;
 })();
 let manageZoomDrag = false;
+const manageCardZoom = new Map();
 
 function manageZoomApply(next, opts) {
   const quiet = !!(opts && opts.quiet);
@@ -37,6 +38,15 @@ function manageZoomApply(next, opts) {
   const mark = (board) => { if (board) board.dataset.manageZoom = String(manageZoom); };
   document.querySelectorAll(".manage-board").forEach(mark);
   if (opts && opts.board) mark(opts.board);
+  manageCardZoom.clear();
+  document.querySelectorAll(".manage-card").forEach((card) => {
+    card.dataset.manageZoom = String(manageZoom);
+    const box = card.querySelector(".manage-card-range");
+    if (box) {
+      box.value = String(manageZoom);
+      box.setAttribute("aria-valuenow", String(manageZoom));
+    }
+  });
   if (!quiet && !manageZoomDrag) {
     document.querySelectorAll("input.manage-zoom-range").forEach((box) => {
       box.value = String(manageZoom);
@@ -47,32 +57,44 @@ function manageZoomApply(next, opts) {
   if (!(opts && opts.filling)) manageZoomExtras();
 }
 
-function manageZoomBar() {
+function manageCardLevel(id) {
+  return manageCardZoom.has(id) ? manageCardZoom.get(id) : manageZoom;
+}
+
+function manageZoomBar(card) {
   const bar = document.createElement("label");
-  bar.className = "manage-zoom";
+  bar.className = card ? "manage-zoom manage-card-zoom" : "manage-zoom";
+  const level = () => card ? manageCardLevel(card.dataset.id) : manageZoom;
   const less = document.createElement("span");
   less.textContent = "Less";
   const more = document.createElement("span");
   more.textContent = "More";
   const input = document.createElement("input");
   input.type = "range";
-  input.className = "manage-zoom-range";
+  input.className = card ? "manage-card-range" : "manage-zoom-range";
   input.min = "0";
   input.max = String(MANAGE_ZOOM_MAX);
   input.step = "any";
-  input.value = String(manageZoom);
+  input.value = String(level());
   input.setAttribute("aria-valuemin", "0");
   input.setAttribute("aria-valuemax", String(MANAGE_ZOOM_MAX));
-  input.setAttribute("aria-valuenow", String(manageZoom));
-  input.setAttribute("aria-label", "Show more or less on each bet");
+  input.setAttribute("aria-valuenow", String(level()));
+  input.setAttribute("aria-label", card ? "Show more or less on this bet" : "Show more or less on each bet");
   const end = () => {
     manageZoomDrag = false;
     const snapped = Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(Number(input.value) || 0)));
     input.value = String(snapped);
-    manageZoomApply(snapped);
+    input.setAttribute("aria-valuenow", String(snapped));
+    if (!card) manageZoomApply(snapped);
+    else {
+      manageCardZoom.set(card.dataset.id, snapped);
+      card.dataset.manageZoom = String(snapped);
+    }
   };
+  bar.addEventListener("pointerdown", (event) => event.stopPropagation());
   input.addEventListener("pointerdown", (event) => {
     manageZoomDrag = true;
+    event.stopPropagation();
     try { input.setPointerCapture(event.pointerId); } catch (error) {}
   });
   input.addEventListener("pointerup", end);
@@ -80,9 +102,13 @@ function manageZoomBar() {
   input.addEventListener("lostpointercapture", end);
   input.addEventListener("input", () => {
     manageZoomDrag = true;
-    const level = Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(Number(input.value) || 0)));
-    input.setAttribute("aria-valuenow", String(level));
-    manageZoomApply(level, { quiet: true });
+    const next = Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(Number(input.value) || 0)));
+    input.setAttribute("aria-valuenow", String(next));
+    if (!card) manageZoomApply(next, { quiet: true });
+    else {
+      manageCardZoom.set(card.dataset.id, next);
+      card.dataset.manageZoom = String(next);
+    }
   });
   input.addEventListener("change", end);
   bar.append(less, input, more);
@@ -336,6 +362,7 @@ function manageCard(row, n) {
   const card = document.createElement("article");
   card.className = `manage-card${(row.legs || []).length > 1 ? " parlay" : ""}${row.locked ? " locked" : ""}${row.id === window.parlayOpenId ? " on" : ""}${manageEditId === row.id ? " editing" : ""}`;
   card.dataset.id = row.id;
+  card.dataset.manageZoom = String(manageCardLevel(row.id));
   const legs = row.legs || [];
   const stake = Number(row.stake) > 0 ? Number(row.stake) : 5;
   const odds = manageOddsSaid(row);
@@ -374,7 +401,7 @@ function manageCard(row, n) {
   const num = document.createElement("b");
   num.className = "manage-n";
   num.textContent = String(n);
-  card.append(num, legsBox, acts, manageTags(legs), manageSlip(row));
+  card.append(num, legsBox, acts, manageTags(legs), manageSlip(row), manageZoomBar(card));
   if (fold) card.insertBefore(fold, acts);
   if (typeof bankCard === "function") bankCard(card, row);
   const openBet = () => {
@@ -401,7 +428,7 @@ function manageCard(row, n) {
     else manageRefresh();
   });
   card.addEventListener("click", (event) => {
-    if (event.target.closest("button, a, input, form, .find-tray-swap")) return;
+    if (event.target.closest("button, a, input, form, .find-tray-swap, .manage-card-zoom")) return;
     openBet();
   });
   card.addEventListener("keydown", (event) => {
