@@ -926,6 +926,8 @@
 .manage-board .manage-stat-line.vol > b { color: #ff8a2a; }
 .manage-board .manage-stat { color: #d5deea; font-size: 13px; font-weight: 700; white-space: nowrap; }
 .manage-board .manage-stat-line.vol .manage-stat { color: #ffb26b; }
+.manage-board .manage-stat.on,
+.manage-board .manage-stat-line.vol .manage-stat.on { padding: 0 0.35rem; border-radius: 999px; background: #e7c15a; color: #1a1400; }
 .find-board > .manage-search-keep { display: none; }
 .manage-board > .manage-search-keep { display: flex; flex-direction: column; gap: 0.8rem; width: 100%; min-width: 0; }
 .manage-search-keep .find-profile-x { display: none !important; }

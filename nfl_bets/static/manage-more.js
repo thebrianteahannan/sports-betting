@@ -88,7 +88,34 @@ function manageStatShort(label) {
   return known[raw.toLowerCase()] || raw;
 }
 
-function manageStatLine(kind, label, stats) {
+function manageStatOn(leg, label) {
+  const text = `${leg && leg.label || ""} ${leg && leg.market || ""}`.toLowerCase();
+  const name = String(label || "").toLowerCase();
+  if (/any\s*time\s*touchdown|anytime td/.test(text)) return name === "td/game" || name === "rush td/game";
+  const rules = [
+    [/3\s*\+|three|3-?point|3pt/, "3pters/game"],
+    [/pra|points\s*\+\s*reb|pts\s*\+\s*reb/, "pra/game"],
+    [/pass(?:ing)?\s*(?:td|touchdown)/, "pass td/game"],
+    [/rush(?:ing)?\s*(?:td|touchdown)/, "rush td/game"],
+    [/pass(?:ing)?\s*(?:yd|yard)/, "pass yds/game"],
+    [/rush(?:ing)?\s*(?:yd|yard)/, "rush yds/game"],
+    [/rec(?:eiving)?\s*(?:yd|yard)/, "rec yds/game"],
+    [/reception/, "receptions/game"],
+    [/target/, "targets/game"],
+    [/carr(?:y|ies)|rush(?:ing)?\s*attempt/, "carries/game"],
+    [/steal/, "steals/game"],
+    [/block/, "blocks/game"],
+    [/rebound/, "rebounds/game"],
+    [/assist/, "assists/game"],
+    [/minute/, "minutes/game"],
+    [/\bgoals?\b/, "goals/game"],
+    [/\bshots?\b/, "shots/game"],
+    [/\bpoints?\b|\bpts\b/, "pts/game"],
+  ];
+  return rules.some(([re, hit]) => re.test(text) && name === hit);
+}
+
+function manageStatLine(kind, label, stats, leg) {
   const line = document.createElement("span");
   line.className = `manage-stat-line ${kind}`;
   const name = document.createElement("b");
@@ -97,6 +124,7 @@ function manageStatLine(kind, label, stats) {
   stats.forEach((stat) => {
     const bit = document.createElement("span");
     bit.className = "manage-stat";
+    if (manageStatOn(leg, stat.label)) bit.classList.add("on");
     bit.textContent = `${manageStatShort(stat.label)} ${stat.value || ""}`.trim();
     line.append(bit);
   });
@@ -122,8 +150,8 @@ function manageLegNote(leg) {
   const stats = card.stats || [];
   const swings = stats.filter((stat) => stat.tag === "Volatile");
   const steady = stats.filter((stat) => stat.tag !== "Volatile");
-  if (swings.length) row.append(manageStatLine("vol", "Swings", swings));
-  if (steady.length) row.append(manageStatLine("steady", "Steady", steady));
+  if (swings.length) row.append(manageStatLine("vol", "Swings", swings, leg));
+  if (steady.length) row.append(manageStatLine("steady", "Steady", steady, leg));
   row.addEventListener("click", (event) => event.stopPropagation());
   return row;
 }
