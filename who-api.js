@@ -25,6 +25,48 @@ function rank(odds) {
   return n > 0 ? n / 100 : 100 / Math.abs(n);
 }
 
+function statOf(bet) {
+  return String(bet.market || "").toLowerCase().replace(/\b(alt|alternate)\b/g, " ").replace(/[^a-z0-9+ ]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function lineOf(bet) {
+  const hit = String(bet.label || "").match(/(\d+(?:\.\d+)?)/);
+  return hit ? Number(hit[1]) : 0;
+}
+
+function keepBets(bets) {
+  const mainLine = (bet) => /^(spread|moneyline|total)$/i.test(String(bet.market || "").trim());
+  const mains = bets.filter(mainLine);
+  const groups = new Map();
+  bets.filter((bet) => !mainLine(bet)).forEach((bet) => {
+    const key = `${statOf(bet)}|${/\bunder\b/i.test(bet.label || "") ? "under" : "over"}`;
+    const list = groups.get(key) || [];
+    list.push(bet);
+    groups.set(key, list);
+  });
+  const bags = [];
+  groups.forEach((list) => {
+    const even = list.slice().sort((a, b) => Math.abs(rank(a.odds) - 1) - Math.abs(rank(b.odds) - 1))[0];
+    const at = lineOf(even);
+    list.sort((a, b) => Math.abs(lineOf(a) - at) - Math.abs(lineOf(b) - at) || Math.abs(rank(a.odds) - 1) - Math.abs(rank(b.odds) - 1));
+    bags.push({ even, list: list.slice(0, 32) });
+  });
+  let picked = bags.flatMap((bag) => bag.list);
+  while (mains.length + picked.length > mains.length + 160) {
+    let worst = null;
+    bags.forEach((bag) => {
+      const last = bag.list[bag.list.length - 1];
+      if (!last || last === bag.even) return;
+      const far = Math.abs(lineOf(last) - lineOf(bag.even));
+      if (!worst || far > worst.far) worst = { bag, far };
+    });
+    if (!worst) break;
+    worst.bag.list.pop();
+    picked = bags.flatMap((bag) => bag.list);
+  }
+  return mains.concat(picked);
+}
+
 function bookOf(pools) {
   const people = new Map();
   const skip = /\b(and|or|the|each|half|to|record|score|in|a|an|both|teams)\b/i;
@@ -81,12 +123,8 @@ function bookOf(pools) {
       put(key, shown || key, "player", bet);
     });
   });
-  const mainLine = (bet) => /^(spread|moneyline|total)$/i.test(String(bet.market || "").trim());
   const rows = [...people.values()].map((row) => {
-    const keep = 48;
-    const mains = row.bets.filter(mainLine);
-    const rest = row.bets.filter((bet) => !mainLine(bet)).sort((a, b) => rank(b.odds) - rank(a.odds));
-    row.bets = mains.concat(rest).slice(0, keep);
+    row.bets = keepBets(row.bets);
     return row;
   }).filter((row) => row.bets.length).sort((a, b) => a.name.localeCompare(b.name));
   // Compact wire shape: shared game list, short bet tuples. Cuts the Build a bet freeze.
