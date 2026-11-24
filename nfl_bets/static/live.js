@@ -69,11 +69,11 @@ function liveRoot(game, picks, rec, show) {
     const { state, say, level, tip } = liveLegState(game, pick);
     const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${liveTags(rec ? pick : liveRecTwin(game, pick))}${say ? `<i class="now${level ? ` pace-${level}` : ""}"${tip ? ` title="${liveEsc(tip)}"` : ""} data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}`;
     const href = `/?${new URLSearchParams({ game: pick.match, ...(pick.parlay ? { bet: pick.parlay } : {}), label: pick.label, market: pick.market, from: "live" })}`;
-    return `<a class="live-mine-leg ${state}" href="${liveEsc(href)}" title="Open this bet in Build a bet">${inner}</a>`;
+    return `<a class="live-mine-leg ${state}${rec || pick.locked ? "" : " live-open"}" href="${liveEsc(href)}" title="Open this bet in Build a bet">${inner}</a>`;
   };
   const groups = [];
   picks.forEach((pick) => { const group = !rec && pick.parlay && groups.find((row) => row.id === pick.parlay); if (group) group.picks.push(pick); else groups.push({ id: pick.parlay, picks: [pick] }); });
-  const body = groups.map((group) => { if (group.picks.length < 2) return one(group.picks[0]); const head = liveParlayHead(group.id, group.picks[0].size); return `<span class="live-parlay${head.level ? ` pace-${head.level}` : ""}"><em>${liveEsc(head.text)}</em>${group.picks.map(one).join("")}</span>`; }).join("");
+  const body = groups.map((group) => { if (group.picks.length < 2) return one(group.picks[0]); const head = liveParlayHead(group.id, group.picks[0].size); const open = !rec && group.picks.every((pick) => !pick.locked); return `<span class="live-parlay${open ? " live-open" : ""}${head.level ? ` pace-${head.level}` : ""}"><em>${liveEsc(head.text)}</em>${group.picks.map(one).join("")}</span>`; }).join("");
   return `<span class="live-mine${rec ? " live-rec" : ""}${show ? " live-rec-show" : ""}"><b>${rec ? "Recommended" : "Rooting for"}</b>${body}</span>`;
 }
 
@@ -175,22 +175,26 @@ function liveLeagueBar(data, count) {
   return chips || go ? `<div class="live-leagues">${chips}${go}</div>` : "";
 }
 
-const LIVE_ZOOM_MAX = 4;
+const LIVE_ZOOM_MAX = 5;
 let liveZoom = (() => {
   try {
     const n = Number(localStorage.getItem("liveZoom"));
     if (!Number.isFinite(n)) return LIVE_ZOOM_MAX;
     const scale = localStorage.getItem("liveZoomScale");
-    let next = Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(n)));
-    if (scale !== "5") {
-      const old = Math.max(0, Math.min(scale === "6" ? 5 : 7, Math.round(n)));
-      next = scale === "6"
-        ? (old <= 1 ? 0 : old - 1)
-        : (old <= 1 ? 0 : old <= 4 ? 1 : old - 3);
-      localStorage.setItem("liveZoomScale", "5");
+    let next = Math.max(0, Math.min(5, Math.round(n)));
+    if (scale !== "7") {
+      if (scale !== "5") {
+        const old = Math.max(0, Math.min(scale === "6" ? 5 : 7, Math.round(n)));
+        next = scale === "6"
+          ? (old <= 1 ? 0 : old - 1)
+          : (old <= 1 ? 0 : old <= 4 ? 1 : old - 3);
+      }
+      if (next >= 3) next += 1;
+      next = Math.max(0, Math.min(LIVE_ZOOM_MAX, next));
+      localStorage.setItem("liveZoomScale", "7");
       localStorage.setItem("liveZoom", String(next));
     }
-    return next;
+    return Math.max(0, Math.min(LIVE_ZOOM_MAX, next));
   } catch (error) {}
   return LIVE_ZOOM_MAX;
 })();
@@ -205,8 +209,9 @@ function liveZoomApply(next, opts) {
   const quiet = !!(opts && opts.quiet);
   liveZoom = Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(Number(next) || 0)));
   document.body.dataset.liveZoom = String(liveZoom);
-  const mine = liveZoom >= 2, recs = liveZoom >= 3;
+  const mine = liveZoom >= 2, all = liveZoom >= 3, recs = liveZoom >= 4;
   document.body.classList.toggle("live-mine-off", !mine);
+  document.body.classList.toggle("live-all-bets", all);
   document.body.classList.toggle("live-recs-on", recs);
   if (opts && opts.master) {
     liveCardZoom.clear();
@@ -486,7 +491,7 @@ function liveFocus(data) {
 let liveLoading = null;
 
 function liveLegsFrom(mine) {
-  liveLegs = (mine.parlays || []).flatMap((row) => (row.legs || []).map((leg) => ({ ...leg, parlay: row.id, parlaySize: (row.legs || []).length })));
+  liveLegs = (mine.parlays || []).flatMap((row) => (row.legs || []).map((leg) => ({ ...leg, parlay: row.id, parlaySize: (row.legs || []).length, locked: !!row.locked })));
 }
 
 async function liveLoad() {
