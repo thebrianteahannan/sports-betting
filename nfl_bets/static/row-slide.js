@@ -16,19 +16,22 @@ function rowSlide(input) {
   input.classList.add("row-slide-input");
   const min = () => Number(input.min) || 0;
   const max = () => Number(input.max);
+  const half = () => (thumb.offsetWidth || 36) / 2;
   const paint = (n) => {
     const lo = min(), hi = Number.isFinite(max()) ? max() : lo;
     const span = hi - lo || 1;
-    const at = ((Math.min(hi, Math.max(lo, n)) - lo) / span) * 100;
-    fill.style.width = `${at}%`;
-    thumb.style.left = `${at}%`;
+    const at = (Math.min(hi, Math.max(lo, n)) - lo) / span;
+    const edge = half();
+    fill.style.width = `calc(${edge}px + (100% - ${edge * 2}px) * ${at})`;
+    thumb.style.left = `calc(${edge}px + (100% - ${edge * 2}px) * ${at})`;
   };
   const fromX = (x) => {
     const lo = min(), hi = Number.isFinite(max()) ? max() : lo;
     const rect = track.getBoundingClientRect();
-    const width = rect.width || 1;
-    const clamped = Math.min(rect.right, Math.max(rect.left, x));
-    return lo + ((clamped - rect.left) / width) * (hi - lo);
+    const edge = half();
+    const inner = Math.max(1, rect.width - edge * 2);
+    const clamped = Math.min(rect.right - edge, Math.max(rect.left + edge, x));
+    return lo + ((clamped - rect.left - edge) / inner) * (hi - lo);
   };
   const desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
   let held = false;
