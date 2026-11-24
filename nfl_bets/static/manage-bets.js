@@ -238,6 +238,23 @@ function manageSlipRec(legs) {
   return "";
 }
 
+function manageLegLine(leg, legs, byKey) {
+  const bits = manageLegRead(leg);
+  const role = byKey && byKey.get(typeof parlayKey === "function" ? parlayKey(leg) : "");
+  const pace = manageSlipPace(leg);
+  const line = document.createElement("p");
+  line.className = "manage-slip-leg";
+  line.innerHTML = [
+    bits.odds && `<i class="px">${esc(bits.odds)}</i>`,
+    bits.pct && `<i class="pct">${esc(bits.pct)}</i>`,
+    bits.who && `<i class="who">${esc(bits.who)}</i>`,
+    bits.prop && `<i class="prop">${esc(bits.prop)}</i>`,
+    role && MANAGE_ROLE[role.role] && !(legs.length < 2 && role.role === "anchor") && `<i class="leg-role r-${esc(role.role)}">${esc(MANAGE_ROLE[role.role])}</i>`,
+    pace && `<i class="tray-now">${esc(pace)}</i>`,
+  ].filter(Boolean).join("");
+  return line;
+}
+
 function manageSlip(row) {
   const slip = document.createElement("div");
   slip.className = "manage-slip";
@@ -261,22 +278,7 @@ function manageSlip(row) {
   slip.append(head);
   const roles = typeof legRoles === "function" ? legRoles(legs) : [];
   const byKey = new Map(roles.map((item) => [typeof parlayKey === "function" ? parlayKey(item.bet) : "", item]));
-  legs.forEach((leg) => {
-    const bits = manageLegRead(leg);
-    const role = byKey.get(typeof parlayKey === "function" ? parlayKey(leg) : "");
-    const pace = manageSlipPace(leg);
-    const line = document.createElement("p");
-    line.className = "manage-slip-leg";
-    line.innerHTML = [
-      bits.odds && `<i class="px">${esc(bits.odds)}</i>`,
-      bits.pct && `<i class="pct">${esc(bits.pct)}</i>`,
-      role && MANAGE_ROLE[role.role] && !(legs.length < 2 && role.role === "anchor") && `<i class="leg-role r-${esc(role.role)}">${esc(MANAGE_ROLE[role.role])}</i>`,
-      bits.who && `<i class="who">${esc(bits.who)}</i>`,
-      bits.prop && `<i class="prop">${esc(bits.prop)}</i>`,
-      pace && `<i class="tray-now">${esc(pace)}</i>`,
-    ].filter(Boolean).join("");
-    slip.append(line);
-  });
+  legs.forEach((leg) => slip.append(manageLegLine(leg, legs, byKey)));
   return slip;
 }
 
@@ -297,7 +299,11 @@ function manageCard(row) {
   if (legs.length === 1) { bits.odds = odds || bits.odds; bits.pct = pct || bits.pct; }
   const more = document.createElement("div");
   more.className = "manage-more";
-  if (legs.length > 1) legs.forEach((leg) => more.append(manageReadLine(manageLegRead(leg))));
+  if (legs.length > 1) {
+    const roles = typeof legRoles === "function" ? legRoles(legs) : [];
+    const byKey = new Map(roles.map((item) => [typeof parlayKey === "function" ? parlayKey(item.bet) : "", item]));
+    legs.forEach((leg) => more.append(manageLegLine(leg, legs, byKey)));
+  }
   const open = document.createElement("button");
   open.type = "button";
   open.className = "manage-open";

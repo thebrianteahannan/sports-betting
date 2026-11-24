@@ -1,18 +1,24 @@
-/** Recommended dial: Golden, then Golden/Silver/Bronze, then +100 to −250, then all.
+/** Recommended dial: Golden, then Silver, then Bronze, then close calls.
  * Same drag pattern as Live Less↔More: step any, pointer capture, no rebuild while the thumb moves. */
 
 const REC_DIAL_MAX = 3;
-const REC_DIAL_DEFAULT = 2;
+const REC_DIAL_DEFAULT = 0;
+const REC_TICKET = [
+  { name: "golden", min: -120, max: 120, rate: 0.6 },
+  { name: "silver", min: -150, max: 150, rate: 0.55 },
+  { name: "bronze", min: -200, max: 200, rate: 0.5 },
+];
 
 let recDial = (() => {
   try {
     const raw = localStorage.getItem("rec-dial");
     const stops = localStorage.getItem("rec-dial-stops");
-    let n = raw == null || raw === "" ? 1 : Math.round(Number(raw));
-    if (stops !== "4") {
+    let n = raw == null || raw === "" ? REC_DIAL_DEFAULT : Math.round(Number(raw));
+    if (stops !== "5") {
+      if (stops !== "4") n = n <= 0 ? 0 : n === 1 ? 2 : 3;
       n = n <= 0 ? 0 : n === 1 ? 2 : 3;
       localStorage.setItem("rec-dial", String(n));
-      localStorage.setItem("rec-dial-stops", "4");
+      localStorage.setItem("rec-dial-stops", "5");
     }
     if (n === 0 || n === 1 || n === 2 || n === 3) return n;
   } catch (error) {}
@@ -26,24 +32,28 @@ function recDialInBand(odds) {
   return Number.isFinite(o) && o >= -250 && o <= 100;
 }
 
+function recDialTone(level) {
+  return ["golden", "silver", "bronze", "close"][Math.max(0, Math.min(REC_DIAL_MAX, Math.round(Number(level) || 0)))] || "golden";
+}
+
 function recDialSay(level, showing) {
   const n = Number(showing);
   const count = Number.isFinite(n) ? ` · ${Math.max(0, Math.round(n))}` : "";
   if (level <= 0) return `Golden Ticket${count}`;
-  if (level === 1) return `Golden, Silver, and Bronze${count}`;
-  if (level >= 3) return `All picks${count}`;
-  return `+100 to −250${count}`;
+  if (level === 1) return `Silver Ticket${count}`;
+  if (level === 2) return `Bronze Ticket${count}`;
+  return `Close calls${count}`;
 }
 
 function recDialShowingOf(level, counts) {
   const golden = Math.max(0, Number(counts && counts.golden) || 0);
+  const silver = Math.max(0, Number(counts && counts.silver) || 0);
   const metal = Math.max(0, Number(counts && counts.metal) || 0);
-  const band = Math.max(0, Number(counts && counts.band) || 0);
-  const all = Math.max(0, Number(counts && counts.all) || 0);
+  const close = Math.max(0, Number(counts && counts.close) || 0);
   if (level <= 0) return golden;
-  if (level === 1) return metal;
-  if (level >= 3) return all;
-  return band;
+  if (level === 1) return golden + silver;
+  if (level === 2) return metal;
+  return metal + close;
 }
 
 function recDialSave(level) {
@@ -53,12 +63,25 @@ function recDialSave(level) {
   return recDial;
 }
 
+function recDialClose(pick) {
+  if (!pick || pick.golden || pick.silver || pick.bronze) return false;
+  const rate = recDialRate(pick);
+  const odds = Number(pick.odds);
+  if (rate == null || !Number.isFinite(odds)) return false;
+  return REC_TICKET.some((bar) => {
+    const priceOff = recDialFit(odds, bar.min, bar.max);
+    const short = bar.rate - rate;
+    if (short <= 0 && priceOff > 0 && priceOff <= 40) return true;
+    return priceOff === 0 && short > 0 && short <= 0.08;
+  });
+}
+
 function recDialOk(pick) {
   if (!pick) return false;
-  if (recDial >= 3) return true;
-  if (recDial <= 0) return !!pick.golden;
-  if (recDial === 1) return !!(pick.golden || pick.silver || pick.bronze);
-  return recDialInBand(pick.odds);
+  if (pick.golden) return true;
+  if (recDial >= 1 && pick.silver) return true;
+  if (recDial >= 2 && pick.bronze) return true;
+  return recDial >= 3 && recDialClose(pick);
 }
 
 function recDialPrice(odds) {
@@ -97,7 +120,7 @@ function recDialWhen(pick) {
 let recDialPicks = [];
 
 function recDialWhy(kind) {
-  const bar = kind === "metals" ? { min: -200, max: 200, rate: 0.5 } : { min: -120, max: 120, rate: 0.6 };
+  const bar = kind === "bronze" ? REC_TICKET[2] : kind === "silver" ? REC_TICKET[1] : REC_TICKET[0];
   const rows = (recDialPicks || []).filter((pick) => pick && pick.label && recDialRate(pick) != null);
   const days = rows.map(recDialDay).filter(Boolean).sort();
   const slate = days[0] || "";
@@ -106,11 +129,13 @@ function recDialWhy(kind) {
   const inside = here.filter((pick) => recDialFit(pick.odds, bar.min, bar.max) === 0).sort((a, b) => recDialRate(b) - recDialRate(a));
   const later = rows.filter((pick) => recDialFit(pick.odds, bar.min, bar.max) === 0 && recDialRate(pick) >= bar.rate && (!slate || recDialDay(pick) !== slate));
   let lead = "No pick on the next slate has 5 games on the record.";
-  if (hot[0] && recDialFit(hot[0].odds, bar.min, bar.max) > 0) lead = `${hot[0].label} has hit in ${hot[0].hits} of ${hot[0].n}, but the price is ${recDialPrice(hot[0].odds)}.`;
-  else if (inside[0]) lead = `${inside[0].label} is ${recDialPrice(inside[0].odds)}, but that has hit ${Math.round(recDialRate(inside[0]) * 100)}%.`;
-  const rule = kind === "metals"
-    ? "Golden is −120 to +120 and 60% or more. Silver is −150 to +150 and 55% or more. Bronze is −200 to +200 and 50% or more."
-    : "A Golden Ticket has to be between −120 and +120, and it has to have hit 60% or more.";
+  if (hot[0] && recDialFit(hot[0].odds, bar.min, bar.max) > 0) lead = `${hot[0].label} has hit in ${hot[0].hits} of ${hot[0].n}. The price is ${recDialPrice(hot[0].odds)}.`;
+  else if (inside[0]) lead = `${inside[0].label} is ${recDialPrice(inside[0].odds)} and has hit ${Math.round(recDialRate(inside[0]) * 100)}%.`;
+  const rule = kind === "bronze"
+    ? "A Bronze Ticket is −200 to +200, and it has to have hit 50% or more."
+    : kind === "silver"
+      ? "A Silver Ticket is −150 to +150, and it has to have hit 55% or more."
+      : "A Golden Ticket is −120 to +120, and it has to have hit 60% or more.";
   const next = later[0];
   const after = next ? ` ${next.label} is ${recDialPrice(next.odds)} and has hit in ${next.hits} of ${next.n}${recDialWhen(next) ? ` on ${recDialWhen(next)}` : ""}.` : "";
   return `${lead} ${rule}${after}`;
@@ -118,19 +143,21 @@ function recDialWhy(kind) {
 
 function recDialEmptySay() {
   if (recDial <= 0) return recDialWhy("golden");
-  if (recDial === 1) return recDialWhy("metals");
-  if (recDial === 2) return "Nothing in +100 to −250 right now. Slide toward More for the rest.";
-  return "No picks are posted yet.";
+  if (recDial === 1) return recDialWhy("silver");
+  if (recDial === 2) return recDialWhy("bronze");
+  return "No close calls on this list.";
 }
 
 function recDialMark(card, pick) {
   if (!card || !pick) return card;
   if (pick.golden) card.dataset.recGolden = "1";
   else delete card.dataset.recGolden;
+  if (pick.silver) card.dataset.recSilver = "1";
+  else delete card.dataset.recSilver;
   if (pick.golden || pick.silver || pick.bronze) card.dataset.recMetal = "1";
   else delete card.dataset.recMetal;
-  if (recDialInBand(pick.odds)) card.dataset.recBand = "1";
-  else delete card.dataset.recBand;
+  if (recDialClose(pick)) card.dataset.recClose = "1";
+  else delete card.dataset.recClose;
   return card;
 }
 
@@ -155,15 +182,16 @@ function recDialShowingPaint(level) {
   document.querySelectorAll(".rec-dial").forEach((bar) => {
     const counts = {
       golden: Number(bar.dataset.golden) || 0,
+      silver: Number(bar.dataset.silver) || 0,
       metal: Number(bar.dataset.metal) || 0,
-      band: Number(bar.dataset.band) || 0,
-      all: Number(bar.dataset.all) || 0,
+      close: Number(bar.dataset.close) || 0,
     };
     showing = recDialShowingOf(at, counts);
     const now = bar.querySelector(".rec-dial-now");
     if (now) now.textContent = String(showing);
     bar.dataset.showing = String(showing);
     bar.dataset.level = String(at);
+    bar.dataset.tone = recDialTone(at);
   });
   return showing;
 }
@@ -177,8 +205,9 @@ function recDialApply(next, opts) {
   document.querySelectorAll(".rec-dial-empty").forEach((node) => {
     const host = node.closest(".find-start, #desk-games");
     if (!host) return;
-    const mark = recDial <= 0 ? "[data-rec-golden]" : recDial === 1 ? "[data-rec-metal]" : "[data-rec-band]";
-    const show = recDial < 3 && !host.querySelector(`.desk-rec${mark}, .rec-parlay-card${mark}`);
+    const seen = (kind) => host.querySelector(`.desk-rec[${kind}], .rec-parlay-card[${kind}]`);
+    const hit = recDial <= 0 ? seen("data-rec-golden") : recDial === 1 ? (seen("data-rec-golden") || seen("data-rec-silver")) : recDial === 2 ? seen("data-rec-metal") : (seen("data-rec-metal") || seen("data-rec-close"));
+    const show = !hit;
     node.hidden = !show;
     if (show) node.textContent = recDialEmptySay();
   });
@@ -194,9 +223,9 @@ function recDialApply(next, opts) {
 
 function recDialNextSay(level) {
   const next = Math.round(Number(level) || 0) + 1;
-  if (next <= 1) return "Show silver and bronze";
-  if (next === 2) return "Show +100 to −250";
-  return "Show the rest";
+  if (next <= 1) return "Show the silver ticket";
+  if (next === 2) return "Show the bronze ticket";
+  return "Show close calls";
 }
 
 function recDialNext() {
@@ -222,27 +251,28 @@ function recDialEmptyNote() {
 function recDialCountOf(picks) {
   const rows = picks || [];
   recDialPicks = rows;
-  return {
-    golden: rows.filter((pick) => pick && pick.golden).length,
-    metal: rows.filter((pick) => pick && (pick.golden || pick.silver || pick.bronze)).length,
-    band: rows.filter((pick) => pick && recDialInBand(pick.odds)).length,
-    all: rows.length,
-  };
+  const golden = rows.filter((pick) => pick && pick.golden).length;
+  const silver = rows.filter((pick) => pick && pick.silver).length;
+  const metal = rows.filter((pick) => pick && (pick.golden || pick.silver || pick.bronze)).length;
+  const close = rows.filter((pick) => recDialClose(pick)).length;
+  return { golden, silver, metal, close, all: metal + close };
 }
 
 function recDialCountPaint(counts) {
   const golden = Math.max(0, Number(counts && counts.golden) || 0);
+  const silver = Math.max(0, Number(counts && counts.silver) || 0);
   const metal = Math.max(0, Number(counts && counts.metal) || 0);
-  const band = Math.max(0, Number(counts && counts.band) || 0);
-  const all = Math.max(0, Number(counts && counts.all) || 0);
+  const close = Math.max(0, Number(counts && counts.close) || 0);
+  const all = metal + close;
   document.querySelectorAll(".rec-dial").forEach((bar) => {
     const less = bar.querySelector(".rec-dial-less .rec-dial-n");
     const more = bar.querySelector(".rec-dial-more .rec-dial-n");
     if (less) less.textContent = String(golden);
     if (more) more.textContent = String(all);
     bar.dataset.golden = String(golden);
+    bar.dataset.silver = String(silver);
     bar.dataset.metal = String(metal);
-    bar.dataset.band = String(band);
+    bar.dataset.close = String(close);
     bar.dataset.all = String(all);
   });
   recDialShowingPaint(recDial);
@@ -260,7 +290,7 @@ function recDialBar(onCommit) {
   less.innerHTML = `Golden Ticket <i class="rec-dial-n">0</i>`;
   const more = document.createElement("span");
   more.className = "rec-dial-more";
-  more.innerHTML = `All <i class="rec-dial-n">0</i>`;
+  more.innerHTML = `Close calls <i class="rec-dial-n">0</i>`;
   const slide = document.createElement("span");
   slide.className = "rec-dial-slide";
   const input = document.createElement("input");

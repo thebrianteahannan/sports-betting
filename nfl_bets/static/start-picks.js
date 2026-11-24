@@ -550,10 +550,14 @@ function startRecMoreSync(wrap, more, pool, shown) {
     more.hidden = true;
     return;
   }
-  if (typeof recDial === "number" && recDial < 3 && !moreMatch) {
-    more.hidden = false;
-    more.textContent = "Slide toward All for more picks.";
-    more.dataset.scroll = "0";
+  if (!moreMatch) {
+    if (typeof recDial === "number" && recDial < 3) {
+      more.hidden = false;
+      more.textContent = "Slide right for the next one.";
+      more.dataset.scroll = "0";
+      return;
+    }
+    more.hidden = true;
     return;
   }
   more.hidden = false;

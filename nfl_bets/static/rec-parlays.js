@@ -313,8 +313,9 @@ function recParlayCard(board, row) {
   const card = document.createElement("article");
   card.className = `rec-parlay-card m-${row.place}`;
   if (row.place === "golden") card.dataset.recGolden = "1";
+  if (row.place === "silver") card.dataset.recSilver = "1";
   if (row.place === "golden" || row.place === "silver" || row.place === "bronze") card.dataset.recMetal = "1";
-  if (typeof recDialInBand === "function" && recDialInBand(row.price)) card.dataset.recBand = "1";
+  if (row.place === "known") card.dataset.recClose = "1";
   const price = Number.isFinite(row.price) ? (row.price > 0 ? `+${row.price}` : String(row.price)) : "";
   const need = `${(row.need * 100).toFixed(1)}%`;
   const ours = `${(row.ours * 100).toFixed(1)}%`;
@@ -383,12 +384,11 @@ function recParlayHit(board, pick) {
 }
 
 function recParlayDialCounts(rows) {
-  return {
-    golden: rows.filter((row) => row.place === "golden").length,
-    metal: rows.filter((row) => row.place === "golden" || row.place === "silver" || row.place === "bronze").length,
-    band: rows.filter((row) => typeof recDialInBand === "function" && recDialInBand(row.price)).length,
-    all: rows.length,
-  };
+  const golden = rows.filter((row) => row.place === "golden").length;
+  const silver = rows.filter((row) => row.place === "silver").length;
+  const metal = rows.filter((row) => row.place === "golden" || row.place === "silver" || row.place === "bronze").length;
+  const close = rows.filter((row) => row.place === "known").length;
+  return { golden, silver, metal, close, all: metal + close };
 }
 
 function recParlayPaint(board, box) {

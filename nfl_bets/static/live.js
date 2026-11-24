@@ -70,7 +70,8 @@ function liveRoot(game, picks, rec, show) {
     const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${liveTags(rec ? pick : liveRecTwin(game, pick))}${say ? `<i class="now${level ? ` pace-${level}` : ""}"${tip ? ` title="${liveEsc(tip)}"` : ""} data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}`;
     const href = `/?${new URLSearchParams({ game: pick.match, ...(pick.parlay ? { bet: pick.parlay } : {}), label: pick.label, market: pick.market, from: "live" })}`;
     const metal = !!(pick.golden || pick.silver || pick.bronze);
-    return `<a class="live-mine-leg ${state}${rec || pick.locked ? "" : " live-open"}${rec && !metal ? " live-rec-more" : ""}" href="${liveEsc(href)}" title="Open this bet in Build a bet">${inner}</a>`;
+    const best = rec && !metal && pick.tier !== "good" && pick.role !== "thin";
+    return `<a class="live-mine-leg ${state}${rec || pick.locked ? "" : " live-open"}${best ? " live-rec-best" : ""}${rec && !metal && !best ? " live-rec-more" : ""}" href="${liveEsc(href)}" title="Open this bet in Build a bet">${inner}</a>`;
   };
   const groups = [];
   picks.forEach((pick) => { const group = !rec && pick.parlay && groups.find((row) => row.id === pick.parlay); if (group) group.picks.push(pick); else groups.push({ id: pick.parlay, picks: [pick] }); });
@@ -119,7 +120,8 @@ function liveGame(game) {
   const body = teams ? `${bar}${teams}` : `<p class="live-note">ESPN has not posted player stats for this game yet.</p>`;
   const match = (liveMine(game, liveRecs)[0] || {}).match || `${game.away.name} @ ${game.home.name}`;
   const page = `/?${new URLSearchParams({ game: match, sport: game.sport, from: "live", ...(game.when ? { kick: game.when } : {}), ...(game.id ? { espn: game.id } : {}) })}`;
-  return `<details class="live-game${picks.length ? " has-mine" : ""}${game.final ? " live-final" : ""}${known && liveCard.court.has(game.id) ? " live-court-only" : ""}${picks.length && liveCard.mine.has(game.id) ? " live-mine-only" : ""}${split && liveCard.off.has(game.id) ? " live-off-only" : ""}" data-id="${liveEsc(game.id)}" data-sport="${liveEsc(game.sport)}" data-match="${liveEsc(match)}"${liveZoom > 1 && liveOpen.has(game.id) ? " open" : ""}><summary><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(game.away, away > home, `${game.id}|away`)}<span class="live-at-sign">@</span>${liveSide(game.home, home > away, `${game.id}|home`)}<span class="live-clock">${liveEsc(game.clock)}</span>${game.last ? `<span class="live-last" data-k="${liveEsc(`${game.id}|last`)}">${liveEsc(game.last)}</span>` : ""}${liveHurt(game)}${liveRoot(game, picks)}${liveRecRow(game, picks)}<a class="live-open" href="${liveEsc(page)}">Open Game Page</a><button type="button" class="live-stats" aria-label="Live stats"></button>${liveCardSlider()}</summary>${body}</details>`;
+  const more = !!(picks.length || recs.size || teams || game.last);
+  return `<details class="live-game${picks.length ? " has-mine" : ""}${game.final ? " live-final" : ""}${known && liveCard.court.has(game.id) ? " live-court-only" : ""}${picks.length && liveCard.mine.has(game.id) ? " live-mine-only" : ""}${split && liveCard.off.has(game.id) ? " live-off-only" : ""}" data-id="${liveEsc(game.id)}" data-sport="${liveEsc(game.sport)}" data-match="${liveEsc(match)}"${liveZoom > 1 && liveOpen.has(game.id) ? " open" : ""}><summary><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(game.away, away > home, `${game.id}|away`)}<span class="live-at-sign">@</span>${liveSide(game.home, home > away, `${game.id}|home`)}<span class="live-clock">${liveEsc(game.clock)}</span>${game.last ? `<span class="live-last" data-k="${liveEsc(`${game.id}|last`)}">${liveEsc(game.last)}</span>` : ""}${liveHurt(game)}${liveRoot(game, picks)}${liveRecRow(game, picks)}<a class="live-open" href="${liveEsc(page)}">Open Game Page</a><button type="button" class="live-stats" aria-label="Live stats"></button>${liveCardSlider(more)}</summary>${body}</details>`;
 }
 
 function liveNext(next) {
@@ -176,23 +178,27 @@ function liveLeagueBar(data, count) {
   return chips || go ? `<div class="live-leagues">${chips}${go}</div>` : "";
 }
 
-const LIVE_ZOOM_MAX = 5, LIVE_ZOOM_DEFAULT = LIVE_ZOOM_MAX;
+const LIVE_ZOOM_MAX = 6, LIVE_ZOOM_DEFAULT = LIVE_ZOOM_MAX;
 let liveZoom = (() => {
   try {
     const n = Number(localStorage.getItem("liveZoom"));
     if (!Number.isFinite(n)) return LIVE_ZOOM_DEFAULT;
     const scale = localStorage.getItem("liveZoomScale");
-    let next = Math.max(0, Math.min(5, Math.round(n)));
-    if (scale !== "7") {
-      if (scale !== "5") {
-        const old = Math.max(0, Math.min(scale === "6" ? 5 : 7, Math.round(n)));
-        next = scale === "6"
-          ? (old <= 1 ? 0 : old - 1)
-          : (old <= 1 ? 0 : old <= 4 ? 1 : old - 3);
+    let next = Math.round(n);
+    if (scale !== "8") {
+      next = Math.max(0, Math.min(5, next));
+      if (scale !== "7") {
+        if (scale !== "5") {
+          const old = Math.max(0, Math.min(scale === "6" ? 5 : 7, Math.round(n)));
+          next = scale === "6"
+            ? (old <= 1 ? 0 : old - 1)
+            : (old <= 1 ? 0 : old <= 4 ? 1 : old - 3);
+        }
+        if (next >= 3) next += 1;
+        next = Math.max(0, Math.min(5, next));
       }
-      if (next >= 3) next += 1;
-      next = Math.max(0, Math.min(LIVE_ZOOM_MAX, next));
-      localStorage.setItem("liveZoomScale", "7");
+      if (next >= 5) next = 6;
+      localStorage.setItem("liveZoomScale", "8");
       localStorage.setItem("liveZoom", String(next));
     }
     return Math.max(0, Math.min(LIVE_ZOOM_MAX, next));
@@ -210,10 +216,11 @@ function liveZoomApply(next, opts) {
   const quiet = !!(opts && opts.quiet);
   liveZoom = Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(Number(next) || 0)));
   document.body.dataset.liveZoom = String(liveZoom);
-  const mine = liveZoom >= 2, all = liveZoom >= 3, recs = liveZoom >= 4, every = liveZoom >= 5;
+  const mine = liveZoom >= 2, all = liveZoom >= 3, recs = liveZoom >= 4, best = liveZoom >= 5, every = liveZoom >= 6;
   document.body.classList.toggle("live-mine-off", !mine);
   document.body.classList.toggle("live-all-bets", all);
   document.body.classList.toggle("live-recs-on", recs);
+  document.body.classList.toggle("live-recs-best", best);
   document.body.classList.toggle("live-recs-all", every);
   if (opts && opts.master) {
     liveCardZoom.clear();
@@ -240,12 +247,13 @@ function liveZoomApply(next, opts) {
 let liveOnlyMine = false;
 try { liveOnlyMine = localStorage.getItem("liveOnlyMine") === "1"; } catch (error) {}
 
-function liveCardSlider() {
+function liveCardSlider(more) {
+  if (!more) return "";
   return `<label class="live-zoom live-card-zoom"><span>Less</span><input type="range" class="live-card-range" min="0" max="${LIVE_ZOOM_MAX}" step="any" value="${liveZoom}" aria-valuemin="0" aria-valuemax="${LIVE_ZOOM_MAX}" aria-valuenow="${liveZoom}" aria-label="Show more or less on this game"/><span>More</span></label>`;
 }
 
 function liveZoomSay(level) {
-  return ["Just the score", "Score and the buttons", "Locked bets", "Every saved bet", "Gold, silver, and bronze", "Every recommended bet and the last play"][level] || "";
+  return ["Just the score", "Score and the buttons", "Locked bets", "Every saved bet", "Gold, silver, and bronze", "The best recommended bets", "Every recommended bet and the last play"][level] || "";
 }
 
 function liveFilterBits() {
@@ -340,7 +348,7 @@ function liveSoonCard(game) {
   const until = liveNow ? "" : (typeof gameUntilText === "function" ? gameUntilText(game.kickoff) : "");
   const meta = `<span class="live-meta">${game.total ? `<span class="live-total">O/U ${liveEsc(game.total)}</span>` : ""}${until ? `<span class="find-until live-until" data-kick="${liveEsc(game.kickoff)}">${liveEsc(until)}</span>` : ""}${game.lines ? `<span class="live-lines">${liveEsc(game.lines)}</span>` : ""}<a class="live-week-game" href="/?${liveEsc(new URLSearchParams({ game: game.match, from: "live" }).toString())}" title="Open this game in Build a bet">Build a bet ›</a></span>`;
   const sides = game.sport === "PGA" ? `<span class="live-side"><b>${liveEsc(game.match || "")}</b></span>` : `${liveSide(like.away, false, `${like.id}|away`)}<span class="live-at-sign">@</span>${liveSide(like.home, false, `${like.id}|home`)}`;
-  return `<div class="live-game live-soon${liveNow ? " live-pga-on" : ""}${picks.length ? " has-mine" : ""}" data-id="${liveEsc(like.id)}"><div class="live-head"><span class="live-sport">${liveEsc(game.sport)}</span>${sides}<span class="live-clock live-when">${liveEsc(day)}</span>${tag}${meta}${liveRoot(like, picks)}${liveRecRow(like, picks, open)}${liveCardSlider()}</div></div>`;
+  return `<div class="live-game live-soon${liveNow ? " live-pga-on" : ""}${picks.length ? " has-mine" : ""}" data-id="${liveEsc(like.id)}"><div class="live-head"><span class="live-sport">${liveEsc(game.sport)}</span>${sides}<span class="live-clock live-when">${liveEsc(day)}</span>${tag}${meta}${liveRoot(like, picks)}${liveRecRow(like, picks, open)}${liveCardSlider(!!(picks.length || recs))}</div></div>`;
 }
 
 function liveWeekList(week) {
