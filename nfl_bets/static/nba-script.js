@@ -38,12 +38,6 @@ function scriptRecTag() {
     let spot = pill;
     scriptRecExtras(bet).forEach((node) => { spot.after(node); spot = node; });
   });
-  if (typeof parlayLeg === "undefined" || !parlayLeg.size || !scriptRecSigs.has(scriptRecSig([...parlayLeg.values()]))) return;
-  document.querySelectorAll(".find-tray .find-ticket > b").forEach((head) => {
-    if (head.querySelector("i.rc")) return;
-    const tag = document.createElement("i"); tag.className = "rc"; tag.textContent = "Recommended";
-    const same = head.querySelector("i.sg"); if (same) same.after(tag); else head.append(tag);
-  });
 }
 
 const scriptRecAll = new Map(), legRecAll = new Map();
@@ -260,26 +254,6 @@ function scriptRecJump(match, test) {
   box.open = true; box.style.scrollMarginTop = "5.5rem";
   if (typeof gameScrollTo === "function") gameScrollTo(box);
 }
-
-function scriptRecGo() {
-  if (typeof parlayLeg === "undefined" || !parlayLeg.size) return;
-  const sig = scriptRecSig([...parlayLeg.values()]);
-  const find = () => [...document.querySelectorAll("#desk-glass-in .find-bets .find-script-tabs button")].find((tab) => tab.dataset.sig === sig);
-  const flip = () => [...document.querySelectorAll("#desk-glass-in .find-bets")].some((box) => {
-    const bets = box.scriptBets, game = box.scriptGame; if (!bets) return false;
-    const group = [bets, bets.stars].filter(Boolean).flatMap((set) => (set.groups || []).filter((row) => (row.parlays || []).some((parlay) => scriptRecSig(parlay.legs.map((at) => ({ ...set.picks[at], match: game.match }))) === sig)))[0];
-    const block = group && [...box.querySelectorAll(":scope > .find-script-bets")].find((node) => node.dataset.team === group.name), check = block && block.querySelector("label.find-script-stars input");
-    if (check) check.click(); return !!check;
-  });
-  const show = scriptRecShow;
-  const now = find() || (flip() && find()); if (now) { show(now); return; }
-  const seek = document.querySelector(".find-tray:not([hidden]) button.find-leg-seek"); if (!seek) return;
-  seek.click();
-  let tries = 0, flipped = false;
-  const wait = setInterval(() => { const tab = find() || (!flipped && (flipped = flip()) && find()); if (tab || ++tries > 50) { clearInterval(wait); if (tab) show(tab); } }, 200);
-}
-
-document.addEventListener("click", (event) => { if (event.target.closest && event.target.closest(".find-tray .find-ticket > b i.rc")) scriptRecGo(); });
 
 function scriptRecLeg(line) {
   const hist = line.querySelector("button.find-leg-hist"), key = (hist && hist.dataset.key) || line.dataset.key, bet = key && typeof parlayLeg !== "undefined" && parlayLeg.get(key);

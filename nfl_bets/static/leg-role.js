@@ -1,6 +1,6 @@
-/** Leg roles on the bet card. Anchor holds the bet up, Juice pays for it, Filler is near even money, Dead weight carries more of the risk than the payout. */
+/** Leg roles on the bet card. Anchor holds the bet up, Pays is the leg that pays for it, Filler is near even money, Dead weight carries more of the risk than the payout. */
 
-const LEG_ROLE = { anchor: ["Anchor", "Holds the bet up."], juice: ["Juice", "Pays for the bet."], filler: ["Filler", "Near even money. Adds some price and real risk."], dead: ["Dead weight", "Carries more of the risk than the payout. Swap it first."] };
+const LEG_ROLE = { anchor: ["Anchor", "Holds the bet up."], juice: ["Pays", "Pays for the bet."], filler: ["Filler", "Near even money. Adds some price and real risk."], dead: ["Dead weight", "Carries more of the risk than the payout. Swap it first."] };
 
 function legRoleChance(bet) {
   const odds = Number(bet.odds), price = odds < 0 ? -odds / (-odds + 100) : 100 / (odds + 100);

@@ -709,9 +709,15 @@
 :is(.rec-board, #choice-result) .find-td > button.find-all-td:hover { background: rgba(61, 255, 110, 0.12) !important; }
 .rec-board .find-list.find-td-board > h3 { margin: 0 0 0.4rem; color: #3dff6e; font-size: 1.05rem; font-weight: 800; }
 .rec-board .find-list.find-td-board > .find-td-span { margin: 0 0 0.45rem; }
-.rec-board .find-list.find-td-board > .find-td-span button.on,
-#desk.tv-full #desk-glass .rec-board .find-list.find-td-board > .find-td-span button.on {
-  border: 1px solid #e7c15a !important; background: transparent !important; color: #e7c15a !important; box-shadow: none !important;
+:is(.rec-board, #choice-result) .find-list.find-td-board > :is(.find-td-span, .find-td-picks) > button,
+#desk.tv-full #desk-glass .rec-board .find-list.find-td-board > :is(.find-td-span, .find-td-picks) > button {
+  width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.3rem 0.7rem !important;
+  border: 1px solid #2a3a48 !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important;
+  color: #9fb3c8 !important; font-size: 13px !important; font-weight: 800 !important; letter-spacing: normal !important; text-transform: none !important; cursor: pointer;
+}
+:is(.rec-board, #choice-result) .find-list.find-td-board > :is(.find-td-span, .find-td-picks) > button.on,
+#desk.tv-full #desk-glass .rec-board .find-list.find-td-board > :is(.find-td-span, .find-td-picks) > button.on {
+  border-color: #3dff6e !important; background: rgba(61, 255, 110, 0.16) !important; color: #f4f7fb !important;
 }
 .rec-board .find-list.find-td-board > .find-td-teams { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0 0 0.55rem; }
 .rec-board .find-list.find-td-board > .find-td-teams[hidden] { display: none !important; }
@@ -1114,3 +1120,10 @@
 :is(.rec-board, #choice-result) .find-tray[data-acts] .find-chose:has(> button.find-leg-more) > button.find-out,
 :is(.rec-board, #choice-result) .find-tray[data-acts] .find-chose > button.find-out { display: inline-flex !important; align-items: center; justify-content: center; }
 :is(.rec-board, #choice-result) .find-tray[data-acts]:not([data-acts="0"]) .find-chose:has(> button.find-leg-more) > button:is(.find-leg-seek, .find-leg-hist, .find-leg-to, .find-leg-swap) { display: inline-flex !important; align-items: center; justify-content: center; }
+:is(.rec-board, #choice-result) .find-tray .find-chose[data-acts="0"] > button:not(.find-out) { display: none !important; }
+:is(.rec-board, #choice-result) .find-tray .find-chose[data-acts]:not([data-acts="0"]) > button:is(.find-leg-seek, .find-leg-hist, .find-leg-to, .find-leg-swap) { display: inline-flex !important; align-items: center; justify-content: center; }
+:is(.rec-board, #choice-result) .find-tray .find-chose { flex-wrap: wrap; }
+:is(.rec-board, #choice-result) .find-tray .find-chose > .leg-acts { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; flex: 1 0 100%; margin: 0 0 0.15rem; color: #9fb3c8; font: 700 10px Outfit, system-ui, sans-serif; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
+:is(.rec-board, #choice-result) .find-tray .find-chose > .leg-acts > span { display: inline; flex: none; align-self: center; min-width: 0; white-space: nowrap; }
+:is(.rec-board, #choice-result) .find-tray .find-chose > .leg-acts .row-slide { display: block; flex: none; align-self: center; width: 4.6rem; min-width: 4.6rem; height: 22px; }
+:is(.rec-board, #choice-result) .find-tray .find-chose > .leg-acts .row-slide > b { width: 14px; height: 14px; border-width: 2px; }

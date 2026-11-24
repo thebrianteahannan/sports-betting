@@ -383,10 +383,6 @@ function openTdPage(list, people, hits, game, team, spanWhen) {
     (button.closest(".td-pick-wrap") || button).after(more);
   };
   const paint = (kind) => { head.textContent = kind === "Anytime TD" ? "Most likely to score an anytime touchdown" : kind === "2 Anytime TDs" ? "Most likely to score 2 anytime touchdowns" : "Most likely to score 3 anytime touchdowns"; allBox.replaceChildren(); const three = books.get("3 Anytime TDs") || new Map(); const rows = [...((books.get(kind) || new Map()).values())].sort((a, b) => b.chance - a.chance); if (!rows.length) { const empty = document.createElement("p"); empty.className = "find-empty"; empty.textContent = `FanDuel has no ${kind.toLowerCase()} touchdown prices up.`; allBox.append(empty); refreshTeams(); return; } rows.forEach((row) => { const button = document.createElement("button"); button.type = "button"; button.dataset.who = row.person.name; button.dataset.match = row.match || ""; button.dataset.kickoff = row.kickoff || ""; button.dataset.odds = String(row.odds); button.dataset.chance = String(Math.round(row.chance * 100)); if (row.person.team) button.dataset.club = row.person.team; if (row.here) button.dataset.here = "1"; button.dataset.tds = teamTd(people, row.person.name, row.match, row.kickoff); if (tdRecWho(row.person.name, null)) { button.dataset.rec = "1"; button.classList.add("find-td-rec"); } button.textContent = `${row.person.name}, ${Number(row.odds) > 0 ? `+${row.odds}` : row.odds}, ${Math.round(row.chance * 100)}%${findCash(row.odds) ? `, $5 profits ${findCash(row.odds)}` : ""}`; if (row.here && !team) button.classList.add("on"); if (kind === "Anytime TD" && three.has(row.person.name)) button.dataset.three = "1"; allBox.append(wrapRow(button, row, kind)); }); markTd(allBox); tagTeams(); fillTeam(people, allBox); loadZone(people, allBox); filterRows(); showFew(kind); syncPick(); refreshTeams(); };
-  const filter = document.createElement("label");
-  filter.className = "find-td-filter find-td-page-filter";
-  filter.innerHTML = `<input type="checkbox" checked> Recommended only`;
-  const recOnly = filter.querySelector("input");
   let picking = false;
   const picked = new Map();
   const tools = document.createElement("div");
@@ -518,7 +514,6 @@ function openTdPage(list, people, hits, game, team, spanWhen) {
     }
   };
   const filterRows = () => {
-    const only = recOnly.checked;
     const fold = (text) => typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase().trim();
     const clubOk = (button) => {
       if (!clubPick) return true;
@@ -546,7 +541,7 @@ function openTdPage(list, people, hits, game, team, spanWhen) {
       [...few.querySelectorAll(".rec-bet")].map((card) => fold(card.dataset.who || (card.querySelector(".rec-gist .who") || {}).textContent || "")).filter(Boolean)
     );
     [...allBox.querySelectorAll("button[data-who]")].forEach((button) => {
-      const hide = (only && button.dataset.rec !== "1") || inFew.has(fold(button.dataset.who)) || !clubOk(button);
+      const hide = button.dataset.rec !== "1" || inFew.has(fold(button.dataset.who)) || !clubOk(button);
       button.hidden = hide;
       const wrap = button.closest(".td-pick-wrap");
       if (wrap) wrap.hidden = hide;
@@ -555,7 +550,7 @@ function openTdPage(list, people, hits, game, team, spanWhen) {
     if (empty) empty.remove();
     const shown = [...few.querySelectorAll(".rec-bet")].some((card) => !card.hidden) || [...allBox.querySelectorAll("button[data-who]")].some((button) => !button.hidden);
     if (!shown) {
-      const say = clubPick ? `No touchdowns for ${clubPick.split(/\s+/).pop()} on this slate.` : only ? "No recommended touchdowns on this slate." : "FanDuel has no anytime touchdown prices up.";
+      const say = clubPick ? `No touchdowns for ${clubPick.split(/\s+/).pop()} on this slate.` : "No recommended touchdowns on this slate.";
       allBox.append(Object.assign(document.createElement("p"), { className: "find-td-empty find-empty", textContent: say }));
     }
     markBest();
@@ -631,8 +626,7 @@ function openTdPage(list, people, hits, game, team, spanWhen) {
       refreshTeams();
     }).catch(() => { filterRows(); refreshTeams(); });
   };
-  recOnly.addEventListener("change", filterRows);
-  list.append(head, ...(when.childElementCount ? [when] : []), picks, filter, tools, teamsBar, few, allBox); syncPick();
+  list.append(head, ...(when.childElementCount ? [when] : []), picks, tools, teamsBar, few, allBox); syncPick();
   list._tdTeamState = teamState();
   paint("Anytime TD");
   const glass = document.getElementById("desk-glass-in");
@@ -780,31 +774,8 @@ function paintRead(row, button, data, name) {
   if (!box.childNodes.length) { button.textContent = "See the history"; return; }
   tuckHist(box, true); button.replaceWith(box);
 }
-function parlayHint(legs) {
-  const rows = (legs || []).filter((leg) => Number(leg.odds));
-  if (!rows.length) return "";
-  const note = document.createElement("p");
-  note.className = "find-why";
-  const say = (text) => { if (text) note.append(document.createTextNode(text)); };
-  let said = "";
-  if (rows.length >= 2 && typeof rosterScan === "function") {
-    const dec = rows.reduce((p, leg) => p * (1 + findRank(leg.odds)), 1);
-    const price = dec >= 2 ? Math.round((dec - 1) * 100) : Math.round(-100 / (dec - 1));
-    const main = (rosterScan(rows, price) || [])[0];
-    if (main && typeof rosterWho === "function") {
-      const label = rosterWho(main.id, main.part, main.name);
-      const exp = document.createElement("span"); exp.className = "find-exp"; note.append(exp); exp.append(main.fit ? "Experimental: matches " : "Experimental: close to ");
-      const go = document.createElement("button");
-      go.type = "button";
-      go.className = "find-near";
-      go.textContent = label;
-      go.addEventListener("click", () => { if (window.openStrategy) openStrategy(main.id, main.part || ""); });
-      exp.append(go);
-      exp.append(main.fit ? "." : `.${main.why ? ` ${main.why}` : ""}`);
-      said = label;
-    }
-  }
-  return note.childNodes.length ? note : "";
+function parlayHint() {
+  return "";
 }
 function parlayNext(legs, said) {
   const n = legs.length;

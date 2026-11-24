@@ -176,11 +176,11 @@ function liveLeagueBar(data, count) {
   return chips || go ? `<div class="live-leagues">${chips}${go}</div>` : "";
 }
 
-const LIVE_ZOOM_MAX = 5;
+const LIVE_ZOOM_MAX = 5, LIVE_ZOOM_DEFAULT = LIVE_ZOOM_MAX;
 let liveZoom = (() => {
   try {
     const n = Number(localStorage.getItem("liveZoom"));
-    if (!Number.isFinite(n)) return LIVE_ZOOM_MAX;
+    if (!Number.isFinite(n)) return LIVE_ZOOM_DEFAULT;
     const scale = localStorage.getItem("liveZoomScale");
     let next = Math.max(0, Math.min(5, Math.round(n)));
     if (scale !== "7") {
@@ -197,7 +197,7 @@ let liveZoom = (() => {
     }
     return Math.max(0, Math.min(LIVE_ZOOM_MAX, next));
   } catch (error) {}
-  return LIVE_ZOOM_MAX;
+  return LIVE_ZOOM_DEFAULT;
 })();
 
 let liveZoomDrag = false;
@@ -230,8 +230,7 @@ function liveZoomApply(next, opts) {
   if (!quiet && !liveZoomDrag) {
     document.querySelectorAll("input.live-zoom-range").forEach((box) => { box.value = String(liveZoom); });
   }
-  const say = document.querySelector(".live-filter-say");
-  if (say && say.firstChild) say.firstChild.textContent = `${liveFilterBits().join(". ")}.`;
+  liveFilterSaySync();
   try {
     localStorage.setItem("liveZoom", String(liveZoom));
     localStorage.setItem("liveRecs", recs ? "1" : "0");
@@ -282,9 +281,27 @@ fetch("/api/parlays", { credentials: "same-origin" }).then((res) => res.ok ? res
   if (badge) badge.textContent = String(liveBetN);
 }).catch(() => {});
 
+function liveFiltersDirty() {
+  return !!(liveLeagues.size || liveOnlyMine || liveSpanChosen || liveZoom !== LIVE_ZOOM_DEFAULT);
+}
+
+function liveFilterSaySync() {
+  const say = document.querySelector(".live-filter-say");
+  if (!say) return;
+  if (say.firstChild) say.firstChild.textContent = `${liveFilterBits().join(". ")}.`;
+  let clear = say.querySelector("[data-live-clear]");
+  if (!liveFiltersDirty()) { if (clear) clear.remove(); return; }
+  if (clear) return;
+  clear = document.createElement("button");
+  clear.type = "button";
+  clear.setAttribute("data-live-clear", "");
+  clear.textContent = "Clear";
+  say.append(clear);
+}
+
 function liveFilterBar(bar, filters) {
   const bits = liveFilterBits();
-  const clear = liveLeagues.size || liveOnlyMine || liveSpanChosen ? ` <button type="button" data-live-clear>Clear</button>` : "";
+  const clear = liveFiltersDirty() ? ` <button type="button" data-live-clear>Clear</button>` : "";
   const say = `<p class="live-filter-say">${liveEsc(bits.join(". "))}.${clear}</p>`;
   return `${say}<details class="live-filter-fold"${liveFiltersOpen ? " open" : ""}><summary>Filters</summary>${bar}${filters}</details>${liveZoomBar()}`;
 }
@@ -300,6 +317,7 @@ function liveFiltersClear() {
     localStorage.setItem("liveLeagues", "[]");
     localStorage.setItem("liveOnlyMine", "0");
   } catch (error) {}
+  liveZoomApply(LIVE_ZOOM_DEFAULT, { master: true });
   if (liveLast) livePaint(liveLast, true);
 }
 

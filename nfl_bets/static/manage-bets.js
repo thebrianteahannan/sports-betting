@@ -207,7 +207,7 @@ function manageReadLine(bits, pay, mark) {
   return line;
 }
 
-const MANAGE_ROLE = { anchor: "Anchor", juice: "Juice", filler: "Filler", dead: "Dead weight" };
+const MANAGE_ROLE = { anchor: "Anchor", juice: "Pays", filler: "Filler", dead: "Dead weight" };
 
 function manageSlipGame(legs) {
   const games = typeof trayLive !== "undefined" && trayLive.games ? trayLive.games : [];

@@ -1,6 +1,5 @@
 // The chart icon on a parlay leg opens that bet's history under the leg, inside the parlay.
 const legHistOpen = new Set(), legHistBox = new Map();
-let betActsHistHeld = false;
 
 function legHistClose(key) {
   legHistOpen.delete(key);
@@ -71,15 +70,18 @@ function legHistFor(key) {
 }
 
 function legHistPaint() {
-  if (typeof betActsNow === "number") {
-    document.querySelectorAll(".find-tray .find-chose[data-key]").forEach((line) => {
-      const key = line.dataset.key;
-      if (!key || typeof parlayLeg === "undefined" || !parlayLeg.has(key)) return;
-      if (betActsNow === 3) legHistOpen.add(key);
-      else if (betActsHistHeld) legHistOpen.delete(key);
-    });
-    betActsHistHeld = betActsNow === 3;
-  }
+  document.querySelectorAll(".find-tray .find-chose[data-key]").forEach((line) => {
+    const key = line.dataset.key;
+    if (!key || typeof parlayLeg === "undefined" || !parlayLeg.has(key)) return;
+    const level = typeof legActsOf === "function" ? legActsOf(line) : (typeof betActsNow === "number" ? betActsNow : 1);
+    if (level === 3) legHistOpen.add(key);
+    else if (line.dataset.histHeld === "1") {
+      legHistOpen.delete(key);
+      const box = legHistBox.get(key);
+      if (box) box.remove();
+    }
+    line.dataset.histHeld = level === 3 ? "1" : "";
+  });
   document.querySelectorAll(".find-tray button.find-leg-hist").forEach((button) => {
     const key = button.dataset.key, on = legHistOpen.has(key) && parlayLeg.has(key);
     button.classList.toggle("on", on);
@@ -96,13 +98,6 @@ function legHistPaint() {
       seek.setAttribute("aria-label", seek.title);
       seek.dataset.who = who.textContent;
       button.before(seek);
-    }
-    if (line && !button.parentElement.querySelector("button.find-leg-to")) {
-      const to = document.createElement("button");
-      to.type = "button"; to.className = "find-leg-to"; to.dataset.key = key;
-      to.title = "Add this leg to another saved parlay"; to.setAttribute("aria-label", to.title);
-      button.after(to);
-      queueMicrotask(() => { if (to.isConnected && button.isConnected) button.after(to); });
     }
   });
   if (typeof betActsApply === "function") betActsApply();
@@ -204,24 +199,22 @@ function legMenuBox(key, close) {
 
 function legMenuPaint() {
   document.querySelectorAll(".find-leg-menu").forEach((node) => node.remove());
-  if (typeof betActsNow === "number" && betActsNow === 4) {
-    document.querySelectorAll(".find-tray .find-chose[data-key]").forEach((line) => {
-      const key = line.dataset.key;
-      if (!key || typeof parlayLeg === "undefined" || !parlayLeg.has(key)) return;
-      const to = line.querySelector("button.find-leg-to");
-      if (to) { to.classList.add("on"); to.setAttribute("aria-expanded", "true"); }
-      line.after(legMenuBox(key, false));
-    });
-    return;
-  }
+  const shown = new Set();
+  document.querySelectorAll(".find-tray .find-chose[data-key]").forEach((line) => {
+    const key = line.dataset.key;
+    if (!key || typeof parlayLeg === "undefined" || !parlayLeg.has(key)) return;
+    const level = typeof legActsOf === "function" ? legActsOf(line) : (typeof betActsNow === "number" ? betActsNow : 1);
+    if (level !== 4 && key !== legMenuKey) return;
+    shown.add(key);
+    const to = line.querySelector("button.find-leg-to");
+    if (to) { to.classList.add("on"); to.setAttribute("aria-expanded", "true"); }
+    line.after(legMenuBox(key, key === legMenuKey && level !== 4));
+  });
   document.querySelectorAll(".find-tray button.find-leg-to").forEach((node) => {
-    const on = node.dataset.key === legMenuKey;
+    const on = shown.has(node.dataset.key);
     node.classList.toggle("on", on);
     node.setAttribute("aria-expanded", String(on));
   });
-  const to = legMenuKey && [...document.querySelectorAll(".find-tray button.find-leg-to")].find((node) => node.dataset.key === legMenuKey);
-  if (!to) return;
-  to.closest(".find-chose").after(legMenuBox(legMenuKey, true));
 }
 
 function legMenuClose() {

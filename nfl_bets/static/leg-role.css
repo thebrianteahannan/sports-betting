@@ -10,7 +10,8 @@
 .find-tray i.leg-metal.m-bronze, .find-tray p.leg-metal-say.m-bronze, .find-tray i.leg-edge.m-bronze { color: #d0894f; }
 .find-tray i.leg-metal.m-out, .find-tray p.leg-metal-say.m-out, .find-tray i.leg-edge.m-out { color: #9aa6b2; }
 .find-tray p.leg-metal-say i.leg-edge { margin: 0 0.4rem 0 0; padding: 0 0.42rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.68rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.5; text-transform: uppercase; white-space: nowrap; cursor: help; }
-.find-tray p.leg-metal-say { margin: 0.15rem 0 0.45rem; font-size: 0.82rem; font-weight: 600; line-height: 1.35; }
+.find-tray p.leg-metal-say { margin: 0.15rem 0 0.45rem; color: #c9d4dd; font-size: 0.82rem; font-weight: 600; line-height: 1.35; }
+.find-tray p.leg-metal-say:is(.m-golden, .m-silver, .m-bronze, .m-out) { color: #c9d4dd; }
 .find-tray .find-new { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
 .find-tray .find-new.on { display: block; }
 :is(.rec-board, #choice-result) .find-tray .find-new button.leg-boost-add { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.35rem 0.8rem !important; border: 1px dashed currentColor !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; font-size: 13px !important; font-weight: 700 !important; text-transform: none !important; letter-spacing: normal !important; cursor: pointer; }

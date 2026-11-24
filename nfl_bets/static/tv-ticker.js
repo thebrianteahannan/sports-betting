@@ -47,7 +47,7 @@ function tvTickCardHtml(pick, guest) {
     const hit = pool[at];
     return rows.findIndex((bet) => bet === hit || (`${bet.label}|${bet.odds}` === `${hit.label}|${hit.odds}`));
   })();
-  const legs = isParlay ? `<ul class="gate-sample-legs">${pick.bets.map((bet, at) => `<li><span class="gate-sample-role">${at === juiceAt || /anytime|touchdown|goal/i.test(`${bet.rung || ""} ${bet.label || ""}`) ? "Juice" : "Anchor"}</span><span class="gate-sample-leg">${esc(bet.label)}</span><b>${esc(Number(bet.odds) > 0 ? `+${bet.odds}` : String(bet.odds))}</b></li>`).join("")}</ul>` : "";
+  const legs = isParlay ? `<ul class="gate-sample-legs">${pick.bets.map((bet, at) => `<li><span class="gate-sample-role">${at === juiceAt || /anytime|touchdown|goal/i.test(`${bet.rung || ""} ${bet.label || ""}`) ? "Pays" : "Anchor"}</span><span class="gate-sample-leg">${esc(bet.label)}</span><b>${esc(Number(bet.odds) > 0 ? `+${bet.odds}` : String(bet.odds))}</b></li>`).join("")}</ul>` : "";
   const head = isParlay ? "Parlay of the Day" : "Today's free pick";
   const bet = isParlay ? `4-leg · 3 players + game bet <b>${esc(price)}</b>` : `${esc(pick.label)} <b>${esc(price)}</b>`;
   return `<div class="tv-tick-stack"><div class="tv-tick-card">${betIt}<p class="gate-sample-head">${head}</p><p class="gate-sample-bet">${bet}</p><p class="gate-sample-game">${esc([pick.match, when].filter(Boolean).join(" · "))}</p>${legs}<p class="gate-sample-why">${esc(pick.how || "")}</p><p class="gate-sample-pay">$5 wins $${win}.</p>${acts}</div>${more}</div>`;

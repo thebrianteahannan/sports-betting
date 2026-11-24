@@ -1,4 +1,4 @@
-/** "Add juice" and "Add stability" next to "+ Add a leg". Each lists moves from the bet's own games, checked against each leg's last 10, with what the move does to the payout and the chance. */
+/** Add juice and Add stability stay off the ticket. The lists stay in this file. */
 
 const LEG_BOOST_SAVE = { keep: "legBoostKeep", game: "legBoostGame", league: "legBoostLeague" };
 const legBoost = { mode: "", asked: new Set(), more: false, ...Object.fromEntries(Object.entries(LEG_BOOST_SAVE).map(([key, name]) => [key, (() => { try { return localStorage.getItem(name) === "1"; } catch (error) { return false; } })()])) };
@@ -177,19 +177,8 @@ function legBoostBox() {
 }
 
 function legBoostPaint() {
-  if (typeof parlayLeg === "undefined") return;
-  if (parlayLeg.size) { legBoostLoad(); legBoostRecLoad(); }
   document.querySelectorAll(".find-tray .find-new").forEach((wrap) => {
     wrap.querySelectorAll(":scope > .leg-boost-add, :scope > .leg-boost-box").forEach((node) => node.remove());
-    if (wrap.classList.contains("on") || !parlayLeg.size) return;
-    Object.entries(LEG_BOOST).forEach(([mode, [name]]) => {
-      const go = document.createElement("button");
-      go.type = "button"; go.className = `leg-boost-add ${mode}${legBoost.mode === mode ? " on" : ""}`; go.textContent = name;
-      go.setAttribute("aria-expanded", String(legBoost.mode === mode));
-      go.addEventListener("click", () => { legBoost.mode = legBoost.mode === mode ? "" : mode; legBoost.more = false; legBoostLoad(); legBoostPaint(); });
-      wrap.append(go);
-    });
-    if (legBoost.mode) wrap.append(legBoostBox());
   });
 }
 

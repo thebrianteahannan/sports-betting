@@ -103,7 +103,7 @@ function sampleParlayHtml(parlay) {
   });
   const juiceKey = juice ? `${juice.label}|${juice.odds}` : "";
   const legs = rows.map((bet) => {
-    const role = `${bet.label}|${bet.odds}` === juiceKey || /anytime|touchdown|goal/i.test(`${bet.rung || ""} ${bet.label || ""}`) ? "Juice" : "Anchor";
+    const role = `${bet.label}|${bet.odds}` === juiceKey || /anytime|touchdown|goal/i.test(`${bet.rung || ""} ${bet.label || ""}`) ? "Pays" : "Anchor";
     return `<li><span class="gate-sample-role">${esc(role)}</span><span class="gate-sample-leg">${esc(bet.label)}</span><b>${esc(samplePrice(bet.odds))}</b></li>`;
   }).join("");
   return `<p class="gate-sample-head">Parlay of the Day</p><p class="gate-sample-bet">4-leg · 3 players + game bet <b>${esc(price)}</b></p><p class="gate-sample-game">${esc([parlay.match, when].filter(Boolean).join(" · "))}</p><ul class="gate-sample-legs">${legs}</ul><p class="gate-sample-why">${esc(parlay.how || "")}</p><p class="gate-sample-pay">$5 wins $${esc(win)}.</p><p class="gate-sample-acts"><button type="button" class="gate-sample-share" data-sample-share>Share with a friend</button></p>`;

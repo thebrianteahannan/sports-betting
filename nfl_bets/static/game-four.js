@@ -26,8 +26,8 @@ function gameFourOdds(stack) {
 
 function gameFourRole(bet, juiceKey) {
   const key = `${bet.label}|${bet.odds}`;
-  if (juiceKey && key === juiceKey) return "Juice";
-  if (/anytime|touchdown|goal/i.test(`${bet.rung || ""} ${bet.label || ""}`)) return "Juice";
+  if (juiceKey && key === juiceKey) return "Pays";
+  if (/anytime|touchdown|goal/i.test(`${bet.rung || ""} ${bet.label || ""}`)) return "Pays";
   if (/^(The over|The under|The spread|The win)$/i.test(String(bet.rung || ""))) return "Anchor";
   return "Anchor";
 }

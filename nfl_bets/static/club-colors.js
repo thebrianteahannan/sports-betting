@@ -53,6 +53,7 @@ function clubTray(tray) {
   const people = [...parlayPick.values()];
   tray.querySelectorAll(".find-row").forEach((row) => {
     row.style.removeProperty("background-image");
+    row.querySelectorAll(":scope > .find-chose").forEach((line) => line.style.removeProperty("background-image"));
     const name = row.querySelector(".find-in .find-name");
     const who = row.querySelector(".find-chose span i.who");
     const key = (row.querySelector(".find-chose[data-key]") || {}).dataset && (row.querySelector(".find-chose[data-key]") || {}).dataset.key;
@@ -65,7 +66,11 @@ function clubTray(tray) {
     if (person && !team) clubAsk(person, sport);
     const color = clubColor(sport, team) || (bare && typeof clubOf !== "undefined" && clubColor(sport, clubOf.get(bare)));
     if (!color) return;
-    row.style.backgroundImage = `linear-gradient(90deg, ${color} 0 5px, ${color}88 5px, ${color}2e 70%, transparent 100%)`;
+    const wash = `linear-gradient(90deg, ${color} 0 5px, ${color}88 5px, ${color}2e 70%, transparent 100%)`;
+    const legs = row.querySelectorAll(":scope > .find-chose");
+    if (!legs.length) return;
+    row.style.backgroundImage = "none";
+    legs.forEach((line) => { line.style.backgroundImage = wash; });
   });
   tray.querySelectorAll(".find-chose").forEach((line) => {
     const who = line.querySelector("span i.who");
