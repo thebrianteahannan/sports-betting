@@ -401,7 +401,9 @@
 #desk.tv-full #desk-glass .manage-board[data-manage-zoom="0"] .find-chose i.find-rec-pill::before,
 .manage-board[data-manage-zoom="0"] .find-chose i.find-rec-pill::before { width: 1.15rem; height: 1.15rem; }
 #desk.tv-full #desk-glass .manage-board[data-manage-zoom="0"] .find-chose i.bet-kind,
-.manage-board[data-manage-zoom="0"] .find-chose i.bet-kind { display: none !important; }
+.manage-board[data-manage-zoom="0"] .find-chose i.bet-kind,
+#desk.tv-full #desk-glass .manage-board[data-manage-zoom="0"] .find-chose i.leg-role,
+.manage-board[data-manage-zoom="0"] .find-chose i.leg-role { display: none !important; }
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-read,
 .manage-board .manage-card > .manage-read { grid-column: 2; grid-row: 1; }
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-card-acts,
@@ -420,6 +422,10 @@
 .manage-board .manage-fold .manage-bet-price { flex: none; }
 .manage-board .manage-fold-legs { display: flex; flex-direction: column; align-items: stretch; gap: 0.15rem; margin-left: 0.1rem; padding-left: 0.65rem; border-left: 2px solid #1e3a2a; }
 .manage-board .manage-fold-legs .find-chose { flex: none; width: 100%; min-width: 0; padding: 0; }
+.manage-board .manage-change { display: none !important; }
+.manage-card.editing .manage-change { display: inline-flex !important; align-items: center; width: auto !important; min-height: 0 !important; height: auto !important; margin: 0 0.2rem !important; padding: 0.05rem 0.45rem !important; border: 1px solid #3dff6e !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #3dff6e !important; font-size: 11px !important; font-weight: 800 !important; letter-spacing: 0 !important; line-height: 1.3 !important; text-transform: none !important; cursor: pointer; }
+.manage-card.editing .manage-change.on { background: #3dff6e !important; color: #04140c !important; }
+.manage-board .find-tray-swap { width: 100%; }
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-tags,
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-more,
 .manage-board .manage-card > .manage-tags,

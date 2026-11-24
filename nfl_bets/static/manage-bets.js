@@ -1,6 +1,7 @@
 /** Manage My Bets: every saved ticket, lock-as-placed, stake and line edits. */
 
 let manageFilter = "all";
+let manageEditId = "";
 const MANAGE_ZOOM_MAX = 5;
 let manageZoom = (() => {
   try {
@@ -141,6 +142,10 @@ function manageLegRead(leg) {
   let prop = raw;
   if (who && prop.toLowerCase().startsWith(who.toLowerCase())) prop = prop.slice(who.length).trim();
   if (prop.toLowerCase() === who.toLowerCase()) prop = "";
+  if (!prop) {
+    const market = String(leg.market || "").replace(who, "").replace(/^\s*-\s*/, "").replace(/^alt(?:ernate)?\s+/i, "").trim();
+    if (market && market.toLowerCase() !== who.toLowerCase()) prop = market;
+  }
   const game = typeof gameShort === "function" && leg.match ? gameShort(leg.match) : String(leg.match || "");
   const when = leg.kickoff && typeof window.when === "function" ? `${window.when(leg.kickoff)} ET` : "";
   return {
@@ -277,6 +282,7 @@ function manageLegLine(leg, legs, byKey) {
     pick && typeof scriptCushionTag === "function" ? scriptCushionTag(pick) : "",
   ].filter(Boolean).join("");
   line.append(said);
+  if (typeof manageLegEdit === "function") manageLegEdit(line, said, leg);
   return line;
 }
 
@@ -325,7 +331,7 @@ function manageSlip(row) {
 
 function manageCard(row, n) {
   const card = document.createElement("article");
-  card.className = `manage-card${(row.legs || []).length > 1 ? " parlay" : ""}${row.locked ? " locked" : ""}${row.id === window.parlayOpenId ? " on" : ""}`;
+  card.className = `manage-card${(row.legs || []).length > 1 ? " parlay" : ""}${row.locked ? " locked" : ""}${row.id === window.parlayOpenId ? " on" : ""}${manageEditId === row.id ? " editing" : ""}`;
   card.dataset.id = row.id;
   const legs = row.legs || [];
   const stake = Number(row.stake) > 0 ? Number(row.stake) : 5;
@@ -349,7 +355,7 @@ function manageCard(row, n) {
   const open = document.createElement("button");
   open.type = "button";
   open.className = "manage-open";
-  open.textContent = "Edit";
+  open.textContent = manageEditId === row.id ? "Done" : "Edit";
   const drop = document.createElement("button");
   drop.type = "button";
   drop.className = "manage-drop";
@@ -369,22 +375,30 @@ function manageCard(row, n) {
   if (fold) card.insertBefore(fold, acts);
   if (typeof bankCard === "function") bankCard(card, row);
   const openBet = () => {
-    if (row.id === window.parlayOpenId) {
-      if (typeof saveCollapseForBet === "function") saveCollapseForBet();
-      if (typeof paintParlay === "function") paintParlay();
-      return;
+    if (manageEditId && manageEditId !== row.id) {
+      manageEditId = "";
+      if (typeof legSwapOpen !== "undefined") legSwapOpen.clear();
     }
-    if (typeof saveOpen === "function") saveOpen(row.id);
+    if (typeof saveOpen === "function" && row.id !== window.parlayOpenId) saveOpen(row.id);
   };
   card.tabIndex = 0;
   card.setAttribute("role", "button");
   card.title = "View bet";
   open.addEventListener("click", (event) => {
     event.stopPropagation();
-    openBet();
+    if (manageEditId === row.id) {
+      manageEditId = "";
+      if (typeof legSwapOpen !== "undefined") legSwapOpen.clear();
+      manageRefresh();
+      return;
+    }
+    manageEditId = row.id;
+    if (typeof legSwapOpen !== "undefined") legSwapOpen.clear();
+    if (typeof saveOpen === "function" && row.id !== window.parlayOpenId) saveOpen(row.id);
+    else manageRefresh();
   });
   card.addEventListener("click", (event) => {
-    if (event.target.closest("button, a, input, form")) return;
+    if (event.target.closest("button, a, input, form, .find-tray-swap")) return;
     openBet();
   });
   card.addEventListener("keydown", (event) => {

@@ -642,6 +642,7 @@ function legSwapPaint() {
     if (on) { const box = legSwapBox(key, "who"); box.dataset.key = key; name.closest(".find-in").after(box); }
   });
   betActsApply();
+  if (typeof manageSwapShow === "function") manageSwapShow();
 }
 
 const legMoreOpen = new Set();
