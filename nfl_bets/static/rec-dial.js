@@ -1,4 +1,4 @@
-/** Recommended dial: Golden, then Silver, then Bronze, then close calls.
+/** Recommended dial: Golden, then Silver, then Bronze, then the other edged bets.
  * Same drag pattern as Live Less↔More: step any, pointer capture, no rebuild while the thumb moves. */
 
 const REC_DIAL_MAX = 3;
@@ -33,7 +33,7 @@ function recDialInBand(odds) {
 }
 
 function recDialTone(level) {
-  return ["golden", "silver", "bronze", "close"][Math.max(0, Math.min(REC_DIAL_MAX, Math.round(Number(level) || 0)))] || "golden";
+  return ["golden", "silver", "bronze", "edge"][Math.max(0, Math.min(REC_DIAL_MAX, Math.round(Number(level) || 0)))] || "golden";
 }
 
 function recDialSay(level, showing) {
@@ -42,7 +42,7 @@ function recDialSay(level, showing) {
   if (level <= 0) return `Golden Ticket${count}`;
   if (level === 1) return `Silver Ticket${count}`;
   if (level === 2) return `Bronze Ticket${count}`;
-  return `Close calls${count}`;
+  return `Has an edge${count}`;
 }
 
 function recDialShowingOf(level, counts) {
@@ -142,10 +142,10 @@ function recDialWhy(kind) {
 }
 
 function recDialEmptySay() {
-  if (recDial <= 0) return recDialWhy("golden");
-  if (recDial === 1) return recDialWhy("silver");
-  if (recDial === 2) return recDialWhy("bronze");
-  return "No close calls on this list.";
+  if (recDial <= 0) return "There is no Golden Ticket bet available right now.";
+  if (recDial === 1) return "There is no Silver Ticket bet available right now.";
+  if (recDial === 2) return "There is no Bronze Ticket bet available right now.";
+  return "Nothing else with an edge right now.";
 }
 
 function recDialMark(card, pick) {
@@ -225,7 +225,7 @@ function recDialNextSay(level) {
   const next = Math.round(Number(level) || 0) + 1;
   if (next <= 1) return "Show the silver ticket";
   if (next === 2) return "Show the bronze ticket";
-  return "Show close calls";
+  return "Show the edge";
 }
 
 function recDialNext() {
@@ -290,7 +290,7 @@ function recDialBar(onCommit) {
   less.innerHTML = `Golden Ticket <i class="rec-dial-n">0</i>`;
   const more = document.createElement("span");
   more.className = "rec-dial-more";
-  more.innerHTML = `Close calls <i class="rec-dial-n">0</i>`;
+  more.innerHTML = `Has an edge <i class="rec-dial-n">0</i>`;
   const slide = document.createElement("span");
   slide.className = "rec-dial-slide";
   const input = document.createElement("input");

@@ -17,15 +17,15 @@ function recParlayChance(odds) {
   return n < 0 ? Math.abs(n) / (Math.abs(n) + 100) : 100 / (n + 100);
 }
 
-function recParlayEdge(gap) {
-  if (typeof metalEdge === "function") return metalEdge(gap);
+function recParlayEdge(gap, price, ours) {
+  if (typeof metalEdge === "function") return metalEdge(gap, price, ours);
   if (!Number.isFinite(gap) || gap < 0.5) return null;
-  return Math.max(1, Math.min(10, Math.round(gap)));
+  return Math.max(1, Math.min(9, Math.round(gap)));
 }
 
-function recParlayPlace(score) {
+function recParlayPlace(score, price, ours) {
   if (!score) return "out";
-  if (typeof metalEdgeId === "function") return metalEdgeId(score);
+  if (typeof metalEdgeId === "function") return metalEdgeId(score, price, ours);
   if (score >= 8) return "golden";
   if (score >= 5) return "silver";
   return "bronze";
@@ -83,9 +83,9 @@ function recParlayScore(legs) {
   if (need == null) return null;
   const ours = legs.reduce((p, leg) => p * leg.rate, 1);
   const gap = Math.round((ours - need) * 1000) / 10;
-  const score = recParlayEdge(gap);
+  const score = recParlayEdge(gap, price, ours);
   if (!score) return { price, need, ours, gap, score: null, place: "out", legs };
-  return { price, need, ours, gap, score, place: recParlayPlace(score), legs };
+  return { price, need, ours, gap, score, place: recParlayPlace(score, price, ours), legs };
 }
 
 function recParlayOk(legs) {

@@ -345,6 +345,11 @@ function homeRecRow(pick, index, opts) {
   const needN = parseFloat(String(pct).replace("%", ""));
   const clear = recordShown != null && Number.isFinite(needN) ? Math.round((recordShown - needN) * 10) / 10 : null;
   const clearText = clear == null ? "" : clear > 0 ? `+${clear.toFixed(1)} over the price` : clear < 0 ? `${Math.abs(clear).toFixed(1)} short of the price` : "Even with the price";
+  const edgeRate = recordShown != null ? recordShown / 100 : null;
+  const edgeScore = clear != null && typeof metalEdge === "function" ? metalEdge(clear, odds, edgeRate) : null;
+  const edgeId = edgeScore && typeof metalEdgeId === "function" ? metalEdgeId(edgeScore, odds, edgeRate) : "";
+  const edgeTip = typeof EDGE_TIP === "string" ? EDGE_TIP : "10 is a Golden Ticket. The number is how close this edge gets to that.";
+  const edgeTag = edgeScore ? `<i class="desk-rec-edge m-${esc(edgeId)}" title="${esc(edgeTip)}" data-tip="${esc(edgeTip)}">Edge ${edgeScore}</i>` : "";
   const clearTip = clear == null || !record || !pct ? "" : `Hit ${record}. ${price} breaks even at ${pct}.`;
   const pay = [record && `<i class="hit">${esc(record)}</i>`, clearText && `<i class="clear ${clear > 0 ? "up" : clear < 0 ? "down" : ""}"${clearTip ? ` title="${esc(clearTip)}"` : ""}>${esc(clearText)}</i>`, `<i class="px">${esc(price)}</i>`, pct && `<i class="pct">${esc(pct)}</i>`, cash && `<i class="pay">${esc(`$5 profits ${cash}`)}</i>`, star].filter(Boolean).join("");
   const goldenTip = "Golden Ticket: −120 to +120, and it has hit 60% or more.";
@@ -357,10 +362,10 @@ function homeRecRow(pick, index, opts) {
       : bronze
         ? `<i class="desk-rec-bronze-tag" title="${esc(bronzeTip)}" data-tip="${esc(bronzeTip)}">Bronze Ticket</i>`
         : "";
-  const tags = [ticketTag, typeof scriptKindTag === "function" ? scriptKindTag(pick) : "", typeof scriptRoleTag === "function" ? scriptRoleTag(pick) : "", typeof scriptCushionTag === "function" ? scriptCushionTag(pick) : ""].filter(Boolean).join("");
+  const tags = [ticketTag, edgeTag, typeof scriptKindTag === "function" ? scriptKindTag(pick) : "", typeof scriptRoleTag === "function" ? scriptRoleTag(pick) : "", typeof scriptCushionTag === "function" ? scriptCushionTag(pick) : ""].filter(Boolean).join("");
   card.innerHTML = `<span class="desk-rec-name">${logo ? `<img class="desk-team-logo desk-rec-logo" src="${esc(dark)}" alt="${esc(side)}" loading="lazy"${dark !== logo ? ` onerror="this.onerror=null;this.src='${esc(logo)}'"` : ""}>` : ""}${esc(homeRecTitle(pick))}</span><span class="desk-rec-pay">${pay}</span><span class="desk-rec-how">${lead}${tags}</span><span class="desk-rec-legs">${esc(when)}</span><span class="desk-rec-read">${esc(`${pick.match}. Hit in ${pick.hits} of his last ${pick.n}.`)}</span>`;
   card.addEventListener("click", (event) => {
-    const tag = event.target.closest(".bet-kind, .desk-rec-golden-tag, .desk-rec-silver-tag, .desk-rec-bronze-tag");
+    const tag = event.target.closest(".bet-kind, .desk-rec-edge, .desk-rec-golden-tag, .desk-rec-silver-tag, .desk-rec-bronze-tag");
     if (tag && card.contains(tag)) {
       event.preventDefault();
       event.stopPropagation();

@@ -85,22 +85,49 @@ function metalWho(bet) {
   return words.length ? words[words.length - 1] : "";
 }
 
-const EDGE_TIP = "10 is a Golden Ticket, 10 points over FanDuel. 5 is a Silver Ticket. Bronze matches the price.";
+const EDGE_TIP = "10 is a Golden Ticket: −120 to +120, and 10 points over the price. The number is how close this edge gets to that.";
 
-function metalEdge(gap) {
-  if (!Number.isFinite(gap) || gap < 0.5) return null;
-  return Math.max(1, Math.min(10, Math.round(gap)));
+function metalEdgePrice(odds) {
+  const out = Math.max(0, Math.abs(Number(odds)) - 120);
+  if (out <= 0) return 10;
+  if (out <= 30) return 10 - (out / 30) * 3;
+  if (out <= 80) return 7 - ((out - 30) / 50) * 3;
+  return Math.max(1, 4 - ((out - 80) / 80) * 3);
 }
 
-function metalEdgeId(score) {
+function metalEdgeRate(rate) {
+  const short = Math.max(0, 0.6 - Number(rate));
+  if (short <= 0) return 10;
+  if (short <= 0.05) return 10 - (short / 0.05) * 3;
+  if (short <= 0.1) return 7 - ((short - 0.05) / 0.05) * 3;
+  return Math.max(1, 4 - ((short - 0.1) / 0.1) * 3);
+}
+
+function metalEdge(gap, odds, rate) {
+  if (!Number.isFinite(gap) || gap < 0.5) return null;
+  const o = Number(odds);
+  const r = Number(rate);
+  if (!Number.isFinite(o) || !o || !Number.isFinite(r)) return Math.max(1, Math.min(9, Math.round(gap)));
+  if (o >= -120 && o <= 120 && r >= 0.6 && gap >= 10) return 10;
+  if (o >= -120 && o <= 120 && r >= 0.6) return Math.max(8, Math.min(9, Math.round(8 + gap / 10)));
+  return Math.max(1, Math.min(9, Math.round(Math.min(metalEdgePrice(o), metalEdgeRate(r)))));
+}
+
+function metalEdgeId(score, odds, rate) {
+  const o = Number(odds);
+  const r = Number(rate);
+  if (Number.isFinite(o) && o && Number.isFinite(r)) {
+    const hit = METAL_BAR.find((bar) => o >= bar.min && o <= bar.max && r >= bar.rate);
+    return hit ? hit.id : "bronze";
+  }
   if (score >= 8) return "golden";
   if (score >= 5) return "silver";
   return "bronze";
 }
 
-function metalEdgeRead(gap) {
-  const score = metalEdge(gap);
-  return { score, id: score ? metalEdgeId(score) : "out" };
+function metalEdgeRead(gap, odds, rate) {
+  const score = metalEdge(gap, odds, rate);
+  return { score, id: score ? metalEdgeId(score, odds, rate) : "out" };
 }
 
 function metalCount(n) {
@@ -138,7 +165,7 @@ function metalScriptSay(rows, odds, need) {
   const high = Math.round(Math.max(...chances) * 100);
   const band = low === high ? `${low}%` : `${low}% to ${high}%`;
   const text = `Same game. ${metalJuiceSay(juice[0])} pays it, priced at ${(payChance * 100).toFixed(1)}%. The other ${metalCount(anchors.length)} are anchors at ${band}. ${metalPrice(odds)} only has to hit ${(need * 100).toFixed(1)}%.`;
-  return { ...metalEdgeRead(gap), text };
+  return { ...metalEdgeRead(gap, odds, payChance), text };
 }
 
 function metalParlaySay(rows, odds) {
@@ -160,7 +187,7 @@ function metalParlaySay(rows, odds) {
   const who = names.length > 2 ? "The recommended legs put" : names.length === 2 ? `${names[0]} and ${names[1]} put` : names.length === 1 ? `${names[0]}'s record puts` : "";
   const over = gap > 0 ? `${gap.toFixed(1)} points over FanDuel's ${even}` : gap < 0 ? `${Math.abs(gap).toFixed(1)} points under FanDuel's ${even}` : `even with FanDuel's ${even}`;
   const line = who ? `${who} it at ${builtPct}, ${over}.` : `We have it at ${builtPct}, ${over}.`;
-  return { ...metalEdgeRead(gap), text: line };
+  return { ...metalEdgeRead(gap, odds, built), text: line };
 }
 
 function metalOneSay(row) {
@@ -169,7 +196,7 @@ function metalOneSay(row) {
   const gap = Math.round((row.hits / row.n - need) * 1000) / 10;
   const even = `${(need * 100).toFixed(1)}%`;
   const over = gap > 0 ? `${gap.toFixed(1)} points over FanDuel's ${even}` : gap < 0 ? `${Math.abs(gap).toFixed(1)} points under FanDuel's ${even}` : `even with FanDuel's ${even}`;
-  return { ...metalEdgeRead(gap), text: `Hit ${row.hits} of ${row.n}, ${over}.` };
+  return { ...metalEdgeRead(gap, row.odds, row.hits / row.n), text: `Hit ${row.hits} of ${row.n}, ${over}.` };
 }
 
 function metalPaint(rows) {

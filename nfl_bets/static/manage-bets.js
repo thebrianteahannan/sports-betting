@@ -1,19 +1,22 @@
 /** Manage My Bets: every saved ticket, lock-as-placed, stake and line edits. */
 
 let manageFilter = "all";
-const MANAGE_ZOOM_MAX = 3;
+const MANAGE_ZOOM_MAX = 4;
 let manageZoom = (() => {
   try {
     const raw = localStorage.getItem("manageZoom");
     const ver = localStorage.getItem("manageZoomVer");
     let n = Number(raw);
     if (Number.isFinite(n)) {
-      // v7: Less, the game line, then tags and the recommendation.
-      if (ver !== "7") {
-        if (ver !== "6") n = n >= 1 ? 1 : 0;
-        n = Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(n)));
+      // v8 adds a collapsed parlay in front of the leg list.
+      if (ver !== "8") {
+        if (ver !== "7") {
+          if (ver !== "6") n = n >= 1 ? 1 : 0;
+          n = Math.max(0, Math.min(3, Math.round(n)));
+        }
+        n = Math.min(4, Math.round(n) + 1);
         localStorage.setItem("manageZoom", String(n));
-        localStorage.setItem("manageZoomVer", "7");
+        localStorage.setItem("manageZoomVer", "8");
       }
       return Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(n)));
     }
@@ -238,21 +241,56 @@ function manageSlipRec(legs) {
   return "";
 }
 
+function manageSpot(who) {
+  if (!who || typeof plainName !== "function" || typeof clubOf === "undefined") return "";
+  const bare = plainName(who).replace(/ (jr|sr|ii|iii|iv|v)$/i, "");
+  const side = clubOf.get(bare) || "";
+  const pos = typeof clubSpot !== "undefined" ? (clubSpot.get(bare) || "") : "";
+  const nick = side && typeof clubNick === "function" ? clubNick("", side) : "";
+  return [pos, nick].filter(Boolean).join(" · ");
+}
+
 function manageLegLine(leg, legs, byKey) {
   const bits = manageLegRead(leg);
   const role = byKey && byKey.get(typeof parlayKey === "function" ? parlayKey(leg) : "");
-  const pace = manageSlipPace(leg);
-  const line = document.createElement("p");
-  line.className = "manage-slip-leg";
-  line.innerHTML = [
+  const pick = managePickOf(leg);
+  const say = pick && typeof scriptKindSay === "function" ? scriptKindSay(pick) : null;
+  const spot = manageSpot(bits.who);
+  const line = document.createElement("div");
+  line.className = "find-chose";
+  const said = document.createElement("span");
+  said.innerHTML = [
+    bits.who && `<i class="who">${esc(bits.who)}</i>`,
+    spot && `<i class="spot">${esc(spot)}</i>`,
+    bits.prop && `<i class="prop">${esc(bits.prop)}</i>`,
     bits.odds && `<i class="px">${esc(bits.odds)}</i>`,
     bits.pct && `<i class="pct">${esc(bits.pct)}</i>`,
-    bits.who && `<i class="who">${esc(bits.who)}</i>`,
-    bits.prop && `<i class="prop">${esc(bits.prop)}</i>`,
     role && MANAGE_ROLE[role.role] && !(legs.length < 2 && role.role === "anchor") && `<i class="leg-role r-${esc(role.role)}">${esc(MANAGE_ROLE[role.role])}</i>`,
-    pace && `<i class="tray-now">${esc(pace)}</i>`,
+    say && `<i class="find-rec-pill${pick.tier === "good" ? " good" : ""}">${esc(pick.tier === "good" ? "Good bet" : `Recommended · ${say.text}`)}</i>`,
+    pick && typeof scriptRoleTag === "function" ? scriptRoleTag(pick) : "",
+    pick && typeof scriptCushionTag === "function" ? scriptCushionTag(pick) : "",
   ].filter(Boolean).join("");
+  line.append(said);
   return line;
+}
+
+function manageFold(legs, odds, pct, pay, byKey) {
+  const fold = document.createElement("div");
+  fold.className = "manage-fold";
+  const top = document.createElement("div");
+  top.className = "manage-fold-line";
+  const price = document.createElement("span");
+  price.className = "manage-bet-price";
+  price.innerHTML = [odds && `<i class="px">${esc(odds)}</i>`, pct && `<i class="pct">${esc(pct)}</i>`, pay && `<i class="pay">${esc(pay)}</i>`].filter(Boolean).join("");
+  top.append(price, manageLegLine(legs[0], legs, byKey));
+  fold.append(top);
+  if (legs.length > 1) {
+    const rest = document.createElement("div");
+    rest.className = "manage-fold-line";
+    legs.slice(1).forEach((leg) => rest.append(manageLegLine(leg, legs, byKey)));
+    fold.append(rest);
+  }
+  return fold;
 }
 
 function manageSlip(row) {
@@ -293,17 +331,18 @@ function manageCard(row) {
   const pct = oddsNum != null && typeof findPct === "function" ? findPct(oddsNum) : "";
   const cash = oddsNum != null && typeof findCash === "function" ? findCash(oddsNum, stake) : "";
   const pay = cash ? `$${manageMoney(stake)} profits ${cash}` : "";
-  const bits = legs.length === 1
-    ? manageLegRead(legs[0])
-    : { who: manageTitle(row), prop: legs.length ? `${legs.length}-leg` : "", game: manageGames(row), when: manageKick(row), odds, pct };
-  if (legs.length === 1) { bits.odds = odds || bits.odds; bits.pct = pct || bits.pct; }
-  const more = document.createElement("div");
-  more.className = "manage-more";
-  if (legs.length > 1) {
-    const roles = typeof legRoles === "function" ? legRoles(legs) : [];
-    const byKey = new Map(roles.map((item) => [typeof parlayKey === "function" ? parlayKey(item.bet) : "", item]));
-    legs.forEach((leg) => more.append(manageLegLine(leg, legs, byKey)));
+  const legsBox = document.createElement("div");
+  legsBox.className = "manage-legs";
+  if (legs.length > 1 && (odds || pct)) {
+    const head = document.createElement("p");
+    head.className = "manage-bet-price";
+    head.innerHTML = [odds && `<i class="px">${esc(odds)}</i>`, pct && `<i class="pct">${esc(pct)}</i>`, pay && `<i class="pay">${esc(pay)}</i>`].filter(Boolean).join("");
+    legsBox.append(head);
   }
+  const roles = typeof legRoles === "function" ? legRoles(legs) : [];
+  const byKey = new Map(roles.map((item) => [typeof parlayKey === "function" ? parlayKey(item.bet) : "", item]));
+  legs.forEach((leg) => legsBox.append(manageLegLine(leg, legs, byKey)));
+  const fold = legs.length > 1 ? manageFold(legs, odds, pct, pay, byKey) : null;
   const open = document.createElement("button");
   open.type = "button";
   open.className = "manage-open";
@@ -311,15 +350,17 @@ function manageCard(row) {
   const drop = document.createElement("button");
   drop.type = "button";
   drop.className = "manage-drop";
-  drop.textContent = "Delete";
+  drop.textContent = "×";
+  drop.setAttribute("aria-label", "Delete");
   drop.addEventListener("click", (event) => {
     event.stopPropagation();
     if (typeof saveDrop === "function") saveDrop(row.id);
   });
   const acts = document.createElement("span");
   acts.className = "manage-card-acts";
-  acts.append(drop, open);
-  card.append(manageReadLine(bits, pay, row.locked ? "Locked" : ""), acts, manageTags(legs), more, manageSlip(row));
+  acts.append(open, drop);
+  card.append(legsBox, acts, manageTags(legs), manageSlip(row));
+  if (fold) card.insertBefore(fold, acts);
   const openBet = () => {
     if (row.id === window.parlayOpenId) {
       if (typeof saveCollapseForBet === "function") saveCollapseForBet();
@@ -394,6 +435,6 @@ function manageFill(board) {
   board.append(bag);
   manageTagsWait(board);
   if (typeof trayLive !== "undefined" && trayLive.at) board.dataset.liveAt = String(trayLive.at);
-  if (manageZoom === 3 && typeof trayLiveLoad === "function") trayLiveLoad();
+  if (manageZoom === 4 && typeof trayLiveLoad === "function") trayLiveLoad();
 }
 

@@ -97,6 +97,25 @@ body.home-games-on #who { top: var(--home-games-top); right: 16px; bottom: auto;
 }
 :is(#desk-games, #rec-page, .find-start) .desk-rec-silver-tag { background: #d5deea; color: #12181f; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec-bronze-tag { background: #d0894f; color: #1a1006; }
+:is(#desk-games, #rec-page, .find-start) .desk-rec-edge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0 0.42rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+  text-transform: uppercase;
+  vertical-align: 0.1em;
+  cursor: pointer;
+}
+:is(#desk-games, #rec-page, .find-start) .desk-rec-edge.m-golden { color: #e7c15a; }
+:is(#desk-games, #rec-page, .find-start) .desk-rec-edge.m-silver { color: #d5deea; }
+:is(#desk-games, #rec-page, .find-start) .desk-rec-edge.m-bronze { color: #d0894f; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec .bet-kind { cursor: pointer; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec-tag-why {
   grid-area: why;

@@ -50,6 +50,9 @@ function rowSlide(input) {
   });
   input.addEventListener("input", () => { if (!held) paint(Number(input.value)); });
   const drop = () => {
+    row.removeEventListener("pointermove", move);
+    row.removeEventListener("pointerup", up);
+    row.removeEventListener("pointercancel", lost);
     document.removeEventListener("pointermove", move);
     document.removeEventListener("pointerup", up);
     document.removeEventListener("pointercancel", lost);
@@ -88,6 +91,9 @@ function rowSlide(input) {
     pointer = event.pointerId;
     try { row.setPointerCapture(event.pointerId); } catch (error) {}
     event.preventDefault();
+    row.addEventListener("pointermove", move);
+    row.addEventListener("pointerup", up);
+    row.addEventListener("pointercancel", lost);
     document.addEventListener("pointermove", move);
     document.addEventListener("pointerup", up);
     document.addEventListener("pointercancel", lost);

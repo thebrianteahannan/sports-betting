@@ -451,13 +451,14 @@ function legActsBar(line) {
     if (line.dataset.key) legActsPick.set(line.dataset.key, next);
     line.dataset.acts = String(next);
   };
-  box.addEventListener("input", remember);
-  box.addEventListener("change", () => {
+  const show = () => {
     remember();
     if (typeof legSwapPaint === "function") legSwapPaint();
     if (typeof legHistPaint === "function") legHistPaint();
     if (typeof legMenuPaint === "function") legMenuPaint();
-  });
+  };
+  box.addEventListener("input", show);
+  box.addEventListener("change", remember);
 }
 
 function betActsSync() {
@@ -528,13 +529,16 @@ function betActsApply() {
         });
         document.querySelectorAll(".find-say .bet-acts input").forEach((other) => { if (other !== event.target) other.value = String(betActs); });
       };
-      box.addEventListener("input", remember);
-      box.addEventListener("change", (event) => {
+      const show = (event) => {
         remember(event);
-        try { localStorage.setItem("betActsVer", "2"); localStorage.setItem("betActs", String(betActs)); } catch (error) {}
         if (typeof legSwapPaint === "function") legSwapPaint();
         if (typeof legHistPaint === "function") legHistPaint();
         if (typeof legMenuPaint === "function") legMenuPaint();
+      };
+      box.addEventListener("input", show);
+      box.addEventListener("change", (event) => {
+        remember(event);
+        try { localStorage.setItem("betActsVer", "2"); localStorage.setItem("betActs", String(betActs)); } catch (error) {}
       });
       const fold = say.querySelector(".find-fold");
       if (fold) fold.before(bar); else say.append(bar);
