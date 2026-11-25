@@ -443,7 +443,9 @@
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.leg-role,
 .manage-card[data-manage-zoom="0"] .find-chose i.leg-role,
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .bank-kelly,
-.manage-card[data-manage-zoom="0"] .bank-kelly { display: none !important; }
+.manage-card[data-manage-zoom="0"] .bank-kelly,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="1"] .bank-kelly,
+.manage-card[data-manage-zoom="1"] .bank-kelly { display: none !important; }
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-read,
 .manage-board .manage-card > .manage-read { grid-column: 2; grid-row: 1; }
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-card-acts,
@@ -958,7 +960,8 @@
   border-color: #e7c15a !important;
   box-shadow: inset 3px 0 0 #e7c15a !important;
 }
-.manage-board .bank-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 0.35rem; margin: 0.35rem 0.6rem; color: #c9d4dd; font-size: 14px; font-weight: 700; }
+.manage-board .bank-line { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem 0.7rem; margin: 0.35rem 0.6rem; color: #c9d4dd; font-size: 14px; font-weight: 700; }
+.manage-board .bank-line .bank-span { display: inline-flex; align-items: center; gap: 0.35rem; }
 .manage-board .bank-line b.bank-name { color: #e7c15a; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .manage-board .bank-line .bank-cash-wrap { display: inline-flex !important; align-items: center; gap: 0.05rem; margin: 0; padding: 0.15rem 0.45rem; border: 1px solid #3dff6e; border-radius: 8px; background: #07140f; color: #3dff6e; font-weight: 800; }
 .manage-board .bank-line .bank-buck { color: #3dff6e; font-weight: 800; }

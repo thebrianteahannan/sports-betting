@@ -115,18 +115,47 @@ function manageFilters(box) {
   box.append(when);
 }
 
-function manageBankPlan() {
+function manageBankSpan(row, span) {
+  if (!span || span === "all") return true;
+  const saved = manageWhen;
+  manageWhen = span;
+  const ok = manageWhenOk(row);
+  manageWhen = saved;
+  return ok;
+}
+
+function manageBankPlan(span) {
   const list = typeof saveList === "function" ? saveList() : [];
   const book = typeof bankBook !== "undefined" ? bankBook : {};
   const out = book.out || {};
   const settled = book.settled || {};
   return Math.round(list.reduce((sum, row) => {
-    if (!row || settled[row.id] || out[row.id]) return sum;
+    if (!row || settled[row.id] || !manageBankSpan(row, span)) return sum;
+    if (out[row.id]) return sum + (Number(out[row.id].stake) || 0);
     if (row.locked) return sum + (typeof saveRowStake === "function" ? saveRowStake(row) : Number(row.stake) || 0);
     const kelly = typeof bankKelly === "function" ? bankKelly(row.legs || []) : null;
     const stake = kelly && kelly.edge && kelly.bet > 0 ? Number(kelly.bet) : (typeof saveRowStake === "function" ? saveRowStake(row) : Number(row.stake) || 0);
     return sum + (Number(stake) || 0);
   }, 0) * 100) / 100;
+}
+
+function manageBankRolls() {
+  try { return JSON.parse(localStorage.getItem("pod-bank-rolls") || "") || {}; } catch (error) { return {}; }
+}
+
+function manageBankRoll(span) {
+  const set = Number(manageBankRolls()[span]);
+  if (Number.isFinite(set) && set >= 0) return set;
+  return typeof bankRoll === "function" ? bankRoll() : 0;
+}
+
+function manageBankRollSet(span, roll) {
+  const n = Math.round(Number(roll) * 100) / 100;
+  if (!Number.isFinite(n) || n < 0 || n > 1000000) return;
+  const rolls = manageBankRolls();
+  rolls[span] = n;
+  try { localStorage.setItem("pod-bank-rolls", JSON.stringify(rolls)); } catch (error) {}
+  if (typeof bankPaint === "function") bankPaint();
 }
 
 function manageClubs(rows) {

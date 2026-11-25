@@ -64,7 +64,9 @@ function bankKelly(legs) {
   if (records.some((row) => !row)) return null;
   const p = records.reduce((prod, row) => prod * row.rate, 1);
   const odds = rows.length === 1 ? bankOddsNum(rows[0].odds) : bankPriceNum(rows);
-  return { ...bankKellyCore(p, odds, bankRoll() || 100, bankBook.cash), odds, p, records };
+  const span = typeof manageBankSpan !== "function" ? "" : manageBankSpan({ legs: rows }, "today") ? "today" : manageBankSpan({ legs: rows }, "week") ? "week" : "";
+  const roll = (span && typeof manageBankRoll === "function" ? manageBankRoll(span) : bankRoll()) || 100;
+  return { ...bankKellyCore(p, odds, roll, roll), odds, p, records, roll };
 }
 
 const bankCards = new Map();
@@ -165,7 +167,7 @@ function bankCall(kelly) {
 
 function bankSay(kelly, fallback) {
   if (!kelly || !(kelly.records || []).length) return "";
-  const roll = bankMoney(bankRoll() || 100);
+  const roll = bankMoney(kelly.roll != null ? kelly.roll : bankRoll() || 100);
   const why = bankHitSay(kelly);
   if (kelly.edge && kelly.bet > 0) return `Bet $${bankMoney(kelly.bet)} of the $${roll}. ${why} A quarter of that edge is $${bankMoney(kelly.bet)}.`;
   if (kelly.edge) return `${why} The edge on the $${roll} is $${bankMoney(kelly.full)}. A quarter of that is under $1.`;
@@ -343,33 +345,23 @@ function bankPaintTicket() {
   });
 }
 
-function bankBar() {
-  const line = document.createElement("p");
-  line.className = "bank-line";
-  const hold = () => (typeof manageBankPlan === "function" ? manageBankPlan() : 0);
-  const left = () => Math.round((Number(bankBook.cash) - hold()) * 100) / 100;
+function bankBit(span, label) {
+  const roll = typeof manageBankRoll === "function" ? manageBankRoll(span) : bankRoll();
+  const hold = typeof manageBankPlan === "function" ? manageBankPlan(span) : 0;
+  const left = Math.round((roll - hold) * 100) / 100;
   const field = document.createElement("input");
-  field.type = "number";
-  field.step = "1";
-  field.readOnly = true;
-  field.className = "bank-cash";
-  field.setAttribute("aria-label", "Bankroll left to bet");
-  field.value = bankMoney(left());
+  field.type = "number"; field.step = "1"; field.readOnly = true; field.className = "bank-cash";
+  field.setAttribute("aria-label", `${label} left to bet`);
+  field.value = bankMoney(left);
   const total = document.createElement("input");
-  total.type = "number";
-  total.min = "0";
-  total.step = "1";
-  total.className = "bank-roll";
-  total.setAttribute("aria-label", "Bankroll before these bets");
-  total.value = bankMoney(bankRoll());
+  total.type = "number"; total.min = "0"; total.step = "1"; total.className = "bank-roll";
+  total.setAttribute("aria-label", `${label} bankroll before these bets`);
+  total.value = bankMoney(roll);
   total.addEventListener("click", (event) => event.stopPropagation());
-  total.addEventListener("change", () => {
-    const cash = Math.round((Number(total.value) - bankOutSum(bankBook)) * 100) / 100;
-    bankAct({ action: "set", cash }).catch(() => { total.value = bankMoney(bankRoll()); });
-  });
+  total.addEventListener("change", () => { if (typeof manageBankRollSet === "function") manageBankRollSet(span, total.value); });
   const name = document.createElement("b");
   name.className = "bank-name";
-  name.textContent = "Bankroll";
+  name.textContent = label;
   const wrap = document.createElement("span");
   wrap.className = "bank-cash-wrap";
   const buck = document.createElement("span");
@@ -379,13 +371,19 @@ function bankBar() {
   word.className = "bank-of";
   word.textContent = "of $";
   wrap.append(buck, field, word, total);
-  line.append(name, wrap);
-  if (bankNote) {
-    const note = document.createElement("span");
-    note.className = "bank-note";
-    note.textContent = bankNote;
-    line.append(note);
-  }
+  const bit = document.createElement("span");
+  bit.className = "bank-span";
+  bit.append(name, wrap);
+  return bit;
+}
+
+function bankBar() {
+  const line = document.createElement("p");
+  line.className = "bank-line";
+  const span = typeof manageWhen === "string" ? manageWhen : "";
+  if (span === "today" || span === "week") line.append(bankBit(span, span === "today" ? "Today" : "This week"));
+  else line.hidden = true;
+  if (bankNote) { const note = document.createElement("span"); note.className = "bank-note"; note.textContent = bankNote; line.append(note); }
   return line;
 }
 
