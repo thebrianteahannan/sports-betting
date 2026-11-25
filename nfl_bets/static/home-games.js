@@ -325,6 +325,8 @@ function homeRecRow(pick, index, opts) {
   const card = document.createElement("button");
   card.type = "button";
   card.className = "desk-game desk-rec";
+  card.dataset.moveLabel = pick.label || "";
+  card.dataset.moveMatch = pick.match || "";
   const odds = Number(pick.odds), price = odds > 0 ? `+${odds}` : String(odds);
   const pct = typeof findPct === "function" ? findPct(odds) : String(pick.need || "");
   const cash = typeof findCash === "function" ? findCash(odds) : (Number.isFinite(odds) && odds ? `$${((odds > 0 ? (5 * odds) / 100 : (5 * 100) / Math.abs(odds))).toFixed(2)}` : "");
@@ -334,10 +336,11 @@ function homeRecRow(pick, index, opts) {
   const golden = !!pick.golden;
   const silver = !!pick.silver;
   const bronze = !!pick.bronze;
-  if (golden) card.classList.add("desk-rec-golden");
-  if (silver) card.classList.add("desk-rec-silver");
-  if (bronze) card.classList.add("desk-rec-bronze");
-  const lead = golden ? "Golden Ticket" : silver ? "Silver Ticket" : bronze ? "Bronze Ticket" : guest ? `${homePickSport(pick) || "Top"} pick` : index ? `#${index + 1}` : span === "today" ? "Today's free pick" : span === "tomorrow" ? "Tomorrow's top pick" : "Top pick";
+  const hot = typeof recDialHot === "function" && recDialHot(pick);
+  if (!hot && golden) card.classList.add("desk-rec-golden");
+  if (!hot && silver) card.classList.add("desk-rec-silver");
+  if (!hot && bronze) card.classList.add("desk-rec-bronze");
+  const lead = hot ? "Other recommendations" : golden ? "Golden Ticket" : silver ? "Silver Ticket" : bronze ? "Bronze Ticket" : guest ? `${homePickSport(pick) || "Top"} pick` : index ? `#${index + 1}` : span === "today" ? "Today's free pick" : span === "tomorrow" ? "Tomorrow's top pick" : "Top pick";
   const when = pick.kickoff ? `${span === "week" ? `${new Date(pick.kickoff).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short" })} ` : ""}${new Date(pick.kickoff).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET` : "";
   const side = String(pick.match || "").split(" @ ").find((name) => pick.team && (name === pick.team || name.endsWith(` ${pick.team}`))) || "", logo = (side && homeLogos && homeLogos[side]) || "", dark = logo.replace("/500/", "/500-dark/");
   const hits = Number(pick.hits), games = Number(pick.n);
@@ -353,7 +356,7 @@ function homeRecRow(pick, index, opts) {
   const goldenTip = "Golden Ticket: −120 to +120, and it has hit 60% or more.";
   const silverTip = "Silver Ticket: −150 to +150, and it has hit 55% or more.";
   const bronzeTip = "Bronze Ticket: −200 to +200, and it has hit 50% or more.";
-  const ticketTag = golden
+  const ticketTag = hot ? "" : golden
     ? `<i class="desk-rec-golden-tag" title="${esc(goldenTip)}" data-tip="${esc(goldenTip)}">Golden Ticket</i>`
     : silver
       ? `<i class="desk-rec-silver-tag" title="${esc(silverTip)}" data-tip="${esc(silverTip)}">Silver Ticket</i>`
@@ -363,6 +366,13 @@ function homeRecRow(pick, index, opts) {
   const tags = [ticketTag, edgeTag, typeof scriptKindTag === "function" ? scriptKindTag(pick) : "", typeof scriptRoleTag === "function" ? scriptRoleTag(pick) : "", typeof scriptCushionTag === "function" ? scriptCushionTag(pick) : ""].filter(Boolean).join("");
   card.innerHTML = `<span class="desk-rec-name">${logo ? `<img class="desk-team-logo desk-rec-logo" src="${esc(dark)}" alt="${esc(side)}" loading="lazy"${dark !== logo ? ` onerror="this.onerror=null;this.src='${esc(logo)}'"` : ""}>` : ""}${esc(homeRecTitle(pick))}</span><span class="desk-rec-pay">${pay}</span><span class="desk-rec-how">${lead}${tags}</span><span class="desk-rec-legs">${esc(when)}</span><span class="desk-rec-read">${esc(`${pick.match}. Hit in ${pick.hits} of his last ${pick.n}.`)}</span>`;
   card.addEventListener("click", (event) => {
+    const moving = event.target.closest(".k-move");
+    if (moving && card.contains(moving)) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof priceMoveOpen === "function") priceMoveOpen(card.dataset.moveLabel, card.dataset.moveMatch);
+      return;
+    }
     const tag = event.target.closest(".bet-kind, .desk-rec-edge, .desk-rec-golden-tag, .desk-rec-silver-tag, .desk-rec-bronze-tag");
     if (tag && card.contains(tag)) {
       event.preventDefault();
@@ -683,6 +693,7 @@ function startStrip(box) {
   box.replaceChildren(head, ...body);
   if (tab === "rec" && typeof recDialCountPaint === "function") recDialCountPaint(typeof recDialCountOf === "function" ? recDialCountOf(all) : { golden: 0, all: all.length });
   if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 2, { quiet: true });
+  if (tab === "rec" && typeof priceMoveMark === "function") priceMoveMark();
 }
 
 function homeGamesTabs(box, games) {

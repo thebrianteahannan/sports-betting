@@ -232,10 +232,12 @@ function fillFind(board, data) {
   if (load) load.remove();
   const heading = document.createElement("h2");
   const history = board.dataset.page === "history";
-  const recPage = board.dataset.page === "rec" || history;
-  heading.textContent = history ? "Recommended History" : recPage ? "Recommended" : "Build a bet";
+  const moves = board.dataset.page === "moves";
+  const recPage = board.dataset.page === "rec" || history || moves;
+  heading.textContent = moves ? "Price Movement" : history ? "Recommended History" : recPage ? "Recommended" : "Build a bet";
   board.classList.toggle("find-rec-page", recPage);
   board.classList.toggle("find-hist-page", history);
+  board.classList.toggle("find-move-page", moves);
   const people = unpackFind(data);
   const label = document.createElement("label");
   label.className = "find";
@@ -254,10 +256,10 @@ function fillFind(board, data) {
   const today = document.createElement("details"); const week = document.createElement("details"); const span = document.createElement("div"); span.className = "find-span"; const games = document.createElement("button"); games.type = "button"; games.className = "find-games-go"; games.textContent = "The Games"; games.addEventListener("click", () => { window.location.href = "/live"; }); const pickHead = document.createElement("p"); pickHead.className = "find-span-head"; pickHead.textContent = "Or pick a game."; span.append(pickHead, today, week);
   const jumpGo = document.createElement("button");
   jumpGo.type = "button";
-  jumpGo.className = history ? "find-rec-go" : recPage ? "find-build-go" : "find-rec-go";
-  jumpGo.textContent = history ? "Recommended" : recPage ? "Build a bet" : "Recommended Bets";
+  jumpGo.className = history || moves ? "find-rec-go" : recPage ? "find-build-go" : "find-rec-go";
+  jumpGo.textContent = history || moves ? "Recommended" : recPage ? "Build a bet" : "Recommended Bets";
   jumpGo.addEventListener("click", () => {
-    if (history) {
+    if (history || moves) {
       if (typeof birdMenu === "function") birdMenu("rec");
       else if (typeof paintRec === "function") paintRec();
       return;
@@ -294,7 +296,15 @@ function fillFind(board, data) {
     if (typeof birdMenu === "function") birdMenu("manage");
     else if (typeof paintFind === "function") { window.saveGone = false; window.saveShut = false; paintFind(); }
   });
-  heading.append(jumpGo, ...(history ? [build] : []), mine, games);
+  const moveGo = document.createElement("button");
+  moveGo.type = "button";
+  moveGo.className = "find-move-go";
+  moveGo.textContent = "Price Movement";
+  moveGo.addEventListener("click", () => {
+    if (typeof birdMenu === "function") birdMenu("moves");
+    else if (typeof paintMoves === "function") paintMoves();
+  });
+  heading.append(jumpGo, ...(moves ? [] : [moveGo]), ...(history || moves ? [build] : []), mine, games);
   findGamesLive(games);
   const pickSpan = (name) => { const on = name === "today"; today.classList.toggle("find-on", on); week.classList.toggle("find-on", !on); if (today.open !== on) today.open = on; if (week.open === on) week.open = !on; };
   today.className = "find-games find-on"; today.dataset.span = "today"; today.open = true; week.className = "find-games find-week"; week.dataset.span = "week";

@@ -460,8 +460,8 @@ function recLine(leg) {
   return `<span class="leg-line" data-player="${esc(leg.player || "")}" data-sport="${esc(leg.sport || "")}" data-market="${esc(market)}" data-label="${esc(head)}"><b>${named}</b><i>${esc([tag, leg.pct, where].filter(Boolean).join(" · "))}</i></span>`;
 }
 
-const PAGE_URL = { find: "/build", rec: "/recommended", history: "/history", manage: "/bets", bets: "/strategies" };
-const PAGE_FROM = { "/build": "find", "/recommended": "rec", "/history": "history", "/bets": "manage", "/strategies": "bets" };
+const PAGE_URL = { find: "/build", rec: "/recommended", history: "/history", moves: "/movement", manage: "/bets", bets: "/strategies" };
+const PAGE_FROM = { "/build": "find", "/recommended": "rec", "/history": "history", "/movement": "moves", "/bets": "manage", "/strategies": "bets" };
 let pageUrlQuiet = false;
 
 function pageUrl(kind, replace) {
@@ -482,7 +482,7 @@ function pageOpen(kind) {
 
 function birdMenu(kind) {
   if (kind === "live" || kind === "guide") { window.location.href = `/${kind}`; return; }
-  if (kind === "shared" && window.sharedOpenFresh) { sharedOpenFresh(); return; } if (kind === "how" && window.paintHow) { paintHow(); return; } if (kind === "stack" && window.trayStackOpen) { trayStackOpen(""); return; } if (kind === "pick" || kind === "ones") { if (window.birdMenu) birdMenu("bets"); return; } if (kind === "rec" && window.paintRec) { if (window.saveNew && !document.getElementById("desk").classList.contains("tv-full")) saveNew(); paintRec(); return; } if (kind === "history") { if (window.goFull) goFull(); if (typeof showTab === "function") showTab("profile"); const box = document.getElementById("admin-history"); if (box) setTimeout(() => box.scrollIntoView({ block: "start" }), 60); return; } if (kind === "fantasy" && window.paintFantasy) { paintFantasy(); return; } if (kind === "manage") { window.saveGone = false; window.saveShut = false; pageUrl("manage"); window.pageUrlHold = true; birdMenu("find"); window.pageUrlHold = false; return; } if (kind === "find" && window.paintFind) { if (window.saveNew && !document.getElementById("desk").classList.contains("tv-full")) saveNew(); paintFind(); return; } if (kind !== "bets") return;
+  if (kind === "shared" && window.sharedOpenFresh) { sharedOpenFresh(); return; } if (kind === "how" && window.paintHow) { paintHow(); return; } if (kind === "stack" && window.trayStackOpen) { trayStackOpen(""); return; } if (kind === "pick" || kind === "ones") { if (window.birdMenu) birdMenu("bets"); return; } if (kind === "rec" && window.paintRec) { if (window.saveNew && !document.getElementById("desk").classList.contains("tv-full")) saveNew(); paintRec(); return; } if (kind === "moves") { if (window.paintMoves) { if (window.goFull) goFull(); paintMoves(); return; } return; } if (kind === "history") { if (window.paintHistory) { if (window.goFull) goFull(); paintHistory(); return; } if (window.goFull) goFull(); if (typeof showTab === "function") showTab("profile"); const box = document.getElementById("admin-history"); if (box) setTimeout(() => box.scrollIntoView({ block: "start" }), 60); return; } if (kind === "fantasy" && window.paintFantasy) { paintFantasy(); return; } if (kind === "manage") { window.saveGone = false; window.saveShut = false; pageUrl("manage"); window.pageUrlHold = true; birdMenu("find"); window.pageUrlHold = false; return; } if (kind === "find" && window.paintFind) { if (window.saveNew && !document.getElementById("desk").classList.contains("tv-full")) saveNew(); paintFind(); return; } if (kind !== "bets") return;
   pageUrl("bets");
   window.asking = true; if (window.goFull) goFull(); if (window.birdQuiet) birdQuiet(); if (window.tvPush && (document.querySelector("#desk-glass-in .rec-board") || { dataset: { page: "" } }).dataset.page !== "bets") tvPush();
   const desk = document.getElementById("desk");

@@ -78,6 +78,7 @@
 .find-board.find-rec-page > h2 { margin-bottom: 0.75rem; }
 .find-board.find-rec-page > .find-start { margin-top: 0; }
 :is(.find-board .find-start, #profile-admin .admin-history) .find-start-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.1rem 0.9rem; margin: 0 0 0.2rem; position: sticky; top: 0.4rem; z-index: 6; background: #000; box-shadow: 0 0 0 8px #000, 0 14px 12px -2px rgba(0, 0, 0, 0.85); }
+#desk-glass .find-board[data-page="history"] .find-start-row { position: static; margin: 0 0 0.85rem; box-shadow: none; }
 :is(.find-board .find-start, #profile-admin .admin-history) .desk-games-tabs { display: flex; width: fit-content; margin: 0; }
 :is(.find-board .find-start, #profile-admin .admin-history) .find-start-span { flex: 1 0 100%; }
 .find-start-random { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
@@ -164,10 +165,16 @@
 :is(.rec-board, #choice-result) .find-start[data-rec-dial="1"] button.desk-rec:not([data-rec-golden]):not([data-rec-silver]),
 :is(.rec-board, #choice-result) .find-start[data-rec-dial="2"] button.desk-rec:not([data-rec-metal]),
 :is(.rec-board, #choice-result) .find-start[data-rec-dial="3"] button.desk-rec:not([data-rec-metal]):not([data-rec-close]),
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="0"] button.desk-rec[data-rec-hot],
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="1"] button.desk-rec[data-rec-hot],
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="2"] button.desk-rec[data-rec-hot],
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="3"] button.desk-rec[data-rec-hot],
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="4"] button.desk-rec:not([data-rec-hot]),
 :is(.rec-board, #choice-result) .find-start[data-rec-dial="0"] .rec-parlay-card:not([data-rec-golden]),
 :is(.rec-board, #choice-result) .find-start[data-rec-dial="1"] .rec-parlay-card:not([data-rec-golden]):not([data-rec-silver]),
 :is(.rec-board, #choice-result) .find-start[data-rec-dial="2"] .rec-parlay-card:not([data-rec-metal]),
-:is(.rec-board, #choice-result) .find-start[data-rec-dial="3"] .rec-parlay-card:not([data-rec-metal]):not([data-rec-close]) { display: none !important; }
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="3"] .rec-parlay-card:not([data-rec-metal]):not([data-rec-close]),
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="4"] .rec-parlay-card:not([data-rec-hot]) { display: none !important; }
 .find-start .find-start-recs { display: flex; flex-direction: column; gap: 0; }
 .find-start .find-start-recs-more { margin: 0.2rem 0 0.8rem; }
 :is(.rec-board, #choice-result, #desk-games) button.rec-dial-next { width: fit-content !important; min-height: 0 !important; margin: 0.35rem 0 0.9rem !important; padding: 0.35rem 0.95rem !important; border: 1px solid #3dff6e !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #3dff6e !important; font-size: 13px !important; font-weight: 800 !important; letter-spacing: normal !important; text-transform: none !important; cursor: pointer; }
@@ -275,6 +282,30 @@ button.rec-dial-next[hidden] { display: none !important; }
 .rec-dial[data-tone="edge"] .row-slide > b { background: #ffc56b; }
 .rec-dial[data-tone="edge"] .row-slide > b { box-shadow: 0 0 14px rgba(255, 197, 107, 0.7); }
 .rec-dial[data-tone="edge"] .rec-dial-now { color: #ffc56b; }
+.rec-dial[data-tone="hot"] .row-slide > i,
+.rec-dial[data-tone="hot"] .row-slide > b { background: #ff9a2e; }
+.rec-dial[data-tone="hot"] .row-slide > b { box-shadow: 0 0 14px rgba(255, 154, 46, 0.7); }
+.rec-dial[data-tone="hot"] .rec-dial-now { color: #ff9a2e; }
+.price-moves { display: grid; grid-template-columns: minmax(12rem, 18rem) 1fr; gap: 0.8rem; margin: 0.2rem 0 1rem; }
+.price-move-list { display: flex; flex-direction: column; gap: 0.35rem; max-height: 34rem; overflow: auto; }
+.price-move-pick { flex: none !important; width: 100%; height: auto !important; min-height: 0 !important; margin: 0; padding: 0.45rem 0.6rem !important; border: 1px solid rgba(255, 154, 46, 0.35); border-radius: 10px; background: transparent; box-shadow: none; color: #f4f7fb; font-family: Outfit, system-ui, sans-serif !important; font-size: 13px !important; font-weight: 700 !important; line-height: 1.3 !important; letter-spacing: 0 !important; text-align: left; text-transform: none !important; white-space: normal; cursor: pointer; }
+.price-move-pick b, .price-move-pick span { display: block; font-weight: 700; letter-spacing: 0; text-transform: none; }
+.price-move-pick span { margin-top: 0.12rem; color: #ffc56b; font-size: 12px; }
+.price-move-pick.on { border-color: #ff9a2e; background: rgba(255, 154, 46, 0.14); }
+.price-move-card h3 { margin: 0 0 0.3rem; color: #ffc56b; font: 800 18px Outfit, system-ui, sans-serif; }
+.price-move-where, .price-move-steps p { margin: 0 0 0.45rem; color: #f4f7fb; font-size: 14px; font-weight: 700; line-height: 1.4; }
+.price-chart { width: 100%; height: auto; margin: 0.2rem 0 0.6rem; background: #07141c; border: 1px solid rgba(255, 154, 46, 0.35); border-radius: 12px; }
+.price-chart-area { fill: rgba(255, 154, 46, 0.16); }
+.price-chart-line { fill: none; stroke: #ff9a2e; stroke-width: 3; }
+.price-chart-dot { fill: #ffc56b; stroke: #1a1206; stroke-width: 1; }
+.price-chart-odds, .price-chart-axis { fill: #d5deea; font: 700 12px Outfit, system-ui, sans-serif; }
+.price-chart-unit { margin: 0 0 0.55rem; color: #9fb3c8; font-size: 13px; font-weight: 700; line-height: 1.35; }
+.price-move-lead { grid-column: 1 / -1; margin: 0; color: #d5deea; font-size: 15px; font-weight: 700; line-height: 1.35; }
+.price-move-switch { grid-column: 1 / -1; display: flex; gap: 0.4rem; }
+.price-move-switch button { flex: none !important; width: auto !important; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.28rem 0.75rem !important; border: 1px solid rgba(255, 154, 46, 0.55) !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #ffc56b !important; font-family: Outfit, system-ui, sans-serif !important; font-size: 13px !important; font-weight: 800 !important; letter-spacing: 0 !important; line-height: 1.3 !important; text-transform: none !important; cursor: pointer; }
+.price-move-switch button.on { background: #ff9a2e !important; border-color: #ff9a2e !important; color: #1a1206 !important; }
+i.bet-kind.k-move { color: #1a1206; background: #ff9a2e; border-color: #ff9a2e; cursor: pointer; }
+@media (max-width: 800px) { .price-moves { grid-template-columns: 1fr; } }
 .find-start-kinds { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin: 0 0 0.6rem; }
 :is(.rec-board, #choice-result, #desk-games) .find-start-kinds > button { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.22rem 0.65rem !important; border: 1px solid rgba(159, 179, 200, 0.55) !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #c9d6e3 !important; font-size: 12px !important; font-weight: 800 !important; letter-spacing: 0.03em !important; text-transform: uppercase !important; cursor: pointer; }
 :is(.rec-board, #choice-result, #desk-games) .find-start-kinds > button.on { border-color: #3dff6e !important; background: #3dff6e !important; color: #04140c !important; }

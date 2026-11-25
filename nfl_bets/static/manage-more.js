@@ -71,7 +71,7 @@ function manageProfileFill(host, page, board) {
   });
 }
 
-let manageWhen = "all";
+let manageWhen = "today";
 
 function manageEtParts(when) {
   const at = when == null ? Date.now() : typeof when === "number" ? when : Date.parse(when);

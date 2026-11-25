@@ -77,6 +77,11 @@ body.home-games-on #who { top: var(--home-games-top); right: 16px; bottom: auto;
 :is(#desk-games, .find-start)[data-rec-dial="1"] .desk-rec:not([data-rec-golden]):not([data-rec-silver]) { display: none !important; }
 :is(#desk-games, .find-start)[data-rec-dial="2"] .desk-rec:not([data-rec-metal]) { display: none !important; }
 :is(#desk-games, .find-start)[data-rec-dial="3"] .desk-rec:not([data-rec-metal]):not([data-rec-close]) { display: none !important; }
+:is(#desk-games, .find-start)[data-rec-dial="0"] .desk-rec[data-rec-hot],
+:is(#desk-games, .find-start)[data-rec-dial="1"] .desk-rec[data-rec-hot],
+:is(#desk-games, .find-start)[data-rec-dial="2"] .desk-rec[data-rec-hot],
+:is(#desk-games, .find-start)[data-rec-dial="3"] .desk-rec[data-rec-hot],
+:is(#desk-games, .find-start)[data-rec-dial="4"] .desk-rec:not([data-rec-hot]) { display: none !important; }
 :is(#desk-games, .find-start) .rec-dial-empty[hidden] { display: none !important; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec-golden-tag,
 :is(#desk-games, #rec-page, .find-start) .desk-rec-silver-tag,

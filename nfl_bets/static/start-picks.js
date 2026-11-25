@@ -527,6 +527,7 @@ function startRecCard(board, pick, index) {
   );
   card.append(actions);
   card.addEventListener("click", (event) => {
+    if (event.target.closest(".k-move")) { if (typeof priceMoveOpen === "function") priceMoveOpen(card.dataset.moveLabel, card.dataset.moveMatch); return; }
     if (event.target.closest(".bet-kind, .desk-rec-golden-tag")) return;
     if (document.body.classList.contains("needs-member")) { const join = document.getElementById("gate-join"); if (join) join.click(); return; }
     const go = event.target.closest("[data-bet-go]");
@@ -549,7 +550,7 @@ function startRecMoreSync(wrap, more, pool, shown) {
     return;
   }
   if (!moreMatch) {
-    if (typeof recDial === "number" && recDial < 3) {
+    if (typeof recDial === "number" && recDial < 4) {
       more.hidden = false;
       more.textContent = "Slide right for the next one.";
       more.dataset.scroll = "0";
@@ -676,7 +677,7 @@ function startFilterBits(games) {
   } else bits.push("All games");
   if ((startTab === "rec" || startTab === "parlays") && typeof window.recDialSay === "function") {
     const level = Number(window.recDial);
-    if (level === 0 || level === 1 || level === 2 || level === 3) bits.push(window.recDialSay(level));
+    if (level === 0 || level === 1 || level === 2 || level === 3 || level === 4) bits.push(window.recDialSay(level));
   }
   if (startTab === "rec") {
     if (startKinds.size) {
@@ -1087,7 +1088,8 @@ function startPaint(again) {
   if (!spot || !board || typeof homeRecRows !== "function") return;
   const input = board.querySelector("label.find input");
   const history = board.dataset.page === "history";
-  const panel = board.dataset.page === "rec" || history;
+  const moves = board.dataset.page === "moves";
+  const panel = board.dataset.page === "rec" || history || moves;
   if (typeof startNeedsWeek === "function" && startNeedsWeek()) startWeekLoad();
   homeRecsLoad(typeof startNeedsWeek === "function" && startNeedsWeek() ? "week" : "auto"); homeLogosLoad(); homeLeagueSync();
   const box = document.createElement("div");
@@ -1099,6 +1101,11 @@ function startPaint(again) {
     spot.after(box);
     if (typeof betShotMount === "function") betShotMount();
     if (typeof quickAddPendingOpen === "function") quickAddPendingOpen();
+    return;
+  }
+  if (moves) {
+    box.append(typeof priceMovePage === "function" ? priceMovePage() : document.createElement("p"));
+    spot.after(box);
     return;
   }
   if (startTab === "shared" || startTab === "games" || startTab === "stats" || startTab === "golden" || startTab === "stacks") startTab = "rec";
@@ -1153,7 +1160,7 @@ function startPaint(again) {
     ? [...(lineNote ? [lineNote] : []), ...(dial ? [dial] : []), ...recs]
       : tabNow === "parlays"
       ? [...(lineNote ? [lineNote] : []), ...(dial ? [dial] : []), ...(typeof recParlayBody === "function" ? recParlayBody(board) : [])]
-      : tabNow === "stats"
+        : tabNow === "stats"
         ? startRecStats()
         : tabNow === "close"
           ? (typeof edgeProveBody === "function" ? edgeProveBody() : [])
@@ -1170,6 +1177,7 @@ function startPaint(again) {
     recDialCountPaint(recParlayDialCounts(recParlayBuild(board).rows));
   }
   if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 2, { quiet: true });
+  if (tabNow === "rec" && typeof priceMoveMark === "function") priceMoveMark();
   const waiting = (typeof startNeedsWeek === "function" && startNeedsWeek() && startWeekLoading) || !homeRecs || homeRecs.loading;
   const shown = box.querySelector("button.desk-rec, .rec-parlay-card, .rec-strategy, .find-start-td-page");
   if (waiting && shown && typeof startWeekLoad === "function" && typeof startNeedsWeek === "function" && startNeedsWeek() && startWeekLoading) startWeekLoad(() => { if (box.isConnected) startPaint((again || 0) + 1); });

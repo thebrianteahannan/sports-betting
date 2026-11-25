@@ -1,7 +1,7 @@
-/** Recommended dial: Golden, then Silver, then Bronze, then the other edged bets.
+/** Recommended dial: Golden, then Silver, then Bronze, then the other edged bets, then other recommendations.
  * Same drag pattern as Live Less↔More: step any, pointer capture, no rebuild while the thumb moves. */
 
-const REC_DIAL_MAX = 3;
+const REC_DIAL_MAX = 4;
 const REC_DIAL_DEFAULT = 2;
 const REC_TICKET = [
   { name: "golden", min: -120, max: 120, rate: 0.6 },
@@ -21,7 +21,7 @@ let recDial = (() => {
       localStorage.setItem("rec-dial", String(n));
     }
     if (stops !== "5") localStorage.setItem("rec-dial-stops", "5");
-    if (n === 0 || n === 1 || n === 2 || n === 3) return n;
+    if (n === 0 || n === 1 || n === 2 || n === 3 || n === 4) return n;
   } catch (error) {}
   return REC_DIAL_DEFAULT;
 })();
@@ -34,7 +34,7 @@ function recDialInBand(odds) {
 }
 
 function recDialTone(level) {
-  return ["golden", "silver", "bronze", "edge"][Math.max(0, Math.min(REC_DIAL_MAX, Math.round(Number(level) || 0)))] || "golden";
+  return ["golden", "silver", "bronze", "edge", "hot"][Math.max(0, Math.min(REC_DIAL_MAX, Math.round(Number(level) || 0)))] || "golden";
 }
 
 function recDialSay(level, showing) {
@@ -43,7 +43,8 @@ function recDialSay(level, showing) {
   if (level <= 0) return `Golden Ticket${count}`;
   if (level === 1) return `Silver Ticket${count}`;
   if (level === 2) return `Bronze Ticket${count}`;
-  return `Has an edge${count}`;
+  if (level === 3) return `Has an edge${count}`;
+  return `Other recommendations${count}`;
 }
 
 function recDialShowingOf(level, counts) {
@@ -51,10 +52,12 @@ function recDialShowingOf(level, counts) {
   const silver = Math.max(0, Number(counts && counts.silver) || 0);
   const metal = Math.max(0, Number(counts && counts.metal) || 0);
   const close = Math.max(0, Number(counts && counts.close) || 0);
+  const hot = Math.max(0, Number(counts && counts.hot) || 0);
   if (level <= 0) return golden;
   if (level === 1) return golden + silver;
   if (level === 2) return metal;
-  return metal + close;
+  if (level === 3) return metal + close;
+  return hot;
 }
 
 function recDialSave(level) {
@@ -77,8 +80,20 @@ function recDialClose(pick) {
   });
 }
 
+function recDialHot(pick) {
+  if (!pick || typeof edgeGap !== "function" || typeof matchupUse !== "function") return false;
+  const row = edgeGap(pick.hits, pick.n, pick.need, pick.odds);
+  if (!row) return false;
+  const moved = matchupUse(row.pulled, pick.matchupShift);
+  const used = moved ? moved.used : row.pulled;
+  return Math.round((used - row.price) * 1000) / 10 >= 10;
+}
+
 function recDialOk(pick) {
   if (!pick) return false;
+  const hot = recDialHot(pick);
+  if (recDial >= 4) return hot;
+  if (hot) return false;
   if (pick.golden) return true;
   if (recDial >= 1 && pick.silver) return true;
   if (recDial >= 2 && pick.bronze) return true;
@@ -146,7 +161,8 @@ function recDialEmptySay() {
   if (recDial <= 0) return "There is no Golden Ticket bet available right now.";
   if (recDial === 1) return "There is no Silver Ticket bet available right now.";
   if (recDial === 2) return "There is no Bronze Ticket bet available right now.";
-  return "Nothing else with an edge right now.";
+  if (recDial === 3) return "Nothing else with an edge right now.";
+  return "There are no other recommendations right now.";
 }
 
 function recDialEmptyText(node) {
@@ -157,7 +173,8 @@ function recDialEmptyText(node) {
   if (recDial <= 0) return `There is no ${word} Golden Ticket parlay right now.`;
   if (recDial === 1) return `There is no ${word} Silver Ticket parlay right now.`;
   if (recDial === 2) return `There is no ${word} Bronze Ticket parlay right now.`;
-  return `There are no ${word} recommended parlays.`;
+  if (recDial === 3) return `There are no ${word} recommended parlays.`;
+  return "There are no other recommended parlays right now.";
 }
 
 function recDialCardOn(card) {
@@ -172,6 +189,15 @@ function recDialCardOn(card) {
 
 function recDialMark(card, pick) {
   if (!card || !pick) return card;
+  if (recDialHot(pick)) {
+    card.dataset.recHot = "1";
+    delete card.dataset.recGolden;
+    delete card.dataset.recSilver;
+    delete card.dataset.recMetal;
+    delete card.dataset.recClose;
+    return card;
+  }
+  delete card.dataset.recHot;
   if (pick.golden) card.dataset.recGolden = "1";
   else delete card.dataset.recGolden;
   if (pick.silver) card.dataset.recSilver = "1";
@@ -207,6 +233,7 @@ function recDialShowingPaint(level) {
       silver: Number(bar.dataset.silver) || 0,
       metal: Number(bar.dataset.metal) || 0,
       close: Number(bar.dataset.close) || 0,
+      hot: Number(bar.dataset.hot) || 0,
     };
     showing = recDialShowingOf(at, counts);
     const now = bar.querySelector(".rec-dial-now");
@@ -241,7 +268,7 @@ function recDialApply(next, opts) {
     const host = node.closest(".find-start, #desk-games");
     if (!host) return;
     const seen = (kind) => [...host.querySelectorAll(`.desk-rec[${kind}], .rec-parlay-card[${kind}]`)].some(recDialCardOn);
-    const hit = recDial <= 0 ? seen("data-rec-golden") : recDial === 1 ? (seen("data-rec-golden") || seen("data-rec-silver")) : recDial === 2 ? seen("data-rec-metal") : (seen("data-rec-metal") || seen("data-rec-close"));
+    const hit = recDial <= 0 ? seen("data-rec-golden") : recDial === 1 ? (seen("data-rec-golden") || seen("data-rec-silver")) : recDial === 2 ? seen("data-rec-metal") : recDial === 3 ? (seen("data-rec-metal") || seen("data-rec-close")) : seen("data-rec-hot");
     const show = !hit;
     node.hidden = !show;
     if (show) node.textContent = recDialEmptyText(node);
@@ -260,7 +287,8 @@ function recDialNextSay(level) {
   const next = Math.round(Number(level) || 0) + 1;
   if (next <= 1) return "Show the silver ticket";
   if (next === 2) return "Show the bronze ticket";
-  return "More recommended bets ...";
+  if (next === 3) return "More recommended bets ...";
+  return "Show other recommendations";
 }
 
 function recDialNext() {
@@ -286,11 +314,13 @@ function recDialEmptyNote() {
 function recDialCountOf(picks) {
   const rows = picks || [];
   recDialPicks = rows;
-  const golden = rows.filter((pick) => pick && pick.golden).length;
-  const silver = rows.filter((pick) => pick && pick.silver).length;
-  const metal = rows.filter((pick) => pick && (pick.golden || pick.silver || pick.bronze)).length;
-  const close = rows.filter((pick) => recDialClose(pick)).length;
-  return { golden, silver, metal, close, all: metal + close };
+  const cool = rows.filter((pick) => pick && !recDialHot(pick));
+  const golden = cool.filter((pick) => pick.golden).length;
+  const silver = cool.filter((pick) => pick.silver).length;
+  const metal = cool.filter((pick) => pick.golden || pick.silver || pick.bronze).length;
+  const close = cool.filter((pick) => recDialClose(pick)).length;
+  const hot = rows.filter((pick) => pick && recDialHot(pick)).length;
+  return { golden, silver, metal, close, hot, all: metal + close };
 }
 
 function recDialCountPaint(counts) {
@@ -298,16 +328,18 @@ function recDialCountPaint(counts) {
   const silver = Math.max(0, Number(counts && counts.silver) || 0);
   const metal = Math.max(0, Number(counts && counts.metal) || 0);
   const close = Math.max(0, Number(counts && counts.close) || 0);
+  const hot = Math.max(0, Number(counts && counts.hot) || 0);
   const all = metal + close;
   document.querySelectorAll(".rec-dial").forEach((bar) => {
     const less = bar.querySelector(".rec-dial-less .rec-dial-n");
     const more = bar.querySelector(".rec-dial-more .rec-dial-n");
     if (less) less.textContent = String(golden);
-    if (more) more.textContent = String(all);
+    if (more) more.textContent = String(hot);
     bar.dataset.golden = String(golden);
     bar.dataset.silver = String(silver);
     bar.dataset.metal = String(metal);
     bar.dataset.close = String(close);
+    bar.dataset.hot = String(hot);
     bar.dataset.all = String(all);
   });
   recDialShowingPaint(recDial);
@@ -325,7 +357,7 @@ function recDialBar(onCommit) {
   less.innerHTML = `Golden Ticket <i class="rec-dial-n">0</i>`;
   const more = document.createElement("span");
   more.className = "rec-dial-more";
-  more.innerHTML = `Has an edge <i class="rec-dial-n">0</i>`;
+  more.innerHTML = `Other recommendations <i class="rec-dial-n">0</i>`;
   const slide = document.createElement("span");
   slide.className = "rec-dial-slide";
   const input = document.createElement("input");
@@ -372,6 +404,7 @@ function recDialBar(onCommit) {
 
 window.recDial = recDial;
 window.recDialOk = recDialOk;
+window.recDialHot = recDialHot;
 window.recDialBar = recDialBar;
 window.recDialApply = recDialApply;
 window.recDialEmptySay = recDialEmptySay;

@@ -125,4 +125,12 @@ function edgeGap(hits, n, need, odds) {
   return { ...pull, price, gap: Math.round((pull.pulled - price) * 1000) / 10 };
 }
 
-module.exports = { betKind, betTag, betCash, betRole, betCushion, betCushionInfo, edgePull, edgeGap, matchupPoints, matchupUse, MATCHUP_STEP };
+function ranHot(pick) {
+  const row = edgeGap(pick && pick.hits, pick && pick.n, pick && pick.need, pick && pick.odds);
+  if (!row) return false;
+  const moved = matchupUse(row.pulled, pick && pick.matchupShift);
+  const used = moved ? moved.used : row.pulled;
+  return Math.round((used - row.price) * 1000) / 10 >= 10;
+}
+
+module.exports = { betKind, betTag, betCash, betRole, betCushion, betCushionInfo, edgePull, edgeGap, ranHot, matchupPoints, matchupUse, MATCHUP_STEP };

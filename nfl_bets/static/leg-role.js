@@ -152,13 +152,13 @@ function fairLine(pick) {
 function pullClause(n, pulled, used, gap, shift, note) {
   const n1 = (value) => (Math.abs(value - Math.round(value)) < 0.05 ? String(Math.round(value)) : value.toFixed(1));
   const pct = (value) => `${(value * 100).toFixed(1)}%`;
-  const games = Number(n) === 1 ? "game" : "games";
   const move = shift ? ` The ${note || "matchup"} ${shift < 0 ? `takes ${n1(Math.abs(shift))} points off it` : `adds ${n1(shift)} points`}, and the chance we use is ${pct(used)}` : "";
   const head = shift
     ? `${n} games get pulled toward 50% by adding 20 games at that rate, to ${pct(pulled)}.${move}`
     : `${n} games get pulled toward 50% by adding 20 games at that rate, and the chance we use is ${pct(used)}`;
-  if (gap >= 10) return `${head}. That chance sits ${n1(gap)} points above the price. The sample is ${n} ${games}. A gap this wide is a broken input.`;
-  if (gap >= 3) return shift ? `${head}. That chance sits ${n1(gap)} points above the price.` : `${head}. That chance sits ${n1(gap)} points above the price. The sample is ${n} ${games}.`;
+  const hot = Number(n) === 1 ? "That game ran hot" : `Those ${n} games ran hot`;
+  if (gap >= 10) return `${head}. That chance sits ${n1(gap)} points above the price. ${hot}, and that is too far from the price to trust.`;
+  if (gap >= 3) return `${head}. That chance sits ${n1(gap)} points above the price.`;
   if (gap > 0.05) return `${head}, which sits ${n1(gap)} points above the price.`;
   if (gap < -0.05) return `${head}, which comes up ${n1(Math.abs(gap))} points short of the price.`;
   return `${head}, which lands on the price.`;

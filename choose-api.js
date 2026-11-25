@@ -234,6 +234,11 @@ async function pgaOffer(game) {
 
 const lastProps = new Map();
 
+function logPrices(game, rows) {
+  if (!game || !rows || !rows.length) return;
+  try { require("./price-log").note(game, rows); } catch (error) { console.error("price log failed:", error); }
+}
+
 function rememberProps(id, rows) {
   if (!id || !rows.length) return;
   lastProps.set(id, rows);
@@ -256,8 +261,16 @@ async function keptProps(id) {
 }
 
 async function offerLegs(game) {
-  if (game.sport === "PGA") return pgaOffer(game);
-  if (Array.isArray(game.props) && game.props.length) return { rows: game.props.filter((leg) => leg && typeof leg === "object"), live: !!game.live };
+  if (game.sport === "PGA") {
+    const got = await pgaOffer(game);
+    logPrices(game, got.rows);
+    return got;
+  }
+  if (Array.isArray(game.props) && game.props.length) {
+    const rows = game.props.filter((leg) => leg && typeof leg === "object");
+    logPrices(game, rows);
+    return { rows, live: !!game.live };
+  }
   const first = await eventPage(game.id, "popular");
   const pages = [first];
   const extra = await Promise.all(propTabs(first.layout).map((tab) => eventPage(game.id, tab).catch(() => null)));
@@ -289,7 +302,7 @@ async function offerLegs(game) {
   if (rows.length) {
     const prev = lastProps.get(id) || [];
     const use = started && prev.length > rows.length ? prev : rows;
-    if (use === rows) rememberProps(id, rows);
+    if (use === rows) { rememberProps(id, rows); logPrices(game, rows); }
     return { rows: use, live };
   }
   if (started) {

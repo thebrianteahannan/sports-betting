@@ -162,7 +162,7 @@ async function recRanked(days, keepStarted) {
   });
   const picks = tonight.flatMap((row) => (((row.story || {}).bets || {}).picks || []).map((pick) => ({ ...pick, match: row.match, kickoff: row.kickoff })));
   const cleared = (pick) => {
-    if (pick.tier !== "good" || !/^his record is only \d+ games$/.test(pick.drop || "")) return pick;
+    if (pick.tier !== "good" || !/^(?:his record is only \d+ games|that game ran hot|those \d+ games ran hot)$/.test(pick.drop || "")) return pick;
     const need = parseFloat(pick.need);
     const tag = betTag({ ...pick, need: need > 1 ? need / 100 : need });
     return tag.tier === "rec" ? { ...pick, tier: "rec", drop: "" } : pick;

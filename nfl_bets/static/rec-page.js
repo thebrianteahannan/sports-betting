@@ -2,7 +2,8 @@
 
 function paintRec(page) {
   const history = page === "history";
-  if (typeof pageUrl === "function") pageUrl(history ? "history" : "rec");
+  const moves = page === "moves";
+  if (typeof pageUrl === "function") pageUrl(moves ? "moves" : history ? "history" : "rec");
   window.asking = true;
   if (document.body.classList.contains("tv-zoom-on") && typeof tvZoomShut === "function") tvZoomShut();
   if (window.goFull) goFull();
@@ -26,8 +27,9 @@ function paintRec(page) {
   document.querySelectorAll(".rec-board").forEach((node) => node.remove());
   const board = document.createElement("div");
   board.className = "rec-board find-board find-rec-page";
-  board.dataset.page = history ? "history" : "rec";
+  board.dataset.page = moves ? "moves" : history ? "history" : "rec";
   if (history) board.classList.add("find-hist-page");
+  if (moves) board.classList.add("find-move-page");
   const saved = findParts.today && findParts.today.data && Date.now() - findParts.today.at < 30 * 60 * 1000;
   if (!saved) board.innerHTML = `<div class="bet-load"><span class="bet-bird"><img src="/scene/parrot-head.webp?v=1" alt=""></span><p>Looking up the board.</p></div>`;
   const hold = document.getElementById("desk-hold");
@@ -68,10 +70,15 @@ function paintHistory() {
   paintRec("history");
 }
 
+function paintMoves() {
+  paintRec("moves");
+}
+
 function recPageOpen() {
   if (typeof paintRec === "function") paintRec();
 }
 
 window.paintRec = paintRec;
 window.paintHistory = paintHistory;
+window.paintMoves = paintMoves;
 window.recPageOpen = recPageOpen;
