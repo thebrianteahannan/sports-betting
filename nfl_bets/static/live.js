@@ -320,11 +320,12 @@ function liveFilterSaySync() {
   say.append(clear);
 }
 
-function liveFilterBar(bar, filters) {
+function liveFilterBar(bar, filters, liveN) {
   const bits = liveFilterBits();
   const clear = liveFiltersDirty() ? ` <button type="button" data-live-clear>Clear</button>` : "";
   const say = `<p class="live-filter-say">${liveEsc(bits.join(". "))}.${clear}</p>`;
-  return `${say}<details class="live-filter-fold"${liveFiltersOpen ? " open" : ""}><summary>Filters</summary>${bar}${filters}</details>${liveZoomBar()}`;
+  const liveGo = liveN && liveSpan !== "live" ? `<p class="live-now-go"><button type="button" data-week="live">${liveN} ${liveN === 1 ? "game is" : "games are"} live</button></p>` : "";
+  return `${say}${liveGo}<details class="live-filter-fold"${liveFiltersOpen ? " open" : ""}><summary>Filters</summary>${bar}${filters}</details>${liveZoomBar()}`;
 }
 
 function liveFiltersClear() {
@@ -357,7 +358,7 @@ function liveSoonCard(game) {
   const kick = Date.parse(game.kickoff), liveNow = game.sport === "PGA" && Number.isFinite(kick) && kick <= Date.now();
   const day = liveNow ? "Live" : `${new Date(kick).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} ET`;
   const like = { id: `${game.match}|${game.kickoff}`, away: game.away || { name: game.awayName }, home: game.home || { name: game.homeName }, when: game.kickoff }, picks = liveMine(like), recs = liveRecPicks(like, picks).length, open = liveRecOpen.has(like.id);
-  const tag = recs ? `<button type="button" class="live-rec-tag${open ? " on" : ""}" data-rec-open="${liveEsc(like.id)}" aria-label="${recs} recommended" title="${recs} recommended"><img src="/scene/parrot-head-tight.webp?v=1" alt=""><b>${recs}</b></button>` : "";
+  const tag = recs ? `<button type="button" class="live-rec-tag${open ? " on" : ""}" data-rec-open="${liveEsc(like.id)}" aria-label="${recs} recommended" title="${recs} recommended"><img src="/scene/parrot-head-tight.webp?v=1" alt=""><b>${recs}</b></button><button type="button" class="live-rec-jump" data-rec-jump="${liveEsc(like.id)}">View recommended</button>` : "";
   const until = liveNow ? "" : (typeof gameUntilText === "function" ? gameUntilText(game.kickoff) : "");
   const meta = `<span class="live-meta">${game.total ? `<span class="live-total">O/U ${liveEsc(game.total)}</span>` : ""}${until ? `<span class="find-until live-until" data-kick="${liveEsc(game.kickoff)}">${liveEsc(until)}</span>` : ""}${game.lines ? `<span class="live-lines">${liveEsc(game.lines)}</span>` : ""}<a class="live-week-game" href="/?${liveEsc(new URLSearchParams({ game: game.match, from: "live" }).toString())}" title="Open this game in Build a bet">Build a bet ›</a></span>`;
   const sides = game.sport === "PGA" ? `<span class="live-side"><b>${liveEsc(game.match || "")}</b></span>` : `${liveSide(like.away, false, `${like.id}|away`)}<span class="live-at-sign">@</span>${liveSide(like.home, false, `${like.id}|home`)}`;
@@ -409,7 +410,7 @@ function livePaint(data, quiet) {
   const liveCount = live.length + pgaLive.length;
   if (!liveSpanHeld) {
     const liveN = liveAll.length + pgaAll.length, nextN = (data.week || []).length ? soonAll.length : nextAll.length;
-    liveSpan = liveN ? "live" : nextN ? "next" : endedAll.length ? "done" : tomorrowAll.length ? "tomorrow" : "week";
+    liveSpan = nextN ? "next" : liveN ? "live" : endedAll.length ? "done" : tomorrowAll.length ? "tomorrow" : "week";
     liveSpanHeld = true;
   }
   const bar = liveLeagueBar(data, { done: endedAll.length, live: liveAll.length + pgaAll.length, next: (data.week || []).length ? soonAll.length : nextAll.length, tomorrow: tomorrowAll.length, week: laterAll.length });
@@ -421,7 +422,7 @@ function livePaint(data, quiet) {
   const tomorrowBody = tomorrow.length ? `<h2>Tomorrow, ${say(tomorrow.length)}</h2>${livePack(tomorrow.map(liveSoonCard).join(""))}` : empty(liveOnlyMine, tomorrowAll, "No games tomorrow.");
   const weekBody = later.length ? `<h2>This week, ${say(later.length)}</h2>${livePack(later.map(liveSoonCard).join(""))}` : empty(liveOnlyMine, laterAll, "No games the rest of this week.");
   const body = { done: doneBody, live: liveBody, next: nextBody, tomorrow: tomorrowBody, week: weekBody }[liveSpan] || liveBody;
-  box.innerHTML = `${liveFilterBar(bar, filters)}${body}`;
+  box.innerHTML = `${liveFilterBar(bar, filters, liveAll.length + pgaAll.length)}${body}`;
   box.querySelectorAll("input.live-zoom-range, input.live-card-range").forEach((node) => { if (typeof rowSlide === "function") rowSlide(node); });
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => { const left = liveSlide.get(node.dataset.slide); if (left) node.scrollLeft = left; });
   if (!first) {
@@ -645,6 +646,20 @@ document.getElementById("live").addEventListener("click", (event) => {
     if (next && next.classList.contains("live-player-row")) { next.remove(); if (row) row.classList.remove("live-open"); liveWhoOpen.delete(id); return; }
     if (id) liveWhoOpen.add(id);
     liveWhoShow(who);
+    return;
+  }
+  const recJump = event.target.closest("[data-rec-jump]");
+  if (recJump) {
+    event.preventDefault();
+    const game = recJump.closest(".live-game");
+    if (!game || !game.dataset.id) return;
+    const now = liveCardZoom.has(game.dataset.id) ? liveCardZoom.get(game.dataset.id) : liveZoom;
+    let level = Math.min(LIVE_ZOOM_MAX, Math.max(now + 2, 5));
+    if (level === 6) level = 7;
+    liveCardZoom.set(game.dataset.id, level);
+    game.dataset.cardZoom = String(level);
+    const range = game.querySelector("input.live-card-range");
+    if (range) { range.value = String(level); range.setAttribute("aria-valuenow", String(level)); }
     return;
   }
   const recTag = event.target.closest("[data-rec-open]");

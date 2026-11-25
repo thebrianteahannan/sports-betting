@@ -28,6 +28,10 @@ a { color: #3dff6e; }
 .live-rec-tag img { width: 18px; height: 18px; object-fit: contain; display: block; }
 .live-rec-tag b { padding: 0; border-radius: 0; background: none; color: #e7c15a; font-weight: 800; }
 .live-rec-tag:hover b, .live-rec-tag.on b { color: #3dff6e; }
+.live-rec-jump { margin: 0; padding: 0; border: 0; background: none; color: #3dff6e; font: 700 13px Outfit, system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
+.live-rec-jump:hover { text-decoration: underline; }
+body[data-live-zoom="0"] .live-game:not([data-card-zoom]) .live-rec-jump,
+body[data-live-zoom="0"] .live-game[data-card-zoom="0"] .live-rec-jump { display: none; }
 body[data-live-zoom="0"] .live-game:not([data-card-zoom]) > .live-head,
 body[data-live-zoom="0"] .live-game[data-card-zoom="0"] > .live-head { padding-right: 46px; }
 body[data-live-zoom="0"] .live-game:not([data-card-zoom]) .live-rec-tag,
@@ -47,6 +51,9 @@ body[data-live-zoom="0"] .live-game[data-card-zoom="0"] .live-rec-tag { position
 .live-nav a { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.28rem 0.75rem; border: 1px solid #3dff6e; border-radius: 999px; background: #07140f; color: #3dff6e; font-size: 14px; font-weight: 700; text-decoration: none; }
 .live-nav a:hover { background: rgba(61, 255, 110, 0.12); }
 .live-nav b { min-width: 1.15rem; padding: 0 0.35rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-weight: 800; line-height: 1.35; text-align: center; }
+.live-now-go { margin: 0 0 0.45rem; }
+.live-now-go button { margin: 0; padding: 0.28rem 0.75rem; border: 1px solid #3dff6e; border-radius: 999px; background: #07140f; color: #3dff6e; font: 700 14px Outfit, system-ui, sans-serif; cursor: pointer; }
+.live-now-go button:hover { background: rgba(61, 255, 110, 0.12); }
 .live-filter-say { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.75rem; margin: 0 0 0.35rem; color: #d5deea; font-size: 14px; font-weight: 650; }
 .live-filter-say button { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: #3dff6e; font: inherit; font-weight: 700; letter-spacing: normal; text-transform: none; text-decoration: underline; cursor: pointer; }
 .live-filter-fold { margin: 0 0 8px; }
