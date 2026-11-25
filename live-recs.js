@@ -50,7 +50,7 @@ function recRecord(match, kickoff, story) {
     seen.add(id); return true;
   }).map((pick) => {
     const old = prior.get(`${pick.label}|${pick.market}`);
-    return { label: pick.label, market: pick.market, odds: pick.odds, who: pick.who, kind: pick.kind || "", basis: pick.basis || "", tier: pick.tier || "", drop: pick.drop || "", hits: pick.hits, n: pick.n, need: pick.need, role: pick.role || "", cushion: !!pick.cushion, cushionRoom: pick.cushion ? pick.cushionRoom : null, cushionPct: pick.cushion ? pick.cushionPct : null, avg: pick.avg, reach: pick.reach, how: pick.how || "", postedOdds: old && old.postedOdds != null ? old.postedOdds : Number(pick.odds), fair: old && old.fair != null ? old.fair : null, fairBooks: old && old.fairBooks != null ? old.fairBooks : null, fairEx: !!(old && old.fairEx), closeOdds: old && old.closeOdds != null ? old.closeOdds : null, closeFair: old && old.closeFair != null ? old.closeFair : null };
+    return { label: pick.label, market: pick.market, odds: pick.odds, who: pick.who, kind: pick.kind || "", basis: pick.basis || "", tier: pick.tier || "", drop: pick.drop || "", hits: pick.hits, n: pick.n, need: pick.need, role: pick.role || "", cushion: !!pick.cushion, cushionRoom: pick.cushion ? pick.cushionRoom : null, cushionPct: pick.cushion ? pick.cushionPct : null, avg: pick.avg, reach: pick.reach, how: pick.how || "", matchupShift: Number(pick.matchupShift) || 0, matchupNote: pick.matchupNote || "", postedOdds: old && old.postedOdds != null ? old.postedOdds : Number(pick.odds), fair: old && old.fair != null ? old.fair : null, fairBooks: old && old.fairBooks != null ? old.fairBooks : null, fairEx: !!(old && old.fairEx), closeOdds: old && old.closeOdds != null ? old.closeOdds : null, closeFair: old && old.closeFair != null ? old.closeFair : null };
   });
   if (!picks.length) return;
   stampFair(bets, picks);
@@ -132,7 +132,7 @@ async function recsList() {
     const full = new Map(((((row.story || {}).bets || {}).picks) || []).map((pick) => [`${pick.label}|${pick.market}`, pick]));
     return (row.picks || []).map((pick) => {
       const src = full.get(`${pick.label}|${pick.market}`) || pick;
-      return { label: pick.label, market: pick.market, odds: pick.odds, kind: src.kind || pick.kind || "", basis: src.basis || pick.basis || "", tier: src.tier || pick.tier || "", drop: src.drop || pick.drop || "", hits: src.hits != null ? src.hits : pick.hits, n: src.n != null ? src.n : pick.n, need: src.need != null ? src.need : pick.need, role: src.role || pick.role || "", cushion: !!(src.cushion || pick.cushion), cushionRoom: (src.cushion || pick.cushion) ? (src.cushionRoom != null ? src.cushionRoom : pick.cushionRoom) : null, cushionPct: (src.cushion || pick.cushion) ? (src.cushionPct != null ? src.cushionPct : pick.cushionPct) : null, avg: src.avg != null ? src.avg : pick.avg, reach: src.reach != null ? src.reach : pick.reach, how: src.how || pick.how || "", match: row.match, kickoff: row.kickoff, ...fairFields(src.fair != null || src.postedOdds != null ? src : pick) };
+      return { label: pick.label, market: pick.market, odds: pick.odds, kind: src.kind || pick.kind || "", basis: src.basis || pick.basis || "", tier: src.tier || pick.tier || "", drop: src.drop || pick.drop || "", hits: src.hits != null ? src.hits : pick.hits, n: src.n != null ? src.n : pick.n, need: src.need != null ? src.need : pick.need, role: src.role || pick.role || "", cushion: !!(src.cushion || pick.cushion), cushionRoom: (src.cushion || pick.cushion) ? (src.cushionRoom != null ? src.cushionRoom : pick.cushionRoom) : null, cushionPct: (src.cushion || pick.cushion) ? (src.cushionPct != null ? src.cushionPct : pick.cushionPct) : null, avg: src.avg != null ? src.avg : pick.avg, reach: src.reach != null ? src.reach : pick.reach, how: src.how || pick.how || "", matchupShift: Number(src.matchupShift != null ? src.matchupShift : pick.matchupShift) || 0, matchupNote: src.matchupNote || pick.matchupNote || "", match: row.match, kickoff: row.kickoff, ...fairFields(src.fair != null || src.postedOdds != null ? src : pick) };
     });
   });
 }
@@ -217,6 +217,8 @@ async function recRanked(days, keepStarted) {
         hits: pick.hits,
         n: pick.n,
         how: pick.how,
+        matchupShift: Number(pick.matchupShift) || 0,
+        matchupNote: pick.matchupNote || "",
         kind: pick.kind || "",
         basis: pick.basis || "",
         role: pick.role || "",

@@ -1,5 +1,7 @@
 /** One NFL game script: how the game plays out, from each team's recent box scores and the game details. */
 
+const { MATCHUP_STEP } = require("./bet-kind");
+
 function n1(value) { return Number.isFinite(value) ? (Math.round(value * 10) / 10).toFixed(1).replace(/\.0$/, "") : ""; }
 function n0(value) { return Number.isFinite(value) ? String(Math.round(value)) : ""; }
 function last(name) { return String(name || "").split(" ").pop(); }
@@ -56,10 +58,10 @@ function passRun(boxes, outs) {
   [[away, home, "away"], [home, away, "home"]].forEach(([team, foe, side]) => {
     const qb = lead(team, "passAtt", gone(outs, side)), back = lead(team, "rushAtt", gone(outs, side));
     const pass = foe.oppPassYds - base.oppPassYds, rush = foe.oppRushYds - base.oppRushYds;
-    if (pass >= 25) out.push({ w: pass / 10, text: `${The(foe.name)} allow ${n0(foe.oppPassYds)} passing yards a game, ${n0(pass)} over this sample.${qb ? ` ${qb[0]} throws for ${n0(qb[1].passYds)} a game, so his yards have room.` : ""}`, brief: `${the(foe.name)} give up ${n0(foe.oppPassYds)} passing yards a game` });
-    else if (pass <= -25) out.push({ w: -pass / 12, text: `${The(foe.name)} allow only ${n0(foe.oppPassYds)} passing yards a game, ${n0(-pass)} under this sample.${qb ? ` ${qb[0]} throws for ${n0(qb[1].passYds)} a game; this is a harder day to get there.` : ""}`, brief: `${the(foe.name)} shut down the pass (${n0(foe.oppPassYds)} allowed)` });
-    if (rush >= 20) out.push({ w: rush / 8, player: back && back[0], bare: `${The(foe.name)} allow ${n0(foe.oppRushYds)} rushing yards a game, ${n0(rush)} over this sample.`, text: `${The(foe.name)} allow ${n0(foe.oppRushYds)} rushing yards a game, ${n0(rush)} over this sample.${back ? ` ${back[0]} gets ${n1(back[1].rushAtt)} carries for ${n0(back[1].rushYds)} yards.` : ""}`, brief: `${the(foe.name)} give up ${n0(foe.oppRushYds)} rushing yards a game` });
-    else if (rush <= -20) out.push({ w: -rush / 10, player: back && back[0], bare: `${The(foe.name)} allow only ${n0(foe.oppRushYds)} rushing yards a game, ${n0(-rush)} under this sample.`, text: `${The(foe.name)} allow only ${n0(foe.oppRushYds)} rushing yards a game, ${n0(-rush)} under this sample.${back ? ` ${back[0]} averages ${n0(back[1].rushYds)}; the ground is harder here.` : ""}`, brief: `${the(foe.name)} stop the run (${n0(foe.oppRushYds)} allowed)` });
+    if (pass >= MATCHUP_STEP.pass) out.push({ w: pass / 10, text: `${The(foe.name)} allow ${n0(foe.oppPassYds)} passing yards a game, ${n0(pass)} over this sample.${qb ? ` ${qb[0]} throws for ${n0(qb[1].passYds)} a game, so his yards have room.` : ""}`, brief: `${the(foe.name)} give up ${n0(foe.oppPassYds)} passing yards a game` });
+    else if (pass <= -MATCHUP_STEP.pass) out.push({ w: -pass / 12, text: `${The(foe.name)} allow only ${n0(foe.oppPassYds)} passing yards a game, ${n0(-pass)} under this sample.${qb ? ` ${qb[0]} throws for ${n0(qb[1].passYds)} a game; this is a harder day to get there.` : ""}`, brief: `${the(foe.name)} shut down the pass (${n0(foe.oppPassYds)} allowed)` });
+    if (rush >= MATCHUP_STEP.rush) out.push({ w: rush / 8, player: back && back[0], bare: `${The(foe.name)} allow ${n0(foe.oppRushYds)} rushing yards a game, ${n0(rush)} over this sample.`, text: `${The(foe.name)} allow ${n0(foe.oppRushYds)} rushing yards a game, ${n0(rush)} over this sample.${back ? ` ${back[0]} gets ${n1(back[1].rushAtt)} carries for ${n0(back[1].rushYds)} yards.` : ""}`, brief: `${the(foe.name)} give up ${n0(foe.oppRushYds)} rushing yards a game` });
+    else if (rush <= -MATCHUP_STEP.rush) out.push({ w: -rush / 10, player: back && back[0], bare: `${The(foe.name)} allow only ${n0(foe.oppRushYds)} rushing yards a game, ${n0(-rush)} under this sample.`, text: `${The(foe.name)} allow only ${n0(foe.oppRushYds)} rushing yards a game, ${n0(-rush)} under this sample.${back ? ` ${back[0]} averages ${n0(back[1].rushYds)}; the ground is harder here.` : ""}`, brief: `${the(foe.name)} stop the run (${n0(foe.oppRushYds)} allowed)` });
     if (foe.sacks >= base.sacks + 0.8 && team.sacked >= base.sacked) out.push({ w: 2 + foe.sacks - base.sacks, text: `${The(foe.name)} get ${n1(foe.sacks)} sacks a game, and ${the(team.name)} give up ${n1(team.sacked)}. Pressure cuts into ${qb ? `${qb[0]}'s` : "the"} passing yards.`, brief: `${the(foe.name)} pass rush meets a line that gives up sacks` });
     if (team.to >= base.to + 0.6 && foe.takes >= base.takes + 0.4) out.push({ w: 2, text: `${The(team.name)} turn it over ${n1(team.to)} times a game, and ${the(foe.name)} take it away ${n1(foe.takes)} times. Short fields help ${the(foe.name)} score.`, brief: `${the(team.name)} give the ball away` });
   });
@@ -68,7 +70,7 @@ function passRun(boxes, outs) {
 
 function matchups(boxes, outs) {
   const out = [], { away, home, base, meet } = boxes;
-  const label = { WR: "wide receivers", TE: "tight ends", RB: "running backs" }, edge = { WR: 20, TE: 12, RB: 20 };
+  const label = { WR: "wide receivers", TE: "tight ends", RB: "running backs" }, edge = { WR: MATCHUP_STEP.recWr, TE: MATCHUP_STEP.recTe, RB: MATCHUP_STEP.recRb };
   [[away, home, "away"], [home, away, "home"]].forEach(([team, foe, side]) => {
     const outSet = gone(outs, side);
     ["WR", "TE", "RB"].forEach((key) => {

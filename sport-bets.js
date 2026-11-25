@@ -2,6 +2,7 @@
 
 const { goodProps, ticketsFrom, propRecords } = require("./script-bets");
 const { iceGroup, footGroup } = require("./sport-boxes");
+const { matchupPoints, MATCHUP_STEP } = require("./bet-kind");
 
 const STATS = {
   NFL: [
@@ -38,7 +39,11 @@ function readProp(sport, row) {
 }
 
 function reasons(sport, foe, base, row) {
-  const out = [], hard = [], against = {}, tail = last(foe.name);
+  const out = [], hard = [], against = {}, shifts = {}, tail = last(foe.name);
+  const put = (key, gap, step, note) => {
+    const points = matchupPoints(gap, step);
+    if (points) shifts[key] = { points, note };
+  };
   const check = (key, have, usual, step, noun, who) => {
     if (!Number.isFinite(have) || !Number.isFinite(usual)) return;
     const gap = have - usual;
@@ -50,13 +55,28 @@ function reasons(sport, foe, base, row) {
     if (WHO[group]) { check("recYds", slot.recYds, mid.recYds, 12, "receiving yards", WHO[group]); check("rec", slot.rec, mid.rec, 1.2, "catches", WHO[group]); }
     check("rushYds", foe.oppRushYds, base.oppRushYds, 15, "rushing yards");
     check("passYds", foe.oppPassYds, base.oppPassYds, 20, "passing yards");
+    const pass = foe.oppPassYds - base.oppPassYds;
+    put("passYds", pass, MATCHUP_STEP.pass, `${tail}' pass defense`);
+    put("passTd", pass, MATCHUP_STEP.pass, `${tail}' pass defense`);
+    let rush = foe.oppRushYds - base.oppRushYds;
+    if (group === "RB" && slot.n >= 3 && Number.isFinite(slot.rushYds) && Number.isFinite(mid.rushYds) && Math.abs(slot.rushYds - mid.rushYds) >= MATCHUP_STEP.rush) rush = slot.rushYds - mid.rushYds;
+    put("rushYds", rush, MATCHUP_STEP.rush, `${tail}' run defense`);
+    if (WHO[group] && Number.isFinite(slot.recYds) && Number.isFinite(mid.recYds)) {
+      put("recYds", slot.recYds - mid.recYds, group === "WR" ? MATCHUP_STEP.recWr : MATCHUP_STEP.recTe, `${tail}' coverage`);
+      put("rec", slot.rec - mid.rec, MATCHUP_STEP.recCatch, `${tail}' coverage`);
+    }
   } else {
     const group = iceGroup(row.pos), slot = (foe.slots || {})[group] || {}, mid = (base.slots || {})[group] || {};
-    check("shots", slot.shots, mid.shots, group === "D" ? 1 : 2, "shots on goal", WHO[group]);
+    const shotStep = group === "D" ? 1 : 2;
+    check("shots", slot.shots, mid.shots, shotStep, "shots on goal", WHO[group]);
     check("goals", foe.allow, base.allow, 0.4, "goals");
     check("ast", foe.allow, base.allow, 0.4, "goals");
+    put("shots", slot.shots - mid.shots, shotStep, `${tail}' shot defense`);
+    const goals = foe.allow - base.allow;
+    put("goals", goals, 0.4, `${tail}' defense`);
+    put("ast", goals, 0.4, `${tail}' defense`);
   }
-  return { hard, against, list: out.sort((a, b) => b.w - a.w) };
+  return { hard, against, shifts, list: out.sort((a, b) => b.w - a.w) };
 }
 
 function sportBets(sport, boxes, outs, props) {

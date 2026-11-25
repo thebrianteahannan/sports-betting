@@ -1,7 +1,7 @@
 /** Posted price and the close, kept after the live list is gone. */
 
 const { kv } = require("./live-recs");
-const { edgePull } = require("./bet-kind");
+const { edgePull, matchupUse } = require("./bet-kind");
 
 const KEY = "bets/edge-prove/";
 const KEEP = 90 * 86400000;
@@ -25,7 +25,31 @@ function modelFields(pick, odds) {
   const pull = edgePull(pick && pick.hits, pick && pick.n);
   const price = implied(odds);
   if (!pull || !(price > 0 && price < 1)) return null;
-  return { model: pull.pulled, modelGap: Math.round((pull.pulled - price) * 1000) / 10, modelN: Number(pick.n), recipe: "pull" };
+  const moved = matchupUse(pull.pulled, pick && pick.matchupShift);
+  const used = moved ? moved.used : pull.pulled;
+  const shift = moved ? moved.shift : 0;
+  return { modelRaw: pull.pulled, model: used, modelGap: Math.round((used - price) * 1000) / 10, modelN: Number(pick.n), recipe: shift ? "pull+matchup" : "pull" };
+}
+
+function applyModel(row, pick, odds) {
+  const fields = modelFields(pick, odds);
+  if (!fields) return false;
+  let changed = false;
+  if (row.modelRaw == null) {
+    row.modelRaw = row.model != null && row.recipe !== "pull+matchup" ? row.model : fields.modelRaw;
+    changed = true;
+  }
+  if (fields.recipe === "pull+matchup" && row.recipe !== "pull+matchup") {
+    row.model = fields.model;
+    row.modelGap = fields.modelGap;
+    row.recipe = fields.recipe;
+    if (fields.modelN) row.modelN = fields.modelN;
+    changed = true;
+  } else if (row.model == null) {
+    Object.assign(row, fields);
+    changed = true;
+  }
+  return changed;
 }
 
 let book = null;
@@ -78,10 +102,9 @@ async function writeNote(pick, match, kickoff, mode) {
     const fields = modelFields(pick, postedOdds);
     if (fields) Object.assign(row, fields);
     changed = true;
-  } else if (row.model == null) {
+  } else {
     const postedOdds = row.postedOdds != null ? row.postedOdds : (pick.postedOdds != null ? Number(pick.postedOdds) : Number(pick.odds));
-    const fields = modelFields(pick, postedOdds);
-    if (fields) { Object.assign(row, fields); changed = true; }
+    if (applyModel(row, pick, postedOdds)) changed = true;
   }
   const kick = Date.parse(kickoff);
   const closing = mode === "close" || (mode !== "fill" && Number.isFinite(kick) && kick > Date.now() && kick - Date.now() < 3600000);
@@ -122,7 +145,7 @@ async function summary() {
   const rows = [...(await load()).values()];
   const tagged = rows.filter((row) => row.tagged);
   const ours = rows.filter((row) => Number(row.modelGap) >= OURS_AT);
-  const card = (row) => ({ label: row.label, match: row.match, postedOdds: row.postedOdds, closeOdds: row.closeOdds, beat: !!row.beat, model: row.model });
+  const card = (row) => ({ label: row.label, match: row.match, postedOdds: row.postedOdds, closeOdds: row.closeOdds, beat: !!row.beat, model: row.model, recipe: row.recipe || "" });
   const closed = (list) => list.filter((row) => row.closeOdds != null).sort((a, b) => Date.parse(b.kickoff) - Date.parse(a.kickoff)).slice(0, 40).map(card);
   return { tagged: pile(tagged), rest: pile(rows.filter((row) => !row.tagged)), ours: pile(ours), rows: closed(tagged), oursRows: closed(ours) };
 }

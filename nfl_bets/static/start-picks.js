@@ -523,7 +523,7 @@ function startRecCard(board, pick, index) {
   actions.append(
     Object.assign(document.createElement("span"), { className: "desk-rec-bet", textContent: "Bet it", title: "Bet it" }),
     typeof recMoreSlider === "function" ? recMoreSlider(board, pick) : Object.assign(document.createElement("span"), { className: "desk-rec-info", textContent: "More info", title: "More info" }),
-    Object.assign(document.createElement("span"), { className: "desk-rec-team", textContent: "Team", title: "Team page" })
+    Object.assign(document.createElement("span"), { className: "desk-rec-team", textContent: "Matchup Page", title: "Matchup Page" })
   );
   card.append(actions);
   card.addEventListener("click", (event) => {

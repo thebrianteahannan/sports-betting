@@ -5,7 +5,7 @@ const STATS = {
   "pts + reb": ["pts", "reb"], "pts + ast": ["pts", "ast"], "pts + reb + ast": ["pts", "reb", "ast"], "reb + ast": ["reb", "ast"],
 };
 const WORDS = { points: "points", rebounds: "rebounds", assists: "assists", threes: "threes", "made threes": "threes", "pts + reb": "points + rebounds", "pts + ast": "points + assists", "pts + reb + ast": "points + rebounds + assists", "reb + ast": "rebounds + assists" };
-const { betKind, betTag, betRole, betCushion, betCushionInfo, edgeGap } = require("./bet-kind");
+const { betKind, betTag, betRole, betCushion, betCushionInfo, edgeGap, matchupPoints, matchupUse } = require("./bet-kind");
 const KINDS = "Points|Rebounds|Assists|Made Threes|Threes|Pts \\+ Reb \\+ Ast|Pts \\+ Reb|Pts \\+ Ast|Reb \\+ Ast";
 
 function n1(value) { return Number.isFinite(value) ? (Math.round(value * 10) / 10).toFixed(1).replace(/\.0$/, "") : ""; }
@@ -28,14 +28,18 @@ function readProp(row) {
 function reasons(team, foe, base, one, outs, both) {
   const out = [], slot = foe.slots[one.group] || {}, mid = base.slots[one.group] || {}, row = team.players[one.name] || {};
   const label = { G: "guards", F: "forwards", C: "centers" }[one.group] || "starters";
-  const loose = foe.oppFta - base.oppFta, hard = [], against = {};
+  const loose = foe.oppFta - base.oppFta, hard = [], against = {}, shifts = {};
+  const put = (key, gap, step, note) => { const points = matchupPoints(gap, step); if (points) shifts[key] = { points, note }; };
+  const defense = `${last(foe.name)}' defense`;
   if (one.starter && slot.n >= 5) [["pts", 1.5, "points"], ["reb", 0.7, "rebounds"], ["ast", 0.5, "assists"]].forEach(([key, step, word]) => {
     const gap = slot[key] - mid[key];
     if (!Number.isFinite(gap)) return;
+    put(key, gap, step, defense);
     if (gap <= -step) { hard.push(key); against[key] = `The ${last(foe.name)} hold starting ${label} to ${n1(slot[key])} ${word} a night, ${n1(-gap)} under usual.`; }
     else if (gap >= step) out.push({ uses: key, w: gap / step, text: `The ${last(foe.name)} allow ${n1(slot[key])} ${word} a night to starting ${label}, ${n1(gap)} more than usual.` });
   });
   const threes = foe.oppTpa - base.oppTpa, paint = foe.oppPaint - base.oppPaint;
+  put("tpm", threes, 2, `${last(foe.name)}' three-point defense`);
   if (threes <= -2) { hard.push("tpm"); against.tpm = `The ${last(foe.name)} hold opponents to ${n1(foe.oppTpa)} threes a game, ${n1(-threes)} under usual.`; }
   else if (threes >= 2) out.push({ uses: "tpm", w: threes / 1.5, text: `The ${last(foe.name)} let opponents take ${n1(foe.oppTpa)} threes a game, ${n1(threes)} more than usual.` });
   if (paint >= 4 && one.group !== "G") out.push({ uses: "pts", w: paint / 3, text: `The ${last(foe.name)} give up ${n1(foe.oppPaint)} points in the paint, ${n1(paint)} more than usual.` });
@@ -43,7 +47,7 @@ function reasons(team, foe, base, one, outs, both) {
   const gone = outs.find((item) => item.next === one.name && /out|injured/.test(item.status) && (team.players[item.name] || {}).min >= 20);
   if (gone) out.push({ uses: "", w: 3, text: `${gone.name} is out, and his ${n1(team.players[gone.name].min)} minutes go to ${last(one.name)}.` });
   if (both) out.push({ uses: "", w: 1, text: "Both teams run, so every counting stat gets extra trips." });
-  return { hard, against, list: out.sort((a, b) => b.w - a.w) };
+  return { hard, against, shifts, list: out.sort((a, b) => b.w - a.w) };
 }
 
 function goodProps(rows, log, read, loose, star) {
@@ -58,7 +62,8 @@ function goodProps(rows, log, read, loose, star) {
     const chance = (hits + 0.5) / (log.length + 1), need = 1 / dec(odds), edge = chance - need;
     if (hits / log.length < (loose ? 0.55 : 0.6) || edge < (loose ? 0 : 0.02)) return;
     const score = edge + 0.25 * chance + (why ? 0.1 + Math.min(why.w, 4) * 0.02 : 0);
-    found.push({ text: prop.text, stat: prop.stat, keys, word: prop.word, reach: prop.need, avg: sums.reduce((a, b) => a + b, 0) / sums.length, odds: Number(odds), label, market, hits, n: log.length, chance, need, edge, score, why: why ? why.text : "", against });
+    const picked = ((read.shifts && keys.map((key) => read.shifts[key]).filter((item) => item && item.points)) || []).sort((a, b) => Math.abs(b.points) - Math.abs(a.points))[0];
+    found.push({ text: prop.text, stat: prop.stat, keys, word: prop.word, reach: prop.need, avg: sums.reduce((a, b) => a + b, 0) / sums.length, odds: Number(odds), label, market, hits, n: log.length, chance, need, edge, score, why: why ? why.text : "", against, matchupShift: picked ? picked.points : 0, matchupNote: picked ? picked.note : "" });
   });
   return found.sort((a, b) => b.score - a.score);
 }
@@ -74,11 +79,14 @@ function propRecords(rows, log) {
 
 function sign(odds) { return odds > 0 ? `+${odds}` : String(odds); }
 
-function pullClause(n, used, gap) {
-  const head = `${n} games get pulled toward 50% by adding 20 games at that rate, and the chance we use is ${pct(used)}`;
+function pullClause(n, pulled, used, gap, shift, note) {
   const games = Number(n) === 1 ? "game" : "games";
-  if (gap >= 10) return `${head}. That chance sits ${n1(gap)} points above the price. The sample is ${n} ${games}, and the defense is not in the number. A gap this wide is a broken input.`;
-  if (gap >= 3) return `${head}. That chance sits ${n1(gap)} points above the price. The sample is ${n} ${games}, and the defense is not in the number.`;
+  const move = shift ? ` The ${note || "matchup"} ${shift < 0 ? `takes ${n1(Math.abs(shift))} points off it` : `adds ${n1(shift)} points`}, and the chance we use is ${pct(used)}` : "";
+  const head = shift
+    ? `${n} games get pulled toward 50% by adding 20 games at that rate, to ${pct(pulled)}.${move}`
+    : `${n} games get pulled toward 50% by adding 20 games at that rate, and the chance we use is ${pct(used)}`;
+  if (gap >= 10) return `${head}. That chance sits ${n1(gap)} points above the price. The sample is ${n} ${games}. A gap this wide is a broken input.`;
+  if (gap >= 3) return shift ? `${head}. That chance sits ${n1(gap)} points above the price.` : `${head}. That chance sits ${n1(gap)} points above the price. The sample is ${n} ${games}.`;
   if (gap > 0.05) return `${head}, which sits ${n1(gap)} points above the price.`;
   if (gap < -0.05) return `${head}, which comes up ${n1(Math.abs(gap))} points short of the price.`;
   return `${head}, which lands on the price.`;
@@ -87,13 +95,16 @@ function pullClause(n, used, gap) {
 function howPick(pick) {
   const rate = pick.hits / pick.n;
   const row = edgeGap(pick.hits, pick.n, pick.need);
-  const used = row ? row.pulled : rate;
-  const gap = row ? row.gap : (used - Number(pick.need)) * 100;
+  const base = row ? row.pulled : rate;
+  const moved = matchupUse(base, pick.matchupShift);
+  const used = moved ? moved.used : base;
+  const price = row ? row.price : Number(pick.need);
+  const gap = Math.round((used - price) * 1000) / 10;
   const needN = Number(pick.need);
   const fairGap = pick.fairEx && pick.fair > 0 && pick.fair < 1 && pick.fairBooks >= 2 && needN > 0 && needN < 1 ? (pick.fair - needN) * 100 : null;
   const fairLeft = fairGap == null ? "" : fairGap > 0.05 ? ` This price is ${n1(fairGap)} points better than those books.` : fairGap < -0.05 ? ` This price is ${n1(Math.abs(fairGap))} points short of those books.` : " This price lands on those books.";
   const fairBit = fairGap == null ? "" : ` The other books, with FanDuel left out and the juice removed, put it at ${pct(pick.fair)} across ${pick.fairBooks} books.${fairLeft}`;
-  const pulled = ` ${pullClause(pick.n, used, gap)}${fairBit}`;
+  const pulled = ` ${pullClause(pick.n, base, used, gap, moved && moved.shift, pick.matchupNote)}${fairBit}`;
   const role = pick.role === "solid"
     ? (pick.starter ? " He starts and his minutes have held, so the opportunity is locked in." : " His minutes have held without a start, so the opportunity looks steady.")
     : pick.role === "thin"

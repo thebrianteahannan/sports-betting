@@ -94,6 +94,16 @@ function edgePull(hits, n) {
   return { raw: h / games, pulled: (h + 10) / (games + 20) };
 }
 
+function matchupUse(pulled, shift) {
+  const base = Number(pulled);
+  if (!(base > 0 && base < 1)) return null;
+  const points = Number(shift);
+  if (!Number.isFinite(points) || Math.abs(points) < 0.05) return { pulled: base, used: base, shift: 0 };
+  const capped = Math.max(-3, Math.min(3, Math.round(points * 10) / 10));
+  const used = Math.round(Math.min(0.99, Math.max(0.01, base + capped / 100)) * 1000) / 1000;
+  return { pulled: base, used, shift: capped };
+}
+
 function edgeGap(hits, n, need, odds) {
   const pull = edgePull(hits, n);
   let price = null;
@@ -139,12 +149,16 @@ function fairLine(pick) {
   return ` The other books, with FanDuel left out and the juice removed, put it at ${(fair * 100).toFixed(1)}% across ${books} books. ${left}`;
 }
 
-function pullClause(n, pulled, gap) {
+function pullClause(n, pulled, used, gap, shift, note) {
   const n1 = (value) => (Math.abs(value - Math.round(value)) < 0.05 ? String(Math.round(value)) : value.toFixed(1));
-  const head = `${n} games get pulled toward 50% by adding 20 games at that rate, and the chance we use is ${(pulled * 100).toFixed(1)}%`;
+  const pct = (value) => `${(value * 100).toFixed(1)}%`;
   const games = Number(n) === 1 ? "game" : "games";
-  if (gap >= 10) return `${head}. That chance sits ${n1(gap)} points above the price. The sample is ${n} ${games}, and the defense is not in the number. A gap this wide is a broken input.`;
-  if (gap >= 3) return `${head}. That chance sits ${n1(gap)} points above the price. The sample is ${n} ${games}, and the defense is not in the number.`;
+  const move = shift ? ` The ${note || "matchup"} ${shift < 0 ? `takes ${n1(Math.abs(shift))} points off it` : `adds ${n1(shift)} points`}, and the chance we use is ${pct(used)}` : "";
+  const head = shift
+    ? `${n} games get pulled toward 50% by adding 20 games at that rate, to ${pct(pulled)}.${move}`
+    : `${n} games get pulled toward 50% by adding 20 games at that rate, and the chance we use is ${pct(used)}`;
+  if (gap >= 10) return `${head}. That chance sits ${n1(gap)} points above the price. The sample is ${n} ${games}. A gap this wide is a broken input.`;
+  if (gap >= 3) return shift ? `${head}. That chance sits ${n1(gap)} points above the price.` : `${head}. That chance sits ${n1(gap)} points above the price. The sample is ${n} ${games}.`;
   if (gap > 0.05) return `${head}, which sits ${n1(gap)} points above the price.`;
   if (gap < -0.05) return `${head}, which comes up ${n1(Math.abs(gap))} points short of the price.`;
   return `${head}, which lands on the price.`;
@@ -154,9 +168,12 @@ function edgeHow(pick) {
   let how = String((pick && pick.how) || "").trim();
   const row = pick && edgeGap(pick.hits, pick.n, pick.need, pick.odds);
   if (!row) return pick && pick.fairEx ? `${how}${fairLine(pick)}`.trim() : how;
-  const clause = pullClause(pick.n, row.pulled, row.gap);
-  const oldPull = /\d+ games get pulled toward 50% by adding 20 games at that rate, and the chance we use is [\d.]+%, which (?:still clears the price by [\d.]+ points|comes up [\d.]+ points short of the price|lands on the price)\. That chance is the pulled record\. It does not include the defense\./;
-  if (oldPull.test(how)) how = how.replace(oldPull, clause);
+  const moved = matchupUse(row.pulled, pick.matchupShift);
+  const used = moved ? moved.used : row.pulled;
+  const gap = Math.round((used - row.price) * 1000) / 10;
+  const clause = pullClause(pick.n, row.pulled, used, gap, moved && moved.shift, pick.matchupNote);
+  const block = /\d+ games get pulled toward 50% by adding 20 games at that rate[\s\S]*?(?=\s+The other books|\s+The script backs|\s+The matchup works|\s+He starts|\s+His minutes|\s+Cushion:|$)/;
+  if (block.test(how)) how = how.replace(block, clause);
   else if (!/pulled toward 50%/.test(how)) {
     if (/clears the price by [\d.]+ percentage points/.test(how)) how = how.replace(/,?\s*so his record clears the price by [\d.]+ percentage points\.?/, `. ${clause}`);
     else how = how ? `${how} ${clause}` : clause;

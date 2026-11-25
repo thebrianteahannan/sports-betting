@@ -52,7 +52,7 @@ function edgeProveHtml(data) {
     return edgeProveCard(row.label, say, row.match);
   }).join("");
   const oursCards = (data && data.oursRows || []).map((row) => {
-    const say = `Our number ${edgeProvePct(row.model)}. FanDuel ${edgeProvePct(edgeProveImplied(row.postedOdds))}. Posted ${edgeProvePrice(row.postedOdds)}. Close ${edgeProvePrice(row.closeOdds)}.${row.beat ? " Beat the close." : ""}`;
+    const say = `Our number ${edgeProvePct(row.model)}. FanDuel ${edgeProvePct(edgeProveImplied(row.postedOdds))}. Posted ${edgeProvePrice(row.postedOdds)}. Close ${edgeProvePrice(row.closeOdds)}.${row.recipe === "pull+matchup" ? " The matchup is in that number." : ""}${row.beat ? " Beat the close." : ""}`;
     return edgeProveCard(row.label, say, row.match);
   }).join("");
   return `${lead}${cards}${oursCards}`;

@@ -87,6 +87,27 @@ function edgePull(hits, n) {
   return { raw: h / games, pulled: (h + 10) / (games + 20) };
 }
 
+/** One step of the matchup the stories already measure moves an over by 1 point, and the move stops at 3. */
+const MATCHUP_STEP = { pass: 25, rush: 20, recWr: 20, recTe: 12, recRb: 20, recCatch: 1.2 };
+const MATCHUP_CAP = 3;
+
+function matchupPoints(gap, step) {
+  const g = Number(gap), s = Number(step);
+  if (!Number.isFinite(g) || !(s > 0) || Math.abs(g) < s) return 0;
+  const points = Math.round((g / s) * 10) / 10;
+  return Math.max(-MATCHUP_CAP, Math.min(MATCHUP_CAP, points));
+}
+
+function matchupUse(pulled, shift) {
+  const base = Number(pulled);
+  if (!(base > 0 && base < 1)) return null;
+  const points = Number(shift);
+  if (!Number.isFinite(points) || Math.abs(points) < 0.05) return { pulled: base, used: base, shift: 0 };
+  const capped = Math.max(-MATCHUP_CAP, Math.min(MATCHUP_CAP, Math.round(points * 10) / 10));
+  const used = Math.round(Math.min(0.99, Math.max(0.01, base + capped / 100)) * 1000) / 1000;
+  return { pulled: base, used, shift: capped };
+}
+
 function edgeGap(hits, n, need, odds) {
   const pull = edgePull(hits, n);
   let price = null;
@@ -104,4 +125,4 @@ function edgeGap(hits, n, need, odds) {
   return { ...pull, price, gap: Math.round((pull.pulled - price) * 1000) / 10 };
 }
 
-module.exports = { betKind, betTag, betCash, betRole, betCushion, betCushionInfo, edgePull, edgeGap };
+module.exports = { betKind, betTag, betCash, betRole, betCushion, betCushionInfo, edgePull, edgeGap, matchupPoints, matchupUse, MATCHUP_STEP };
