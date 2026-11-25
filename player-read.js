@@ -127,12 +127,29 @@ function hoop(rows, names, before) {
   return { line: line.filter(Boolean).join(" "), stats };
 }
 
+function playLine(throws, runs, pass, rush) {
+  const carriesN = Number(runs) || 0;
+  if (throws > 0) {
+    const share = Math.round((throws / (throws + carriesN)) * 100);
+    const t = String(Math.round(throws)), c = shown(carriesN);
+    if (carriesN >= throws) return `He runs more than he throws, ${c} carries and ${t} throws a game.`;
+    if (share >= 85) return `He throws on ${share}% of his plays, ${t} a game, and runs ${c} times.`;
+    return `He throws on ${share}% of his plays and runs the other ${100 - share}%, ${t} throws and ${c} carries a game.`;
+  }
+  const ground = Number(rush) || 0;
+  const air = Number(pass) || 0;
+  if (!(air > 0)) return "";
+  const share = Math.round((air / (air + ground)) * 100);
+  return ground >= 20 ? `Passing is ${share}% of his yards, ${shown(air)} through the air and ${shown(ground)} on the ground.` : `Passing is ${share}% of his yards, ${shown(air)} a game. He adds ${shown(ground)} rushing.`;
+}
+
 function ball(rows, names) {
   const pass = mean(rows, names, "passingYards"), rush = mean(rows, names, "rushingYards"), rec = mean(rows, names, "receivingYards");
   const carries = mean(rows, names, "rushingAttempts"), catches = mean(rows, names, "receptions"), targets = mean(rows, names, "receivingTargets");
   const passTd = mean(rows, names, "passingTouchdowns"), rushTd = mean(rows, names, "rushingTouchdowns"), recTd = mean(rows, names, "receivingTouchdowns");
+  const throws = mean(rows, names, "passingAttempts");
   let line = "";
-  if (pass >= 150) line = rush >= 20 ? "He throws it, and he runs when the pocket breaks." : "He throws it. The yards come through the air.";
+  if (pass >= 150) line = playLine(throws, carries, pass, rush);
   else if (rush >= 35 && rec >= 20) line = "He runs and he catches. The touches come both ways.";
   else if (rush >= (rec || 0) && rush >= 30) line = "He is the runner. The yards come on the ground.";
   else if (rec >= 30 && catches > 0) {

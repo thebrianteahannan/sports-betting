@@ -519,12 +519,9 @@ function startRecCard(board, pick, index) {
   card.title = "Show the player";
   const actions = document.createElement("span");
   actions.className = "desk-rec-go";
-  const info = Object.assign(document.createElement("span"), { className: "desk-rec-info", textContent: "More info", title: "More info" });
-  info.setAttribute("role", "button");
-  info.setAttribute("aria-expanded", "false");
   actions.append(
     Object.assign(document.createElement("span"), { className: "desk-rec-bet", textContent: "Bet it", title: "Bet it" }),
-    info,
+    typeof recMoreSlider === "function" ? recMoreSlider(board, pick) : Object.assign(document.createElement("span"), { className: "desk-rec-info", textContent: "More info", title: "More info" }),
     Object.assign(document.createElement("span"), { className: "desk-rec-team", textContent: "Team", title: "Team page" })
   );
   card.append(actions);
@@ -535,8 +532,8 @@ function startRecCard(board, pick, index) {
     if (go) { card.querySelectorAll(".desk-rec-ask").forEach((node) => node.remove()); startBetGo(board, pick, go.dataset.betGo); return; }
     if (event.target.closest(".desk-rec-team")) { startTeam(board, pick); return; }
     if (event.target.closest(".desk-rec-bet")) { startBetAsk(board, pick, card); return; }
-    if (event.target.closest(".desk-rec-info")) { startCard(board, pick, card); return; }
-    if (event.target.closest(".desk-rec-ask, .desk-rec-more, .desk-rec-go, .desk-rec-tag-why")) return;
+    if (event.target.closest(".desk-rec-ask, .desk-rec-more, .desk-rec-go, .desk-rec-tag-why, .desk-rec-slide")) return;
+    if (typeof recMoreStep === "function") { recMoreStep(board, pick, card); return; }
     startCard(board, pick, card);
   });
   return card;

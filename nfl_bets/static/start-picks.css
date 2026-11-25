@@ -306,6 +306,12 @@ button.rec-dial-next[hidden] { display: none !important; }
 :is(#desk-glass-in .find-start, #desk-games) .desk-rec-ask [data-bet-go="new"] { background: transparent; color: #3dff6e; }
 :is(#desk-glass-in .find-start, #desk-games) .desk-rec .desk-rec-more { grid-column: 1 / -1; margin-top: 0.35rem; padding-top: 0.4rem; border-top: 1px solid rgba(255, 255, 255, 0.1); cursor: default; }
 :is(#desk-glass-in .find-start, #desk-games) .desk-rec .desk-rec-more .find-card { margin: 0; }
+:is(#desk-glass-in .find-start, #desk-games) .desk-rec-slide { display: inline-flex; align-items: center; width: 5.6rem; height: 1.7rem; margin: 0; cursor: pointer; }
+:is(#desk-glass-in .find-start, #desk-games) .desk-rec-slide .row-slide { width: 100%; min-width: 0; height: 1.7rem; }
+:is(#desk-glass-in .find-start, #desk-games) .desk-rec-slide .row-slide > b { width: 16px; height: 16px; }
+:is(#desk-glass-in .find-start, #desk-games) .desk-rec-more[data-level="1"] :is(.find-card, .desk-rec-script),
+:is(#desk-glass-in .find-start, #desk-games) .desk-rec-more[data-level="2"] .desk-rec-script { display: none; }
+:is(#desk-glass-in .find-start, #desk-games) .desk-rec-script p { margin: 0.45rem 0 0; color: #f4f7fb; font-size: 13px; font-weight: 600; line-height: 1.4; text-align: left; }
 
 #start-random { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, 0.72); }
 #start-random .start-random-card { position: relative; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; width: min(520px, 100%); max-height: min(82vh, 640px); padding: 18px 16px 16px; border: 1px solid rgba(61, 255, 110, 0.5); border-radius: 14px; background: #07090e; box-shadow: 0 0 24px rgba(61, 255, 110, 0.2); color: #f4f7fb; }
