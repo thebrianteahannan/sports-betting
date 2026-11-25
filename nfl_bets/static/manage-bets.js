@@ -194,13 +194,14 @@ function manageLegRead(leg) {
 
 function managePickOf(leg) {
   if (!leg || typeof homeRecs === "undefined" || !homeRecs) return null;
-  const picks = [homeRecs.golden, ...(homeRecs.picks || [])].filter(Boolean);
-  const label = String(leg.label || "");
-  const market = String(leg.market || "");
-  const match = String(leg.match || "");
-  return picks.find((pick) => pick.label === label && String(pick.market || "") === market && (!match || !pick.match || pick.match === match))
-    || picks.find((pick) => pick.label === label && (!match || !pick.match || pick.match === match))
-    || null;
+  const picks = [homeRecs.golden, homeRecs.silver, homeRecs.bronze, ...(homeRecs.picks || [])].filter(Boolean);
+  const label = String(leg.label || ""), market = String(leg.market || ""), match = String(leg.match || "");
+  const game = (pick) => !match || !pick.match || pick.match === match;
+  const hit = picks.find((pick) => pick.label === label && String(pick.market || "") === market && game(pick)) || picks.find((pick) => pick.label === label && game(pick));
+  if (hit) return hit;
+  const fold = (text) => String(text || "").toLowerCase().replace(/\btouchdowns\b/g, "tds").replace(/\btouchdown\b/g, "td").replace(/\byards\b/g, "yds").replace(/[^a-z0-9.]+/g, " ").replace(/\s+/g, " ").trim();
+  const want = fold(`${label} ${market}`).split(" ").filter((word) => word.length > 1 && !/^(over|under|alt|player)$/.test(word));
+  return want.length ? picks.find((pick) => game(pick) && want.every((word) => fold(`${pick.label} ${pick.market}`).includes(word))) || null : null;
 }
 
 function manageTags(legs) {
@@ -216,8 +217,10 @@ function manageTags(legs) {
     const tags = typeof scriptPickTags === "function" ? scriptPickTags(pick) : "";
     const how = String(pick.how || "").trim();
     const rec = pick.tier === "good" ? "" : `<i class="manage-rec">Recommended</i>`;
-    row.innerHTML = `${rec}${tags}${how ? `<span class="manage-how">${esc(how)}</span>` : ""}`;
+    const edge = typeof manageEdgeTag === "function" ? manageEdgeTag(pick) : "";
+    row.innerHTML = `${rec}${tags}${edge}${how ? `<span class="manage-how">${esc(how)}</span>` : ""}`;
     if (row.textContent.trim()) box.append(row);
+    if (typeof recMoreAttach === "function") recMoreAttach(pick, box);
   });
   if (!box.childElementCount) box.hidden = true;
   box.addEventListener("click", (event) => event.stopPropagation());
@@ -299,8 +302,6 @@ function manageLegLine(leg, legs, byKey) {
   const bits = manageLegRead(leg);
   const role = byKey && byKey.get(typeof parlayKey === "function" ? parlayKey(leg) : "");
   const pick = managePickOf(leg);
-  const say = pick && typeof scriptKindSay === "function" ? scriptKindSay(pick) : null;
-  const ticket = pick && (pick.golden ? "Golden" : pick.silver ? "Silver" : pick.bronze ? "Bronze" : "");
   const spot = manageSpot(bits.who);
   const line = document.createElement("div");
   line.className = "find-chose";
@@ -313,9 +314,7 @@ function manageLegLine(leg, legs, byKey) {
     bits.odds && `<i class="px">${esc(bits.odds)}</i>`,
     bits.pct && `<i class="pct">${esc(bits.pct)}</i>`,
     role && MANAGE_ROLE[role.role] && !(legs.length < 2 && role.role === "anchor") && `<i class="leg-role r-${esc(role.role)}">${esc(MANAGE_ROLE[role.role])}</i>`,
-    (ticket || say) && `<i class="find-rec-pill${ticket ? ` ticket ${ticket.toLowerCase()}` : pick.tier === "good" ? " good" : ""}">${ticket ? esc(`${ticket} Ticket`) : pick.tier === "good" ? "Good bet" : `Recommended<i class="kind"> · ${esc(say.text)}</i>`}</i>`,
-    pick && typeof scriptRoleTag === "function" ? scriptRoleTag(pick) : "",
-    pick && typeof scriptCushionTag === "function" ? scriptCushionTag(pick) : "",
+    pick && ((typeof scriptGoldenTag === "function" && scriptGoldenTag(pick)) || (pick.tier !== "good" ? `<i class="manage-rec">Recommended</i>` : "")),
   ].filter(Boolean).join("");
   line.append(said);
   if (typeof manageLegEdit === "function") manageLegEdit(line, said, leg);
@@ -390,6 +389,7 @@ function manageCard(row, n) {
   const roles = typeof legRoles === "function" ? legRoles(legs) : [];
   const byKey = new Map(roles.map((item) => [typeof parlayKey === "function" ? parlayKey(item.bet) : "", item]));
   legs.forEach((leg) => legsBox.append(manageLegLine(leg, legs, byKey)));
+  legsBox.append(manageTags(legs));
   const fold = legs.length > 1 ? manageFold(legs, odds, pct, pay, byKey) : null;
   const open = document.createElement("button");
   open.type = "button";
@@ -410,7 +410,7 @@ function manageCard(row, n) {
   const num = document.createElement("b");
   num.className = "manage-n";
   num.textContent = String(n);
-  card.append(num, legsBox, acts, manageTags(legs), manageSlip(row));
+  card.append(num, legsBox, acts, manageSlip(row));
   if (fold) card.insertBefore(fold, acts);
   if (typeof bankCard === "function") bankCard(card, row);
   const openBet = () => {

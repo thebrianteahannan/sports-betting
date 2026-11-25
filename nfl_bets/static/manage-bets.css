@@ -376,6 +376,7 @@
   .manage-board .find-chose i.prop { flex: 0 0 auto; max-width: 100%; overflow: visible; text-overflow: clip; white-space: nowrap; }
   .manage-board .find-chose i.find-rec-pill { flex: 0 1 auto; max-width: 100%; height: auto; white-space: normal; }
   .manage-board .manage-legs:has(.manage-bet-price) .find-chose,
+  .manage-board .manage-legs:has(.manage-bet-price) > .manage-tags,
   .manage-board .manage-fold-legs { margin-left: 0; padding-left: 0.45rem; }
 }
 .manage-board .find-chose i.px { order: -2; min-width: 3.4em; color: #3dff6e; font-weight: 700; }
@@ -394,14 +395,20 @@
 .manage-board .find-chose i.find-rec-pill.ticket.bronze { background: #d0894f; color: #1a1006; }
 .manage-board .find-chose i.find-rec-pill.good { background: transparent; border: 1px dashed #c4cde0; color: #c4cde0; }
 .manage-board .find-chose i.find-rec-pill.good::before { display: none; }
+.manage-board .find-chose :is(.desk-rec-golden-tag, .desk-rec-silver-tag, .desk-rec-bronze-tag, .desk-rec-edge) { display: inline-block; align-self: center; margin: 0; padding: 0 0.45rem; border-radius: 999px; font-size: 0.66rem; font-style: normal; font-weight: 800; letter-spacing: 0.03em; line-height: 1.5; text-transform: uppercase; white-space: nowrap; }
+.manage-board .find-chose .desk-rec-golden-tag { background: #e7c15a; color: #1a1400; }
+.manage-board .find-chose .desk-rec-silver-tag { background: #d5deea; color: #12181f; }
+.manage-board .find-chose .desk-rec-bronze-tag { background: #d0894f; color: #1a1006; }
+.manage-board .find-chose .desk-rec-edge { border: 1px solid currentColor; background: transparent; }
+.manage-board .find-chose .desk-rec-edge.m-golden { color: #e7c15a; }
+.manage-board .find-chose .desk-rec-edge.m-silver { color: #d5deea; }
+.manage-board .find-chose .desk-rec-edge.m-bronze { color: #d0894f; }
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.spot,
 .manage-card[data-manage-zoom="0"] .find-chose i.spot,
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.game,
 .manage-card[data-manage-zoom="0"] .find-chose i.game,
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill,
 .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill,
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.bet-kind,
-.manage-card[data-manage-zoom="0"] .find-chose i.bet-kind,
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.leg-role,
 .manage-card[data-manage-zoom="0"] .find-chose i.leg-role,
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .bank-kelly,
@@ -416,7 +423,9 @@
 .manage-board .manage-card:has(.manage-bet-price) { align-items: start !important; }
 #desk.tv-full #desk-glass .manage-board .manage-card:has(.manage-bet-price) > .manage-card-acts,
 .manage-board .manage-card:has(.manage-bet-price) > .manage-card-acts { align-self: start; margin-top: 0.15rem; }
-.manage-board .manage-legs:has(.manage-bet-price) .find-chose { margin-left: 0.35rem; padding-left: 0.7rem; border-left: 2px solid #1e3a2a; }
+.manage-board .manage-legs:has(.manage-bet-price) .find-chose,
+.manage-board .manage-legs:has(.manage-bet-price) > .manage-tags { margin-left: 0.35rem; padding-left: 0.7rem; border-left: 2px solid #1e3a2a; }
+.manage-board .manage-legs:has(.manage-bet-price) > .manage-tags { margin-top: -0.15rem; padding-top: 0.2rem; }
 .manage-board .manage-fold { display: none; }
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"]:has(.manage-fold) .manage-legs,
 .manage-card[data-manage-zoom="0"]:has(.manage-fold) .manage-legs { display: none !important; }
@@ -430,10 +439,8 @@
 .manage-card.editing .manage-change { display: inline-flex !important; align-items: center; width: auto !important; min-height: 0 !important; height: auto !important; margin: 0 0.2rem !important; padding: 0.05rem 0.45rem !important; border: 1px solid #3dff6e !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #3dff6e !important; font-size: 11px !important; font-weight: 800 !important; letter-spacing: 0 !important; line-height: 1.3 !important; text-transform: none !important; cursor: pointer; }
 .manage-card.editing .manage-change.on { background: #3dff6e !important; color: #04140c !important; }
 .manage-board .find-tray-swap { width: 100%; }
-#desk.tv-full #desk-glass .manage-board .manage-card > .manage-tags,
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-more,
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-inline,
-.manage-board .manage-card > .manage-tags,
 .manage-board .manage-card > .manage-more,
 .manage-board .manage-card > .manage-inline { grid-column: 1 / -1; min-width: 0; }
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="3"] .manage-tags:not([hidden]),
@@ -470,6 +477,12 @@
 }
 .manage-board .manage-rec { background: #3dff6e; color: #04140c; }
 .manage-board .manage-tags .desk-rec-golden-tag { background: #e7c15a; color: #1a1400; }
+.manage-board .manage-tags .desk-rec-silver-tag { background: #d5deea; color: #12181f; }
+.manage-board .manage-tags .desk-rec-bronze-tag { background: #d0894f; color: #1a1006; }
+.manage-board .manage-tags .desk-rec-edge { border: 1px solid currentColor; background: transparent; }
+.manage-board .manage-tags .desk-rec-edge.m-golden { color: #e7c15a; }
+.manage-board .manage-tags .desk-rec-edge.m-silver { color: #d5deea; }
+.manage-board .manage-tags .desk-rec-edge.m-bronze { color: #d0894f; }
 .manage-board .manage-how {
   flex: 1 0 100%;
   color: #d5deea;
@@ -477,6 +490,12 @@
   font-weight: 600;
   line-height: 1.35;
 }
+.manage-board .manage-tags .desk-rec-why,
+.manage-board .manage-tags .desk-rec-script { display: flex; flex-direction: column; gap: 0.28rem; }
+.manage-board .manage-tags .desk-rec-why-tag,
+.manage-board .manage-tags .desk-rec-why-nums,
+.manage-board .manage-tags .desk-rec-script p { margin: 0; color: #f4f7fb; font-size: 13px; font-weight: 600; line-height: 1.4; text-align: left; text-transform: none; letter-spacing: normal; }
+.manage-board .manage-tags .desk-rec-why-tag b { margin-right: 0.35rem; color: #e7c15a; font-weight: 800; }
 
 .manage-board .manage-slip { display: none; }
 #desk.tv-full #desk-glass .manage-board[data-manage-zoom="5"] .manage-list,

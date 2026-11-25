@@ -223,6 +223,21 @@ function manageClubs(rows) {
   });
 }
 
+function manageEdgeTag(pick) {
+  if (!pick || typeof metalEdge !== "function" || typeof findPct !== "function") return "";
+  const hits = Number(pick.hits), games = Number(pick.n), odds = Number(pick.odds);
+  if (!(games > 0) || !Number.isFinite(hits) || !Number.isFinite(odds)) return "";
+  const record = Math.round((100 * hits) / games);
+  const need = parseFloat(String(findPct(odds)).replace("%", ""));
+  if (!Number.isFinite(need)) return "";
+  const clear = Math.round((record - need) * 10) / 10;
+  const score = metalEdge(clear, odds, record / 100);
+  if (!score) return "";
+  const id = typeof metalEdgeId === "function" ? metalEdgeId(score, odds, record / 100) : "";
+  const tip = typeof EDGE_TIP === "string" ? EDGE_TIP : "";
+  return `<i class="desk-rec-edge m-${esc(id)}" title="${esc(tip)}" data-tip="${esc(tip)}">Edge ${score}</i>`;
+}
+
 function manageZoomExtra() {}
 
 function manageZoomExtras() {

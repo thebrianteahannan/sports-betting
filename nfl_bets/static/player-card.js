@@ -201,6 +201,21 @@ function recMoreLines(data, pick) {
   return fresh.slice(0, 3);
 }
 
+function recMoreAttach(pick, box) {
+  if (!pick || !box) return;
+  if (typeof startRecWhy === "function") {
+    const why = startRecWhy(pick);
+    const told = why && why.querySelector(".desk-rec-why-how");
+    if (told) told.remove();
+    if (why && why.childNodes.length) box.append(why);
+  }
+  const script = document.createElement("div");
+  script.className = "desk-rec-script";
+  box.append(script);
+  recMoreStory(pick, script);
+}
+
 window.recMoreSlider = recMoreSlider;
 window.recMoreStep = recMoreStep;
 window.recMoreSet = recMoreSet;
+window.recMoreAttach = recMoreAttach;

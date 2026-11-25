@@ -89,7 +89,8 @@ function rowSlide(input) {
   };
   row.addEventListener("pointerdown", (event) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
-    if (event.target.closest && event.target.closest("button, a")) return;
+    const press = event.target.closest && event.target.closest("button, a");
+    if (press && press !== row && row.contains(press)) return;
     held = true;
     pointer = event.pointerId;
     edgePx = (thumb.offsetWidth || 32) / 2;
