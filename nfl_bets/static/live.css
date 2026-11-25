@@ -159,7 +159,12 @@ body[data-live-zoom="0"] .live-hurt, body[data-live-zoom="1"] .live-hurt, body[d
 .live-court input { accent-color: #3dff6e; width: 15px; height: 15px; margin: 0; cursor: pointer; }
 .live-court.live-court-next { margin-left: 0; }
 body.live-mine-games .live-game:not(.has-mine),
-body.live-mine-games .live-next li:not(.has-mine) { display: none; }
+body.live-mine-games .live-next li:not(.has-mine),
+body.live-my-board .live-game:not(.has-mine),
+body.live-my-board .live-next li:not(.has-mine) { display: none; }
+body.live-my-board .live-mine.live-rec,
+body.live-my-board .live-rec-tag,
+body.live-my-board .live-rec-jump { display: none !important; }
 @media (max-width: 700px) {
   .live-top {
     display: grid; grid-template-columns: auto minmax(0, 1fr) auto;

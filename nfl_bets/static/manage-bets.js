@@ -274,9 +274,11 @@ function manageSlipLive(legs) {
 
 function manageSlipPace(leg) {
   const game = manageSlipGame([leg]);
-  if (!game || typeof liveLegRead !== "function" || typeof liveLegState !== "function") return "";
+  if (!game || game.final || typeof liveLegRead !== "function" || typeof liveLegState !== "function") return "";
   const read = liveLegState(game, liveLegRead(leg));
-  return read && read.say ? read.say : "";
+  if (!read || !read.say || !game.id) return "";
+  const pace = read.state || (read.level ? `pace-${read.level}` : "");
+  return `<a class="manage-pace ${esc(pace)}" href="${esc(`/live?${new URLSearchParams({ game: game.id, only: "1" })}`)}"${read.tip ? ` title="${esc(read.tip)}"` : ""}>${esc(read.say)}</a>`;
 }
 
 function manageSlipRec(legs) {
@@ -315,6 +317,7 @@ function manageLegLine(leg, legs, byKey) {
     bits.pct && `<i class="pct">${esc(bits.pct)}</i>`,
     role && MANAGE_ROLE[role.role] && !(legs.length < 2 && role.role === "anchor") && `<i class="leg-role r-${esc(role.role)}">${esc(MANAGE_ROLE[role.role])}</i>`,
     pick && ((typeof scriptGoldenTag === "function" && scriptGoldenTag(pick)) || (pick.tier !== "good" ? `<i class="manage-rec">Recommended</i>` : "")),
+    manageSlipPace(leg),
   ].filter(Boolean).join("");
   line.append(said);
   if (typeof manageLegEdit === "function") manageLegEdit(line, said, leg);
@@ -491,7 +494,7 @@ function manageFill(board) {
   board.append(bag);
   manageTagsWait(board);
   if (typeof trayLive !== "undefined" && trayLive.at) board.dataset.liveAt = String(trayLive.at);
-  if (manageZoom === 3 && typeof trayLiveLoad === "function") trayLiveLoad();
+  if (typeof trayLiveLoad === "function") trayLiveLoad();
   manageZoomExtra(board);
 }
 

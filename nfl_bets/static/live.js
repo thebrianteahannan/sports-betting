@@ -228,12 +228,16 @@ function liveZoomApply(next, opts) {
   const quiet = !!(opts && opts.quiet);
   liveZoom = Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(Number(next) || 0)));
   document.body.dataset.liveZoom = String(liveZoom);
-  const mine = liveZoom >= 2, all = liveZoom >= 3, recs = liveZoom >= 4, best = liveZoom === 5 || liveZoom >= 7, every = liveZoom >= 7;
+  const board = liveZoom === LIVE_ZOOM_MAX && liveSpan === "live";
+  const flipped = board !== liveBoardOn;
+  liveBoardOn = board;
+  const mine = liveZoom >= 2, all = liveZoom >= 3, recs = liveZoom >= 4 && !board, best = (liveZoom === 5 || liveZoom >= 7) && !board, every = liveZoom >= 7 && !board;
   document.body.classList.toggle("live-mine-off", !mine);
   document.body.classList.toggle("live-all-bets", all);
   document.body.classList.toggle("live-recs-on", recs);
   document.body.classList.toggle("live-recs-best", best);
   document.body.classList.toggle("live-recs-all", every);
+  document.body.classList.toggle("live-my-board", board);
   document.body.classList.toggle("live-tickets", liveZoom === 6);
   if (opts && opts.master) {
     liveCardZoom.clear();
@@ -255,7 +259,10 @@ function liveZoomApply(next, opts) {
     localStorage.setItem("liveZoom", String(liveZoom));
     localStorage.setItem("liveRecs", recs ? "1" : "0");
   } catch (error) { console.log("[live] could not keep the detail slider", error); }
+  if (flipped && liveLast && !(opts && opts.fromPaint)) livePaint(liveLast, true);
 }
+
+let liveBoardOn = false;
 
 let liveOnlyMine = false;
 try { liveOnlyMine = localStorage.getItem("liveOnlyMine") === "1"; } catch (error) {}
@@ -266,7 +273,8 @@ function liveCardSlider(more) {
 }
 
 function liveZoomSay(level) {
-  return ["Just the score", "Score and the buttons", "Locked bets", "Every saved bet", "Gold, silver, and bronze", "The best recommended bets", "Gold, silver, and bronze", "Every recommended bet, and the latest play on a live game"][level] || "";
+  const last = liveSpan === "live" ? "Your bets" : "Every recommended bet, and the latest play on a live game";
+  return ["Just the score", "Score and the buttons", "Locked bets", "Every saved bet", "Gold, silver, and bronze", "The best recommended bets", "Gold, silver, and bronze", last][level] || "";
 }
 
 function liveFilterBits() {
@@ -289,6 +297,7 @@ function liveFilterBits() {
   bits.push(liveOnlyMine ? "Only your bets" : "All games");
   const zoom = liveZoomSay(liveZoom);
   if (zoom) bits.push(zoom);
+  if (liveOnlyId) bits.push("Just this game");
   return bits;
 }
 
@@ -303,7 +312,7 @@ fetch("/api/parlays", { credentials: "same-origin" }).then((res) => res.ok ? res
 }).catch(() => {});
 
 function liveFiltersDirty() {
-  return !!(liveLeagues.size || liveOnlyMine || liveSpanChosen || liveZoom !== LIVE_ZOOM_DEFAULT);
+  return !!(liveLeagues.size || liveOnlyMine || liveSpanChosen || liveOnlyId || liveZoom > 0);
 }
 
 function liveFilterSaySync() {
@@ -331,6 +340,7 @@ function liveFilterBar(bar, filters, liveN) {
 function liveFiltersClear() {
   liveLeagues.clear();
   liveOnlyMine = false;
+  liveOnlyId = "";
   liveSpan = "";
   liveSpanHeld = false;
   liveSpanChosen = false;
@@ -339,7 +349,7 @@ function liveFiltersClear() {
     localStorage.setItem("liveLeagues", "[]");
     localStorage.setItem("liveOnlyMine", "0");
   } catch (error) {}
-  liveZoomApply(LIVE_ZOOM_DEFAULT, { master: true });
+  liveZoomApply(0, { master: true });
   if (liveLast) livePaint(liveLast, true);
 }
 
@@ -400,23 +410,28 @@ function livePaint(data, quiet) {
   const endedAll = doneAll.filter((game) => liveDayKey(game.when) === today);
   const tomorrowAll = board.filter((game) => !pgaOn(game) && liveDayKey(game.kickoff) === tomorrowKey);
   const laterAll = board.filter((game) => !pgaOn(game) && liveDayKey(game.kickoff) > tomorrowKey);
-  const live = liveOnly(liveAll), pgaLive = liveOnly(pgaAll), soon = liveOnly(soonAll), ended = liveOnly(endedAll), tomorrow = liveOnly(tomorrowAll), later = liveOnly(laterAll);
+  const soon = liveOnly(soonAll), ended = liveOnly(endedAll), tomorrow = liveOnly(tomorrowAll), later = liveOnly(laterAll);
   const upcoming = (data.week || []).length ? soon : liveOnly(nextAll);
   const none = `<p class="live-note">None of these games are in your bets.</p>`;
   const say = (n) => `${n} ${n === 1 ? "game" : "games"}`;
   const empty = (mine, all, text) => (mine && all.length ? none : `<p class="live-note">${text}</p>`);
   const final = (day, list) => list.length ? `<h2>Finished ${day}, ${say(list.length)}</h2>${livePack(list.map(liveGame).join(""))}` : "";
   const hist = ((data.tally || {}).history || []);
-  const liveCount = live.length + pgaLive.length;
   if (!liveSpanHeld) {
     const liveN = liveAll.length + pgaAll.length, nextN = (data.week || []).length ? soonAll.length : nextAll.length;
     liveSpan = nextN ? "next" : liveN ? "live" : endedAll.length ? "done" : tomorrowAll.length ? "tomorrow" : "week";
     liveSpanHeld = true;
   }
+  liveZoomApply(liveZoom, { quiet: true, fromPaint: true });
+  const mineBoard = !liveOnlyId && liveZoom === LIVE_ZOOM_MAX && liveSpan === "live";
+  const just = (list) => (list || []).filter((game) => String(game.id) === liveOnlyId);
+  const live = liveOnlyId ? just(liveAll) : (mineBoard ? liveAll.filter(liveHasMine) : liveOnly(liveAll));
+  const pgaLive = liveOnlyId ? just(pgaAll) : (mineBoard ? pgaAll.filter(liveHasMine) : liveOnly(pgaAll));
+  const liveCount = live.length + pgaLive.length;
   const bar = liveLeagueBar(data, { done: endedAll.length, live: liveAll.length + pgaAll.length, next: (data.week || []).length ? soonAll.length : nextAll.length, tomorrow: tomorrowAll.length, week: laterAll.length });
   const filters = liveFilters();
   const recap = liveOnlyMine ? "" : `<div class="live-today-recap">${liveHistory(hist.filter((row) => liveDayKey(row.kickoff) === today), true)}</div>`;
-  const liveBody = liveCount ? `<h2>Live now, ${say(liveCount)}</h2>${livePack(live.map(liveGame).join("") + pgaLive.map(liveSoonCard).join(""))}` : empty(liveOnlyMine, liveAll.concat(pgaAll), "No games are live right now.");
+  const liveBody = liveCount ? `<h2>Live now, ${say(liveCount)}</h2>${livePack(live.map(liveGame).join("") + pgaLive.map(liveSoonCard).join(""))}` : empty(liveOnlyMine || mineBoard, liveAll.concat(pgaAll), "No games are live right now.");
   const nextBody = upcoming.length ? `<h2>Upcoming today, ${say(upcoming.length)}</h2>${livePack(upcoming.map(liveSoonCard).join(""))}` : empty(liveOnlyMine, (data.week || []).length ? soonAll : nextAll, "No games left today.");
   const doneBody = `${final("today", ended)}${recap}` || empty(liveOnlyMine, endedAll, "No games have finished today.");
   const tomorrowBody = tomorrow.length ? `<h2>Tomorrow, ${say(tomorrow.length)}</h2>${livePack(tomorrow.map(liveSoonCard).join(""))}` : empty(liveOnlyMine, tomorrowAll, "No games tomorrow.");
@@ -523,13 +538,15 @@ function liveWhoPlace() {
 }
 
 let liveFocusId = new URLSearchParams(location.search).get("game") || "";
+let liveOnlyId = new URLSearchParams(location.search).get("only") === "1" ? liveFocusId : "";
+let liveOnlyPinned = false;
 
 function liveFocus(data) {
   if (!liveFocusId) return;
   const id = liveFocusId, find = () => document.querySelector(`.live-game[data-id="${CSS.escape(id)}"]`);
   liveFocusId = "";
   history.replaceState(null, "", location.pathname);
-  if (!find()) { liveSpanHeld = true; ["live", "next", "done", "tomorrow", "week"].some((span) => { if (liveSpan === span) return false; liveSpan = span; livePaint(data, true); return find(); }); }
+  if (!find() && !liveOnlyId) { liveSpanHeld = true; ["live", "next", "done", "tomorrow", "week"].some((span) => { if (liveSpan === span) return false; liveSpan = span; livePaint(data, true); return find(); }); }
   if (!find() && liveLeagues.size) { liveLeagues.clear(); livePaint(data, true); }
   const game = find();
   if (!game) return;
@@ -560,6 +577,12 @@ async function liveFetch(again) {
     if (mine) liveLegsFrom(mine);
     liveTickets = data.tickets || {};
     liveRecs = data.recs || [];
+    if (liveOnlyId) {
+      liveSpan = "live";
+      liveSpanHeld = true;
+      liveSpanChosen = true;
+      if (!liveOnlyPinned) { liveZoom = LIVE_ZOOM_MAX; liveOnlyPinned = true; }
+    }
     livePaint(data);
     liveFocus(data);
     if (!mine) legsJob.then((got) => { if (!got || !liveLast) return; liveLegsFrom(got); livePaint(liveLast, true); });
@@ -677,6 +700,7 @@ document.getElementById("live").addEventListener("click", (event) => {
   }
   const span = event.target.closest("[data-week]");
   if (span) {
+    liveOnlyId = "";
     liveSpan = span.dataset.week;
     liveSpanHeld = true;
     liveSpanChosen = true;

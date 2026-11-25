@@ -54,6 +54,18 @@ function recRecord(match, kickoff, story) {
   prune();
 }
 
+function recOpen(book) {
+  const games = book && book.pack === 1 && Array.isArray(book.games) ? book.games : null;
+  return ((book && book.people) || []).filter((person) => person && person.kind === "player").map((person) => ({
+    ...person,
+    bets: (person.bets || []).map((bet) => {
+      if (!games || !Array.isArray(bet)) return bet;
+      const game = games[bet[2]] || ["", "", ""];
+      return { label: bet[0], odds: bet[1], match: game[0], sport: game[1], kickoff: game[2], market: bet[3] || "" };
+    }),
+  }));
+}
+
 async function recWarm(board) {
   const now = Date.now();
   if (now - warmAt < 10 * 60000 || warming) return;
@@ -72,8 +84,7 @@ async function recWarm(board) {
     ]);
     const people = new Map();
     [today, week].forEach((book) => {
-      ((book && book.people) || []).forEach((person) => {
-        if (!person || person.kind !== "player") return;
+      recOpen(book).forEach((person) => {
         const have = people.get(person.key);
         if (!have) { people.set(person.key, { ...person, bets: (person.bets || []).slice() }); return; }
         const seen = new Set(have.bets.map((bet) => `${bet.label}|${bet.odds}|${bet.match}`));
@@ -84,11 +95,16 @@ async function recWarm(board) {
       });
     });
     const players = [...people.values()];
+    const empty = [], missed = [];
     for (const game of todo) {
       const props = players.flatMap((person) => (person.bets || []).filter((bet) => bet.match === game.match && /\d/.test(`${bet.market} ${bet.label}`) && !SKIP.test(`${bet.market} ${bet.label}`)).map((bet) => ({ label: bet.label, market: bet.market, odds: bet.odds, who: person.name })));
-      if (!props.length) continue;
+      if (!props.length) { empty.push(game.match); continue; }
       try { await require("./game-story").gameStory({ match: game.match, kickoff: game.kickoff, props }, board); } catch (error) { console.error("live recs warm failed:", game.match, error); }
+      if (!recs[`${game.match}|${game.kickoff}`]) missed.push(game.match);
     }
+    console.log(`[live] recs warm: ${todo.length} games, ${empty.length} with no props, ${missed.length} with no list`);
+    if (empty.length) console.log("[live] no props:", empty.join("; "));
+    if (missed.length) console.log("[live] no list:", missed.join("; "));
   } finally { warming = false; }
 }
 
