@@ -396,6 +396,65 @@ function manageSwapShow() {
   });
 }
 
+function manageLockStake(row) {
+  const saved = typeof saveRowStake === "function" ? saveRowStake(row) : Number(row.stake) || 0;
+  if (row && row.stakeTyped) return saved;
+  const kelly = typeof bankKelly === "function" ? bankKelly(row.legs || []) : null;
+  return kelly && kelly.edge && kelly.bet > 0 ? kelly.bet : saved;
+}
+
+function manageLockOdds(text) {
+  const n = typeof bankOddsNum === "function" ? bankOddsNum(text) : Number(String(text || "").replace(/[−–]/g, "-").replace(/[+$,\s]/g, ""));
+  if (!n) return "";
+  return n > 0 ? `+${n}` : String(n);
+}
+
+function manageLockBonus(got, board) {
+  const pay = (text) => { const n = typeof bankOddsNum === "function" ? bankOddsNum(text) : 0; return n > 0 ? n / 100 : n < 0 ? 100 / Math.abs(n) : 0; };
+  const a = pay(got), b = pay(board);
+  if (!(a > 0) || !(b > 0)) return { bonus: false, say: "" };
+  if (a > b + 0.001) return { bonus: true, say: `A bonus is in these odds. They pay more than ${board}.` };
+  if (a + 0.001 < b) return { bonus: false, say: `No bonus in these odds. They pay less than ${board}.` };
+  return { bonus: false, say: `No bonus in these odds. They match ${board}.` };
+}
+
+function manageLockAsk(row) {
+  const board = typeof savePrice === "function" ? savePrice(row.legs || []) : "";
+  const old = document.querySelector(".manage-lock-pop");
+  if (old) old.remove();
+  const pop = document.createElement("div");
+  pop.className = "manage-lock-pop";
+  pop.innerHTML = `<form class="manage-lock-sheet" role="dialog" aria-label="Lock this bet in"><p class="manage-lock-head">Lock this bet in</p><label>Sportsbook<select name="book"></select></label><label>Odds you got<input name="odds" inputmode="text" autocomplete="off"></label><label>Amount you bet<input name="stake" inputmode="decimal" autocomplete="off"></label><p class="manage-lock-bonus"></p><p class="manage-lock-note"></p><p class="manage-lock-do"><button type="button" class="manage-lock-no">Cancel</button><button type="submit" class="manage-lock-yes">Lock it in</button></p></form>`;
+  document.body.append(pop);
+  const form = pop.querySelector("form");
+  if (typeof fillBookSelect === "function") fillBookSelect(form.book);
+  form.odds.value = board;
+  form.stake.value = String(manageLockStake(row) || "");
+  const bonus = form.querySelector(".manage-lock-bonus");
+  const note = form.querySelector(".manage-lock-note");
+  const paint = () => { const check = manageLockBonus(manageLockOdds(form.odds.value), board); bonus.textContent = check.say; bonus.classList.toggle("on", check.bonus); };
+  form.odds.addEventListener("input", paint);
+  paint();
+  const shut = () => pop.remove();
+  form.querySelector(".manage-lock-no").addEventListener("click", shut);
+  pop.addEventListener("click", (event) => { if (event.target === pop) shut(); });
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const odds = manageLockOdds(form.odds.value);
+    const stake = Math.round(Number(form.stake.value) * 100) / 100;
+    if (!form.book.value) { note.textContent = "Pick the sportsbook."; return; }
+    if (!odds) { note.textContent = "Those odds do not look right."; return; }
+    if (!(stake > 0)) { note.textContent = "That amount does not look right."; return; }
+    if (typeof bankCanLock === "function" && !bankCanLock(stake, row.id)) { note.textContent = typeof bankNote === "string" ? bankNote : ""; return; }
+    const check = manageLockBonus(odds, board);
+    if (typeof savePatch === "function") savePatch(row.id, { stake, stakeTyped: true, lockedOdds: odds, lockedBook: form.book.value, lockedBonus: check.bonus });
+    if (typeof saveLock === "function") saveLock(row.id);
+    shut();
+    if (typeof manageRefresh === "function") manageRefresh();
+  });
+  form.odds.focus();
+}
+
 function manageLockBtn(row) {
   const lock = document.createElement("button");
   lock.type = "button";
@@ -404,9 +463,8 @@ function manageLockBtn(row) {
   lock.title = lock.getAttribute("aria-label");
   lock.addEventListener("click", (event) => {
     event.stopPropagation();
-    if (row.locked) { if (typeof saveUnlock === "function") saveUnlock(row.id); }
-    else if (typeof saveLock === "function") saveLock(row.id);
-    if (typeof manageRefresh === "function") manageRefresh();
+    if (row.locked) { if (typeof saveUnlock === "function") saveUnlock(row.id); if (typeof manageRefresh === "function") manageRefresh(); return; }
+    manageLockAsk(row);
   });
   return lock;
 }

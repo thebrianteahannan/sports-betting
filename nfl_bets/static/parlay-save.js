@@ -228,6 +228,8 @@ function saveNow() {
     entry.locked = true;
     if (list[at].lockedAt) entry.lockedAt = list[at].lockedAt;
     entry.lockedOdds = saveSig(entry.legs) === saveSig(list[at].legs) ? (list[at].lockedOdds || savePrice(entry.legs) || "") : (savePrice(entry.legs) || "");
+    if (list[at].lockedBook) entry.lockedBook = list[at].lockedBook;
+    if ("lockedBonus" in list[at]) entry.lockedBonus = list[at].lockedBonus;
   }
   const stake = Number(window.parlayStake) > 0 ? Number(window.parlayStake) : (at >= 0 && Number(list[at].stake)) || 5;
   entry.stake = stake;
@@ -255,7 +257,7 @@ function saveLock(id) {
   if (typeof bankCanLock === "function" && !bankCanLock(saveRowStake(row), id)) return null;
   row.locked = true;
   row.lockedAt = Date.now();
-  row.lockedOdds = savePrice(row.legs) || "";
+  if (!row.lockedOdds) row.lockedOdds = savePrice(row.legs) || "";
   saveStore(list);
   if (typeof bankSpend === "function") bankSpend(row);
   return row;
@@ -268,6 +270,8 @@ function saveUnlock(id, opts) {
   delete row.locked;
   delete row.lockedAt;
   delete row.lockedOdds;
+  delete row.lockedBook;
+  delete row.lockedBonus;
   saveStore(list);
   if (!(opts && opts.quiet) && typeof bankReturn === "function") bankReturn(id);
   return row;

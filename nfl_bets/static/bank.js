@@ -385,7 +385,7 @@ function bankBar() {
     line.append(bankBit(span, span === "today" ? "Today" : "This week"));
     const said = typeof manageBankTakeSay === "function" ? manageBankTakeSay(span) : "";
     if (said) { const take = document.createElement("span"); take.className = "bank-take"; take.textContent = said; line.append(take); }
-  } else line.hidden = true;
+  } else if (!bankNote) line.hidden = true;
   if (bankNote) { const note = document.createElement("span"); note.className = "bank-note"; note.textContent = bankNote; line.append(note); }
   return line;
 }
