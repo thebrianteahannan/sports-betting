@@ -406,7 +406,7 @@ function manageCard(row, n) {
   });
   const acts = document.createElement("span");
   acts.className = "manage-card-acts";
-  acts.append(manageZoomBar(card), open, drop);
+  acts.append(manageZoomBar(card), open, typeof manageLockBtn === "function" ? manageLockBtn(row) : "", drop);
   const num = document.createElement("b");
   num.className = "manage-n";
   num.textContent = String(n);

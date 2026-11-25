@@ -396,5 +396,21 @@ function manageSwapShow() {
   });
 }
 
+function manageLockBtn(row) {
+  const lock = document.createElement("button");
+  lock.type = "button";
+  lock.className = `manage-lock${row.locked ? " on" : ""}`;
+  lock.setAttribute("aria-label", row.locked ? "Unlock this bet" : "Lock this bet in");
+  lock.title = lock.getAttribute("aria-label");
+  lock.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (row.locked) { if (typeof saveUnlock === "function") saveUnlock(row.id); }
+    else if (typeof saveLock === "function") saveLock(row.id);
+    if (typeof manageRefresh === "function") manageRefresh();
+  });
+  return lock;
+}
+
 window.manageLegEdit = manageLegEdit;
 window.manageSwapShow = manageSwapShow;
+window.manageLockBtn = manageLockBtn;

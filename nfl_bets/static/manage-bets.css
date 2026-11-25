@@ -365,9 +365,9 @@
   #desk.tv-full #desk-glass .manage-board .manage-card > .manage-card-acts,
   .manage-board .manage-card > .manage-card-acts { position: absolute !important; top: 0.7rem; right: 0.7rem; grid-column: auto !important; grid-row: auto !important; }
   .manage-board .manage-bet-price,
-  .manage-board .manage-fold-line { padding-right: 6.4rem; }
+  .manage-board .manage-fold-line { padding-right: 8.5rem; }
   .manage-board[data-manage-zoom="1"] .manage-bet-price,
-  .manage-board[data-manage-zoom="1"] .manage-fold-line { padding-right: 11.5rem; }
+  .manage-board[data-manage-zoom="1"] .manage-fold-line { padding-right: 13.6rem; }
   .manage-board .find-chose { gap: 0.3rem; padding: 0.12rem 0; }
   .manage-board .find-chose > span { flex-wrap: wrap; align-items: center; gap: 0.2rem 0.35rem; font-size: 14px; }
   .manage-board .find-chose i.who,
@@ -622,6 +622,25 @@
   background: rgba(255, 107, 107, 0.16) !important;
   color: #ff6b6b !important;
   filter: none !important;
+}
+
+#desk.tv-full #desk-glass .manage-board button.manage-lock,
+.manage-board button.manage-lock {
+  width: 1.7rem !important;
+  height: 1.7rem !important;
+  padding: 0 !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='11' width='14' height='9' rx='1.5'/%3E%3Cpath d='M8 11V8a4 4 0 0 1 7.4-2'/%3E%3C/svg%3E");
+}
+#desk.tv-full #desk-glass .manage-board button.manage-lock::before,
+.manage-board button.manage-lock::before { content: ""; width: 15px; height: 15px; background: currentColor; -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
+#desk.tv-full #desk-glass .manage-board button.manage-lock.on,
+.manage-board button.manage-lock.on {
+  border-color: #3dff6e !important;
+  background: #3dff6e !important;
+  color: #04140c !important;
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='11' width='14' height='9' rx='1.5'/%3E%3Cpath d='M8 11V8a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E");
 }
 
 
