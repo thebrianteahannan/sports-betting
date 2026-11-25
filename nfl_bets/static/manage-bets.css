@@ -125,8 +125,8 @@
   white-space: nowrap;
 }
 .manage-board .manage-card-zoom { display: none !important; margin: 0; gap: 0; }
-#desk.tv-full #desk-glass .manage-board[data-manage-zoom="1"] .manage-card-zoom,
-.manage-board[data-manage-zoom="1"] .manage-card-zoom { display: inline-flex !important; }
+#desk.tv-full #desk-glass .manage-board[data-manage-zoom="2"] .manage-card-zoom,
+.manage-board[data-manage-zoom="2"] .manage-card-zoom { display: inline-flex !important; }
 .manage-board .manage-card-zoom .row-slide { flex: none; width: 4.4rem; min-width: 0; height: 22px; }
 .manage-board .manage-card-zoom .row-slide::before,
 .manage-board .manage-card-zoom .row-slide > i { height: 3px; }
@@ -402,8 +402,8 @@
   .manage-board .manage-bet-price,
   .manage-board .manage-fold-line,
   .manage-card[data-manage-zoom="0"] > .manage-legs { padding-right: 6.4rem; }
-  .manage-board[data-manage-zoom="1"] .manage-bet-price,
-  .manage-board[data-manage-zoom="1"] .manage-fold-line { padding-right: 11.5rem; }
+  .manage-board[data-manage-zoom="2"] .manage-bet-price,
+  .manage-board[data-manage-zoom="2"] .manage-fold-line { padding-right: 11.5rem; }
   .manage-board .find-chose { gap: 0.3rem; padding: 0.12rem 0; }
   .manage-board .find-chose > span { flex-wrap: wrap; align-items: center; gap: 0.2rem 0.35rem; font-size: 14px; }
   .manage-board .find-chose i.who,

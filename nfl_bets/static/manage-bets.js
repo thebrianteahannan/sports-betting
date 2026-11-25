@@ -4,8 +4,7 @@ let manageFilter = "all";
 let manageEditId = "";
 const MANAGE_ZOOM_MAX = 4;
 function manageZoomStart() {
-  try { return window.matchMedia("(max-width: 800px)").matches ? 0 : 2; } catch (error) {}
-  return 0;
+  return 1;
 }
 let manageZoom = manageZoomStart();
 let manageZoomDrag = false;
