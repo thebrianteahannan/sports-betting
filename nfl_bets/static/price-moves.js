@@ -278,6 +278,7 @@ function priceMoveDraw(box, rows) {
   }
   const books = priceMoveTab === "deez" ? document.createElement("p") : null;
   const news = priceMoveTab === "deez" ? document.createElement("button") : null;
+  const bet = priceMoveTab === "deez" ? document.createElement("button") : null;
   if (books) {
     books.className = "price-move-note";
     const read = picked.read;
@@ -312,8 +313,46 @@ function priceMoveDraw(box, rows) {
       });
     });
   }
-  card.append(head, where, ...(why ? [why] : []), ...(books ? [books] : []), ...(news ? [news] : []), priceMoveChart(picked.series), unit, steps);
+  if (bet) {
+    bet.type = "button";
+    bet.className = "price-move-bet";
+    bet.textContent = "Bet it";
+    bet.addEventListener("click", () => priceMoveTake(picked, card));
+  }
+  const acts = bet || news ? document.createElement("div") : null;
+  if (acts) {
+    acts.className = "price-move-acts";
+    if (bet) acts.append(bet);
+    if (news) acts.append(news);
+  }
+  card.append(head, where, ...(why ? [why] : []), ...(books ? [books] : []), ...(acts ? [acts] : []), priceMoveChart(picked.series), unit, steps);
   box.replaceChildren(lead, switcher, ...(leagueBar.childElementCount ? [leagueBar] : []), menu, card);
+}
+
+function priceMoveTake(picked, card) {
+  if (document.body.classList.contains("needs-member")) {
+    const join = document.getElementById("gate-join");
+    if (join) join.click();
+    return;
+  }
+  const board = card.closest(".find-board");
+  const pick = { label: picked.label || "", market: picked.market || "", match: picked.match || "" };
+  if (board && typeof startHit === "function") {
+    const hit = startHit(board, pick);
+    const odds = Number(picked.last);
+    if (hit && hit.bet && Number.isFinite(odds) && odds) hit.bet.odds = odds;
+  }
+  if (typeof startBetAsk !== "function" || !board) return;
+  startBetAsk(board, pick, card);
+  const ask = card.querySelector(".desk-rec-ask");
+  if (!ask || ask.dataset.wired) return;
+  ask.dataset.wired = "1";
+  ask.addEventListener("click", (event) => {
+    const go = event.target.closest("[data-bet-go]");
+    if (!go || typeof startBetGo !== "function") return;
+    card.querySelectorAll(".desk-rec-ask").forEach((node) => node.remove());
+    startBetGo(board, pick, go.dataset.betGo);
+  });
 }
 
 function priceMoveAsk(row, kind) {

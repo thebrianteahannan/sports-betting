@@ -297,7 +297,10 @@ button.rec-dial-next[hidden] { display: none !important; }
 .price-move-steps p { margin: 0 0 0.2rem; }
 .price-move-why, .price-move-note { color: #d5deea; }
 .price-move-note { display: block; margin: 0 0 0.45rem; }
-.price-move-news { display: inline-flex !important; width: auto !important; height: auto !important; min-height: 0 !important; margin: 0 0 0.55rem !important; padding: 0.28rem 0.75rem !important; border: 1px solid rgba(255, 154, 46, 0.55) !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #ffc56b !important; font-family: Outfit, system-ui, sans-serif !important; font-size: 13px !important; font-weight: 800 !important; letter-spacing: 0 !important; line-height: 1.3 !important; text-transform: none !important; cursor: pointer; }
+.price-move-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; margin: 0 0 0.55rem; }
+.price-move-news, .price-move-bet { display: inline-flex !important; width: auto !important; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0.28rem 0.75rem !important; border-radius: 999px !important; box-shadow: none !important; font-family: Outfit, system-ui, sans-serif !important; font-size: 13px !important; font-weight: 800 !important; letter-spacing: 0 !important; line-height: 1.3 !important; text-transform: none !important; cursor: pointer; }
+.price-move-news { border: 1px solid rgba(255, 154, 46, 0.55) !important; background: transparent !important; color: #ffc56b !important; }
+.price-move-bet { border: 1px solid #3dff6e !important; background: #3dff6e !important; color: #04140c !important; }
 .price-chart { width: 100%; height: auto; margin: 0.2rem 0 0.6rem; background: #07141c; border: 1px solid rgba(255, 154, 46, 0.35); border-radius: 12px; }
 .price-chart-area { fill: rgba(255, 154, 46, 0.16); }
 .price-chart-line { fill: none; stroke: #ff9a2e; stroke-width: 3; }
