@@ -79,6 +79,8 @@ function snap(pick) {
     cushionPct: pick.cushionPct == null ? null : pick.cushionPct,
     avg: pick.avg,
     reach: pick.reach,
+    postedOdds: pick.postedOdds == null ? null : pick.postedOdds,
+    closeOdds: pick.closeOdds == null ? null : pick.closeOdds,
     starter: !!pick.starter,
     match: pick.match,
     kickoff: pick.kickoff,
@@ -200,6 +202,8 @@ function packRows(rows) {
     kind: row.kind || "",
     hits: row.hits,
     n: row.n,
+    postedOdds: row.postedOdds == null ? null : row.postedOdds,
+    closeOdds: row.closeOdds == null ? null : row.closeOdds,
     result: row.result || "",
     got: row.got,
   }));

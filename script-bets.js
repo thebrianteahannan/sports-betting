@@ -5,7 +5,7 @@ const STATS = {
   "pts + reb": ["pts", "reb"], "pts + ast": ["pts", "ast"], "pts + reb + ast": ["pts", "reb", "ast"], "reb + ast": ["reb", "ast"],
 };
 const WORDS = { points: "points", rebounds: "rebounds", assists: "assists", threes: "threes", "made threes": "threes", "pts + reb": "points + rebounds", "pts + ast": "points + assists", "pts + reb + ast": "points + rebounds + assists", "reb + ast": "rebounds + assists" };
-const { betKind, betTag, betRole, betCushion, betCushionInfo } = require("./bet-kind");
+const { betKind, betTag, betRole, betCushion, betCushionInfo, edgeGap } = require("./bet-kind");
 const KINDS = "Points|Rebounds|Assists|Made Threes|Threes|Pts \\+ Reb \\+ Ast|Pts \\+ Reb|Pts \\+ Ast|Reb \\+ Ast";
 
 function n1(value) { return Number.isFinite(value) ? (Math.round(value * 10) / 10).toFixed(1).replace(/\.0$/, "") : ""; }
@@ -74,8 +74,26 @@ function propRecords(rows, log) {
 
 function sign(odds) { return odds > 0 ? `+${odds}` : String(odds); }
 
+function pullClause(n, used, gap) {
+  const head = `${n} games get pulled toward 50% by adding 20 games at that rate, and the chance we use is ${pct(used)}`;
+  const games = Number(n) === 1 ? "game" : "games";
+  if (gap >= 10) return `${head}. That chance sits ${n1(gap)} points above the price. The sample is ${n} ${games}, and the defense is not in the number. A gap this wide is a broken input.`;
+  if (gap >= 3) return `${head}. That chance sits ${n1(gap)} points above the price. The sample is ${n} ${games}, and the defense is not in the number.`;
+  if (gap > 0.05) return `${head}, which sits ${n1(gap)} points above the price.`;
+  if (gap < -0.05) return `${head}, which comes up ${n1(Math.abs(gap))} points short of the price.`;
+  return `${head}, which lands on the price.`;
+}
+
 function howPick(pick) {
   const rate = pick.hits / pick.n;
+  const row = edgeGap(pick.hits, pick.n, pick.need);
+  const used = row ? row.pulled : rate;
+  const gap = row ? row.gap : (used - Number(pick.need)) * 100;
+  const needN = Number(pick.need);
+  const fairGap = pick.fairEx && pick.fair > 0 && pick.fair < 1 && pick.fairBooks >= 2 && needN > 0 && needN < 1 ? (pick.fair - needN) * 100 : null;
+  const fairLeft = fairGap == null ? "" : fairGap > 0.05 ? ` This price is ${n1(fairGap)} points better than those books.` : fairGap < -0.05 ? ` This price is ${n1(Math.abs(fairGap))} points short of those books.` : " This price lands on those books.";
+  const fairBit = fairGap == null ? "" : ` The other books, with FanDuel left out and the juice removed, put it at ${pct(pick.fair)} across ${pick.fairBooks} books.${fairLeft}`;
+  const pulled = ` ${pullClause(pick.n, used, gap)}${fairBit}`;
   const role = pick.role === "solid"
     ? (pick.starter ? " He starts and his minutes have held, so the opportunity is locked in." : " His minutes have held without a start, so the opportunity looks steady.")
     : pick.role === "thin"
@@ -87,7 +105,7 @@ function howPick(pick) {
     : pick.cushion
       ? ` His average sits ${n1(pick.avg - pick.reach)} above the line, so he has room and can still cash a quiet night.`
       : "";
-  return `He averages ${n1(pick.avg)} ${pick.word || WORDS[pick.stat]} over his last ${pick.n} games and reached ${pick.reach} in ${pick.hits} of them (${Math.round(rate * 100)}%). At ${sign(pick.odds)} the bet needs ${pct(pick.need)}, so his record clears the price by ${n1((rate - pick.need) * 100)} percentage points.${role}${cushion}${pick.why ? ` The script backs it: ${pick.why}` : ""}${pick.against ? ` The matchup works against it: ${pick.against}` : ""}`;
+  return `He averages ${n1(pick.avg)} ${pick.word || WORDS[pick.stat]} over his last ${pick.n} games and reached ${pick.reach} in ${pick.hits} of them (${Math.round(rate * 100)}%). At ${sign(pick.odds)} the bet needs ${pct(pick.need)}.${pulled}${role}${cushion}${pick.why ? ` The script backs it: ${pick.why}` : ""}${pick.against ? ` The matchup works against it: ${pick.against}` : ""}`;
 }
 
 function howTicket(legs, kind, teams) {

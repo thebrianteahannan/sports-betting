@@ -1,6 +1,6 @@
 /** Recommended bets from each game script, kept from before tip-off so the live tracker can show whether they hit. */
 
-const { betTag } = require("./bet-kind");
+const { betTag, edgeGap } = require("./bet-kind");
 const KEY = "bets/live-recs/";
 const SKIP = /under|quarter|qtr|half|each|most|touchdown|1st|first|minutes|double|triple/i;
 let recs = {};
@@ -43,15 +43,33 @@ function recRecord(match, kickoff, story) {
   const kick = Date.parse(kickoff || ""), bets = story && story.bets;
   if (!bets || !Number.isFinite(kick) || Date.now() >= kick) return;
   const seen = new Set();
+  const prior = new Map((((recs[`${match}|${kickoff}`] || {}).picks) || []).map((pick) => [`${pick.label}|${pick.market}`, pick]));
   const picks = [bets, bets.stars].filter(Boolean).flatMap((set) => set.picks || []).filter((pick) => {
     const id = `${pick.label}|${pick.market}`;
     if (!pick.label || seen.has(id)) return false;
     seen.add(id); return true;
-  }).map((pick) => ({ label: pick.label, market: pick.market, odds: pick.odds, who: pick.who, kind: pick.kind || "", basis: pick.basis || "", tier: pick.tier || "", drop: pick.drop || "", hits: pick.hits, n: pick.n, need: pick.need, role: pick.role || "", cushion: !!pick.cushion, cushionRoom: pick.cushion ? pick.cushionRoom : null, cushionPct: pick.cushion ? pick.cushionPct : null, avg: pick.avg, reach: pick.reach, how: pick.how || "" }));
+  }).map((pick) => {
+    const old = prior.get(`${pick.label}|${pick.market}`);
+    return { label: pick.label, market: pick.market, odds: pick.odds, who: pick.who, kind: pick.kind || "", basis: pick.basis || "", tier: pick.tier || "", drop: pick.drop || "", hits: pick.hits, n: pick.n, need: pick.need, role: pick.role || "", cushion: !!pick.cushion, cushionRoom: pick.cushion ? pick.cushionRoom : null, cushionPct: pick.cushion ? pick.cushionPct : null, avg: pick.avg, reach: pick.reach, how: pick.how || "", postedOdds: old && old.postedOdds != null ? old.postedOdds : Number(pick.odds), fair: old && old.fair != null ? old.fair : null, fairBooks: old && old.fairBooks != null ? old.fairBooks : null, fairEx: !!(old && old.fairEx), closeOdds: old && old.closeOdds != null ? old.closeOdds : null, closeFair: old && old.closeFair != null ? old.closeFair : null };
+  });
   if (!picks.length) return;
+  stampFair(bets, picks);
   recs[`${match}|${kickoff}`] = { match, kickoff, at: Date.now(), picks, story };
   save(`${match}|${kickoff}`);
   prune();
+}
+
+function stampFair(bets, picks) {
+  const byId = new Map(picks.map((pick) => [`${pick.label}|${pick.market}`, pick]));
+  [bets, bets && bets.stars].filter(Boolean).forEach((set) => (set.picks || []).forEach((pick) => {
+    const kept = byId.get(`${pick.label}|${pick.market}`);
+    if (!kept) return;
+    ["postedOdds", "fair", "fairBooks", "fairEx", "closeOdds", "closeFair"].forEach((key) => { if (kept[key] != null) pick[key] = kept[key]; });
+  }));
+}
+
+function fairFields(pick) {
+  return { postedOdds: pick.postedOdds != null ? pick.postedOdds : null, fair: pick.fair != null ? pick.fair : null, fairBooks: pick.fairBooks != null ? pick.fairBooks : null, fairEx: !!pick.fairEx, closeOdds: pick.closeOdds != null ? pick.closeOdds : null, closeFair: pick.closeFair != null ? pick.closeFair : null };
 }
 
 function recOpen(book) {
@@ -114,7 +132,7 @@ async function recsList() {
     const full = new Map(((((row.story || {}).bets || {}).picks) || []).map((pick) => [`${pick.label}|${pick.market}`, pick]));
     return (row.picks || []).map((pick) => {
       const src = full.get(`${pick.label}|${pick.market}`) || pick;
-      return { label: pick.label, market: pick.market, odds: pick.odds, kind: src.kind || pick.kind || "", basis: src.basis || pick.basis || "", tier: src.tier || pick.tier || "", drop: src.drop || pick.drop || "", hits: src.hits != null ? src.hits : pick.hits, n: src.n != null ? src.n : pick.n, need: src.need != null ? src.need : pick.need, role: src.role || pick.role || "", cushion: !!(src.cushion || pick.cushion), cushionRoom: (src.cushion || pick.cushion) ? (src.cushionRoom != null ? src.cushionRoom : pick.cushionRoom) : null, cushionPct: (src.cushion || pick.cushion) ? (src.cushionPct != null ? src.cushionPct : pick.cushionPct) : null, avg: src.avg != null ? src.avg : pick.avg, reach: src.reach != null ? src.reach : pick.reach, how: src.how || pick.how || "", match: row.match, kickoff: row.kickoff };
+      return { label: pick.label, market: pick.market, odds: pick.odds, kind: src.kind || pick.kind || "", basis: src.basis || pick.basis || "", tier: src.tier || pick.tier || "", drop: src.drop || pick.drop || "", hits: src.hits != null ? src.hits : pick.hits, n: src.n != null ? src.n : pick.n, need: src.need != null ? src.need : pick.need, role: src.role || pick.role || "", cushion: !!(src.cushion || pick.cushion), cushionRoom: (src.cushion || pick.cushion) ? (src.cushionRoom != null ? src.cushionRoom : pick.cushionRoom) : null, cushionPct: (src.cushion || pick.cushion) ? (src.cushionPct != null ? src.cushionPct : pick.cushionPct) : null, avg: src.avg != null ? src.avg : pick.avg, reach: src.reach != null ? src.reach : pick.reach, how: src.how || pick.how || "", match: row.match, kickoff: row.kickoff, ...fairFields(src.fair != null || src.postedOdds != null ? src : pick) };
     });
   });
 }
@@ -151,7 +169,8 @@ async function recRanked(days, keepStarted) {
   };
   const edge = (pick) => {
     if (pick.n < 5) return -Infinity;
-    const base = (pick.hits / pick.n) * 100 - parseFloat(pick.need);
+    const row = edgeGap(pick.hits, pick.n, pick.need);
+    const base = row ? row.gap : -Infinity;
     const role = pick.role === "solid" ? 1.5 : pick.role === "thin" ? -2 : 0;
     const cushion = pick.cushion ? 0.75 : 0;
     return base + role + cushion;
@@ -209,6 +228,7 @@ async function recRanked(days, keepStarted) {
         starter: !!pick.starter,
         match: pick.match,
         kickoff: pick.kickoff,
+        ...fairFields(pick),
       };
     }),
   };
@@ -322,6 +342,77 @@ async function recLazy() {
   return today.length ? { span: "today", picks: today.slice(0, 30) } : { span: "week", picks: (await recRanked(7)).ranked.slice(0, 30) };
 }
 
+async function fairTick() {
+  const fair = require("./market-fair");
+  if (!fair.hasKey()) return;
+  await pull();
+  const now = Date.now();
+  const sports = await sportMap().catch(() => new Map());
+  const rows = Object.values(recs).map((row) => ({ row, sport: sports.get(`${row.match}|${row.kickoff}`) || sports.get(row.match) || "" })).filter((item) => /^(NFL|NBA|NHL)$/.test(item.sport) && Date.parse(item.row.kickoff) > now);
+  await fillModel(rows);
+  if (!rows.length) return;
+  const ledger = await fair.readLedger(kv, now);
+  if (ledger.used >= fair.DAY_CAP) return;
+  const due = new Set(rows.filter((item) => fair.need(ledger.games[`${item.row.match}|${item.row.kickoff}`], item.row.kickoff, now)).map((item) => item.sport));
+  if (!due.size) return;
+  for (const sport of due) {
+    if (ledger.used >= fair.DAY_CAP) break;
+    let events = [];
+    try { events = await fair.fetchLeague(sport); } catch (error) { console.error("fair price failed:", sport, error); continue; }
+    ledger.used += events.length;
+    for (const item of rows.filter((row) => row.sport === sport)) {
+      const event = events.find((row) => fair.sameGame(item.row.match, row));
+      const slot = ledger.games[`${item.row.match}|${item.row.kickoff}`] || { kickoff: item.row.kickoff };
+      const mode = fair.need(slot, item.row.kickoff, now);
+      if (!event || !mode) { ledger.games[`${item.row.match}|${item.row.kickoff}`] = slot; continue; }
+      const logged = new Set();
+      const proved = [];
+      const closing = mode === "close" || Date.parse(item.row.kickoff) - now < 3600000;
+      const apply = (pick) => {
+        if (pick.postedOdds == null && Number.isFinite(Number(pick.odds))) pick.postedOdds = Number(pick.odds);
+        const priced = fair.fairPrice(pick, event, sport);
+        if (!priced) return;
+        pick.fair = priced.fair;
+        pick.fairBooks = priced.fairBooks;
+        pick.fairEx = true;
+        if (closing) { pick.closeOdds = Number(pick.odds); pick.closeFair = priced.fair; }
+        const id = `${pick.label}|${pick.market}`;
+        if (logged.has(id)) return;
+        logged.add(id);
+        proved.push(pick);
+        console.log(`[fair] ${pick.label} ${priced.names.join(",")} ${(priced.fair * 100).toFixed(1)}%`);
+      };
+      (item.row.picks || []).forEach(apply);
+      const bets = item.row.story && item.row.story.bets;
+      [bets, bets && bets.stars].filter(Boolean).forEach((set) => (set.picks || []).forEach(apply));
+      await Promise.all(proved.map((pick) => require("./edge-prove").note(pick, item.row.match, item.row.kickoff, closing ? "close" : mode).catch((error) => console.error("edge prove failed:", error))));
+      slot.first = slot.first || Date.now();
+      slot.ex = slot.ex || Date.now();
+      if (closing) slot.close = Date.now();
+      ledger.games[`${item.row.match}|${item.row.kickoff}`] = slot;
+      item.row.at = Date.now();
+      save(`${item.row.match}|${item.row.kickoff}`);
+    }
+  }
+  await fair.writeLedger(kv, ledger);
+}
+
+async function fillModel(rows) {
+  const prove = require("./edge-prove");
+  const jobs = [];
+  rows.forEach((item) => {
+    const bets = item.row.story && item.row.story.bets;
+    const sets = [item.row.picks, bets && bets.picks, bets && bets.stars && bets.stars.picks];
+    sets.forEach((picks) => (picks || []).forEach((pick) => {
+      if (pick && pick.fairEx) jobs.push(prove.note(pick, item.row.match, item.row.kickoff, "fill").catch((error) => console.error("edge prove failed:", error)));
+    }));
+  });
+  if (jobs.length) {
+    await Promise.all(jobs);
+    console.log(`[fair] model fill ${jobs.length}`);
+  }
+}
+
 pull();
 
-module.exports = { recRecord, recWarm, recsList, recRanked, recStory, recSample, recTop, recLazy, kv };
+module.exports = { recRecord, recWarm, recsList, recRanked, recStory, recSample, recTop, recLazy, fairTick, kv };

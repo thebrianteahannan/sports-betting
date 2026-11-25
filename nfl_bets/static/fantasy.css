@@ -120,9 +120,11 @@
 #desk.tv-full #desk-glass .fantasy-board button.fantasy-back,
 #desk.tv-full #desk-glass .fantasy-board button.fantasy-go,
 #desk.tv-full #desk-glass .fantasy-board button.fantasy-league,
+#desk.tv-full #desk-glass .fantasy-board button.fantasy-seek-toggle,
 .fantasy-board button.fantasy-back,
 .fantasy-board button.fantasy-go,
-.fantasy-board button.fantasy-league {
+.fantasy-board button.fantasy-league,
+.fantasy-board button.fantasy-seek-toggle {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -149,8 +151,10 @@
 
 #desk.tv-full #desk-glass .fantasy-board button.fantasy-back:hover,
 #desk.tv-full #desk-glass .fantasy-board button.fantasy-league:hover,
+#desk.tv-full #desk-glass .fantasy-board button.fantasy-seek-toggle:hover,
 .fantasy-board button.fantasy-back:hover,
-.fantasy-board button.fantasy-league:hover {
+.fantasy-board button.fantasy-league:hover,
+.fantasy-board button.fantasy-seek-toggle:hover {
   filter: none !important;
   background: rgba(61, 255, 110, 0.12) !important;
   color: #f4f7fb !important;
@@ -299,10 +303,57 @@
   color: #ff6b6b;
 }
 
-.fantasy-board .league-tag.pickup {
+.fantasy-board .league-tag.pickup,
+.fantasy-board .league-tag.free {
   border-color: rgba(231, 193, 90, 0.7);
   background: rgba(231, 193, 90, 0.16);
   color: #e7c15a;
+}
+
+.fantasy-board .fantasy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  width: min(100%, 28rem);
+}
+
+.fantasy-board .fantasy-seek {
+  display: contents;
+}
+
+.fantasy-board button.fantasy-seek-toggle {
+  width: auto !important;
+  max-width: 100%;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  text-align: center;
+}
+
+.fantasy-board .fantasy-seek-body {
+  display: grid;
+  flex: 1 1 100%;
+  gap: 0.45rem;
+}
+
+.fantasy-board .fantasy-seek-body[hidden] {
+  display: none;
+}
+
+.fantasy-board .fantasy-seek-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.fantasy-board .fantasy-seek-picks button {
+  padding: 0.28rem 0.55rem !important;
+  border: 1px solid rgba(231, 193, 90, 0.55) !important;
+  border-radius: 999px !important;
+  background: rgba(231, 193, 90, 0.12) !important;
+  color: #e7c15a !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
 }
 
 .fantasy-board .fantasy-lead,

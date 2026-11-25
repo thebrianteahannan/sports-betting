@@ -85,7 +85,87 @@ function metalWho(bet) {
   return words.length ? words[words.length - 1] : "";
 }
 
-const EDGE_TIP = "10 is a Golden Ticket: −120 to +120, and 10 points over the price. The number is how close this edge gets to that.";
+const EDGE_TIP = "10 needs −120 to +120, a pulled chance of 60% or more, and 10 points over the price after adding 20 games at 50%. The number is how close this edge gets to that.";
+const PRICE_EDGE_TIP = "FanDuel needs at least 3 points fewer hits than the other books, with FanDuel left out and the juice removed.";
+
+function edgePull(hits, n) {
+  const h = Number(hits), games = Number(n);
+  if (!(games > 0) || !Number.isFinite(h)) return null;
+  return { raw: h / games, pulled: (h + 10) / (games + 20) };
+}
+
+function edgeGap(hits, n, need, odds) {
+  const pull = edgePull(hits, n);
+  let price = null;
+  if (odds != null && typeof findPct === "function") {
+    const parsed = parseFloat(String(findPct(odds)).replace("%", ""));
+    if (parsed > 0 && parsed < 100) price = parsed / 100;
+  }
+  if (!(price > 0 && price < 1)) {
+    const raw = String(need == null ? "" : need).trim();
+    const value = Number(raw.replace("%", ""));
+    if (raw.includes("%") && value > 0 && value < 100) price = value / 100;
+    else if (value > 0 && value < 1) price = value;
+  }
+  if (!pull || !(price > 0 && price < 1)) return null;
+  return { ...pull, price, gap: Math.round((pull.pulled - price) * 1000) / 10 };
+}
+
+function edgeClaim(pick, odds) {
+  const used = odds != null ? odds : pick && pick.odds;
+  const row = pick && edgeGap(pick.hits, pick.n, pick.need, used);
+  const fair = Number(pick && pick.fair);
+  const books = Number(pick && pick.fairBooks);
+  const haveFair = !!(pick && pick.fairEx) && fair > 0 && fair < 1 && books >= 2;
+  let price = row ? row.price : null;
+  if (!(price > 0 && price < 1)) {
+    const n = Number(used);
+    if (Number.isFinite(n) && n) price = n < 0 ? Math.abs(n) / (Math.abs(n) + 100) : 100 / (n + 100);
+  }
+  if (!row && !haveFair) return null;
+  const clear = haveFair && price > 0 && price < 1 ? Math.round((fair - price) * 1000) / 10 : null;
+  return { pulled: row ? row.pulled : null, price, fair: haveFair ? fair : null, books: haveFair ? books : 0, clear };
+}
+
+function fairLine(pick) {
+  const fair = Number(pick && pick.fair);
+  const books = Number(pick && pick.fairBooks);
+  const odds = Number(pick && pick.odds);
+  if (!pick || !pick.fairEx || !(fair > 0 && fair < 1) || !(books >= 2) || !Number.isFinite(odds) || !odds) return "";
+  const price = odds < 0 ? Math.abs(odds) / (Math.abs(odds) + 100) : 100 / (odds + 100);
+  const gap = Math.round((fair - price) * 1000) / 10;
+  const n1 = (value) => (Math.abs(value - Math.round(value)) < 0.05 ? String(Math.round(value)) : value.toFixed(1));
+  const left = gap > 0.05 ? `This price is ${n1(gap)} points better than those books.` : gap < -0.05 ? `This price is ${n1(Math.abs(gap))} points short of those books.` : `This price lands on those books.`;
+  return ` The other books, with FanDuel left out and the juice removed, put it at ${(fair * 100).toFixed(1)}% across ${books} books. ${left}`;
+}
+
+function pullClause(n, pulled, gap) {
+  const n1 = (value) => (Math.abs(value - Math.round(value)) < 0.05 ? String(Math.round(value)) : value.toFixed(1));
+  const head = `${n} games get pulled toward 50% by adding 20 games at that rate, and the chance we use is ${(pulled * 100).toFixed(1)}%`;
+  const games = Number(n) === 1 ? "game" : "games";
+  if (gap >= 10) return `${head}. That chance sits ${n1(gap)} points above the price. The sample is ${n} ${games}, and the defense is not in the number. A gap this wide is a broken input.`;
+  if (gap >= 3) return `${head}. That chance sits ${n1(gap)} points above the price. The sample is ${n} ${games}, and the defense is not in the number.`;
+  if (gap > 0.05) return `${head}, which sits ${n1(gap)} points above the price.`;
+  if (gap < -0.05) return `${head}, which comes up ${n1(Math.abs(gap))} points short of the price.`;
+  return `${head}, which lands on the price.`;
+}
+
+function edgeHow(pick) {
+  let how = String((pick && pick.how) || "").trim();
+  const row = pick && edgeGap(pick.hits, pick.n, pick.need, pick.odds);
+  if (!row) return pick && pick.fairEx ? `${how}${fairLine(pick)}`.trim() : how;
+  const clause = pullClause(pick.n, row.pulled, row.gap);
+  const oldPull = /\d+ games get pulled toward 50% by adding 20 games at that rate, and the chance we use is [\d.]+%, which (?:still clears the price by [\d.]+ points|comes up [\d.]+ points short of the price|lands on the price)\. That chance is the pulled record\. It does not include the defense\./;
+  if (oldPull.test(how)) how = how.replace(oldPull, clause);
+  else if (!/pulled toward 50%/.test(how)) {
+    if (/clears the price by [\d.]+ percentage points/.test(how)) how = how.replace(/,?\s*so his record clears the price by [\d.]+ percentage points\.?/, `. ${clause}`);
+    else how = how ? `${how} ${clause}` : clause;
+  }
+  how = how.replace(/ The other books, with the juice removed, put it at [\d.]+% across \d+ books\.(?: The pulled record (?:clears that by [\d.]+ points|comes up [\d.]+ points short of that|lands on that)\.)?/g, "");
+  how = how.replace(/ The other books, with FanDuel left out and the juice removed, put it at [\d.]+% across \d+ books\.(?: This price is [\d.]+ points (?:better than|short of) those books\.| This price lands on those books\.)?/g, "");
+  if (pick.fairEx) how = `${how}${fairLine(pick)}`.trim();
+  return how;
+}
 
 function metalEdgePrice(odds) {
   const out = Math.max(0, Math.abs(Number(odds)) - 120);
@@ -175,7 +255,8 @@ function metalParlaySay(rows, odds) {
   if (script) return script;
   const ours = rows.map((row) => {
     const book = metalChance(row.odds);
-    const have = row.n >= 5 && Number.isFinite(row.hits) ? row.hits / row.n : book;
+    const pull = row.n >= 5 && Number.isFinite(row.hits) ? edgePull(row.hits, row.n) : null;
+    const have = pull ? pull.pulled : book;
     return { book, have, who: metalWho(row.bet), lift: book != null && have != null && Math.abs(have - book) >= 0.005 };
   }).filter((row) => row.have != null);
   if (ours.length < 2) return null;
@@ -192,11 +273,12 @@ function metalParlaySay(rows, odds) {
 
 function metalOneSay(row) {
   const need = metalChance(row.odds);
-  if (!(row.n >= 5) || !Number.isFinite(row.hits) || need == null) return null;
-  const gap = Math.round((row.hits / row.n - need) * 1000) / 10;
+  const pull = row.n >= 5 && Number.isFinite(row.hits) ? edgePull(row.hits, row.n) : null;
+  if (!pull || need == null) return null;
+  const gap = Math.round((pull.pulled - need) * 1000) / 10;
   const even = `${(need * 100).toFixed(1)}%`;
   const over = gap > 0 ? `${gap.toFixed(1)} points over FanDuel's ${even}` : gap < 0 ? `${Math.abs(gap).toFixed(1)} points under FanDuel's ${even}` : `even with FanDuel's ${even}`;
-  return { ...metalEdgeRead(gap, row.odds, row.hits / row.n), text: `Hit ${row.hits} of ${row.n}, ${over}.` };
+  return { ...metalEdgeRead(gap, row.odds, pull.pulled), text: `Hit ${row.hits} of ${row.n}. Pulled to ${(pull.pulled * 100).toFixed(1)}%, ${over}.` };
 }
 
 function metalPaint(rows) {

@@ -215,7 +215,7 @@ function manageTags(legs) {
     const row = document.createElement("p");
     row.className = "manage-tag-row";
     const tags = typeof scriptPickTags === "function" ? scriptPickTags(pick) : "";
-    const how = String(pick.how || "").trim();
+    const how = (typeof edgeHow === "function" ? edgeHow(pick) : String(pick.how || "")).trim();
     const rec = pick.tier === "good" ? "" : `<i class="manage-rec">Recommended</i>`;
     const edge = typeof manageEdgeTag === "function" ? manageEdgeTag(pick) : "";
     row.innerHTML = `${rec}${tags}${edge}${how ? `<span class="manage-how">${esc(how)}</span>` : ""}`;

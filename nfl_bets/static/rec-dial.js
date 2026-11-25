@@ -2,7 +2,7 @@
  * Same drag pattern as Live Less↔More: step any, pointer capture, no rebuild while the thumb moves. */
 
 const REC_DIAL_MAX = 3;
-const REC_DIAL_DEFAULT = 0;
+const REC_DIAL_DEFAULT = 2;
 const REC_TICKET = [
   { name: "golden", min: -120, max: 120, rate: 0.6 },
   { name: "silver", min: -150, max: 150, rate: 0.55 },
@@ -13,13 +13,14 @@ let recDial = (() => {
   try {
     const raw = localStorage.getItem("rec-dial");
     const stops = localStorage.getItem("rec-dial-stops");
-    let n = raw == null || raw === "" ? REC_DIAL_DEFAULT : Math.round(Number(raw));
-    if (stops !== "5") {
+    const saved = raw != null && raw !== "";
+    let n = saved ? Math.round(Number(raw)) : REC_DIAL_DEFAULT;
+    if (saved && stops !== "5") {
       if (stops !== "4") n = n <= 0 ? 0 : n === 1 ? 2 : 3;
       n = n <= 0 ? 0 : n === 1 ? 2 : 3;
       localStorage.setItem("rec-dial", String(n));
-      localStorage.setItem("rec-dial-stops", "5");
     }
+    if (stops !== "5") localStorage.setItem("rec-dial-stops", "5");
     if (n === 0 || n === 1 || n === 2 || n === 3) return n;
   } catch (error) {}
   return REC_DIAL_DEFAULT;
@@ -259,7 +260,7 @@ function recDialNextSay(level) {
   const next = Math.round(Number(level) || 0) + 1;
   if (next <= 1) return "Show the silver ticket";
   if (next === 2) return "Show the bronze ticket";
-  return "Show the edge";
+  return "More recommended bets ...";
 }
 
 function recDialNext() {

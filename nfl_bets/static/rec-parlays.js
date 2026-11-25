@@ -45,7 +45,8 @@ function recParlayLegs(board) {
   return (pool.picks || []).map((pick) => {
     const hits = Number(pick.hits), n = Number(pick.n), book = recParlayChance(pick.odds);
     if (!(n >= 5) || !Number.isFinite(hits) || book == null) return null;
-    const rate = hits / n;
+    const pull = typeof edgePull === "function" ? edgePull(hits, n) : null;
+    const rate = pull ? pull.pulled : hits / n;
     const gap = (rate - book) * 100;
     if (!(gap > 0)) return null;
     return { pick, rate, book, gap, who: recParlayWho(pick) };

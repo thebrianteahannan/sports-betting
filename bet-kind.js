@@ -81,4 +81,27 @@ function betCash(odds, result) {
   return result === "won" ? 5 * (o > 0 ? o / 100 : 100 / -o) : result === "lost" ? -5 : 0;
 }
 
-module.exports = { betKind, betTag, betCash, betRole, betCushion, betCushionInfo };
+function edgePull(hits, n) {
+  const h = Number(hits), games = Number(n);
+  if (!(games > 0) || !Number.isFinite(h)) return null;
+  return { raw: h / games, pulled: (h + 10) / (games + 20) };
+}
+
+function edgeGap(hits, n, need, odds) {
+  const pull = edgePull(hits, n);
+  let price = null;
+  if (odds != null && typeof findPct === "function") {
+    const parsed = parseFloat(String(findPct(odds)).replace("%", ""));
+    if (parsed > 0 && parsed < 100) price = parsed / 100;
+  }
+  if (!(price > 0 && price < 1)) {
+    const raw = String(need == null ? "" : need).trim();
+    const value = Number(raw.replace("%", ""));
+    if (raw.includes("%") && value > 0 && value < 100) price = value / 100;
+    else if (value > 0 && value < 1) price = value;
+  }
+  if (!pull || !(price > 0 && price < 1)) return null;
+  return { ...pull, price, gap: Math.round((pull.pulled - price) * 1000) / 10 };
+}
+
+module.exports = { betKind, betTag, betCash, betRole, betCushion, betCushionInfo, edgePull, edgeGap };

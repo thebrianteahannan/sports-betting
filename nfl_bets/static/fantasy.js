@@ -266,7 +266,12 @@ function fantasyLeaguePicker(board) {
   check.textContent = fantasyState.checking ? "Checking your teams…" : (fantasyState.checks ? "Check again" : "Check my teams");
   check.disabled = !!fantasyState.checking;
   check.addEventListener("click", () => fantasyCheckAll(board));
-  box.append(check);
+  const actions = document.createElement("div");
+  actions.className = "fantasy-actions";
+  actions.append(check);
+  const seek = typeof fantasySeekMount === "function" ? fantasySeekMount() : null;
+  if (seek) actions.append(seek);
+  box.append(actions);
   if (fantasyState.checkError) {
     const note = document.createElement("p");
     note.className = "fantasy-note";
@@ -292,6 +297,7 @@ function fantasyLeaguePicker(board) {
     const hit = fantasyState.checks && fantasyState.checks[league.league_id];
     const tags = hit && !hit.skip ? (hit.tags || []) : null;
     const needs = !!(tags && tags.length);
+    btn.dataset.league = league.league_id;
     btn.className = `fantasy-league${fantasyState.leagueId === league.league_id ? " on" : ""}${needs ? " needs" : ""}${tags && !needs ? " ready" : ""}`;
     const tagHtml = tags
       ? (needs

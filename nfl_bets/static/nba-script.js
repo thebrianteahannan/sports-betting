@@ -464,7 +464,7 @@ function scriptBetsBlock(bets, group, game, people, keep = {}, starsOnly = false
   const club = group.name !== "Both teams" && scriptClub(game, group.name);
   if (club) { block.classList.add("find-script-club"); block.style.borderLeftColor = club.color; block.style.backgroundImage = `linear-gradient(90deg, ${club.color}4d, ${club.color}12 80%)`; }
   const lead = mine.slice(0, 3), rest = mine.slice(3);
-  const pickHtml = (pick) => `<div class="find-script-pick"${club ? "" : scriptClubStyle(game, pick.team)}><p><strong>${who(pick)} ${esc(pick.text)}, ${money(pick.odds)}.</strong> ${scriptPickTags(pick, game)}</p><p class="find-script-why"><em>Why:</em> ${esc(pick.how || `Hit in ${pick.hits} of his last ${pick.n}. Needs ${pick.need}.`)}</p></div>`;
+  const pickHtml = (pick) => `<div class="find-script-pick"${club ? "" : scriptClubStyle(game, pick.team)}><p><strong>${who(pick)} ${esc(pick.text)}, ${money(pick.odds)}.</strong> ${scriptPickTags(pick, game)}</p><p class="find-script-why"><em>Why:</em> ${esc((typeof edgeHow === "function" ? edgeHow(pick) : pick.how) || `Hit in ${pick.hits} of his last ${pick.n}. Needs ${pick.need}.`)}</p></div>`;
   block.innerHTML = `<b${club ? ` style="color: ${club.text}"` : ""}>${esc(group.name)}</b>${lead.map(pickHtml).join("")}`;
   block.querySelectorAll(".find-script-pick").forEach((row, at) => scriptPickPlus(row, lead[at], game, people));
   if (rest.length) {

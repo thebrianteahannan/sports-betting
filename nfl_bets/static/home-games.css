@@ -111,6 +111,7 @@ body.home-games-on #who { top: var(--home-games-top); right: 16px; bottom: auto;
   line-height: 1.5;
   text-transform: uppercase;
   vertical-align: 0.1em;
+  color: #e7c15a;
   cursor: pointer;
 }
 :is(#desk-games, #rec-page, .find-start) .desk-rec-edge.m-golden { color: #e7c15a; }

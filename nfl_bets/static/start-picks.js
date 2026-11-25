@@ -126,10 +126,11 @@ function startRecWhy(pick) {
         : "",
     });
   }
-  if (pick && pick.how) {
+  const said = typeof edgeHow === "function" ? edgeHow(pick) : (pick && pick.how) || "";
+  if (said) {
     const why = document.createElement("p");
     why.className = "desk-rec-why-how";
-    why.innerHTML = `<em>Why:</em> ${typeof esc === "function" ? esc(pick.how) : String(pick.how)}`;
+    why.innerHTML = `<em>Why:</em> ${typeof esc === "function" ? esc(said) : String(said)}`;
     box.append(why);
   }
   tips.forEach((row) => {
@@ -1034,10 +1035,15 @@ function startGoldenList() {
         : result === "won" ? `$5 won ${startMoney(made)}` : result === "lost" ? `$5 lost ${startMoney(made)}` : `$5 ${startMoney(made)}`;
       const need = typeof findPct === "function" ? findPct(ticket.odds) : "";
       const needN = parseFloat(need);
-      const clear = recordShown != null && Number.isFinite(needN) ? Math.round((recordShown - needN) * 10) / 10 : null;
+      const pull = typeof edgePull === "function" ? edgePull(hits, n) : null;
+      const pulledShown = pull ? Math.round(pull.pulled * 1000) / 10 : recordShown;
+      const clear = pulledShown != null && Number.isFinite(needN) ? Math.round((pulledShown - needN) * 10) / 10 : null;
       const clearText = clear == null ? "" : `${clear > 0 ? "+" : ""}${clear.toFixed(1)}%`;
       const meta = [price(ticket.odds), need, ticket.match].filter(Boolean).join(" · ");
-      return `<article class="golden-card"><div class="golden-card-top"><b>${escHtml(ticket.label || "")}</b><i class="${escHtml(result)}">${escHtml(word[result] || "Open")}</i></div><p class="golden-card-pay"><span class="golden-card-edge"><b>${escHtml(record)}</b>${clearText ? `<i class="${clear > 0 ? "up" : clear < 0 ? "down" : ""}">${escHtml(clearText)}</i>` : ""}</span><span class="${escHtml(result)}">${escHtml(pay)}</span></p>${meta ? `<p class="golden-card-meta">${escHtml(meta)}</p>` : ""}${ticket.markedAt ? `<p class="golden-card-when">Marked ${escHtml(when(ticket.markedAt))}</p>` : ""}${ticket.how ? `<p class="golden-card-how">${escHtml(ticket.how)}</p>` : ""}</article>`;
+      const postedN = Number(ticket.postedOdds), closeN = Number(ticket.closeOdds);
+      const implied = (odds) => odds < 0 ? Math.abs(odds) / (Math.abs(odds) + 100) : 100 / (odds + 100);
+      const closeSay = Number.isFinite(postedN) && Number.isFinite(closeN) ? `Posted ${price(postedN)}. Close ${price(closeN)}.${implied(closeN) > implied(postedN) + 0.005 ? " Beat the close." : ""}` : "";
+      return `<article class="golden-card"><div class="golden-card-top"><b>${escHtml(ticket.label || "")}</b><i class="${escHtml(result)}">${escHtml(word[result] || "Open")}</i></div><p class="golden-card-pay"><span class="golden-card-edge"><b>${escHtml(record)}</b>${clearText ? `<i class="${clear > 0 ? "up" : clear < 0 ? "down" : ""}">${escHtml(clearText)}</i>` : ""}</span><span class="${escHtml(result)}">${escHtml(pay)}</span></p>${meta ? `<p class="golden-card-meta">${escHtml(meta)}</p>` : ""}${closeSay ? `<p class="golden-card-meta">${escHtml(closeSay)}</p>` : ""}${ticket.markedAt ? `<p class="golden-card-when">Marked ${escHtml(when(ticket.markedAt))}</p>` : ""}${ticket.how ? `<p class="golden-card-how">${escHtml(typeof edgeHow === "function" ? edgeHow(ticket) : ticket.how)}</p>` : ""}</article>`;
     }).join("");
     return `<h3 class="golden-place">${escHtml(name)}</h3><div class="golden-sum"><div><b>${escHtml(pct)}</b><span>${of ? `${won} of ${of}` : "0 settled"}</span></div><div><strong class="${tone}">${escHtml(startMoney(cash))}</strong><span>$5 on each settled ticket</span></div></div>${cards || `<p class="quiet">No ${escHtml(name)} has been marked yet.</p>`}`;
   };
@@ -1096,14 +1102,14 @@ function startPaint(again) {
     return;
   }
   if (startTab === "shared" || startTab === "games" || startTab === "stats" || startTab === "golden" || startTab === "stacks") startTab = "rec";
-  if (history && startHistTab !== "stats" && startHistTab !== "golden") startHistTab = "stats";
+  if (history && startHistTab !== "stats" && startHistTab !== "golden" && startHistTab !== "close") startHistTab = "stats";
   const tabNow = history ? startHistTab : startTab;
   const tabs = document.createElement("span");
   tabs.className = "desk-games-tabs";
   const { recs, games, picks, all } = startRecs(board, box);
   const goldenN = startMetals ? ["golden", "silver", "bronze"].reduce((sum, key) => sum + (((startMetals[key] || {}).history || []).length), 0) : (startGolden && Array.isArray(startGolden.history) ? startGolden.history.length : null);
   const tabList = history
-    ? [["stats", "Hit Rates", null], ["golden", "Golden", goldenN]]
+    ? [["stats", "Hit Rates", null], ["golden", "Golden", goldenN], ["close", "The close", null]]
     : [
       ["rec", "Players", typeof recDialCountOf === "function" ? recDialCountOf(picks).all : picks.length],
       ["parlays", "Parlays", typeof recParlayCount === "function" ? recParlayCount(board) : null],
@@ -1149,7 +1155,9 @@ function startPaint(again) {
       ? [...(lineNote ? [lineNote] : []), ...(dial ? [dial] : []), ...(typeof recParlayBody === "function" ? recParlayBody(board) : [])]
       : tabNow === "stats"
         ? startRecStats()
-        : tabNow === "td"
+        : tabNow === "close"
+          ? (typeof edgeProveBody === "function" ? edgeProveBody() : [])
+          : tabNow === "td"
           ? [startTdInline(board)]
           : startGoldenList();
   box.append(row, ...body);

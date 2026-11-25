@@ -15,6 +15,7 @@ const { projectPlayer, suggestSwaps, statKit, rate, statAmount, returnKeys } = r
 let playerMap = null;
 let playerAt = 0;
 const rosterCache = new Map();
+const takenCache = new Map();
 let weekCache = { week: 0, at: 0, data: null };
 let projCache = { key: "", at: 0, data: null };
 let statsCache = { key: "", at: 0, data: null };
@@ -542,6 +543,7 @@ async function sleeper(query) {
 
 function clearCaches() {
   rosterCache.clear();
+  takenCache.clear();
   weekCache = { week: 0, at: 0, data: null };
   projCache = { key: "", at: 0, data: null };
   statsCache = { key: "", at: 0, data: null };
@@ -969,4 +971,81 @@ async function matchups(body) {
   return data;
 }
 
-module.exports = { sleeper, startSit, leagueCheck, matchups, samePlayer, fillLineup };
+function playerHits(map, query) {
+  const q = words(query).join(" ");
+  if (q.length < 2) return [];
+  const hits = [];
+  Object.entries(map || {}).forEach(([id, row]) => {
+    if (!row || typeof row !== "object") return;
+    const positions = Array.isArray(row.fantasy_positions) ? row.fantasy_positions : [];
+    const pos = positions.find((item) => FAN_POS.has(item)) || (FAN_POS.has(row.position) ? row.position : "");
+    if (!pos) return;
+    const full = words(row.full_name || `${row.first_name || ""} ${row.last_name || ""}`).join(" ");
+    const first = words(row.first_name).join(" ");
+    const last = words(row.last_name).join(" ");
+    if (!full) return;
+    let rank = 4;
+    if (full === q) rank = 0;
+    else if (q.includes(" ")) rank = full.startsWith(q) ? 1 : 4;
+    else if (last === q) rank = 1;
+    else if (first === q) rank = 2;
+    else if (full.startsWith(q)) rank = 3;
+    if (rank === 4) return;
+    hits.push({
+      id: String(id),
+      name: [row.first_name, row.last_name].filter(Boolean).join(" ").trim() || String(row.full_name || id),
+      pos,
+      team: String(row.team || ""),
+      rank,
+      onTeam: row.team ? 0 : 1,
+      search: Number(row.search_rank) || 99999,
+    });
+  });
+  hits.sort((a, b) => a.rank - b.rank || a.onTeam - b.onTeam || a.search - b.search || a.name.localeCompare(b.name));
+  const exact = hits.filter((row) => row.rank === 0);
+  const teamed = exact.filter((row) => row.onTeam === 0);
+  const picked = teamed.length === 1 ? teamed : exact.length === 1 ? exact : hits.length === 1 ? hits : hits.slice(0, 6);
+  return picked.map((row) => ({ id: row.id, name: row.name, pos: row.pos, team: row.team }));
+}
+
+async function takenIds(leagueId) {
+  const hit = takenCache.get(leagueId);
+  if (hit && Date.now() - hit.at < 60000) return hit.ids;
+  const rosters = await sleeperGet(`/league/${encodeURIComponent(leagueId)}/rosters`);
+  const ids = new Set();
+  (rosters || []).forEach((row) => {
+    [...(row.players || []), ...(row.reserve || []), ...(row.taxi || [])].forEach((id) => {
+      if (id && id !== "0") ids.add(String(id));
+    });
+  });
+  takenCache.set(leagueId, { at: Date.now(), ids });
+  return ids;
+}
+
+async function playerFree(query) {
+  const name = String((query && query.name) || "").trim();
+  const user = await resolveUser(query && (query.user || query.username));
+  const state = await nflState();
+  const season = String(state.league_season || state.season || new Date().getFullYear());
+  const leagues = await leaguesFor(user.user_id, season);
+  const map = await loadPlayers();
+  let id = String((query && query.id) || "");
+  if (!id) {
+    const matches = playerHits(map, name);
+    if (matches.length !== 1) return { player: null, matches, leagues: [] };
+    id = matches[0].id;
+  }
+  const player = playerRow(id, map);
+  if (!player || !map[id]) throw new Error("No player with that name.");
+  const rows = await Promise.all(leagues.map(async (league) => {
+    const ids = await takenIds(league.league_id);
+    return { league_id: league.league_id, available: !ids.has(String(id)) };
+  }));
+  return {
+    player: { id: player.id, name: player.name, pos: player.pos, team: player.team },
+    matches: [],
+    leagues: rows.filter((row) => row.available),
+  };
+}
+
+module.exports = { sleeper, startSit, leagueCheck, matchups, samePlayer, fillLineup, playerFree };
