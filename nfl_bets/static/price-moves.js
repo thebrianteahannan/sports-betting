@@ -276,8 +276,44 @@ function priceMoveDraw(box, rows) {
     why.className = "price-move-why";
     why.textContent = typeof edgeHow === "function" ? edgeHow(picked.read) : picked.read.how;
   }
-  card.append(head, where, ...(why ? [why] : []), priceMoveChart(picked.series), unit, steps);
+  const books = priceMoveTab === "deez" ? document.createElement("p") : null;
+  const news = priceMoveTab === "deez" ? document.createElement("button") : null;
+  if (books) {
+    books.className = "price-move-note";
+    const read = picked.read;
+    if (read && read.fairEx && Number(read.fair) > 0) books.textContent = `The other books, with FanDuel left out, have it at ${(Number(read.fair) * 100).toFixed(1)}% across ${read.fairBooks} books.`;
+    else if (picked.booksLine) books.textContent = picked.booksLine;
+    else {
+      books.textContent = "Checking the other books.";
+      priceMoveAsk(picked, "books").then((data) => {
+        if (!books.isConnected) return;
+        picked.booksLine = data.line || "The other books do not have this line.";
+        books.textContent = picked.booksLine;
+      });
+    }
+  }
+  if (news) {
+    news.type = "button";
+    news.className = "price-move-news";
+    news.textContent = "Any news?";
+    news.addEventListener("click", () => {
+      news.disabled = true;
+      news.textContent = "Looking.";
+      priceMoveAsk(picked, "news").then((data) => {
+        const line = document.createElement("p");
+        line.className = "price-move-note";
+        line.textContent = data.line || "The news check did not come back.";
+        news.replaceWith(line);
+      });
+    });
+  }
+  card.append(head, where, ...(why ? [why] : []), ...(books ? [books] : []), ...(news ? [news] : []), priceMoveChart(picked.series), unit, steps);
   box.replaceChildren(lead, switcher, ...(leagueBar.childElementCount ? [leagueBar] : []), menu, card);
+}
+
+function priceMoveAsk(row, kind) {
+  const query = new URLSearchParams({ label: row.label || "", match: row.match || "", market: row.market || "", sport: row.sport || "", kind });
+  return fetch(`/api/price-look?${query}`, { credentials: "same-origin" }).then((response) => (response.ok ? response.json() : { line: "" })).catch(() => ({ line: "" }));
 }
 
 function priceMoveShut(event) {
