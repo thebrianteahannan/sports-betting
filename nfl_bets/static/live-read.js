@@ -1,6 +1,14 @@
 /** Reads a bet leg against a live box score. Shared by the live page and the bet card on the home page. */
 
-let liveLegs = [], liveRecs = [];
+let liveLegs = [], liveRecs = [], liveTickets = {};
+
+function liveMetal(leg) {
+  if (leg.golden) return "golden";
+  if (leg.silver) return "silver";
+  if (leg.bronze) return "bronze";
+  const same = (row) => row && row.label === leg.label && (!row.match || row.match === leg.match);
+  return ["golden", "silver", "bronze"].find((spot) => same(liveTickets[spot])) || "";
+}
 const LIVE_STAT = { points: ["PTS"], rebounds: ["REB"], assists: ["AST"], threes: ["3PT"], "made threes": ["3PT"], steals: ["STL"], blocks: ["BLK"], "pts + reb": ["PTS", "REB"], "pts + ast": ["PTS", "AST"], "reb + ast": ["REB", "AST"], "pts + reb + ast": ["PTS", "REB", "AST"] };
 const LIVE_NHL = { points: ["G", "A"], goals: ["G"], assists: ["A"], "shots on goal": ["S"], "blocked shots": ["BS"], saves: ["SV"] };
 const LIVE_NFL = { "rushing yards": [["rushing", "YDS"]], "receiving yards": [["receiving", "YDS"]], "passing yards": [["passing", "YDS"]], receptions: [["receiving", "REC"]], "rushing attempts": [["rushing", "CAR"]], "passing touchdowns": [["passing", "TD"]], "passing completions": [["passing", "C/ATT"]], "pass completions": [["passing", "C/ATT"]], completions: [["passing", "C/ATT"]], "interceptions thrown": [["passing", "INT"]], "rushing + receiving yards": [["rushing", "YDS"], ["receiving", "YDS"]], touchdowns: [["rushing", "TD"], ["receiving", "TD"]] };
@@ -16,7 +24,8 @@ function liveLegRead(leg) {
   const stat = ((plus && plus[2]) || (named && named[1]) || (label.match(/\b(?:Over|Under)\s+\d+(?:\.\d+)?\s+(.+)$/i) || [])[1] || "").toLowerCase();
   const text = plus ? `${plus[1]}+ ${stat}` : line ? `${line[1]} ${line[2]} ${stat}`.trim() : label.slice(who.length).trim() || market;
   const score = !plus && !line && (market.match(/any\s*time touchdown|to score (\d+)\+ touchdowns/i) || null), tagged = !plus && !line && !score && label.slice(who.length).match(/^\s*(\d+)\+\s/);
-  return { parlay: leg.parlay || "", size: leg.parlaySize || 0, locked: !!leg.locked, golden: !!leg.golden, silver: !!leg.silver, bronze: !!leg.bronze, kind: leg.kind || "", basis: leg.basis || "", tier: leg.tier || "", drop: leg.drop || "", role: leg.role || "", cushion: !!leg.cushion, cushionRoom: leg.cushionRoom, cushionPct: leg.cushionPct, avg: leg.avg, reach: leg.reach, how: leg.how || "", label, market, match: leg.match || "", kickoff: leg.kickoff || "", who, stat: score ? "touchdowns" : stat, text, odds: Number(leg.odds), need: plus ? Number(plus[1]) : line ? Number(line[2]) : score ? Number(score[1] || 1) : tagged ? Number(tagged[1]) : null, plus: !!plus || !!score || !!tagged, under: !!(line && /under/i.test(line[1])) };
+  const metal = liveMetal(leg);
+  return { parlay: leg.parlay || "", size: leg.parlaySize || 0, locked: !!leg.locked, golden: metal === "golden", silver: metal === "silver", bronze: metal === "bronze", kind: leg.kind || "", basis: leg.basis || "", tier: leg.tier || "", drop: leg.drop || "", role: leg.role || "", cushion: !!leg.cushion, cushionRoom: leg.cushionRoom, cushionPct: leg.cushionPct, avg: leg.avg, reach: leg.reach, how: leg.how || "", label, market, match: leg.match || "", kickoff: leg.kickoff || "", who, stat: score ? "touchdowns" : stat, text, odds: Number(leg.odds), need: plus ? Number(plus[1]) : line ? Number(line[2]) : score ? Number(score[1] || 1) : tagged ? Number(tagged[1]) : null, plus: !!plus || !!score || !!tagged, under: !!(line && /under/i.test(line[1])) };
 }
 
 function liveMine(game, list = liveLegs) {

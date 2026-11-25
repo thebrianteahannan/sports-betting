@@ -3,32 +3,11 @@
 let manageFilter = "all";
 let manageEditId = "";
 const MANAGE_ZOOM_MAX = 3;
-let manageZoom = (() => {
-  try {
-    const raw = localStorage.getItem("manageZoom");
-    const ver = localStorage.getItem("manageZoomVer");
-    let n = Number(raw);
-    if (Number.isFinite(n)) {
-      // v8 adds a collapsed parlay. v9 added history, then search. v10 moves history to the profile.
-      if (ver !== "10" && ver !== "9" && ver !== "8") {
-        if (ver !== "7") {
-          if (ver !== "6") n = n >= 1 ? 1 : 0;
-          n = Math.max(0, Math.min(3, Math.round(n)));
-        }
-        n = Math.min(4, Math.round(n) + 1);
-      }
-      if (ver === "9") {
-        if (n >= 6) n = 5;
-        else if (n === 5) n = 4;
-      }
-      n = Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(n)));
-      localStorage.setItem("manageZoom", String(n));
-      localStorage.setItem("manageZoomVer", "10");
-      return n;
-    }
-  } catch (error) {}
+function manageZoomStart() {
+  try { return window.matchMedia("(max-width: 800px)").matches ? 0 : 1; } catch (error) {}
   return 0;
-})();
+}
+let manageZoom = manageZoomStart();
 let manageZoomDrag = false;
 const manageCardZoom = new Map();
 

@@ -351,15 +351,21 @@ function bankBar() {
   const field = document.createElement("input");
   field.type = "number";
   field.step = "1";
+  field.readOnly = true;
   field.className = "bank-cash";
   field.setAttribute("aria-label", "Bankroll left to bet");
   field.value = bankMoney(left());
-  field.addEventListener("click", (event) => event.stopPropagation());
-  field.addEventListener("focus", () => { field.value = bankMoney(bankBook.cash); });
-  field.addEventListener("blur", () => { field.value = bankMoney(left()); });
-  field.addEventListener("change", () => {
-    const cash = Number(field.value);
-    bankAct({ action: "set", cash }).catch(() => { field.value = bankMoney(left()); });
+  const total = document.createElement("input");
+  total.type = "number";
+  total.min = "0";
+  total.step = "1";
+  total.className = "bank-roll";
+  total.setAttribute("aria-label", "Bankroll before these bets");
+  total.value = bankMoney(bankRoll());
+  total.addEventListener("click", (event) => event.stopPropagation());
+  total.addEventListener("change", () => {
+    const cash = Math.round((Number(total.value) - bankOutSum(bankBook)) * 100) / 100;
+    bankAct({ action: "set", cash }).catch(() => { total.value = bankMoney(bankRoll()); });
   });
   const name = document.createElement("b");
   name.className = "bank-name";
@@ -369,7 +375,10 @@ function bankBar() {
   const buck = document.createElement("span");
   buck.className = "bank-buck";
   buck.textContent = "$";
-  wrap.append(buck, field);
+  const word = document.createElement("span");
+  word.className = "bank-of";
+  word.textContent = "of $";
+  wrap.append(buck, field, word, total);
   line.append(name, wrap);
   if (bankNote) {
     const note = document.createElement("span");
@@ -475,16 +484,7 @@ if (typeof window !== "undefined") {
       bankPaintTicket();
     };
   }
-  window.bankKelly = bankKelly;
-  window.bankCanLock = bankCanLock;
-  window.bankSpend = bankSpend;
-  window.bankReturn = bankReturn;
-  window.bankBar = bankBar;
-  window.bankCard = bankCard;
-  window.bankCardOf = bankCardOf;
-  window.bankAskCard = bankAskCard;
-  window.bankWho = bankWho;
-  window.bankLoad = bankLoad;
+  Object.assign(window, { bankKelly, bankCanLock, bankSpend, bankReturn, bankBar, bankCard, bankCardOf, bankAskCard, bankWho, bankLoad });
   const kept = bankReadLocal();
   if (kept && kept.cash != null) bankBook = { ...bankFresh(), ...kept, out: kept.out || {}, settled: kept.settled || {} };
   const bankWait = setInterval(() => {

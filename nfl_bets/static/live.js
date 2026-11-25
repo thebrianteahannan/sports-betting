@@ -50,9 +50,16 @@ function liveCushionTag(pick) {
   return `<i class="bet-kind k-cushion" title="${liveEsc(tip)}">Cushion</i>`;
 }
 
+function liveTicketTag(pick) {
+  const metal = pick.golden ? "golden" : pick.silver ? "silver" : pick.bronze ? "bronze" : "";
+  if (!metal) return "";
+  const say = { golden: ["Golden Ticket", "Golden Ticket: −120 to +120, and it has hit 60% or more."], silver: ["Silver Ticket", "Silver Ticket: −150 to +150, and it has hit 55% or more."], bronze: ["Bronze Ticket", "Bronze Ticket: −200 to +200, and it has hit 50% or more."] }[metal];
+  return `<i class="bet-kind k-${metal}" title="${liveEsc(say[1])}">${say[0]}</i>`;
+}
+
 function liveTags(pick) {
   if (!pick) return "";
-  return `${liveKindTag(pick)}${liveRoleTag(pick)}${liveCushionTag(pick)}`;
+  return `${liveTicketTag(pick)}${liveKindTag(pick)}${liveRoleTag(pick)}${liveCushionTag(pick)}`;
 }
 
 function liveRecTwin(game, pick) {
@@ -67,16 +74,18 @@ function liveRoot(game, picks, rec, show) {
   const one = (pick) => {
     const price = Number.isFinite(pick.odds) ? ` ${pick.odds > 0 ? `+${pick.odds}` : pick.odds}` : "";
     const { state, say, level, tip } = liveLegState(game, pick);
-    const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${liveTags(rec ? pick : liveRecTwin(game, pick))}${say ? `<i class="now${level ? ` pace-${level}` : ""}"${tip ? ` title="${liveEsc(tip)}"` : ""} data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}`;
+    const twin = rec ? pick : liveRecTwin(game, pick);
+    const tagged = twin && (twin.golden || twin.silver || twin.bronze) ? twin : { ...(twin || {}), ...pick, golden: !!(pick.golden || (twin && twin.golden)), silver: !!(pick.silver || (twin && twin.silver)), bronze: !!(pick.bronze || (twin && twin.bronze)) };
+    const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${liveTags(tagged)}${say ? `<i class="now${level ? ` pace-${level}` : ""}"${tip ? ` title="${liveEsc(tip)}"` : ""} data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}`;
     const href = `/?${new URLSearchParams({ game: pick.match, ...(pick.parlay ? { bet: pick.parlay } : {}), label: pick.label, market: pick.market, from: "live" })}`;
     const metal = !!(pick.golden || pick.silver || pick.bronze);
     const best = rec && !metal && pick.tier !== "good" && pick.role !== "thin";
-    return `<a class="live-mine-leg ${state}${rec || pick.locked ? "" : " live-open"}${best ? " live-rec-best" : ""}${rec && !metal && !best ? " live-rec-more" : ""}" href="${liveEsc(href)}" title="Open this bet in Build a bet">${inner}</a>`;
+    return `<a class="live-mine-leg ${state}${rec || pick.locked ? "" : " live-open"}${best ? " live-rec-best" : ""}${rec && !metal && !best ? " live-rec-more" : ""}${!rec && !metal ? " live-plain" : ""}" href="${liveEsc(href)}" title="Open this bet in Build a bet">${inner}</a>`;
   };
   const groups = [];
   picks.forEach((pick) => { const group = !rec && pick.parlay && groups.find((row) => row.id === pick.parlay); if (group) group.picks.push(pick); else groups.push({ id: pick.parlay, picks: [pick] }); });
   const body = groups.map((group) => { if (group.picks.length < 2) return one(group.picks[0]); const head = liveParlayHead(group.id, group.picks[0].size); const open = !rec && group.picks.every((pick) => !pick.locked); return `<span class="live-parlay${open ? " live-open" : ""}${head.level ? ` pace-${head.level}` : ""}"><em>${liveEsc(head.text)}</em>${group.picks.map(one).join("")}</span>`; }).join("");
-  return `<span class="live-mine${rec ? " live-rec" : ""}${show ? " live-rec-show" : ""}"><b>${rec ? "Recommended" : "Rooting for"}</b>${body}</span>`;
+  return `<span class="live-mine${rec ? " live-rec" : ""}${show ? " live-rec-show" : ""}"><b>${rec ? "Recommended" : "My Bets"}</b>${body}</span>`;
 }
 
 function liveHurt(game) {
@@ -178,14 +187,14 @@ function liveLeagueBar(data, count) {
   return chips || go ? `<div class="live-leagues">${chips}${go}</div>` : "";
 }
 
-const LIVE_ZOOM_MAX = 6, LIVE_ZOOM_DEFAULT = LIVE_ZOOM_MAX;
+const LIVE_ZOOM_MAX = 7, LIVE_ZOOM_DEFAULT = LIVE_ZOOM_MAX;
 let liveZoom = (() => {
   try {
     const n = Number(localStorage.getItem("liveZoom"));
     if (!Number.isFinite(n)) return LIVE_ZOOM_DEFAULT;
     const scale = localStorage.getItem("liveZoomScale");
     let next = Math.round(n);
-    if (scale !== "8") {
+    if (scale !== "8" && scale !== "9") {
       next = Math.max(0, Math.min(5, next));
       if (scale !== "7") {
         if (scale !== "5") {
@@ -198,7 +207,10 @@ let liveZoom = (() => {
         next = Math.max(0, Math.min(5, next));
       }
       if (next >= 5) next = 6;
-      localStorage.setItem("liveZoomScale", "8");
+    }
+    if (scale !== "9" && next >= 6) next += 1;
+    if (scale !== "9") {
+      localStorage.setItem("liveZoomScale", "9");
       localStorage.setItem("liveZoom", String(next));
     }
     return Math.max(0, Math.min(LIVE_ZOOM_MAX, next));
@@ -216,12 +228,13 @@ function liveZoomApply(next, opts) {
   const quiet = !!(opts && opts.quiet);
   liveZoom = Math.max(0, Math.min(LIVE_ZOOM_MAX, Math.round(Number(next) || 0)));
   document.body.dataset.liveZoom = String(liveZoom);
-  const mine = liveZoom >= 2, all = liveZoom >= 3, recs = liveZoom >= 4, best = liveZoom >= 5, every = liveZoom >= 6;
+  const mine = liveZoom >= 2, all = liveZoom >= 3, recs = liveZoom >= 4, best = liveZoom === 5 || liveZoom >= 7, every = liveZoom >= 7;
   document.body.classList.toggle("live-mine-off", !mine);
   document.body.classList.toggle("live-all-bets", all);
   document.body.classList.toggle("live-recs-on", recs);
   document.body.classList.toggle("live-recs-best", best);
   document.body.classList.toggle("live-recs-all", every);
+  document.body.classList.toggle("live-tickets", liveZoom === 6);
   if (opts && opts.master) {
     liveCardZoom.clear();
     document.querySelectorAll(".live-game[data-card-zoom]").forEach((game) => { delete game.dataset.cardZoom; });
@@ -253,7 +266,7 @@ function liveCardSlider(more) {
 }
 
 function liveZoomSay(level) {
-  return ["Just the score", "Score and the buttons", "Locked bets", "Every saved bet", "Gold, silver, and bronze", "The best recommended bets", "Every recommended bet and the last play"][level] || "";
+  return ["Just the score", "Score and the buttons", "Locked bets", "Every saved bet", "Gold, silver, and bronze", "The best recommended bets", "Gold, silver, and bronze", "Every recommended bet and the last play"][level] || "";
 }
 
 function liveFilterBits() {
@@ -544,6 +557,7 @@ async function liveFetch(again) {
     const data = await res.json();
     const mine = await Promise.race([legsJob, new Promise((resolve) => setTimeout(() => resolve(null), 200))]);
     if (mine) liveLegsFrom(mine);
+    liveTickets = data.tickets || {};
     liveRecs = data.recs || [];
     livePaint(data);
     liveFocus(data);

@@ -688,7 +688,7 @@ const server = http.createServer(async (req, res) => {
         const spot = metal.get(`${pick.label}|${pick.market || ""}|${pick.match}`);
         return spot ? { ...pick, golden: spot === "golden", silver: spot === "silver", bronze: spot === "bronze" } : pick;
       });
-      sendJson(res, { ...boardNow, recs: marked, week, tally });
+      sendJson(res, { ...boardNow, recs: marked, week, tally, tickets });
       board().then((now) => recs.recWarm(now)).catch((error) => console.error("live recs warm failed:", error));
       require("./live-grade").gradeTick().catch((error) => console.error("live recs grade failed:", error));
       return;

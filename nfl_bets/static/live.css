@@ -92,22 +92,31 @@ body[data-live-zoom="0"] .live-game[data-card-zoom]:not([data-card-zoom="0"]) :i
 .live-game[data-card-zoom="4"] .live-mine:not(.live-rec),
 .live-game[data-card-zoom="5"] .live-mine:not(.live-rec),
 .live-game[data-card-zoom="6"] .live-mine:not(.live-rec),
+.live-game[data-card-zoom="7"] .live-mine:not(.live-rec),
 .live-game[data-card-zoom="4"] .live-mine.live-rec,
 .live-game[data-card-zoom="5"] .live-mine.live-rec,
-.live-game[data-card-zoom="6"] .live-mine.live-rec { display: flex; }
+.live-game[data-card-zoom="6"] .live-mine.live-rec,
+.live-game[data-card-zoom="7"] .live-mine.live-rec { display: flex; }
 body.live-recs-on .live-game[data-card-zoom="0"] .live-mine.live-rec,
 body.live-recs-on .live-game[data-card-zoom="1"] .live-mine.live-rec,
 body.live-recs-on .live-game[data-card-zoom="2"] .live-mine.live-rec,
 body.live-recs-on .live-game[data-card-zoom="3"] .live-mine.live-rec,
 body:not(.live-mine-off) .live-game[data-card-zoom="0"] .live-mine:not(.live-rec),
 body:not(.live-mine-off) .live-game[data-card-zoom="1"] .live-mine:not(.live-rec) { display: none; }
-.live-game[data-card-zoom="6"] :is(.live-last, .live-hurt) { display: flex !important; }
+.live-game[data-card-zoom="7"] :is(.live-last, .live-hurt) { display: flex !important; }
 body[data-live-zoom="6"] .live-game[data-card-zoom="0"] :is(.live-last, .live-hurt),
 body[data-live-zoom="6"] .live-game[data-card-zoom="1"] :is(.live-last, .live-hurt),
 body[data-live-zoom="6"] .live-game[data-card-zoom="2"] :is(.live-last, .live-hurt),
 body[data-live-zoom="6"] .live-game[data-card-zoom="3"] :is(.live-last, .live-hurt),
 body[data-live-zoom="6"] .live-game[data-card-zoom="4"] :is(.live-last, .live-hurt),
-body[data-live-zoom="6"] .live-game[data-card-zoom="5"] :is(.live-last, .live-hurt) { display: none !important; }
+body[data-live-zoom="6"] .live-game[data-card-zoom="5"] :is(.live-last, .live-hurt),
+body[data-live-zoom="7"] .live-game[data-card-zoom="0"] :is(.live-last, .live-hurt),
+body[data-live-zoom="7"] .live-game[data-card-zoom="1"] :is(.live-last, .live-hurt),
+body[data-live-zoom="7"] .live-game[data-card-zoom="2"] :is(.live-last, .live-hurt),
+body[data-live-zoom="7"] .live-game[data-card-zoom="3"] :is(.live-last, .live-hurt),
+body[data-live-zoom="7"] .live-game[data-card-zoom="4"] :is(.live-last, .live-hurt),
+body[data-live-zoom="7"] .live-game[data-card-zoom="5"] :is(.live-last, .live-hurt),
+body[data-live-zoom="7"] .live-game[data-card-zoom="6"] :is(.live-last, .live-hurt) { display: none !important; }
 .live-game[data-card-zoom="0"] .live-stats,
 .live-game[data-card-zoom="1"] .live-stats { display: none !important; }
 body[data-live-zoom="0"] .live-game[data-card-zoom="2"] .live-stats,
@@ -115,18 +124,20 @@ body[data-live-zoom="0"] .live-game[data-card-zoom="3"] .live-stats,
 body[data-live-zoom="0"] .live-game[data-card-zoom="4"] .live-stats,
 body[data-live-zoom="0"] .live-game[data-card-zoom="5"] .live-stats,
 body[data-live-zoom="0"] .live-game[data-card-zoom="6"] .live-stats,
+body[data-live-zoom="0"] .live-game[data-card-zoom="7"] .live-stats,
 body[data-live-zoom="1"] .live-game[data-card-zoom="2"] .live-stats,
 body[data-live-zoom="1"] .live-game[data-card-zoom="3"] .live-stats,
 body[data-live-zoom="1"] .live-game[data-card-zoom="4"] .live-stats,
 body[data-live-zoom="1"] .live-game[data-card-zoom="5"] .live-stats,
-body[data-live-zoom="1"] .live-game[data-card-zoom="6"] .live-stats { display: inline !important; }
+body[data-live-zoom="1"] .live-game[data-card-zoom="6"] .live-stats,
+body[data-live-zoom="1"] .live-game[data-card-zoom="7"] .live-stats { display: inline !important; }
 body[data-live-zoom="0"] .live-sport { display: none !important; }
 body[data-live-zoom="0"] .live-open,
 body[data-live-zoom="0"] .live-stats,
 body[data-live-zoom="1"] .live-stats,
 body[data-live-zoom="0"] .live-meta { display: none !important; }
-body[data-live-zoom="0"] .live-last, body[data-live-zoom="1"] .live-last, body[data-live-zoom="2"] .live-last, body[data-live-zoom="3"] .live-last, body[data-live-zoom="4"] .live-last, body[data-live-zoom="5"] .live-last,
-body[data-live-zoom="0"] .live-hurt, body[data-live-zoom="1"] .live-hurt, body[data-live-zoom="2"] .live-hurt, body[data-live-zoom="3"] .live-hurt, body[data-live-zoom="4"] .live-hurt, body[data-live-zoom="5"] .live-hurt { display: none !important; }
+body[data-live-zoom="0"] .live-last, body[data-live-zoom="1"] .live-last, body[data-live-zoom="2"] .live-last, body[data-live-zoom="3"] .live-last, body[data-live-zoom="4"] .live-last, body[data-live-zoom="5"] .live-last, body[data-live-zoom="6"] .live-last,
+body[data-live-zoom="0"] .live-hurt, body[data-live-zoom="1"] .live-hurt, body[data-live-zoom="2"] .live-hurt, body[data-live-zoom="3"] .live-hurt, body[data-live-zoom="4"] .live-hurt, body[data-live-zoom="5"] .live-hurt, body[data-live-zoom="6"] .live-hurt { display: none !important; }
 .live-court { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; color: #c4cde0; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .live-court input { accent-color: #3dff6e; width: 15px; height: 15px; margin: 0; cursor: pointer; }
 .live-court.live-court-next { margin-left: 0; }
@@ -225,7 +236,9 @@ body.live-mine-games .live-next li:not(.has-mine) { display: none; }
 .live-hurt > b { color: #ff6b6b; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .live-hurt > i { padding: 3px 10px; border: 1px solid rgba(255, 107, 107, 0.55); border-radius: 999px; background: rgba(255, 107, 107, 0.1); color: #f4f7fb; font-size: 13px; font-style: normal; }
 .live-hurt em { color: #ff8f8f; font-style: normal; font-weight: 700; }
+.live-mine:not(.live-rec) { margin: 2px 0 6px; padding: 8px 10px; border: 1px solid rgba(231, 193, 90, 0.55); border-left: 4px solid #e7c15a; border-radius: 12px; background: rgba(231, 193, 90, 0.1); }
 .live-mine > b { color: #e7c15a; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.live-mine:not(.live-rec) > b { padding: 2px 8px; border-radius: 999px; background: #e7c15a; color: #1a1400; }
 .live-mine-leg { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border: 1px solid rgba(231, 193, 90, 0.55); border-radius: 999px; background: rgba(231, 193, 90, 0.1); font-size: 13px; }
 .live-mine-leg i { font-style: normal; }
 .live-parlay { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 5px 8px; border: 1px dashed rgba(231, 193, 90, 0.6); border-radius: 14px; }
@@ -261,12 +274,14 @@ body.live-all-bets .live-mine:not(.live-rec) :is(.live-mine-leg.live-open, .live
 .live-game[data-card-zoom="3"] .live-mine:not(.live-rec) :is(.live-mine-leg.live-open, .live-parlay.live-open),
 .live-game[data-card-zoom="4"] .live-mine:not(.live-rec) :is(.live-mine-leg.live-open, .live-parlay.live-open),
 .live-game[data-card-zoom="5"] .live-mine:not(.live-rec) :is(.live-mine-leg.live-open, .live-parlay.live-open),
-.live-game[data-card-zoom="6"] .live-mine:not(.live-rec) :is(.live-mine-leg.live-open, .live-parlay.live-open) { display: inline-flex; }
+.live-game[data-card-zoom="6"] .live-mine:not(.live-rec) :is(.live-mine-leg.live-open, .live-parlay.live-open),
+.live-game[data-card-zoom="7"] .live-mine:not(.live-rec) :is(.live-mine-leg.live-open, .live-parlay.live-open) { display: inline-flex; }
 body.live-all-bets .live-mine:not(.live-rec):not(:has(.live-mine-leg:not(.live-open))),
 .live-game[data-card-zoom="3"] .live-mine:not(.live-rec):not(:has(.live-mine-leg:not(.live-open))),
 .live-game[data-card-zoom="4"] .live-mine:not(.live-rec):not(:has(.live-mine-leg:not(.live-open))),
 .live-game[data-card-zoom="5"] .live-mine:not(.live-rec):not(:has(.live-mine-leg:not(.live-open))),
-.live-game[data-card-zoom="6"] .live-mine:not(.live-rec):not(:has(.live-mine-leg:not(.live-open))) { display: flex; }
+.live-game[data-card-zoom="6"] .live-mine:not(.live-rec):not(:has(.live-mine-leg:not(.live-open))),
+.live-game[data-card-zoom="7"] .live-mine:not(.live-rec):not(:has(.live-mine-leg:not(.live-open))) { display: flex; }
 body.live-all-bets .live-game[data-card-zoom="0"] .live-mine:not(.live-rec) :is(.live-open),
 body.live-all-bets .live-game[data-card-zoom="1"] .live-mine:not(.live-rec) :is(.live-open),
 body.live-all-bets .live-game[data-card-zoom="2"] .live-mine:not(.live-rec) :is(.live-open),
@@ -282,12 +297,22 @@ body.live-recs-on .live-mine.live-rec { display: flex; }
 body.live-recs-on:not(.live-recs-best) .live-mine.live-rec:not(:has(.live-mine-leg:not(.live-rec-best):not(.live-rec-more))) { display: none; }
 body.live-recs-best .live-mine.live-rec .live-mine-leg.live-rec-best,
 .live-game[data-card-zoom="5"] .live-mine.live-rec .live-mine-leg.live-rec-best,
-.live-game[data-card-zoom="6"] .live-mine.live-rec .live-mine-leg.live-rec-best { display: inline-flex; }
+.live-game[data-card-zoom="7"] .live-mine.live-rec .live-mine-leg.live-rec-best { display: inline-flex; }
 body.live-recs-best:not(.live-recs-all) .live-mine.live-rec:not(:has(.live-mine-leg:not(.live-rec-more))) { display: none; }
 body.live-recs-all .live-mine.live-rec .live-mine-leg.live-rec-more,
-.live-game[data-card-zoom="6"] .live-mine.live-rec .live-mine-leg.live-rec-more { display: inline-flex; }
+.live-game[data-card-zoom="7"] .live-mine.live-rec .live-mine-leg.live-rec-more { display: inline-flex; }
 body.live-recs-all .live-mine.live-rec:not(:has(.live-mine-leg:not(.live-rec-more))),
-.live-game[data-card-zoom="6"] .live-mine.live-rec:not(:has(.live-mine-leg:not(.live-rec-more))) { display: flex; }
+.live-game[data-card-zoom="7"] .live-mine.live-rec:not(:has(.live-mine-leg:not(.live-rec-more))) { display: flex; }
+body.live-recs-best .live-game[data-card-zoom="6"] .live-mine.live-rec .live-rec-best,
+body.live-recs-all .live-game[data-card-zoom="6"] .live-mine.live-rec .live-rec-more,
+.live-game[data-card-zoom="6"] .live-mine.live-rec:not(:has(.live-mine-leg:not(.live-rec-best):not(.live-rec-more))) { display: none !important; }
+body.live-tickets .live-mine:not(.live-rec) .live-plain,
+.live-game[data-card-zoom="6"] .live-mine:not(.live-rec) .live-plain,
+body.live-tickets .live-parlay:not(:has(.live-mine-leg:not(.live-plain))),
+.live-game[data-card-zoom="6"] .live-parlay:not(:has(.live-mine-leg:not(.live-plain))),
+body.live-tickets .live-mine:not(.live-rec):not(:has(.live-mine-leg:not(.live-plain))) { display: none !important; }
+body.live-tickets .live-game[data-card-zoom="7"] .live-mine:not(.live-rec) .live-plain,
+body.live-tickets .live-game[data-card-zoom="7"] .live-parlay { display: inline-flex !important; }
 body.live-recs-best .live-game[data-card-zoom="0"] .live-mine.live-rec .live-rec-best,
 body.live-recs-best .live-game[data-card-zoom="1"] .live-mine.live-rec .live-rec-best,
 body.live-recs-best .live-game[data-card-zoom="2"] .live-mine.live-rec .live-rec-best,
@@ -334,6 +359,7 @@ body.live-recs-on .live-table tr.rec .live-name { color: #3dff6e; }
 .live-hist-review li.held b { color: #3dff6e; } .live-hist-review li.miss b { color: #ff5a5a; } .live-hist-review li.odd b { color: #e7c15a; }
 .live-mine-leg i.bet-kind { padding: 0 6px; border: 1px solid currentColor; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; cursor: help; }
 .live-mine-leg i.bet-kind.k-safe { color: #3dff6e; } .live-mine-leg i.bet-kind.k-balanced { color: #8fb4ff; } .live-mine-leg i.bet-kind.k-payout { color: #ff9a2e; } .live-mine-leg i.bet-kind.k-good { color: #c4cde0; border-style: dashed; } .live-mine-leg i.bet-kind.k-role-solid { color: #6bff92; } .live-mine-leg i.bet-kind.k-role-thin { color: #ffb35c; border-style: dashed; } .live-mine-leg i.bet-kind.k-cushion { color: #e7c15a; }
+.live-mine-leg i.bet-kind.k-golden { color: #1a1400; background: #e7c15a; border-color: #e7c15a; } .live-mine-leg i.bet-kind.k-silver { color: #12181f; background: #d5deea; border-color: #d5deea; } .live-mine-leg i.bet-kind.k-bronze { color: #1a1006; background: #d0894f; border-color: #d0894f; }
 .live-load { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; min-height: 60vh; }
 .live-load img { width: 200px; height: auto; animation: live-look 0.9s ease-in-out infinite; transform-origin: 68% 26%; filter: drop-shadow(0 10px 16px rgba(61, 255, 110, 0.35)); }
 .live-load-say { display: flex; flex-direction: column; gap: 0.35rem; min-width: 19rem; }
