@@ -266,7 +266,7 @@ function liveCardSlider(more) {
 }
 
 function liveZoomSay(level) {
-  return ["Just the score", "Score and the buttons", "Locked bets", "Every saved bet", "Gold, silver, and bronze", "The best recommended bets", "Gold, silver, and bronze", "Every recommended bet and the last play"][level] || "";
+  return ["Just the score", "Score and the buttons", "Locked bets", "Every saved bet", "Gold, silver, and bronze", "The best recommended bets", "Gold, silver, and bronze", "Every recommended bet, and the latest play on a live game"][level] || "";
 }
 
 function liveFilterBits() {
