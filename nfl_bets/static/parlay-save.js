@@ -527,13 +527,6 @@ function savePaint() {
     const betOpen = saveBetOpen(tray);
     const head = document.createElement("p"); head.className = "find-say";
     const title = document.createElement("b"); title.className = "find-saved-title"; title.textContent = "MY BETS"; head.append(title);
-    const tally = savePackTally(list);
-    if (tally.n) {
-      const pay = document.createElement("span");
-      pay.className = "find-saved-pay";
-      pay.innerHTML = `<i class="pay">$${esc(saveMoneySaid(tally.stake))}</i> · profits <i class="pay">$${esc(saveMoneySaid(tally.profit))}</i> if all hit`;
-      head.append(pay);
-    }
     const hide = document.createElement("button");
     hide.type = "button";
     hide.className = "find-saved-quick find-saved-hide";

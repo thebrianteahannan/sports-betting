@@ -139,6 +139,34 @@ function manageBankPlan(span) {
   }, 0) * 100) / 100;
 }
 
+function manageBankTake(span) {
+  const list = typeof saveList === "function" ? saveList() : [];
+  const book = typeof bankBook !== "undefined" ? bankBook : {};
+  const out = book.out || {};
+  const settled = book.settled || {};
+  return list.reduce((sum, row) => {
+    if (!row || settled[row.id] || !manageBankSpan(row, span)) return sum;
+    const kelly = typeof bankKelly === "function" ? bankKelly(row.legs || []) : null;
+    const saved = typeof saveRowStake === "function" ? saveRowStake(row) : Number(row.stake) || 0;
+    const stake = out[row.id] ? Number(out[row.id].stake) || 0 : row.locked ? saved : kelly && kelly.edge && kelly.bet > 0 ? Number(kelly.bet) : saved;
+    const win = typeof saveRowWin === "function" ? saveRowWin(row) : 0;
+    const profit = saved > 0 ? stake * win / saved : 0;
+    const p = kelly && kelly.p > 0 ? kelly.p : 0;
+    sum.stake += stake;
+    sum.profit += profit;
+    if (p) sum.ev += p * profit - (1 - p) * stake;
+    return sum;
+  }, { stake: 0, profit: 0, ev: 0 });
+}
+
+function manageBankTakeSay(span) {
+  const take = manageBankTake(span);
+  if (!(take.stake > 0)) return "";
+  const money = (n) => { const v = Math.round(Number(n) * 100) / 100; return Math.abs(v - Math.round(v)) < 0.005 ? String(Math.round(v)) : v.toFixed(2); };
+  const ev = Math.round(take.ev * 100) / 100;
+  return `$${money(take.stake)} in, $${money(take.profit)} profit if all win, expected ${ev < 0 ? "-" : ""}$${money(Math.abs(ev))}`;
+}
+
 function manageBankRolls() {
   try { return JSON.parse(localStorage.getItem("pod-bank-rolls") || "") || {}; } catch (error) { return {}; }
 }

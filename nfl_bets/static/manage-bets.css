@@ -294,7 +294,9 @@
 #desk.tv-full #desk-glass .manage-board[data-manage-zoom="2"] .manage-list,
 .manage-board[data-manage-zoom="2"] .manage-list,
 #desk.tv-full #desk-glass .manage-board[data-manage-zoom="3"] .manage-list,
-.manage-board[data-manage-zoom="3"] .manage-list {
+.manage-board[data-manage-zoom="3"] .manage-list,
+#desk.tv-full #desk-glass .manage-board[data-manage-zoom="4"] .manage-list,
+.manage-board[data-manage-zoom="4"] .manage-list {
   display: flex !important;
   flex-direction: column;
   gap: 0 !important;
@@ -308,7 +310,9 @@
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="2"],
 .manage-card[data-manage-zoom="2"],
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="3"],
-.manage-card[data-manage-zoom="3"] {
+.manage-card[data-manage-zoom="3"],
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="4"],
+.manage-card[data-manage-zoom="4"] {
   display: grid !important;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -331,7 +335,9 @@
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="2"]:hover,
 .manage-card[data-manage-zoom="2"]:hover,
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="3"]:hover,
-.manage-card[data-manage-zoom="3"]:hover {
+.manage-card[data-manage-zoom="3"]:hover,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="4"]:hover,
+.manage-card[data-manage-zoom="4"]:hover {
   background: rgba(61, 255, 110, 0.04) !important;
   box-shadow: none !important;
 }
@@ -380,7 +386,6 @@
 .manage-board .manage-bet-price .pay { color: #3dff6e; }
 .manage-board .find-chose { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; min-width: 0; padding: 0.2rem 0; }
 .manage-board .manage-leg-note { display: none; flex: 1 0 100%; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.45rem; margin: 0.1rem 0 0.35rem; min-width: 0; }
-.manage-card[data-manage-zoom="3"] .manage-leg-note,
 .manage-card[data-manage-zoom="4"] .manage-leg-note,
 .manage-card[data-manage-zoom="5"] .manage-leg-note { display: flex; }
 .manage-board .find-chose > span { display: flex; flex: 1; align-items: baseline; flex-wrap: wrap; gap: 0.1rem 0.5rem; min-width: 0; font-weight: 600; }
@@ -395,7 +400,8 @@
   #desk.tv-full #desk-glass .manage-board .manage-card > .manage-card-acts,
   .manage-board .manage-card > .manage-card-acts { position: absolute !important; top: 0.7rem; right: 0.7rem; grid-column: auto !important; grid-row: auto !important; }
   .manage-board .manage-bet-price,
-  .manage-board .manage-fold-line { padding-right: 6.4rem; }
+  .manage-board .manage-fold-line,
+  .manage-card[data-manage-zoom="0"] > .manage-legs { padding-right: 6.4rem; }
   .manage-board[data-manage-zoom="1"] .manage-bet-price,
   .manage-board[data-manage-zoom="1"] .manage-fold-line { padding-right: 11.5rem; }
   .manage-board .find-chose { gap: 0.3rem; padding: 0.12rem 0; }
@@ -416,8 +422,8 @@
 .manage-board .find-chose i.leg-role.r-filler { color: #9aa6b2; }
 .manage-board .find-chose i.leg-role.r-dead { color: #ff6b6b; border-style: dashed; }
 .manage-board .find-chose i.find-rec-pill { display: inline-flex; align-items: center; gap: 0.25rem; align-self: center; margin: 0 0 0 0.3rem; padding: 0 0.45rem 0 0.25rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.03em; line-height: 1.45; text-transform: uppercase; white-space: nowrap; }
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill .kind,
-.manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill .kind { display: none; }
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="1"] .find-chose i.find-rec-pill .kind,
+.manage-card[data-manage-zoom="1"] .find-chose i.find-rec-pill .kind { display: none; }
 .manage-board .find-chose i.find-rec-pill::before { content: ""; width: 1.3em; height: 1.3em; background: url("/scene/parrot-head-tight.webp?v=1") center / contain no-repeat; }
 .manage-board .find-chose i.find-rec-pill.ticket { background: #e7c15a; color: #1a1400; }
 .manage-board .find-chose i.find-rec-pill.ticket.silver { background: #d5deea; color: #12181f; }
@@ -432,20 +438,22 @@
 .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill.ticket.silver { background: #d5deea; color: #12181f; }
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill.ticket.bronze,
 .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill.ticket.bronze { background: #d0894f; color: #1a1006; }
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.spot,
-.manage-card[data-manage-zoom="0"] .find-chose i.spot,
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.game,
-.manage-card[data-manage-zoom="0"] .find-chose i.game,
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill,
-.manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill,
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.bet-kind,
-.manage-card[data-manage-zoom="0"] .find-chose i.bet-kind,
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.leg-role,
-.manage-card[data-manage-zoom="0"] .find-chose i.leg-role,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="1"] .find-chose i.spot,
+.manage-card[data-manage-zoom="1"] .find-chose i.spot,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="1"] .find-chose i.game,
+.manage-card[data-manage-zoom="1"] .find-chose i.game,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="1"] .find-chose i.find-rec-pill,
+.manage-card[data-manage-zoom="1"] .find-chose i.find-rec-pill,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="1"] .find-chose i.bet-kind,
+.manage-card[data-manage-zoom="1"] .find-chose i.bet-kind,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="1"] .find-chose i.leg-role,
+.manage-card[data-manage-zoom="1"] .find-chose i.leg-role,
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .bank-kelly,
 .manage-card[data-manage-zoom="0"] .bank-kelly,
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="1"] .bank-kelly,
-.manage-card[data-manage-zoom="1"] .bank-kelly { display: none !important; }
+.manage-card[data-manage-zoom="1"] .bank-kelly,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="2"] .bank-kelly,
+.manage-card[data-manage-zoom="2"] .bank-kelly { display: none !important; }
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-read,
 .manage-board .manage-card > .manage-read { grid-column: 2; grid-row: 1; }
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-card-acts,
@@ -456,10 +464,22 @@
 .manage-board .manage-card:has(.manage-bet-price) > .manage-card-acts { align-self: start; margin-top: 0.15rem; }
 .manage-board .manage-legs:has(.manage-bet-price) .find-chose { margin-left: 0.35rem; padding-left: 0.7rem; border-left: 2px solid #1e3a2a; }
 .manage-board .manage-fold { display: none; }
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"]:has(.manage-fold) .manage-legs,
-.manage-card[data-manage-zoom="0"]:has(.manage-fold) .manage-legs { display: none !important; }
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .manage-fold,
-.manage-card[data-manage-zoom="0"] .manage-fold { display: flex; flex-direction: column; gap: 0.12rem; grid-column: 2; grid-row: 1; min-width: 0; }
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="1"]:has(.manage-fold) .manage-legs,
+.manage-card[data-manage-zoom="1"]:has(.manage-fold) .manage-legs { display: none !important; }
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="1"] .manage-fold,
+.manage-card[data-manage-zoom="1"] .manage-fold { display: flex; flex-direction: column; gap: 0.12rem; grid-column: 2; grid-row: 1; min-width: 0; }
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] > .manage-legs,
+.manage-card[data-manage-zoom="0"] > .manage-legs { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 0.45rem; }
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .manage-bet-price,
+.manage-card[data-manage-zoom="0"] .manage-bet-price,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose,
+.manage-card[data-manage-zoom="0"] .find-chose,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose > span,
+.manage-card[data-manage-zoom="0"] .find-chose > span { display: contents; }
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"]:not(.parlay) .find-chose i.px,
+.manage-card[data-manage-zoom="0"]:not(.parlay) .find-chose i.px,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"]:not(.parlay) .find-chose i.pct,
+.manage-card[data-manage-zoom="0"]:not(.parlay) .find-chose i.pct { display: none; }
 .manage-board .manage-fold-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 0.85rem; min-width: 0; }
 .manage-board .manage-fold .manage-bet-price { flex: none; }
 .manage-board .manage-fold-legs { display: flex; flex-direction: column; align-items: stretch; gap: 0.15rem; margin-left: 0.1rem; padding-left: 0.65rem; border-left: 2px solid #1e3a2a; }
@@ -474,12 +494,8 @@
 .manage-board .manage-card > .manage-tags,
 .manage-board .manage-card > .manage-more,
 .manage-board .manage-card > .manage-inline { grid-column: 1 / -1; min-width: 0; }
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="3"] .manage-tags:not([hidden]),
-.manage-card[data-manage-zoom="3"] .manage-tags:not([hidden]),
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="4"] .manage-tags:not([hidden]),
 .manage-card[data-manage-zoom="4"] .manage-tags:not([hidden]),
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="3"] .manage-inline:not([hidden]),
-.manage-card[data-manage-zoom="3"] .manage-inline:not([hidden]),
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="4"] .manage-inline:not([hidden]),
 .manage-card[data-manage-zoom="4"] .manage-inline:not([hidden]),
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="5"] .manage-inline:not([hidden]),
@@ -521,15 +537,15 @@
 }
 
 .manage-board .manage-slip { display: none; }
-#desk.tv-full #desk-glass .manage-board[data-manage-zoom="4"] .manage-list,
-.manage-board[data-manage-zoom="4"] .manage-list {
+#desk.tv-full #desk-glass .manage-board[data-manage-zoom="5"] .manage-list,
+.manage-board[data-manage-zoom="5"] .manage-list {
   display: flex !important;
   flex-direction: column;
   gap: 0 !important;
   width: 100%;
 }
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="4"],
-.manage-card[data-manage-zoom="4"] {
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="5"],
+.manage-card[data-manage-zoom="5"] {
   display: grid !important;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: start;
@@ -543,16 +559,16 @@
   background: transparent !important;
   box-shadow: none !important;
 }
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="4"] .manage-read,
-.manage-card[data-manage-zoom="4"] .manage-read,
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="4"] .manage-more,
-.manage-card[data-manage-zoom="4"] .manage-more,
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="4"] .manage-legs,
-.manage-card[data-manage-zoom="4"] .manage-legs,
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="4"] .manage-fold,
-.manage-card[data-manage-zoom="4"] .manage-fold { display: none !important; }
-#desk.tv-full #desk-glass .manage-card[data-manage-zoom="4"] .manage-slip,
-.manage-card[data-manage-zoom="4"] .manage-slip {
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="5"] .manage-read,
+.manage-card[data-manage-zoom="5"] .manage-read,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="5"] .manage-more,
+.manage-card[data-manage-zoom="5"] .manage-more,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="5"] .manage-legs,
+.manage-card[data-manage-zoom="5"] .manage-legs,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="5"] .manage-fold,
+.manage-card[data-manage-zoom="5"] .manage-fold { display: none !important; }
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="5"] .manage-slip,
+.manage-card[data-manage-zoom="5"] .manage-slip {
   display: grid;
   gap: 0.28rem;
   grid-column: 2;
@@ -962,6 +978,7 @@
 }
 .manage-board .bank-line { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem 0.7rem; margin: 0.35rem 0.6rem; color: #c9d4dd; font-size: 14px; font-weight: 700; }
 .manage-board .bank-line .bank-span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.manage-board .bank-line .bank-take { color: #d5deea; font-weight: 700; }
 .manage-board .bank-line b.bank-name { color: #e7c15a; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .manage-board .bank-line .bank-cash-wrap { display: inline-flex !important; align-items: center; gap: 0.05rem; margin: 0; padding: 0.15rem 0.45rem; border: 1px solid #3dff6e; border-radius: 8px; background: #07140f; color: #3dff6e; font-weight: 800; }
 .manage-board .bank-line .bank-buck { color: #3dff6e; font-weight: 800; }

@@ -2,9 +2,9 @@
 
 let manageFilter = "all";
 let manageEditId = "";
-const MANAGE_ZOOM_MAX = 3;
+const MANAGE_ZOOM_MAX = 4;
 function manageZoomStart() {
-  try { return window.matchMedia("(max-width: 800px)").matches ? 0 : 1; } catch (error) {}
+  try { return window.matchMedia("(max-width: 800px)").matches ? 0 : 2; } catch (error) {}
   return 0;
 }
 let manageZoom = manageZoomStart();
