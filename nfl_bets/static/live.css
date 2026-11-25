@@ -86,14 +86,24 @@ body[data-live-zoom="0"] .live-side i { font-size: 18px; }
 body[data-live-zoom="0"] .live-clock,
 body[data-live-zoom="0"] .live-next li > i { font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
 body[data-live-zoom="0"] .live-soon .live-side i:empty { display: none; }
-body[data-live-zoom="0"] .live-pack > .live-game[data-card-zoom]:not([data-card-zoom="0"]) { grid-column: 1 / -1; }
+body[data-live-zoom="0"] .live-pack > .live-game[data-card-zoom]:not([data-card-zoom="0"]),
+body[data-live-zoom="0"] .live-pack > .live-game:has(.live-rec-show) { grid-column: 1 / -1; min-width: 0; }
 body[data-live-zoom="0"] .live-game[data-card-zoom]:not([data-card-zoom="0"]) > summary,
-body[data-live-zoom="0"] .live-game[data-card-zoom]:not([data-card-zoom="0"]) > .live-head { padding: 12px 14px; gap: 8px 12px; }
-body[data-live-zoom="0"] .live-game[data-card-zoom]:not([data-card-zoom="0"]) .live-side img { width: 26px; height: 26px; }
-body[data-live-zoom="0"] .live-game[data-card-zoom]:not([data-card-zoom="0"]) .live-side b { font-size: 16px; }
-body[data-live-zoom="0"] .live-game[data-card-zoom]:not([data-card-zoom="0"]) .live-side i { font-size: 22px; }
-body[data-live-zoom="0"] .live-game[data-card-zoom]:not([data-card-zoom="0"]) .live-clock { font-size: 13px; letter-spacing: normal; }
-body[data-live-zoom="0"] .live-game[data-card-zoom]:not([data-card-zoom="0"]) :is(.live-sport, .live-open, .live-meta) { display: inline-flex !important; }
+body[data-live-zoom="0"] .live-game[data-card-zoom]:not([data-card-zoom="0"]) > .live-head,
+body[data-live-zoom="0"] .live-game:has(.live-rec-show) > summary,
+body[data-live-zoom="0"] .live-game:has(.live-rec-show) > .live-head { padding: 12px 14px; gap: 8px 12px; }
+body[data-live-zoom="0"] .live-game[data-card-zoom]:not([data-card-zoom="0"]) .live-side img,
+body[data-live-zoom="0"] .live-game:has(.live-rec-show) .live-side img { width: 26px; height: 26px; }
+body[data-live-zoom="0"] .live-game[data-card-zoom]:not([data-card-zoom="0"]) .live-side b,
+body[data-live-zoom="0"] .live-game:has(.live-rec-show) .live-side b { font-size: 16px; }
+body[data-live-zoom="0"] .live-game[data-card-zoom]:not([data-card-zoom="0"]) .live-side i,
+body[data-live-zoom="0"] .live-game:has(.live-rec-show) .live-side i { font-size: 22px; }
+body[data-live-zoom="0"] .live-game[data-card-zoom]:not([data-card-zoom="0"]) .live-clock,
+body[data-live-zoom="0"] .live-game:has(.live-rec-show) .live-clock { font-size: 13px; letter-spacing: normal; }
+body[data-live-zoom="0"] .live-game[data-card-zoom]:not([data-card-zoom="0"]) :is(.live-sport, .live-open, .live-meta),
+body[data-live-zoom="0"] .live-game:has(.live-rec-show) :is(.live-sport, .live-open, .live-meta) { display: inline-flex !important; }
+body[data-live-zoom="0"] .live-game:has(.live-rec-show) .live-mine.live-rec { min-width: 0; max-width: 100%; }
+body[data-live-zoom="0"] .live-game:has(.live-rec-show) .live-mine-leg { max-width: 100%; }
 .live-game[data-card-zoom="2"] .live-mine:not(.live-rec),
 .live-game[data-card-zoom="3"] .live-mine:not(.live-rec),
 .live-game[data-card-zoom="4"] .live-mine:not(.live-rec),
