@@ -295,15 +295,20 @@ function priceMoveDraw(box, rows) {
   if (news) {
     news.type = "button";
     news.className = "price-move-news";
-    news.textContent = "Any news?";
+    news.textContent = "Why the move?";
     news.addEventListener("click", () => {
       news.disabled = true;
       news.textContent = "Looking.";
-      priceMoveAsk(picked, "news").then((data) => {
-        const line = document.createElement("p");
-        line.className = "price-move-note";
-        line.textContent = data.line || "The news check did not come back.";
-        news.replaceWith(line);
+      priceMoveAsk(picked, "why").then((data) => {
+        const lines = data && data.lines && data.lines.length ? data.lines : [data && data.line || "The check did not come back."];
+        const box = document.createElement("div");
+        lines.forEach((text) => {
+          const line = document.createElement("p");
+          line.className = "price-move-note";
+          line.textContent = text;
+          box.append(line);
+        });
+        news.replaceWith(box);
       });
     });
   }
@@ -312,7 +317,7 @@ function priceMoveDraw(box, rows) {
 }
 
 function priceMoveAsk(row, kind) {
-  const query = new URLSearchParams({ label: row.label || "", match: row.match || "", market: row.market || "", sport: row.sport || "", kind });
+  const query = new URLSearchParams({ label: row.label || "", match: row.match || "", market: row.market || "", sport: row.sport || "", kickoff: row.kickoff || "", model: row.model != null ? String(row.model) : "", kind });
   return fetch(`/api/price-look?${query}`, { credentials: "same-origin" }).then((response) => (response.ok ? response.json() : { line: "" })).catch(() => ({ line: "" }));
 }
 
