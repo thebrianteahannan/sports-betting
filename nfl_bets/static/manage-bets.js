@@ -116,6 +116,34 @@ function manageKick(row) {
   return typeof window.when === "function" ? `${window.when(kicks[0])} ET` : kicks[0];
 }
 
+function manageNextLine(rows) {
+  const line = document.createElement("p");
+  line.className = "manage-next";
+  const settled = (typeof bankBook !== "undefined" && bankBook.settled) || {};
+  const now = Date.now();
+  let best = null;
+  (rows || []).forEach((row) => {
+    if (!row || settled[row.id]) return;
+    (row.legs || []).forEach((leg) => {
+      const at = Date.parse(leg.kickoff || "");
+      if (!(at > now)) return;
+      const game = typeof gameShort === "function" && leg.match ? gameShort(leg.match) : "";
+      if (!game) return;
+      if (!best || at < best.at) best = { at, kick: leg.kickoff, games: new Set([game]) };
+      else if (at === best.at) best.games.add(game);
+    });
+  });
+  if (!best) { line.hidden = true; return line; }
+  const when = typeof window.when === "function" ? window.when(best.kick) : "";
+  line.append(`Next up is ${[...best.games].join(" and ")}${when ? `, ${when} ET. ` : ". "}`);
+  const until = document.createElement("span");
+  until.className = "find-until";
+  until.dataset.kick = best.kick;
+  if (typeof gameUntilPaint === "function") gameUntilPaint(until);
+  line.append(until);
+  return line;
+}
+
 function manageGames(row) {
   return typeof gameShortList === "function" ? gameShortList(row.legs || []) : [...new Set((row.legs || []).map((leg) => leg.match).filter(Boolean))].join(" · ");
 }
@@ -437,6 +465,7 @@ function manageFill(board) {
   filters.append(manageZoomBar());
   board.append(filters);
   if (typeof bankBar === "function") board.append(bankBar());
+  board.append(manageNextLine(shown));
   manageZoomApply(manageZoom, { quiet: true, board, filling: true });
   if (!shown.length) {
     const none = document.createElement("div");
