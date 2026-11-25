@@ -175,9 +175,9 @@ function manageLegRead(leg) {
   let prop = raw;
   if (who && prop.toLowerCase().startsWith(who.toLowerCase())) prop = prop.slice(who.length).trim();
   if (prop.toLowerCase() === who.toLowerCase()) prop = "";
-  if (!prop) {
-    const market = String(leg.market || "").replace(who, "").replace(/^\s*-\s*/, "").replace(/^alt(?:ernate)?\s+/i, "").trim();
-    if (market && market.toLowerCase() !== who.toLowerCase()) prop = market;
+  if (!prop || /^(over|under)(\s+[\d.]+)?$/i.test(prop)) {
+    const unit = String(leg.market || "").replace(who, "").replace(/^\s*-\s*/, "").replace(/^(alt(?:ernate)?|total|player)\s+/i, "").replace(/^\d+\+\s*/, "").trim().toLowerCase();
+    if (unit && unit !== who.toLowerCase() && !prop.toLowerCase().includes(unit)) prop = [prop, unit].filter(Boolean).join(" ");
   }
   if (/any\s*time\s*touchdown/i.test(prop)) prop = "Anytime TD";
   const game = typeof gameShort === "function" && leg.match ? gameShort(leg.match) : String(leg.match || "");
