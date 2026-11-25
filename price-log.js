@@ -68,16 +68,6 @@ function whenText(at) {
   return new Date(at).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
 }
 
-function leadText(at, kickoff) {
-  const kick = Date.parse(kickoff || "");
-  if (!Number.isFinite(kick) || !Number.isFinite(at)) return "";
-  const hours = Math.round((kick - at) / 3600000);
-  if (hours >= 48) return `${Math.round(hours / 24)} days before the game`;
-  if (hours >= 1) return `${hours} hours before the game`;
-  if (hours > -1) return "right at the game";
-  return "";
-}
-
 function modelOf(pick) {
   if (!pick) return null;
   const { edgePull, matchupUse } = require("./bet-kind");
@@ -87,12 +77,33 @@ function modelOf(pick) {
   return moved ? moved.used : pull.pulled;
 }
 
+function readOf(pick) {
+  if (!pick || pick.tier === "good" || !pick.how) return null;
+  const { ranHot } = require("./bet-kind");
+  return {
+    tier: pick.tier || "rec",
+    hits: pick.hits,
+    n: pick.n,
+    need: pick.need,
+    odds: pick.odds,
+    how: pick.how,
+    role: pick.role || "",
+    cushion: !!pick.cushion,
+    hot: ranHot(pick),
+    matchupShift: Number(pick.matchupShift) || 0,
+    matchupNote: pick.matchupNote || "",
+    fair: pick.fairEx ? Number(pick.fair) : null,
+    fairEx: !!pick.fairEx,
+    fairBooks: pick.fairBooks || null,
+  };
+}
+
 function stepSay(prev, next, kickoff, ctx, prior) {
   const from = implied(prev[0]);
   const to = implied(next[0]);
   const points = Math.round((to - from) * 1000) / 10;
   if (!points) return null;
-  const way = points > 0 ? "shorter" : "longer";
+  const pay = `Pays ${Math.abs(points).toFixed(1)} points ${points > 0 ? "less" : "more"}.`;
   const fair = ctx && Number(ctx.fair);
   const model = ctx && Number(ctx.model);
   const haveFair = fair > 0 && fair < 1;
@@ -101,19 +112,18 @@ function stepSay(prev, next, kickoff, ctx, prior) {
   const oursNear = haveModel && Math.abs(to - model) + 0.002 < Math.abs(from - model);
   let cause = "";
   if (haveFair && haveModel) {
-    if (booksNear && oursNear) cause = `The other books have it at ${pctText(fair)}, and our number is ${pctText(model)}. This step moved FanDuel toward both.`;
-    else if (booksNear) cause = `The other books have it at ${pctText(fair)}. FanDuel moved toward them, and away from our ${pctText(model)}.`;
-    else if (oursNear) cause = `Our number is ${pctText(model)}. The price moved toward it, and away from the other books at ${pctText(fair)}.`;
-    else cause = `This step left our ${pctText(model)} and the other books at ${pctText(fair)}.`;
-  } else if (haveFair) cause = booksNear ? `FanDuel moved toward the other books, which have it at ${pctText(fair)}.` : `FanDuel moved away from the other books, which have it at ${pctText(fair)}.`;
-  else if (haveModel) cause = oursNear ? `The price moved toward our ${pctText(model)}.` : `The price moved away from our ${pctText(model)}.`;
-  else if (prior) cause = prior > 0 === points > 0 ? `The price kept getting ${way}.` : "The price turned around.";
-  const lead = leadText(next[1], kickoff);
+    if (booksNear && oursNear) cause = `Toward our ${pctText(model)} and the books at ${pctText(fair)}.`;
+    else if (booksNear) cause = `Toward the books at ${pctText(fair)}, away from our ${pctText(model)}.`;
+    else if (oursNear) cause = `Toward our ${pctText(model)}, away from the books at ${pctText(fair)}.`;
+    else cause = `Away from our ${pctText(model)} and the books at ${pctText(fair)}.`;
+  } else if (haveFair) cause = booksNear ? `Toward the books at ${pctText(fair)}.` : `Away from the books at ${pctText(fair)}.`;
+  else if (haveModel) cause = oursNear ? `Toward our ${pctText(model)}.` : `Away from our ${pctText(model)}.`;
+  else if (prior) cause = prior > 0 === points > 0 ? "" : "Turned.";
   return {
     at: next[1],
     odds: next[0],
     points,
-    text: `${whenText(next[1])}. ${priceText(prev[0])} to ${priceText(next[0])}. The price got ${Math.abs(points).toFixed(1)} points ${way}${lead ? `, ${lead}` : ""}. ${cause}`.trim(),
+    text: `${whenText(next[1])}. ${priceText(prev[0])} to ${priceText(next[0])}. ${pay}${cause ? ` ${cause}` : ""}`,
   };
 }
 
@@ -252,10 +262,15 @@ async function movers() {
     const key = `${item.move.label}|${item.move.match}`;
     if (seen.has(key)) return;
     seen.add(key);
+    const exact = pick && String(item.move.label || "").toLowerCase().trim() === String(pick.label || "").toLowerCase().trim();
     const ctx = pick ? { fair: pick.fairEx ? Number(pick.fair) : null, model: modelOf(pick) } : null;
     item.move.series = item.series.map(([odds, at]) => ({ odds, at }));
     item.move.steps = stepsOf(item.series, item.game, ctx);
     if (ctx && ctx.model) item.move.model = ctx.model;
+    if (exact) {
+      const read = readOf(pick);
+      if (read) item.move.read = read;
+    }
     kept.push(item.move);
   });
   return { tracked, rows: kept };
