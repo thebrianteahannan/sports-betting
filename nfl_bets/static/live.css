@@ -65,8 +65,8 @@ body[data-live-zoom="0"] .live-game[data-card-zoom="0"] .live-rec-tag { position
 .live-zoom input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border: 2px solid #04140c; border-radius: 50%; background: #3dff6e; box-shadow: 0 0 10px rgba(61, 255, 110, 0.45); cursor: grab; }
 .live-zoom input[type="range"]:active::-moz-range-thumb { cursor: grabbing; }
 .live-card-zoom { display: none; flex: 1 0 100%; margin: 6px 0 0; justify-content: flex-end; }
-.live-game[data-card-zoom] > .live-head > .live-card-zoom,
-.live-game[data-card-zoom] > summary > .live-card-zoom { display: inline-flex; }
+.live-game[data-card-zoom]:not([data-card-zoom="0"]):not([data-card-zoom="1"]) > .live-head > .live-card-zoom,
+.live-game[data-card-zoom]:not([data-card-zoom="0"]):not([data-card-zoom="1"]) > summary > .live-card-zoom { display: inline-flex; }
 .live-card-zoom input[type="range"] { width: min(160px, 50%); }
 /* 0 game blocks · 1 sport and buttons · 2 locked bets · 3 every bet · 4 gold, silver, bronze · 5 every recommended bet and last play
    Only .live-pack goes multi-column — never #live, or the Less/More bar jumps when blocks become rows. */
@@ -117,8 +117,9 @@ body[data-live-zoom="7"] .live-game[data-card-zoom="3"] :is(.live-last, .live-hu
 body[data-live-zoom="7"] .live-game[data-card-zoom="4"] :is(.live-last, .live-hurt),
 body[data-live-zoom="7"] .live-game[data-card-zoom="5"] :is(.live-last, .live-hurt),
 body[data-live-zoom="7"] .live-game[data-card-zoom="6"] :is(.live-last, .live-hurt) { display: none !important; }
-.live-game[data-card-zoom="0"] .live-stats,
-.live-game[data-card-zoom="1"] .live-stats { display: none !important; }
+.live-game[data-card-zoom="0"] .live-stats { display: none !important; }
+body[data-live-zoom="0"] .live-game[data-card-zoom="1"] .live-stats,
+body[data-live-zoom="1"] .live-game[data-card-zoom="1"] .live-stats,
 body[data-live-zoom="0"] .live-game[data-card-zoom="2"] .live-stats,
 body[data-live-zoom="0"] .live-game[data-card-zoom="3"] .live-stats,
 body[data-live-zoom="0"] .live-game[data-card-zoom="4"] .live-stats,
@@ -134,7 +135,6 @@ body[data-live-zoom="1"] .live-game[data-card-zoom="7"] .live-stats { display: i
 body[data-live-zoom="0"] .live-sport { display: none !important; }
 body[data-live-zoom="0"] .live-open,
 body[data-live-zoom="0"] .live-stats,
-body[data-live-zoom="1"] .live-stats,
 body[data-live-zoom="0"] .live-meta { display: none !important; }
 body[data-live-zoom="0"] .live-last, body[data-live-zoom="1"] .live-last, body[data-live-zoom="2"] .live-last, body[data-live-zoom="3"] .live-last, body[data-live-zoom="4"] .live-last, body[data-live-zoom="5"] .live-last, body[data-live-zoom="6"] .live-last,
 body[data-live-zoom="0"] .live-hurt, body[data-live-zoom="1"] .live-hurt, body[data-live-zoom="2"] .live-hurt, body[data-live-zoom="3"] .live-hurt, body[data-live-zoom="4"] .live-hurt, body[data-live-zoom="5"] .live-hurt, body[data-live-zoom="6"] .live-hurt { display: none !important; }

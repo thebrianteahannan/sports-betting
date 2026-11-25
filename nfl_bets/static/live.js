@@ -129,7 +129,7 @@ function liveGame(game) {
   const body = teams ? `${bar}${teams}` : `<p class="live-note">ESPN has not posted player stats for this game yet.</p>`;
   const match = (liveMine(game, liveRecs)[0] || {}).match || `${game.away.name} @ ${game.home.name}`;
   const page = `/?${new URLSearchParams({ game: match, sport: game.sport, from: "live", ...(game.when ? { kick: game.when } : {}), ...(game.id ? { espn: game.id } : {}) })}`;
-  const more = !!(picks.length || recs.size || teams || game.last);
+  const more = !!(picks.length || recs.size);
   return `<details class="live-game${picks.length ? " has-mine" : ""}${game.final ? " live-final" : ""}${known && liveCard.court.has(game.id) ? " live-court-only" : ""}${picks.length && liveCard.mine.has(game.id) ? " live-mine-only" : ""}${split && liveCard.off.has(game.id) ? " live-off-only" : ""}" data-id="${liveEsc(game.id)}" data-sport="${liveEsc(game.sport)}" data-match="${liveEsc(match)}"${liveZoom > 1 && liveOpen.has(game.id) ? " open" : ""}><summary><span class="live-sport">${liveEsc(game.sport)}</span>${liveSide(game.away, away > home, `${game.id}|away`)}<span class="live-at-sign">@</span>${liveSide(game.home, home > away, `${game.id}|home`)}<span class="live-clock">${liveEsc(game.clock)}</span>${game.last ? `<span class="live-last" data-k="${liveEsc(`${game.id}|last`)}">${liveEsc(game.last)}</span>` : ""}${liveHurt(game)}${liveRoot(game, picks)}${liveRecRow(game, picks)}<a class="live-open" href="${liveEsc(page)}">Open Game Page</a><button type="button" class="live-stats" aria-label="Live stats"></button>${liveCardSlider(more)}</summary>${body}</details>`;
 }
 

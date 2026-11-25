@@ -94,7 +94,7 @@ function trayLivePaint() {
     head.append(tally);
   });
   const board = document.querySelector(".manage-board");
-  if (typeof manageZoom !== "undefined" && manageZoom === 4 && trayLive.at && board && board.dataset.liveAt !== String(trayLive.at) && typeof manageRefresh === "function") manageRefresh();
+  if (typeof manageZoom !== "undefined" && manageZoom === 3 && trayLive.at && board && board.dataset.liveAt !== String(trayLive.at) && typeof manageRefresh === "function") manageRefresh();
 }
 
 if (typeof paintParlay === "function") {

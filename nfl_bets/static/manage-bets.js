@@ -2,9 +2,9 @@
 
 let manageFilter = "all";
 let manageEditId = "";
-const MANAGE_ZOOM_MAX = 4;
+const MANAGE_ZOOM_MAX = 3;
 function manageZoomStart() {
-  return 1;
+  return 0;
 }
 let manageZoom = manageZoomStart();
 let manageZoomDrag = false;
@@ -462,7 +462,7 @@ function manageFill(board) {
   board.append(bag);
   manageTagsWait(board);
   if (typeof trayLive !== "undefined" && trayLive.at) board.dataset.liveAt = String(trayLive.at);
-  if (manageZoom === 4 && typeof trayLiveLoad === "function") trayLiveLoad();
+  if (manageZoom === 3 && typeof trayLiveLoad === "function") trayLiveLoad();
   manageZoomExtra(board);
 }
 
