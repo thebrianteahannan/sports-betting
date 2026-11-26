@@ -296,16 +296,7 @@ function fillFind(board, data) {
     if (typeof birdMenu === "function") birdMenu("manage");
     else if (typeof paintFind === "function") { window.saveGone = false; window.saveShut = false; paintFind(); }
   });
-  const moveGo = document.createElement("button");
-  moveGo.type = "button";
-  moveGo.className = "find-move-go";
-  moveGo.textContent = "Price Movement";
-  moveGo.addEventListener("click", () => {
-    window.startMoveTab = true;
-    if (board.dataset.page === "rec" && typeof startPaint === "function") { startPaint(1); return; }
-    if (typeof paintMoves === "function") paintMoves();
-  });
-  heading.append(jumpGo, ...(board.dataset.page === "rec" ? [moveGo] : []), ...(history || moves ? [build] : []), mine, games);
+  heading.append(jumpGo, ...(history || moves ? [build] : []), mine, games);
   findGamesLive(games);
   const pickSpan = (name) => { const on = name === "today"; today.classList.toggle("find-on", on); week.classList.toggle("find-on", !on); if (today.open !== on) today.open = on; if (week.open === on) week.open = !on; };
   today.className = "find-games find-on"; today.dataset.span = "today"; today.open = true; week.className = "find-games find-week"; week.dataset.span = "week";

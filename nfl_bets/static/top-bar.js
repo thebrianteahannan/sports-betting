@@ -21,6 +21,7 @@ function whereText() {
   const board = document.querySelector("#desk-glass-in .rec-board");
   if (board && board.dataset.page) {
     if (board.dataset.page === "find") return whereFind(board);
+    if (board.dataset.page === "rec") return "Recommended";
     if (board.dataset.page === "bets") return window.recPast ? "Finished bets, by strategy" : "Experimental strategies";
     return WHERE_PAGES[board.dataset.page] || "";
   }
