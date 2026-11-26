@@ -657,7 +657,7 @@ function openTdPage(list, people, hits, game, team, spanWhen) {
   list._tdTeamState = teamState();
   paint("Anytime TD");
   const glass = document.getElementById("desk-glass-in");
-  if (glass) glass.scrollTop += head.getBoundingClientRect().top - glass.getBoundingClientRect().top - 8;
+  if (glass && !list.closest(".find-start-td-page")) glass.scrollTop += head.getBoundingClientRect().top - glass.getBoundingClientRect().top - 8;
   if (!game) return;
   const sides = (String(game.match || "").includes(" @ ") ? String(game.match).split(" @ ") : String(game.match || "").split(" v ").reverse()).map((side) => side.replace(/\s*\([^)]*\)/g, "").trim()).filter(Boolean);
   Promise.all(sides.map((name) => fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "roster", name, sport: game.sport || "NFL" }) }).then((res) => res.json()).then((data) => (data.players || []).forEach((row) => { if (typeof plainName === "function") clubs.set(plainName(row && row.name || row), name); })).catch(() => {}))).then(() => { if (allBox.isConnected) tagTeams(); });
