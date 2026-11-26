@@ -19,6 +19,10 @@ function priceTrendBrief(data) {
   return [first, second, third];
 }
 
+function priceTrendMore(side, up) {
+  return side === "Under" ? !up : !!up;
+}
+
 function priceTrendPdf(data) {
   const plain = (text) => String(text || "").replace(/[−–—]/g, "-").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[^\x20-\x7E]/g, "");
   const escape = (text) => plain(text).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
@@ -73,7 +77,7 @@ function priceTrendPdf(data) {
   if (dive && dive.lean) { heading("From the first price to the close"); write(dive.lean, 11, 15, 86); }
   if (leaned) {
     heading("When the first price finishes");
-    write("Green finishes shorter. Red finishes longer. The bar is the typical trip, in points. A window needs 4 games before it is drawn.", 10, 13, 92, "F1", "0.35 0.38 0.42");
+    write("The bar is the typical trip, in points. A window needs 4 games before it is drawn.", 10, 13, 92, "F1", "0.35 0.38 0.42");
     y -= 8;
     const rowH = 34;
     if (y - sports.length * rowH < 70) next();
@@ -103,12 +107,12 @@ function priceTrendPdf(data) {
   const clocks = (dive && dive.clocks) || [];
   if (clocks.length) {
     heading("Where the price moves");
-    write("The bar is the typical move, in points.", 10, 14, 80, "F1", "0.35 0.38 0.42");
+    write("Green means more likely to reach the prop. Red means less likely. The bar is the typical move, in points.", 10, 14, 92, "F1", "0.35 0.38 0.42");
     const maxPts = Math.max(1, ...clocks.map((clock) => Math.abs(clock.points) || 0));
     clocks.forEach((clock) => {
       if (y < 64) next();
       const w = Math.max(2, 170 * Math.abs(clock.points) / maxPts);
-      const color = clock.faded ? "0.62 0.64 0.66" : clock.way === "shorter" ? "0.12 0.55 0.32" : "0.72 0.22 0.16";
+      const color = clock.faded ? "0.62 0.64 0.66" : priceTrendMore(clock.side, clock.way === "shorter") ? "0.12 0.55 0.32" : "0.72 0.22 0.16";
       cmds.push(`${color} rg 54 ${y.toFixed(1)} ${w.toFixed(1)} 8 re f`);
       text(236, y, clock.title, 8, "F1", "0.15 0.17 0.2");
       y -= 14;
@@ -120,7 +124,7 @@ function priceTrendPdf(data) {
       write(clock.title, 12, 16, 70, "F2", "0.1 0.12 0.16");
       const width = 160;
       const fill = Math.max(2, width * (clock.agree / Math.max(clock.games, 1)));
-      const color = clock.way === "shorter" ? "0.12 0.55 0.32" : "0.72 0.22 0.16";
+      const color = priceTrendMore(clock.side, clock.way === "shorter") ? "0.12 0.55 0.32" : "0.72 0.22 0.16";
       cmds.push(`0.9 0.91 0.92 rg 54 ${y.toFixed(1)} ${width} 8 re f`);
       cmds.push(`${color} rg 54 ${y.toFixed(1)} ${fill.toFixed(1)} 8 re f`);
       text(224, y, `${clock.agree} of ${clock.games}`, 9, "F1", "0.25 0.28 0.32");
@@ -135,7 +139,7 @@ function priceTrendPdf(data) {
           if (bar.games >= 4 && bar.points) {
             const h = Math.max(2, (Math.abs(bar.points) / peak) * 12);
             const yy = bar.points > 0 ? y : y - h;
-            cmds.push(`${bar.points > 0 ? "0.12 0.55 0.32" : "0.72 0.22 0.16"} rg ${x} ${yy.toFixed(1)} 16 ${h.toFixed(1)} re f`);
+            cmds.push(`${priceTrendMore(clock.side, bar.points > 0) ? "0.12 0.55 0.32" : "0.72 0.22 0.16"} rg ${x} ${yy.toFixed(1)} 16 ${h.toFixed(1)} re f`);
           }
           text(x, y - 20, bar.label, 7, "F1", "0.4 0.42 0.45");
         });
@@ -186,12 +190,7 @@ function priceTrendFill(host, data) {
   const lines = priceTrendBrief(data);
   if (!lines[0]) { host.remove(); return; }
   const summary = document.createElement("summary");
-  lines.forEach((line) => {
-    const p = document.createElement("p");
-    p.className = "price-trend-bet";
-    p.textContent = line;
-    summary.append(p);
-  });
+  summary.textContent = "Price clocks";
   const button = document.createElement("button");
   button.type = "button";
   button.className = "price-trend-pdf";
@@ -211,6 +210,7 @@ function priceTrendFill(host, data) {
   };
   button.addEventListener("click", (event) => {
     event.preventDefault();
+    event.stopPropagation();
     if (host.open && !frame.hidden) {
       frame.hidden = true;
       host.open = false;
@@ -228,9 +228,14 @@ function priceTrendFill(host, data) {
     requestAnimationFrame(fit);
   });
   window.addEventListener("resize", fit);
-  summary.addEventListener("click", (event) => { event.preventDefault(); });
-  summary.append(button);
-  host.append(summary, frame);
+  host.append(summary);
+  lines.forEach((line) => {
+    const p = document.createElement("p");
+    p.className = "price-trend-bet";
+    p.textContent = line;
+    host.append(p);
+  });
+  host.append(button, frame);
 }
 
 function priceTrendPaint(box) {

@@ -25,6 +25,19 @@ function pointWord(n) {
   return `${v} point${v === 1 ? "" : "s"}`;
 }
 
+function reachSay(way, side, prop) {
+  const more = side === "Under" ? way !== "shorter" : way === "shorter";
+  const word = more ? "more likely" : "less likely";
+  if (!side && /td|goal/i.test(String(prop))) return `${word} to score`;
+  if (/total/i.test(String(prop))) return `${word} to clear`;
+  return `${word} to reach it`;
+}
+
+function treat(way, side, prop) {
+  const bit = reachSay(way, side, prop);
+  return /total/i.test(String(prop)) ? `They treat the total as ${bit}.` : `They treat the player as ${bit}.`;
+}
+
 function spoken(prop, side, sport) {
   let name = prop === "Anytime TD" ? "anytime TDs" : String(prop || "").toLowerCase();
   if (sport === "NHL" && prop === "Anytime TD") name = "anytime goals";
@@ -115,8 +128,7 @@ function shape(trips, windows) {
     const peak = bars.reduce((best, bar) => (Math.abs(bar.points) > Math.abs(best.points) ? bar : best), bars[0]);
     let line = "";
     if (peak && peak.games >= 4 && Math.abs(peak.points) >= 0.5) {
-      const way = peak.points > 0 ? "shorter" : "longer";
-      line = `${sport} prices first seen ${peak.when} finish ${way}, about ${pointWord(peak.points)} across ${peak.games} games.`;
+      line = `${sport} prices first seen ${peak.when} move about ${pointWord(peak.points)} across ${peak.games} games.`;
     } else if (bars.some((bar) => bar.games >= 4)) line = `${sport} does not lean one way from the first price to the close. The edge is in the single props.`;
     return { sport, bars, line };
   }).filter((row) => row.bars.some((bar) => bar.games >= 4)).sort((a, b) => {
@@ -143,19 +155,20 @@ function clockOf(trend, steps, trips, windows) {
   const faded = !conflict && hold.known >= 4 && !stayed;
   const edge = trip ? trip.points : (trend.way === "shorter" ? Math.abs(trend.points) : -Math.abs(trend.points));
   const cents = centsOf(-110, edge);
-  const money = cents ? ` At −110 that is about ${Math.abs(cents)} cents ${cents < 0 ? "shorter" : "longer"}.` : "";
+  const readWay = conflict ? tripWay : trend.way;
+  const money = cents ? ` At −110 that is about ${Math.abs(cents)} cents.` : "";
   let stay = "";
   if (hold.known >= 4) {
     stay = hold.held / hold.known > 0.5
-      ? ` The close stayed ${trend.way} in ${hold.held} of ${hold.known} games with a later price.`
-      : ` The close gave the move back in ${hold.known - hold.held} of ${hold.known} games with a later price.`;
+      ? ` The close still had that read in ${hold.held} of ${hold.known} games with a later price.`
+      : ` The close gave that read back in ${hold.known - hold.held} of ${hold.known} games with a later price.`;
   }
-  const tripLine = trip ? ` From the first price to the close, ${trip.games} games finish ${tripWay}, about ${pointWord(trip.points)}.` : "";
-  let action = `Bet ${name} before that window.`;
-  if (conflict) action = tripWay === "shorter" ? `Bet ${name} early. The window moves the other way, and the close is what pays.` : `Wait on ${name}. The window moves, and the close goes longer.`;
-  else if (faded) action = `Leave ${name} alone. The window moves and the close gives it back.`;
-  else if (trend.way === "longer") action = `Wait on ${name}. Waiting pays more on these.`;
-  else if (!stayed) action = `Bet ${name} before that window. The log does not have enough later prices to see the close.`;
+  const tripLine = trip ? ` From the first price to the close, ${trip.games} games treat it as ${reachSay(tripWay, trend.side, trend.prop)}, about ${pointWord(trip.points)}.` : "";
+  let action = `Bet ${name} before that window. ${treat(readWay, trend.side, trend.prop)}`;
+  if (conflict) action = `${tripWay === "shorter" ? `Bet ${name} early.` : `Wait on ${name}.`} ${treat(tripWay, trend.side, trend.prop)}`;
+  else if (faded) action = `Leave ${name} alone. The window makes that read, and the close gives it back.`;
+  else if (trend.way === "longer") action = `Wait on ${name}. ${treat(trend.way, trend.side, trend.prop)} The number gets better if you wait.`;
+  else if (!stayed) action = `Bet ${name} before that window. ${treat(trend.way, trend.side, trend.prop)} The log does not have enough later prices to see the close.`;
   return {
     title: `${name}, ${trend.when}`,
     way: conflict ? tripWay : trend.way,
@@ -166,7 +179,7 @@ function clockOf(trend, steps, trips, windows) {
     held: stayed,
     conflict,
     action,
-    line: `${name} move ${trend.way} ${trend.when}. ${trend.agree} of ${trend.games} games, about ${pointWord(trend.points)}.${money}${stay}${tripLine}`,
+    line: `${name}, ${trend.when}. ${treat(trend.way, trend.side, trend.prop)} ${trend.agree} of ${trend.games} games, about ${pointWord(trend.points)}.${money}${stay}${tripLine}`,
     path: pathOf(trips, trend, windows || []),
     sport: trend.sport,
     prop: trend.prop,
@@ -199,10 +212,18 @@ function briefOf(looked, clocks, now) {
     : `${count(looked.steps)} reprices across ${count(looked.games)} games. Nothing has landed on the same clock yet.`;
   const bet = takes.filter((row) => row.held);
   const named = bet.length ? bet : takes;
+  const grouped = (list, lead) => {
+    const bag = new Map();
+    list.forEach((row) => {
+      const bit = treat(row.way, row.side, row.prop);
+      const rows = bag.get(bit) || [];
+      rows.push(row);
+      bag.set(bit, rows);
+    });
+    return [...bag.entries()].map(([bit, rows]) => `${lead} ${names(rows)}. ${bit}`).join(" ");
+  };
   let second = "No clock is strong enough to bet ahead of.";
-  if (named.length && waits.length) second = `Bet ${names(named)} before the window. Wait on ${names(waits)}.`;
-  else if (named.length) second = `Bet ${names(named)} before the window.`;
-  else if (waits.length) second = `Wait on ${names(waits)}. The price gets longer into that window.`;
+  if (named.length || waits.length) second = [named.length ? grouped(named, "Bet") : "", waits.length ? grouped(waits, "Wait on") : ""].filter(Boolean).join(" ");
   else if (clocks.length) second = "Those windows move and the close gives them back.";
   let third = "No open price is still ahead of its clock.";
   if (now.length > 1) third = `${now.length} prices are still ahead of the clock. ${now[0]}`;
@@ -252,7 +273,7 @@ function build({ steps, trips, trends, early, looked, near, windows }) {
     lean,
     clocks,
     miss: near || "",
-    read: "A reprice counts at 1 point or more, before kickoff. A clock needs 4 games, 75 percent the same way, and two different dates when it is a weekday. Green gets shorter. Red gets longer. Gray moved, then the close gave it back. A point is one percentage point of the price.",
+    read: "A reprice counts at 1 point or more, before kickoff. A clock needs 4 games, 75 percent the same way, and two different dates when it is a weekday. The line says whether FanDuel treats the player as more or less likely to reach the prop. Gray means the close gave that read back. A point is one percentage point of the price.",
   };
 }
 

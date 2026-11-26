@@ -367,7 +367,8 @@ button.rec-dial-next[hidden] { display: none !important; }
 .price-chart-unit { margin: 0 0 0.55rem; color: #9fb3c8; font-size: 13px; font-weight: 700; line-height: 1.35; }
 .price-move-lead { grid-column: 1 / -1; margin: 0; color: #d5deea; font-size: 15px; font-weight: 700; line-height: 1.35; }
 .price-trend { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 0.4rem; margin: 0 0 0.3rem; padding: 0.7rem 0.8rem; border: 1px solid rgba(255, 154, 46, 0.45); border-radius: 12px; background: #07141c; }
-.price-trend summary { display: flex; flex-direction: column; align-items: flex-start; gap: 0.4rem; cursor: pointer; color: #ffc56b; font-size: 15px; font-weight: 800; line-height: 1.35; list-style: none; }
+.price-trend summary { display: flex; flex-direction: row; align-items: center; gap: 0.4rem; cursor: pointer; color: #ffc56b; font-size: 15px; font-weight: 800; line-height: 1.35; list-style: none; }
+.price-trend:not([open]) > :not(summary) { display: none !important; }
 .price-trend summary::-webkit-details-marker { display: none; }
 .price-trend summary::before { content: ""; display: inline-block; width: 0; height: 0; margin-right: 0.45rem; border: 5px solid transparent; border-left: 6px solid #ffc56b; vertical-align: middle; }
 .price-trend[open] summary::before { border-left: 5px solid transparent; border-top: 6px solid #ffc56b; transform: translateY(2px); }

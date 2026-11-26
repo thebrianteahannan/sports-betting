@@ -188,8 +188,12 @@ function collect(steps) {
 }
 
 function sayOf(row, found) {
-  const move = `${row.sport} ${spoken(row.prop, row.side)} move ${found.way} ${row.when}. ${found.agree} of ${found.games} games, about ${Math.abs(found.points)} points.`;
-  return found.way === "longer" ? `${move} Waiting pays more on these.` : move;
+  const more = row.side === "Under" ? found.way !== "shorter" : found.way === "shorter";
+  const word = more ? "more likely" : "less likely";
+  const bit = !row.side && /td|goal/i.test(row.prop) ? `${word} to score` : /total/i.test(row.prop) ? `${word} to clear` : `${word} to reach it`;
+  const who = /total/i.test(row.prop) ? "the total" : "the player";
+  const move = `${row.sport} ${spoken(row.prop, row.side)} ${row.when}. They treat ${who} as ${bit}. ${found.agree} of ${found.games} games, about ${Math.abs(found.points)} points.`;
+  return found.way === "longer" ? `${move} The number gets better if you wait.` : move;
 }
 
 function trendsFrom(steps) {
@@ -304,7 +308,11 @@ function earlyFrom(books, trends, now) {
         const price = priceText(odds);
         const when = kickoffSay(game.kickoff);
         const clock = open ? "The window is open and this price has not moved." : "That clock has not hit yet.";
-        const say = `Take ${label}${price ? ` now at ${price}` : " now"}. ${trend.sport} ${spoken(trend.prop, trend.side)} move shorter ${trend.when}, about ${Math.abs(trend.points)} points. ${clock}${when ? ` Kickoff is ${when} ET.` : ""}`;
+        const more = trend.side !== "Under";
+        const word = more ? "more likely" : "less likely";
+        const bit = !trend.side && /td|goal/i.test(trend.prop) ? `${word} to score` : /total/i.test(trend.prop) ? `${word} to clear` : `${word} to reach it`;
+        const who = /total/i.test(trend.prop) ? "the total" : "the player";
+        const say = `Take ${label}${price ? ` now at ${price}` : " now"}. They treat ${who} as ${bit} ${trend.when}. ${clock}${when ? ` Kickoff is ${when} ET.` : ""}`;
         const have = out.find((row) => row.id === id);
         if (have) { if (closerToEven(odds, have.odds)) Object.assign(have, { label, odds, say, prop: trend.prop, side: trend.side, when: trend.when, points: Math.abs(trend.points) }); return; }
         if ((perTrend.get(trendKey) || 0) >= 2) return;
