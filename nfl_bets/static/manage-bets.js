@@ -320,6 +320,7 @@ function manageLegLine(leg, legs, byKey) {
     manageSlipPace(leg),
   ].filter(Boolean).join("");
   line.append(said);
+  if (typeof manageOddsBind === "function") manageOddsBind(said.querySelector(".px"), [leg], line);
   if (typeof manageLegEdit === "function") manageLegEdit(line, said, leg);
   const note = typeof manageLegNote === "function" ? manageLegNote(leg) : null;
   if (note) line.append(note);
@@ -334,6 +335,7 @@ function manageFold(legs, odds, pct, pay, byKey) {
   const price = document.createElement("span");
   price.className = "manage-bet-price";
   price.innerHTML = [odds && `<i class="px">${esc(odds)}</i>`, pct && `<i class="pct">${esc(pct)}</i>`, pay && `<i class="pay">${esc(pay)}</i>`].filter(Boolean).join("");
+  if (typeof manageOddsBind === "function") manageOddsBind(price.querySelector(".px"), legs, top);
   top.append(price);
   const legsLine = document.createElement("div");
   legsLine.className = "manage-fold-legs";
@@ -387,6 +389,7 @@ function manageCard(row, n) {
     const head = document.createElement("p");
     head.className = "manage-bet-price";
     head.innerHTML = [odds && `<i class="px">${esc(odds)}</i>`, pct && `<i class="pct">${esc(pct)}</i>`, pay && `<i class="pay">${esc(pay)}</i>`].filter(Boolean).join("");
+    if (typeof manageOddsBind === "function") manageOddsBind(head.querySelector(".px"), legs, head);
     legsBox.append(head);
   }
   const roles = typeof legRoles === "function" ? legRoles(legs) : [];
@@ -448,7 +451,7 @@ function manageCard(row, n) {
     else manageRefresh();
   });
   card.addEventListener("click", (event) => {
-    if (event.target.closest("button, a, input, form, .find-tray-swap, .manage-card-zoom")) return;
+    if (event.target.closest("button, a, input, form, .find-tray-swap, .manage-card-zoom, .manage-odds, .manage-price-chart")) return;
     openBet();
   });
   card.addEventListener("keydown", (event) => {

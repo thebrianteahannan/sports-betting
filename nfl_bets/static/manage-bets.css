@@ -348,6 +348,8 @@
 .manage-board .manage-bet-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 0.5rem; margin: 0; font-size: 18px; font-weight: 700; }
 .manage-board .manage-bet-price i { font-style: normal; }
 .manage-board .manage-bet-price .px { min-width: 3.4em; color: #3dff6e; font-weight: 700; }
+.manage-board .manage-odds { cursor: pointer; text-decoration: underline; text-underline-offset: 0.14em; }
+.manage-board .manage-price-chart { flex: 1 0 100%; min-width: 0; margin: 0.2rem 0 0.15rem; }
 .manage-board .manage-bet-price .pct { min-width: 3.4em; color: #c9d4dd; font-size: 0.88em; }
 .manage-board .manage-bet-price .pay { color: #3dff6e; }
 .manage-board .find-chose { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; min-width: 0; padding: 0.2rem 0; }
@@ -1028,7 +1030,7 @@ body > .manage-lock-pop:not(.grid-bg):not(.aurora):not(.scan) { position: fixed;
 .manage-board .bank-line .bank-note { flex: 1 0 100%; color: #ffb45a; }
 .manage-board .bank-kelly, .manage-board .bank-result, .manage-board .bank-marks { grid-column: 2; margin: 0; font-size: 13px; font-weight: 700; }
 .manage-board .bank-kelly { color: #3dff6e; font-style: normal; font-weight: 800; white-space: normal; }
-.manage-board .bank-call { flex: none; align-self: center; margin: 0 0.15rem 0 0; padding: 0 0.45rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.62rem; font-style: normal; font-weight: 800; letter-spacing: 0.04em; line-height: 1.5; text-transform: uppercase; }
+.manage-board .bank-call { flex: none; align-self: center; margin: 0; padding: 0 0.45rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.62rem; font-style: normal; font-weight: 800; letter-spacing: 0.04em; line-height: 1.5; text-transform: uppercase; }
 .manage-board .bank-call.c-bet { color: #04140c; background: #3dff6e; border-color: #3dff6e; }
 .manage-board .bank-call.c-leave, .manage-board .bank-call.c-lost { color: #ff6b6b; }
 .manage-board .bank-call.c-won, .manage-board .bank-call.c-pace { color: #3dff6e; }
@@ -1055,58 +1057,19 @@ body > .manage-lock-pop:not(.grid-bg):not(.aurora):not(.scan) { position: fixed;
   .manage-board .find-chose a.manage-pace { order: 4; }
   .manage-board .find-chose i.px { order: 6; }
   .manage-board .find-chose i.pct { order: 7; }
+  #desk.tv-full #desk-glass .manage-board .manage-n,
+  .manage-board .manage-n { align-self: start; margin-top: 0.22rem; }
   .manage-card.parlay > .manage-legs > .manage-bet-price,
-  .manage-card[data-manage-zoom="0"] .manage-fold-line { order: 2; padding-right: 0; }
+  .manage-card[data-manage-zoom="0"] .manage-fold-line,
+  .manage-board .manage-card:not(.parlay) > .manage-legs > .manage-bet-price { order: 1; padding-right: 6.2rem; }
+  .manage-card[data-manage-zoom="0"] .manage-fold-line > .manage-bet-price { flex: 0 1 auto; min-width: 0; max-width: 100%; padding-right: 0; }
   .manage-card.parlay > .manage-legs > .find-chose,
-  .manage-card[data-manage-zoom="0"] .manage-fold-legs { order: 1; }
+  .manage-card[data-manage-zoom="0"] .manage-fold-legs { order: 2; }
+  .manage-board .manage-card:not(.parlay) > .manage-legs > .manage-price-chart { order: 2; }
+  .manage-board .manage-card:not(.parlay) > .manage-legs > .find-chose { order: 3; }
   .manage-card.parlay > .manage-legs > .find-chose,
-  .manage-card[data-manage-zoom="0"] .manage-fold-legs .find-chose { padding-right: 6.2rem; }
-  #desk.tv-full #desk-glass .manage-card:not(.parlay):not(.editing),
-  .manage-board .manage-card:not(.parlay):not(.editing) {
-    display: flex !important;
-    flex-wrap: wrap;
-    align-items: start !important;
-    column-gap: 0.32rem;
-    row-gap: 0.2rem;
-    padding: 0.4rem 0.45rem !important;
-  }
-  #desk.tv-full #desk-glass .manage-card:not(.parlay):not(.editing) > .manage-n,
-  .manage-board .manage-card:not(.parlay):not(.editing) > .manage-n { order: 0; align-self: center; }
-  #desk.tv-full #desk-glass .manage-card:not(.parlay):not(.editing) > .manage-legs,
-  .manage-board .manage-card:not(.parlay):not(.editing) > .manage-legs,
-  #desk.tv-full #desk-glass .manage-card:not(.parlay):not(.editing) > .manage-legs > .manage-bet-price,
-  .manage-board .manage-card:not(.parlay):not(.editing) > .manage-legs > .manage-bet-price,
-  #desk.tv-full #desk-glass .manage-card:not(.parlay):not(.editing) > .manage-legs > .find-chose,
-  .manage-board .manage-card:not(.parlay):not(.editing) > .manage-legs > .find-chose,
-  #desk.tv-full #desk-glass .manage-card:not(.parlay):not(.editing) > .manage-legs > .find-chose > span,
-  .manage-board .manage-card:not(.parlay):not(.editing) > .manage-legs > .find-chose > span { display: contents; }
-  #desk.tv-full #desk-glass .manage-card:not(.parlay):not(.editing)::before,
-  .manage-board .manage-card:not(.parlay):not(.editing)::before { content: ""; order: 4; flex: 0 0 5.6rem; height: 1.7rem; margin-left: auto; align-self: start; }
-  #desk.tv-full #desk-glass .manage-card:not(.parlay):not(.editing)::after,
-  .manage-board .manage-card:not(.parlay):not(.editing)::after { content: ""; order: 5; flex: 1 0 100%; height: 0; }
-  .manage-board .manage-card:not(.parlay):not(.editing) > .manage-indent { display: block; order: 6; flex: 0 0 1.15rem; height: 0; }
-  #desk.tv-full #desk-glass .manage-card:not(.parlay):not(.editing) > .manage-card-acts,
-  .manage-board .manage-card:not(.parlay):not(.editing) > .manage-card-acts {
-    position: absolute !important;
-    top: 0.4rem;
-    right: 0.45rem;
-    margin: 0;
-  }
-  .manage-board .manage-card:not(.parlay):not(.editing) .find-chose i.who { order: 1; flex: none; font-size: 14px; white-space: nowrap; }
-  .manage-board .manage-card:not(.parlay):not(.editing) .find-chose i.prop { order: 2; flex: 0 1 auto; min-width: 0; font-size: 14px; line-height: 1.2; white-space: normal; }
-  .manage-board .manage-card:not(.parlay):not(.editing) .find-chose :is(i.leg-role, i.find-rec-pill, .desk-rec-golden-tag, .desk-rec-silver-tag, .desk-rec-bronze-tag, .desk-rec-edge) { order: 17; }
-  .manage-board .manage-card:not(.parlay):not(.editing) .find-chose a.manage-pace { order: 9; flex: none; margin: 0; font-size: 11px; }
-  .manage-board .manage-card:not(.parlay):not(.editing) :is(.bank-call, .px, .pct, .pay) { min-width: 0; margin: 0; font-size: 12px; }
+  .manage-card[data-manage-zoom="0"] .manage-fold-legs .find-chose,
+  .manage-board .manage-card:not(.parlay) > .manage-legs > .find-chose { padding-right: 0; }
   .manage-board .bank-line { flex-wrap: nowrap; align-items: center; gap: 0.45rem; }
   .manage-board .bank-line .bank-take { flex: 1 1 auto; min-width: 0; font-size: 11px; font-weight: 650; line-height: 1.25; }
-  .manage-board .manage-card:not(.parlay):not(.editing) .bank-call { order: 10; }
-  .manage-board .manage-card:not(.parlay):not(.editing) .manage-bet-price .px { order: 11; }
-  .manage-board .manage-card:not(.parlay):not(.editing) .manage-bet-price .pct { order: 12; }
-  .manage-board .manage-card:not(.parlay):not(.editing) .manage-bet-price .pay { order: 13; }
-  .manage-board .manage-card:not(.parlay):not(.editing) .find-chose i.px { order: 14; }
-  .manage-board .manage-card:not(.parlay):not(.editing) .find-chose i.pct { order: 15; }
-  .manage-board .manage-card:not(.parlay):not(.editing) .bank-kelly,
-  .manage-board .manage-card:not(.parlay):not(.editing) .manage-leg-note,
-  .manage-board .manage-card:not(.parlay):not(.editing) .manage-tags,
-  .manage-board .manage-card:not(.parlay):not(.editing) .bank-result { order: 20; flex: 1 0 100%; }
 }

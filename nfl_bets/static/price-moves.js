@@ -448,7 +448,55 @@ function priceMoveOpen(label, match) {
   priceMoveLoad().then((data) => go((data && data.rows) || [])).catch(() => go([]));
 }
 
+function manageOddsChart(host, legs) {
+  if (!host) return;
+  const had = host.querySelector(":scope > .manage-price-chart");
+  host.querySelectorAll(":scope > .manage-price-chart").forEach((node) => node.remove());
+  if (had) return;
+  (legs || []).forEach((leg) => {
+    const box = document.createElement("div");
+    box.className = "manage-price-chart";
+    box.addEventListener("click", (event) => event.stopPropagation());
+    const note = document.createElement("p");
+    note.className = "price-chart-unit";
+    note.textContent = "Reading the price.";
+    box.append(note);
+    host.append(box);
+    const q = new URLSearchParams({ label: leg.label || "", market: leg.market || "", match: leg.match || "" });
+    fetch(`/api/price-history?${q}`, { credentials: "same-origin" })
+      .then((res) => (res.ok ? res.json() : { series: [] }))
+      .then((data) => {
+        if (!box.isConnected) return;
+        const series = (data && data.series) || [];
+        box.replaceChildren();
+        if (series.length < 2) {
+          note.textContent = "The price has not moved.";
+          box.append(note);
+          return;
+        }
+        box.append(priceMoveChart(series));
+      })
+      .catch(() => {
+        if (!box.isConnected) return;
+        note.textContent = "The price did not come back.";
+        box.replaceChildren(note);
+      });
+  });
+}
+
+function manageOddsBind(node, legs, host) {
+  if (!node || !(legs || []).length) return;
+  node.classList.add("manage-odds");
+  node.title = "Price history";
+  node.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    manageOddsChart(host || node.parentElement, legs);
+  });
+}
+
 window.priceMovePage = priceMovePage;
 window.priceMoveMark = priceMoveMark;
 window.priceMoveOpen = priceMoveOpen;
+window.manageOddsBind = manageOddsBind;
 document.addEventListener("click", priceMoveShut);

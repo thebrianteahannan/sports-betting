@@ -281,4 +281,45 @@ async function tick(board) {
   await prune().catch((error) => console.error("price log prune failed:", error));
 }
 
-module.exports = { note, movers, tick, apply, moveOf, stepSay };
+function historyFold(text) {
+  return String(text || "").toLowerCase().replace(/[–—−]/g, "-").replace(/\s+/g, " ").trim();
+}
+
+function historyWho(text) {
+  return historyFold(text).split(/\d/)[0].replace(/\s+(over|under)\b.*$/, "").replace(/\s+[—-].*$/, "").trim();
+}
+
+function historyLine(text) {
+  const hit = String(text || "").match(/\d+(?:\.\d+)?/);
+  return hit ? Number(hit[0]) : null;
+}
+
+async function history(want) {
+  const who = historyWho(want && want.label);
+  const market = historyFold(want && want.market);
+  const match = historyFold(want && want.match);
+  const line = historyLine(`${want && want.label || ""} ${want && want.market || ""}`);
+  if (!who) return { series: [] };
+  const { kv } = require("./live-recs");
+  const rows = await kv(`?k=like.${encodeURIComponent(KEY)}*&select=v`);
+  let best = null;
+  (rows || []).forEach((row) => {
+    const game = row && row.v;
+    if (!game || !game.props) return;
+    const gameMatch = historyFold(game.match);
+    if (match && gameMatch && match !== gameMatch && !gameMatch.includes(match) && !match.includes(gameMatch)) return;
+    Object.entries(game.props).forEach(([key, series]) => {
+      const parts = String(key).split("\u0001");
+      if (historyWho(parts[0]) !== who) return;
+      const kind = historyFold(parts[1] || "");
+      if (market && kind && kind !== market && !kind.includes(market) && !market.includes(kind)) return;
+      const theirs = historyLine(parts[0]);
+      if (line != null && theirs != null && Math.abs(line - theirs) > 1) return;
+      const score = (series || []).length + (market && kind ? 20 : 0) + (line != null && theirs != null ? 10 : 0);
+      if (!best || score > best.score) best = { score, series: series || [] };
+    });
+  });
+  return { series: ((best && best.series) || []).map(([odds, at]) => ({ odds, at })) };
+}
+
+module.exports = { note, movers, tick, apply, moveOf, stepSay, history };

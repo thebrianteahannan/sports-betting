@@ -47,7 +47,7 @@ function bankRoll() {
 
 function bankKellyCore(p, odds, roll, free) {
   const b = bankMultiple(odds);
-  if (!(b > 0) || !(p > 0) || p >= 1) return { full: 0, bet: 0, edge: false };
+  if (!(b > 0) || !(p > 0) || p > 1) return { full: 0, bet: 0, edge: false };
   const ev = b * p - (1 - p);
   if (!(ev > 0)) return { full: 0, bet: 0, edge: false, ev };
   const fraction = ev / b;
@@ -105,6 +105,7 @@ function bankGameHit(leg, games) {
   if (/point/.test(blob)) return count((game) => game.pts, Number.isFinite(line) ? `cleared ${line} in` : "cleared it in");
   if (/receiv/.test(blob)) return count((game) => /yard/.test(blob) ? game.recYds : game.rec, "cleared it in");
   if (/rush/.test(blob)) return count((game) => game.rushYds, "cleared it in");
+  if (/pass/.test(blob) && /yard|\byds?\b/.test(blob)) return count((game) => game.passYds, "cleared it in");
   return null;
 }
 
@@ -419,7 +420,11 @@ function bankMark(parent, text, call) {
   const tag = document.createElement("i");
   tag.className = `bank-call c-${call.kind}`;
   tag.textContent = call.text;
-  parent.prepend(tag);
+  const pay = parent.querySelector(":scope > .pay");
+  const price = parent.querySelector(":scope > .manage-bet-price");
+  if (pay) pay.after(tag);
+  else if (price) price.after(tag);
+  else parent.append(tag);
 }
 
 let bankRecWait = 0;
