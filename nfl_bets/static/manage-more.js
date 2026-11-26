@@ -372,7 +372,7 @@ function manageLegEdit(line, said, leg, at, count) {
   const prop = said.querySelector("i.prop");
   if (who) who.after(propBtn); else said.append(propBtn);
   if (prop) prop.after(valBtn); else said.append(valBtn);
-  if (typeof manageLegMoves === "function") manageLegMoves(said, key, at, count);
+  if (typeof manageLegDrop === "function") manageLegDrop(said, key);
   const pickMode = (mode, event) => {
     event.preventDefault();
     event.stopPropagation();

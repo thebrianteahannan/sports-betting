@@ -1,48 +1,37 @@
 // "+ Add a leg" under the parlay opens Quick add in the tray.
-// The same add, plus Move up and Move down, sits on an editing parlay card.
+// The same add, plus Delete, sits on an editing parlay card.
 
-function manageLegShift(key, dir) {
-  if (!key || typeof parlayLeg === "undefined" || !parlayLeg.has(key)) return;
-  const entries = [...parlayLeg.entries()];
-  const at = entries.findIndex(([id]) => id === key);
-  const to = at + dir;
-  if (at < 0 || to < 0 || to >= entries.length) return;
-  const [row] = entries.splice(at, 1);
-  entries.splice(to, 0, row);
-  parlayLeg.clear();
-  entries.forEach(([id, bet]) => parlayLeg.set(id, bet));
-  if (typeof saveNow === "function") saveNow();
-  if (typeof paintParlay === "function") paintParlay();
-}
-
-function manageLegMoves(said, key, at, count) {
-  if (!(count > 1) || !said) return;
-  const move = (dir, event) => {
+function manageLegDrop(said, key) {
+  if (!said || !key || typeof parlayLeg === "undefined") return;
+  const drop = document.createElement("button");
+  drop.type = "button";
+  drop.className = "manage-change manage-leg-drop";
+  drop.textContent = "Delete";
+  drop.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    manageLegShift(key, dir);
-  };
-  const place = (button) => {
-    const after = said.querySelector(".manage-move") || said.querySelector(".manage-change-value") || said.querySelector(".manage-change-prop");
-    if (after) after.after(button);
-    else said.append(button);
-  };
-  if (at > 0) {
-    const up = document.createElement("button");
-    up.type = "button";
-    up.className = "manage-change manage-move";
-    up.textContent = "Move up";
-    up.addEventListener("click", (event) => move(-1, event));
-    place(up);
-  }
-  if (at < count - 1) {
-    const down = document.createElement("button");
-    down.type = "button";
-    down.className = "manage-change manage-move";
-    down.textContent = "Move down";
-    down.addEventListener("click", (event) => move(1, event));
-    place(down);
-  }
+    if (!parlayLeg.has(key)) return;
+    if (parlayLeg.size <= 1) {
+      const id = window.parlayOpenId;
+      if (id && typeof saveDrop === "function") saveDrop(id);
+      return;
+    }
+    const bet = parlayLeg.get(key);
+    parlayLeg.delete(key);
+    if (typeof legOwner !== "undefined") legOwner.delete(key);
+    if (typeof legSwapOpen !== "undefined") legSwapOpen.delete(key);
+    if (typeof legSwapDrill !== "undefined") legSwapDrill.delete(key);
+    [...parlayPick.entries()].forEach(([pick, who]) => {
+      const owned = String((bet && bet.label) || "").startsWith(who.name);
+      const left = [...parlayLeg.values()].some((row) => typeof legOwns === "function" ? legOwns(who, row) : String(row.label || "").startsWith(who.name));
+      if (owned && !left) parlayPick.delete(pick);
+    });
+    if (typeof saveNow === "function") saveNow();
+    if (typeof paintParlay === "function") paintParlay();
+  });
+  const after = said.querySelector(".manage-change-value") || said.querySelector(".manage-change-prop");
+  if (after) after.after(drop);
+  else said.append(drop);
 }
 
 function manageAddLeg(host) {
