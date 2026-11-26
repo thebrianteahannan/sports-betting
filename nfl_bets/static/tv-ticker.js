@@ -14,7 +14,7 @@ function tvTickAsks() {
 }
 
 function tvTickPages() {
-  return [...(tvTickGateOn() ? [] : ["menu"]), "meet", ...tvTickAsks(), ...(tvTick.parlay ? ["day"] : []), ...(tvTick.pick ? ["pick"] : []), ...(tvTickGateOn() ? [] : ["lazy"]), "way", "steady", "how", "odds", "book", "qr", ...(tvTickLaw() ? ["law"] : []), "risk", "help"];
+  return [...(tvTickGateOn() ? [] : ["menu"]), "meet", ...tvTickAsks(), ...(tvTick.parlay ? ["day"] : []), ...(tvTick.pick ? ["pick"] : []), ...(tvTickGateOn() ? [] : ["lazy"]), "way", "steady", "how", "odds", "book", "qr", "risk", "help"];
 }
 
 function tvTickPayload() {
