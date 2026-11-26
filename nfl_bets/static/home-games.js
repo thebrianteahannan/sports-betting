@@ -721,7 +721,7 @@ function homeGamesTabs(box, games) {
 }
 
 function homeGamesPaint() {
-  const desk = document.getElementById("desk"), bg = document.getElementById("desk-bg"), guide = document.getElementById("bird-guide");
+  const desk = document.getElementById("desk"), bg = document.getElementById("desk-bg");
   if (!desk || !bg) return;
   let box = document.getElementById("desk-games");
   if (!box) { box = document.createElement("div"); box.id = "desk-games"; box.hidden = true; desk.append(box); homeGamesGrow(box); }
@@ -734,7 +734,7 @@ function homeGamesPaint() {
   void bg.offsetWidth;
   const top = Math.ceil(bg.getBoundingClientRect().bottom - desk.getBoundingClientRect().top);
   const hasRec = homeGamesTab === "rec" && homeRecs && (homeRecs.picks.length || homeRecs.loading);
-  const show = (fresh.length > 0 || games.length > 0 || hasRec) && !desk.classList.contains("tv-full") && (guest || Boolean(guide && !guide.hidden)) && desk.clientHeight - top >= 100;
+  const show = (fresh.length > 0 || games.length > 0 || hasRec) && !desk.classList.contains("tv-full") && desk.clientHeight - top >= 100;
   const wasHidden = box.hidden;
   box.hidden = !show;
   document.body.classList.toggle("home-games-on", show);
