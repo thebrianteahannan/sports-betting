@@ -16,6 +16,7 @@ function shotOdds(text) {
 function shotTdKind(text) {
   const low = String(text || "").toLowerCase().replace(/\btds\b/g, "touchdowns").replace(/\btd\b/g, "touchdown");
   if (!/touchdown/.test(low) || /rush|receiv|pass/.test(low)) return "";
+  if (/\blast\b/.test(low)) return "last";
   if (/any\s*time|anytime/.test(low)) return "anytime";
   if (/\b(first|1st)\b/.test(low) && !/half|quarter/.test(low)) return "first";
   const plus = low.match(/(?:to score\s*)?(\d+)\+\s*touchdown/) || low.match(/to score\s*(\d+)\+/);
@@ -27,7 +28,7 @@ function shotTdKind(text) {
 function shotTdWant(leg) {
   const market = String(leg.market || "");
   const kind = shotTdKind(market);
-  if (kind === "anytime" || kind === "first") return kind;
+  if (kind === "anytime" || kind === "first" || kind === "last") return kind;
   if (kind === "td") {
     const line = leg.line == null || leg.line === "" ? null : Number(leg.line);
     if (line != null && Number.isFinite(line) && line >= 2) return `${Math.round(line)}+`;
@@ -63,10 +64,42 @@ function shotBest(rows, leg) {
   return rows.slice().sort((a, b) => (want == null ? 0 : Math.abs(Number(a.odds) - want) - Math.abs(Number(b.odds) - want)))[0] || null;
 }
 
+function shotBits(raw) {
+  return String(raw || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z\s]/g, " ").replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+}
+
+function shotPerson(people, raw, leg) {
+  const bits = shotBits(raw);
+  if (!bits.length) return null;
+  const players = (people || []).filter((who) => who && who.kind === "player");
+  const partsOf = (who) => plainName(who.name).split(" ").filter(Boolean);
+  const pick = (hits) => {
+    if (hits.length <= 1) return hits[0] || null;
+    const want = leg && shotSig(leg.market);
+    const priced = want ? hits.filter((who) => (who.bets || []).some((bet) => shotSig(`${bet.label || ""} ${bet.market || ""}`) === want)) : [];
+    return (priced.length === 1 ? priced : hits)[0];
+  };
+  const exact = players.find((who) => plainName(who.name) === bits.join(" "));
+  if (exact) return exact;
+  if (bits.length >= 2 && bits[0].length === 1) {
+    const last = bits.slice(1).join(" ");
+    const hits = players.filter((who) => { const parts = partsOf(who); return parts.length >= 2 && parts[0][0] === bits[0] && parts.slice(1).join(" ") === last; });
+    if (hits.length) return pick(hits);
+  }
+  if (bits.length === 1 && bits[0].length > 3) {
+    const hits = players.filter((who) => { const parts = partsOf(who); return parts.length >= 2 && parts[0][0] === bits[0][0] && parts.slice(1).join(" ") === bits[0].slice(1); });
+    if (hits.length) return pick(hits);
+  }
+  if (bits.length === 1 && bits[0].length > 2) {
+    const hits = players.filter((who) => partsOf(who).pop() === bits[0]);
+    if (hits.length === 1) return hits[0];
+  }
+  return null;
+}
+
 function shotPlayer(people, leg) {
   leg = shotNorm(leg);
-  const name = plainName(leg.player);
-  const person = name && people.find((who) => who.kind === "player" && plainName(who.name) === name);
+  const person = shotPerson(people, leg.player, leg);
   if (!person) return null;
   const sig = shotSig(leg.market), part = SHOT_PART.test(String(leg.market).toLowerCase());
   const rows = (person.bets || []).filter((bet) => {
@@ -126,9 +159,7 @@ function shotGame(people, leg, found) {
 const shotWant = new Map();
 
 function shotWho(people, leg) {
-  const name = plainName(leg.player);
-  if (!name) return null;
-  return people.find((who) => who.kind === "player" && plainName(who.name) === name) || shotTeamOf(people, leg);
+  return shotPerson(people, leg.player, leg) || shotTeamOf(people, leg);
 }
 
 function shotWantHit(person, bet) {
@@ -147,7 +178,7 @@ function shotNear(people, leg, game) {
   const name = plainName(leg.player), market = String(leg.market || "").toLowerCase(), side = String(leg.side || "").toLowerCase();
   const wantTd = shotTdWant(leg);
   const plain = (bet) => !SHOT_PART.test(`${bet.label} ${bet.market}`.toLowerCase());
-  const person = name && people.find((who) => who.kind === "player" && plainName(who.name) === name);
+  const person = shotPerson(people, leg.player, leg);
   let pool = [];
   if (person) {
     const sig = shotSig(leg.market);

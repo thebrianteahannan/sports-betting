@@ -382,7 +382,7 @@ function openTdPage(list, people, hits, game, team, spanWhen) {
     }
     (button.closest(".td-pick-wrap") || button).after(more);
   };
-  const paint = (kind) => { head.textContent = kind === "Anytime TD" ? "Most likely to score an anytime touchdown" : kind === "2 Anytime TDs" ? "Most likely to score 2 anytime touchdowns" : "Most likely to score 3 anytime touchdowns"; allBox.replaceChildren(); const three = books.get("3 Anytime TDs") || new Map(); const rows = [...((books.get(kind) || new Map()).values())].sort((a, b) => b.chance - a.chance); if (!rows.length) { const empty = document.createElement("p"); empty.className = "find-empty"; empty.textContent = `FanDuel has no ${kind.toLowerCase()} touchdown prices up.`; allBox.append(empty); refreshTeams(); return; } rows.forEach((row) => { const button = document.createElement("button"); button.type = "button"; button.dataset.who = row.person.name; button.dataset.match = row.match || ""; button.dataset.kickoff = row.kickoff || ""; button.dataset.odds = String(row.odds); button.dataset.chance = String(Math.round(row.chance * 100)); if (row.person.team) button.dataset.club = row.person.team; if (row.here) button.dataset.here = "1"; button.dataset.tds = teamTd(people, row.person.name, row.match, row.kickoff); if (tdRecWho(row.person.name, null)) { button.dataset.rec = "1"; button.classList.add("find-td-rec"); } button.textContent = `${row.person.name}, ${Number(row.odds) > 0 ? `+${row.odds}` : row.odds}, ${Math.round(row.chance * 100)}%${findCash(row.odds) ? `, $5 profits ${findCash(row.odds)}` : ""}`; if (row.here && !team) button.classList.add("on"); if (kind === "Anytime TD" && three.has(row.person.name)) button.dataset.three = "1"; allBox.append(wrapRow(button, row, kind)); }); markTd(allBox); tagTeams(); fillTeam(people, allBox); loadZone(people, allBox); filterRows(); showFew(kind); syncPick(); refreshTeams(); };
+  const paint = (kind) => { head.textContent = kind === "Anytime TD" ? "Most likely to score an anytime touchdown" : kind === "2 Anytime TDs" ? "Most likely to score 2 anytime touchdowns" : "Most likely to score 3 anytime touchdowns"; allBox.replaceChildren(); const three = books.get("3 Anytime TDs") || new Map(); const rows = [...((books.get(kind) || new Map()).values())].sort((a, b) => b.chance - a.chance); if (!rows.length) { const empty = document.createElement("p"); empty.className = "find-empty"; empty.textContent = `FanDuel has no ${kind.toLowerCase()} touchdown prices up.`; allBox.append(empty); refreshTeams(); return; } rows.forEach((row) => { const button = document.createElement("button"); button.type = "button"; button.dataset.who = row.person.name; button.dataset.match = row.match || ""; button.dataset.kickoff = row.kickoff || ""; button.dataset.odds = String(row.odds); button.dataset.chance = String(Math.round(row.chance * 100)); if (row.person.team) button.dataset.club = row.person.team; if (row.here) button.dataset.here = "1"; button.dataset.tds = teamTd(people, row.person.name, row.match, row.kickoff); if (tdRecWho(row.person.name, null)) { button.dataset.rec = "1"; button.classList.add("find-td-rec"); } button.textContent = `${row.person.name}, ${Number(row.odds) > 0 ? `+${row.odds}` : row.odds}, ${Math.round(row.chance * 100)}%${findCash(row.odds) ? `, $5 profits ${findCash(row.odds)}` : ""}`; if (row.here && !team) button.classList.add("on"); if (kind === "Anytime TD" && three.has(row.person.name)) button.dataset.three = "1"; allBox.append(wrapRow(button, row, kind)); }); markTd(allBox); tagTeams(); fillTeam(people, allBox); loadZone(people, allBox); showFew(kind); syncPick(); refreshTeams(); };
   let picking = false;
   const picked = new Map();
   const tools = document.createElement("div");
@@ -550,7 +550,7 @@ function openTdPage(list, people, hits, game, team, spanWhen) {
     if (empty) empty.remove();
     const shown = [...few.querySelectorAll(".rec-bet")].some((card) => !card.hidden) || [...allBox.querySelectorAll("button[data-who]")].some((button) => !button.hidden);
     if (!shown) {
-      const say = clubPick ? `No touchdowns for ${clubPick.split(/\s+/).pop()} on this slate.` : "No recommended touchdowns on this slate.";
+      const say = list.dataset.tdWait === "1" ? "Looking up the touchdowns." : clubPick ? `No touchdowns for ${clubPick.split(/\s+/).pop()} on this slate.` : "No recommended touchdowns on this slate.";
       allBox.append(Object.assign(document.createElement("p"), { className: "find-td-empty find-empty", textContent: say }));
     }
     markBest();
@@ -603,17 +603,10 @@ function openTdPage(list, people, hits, game, team, spanWhen) {
   few = document.createElement("div");
   few.className = "find-td-all find-td-page find-td-few";
   let fewKey = "";
+  let fewPicks = [];
   const showFew = (kind) => {
-    if (kind !== "Anytime TD") { few.replaceChildren(); fewKey = ""; filterRows(); return; }
-    const rows = [...allBox.querySelectorAll("button")].filter((button) => button.dataset.three === "1").map((button) => ({ name: button.dataset.who, odds: Number(button.dataset.odds), match: button.dataset.match || "" }));
-    const key = rows.map((row) => `${row.name}|${row.odds}`).join(",");
-    if (!rows.length || key === fewKey) { filterRows(); return; }
-    fewKey = key;
-    few.replaceChildren();
-    fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "few", rows }) }).then((res) => res.json()).then((data) => {
-      if (!few.isConnected || fewKey !== key) return;
-      const picks = data && Array.isArray(data.picks) ? data.picks : [];
-      picks.forEach((pick) => {
+    const apply = (picks) => {
+      (picks || []).forEach((pick) => {
         const live = [...allBox.querySelectorAll("button")].find((node) => node.dataset.who === pick.name);
         if (!live) return;
         live.dataset.rec = "1";
@@ -621,10 +614,44 @@ function openTdPage(list, people, hits, game, team, spanWhen) {
         delete live.dataset.dressed;
         if (typeof dressTdRow === "function") dressTdRow(live);
       });
+    };
+    if (kind !== "Anytime TD") { list.dataset.tdWait = ""; few.replaceChildren(); fewKey = ""; filterRows(); return; }
+    const rows = [...allBox.querySelectorAll("button")].filter((button) => button.dataset.three === "1").map((button) => ({ name: button.dataset.who, odds: Number(button.dataset.odds), match: button.dataset.match || "" }));
+    const key = rows.map((row) => `${row.name}|${row.odds}`).join(",");
+    if (!rows.length) { list.dataset.tdWait = ""; fewPicks = []; filterRows(); return; }
+    if (key === fewKey) {
+      if (list.dataset.tdWait !== "1") apply(fewPicks);
+      filterRows();
+      return;
+    }
+    fewKey = key;
+    few.replaceChildren();
+    let cached = null;
+    try { cached = JSON.parse(sessionStorage.getItem(`td-few:${key}`) || "null"); } catch (error) {}
+    if (cached && Array.isArray(cached.picks) && Date.now() - Number(cached.at) < 10 * 60 * 1000) {
+      list.dataset.tdWait = "";
+      fewPicks = cached.picks;
+      apply(fewPicks);
       filterRows();
       syncPick();
       refreshTeams();
-    }).catch(() => { filterRows(); refreshTeams(); });
+      return;
+    }
+    list.dataset.tdWait = "1";
+    filterRows();
+    fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "few", rows }) }).then((res) => res.json()).then((data) => {
+      const picks = data && Array.isArray(data.picks) ? data.picks : [];
+      if (picks.length) { try { sessionStorage.setItem(`td-few:${key}`, JSON.stringify({ at: Date.now(), picks })); } catch (error) {} }
+      if (!few.isConnected || fewKey !== key) return;
+      fewPicks = picks;
+      apply(picks);
+    }).catch(() => {}).finally(() => {
+      if (!few.isConnected || fewKey !== key) return;
+      list.dataset.tdWait = "";
+      filterRows();
+      syncPick();
+      refreshTeams();
+    });
   };
   list.append(head, ...(when.childElementCount ? [when] : []), picks, tools, teamsBar, few, allBox); syncPick();
   list._tdTeamState = teamState();

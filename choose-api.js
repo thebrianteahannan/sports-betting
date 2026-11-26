@@ -1,6 +1,24 @@
 /** Build a bet on the website. Same rules as the local desk. */
 
+const { execFile } = require("child_process");
 const { addSway } = require("./sway-api"); const { onePick, markPlayer, whyPlayer } = require("./single-find"); const { onesList } = require("./ones-find"); const { playerNames, nameBook, playerClub, teamRoster, outList } = require("./who-api"); const { gameRead } = require("./game-read");
+const fewMemo = new Map();
+function fewList(body) {
+  const rows = Array.isArray(body.rows) ? body.rows.slice(0, 40) : [];
+  const key = rows.map((row) => `${row && row.name}|${row && row.odds}|${(row && row.match) || ""}`).join("~");
+  const hit = fewMemo.get(key);
+  if (hit && Date.now() - hit.at < 10 * 60 * 1000) return Promise.resolve(hit.data);
+  return new Promise((resolve) => {
+    execFile("python3", ["-m", "nfl_bets.td_few"], { input: JSON.stringify({ rows }), encoding: "utf8", timeout: 90000, cwd: __dirname, maxBuffer: 8 * 1024 * 1024 }, (error, stdout) => {
+      if (error) { resolve({ picks: [] }); return; }
+      try {
+        const data = JSON.parse(stdout);
+        fewMemo.set(key, { at: Date.now(), data });
+        resolve(data);
+      } catch (parseError) { resolve({ picks: [] }); }
+    });
+  });
+}
 const AK = "FhMFpcPWXMeyZxOx";
 const SPORTS = ["NFL", "MLB", "NBA", "NHL", "WNBA", "PGA"];
 function propFamily(leg) {
@@ -652,7 +670,7 @@ async function chooseBet(body, board) {
   const mix = ["any", "even", "safer", "long"].includes(body.mix) ? body.mix : "even";
   const span = body.when === "week" ? "week" : "today";
   const games = slate(Array.isArray(board.games) ? board.games : [], picked, ids, span);
-  if (body.list === "pga") return require("./pga-board").pgaBoard(); if (body.list === "stack") { try { return await require("./stack-shapes").findStacks(board); } catch (error) { console.error("stack finder failed:", error); return { found: {}, notes: {}, error: `The strategy finder failed on this server: ${String((error && error.message) || error)}` }; } } if (body.list === "few") { try { return JSON.parse(require("child_process").execFileSync("python3", ["-m", "nfl_bets.td_few"], { input: JSON.stringify({ rows: Array.isArray(body.rows) ? body.rows.slice(0, 40) : [] }), encoding: "utf8", timeout: 90000, cwd: __dirname })); } catch (error) { return { picks: [] }; } } if (body.list === "zone") { try { return JSON.parse(require("child_process").execFileSync("python3", ["-m", "nfl_bets.zone"], { encoding: "utf8", timeout: 90000, cwd: __dirname })); } catch (error) { return { teams: {} }; } } if (body.list === "game") return gameRead(body, board); if (body.list === "nba") return require("./nba-game-script").nbaScript(body, board); if (body.list === "story") return require("./game-story").gameStory(body, board); if (body.list === "why") return whyPlayer(body.name, body.text, body.sport, body.bet, body.odds, Array.isArray(board.games) ? board.games : []); if (body.list === "out") return outList(); if (body.list === "kinds") return listKinds(games); if (body.list === "ones") return onesList((Array.isArray(board.games) ? board.games : []).filter((game) => SPORTS.includes(String(game.sport || "")))); if (body.list === "lookup") { const span = ["week", "today", "open", "slate"].includes(body.when) ? body.when : "today"; let games = (Array.isArray(board.games) ? board.games : []).filter((game) => SPORTS.includes(String(game.sport || ""))); if (Array.isArray(body.sports) && body.sports.length) { const want = new Set(body.sports.map(String)); games = games.filter((game) => want.has(String(game.sport || ""))); } return nameBook(games, offerLegs, span); } if (body.list === "club") return playerClub(body.name); if (body.list === "hurt") return require("./who-api").hurtList(body.names, body.games); if (body.list === "roster") return teamRoster(body.name, body.sport); if (body.list === "card") return require("./player-read").playerCard(body.name, body.sport); if (body.list === "mark") return markPlayer(body.name, body.bets, Array.isArray(board.games) ? board.games : []);
+  if (body.list === "pga") return require("./pga-board").pgaBoard(); if (body.list === "stack") { try { return await require("./stack-shapes").findStacks(board); } catch (error) { console.error("stack finder failed:", error); return { found: {}, notes: {}, error: `The strategy finder failed on this server: ${String((error && error.message) || error)}` }; } } if (body.list === "few") return fewList(body); if (body.list === "zone") { try { return JSON.parse(require("child_process").execFileSync("python3", ["-m", "nfl_bets.zone"], { encoding: "utf8", timeout: 90000, cwd: __dirname })); } catch (error) { return { teams: {} }; } } if (body.list === "game") return gameRead(body, board); if (body.list === "nba") return require("./nba-game-script").nbaScript(body, board); if (body.list === "story") return require("./game-story").gameStory(body, board); if (body.list === "why") return whyPlayer(body.name, body.text, body.sport, body.bet, body.odds, Array.isArray(board.games) ? board.games : []); if (body.list === "out") return outList(); if (body.list === "kinds") return listKinds(games); if (body.list === "ones") return onesList((Array.isArray(board.games) ? board.games : []).filter((game) => SPORTS.includes(String(game.sport || "")))); if (body.list === "lookup") { const span = ["week", "today", "open", "slate"].includes(body.when) ? body.when : "today"; let games = (Array.isArray(board.games) ? board.games : []).filter((game) => SPORTS.includes(String(game.sport || ""))); if (Array.isArray(body.sports) && body.sports.length) { const want = new Set(body.sports.map(String)); games = games.filter((game) => want.has(String(game.sport || ""))); } return nameBook(games, offerLegs, span); } if (body.list === "club") return playerClub(body.name); if (body.list === "hurt") return require("./who-api").hurtList(body.names, body.games); if (body.list === "roster") return teamRoster(body.name, body.sport); if (body.list === "card") return require("./player-read").playerCard(body.name, body.sport); if (body.list === "mark") return markPlayer(body.name, body.bets, Array.isArray(board.games) ? board.games : []);
   const safeAim = aim;
   if (!games.length) { if (body.list === "players") return { players: [] };
     const rows = Array.isArray(board.games) ? board.games : [];
