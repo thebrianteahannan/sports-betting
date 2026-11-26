@@ -76,7 +76,9 @@ function liveRoot(game, picks, rec, show) {
     const { state, say, level, tip } = liveLegState(game, pick);
     const twin = rec ? pick : liveRecTwin(game, pick);
     const tagged = twin && (twin.golden || twin.silver || twin.bronze) ? twin : { ...(twin || {}), ...pick, golden: !!(pick.golden || (twin && twin.golden)), silver: !!(pick.silver || (twin && twin.silver)), bronze: !!(pick.bronze || (twin && twin.bronze)) };
-    const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${liveTags(tagged)}${say ? `<i class="now${level ? ` pace-${level}` : ""}"${tip ? ` title="${liveEsc(tip)}"` : ""} data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}`;
+    const purse = !rec && pick.locked && pick.parlay ? livePurse.get(pick.parlay) : null;
+    const won = purse && state === "hit" && !(pick.size > 1) ? liveWonCash(purse.stake, purse.odds || pick.odds) : "";
+    const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${liveTags(tagged)}${say ? `<i class="now${level ? ` pace-${level}` : ""}"${tip ? ` title="${liveEsc(tip)}"` : ""} data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}${won ? `<i class="won">${liveEsc(won)}</i>` : ""}`;
     const href = `/?${new URLSearchParams({ game: pick.match, ...(pick.parlay ? { bet: pick.parlay } : {}), label: pick.label, market: pick.market, from: "live" })}`;
     const metal = !!(pick.golden || pick.silver || pick.bronze);
     const best = rec && !metal && pick.tier !== "good" && pick.role !== "thin";
@@ -84,7 +86,15 @@ function liveRoot(game, picks, rec, show) {
   };
   const groups = [];
   picks.forEach((pick) => { const group = !rec && pick.parlay && groups.find((row) => row.id === pick.parlay); if (group) group.picks.push(pick); else groups.push({ id: pick.parlay, picks: [pick] }); });
-  const body = groups.map((group) => { if (group.picks.length < 2) return one(group.picks[0]); const head = liveParlayHead(group.id, group.picks[0].size); const open = !rec && group.picks.every((pick) => !pick.locked); return `<span class="live-parlay${open ? " live-open" : ""}${head.level ? ` pace-${head.level}` : ""}"><em>${liveEsc(head.text)}</em>${group.picks.map(one).join("")}</span>`; }).join("");
+  const body = groups.map((group) => {
+    if (group.picks.length < 2) return one(group.picks[0]);
+    const head = liveParlayHead(group.id, group.picks[0].size);
+    const open = !rec && group.picks.every((pick) => !pick.locked);
+    const tally = !rec && liveParlays.get(group.id);
+    const purse = tally && livePurse.get(group.id);
+    const won = purse && group.picks[0].locked && tally.total > 1 && tally.hit === tally.total && !tally.lost ? liveWonCash(purse.stake, purse.odds) : "";
+    return `<span class="live-parlay${open ? " live-open" : ""}${head.level ? ` pace-${head.level}` : ""}"><em>${liveEsc(head.text)}</em>${won ? `<i class="won">${liveEsc(won)}</i>` : ""}${group.picks.map(one).join("")}</span>`;
+  }).join("");
   return `<span class="live-mine${rec ? " live-rec" : ""}${show ? " live-rec-show" : ""}"><b>${rec ? "Recommended" : "My Bets"}</b>${body}</span>`;
 }
 
@@ -566,7 +576,20 @@ function liveFocus(data) {
 
 let liveLoading = null;
 
+const livePurse = new Map();
+
+function liveWonCash(stake, odds) {
+  const n = Number(String(odds || "").replace(/[−–]/g, "-").replace(/[+$,\s]/g, ""));
+  const bet = Number(stake);
+  if (!n || !(bet > 0)) return "";
+  const won = Math.round(bet * (n < 0 ? 100 / -n : n / 100) * 100) / 100;
+  const cash = Math.abs(won - Math.round(won)) < 0.005 ? String(Math.round(won)) : won.toFixed(2);
+  return `Won $${cash}`;
+}
+
 function liveLegsFrom(mine) {
+  livePurse.clear();
+  (mine.parlays || []).forEach((row) => { if (row && row.id) livePurse.set(row.id, { stake: Number(row.stake) || 0, odds: row.lockedOdds || "" }); });
   liveLegs = (mine.parlays || []).flatMap((row) => (row.legs || []).map((leg) => ({ ...leg, parlay: row.id, parlaySize: (row.legs || []).length, locked: !!row.locked })));
 }
 

@@ -284,6 +284,7 @@ a.live-mine-leg:hover { border-color: #e7c15a; background: rgba(231, 193, 90, 0.
 .live-mine-leg.hit { border-color: #3dff6e; background: rgba(61, 255, 110, 0.12); }
 .live-mine-leg.hit .now { background: #3dff6e; color: #04140c; }
 .live-mine-leg.hit .now::before { content: "✓ "; }
+.live-mine-leg .won, .live-parlay > .won { color: #3dff6e; font-weight: 800; white-space: nowrap; }
 .live-mine-leg.lost { border-color: rgba(255, 107, 107, 0.6); background: rgba(255, 107, 107, 0.1); }
 .live-mine-leg.lost .now { background: #ff6b6b; color: #1a0606; }
 .live-mine-leg .now.live-flash { animation: live-flash-text 1.8s ease-in-out 0.2s; }
@@ -412,6 +413,7 @@ body.live-recs-on .live-table tr.rec .live-name { color: #3dff6e; }
   }
   .live-mine-leg .who { order: 1; flex: 1 1 auto; min-width: 0; white-space: nowrap; }
   .live-mine-leg .now { order: 2; flex: none; margin-left: auto; white-space: nowrap; }
+  .live-mine-leg .won { order: 2; flex: none; white-space: nowrap; }
   .live-mine-leg .prop { order: 3; flex: 1 0 100%; min-width: 0; white-space: normal; }
   .live-mine-leg .bet-kind { order: 4; }
 }
