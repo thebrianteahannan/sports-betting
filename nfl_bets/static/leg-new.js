@@ -273,4 +273,41 @@ if (typeof paintParlay === "function") {
   };
 }
 
+function betCurrentMark(id) {
+  if (!id) return;
+  window.betCurrent = id;
+  try { sessionStorage.setItem("betCurrent", id); } catch (error) {}
+}
+
+function betCurrentPick() {
+  const id = window.betCurrent || "";
+  let stored = "";
+  try { stored = sessionStorage.getItem("betCurrent") || ""; } catch (error) {}
+  const list = typeof saveList === "function" ? saveList() : [];
+  const pick = id || stored;
+  if (pick && list.some((row) => row.id === pick)) return pick;
+  const newest = list.slice().sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0))[0];
+  return newest ? newest.id : "";
+}
+
+function betCurrentOpen() {
+  const id = betCurrentPick();
+  if (!id || typeof saveOpen !== "function") return false;
+  if (window.parlayOpenId !== id) saveOpen(id);
+  return window.parlayOpenId === id;
+}
+
+if (typeof saveNow === "function" && !window.betCurrentWrapped) {
+  window.betCurrentWrapped = true;
+  const betCurrentSave = saveNow;
+  saveNow = function () {
+    const before = window.parlayOpenId || "";
+    const entry = betCurrentSave.apply(this, arguments);
+    if (entry && entry.id && entry.id !== before) betCurrentMark(entry.id);
+    return entry;
+  };
+}
+
 window.legNewClose = legNewClose;
+window.betCurrentMark = betCurrentMark;
+window.betCurrentOpen = betCurrentOpen;

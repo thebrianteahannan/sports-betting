@@ -341,7 +341,7 @@ function manageFold(legs, odds, pct, pay) {
   const legsLine = document.createElement("div");
   legsLine.className = "manage-fold-legs";
   legs.forEach((leg) => legsLine.append(manageLegLine(leg, legs)));
-  if (legs.length > 1 && typeof manageAddLeg === "function") manageAddLeg(legsLine);
+  if (typeof manageAddLeg === "function") manageAddLeg(legsLine);
   fold.append(top, legsLine);
   return fold;
 }
@@ -368,7 +368,7 @@ function manageSlip(row) {
   ].filter(Boolean).join("");
   slip.append(head);
   legs.forEach((leg) => slip.append(manageLegLine(leg, legs)));
-  if (legs.length > 1 && typeof manageAddLeg === "function") manageAddLeg(slip);
+  if (typeof manageAddLeg === "function") manageAddLeg(slip);
   return slip;
 }
 
@@ -394,7 +394,7 @@ function manageCard(row, n) {
     legsBox.append(head);
   }
   legs.forEach((leg) => legsBox.append(manageLegLine(leg, legs)));
-  if (legs.length > 1 && typeof manageAddLeg === "function") manageAddLeg(legsBox);
+  if (typeof manageAddLeg === "function") manageAddLeg(legsBox);
   legsBox.append(manageTags(legs));
   const fold = legs.length > 1 ? manageFold(legs, odds, pct, pay) : null;
   const open = document.createElement("button");
@@ -446,6 +446,7 @@ function manageCard(row, n) {
       return;
     }
     manageEditSet(row.id);
+    if (typeof betCurrentMark === "function") betCurrentMark(row.id);
     if (typeof legSwapOpen !== "undefined") legSwapOpen.clear();
     if (typeof saveOpen === "function" && row.id !== window.parlayOpenId) saveOpen(row.id);
     else manageRefresh();

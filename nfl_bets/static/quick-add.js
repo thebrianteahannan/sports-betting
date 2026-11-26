@@ -109,6 +109,10 @@ function quickAddPastPeople(game, sport, have) {
 function quickAddGames(people, sport, when) {
   const want = when || quickAdd.when || "next";
   if (want === "done") return quickAddDoneList(sport);
+  if (want === "live" && typeof startGamesFor === "function") {
+    return startGamesFor("live").filter((game) => game && String(game.match || "").trim() && quickAddOnSport(game, sport))
+      .sort((a, b) => Date.parse(a.kickoff || a.when || "") - Date.parse(b.kickoff || b.when || "") || String(a.match).localeCompare(String(b.match)));
+  }
   const rows = typeof loadedGames === "function" ? loadedGames(people, quickAddSpan(want)) : [];
   return (rows || []).filter((game) => quickAddOnSport(game, sport) && String(game.match || "").trim() && (typeof whenBucket !== "function" || whenBucket(Date.parse(game.kickoff || ""), game.match) === want))
     .sort((a, b) => Date.parse(a.kickoff || "") - Date.parse(b.kickoff || "") || String(a.match).localeCompare(String(b.match)));
@@ -663,7 +667,7 @@ function quickAddReveal(box) {
 }
 
 function quickAddLive(game) {
-  if (game && game.final) return true;
+  if (game && (game.final || game.live)) return true;
   const kick = Date.parse((game && game.kickoff) || "");
   return Number.isFinite(kick) && kick <= Date.now();
 }
@@ -672,6 +676,7 @@ function quickAddLock(person, game, said, odds, fresh) {
   const name = person && person.name ? String(person.name).trim() : "";
   if (!name || !said || !Number.isFinite(odds) || !odds || typeof parlayLeg === "undefined" || typeof parlayKey !== "function") return false;
   if (fresh && parlayLeg.size && typeof saveNew === "function") saveNew();
+  else if (!fresh && typeof betCurrentOpen === "function") betCurrentOpen();
   const label = said.toLowerCase().startsWith(name.toLowerCase()) ? said : `${name} ${said}`;
   const bet = { label, market: said, odds, match: (game && game.match) || "", kickoff: (game && game.kickoff) || "", sport: (game && game.sport) || "" };
   const id = parlayKey(bet);
@@ -747,6 +752,7 @@ function quickAddPut(board, fresh) {
   const bet = person && (person.bets || []).find((row) => typeof parlayKey === "function" && parlayKey(row) === quickAdd.value);
   if (!person || !bet) return;
   if (fresh && typeof parlayLeg !== "undefined" && parlayLeg.size && typeof saveNew === "function") saveNew();
+  else if (!fresh && typeof betCurrentOpen === "function") betCurrentOpen();
   if (typeof parlayKey === "function" && typeof parlayLeg !== "undefined" && (parlayLeg.has(parlayKey(bet)) || parlayLeg.size >= 8)) return;
   if (typeof legSwapAdd === "function") legSwapAdd(person.kind === "player" ? person : null, bet);
   else {
@@ -772,10 +778,12 @@ function quickAddBox(board) {
     const keep = focusSearch && typeof focusSearch === "number" ? focusSearch : null;
     const next = quickAddBox(board);
     // Roster callbacks outlive this box — always swap the live Quick Add node.
-    const live = box.isConnected ? box : board.querySelector(".quick-add");
+    const live = box.isConnected ? box : null;
     if (!live || !live.parentNode) return;
     const shot = live.querySelector(":scope > .find-shot-row");
+    const leg = live.classList.contains("quick-add-leg");
     live.replaceWith(next);
+    if (leg) next.classList.add("quick-add-leg");
     if (shot) {
       const shotHead = next.querySelector(".quick-add-head");
       if (shotHead) shotHead.after(shot);
@@ -818,7 +826,9 @@ function quickAddBox(board) {
   const all = quickAddPeople(board);
   const people = quickAddScope(all, quickAdd.when);
   const doneGames = quickAdd.when === "done" ? quickAddDoneList("") : [];
-  const sports = doneGames.length ? [...new Set(doneGames.map((game) => game.sport).filter(Boolean))].sort() : quickAddSports(people);
+  const liveGames = quickAdd.when === "live" && typeof startGamesFor === "function" ? startGamesFor("live") : [];
+  const posted = doneGames.length ? doneGames : liveGames;
+  const sports = posted.length ? [...new Set(posted.map((game) => game.sport).filter(Boolean))].sort() : quickAddSports(people);
   if (!sports.length) {
     const none = document.createElement("p");
     none.className = "quick-add-none";
@@ -909,7 +919,7 @@ function quickAddBox(board) {
   const splitTeams = !!(quickAdd.team && game && game.match);
   // Games only, until a game is picked or a name is typed.
   const listed = !quickAdd.team && !quickAdd.q.trim() ? [] : quickAddPlayers(people, quickAdd.sport, quickAdd.team, game, splitTeams);
-  const past = quickAdd.when === "done" && game ? quickAddPastPeople(game, quickAdd.sport, listed) : [];
+  const past = (quickAdd.when === "done" || quickAdd.when === "live") && game ? quickAddPastPeople(game, quickAdd.sport, listed) : [];
   const players = listed.concat(past).slice(0, playerCap);
   if (splitTeams) {
     const sides = quickAddGameSides(game);
@@ -998,7 +1008,7 @@ function quickAddBox(board) {
 
   const person = quickAddPerson(people.concat(past));
   if (!person) {
-    if (quickAdd.when === "done" && game && quickAddLive(game) && quickAddRosterReady(game, quickAdd.sport) && !players.length) {
+    if ((quickAdd.when === "done" || quickAdd.when === "live") && game && quickAddLive(game) && quickAddRosterReady(game, quickAdd.sport) && !players.length) {
       box.append(quickAddStep("1. Prop", [quickAddLiveForm(null, game)], "prop"));
     }
     return box;
@@ -1054,6 +1064,17 @@ function quickAddBox(board) {
   acts.append(current, fresh);
   box.append(acts);
   return box;
+}
+
+function quickAddLiveRefresh() {
+  if (quickAdd.when !== "live") return;
+  document.querySelectorAll(".manage-add .quick-add, .find-new.on .quick-add").forEach((node) => {
+    const board = node.closest(".find-board") || document.querySelector("#desk-glass-in .find-board");
+    if (!board || !node.parentNode) return;
+    const next = quickAddBox(board);
+    if (node.classList.contains("quick-add-leg")) next.classList.add("quick-add-leg");
+    node.replaceWith(next);
+  });
 }
 
 function quickAddOpen() {

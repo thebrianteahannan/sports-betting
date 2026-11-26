@@ -76,7 +76,7 @@ function homeLaterLoad() {
       startWeekAt = homeLater.weekAt;
       homeLater.tomorrow = games.filter((game) => day(Date.parse(game.kickoff || "")) === next).sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
     }
-  }).catch((error) => console.log("[home-games] could not load live and tomorrow", error)).finally(() => { homeLater.at = Date.now(); homeLater.loading = false; homeGamesPaint(); });
+  }).catch((error) => console.log("[home-games] could not load live and tomorrow", error)).finally(() => { homeLater.at = Date.now(); homeLater.loading = false; homeGamesPaint(); if (typeof quickAddLiveRefresh === "function") quickAddLiveRefresh(); });
 }
 
 function startWeekMerge(board, people) {

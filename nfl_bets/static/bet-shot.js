@@ -290,6 +290,19 @@ function shotStakeOf(legs) {
   return 5;
 }
 
+function shotLoose(leg) {
+  const player = String(leg.player || "").replace(/\s+/g, " ").trim();
+  const market = String(leg.market || "").replace(/\s+/g, " ").trim();
+  const side = String(leg.side || "").toLowerCase();
+  const line = leg.line == null || leg.line === "" ? null : Number(leg.line);
+  const odds = shotOdds(leg.odds);
+  if (!player || !market || !odds) return null;
+  let prop = market;
+  if (line != null && Number.isFinite(line) && !/win|moneyline|spread/.test(market)) prop = `${side === "under" ? "Under" : "Over"} ${line} ${market}`;
+  const bet = { label: `${player} ${prop}`.replace(/\s+/g, " ").trim(), odds, market, match: String(leg.match || "").trim(), kickoff: "", sport: String(leg.sport || "").trim() };
+  return bet.label ? bet : null;
+}
+
 function shotMatch(people, raw) {
   const legs = (raw || []).filter((leg) => leg && (leg.player || leg.market)).map(shotNorm).slice(0, 8);
   const rows = legs.map((leg) => ({ leg, hit: shotPlayer(people, leg) }));
@@ -302,15 +315,17 @@ function shotMatch(people, raw) {
     drafts.push({ person, leg });
     if (leg.market) shotWant.set(person.key, String(leg.market).trim());
   });
-  return { legs, found, drafts, missed };
+  const loose = missed.filter((leg) => !drafts.some((one) => one.leg === leg)).map(shotLoose).filter(Boolean);
+  return { legs, found, drafts, missed, loose };
 }
 
-function shotLoad(found, drafts, label) {
+function shotLoad(found, drafts, label, loose) {
   parlayPick.clear();
   parlayLeg.clear();
   if (typeof betFromSay === "function") betFromSay(label || "Pasted bet", true);
   found.forEach(({ person, bet }) => { if (person) parlayPick.set(person.key, person); parlayLeg.set(parlayKey(bet), bet); });
   drafts.forEach(({ person }) => parlayPick.set(person.key, person));
+  (loose || []).forEach((bet) => { parlayLeg.set(parlayKey(bet), bet); const who = typeof legLoose === "function" ? legLoose(bet).who : ""; if (who && typeof legOwner !== "undefined") legOwner.set(parlayKey(bet), who); });
 }
 
 async function shotRead(board, file) {
@@ -329,9 +344,9 @@ async function shotRead(board, file) {
     const tickets = shotTickets(data);
     const people = board.people || [];
     shotWant.clear();
-    const matched = tickets.map((bet) => ({ stake: shotStakeOf(bet.legs), ...shotMatch(people, bet.legs) })).filter((row) => row.found.length || row.drafts.length);
+    const matched = tickets.map((bet) => ({ stake: shotStakeOf(bet.legs), ...shotMatch(people, bet.legs) })).filter((row) => row.found.length || row.drafts.length || (row.loose || []).length);
     if (!matched.length) { console.log("[bet-shot] no legs in reply", data); throw new Error("I read that screenshot but found no player or team legs on it."); }
-    const legsTotal = matched.reduce((sum, row) => sum + row.found.length + row.drafts.length, 0);
+    const legsTotal = matched.reduce((sum, row) => sum + row.found.length + row.drafts.length + (row.loose || []).length, 0);
     wait.step(matched.length > 1 ? `Found ${matched.length} bets. Saving them in My bets` : `Found ${legsTotal} ${legsTotal === 1 ? "leg" : "legs"}. Building your parlay`);
     await new Promise((done) => setTimeout(done, 350));
     if (wait.signal.aborted) return;
@@ -344,9 +359,9 @@ async function shotRead(board, file) {
       const label = matched.length > 1 ? `Pasted bet ${index + 1}` : "Pasted bet";
       if (matched.length === 1) {
         if (typeof saveDetach === "function") saveDetach();
-        trayStackDo(`Read ${row.found.length + row.drafts.length} ${row.found.length + row.drafts.length === 1 ? "leg" : "legs"} from the screenshot.`, () => shotLoad(row.found, row.drafts, label));
+        trayStackDo(`Read ${row.found.length + row.drafts.length + (row.loose || []).length} ${row.found.length + row.drafts.length + (row.loose || []).length === 1 ? "leg" : "legs"} from the screenshot.`, () => shotLoad(row.found, row.drafts, label, row.loose));
       } else {
-        shotLoad(row.found, row.drafts, label);
+        shotLoad(row.found, row.drafts, label, row.loose);
         if (typeof trayRoster === "function") trayRoster();
       }
       const made = typeof saveNow === "function" ? saveNow() : null;
@@ -367,7 +382,7 @@ async function shotRead(board, file) {
     const drafts = matched.flatMap((row) => row.drafts);
     const missed = matched.flatMap((row) => row.missed);
     const found = matched.flatMap((row) => row.found);
-    const lost = missed.filter((leg) => !drafts.some((one) => one.leg === leg));
+    const lost = missed.filter((leg) => !drafts.some((one) => one.leg === leg) && !(matched.flatMap((row) => row.loose || []).some((bet) => String(bet.label || "").startsWith(String(leg.player || "")))));
     const more = matched.length > 1 ? ` Saved ${matched.length} bets from that screenshot${group ? " in My stacks" : ""}.` : "";
     const told = [drafts.length && `FanDuel doesn't have ${drafts.map(({ leg }) => say(leg)).join(", ")} at that number. ${drafts.length === 1 ? "It's" : "They're"} in your bet. Pick the line.`, lost.length && `Not on the board right now: ${lost.map(say).join(", ")}.`].filter(Boolean).join(" ");
     shotNote(board, `${told}${more}`.trim());
