@@ -532,7 +532,13 @@ function startRecCard(board, pick, index) {
     if (document.body.classList.contains("needs-member")) { const join = document.getElementById("gate-join"); if (join) join.click(); return; }
     const go = event.target.closest("[data-bet-go]");
     if (go) { card.querySelectorAll(".desk-rec-ask").forEach((node) => node.remove()); startBetGo(board, pick, go.dataset.betGo); return; }
-    if (event.target.closest(".desk-rec-team")) { startTeam(board, pick); return; }
+    if (event.target.closest(".desk-rec-team")) {
+      const hit = startHit(board, pick);
+      const game = hit && hit.bet ? hit.bet : { match: pick.match || "", kickoff: pick.kickoff || "", sport: pick.sport || "" };
+      if (board.querySelector(":scope > .find-teams") && board.querySelector(":scope > .find-list")) startOpen(board, game);
+      else startGameOpen(board, game);
+      return;
+    }
     if (event.target.closest(".desk-rec-bet")) { startBetAsk(board, pick, card); return; }
     if (event.target.closest(".desk-rec-ask, .desk-rec-more, .desk-rec-go, .desk-rec-tag-why, .desk-rec-slide")) return;
     if (typeof recMoreStep === "function") { recMoreStep(board, pick, card); return; }

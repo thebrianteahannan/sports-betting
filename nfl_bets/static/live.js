@@ -394,10 +394,20 @@ function liveOnly(list) {
   return liveOnlyMine ? (list || []).filter(liveHasMine) : (list || []);
 }
 
+let livePaintHeld = false;
+
+function livePaintFlush() {
+  if (!livePaintHeld || !liveLast || document.querySelector("#live .holding")) return;
+  livePaint(liveLast, true);
+}
+
 function livePaint(data, quiet) {
   liveLast = data;
-  liveParlayTally([...(data.live || []), ...(data.done || [])]);
   const box = document.getElementById("live");
+  // Rebuilding the page drops the finger off the slider. Wait until the drag ends.
+  if (box && box.querySelector(".holding")) { livePaintHeld = true; return; }
+  livePaintHeld = false;
+  liveParlayTally([...(data.live || []), ...(data.done || [])]);
   box.querySelectorAll(".live-table[data-slide]").forEach((node) => liveSlide.set(node.dataset.slide, node.scrollLeft));
   const was = new Map([...box.querySelectorAll("[data-k]")].map((node) => [node.dataset.k, node.textContent])), games = new Set([...box.querySelectorAll(".live-game[data-id]")].map((node) => node.dataset.id)), first = quiet || !box.querySelector(".live-game, h2");
   const keep = (game) => !liveLeagues.size || liveLeagues.has(game.sport);
@@ -612,10 +622,9 @@ document.getElementById("live").addEventListener("change", (event) => {
 document.body.classList.remove("live-mine-games");
 liveZoomApply(liveZoom);
 document.getElementById("live").addEventListener("pointerdown", (event) => {
-  if (event.target.matches("input.live-card-range")) { try { event.target.setPointerCapture(event.pointerId); } catch (error) {} return; }
-  if (!event.target.matches("input.live-zoom-range")) return;
+  const zoom = event.target.closest && event.target.closest(".live-zoom");
+  if (!zoom || zoom.classList.contains("live-card-zoom")) return;
   liveZoomDrag = true;
-  try { event.target.setPointerCapture(event.pointerId); } catch (error) {}
 });
 const liveZoomEnd = (event) => {
   const cardRange = event.target && event.target.matches && event.target.matches("input.live-card-range");
@@ -630,11 +639,10 @@ const liveZoomEnd = (event) => {
   box.setAttribute("aria-valuenow", String(snapped));
   liveZoomApply(snapped, { master: true });
 };
-document.getElementById("live").addEventListener("pointerup", liveZoomEnd);
-document.getElementById("live").addEventListener("pointercancel", liveZoomEnd);
-document.getElementById("live").addEventListener("lostpointercapture", (event) => {
-  if (event.target.matches("input.live-zoom-range")) liveZoomEnd(event);
-});
+const liveDragStop = (event) => { liveZoomEnd(event); livePaintFlush(); };
+document.getElementById("live").addEventListener("pointerup", liveDragStop);
+document.getElementById("live").addEventListener("pointercancel", liveDragStop);
+document.getElementById("live").addEventListener("lostpointercapture", liveDragStop);
 document.getElementById("live").addEventListener("input", (event) => {
   if (event.target.matches("input.live-card-range")) { liveCardMove(event.target.closest(".live-game"), event.target); return; }
   if (!event.target.matches("input.live-zoom-range")) return;

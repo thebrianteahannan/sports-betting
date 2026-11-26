@@ -17,7 +17,6 @@ function rowSlide(input) {
   const min = () => Number(input.min) || 0;
   const max = () => Number(input.max);
   let edgePx = (thumb.offsetWidth || 32) / 2;
-  let spanRect = null;
   const half = () => edgePx;
   const paint = (n) => {
     const lo = min(), hi = Number.isFinite(max()) ? max() : lo;
@@ -29,7 +28,7 @@ function rowSlide(input) {
   };
   const fromX = (x) => {
     const lo = min(), hi = Number.isFinite(max()) ? max() : lo;
-    const rect = spanRect || track.getBoundingClientRect();
+    const rect = track.getBoundingClientRect();
     const edge = half();
     const inner = Math.max(1, rect.width - edge * 2);
     const clamped = Math.min(rect.right - edge, Math.max(rect.left + edge, x));
@@ -40,6 +39,8 @@ function rowSlide(input) {
   let pointer = 0;
   let raw = Number(input.value) || 0;
   let sent = Math.round(raw);
+  let pointX = 0;
+  let told = 0;
   const write = (level, kind) => {
     desc.set.call(input, String(level));
     input.setAttribute("aria-valuenow", String(level));
@@ -55,29 +56,40 @@ function rowSlide(input) {
     row.removeEventListener("pointermove", move);
     row.removeEventListener("pointerup", up);
     row.removeEventListener("pointercancel", lost);
+    row.removeEventListener("lostpointercapture", lost);
     document.removeEventListener("pointermove", move);
     document.removeEventListener("pointerup", up);
     document.removeEventListener("pointercancel", lost);
   };
-  const move = (event) => {
-    if (!held || event.pointerId !== pointer) return;
-    if (event.cancelable) event.preventDefault();
-    raw = fromX(event.clientX);
-    paint(raw);
+  // The thumb moves on this frame. The page hears about the new step after that paint, so a heavy listener cannot freeze the drag.
+  const tell = () => {
     const level = Math.round(raw);
     if (level === sent) return;
     sent = level;
-    write(level, "input");
+    const gen = ++told;
+    setTimeout(() => {
+      if (gen !== told || !held) return;
+      write(sent, "input");
+    }, 0);
+  };
+  const move = (event) => {
+    if (!held || event.pointerId !== pointer) return;
+    if (event.cancelable) event.preventDefault();
+    pointX = event.clientX;
+    raw = fromX(pointX);
+    paint(raw);
+    tell();
   };
   const finish = (level) => {
     held = false;
-    spanRect = null;
+    told += 1;
     drop();
     raw = level;
     sent = level;
     paint(level);
     write(level, "input");
     input.dispatchEvent(new Event("change", { bubbles: true }));
+    row.classList.remove("holding");
   };
   const up = (event) => {
     if (!held || event.pointerId !== pointer) return;
@@ -85,30 +97,29 @@ function rowSlide(input) {
   };
   const lost = (event) => {
     if (!held || event.pointerId !== pointer) return;
-    finish(Math.round(raw));
+    finish(Math.round(fromX(pointX)));
   };
   row.addEventListener("pointerdown", (event) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
     const press = event.target.closest && event.target.closest("button, a");
     if (press && press !== row && row.contains(press)) return;
     held = true;
+    row.classList.add("holding");
     pointer = event.pointerId;
     edgePx = (thumb.offsetWidth || 32) / 2;
-    spanRect = track.getBoundingClientRect();
     try { row.setPointerCapture(event.pointerId); } catch (error) {}
     event.preventDefault();
     row.addEventListener("pointermove", move);
     row.addEventListener("pointerup", up);
     row.addEventListener("pointercancel", lost);
+    row.addEventListener("lostpointercapture", lost);
     document.addEventListener("pointermove", move);
     document.addEventListener("pointerup", up);
     document.addEventListener("pointercancel", lost);
-    raw = fromX(event.clientX);
+    pointX = event.clientX;
+    raw = fromX(pointX);
     paint(raw);
-    const level = Math.round(raw);
-    if (level === sent) return;
-    sent = level;
-    write(level, "input");
+    tell();
   });
   paint(raw);
 }

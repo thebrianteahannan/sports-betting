@@ -20,12 +20,15 @@ function priceMoveKey(row) {
   return `${row && row.label || ""}|${row && row.match || ""}`;
 }
 
+function priceMoveFold(text) {
+  return String(text || "").toLowerCase().replace(/[–—−]/g, "-").replace(/\s+/g, " ").trim();
+}
+
 function priceMoveSame(row, label, match) {
-  if (!row || (row.match || "") !== (match || "")) return false;
-  const a = String(row.label || "").toLowerCase().trim();
-  const b = String(label || "").toLowerCase().trim();
-  if (!a || !b) return false;
-  return a === b || a.startsWith(`${b} `) || b.startsWith(`${a} `);
+  if (!row || priceMoveFold(row.match) !== priceMoveFold(match)) return false;
+  const a = priceMoveFold(row.label);
+  const b = priceMoveFold(label);
+  return !!a && a === b;
 }
 
 function priceMoveLoad() {
@@ -327,6 +330,21 @@ function priceMoveDraw(box, rows) {
   }
   card.append(head, where, ...(why ? [why] : []), ...(books ? [books] : []), ...(acts ? [acts] : []), priceMoveChart(picked.series), unit, steps);
   box.replaceChildren(lead, switcher, ...(leagueBar.childElementCount ? [leagueBar] : []), menu, card);
+  const on = box.querySelector(".price-move-pick.on");
+  if (on) on.scrollIntoView({ block: "nearest" });
+}
+
+function priceMoveShow(board, card) {
+  const ask = card.querySelector(".desk-rec-ask");
+  const acts = card.querySelector(".price-move-acts");
+  if (ask && acts) acts.after(ask);
+  const tray = board && board.querySelector(":scope > .find-tray");
+  const bet = card.querySelector(".price-move-bet");
+  if (tray && !tray.hidden) {
+    tray.classList.remove("find-shut");
+    if (bet && !ask) bet.textContent = "On the slip";
+    tray.scrollIntoView({ block: "nearest" });
+  } else if (ask) ask.scrollIntoView({ block: "nearest" });
 }
 
 function priceMoveTake(picked, card) {
@@ -344,6 +362,7 @@ function priceMoveTake(picked, card) {
   }
   if (typeof startBetAsk !== "function" || !board) return;
   startBetAsk(board, pick, card);
+  priceMoveShow(board, card);
   const ask = card.querySelector(".desk-rec-ask");
   if (!ask || ask.dataset.wired) return;
   ask.dataset.wired = "1";
@@ -352,6 +371,7 @@ function priceMoveTake(picked, card) {
     if (!go || typeof startBetGo !== "function") return;
     card.querySelectorAll(".desk-rec-ask").forEach((node) => node.remove());
     startBetGo(board, pick, go.dataset.betGo);
+    priceMoveShow(board, card);
   });
 }
 
@@ -395,10 +415,13 @@ function priceMoveMark() {
       if (!row) return;
       const how = card.querySelector(".desk-rec-how");
       if (!how) return;
+      const moved = Math.abs(Number(row.points) || 0);
+      const way = Number(row.points) > 0 ? "less" : "more";
+      const amount = moved ? moved.toFixed(1).replace(/\.0$/, "") : "";
       const tip = `FanDuel ${priceMovePay(row.points)}, from ${priceMovePrice(row.first)} to ${priceMovePrice(row.last)}.`;
       const tag = document.createElement("i");
       tag.className = "bet-kind k-move";
-      tag.textContent = "Moving";
+      tag.textContent = amount ? `Moving ${amount} ${way}` : "Moving";
       tag.title = tip;
       tag.dataset.tip = tip;
       how.append(tag);
@@ -407,15 +430,22 @@ function priceMoveMark() {
 }
 
 function priceMoveOpen(label, match) {
-  const rows = priceMoveBag && priceMoveBag.data && priceMoveBag.data.rows || [];
-  const row = rows.find((item) => priceMoveSame(item, label, match));
-  priceMoveFocus = row ? priceMoveKey(row) : `${label || ""}|${match || ""}`;
-  if (row) priceMoveTab = priceMoveDeez(row) ? "deez" : priceMoveLive(row) ? "live" : "all";
-  try { sessionStorage.setItem("price-move", priceMoveFocus); } catch (error) {}
-  const here = document.querySelector("#desk-glass-in .find-board");
-  if (here && here.dataset.page === "moves" && typeof startPaint === "function") { startPaint(1); return; }
-  if (typeof paintMoves === "function") paintMoves();
-  else window.location.href = "/movement";
+  const go = (rows) => {
+    const row = (rows || []).find((item) => priceMoveSame(item, label, match));
+    priceMoveFocus = row ? priceMoveKey(row) : `${label || ""}|${match || ""}`;
+    if (row) {
+      priceMoveTab = priceMoveDeez(row) ? "deez" : priceMoveLive(row) ? "live" : "all";
+      priceMoveLeague = row.sport || "";
+    }
+    try { sessionStorage.setItem("price-move", priceMoveFocus); } catch (error) {}
+    const here = document.querySelector("#desk-glass-in .find-board");
+    if (here && here.dataset.page === "moves" && typeof startPaint === "function") { startPaint(1); return; }
+    if (typeof paintMoves === "function") paintMoves();
+    else window.location.href = "/movement";
+  };
+  const ready = priceMoveBag && priceMoveBag.data && priceMoveBag.data.rows;
+  if (ready) { go(ready); return; }
+  priceMoveLoad().then((data) => go((data && data.rows) || [])).catch(() => go([]));
 }
 
 window.priceMovePage = priceMovePage;

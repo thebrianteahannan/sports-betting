@@ -68,12 +68,14 @@
 :is(.find-board .find-start, #profile-admin .admin-history).find-start-open { display: block !important; }
 .find-board.find-rec-page > .find-tray,
 .find-board.find-rec-page > .find-teams[data-parlay-games] { display: none !important; }
+.find-board.find-move-page > .find-tray:not([hidden]) { display: block !important; }
 .find-board.find-rec-page:not(:has(.find-match:not([data-parlay-match]))) > .find-start { display: block !important; }
 .find-board.find-rec-page > label.find,
 .find-board.find-rec-page > .find-span,
 .find-board.find-rec-page > .find-shot-row,
 .find-board.find-rec-page > h2 .find-shot,
 .find-board.find-rec-page > .find-hits:not(.find-tray),
+.find-board.find-rec-page > .find-roster,
 .find-board.find-rec-page > .find-saved { display: none !important; }
 .find-board.find-rec-page > h2 { margin-bottom: 0.75rem; }
 .find-board.find-rec-page > .find-start { margin-top: 0; }

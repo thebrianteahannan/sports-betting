@@ -331,6 +331,7 @@ function recParlayCard(board, row) {
   if (row.place === "silver") card.dataset.recSilver = "1";
   if (row.place === "golden" || row.place === "silver" || row.place === "bronze") card.dataset.recMetal = "1";
   if (row.place === "known") card.dataset.recClose = "1";
+  if (row.place === "edge") card.dataset.recHot = "1";
   const price = Number.isFinite(row.price) ? (row.price > 0 ? `+${row.price}` : String(row.price)) : "";
   const need = `${(row.need * 100).toFixed(1)}%`;
   const ours = `${(row.ours * 100).toFixed(1)}%`;
@@ -403,7 +404,8 @@ function recParlayDialCounts(rows) {
   const silver = rows.filter((row) => row.place === "silver").length;
   const metal = rows.filter((row) => row.place === "golden" || row.place === "silver" || row.place === "bronze").length;
   const close = rows.filter((row) => row.place === "known").length;
-  return { golden, silver, metal, close, all: metal + close };
+  const hot = rows.filter((row) => row.place === "edge").length;
+  return { golden, silver, metal, close, hot, all: metal + close };
 }
 
 function recParlayTune(box) {
@@ -444,7 +446,7 @@ function recParlayPaint(board, box) {
   }
   const list = document.createElement("div");
   list.className = "rec-parlay-list";
-  made.rows.filter((row) => row.place === "golden" || row.place === "silver" || row.place === "bronze" || row.place === "known").forEach((row) => list.append(recParlayCard(board, row)));
+  made.rows.filter((row) => row.place === "golden" || row.place === "silver" || row.place === "bronze" || row.place === "known" || row.place === "edge").forEach((row) => list.append(recParlayCard(board, row)));
   box.append(list);
   const next = box.querySelector("button.rec-dial-next") || (typeof recDialNext === "function" ? recDialNext() : null);
   if (next) box.append(next);
