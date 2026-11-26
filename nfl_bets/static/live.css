@@ -13,6 +13,9 @@ a { color: #3dff6e; }
 #live-profile:hover, .live-bird:hover { box-shadow: 0 0 18px rgba(61, 255, 110, 0.6); }
 .live-top .live-nav { margin: 0; justify-content: flex-end; }
 .live-top h1 { margin: 0; font-family: Oswald, sans-serif; font-size: 24px; font-weight: 600; letter-spacing: 0.02em; }
+@media (min-width: 701px) {
+  .live-top h1 { position: absolute; z-index: 1; top: 0; left: 11.5rem; right: 26rem; height: 100%; display: flex; align-items: center; justify-content: center; pointer-events: none; text-align: center; }
+}
 .live-score { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; color: #f4f7fb; font-size: 13px; font-weight: 600; }
 .live-score i { color: #3dff6e; font-size: 12px; font-style: normal; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .live-score span { padding: 3px 10px; border: 1px solid rgba(61, 255, 110, 0.35); border-radius: 999px; background: rgba(61, 255, 110, 0.06); white-space: nowrap; }
@@ -57,6 +60,12 @@ body[data-live-zoom="0"] .live-game[data-card-zoom="0"] .live-rec-tag { position
 .live-filter-say { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.75rem; margin: 0 0 0.35rem; color: #d5deea; font-size: 14px; font-weight: 650; }
 .live-filter-say button { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: #3dff6e; font: inherit; font-weight: 700; letter-spacing: normal; text-transform: none; text-decoration: underline; cursor: pointer; }
 .live-filter-fold { margin: 0 0 8px; }
+@media (min-width: 701px) {
+  .live-filter-row { display: flex; align-items: flex-start; gap: 12px 18px; }
+  .live-filter-row > .live-filter-fold { flex: 1 1 auto; min-width: 0; margin: 0; }
+  .live-filter-row > .live-filter-fold:not([open]) > summary { display: flex; align-items: center; min-height: 48px; }
+  .live-filter-row > .live-zoom-bar { flex: 0 0 auto; width: auto; margin: 0; }
+}
 .live-filter-fold > summary { width: fit-content; margin: 0; padding: 0.15rem 0; color: #9fb3c8; font-size: 13px; font-weight: 800; list-style: none; cursor: pointer; }
 .live-filter-fold > summary::-webkit-details-marker { display: none; }
 .live-filter-fold > summary::before { content: "▸ "; }

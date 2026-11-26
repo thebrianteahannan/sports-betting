@@ -346,7 +346,7 @@ function liveFilterBar(bar, filters, liveN) {
   const clear = liveFiltersDirty() ? ` <button type="button" data-live-clear>Clear</button>` : "";
   const say = `<p class="live-filter-say">${liveEsc(bits.join(". "))}.${clear}</p>`;
   const liveGo = liveN && liveSpan !== "live" ? `<p class="live-now-go"><button type="button" data-week="live">${liveN} ${liveN === 1 ? "game is" : "games are"} live</button></p>` : "";
-  return `${say}${liveGo}<details class="live-filter-fold"${liveFiltersOpen ? " open" : ""}><summary>Filters</summary>${bar}${filters}</details>${liveZoomBar()}`;
+  return `${say}${liveGo}<div class="live-filter-row"><details class="live-filter-fold"${liveFiltersOpen ? " open" : ""}><summary>Filters</summary>${bar}${filters}</details>${liveZoomBar()}</div>`;
 }
 
 function liveFiltersClear() {
