@@ -200,14 +200,34 @@ function priceTrendFill(host, data) {
   frame.className = "price-trend-frame";
   frame.hidden = true;
   frame.title = "Price clocks";
+  const src = () => { if (!frame.src) frame.src = `${URL.createObjectURL(new Blob([priceTrendPdf(data)], { type: "application/pdf" }))}#toolbar=0&navpanes=0&view=Fit`; };
+  const fit = () => {
+    if (frame.hidden) return;
+    const box = host.closest(".price-moves");
+    if (box) box.classList.add("price-moves-pdf");
+    host.classList.add("price-trend-open");
+    const top = Math.max(0, frame.getBoundingClientRect().top);
+    frame.style.height = `${Math.max(360, Math.round(window.innerHeight - top - 8))}px`;
+  };
   button.addEventListener("click", (event) => {
     event.preventDefault();
-    if (host.open && !frame.hidden) { frame.hidden = true; host.open = false; button.textContent = "View the PDF"; return; }
-    if (!frame.src) frame.src = `${URL.createObjectURL(new Blob([priceTrendPdf(data)], { type: "application/pdf" }))}#navpanes=0`;
+    if (host.open && !frame.hidden) {
+      frame.hidden = true;
+      host.open = false;
+      host.classList.remove("price-trend-open");
+      const box = host.closest(".price-moves");
+      if (box) box.classList.remove("price-moves-pdf");
+      frame.style.height = "";
+      button.textContent = "View the PDF";
+      return;
+    }
+    src();
     frame.hidden = false;
     host.open = true;
     button.textContent = "Hide the PDF";
+    requestAnimationFrame(fit);
   });
+  window.addEventListener("resize", fit);
   summary.addEventListener("click", (event) => { event.preventDefault(); });
   summary.append(button);
   host.append(summary, frame);
