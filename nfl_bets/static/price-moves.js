@@ -438,7 +438,8 @@ function priceMoveDraw(box, rows) {
     if (news) acts.append(news);
   }
   card.append(head, where, ...(why ? [why] : []), ...(books ? [books] : []), ...(acts ? [acts] : []), priceMoveChart(picked.series), unit, steps);
-  box.replaceChildren(lead, switcher, ...(leagueBar.childElementCount ? [leagueBar] : []), menu, card);
+  const trend = box.querySelector(":scope > .price-trend");
+  box.replaceChildren(...(trend ? [trend] : []), lead, switcher, ...(leagueBar.childElementCount ? [leagueBar] : []), menu, card);
   const on = box.querySelector(".price-move-pick.on");
   if (on) on.scrollIntoView({ block: "nearest" });
 }
@@ -502,6 +503,7 @@ function priceMovePage() {
   note.className = "desk-games-note";
   note.textContent = "Looking up the FanDuel prices.";
   box.append(note);
+  if (typeof priceTrendPaint === "function") priceTrendPaint(box);
   try { priceMoveFocus = priceMoveFocus || sessionStorage.getItem("price-move") || ""; } catch (error) {}
   priceMoveLoad().then((data) => {
     if (!box.isConnected) return;

@@ -96,6 +96,11 @@ function manageLegKick(leg) {
 
 function manageWhenOk(row) {
   if (manageWhen === "all") return true;
+  if (manageWhen === "live") {
+    const legs = (row && row.legs) || [], tray = typeof trayLive !== "undefined" && trayLive.games ? trayLive.games.filter((game) => game && !game.final) : [];
+    if (typeof liveMine === "function" && tray.some((game) => liveMine(game, legs).length)) return true;
+    return (typeof startGamesFor === "function" ? startGamesFor("live") : []).some((game) => legs.some((leg) => typeof whenSame === "function" && whenSame(game, leg)));
+  }
   const now = manageEtParts();
   const days = (row.legs || []).map((leg) => manageEtParts(manageLegKick(leg))).filter(Boolean).map((part) => part.key);
   if (!now || !days.length) return false;
@@ -123,7 +128,7 @@ function manageFilters(box) {
   [["all", "All"], ["locked", "Locked"], ["open", "Still Building"]].forEach(([key, label]) => chip(box, label, manageFilter === key, () => { manageFilter = key; }));
   const when = document.createElement("span");
   when.className = "manage-when";
-  [["all", "Any day"], ["today", "Today"], ["week", "This week"]].forEach(([key, label]) => chip(when, label, manageWhen === key, () => { manageWhen = key; }));
+  [["all", "Any day"], ["live", "Live"], ["today", "Today"], ["week", "This week"]].forEach(([key, label]) => chip(when, label, manageWhen === key, () => { manageWhen = key; if (key === "live") { if (typeof homeLaterLoad === "function") homeLaterLoad(); if (typeof trayLiveLoad === "function") trayLiveLoad(); } }));
   box.append(when);
 }
 

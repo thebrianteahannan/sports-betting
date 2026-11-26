@@ -378,4 +378,8 @@ function prime() {
   return kv(`?k=like.${encodeURIComponent(KEY)}*&select=v`).then((rows) => { hold(rows); }).catch(() => {});
 }
 
-module.exports = { note, movers, tick, apply, moveOf, stepSay, history, prime };
+function logged() {
+  return books;
+}
+
+module.exports = { note, movers, tick, apply, moveOf, stepSay, history, prime, logged };

@@ -1223,6 +1223,8 @@ function startPaint(again) {
     return;
   }
   if (startTab === "shared" || startTab === "games" || startTab === "stats" || startTab === "golden" || startTab === "stacks") startTab = "rec";
+  const recordAdmin = !!(window.memberAdmin || (window.state && window.state.admin));
+  if (!history && startTab === "record" && !recordAdmin) startTab = "rec";
   if (history && startHistTab !== "stats" && startHistTab !== "golden" && startHistTab !== "close") startHistTab = "stats";
   const tabNow = history ? startHistTab : startTab;
   const tabs = document.createElement("span");
@@ -1272,13 +1274,15 @@ function startPaint(again) {
     moveTab.textContent = "Price Movement";
     moveTab.addEventListener("click", () => { startTab = "moves"; startPaint(1); });
     tabs.append(moveTab);
-    const recordTab = document.createElement("button");
-    recordTab.type = "button";
-    recordTab.className = `desk-games-tab${tabNow === "record" ? " on" : ""}`;
-    recordTab.setAttribute("aria-pressed", String(tabNow === "record"));
-    recordTab.textContent = "History";
-    recordTab.addEventListener("click", () => { startTab = "record"; startPaint(1); });
-    tabs.append(recordTab);
+    if (recordAdmin) {
+      const recordTab = document.createElement("button");
+      recordTab.type = "button";
+      recordTab.className = `desk-games-tab${tabNow === "record" ? " on" : ""}`;
+      recordTab.setAttribute("aria-pressed", String(tabNow === "record"));
+      recordTab.textContent = "History";
+      recordTab.addEventListener("click", () => { startTab = "record"; startPaint(1); });
+      tabs.append(recordTab);
+    }
   }
   box.dataset.stacks = startStackKey();
   const row = document.createElement("div");

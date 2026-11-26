@@ -150,6 +150,7 @@ function showMember(payload) {
   }
   if (window.render) window.render();
   if (admin && window.loadAdmin) window.loadAdmin();
+  if (admin && typeof startPaint === "function" && document.querySelector('#desk-glass-in .find-board[data-page="rec"] .find-start') && ![...document.querySelectorAll("#desk-glass-in .desk-games-tab")].some((tab) => tab.textContent.trim() === "History")) startPaint(1);
   if (window.tvTickPaintCards) tvTickPaintCards(true);
   if (window.tvTickMeetFirst) tvTickMeetFirst();
   if (window.trialWarnMaybe) trialWarnMaybe(member);
