@@ -398,6 +398,8 @@ function manageCard(row, n) {
   open.type = "button";
   open.className = "manage-open";
   open.textContent = manageEditId === row.id ? "Done" : "Edit";
+  open.setAttribute("aria-label", open.textContent);
+  open.title = open.textContent;
   const drop = document.createElement("button");
   drop.type = "button";
   drop.className = "manage-drop";
