@@ -467,8 +467,8 @@ function manageFill(board) {
   if (typeof manageFilters === "function") manageFilters(filters);
   filters.append(manageZoomBar());
   board.append(filters);
-  if (typeof bankBar === "function") board.append(bankBar());
   board.append(manageNextLine(shown));
+  if (typeof bankBar === "function") board.append(bankBar());
   manageZoomApply(manageZoom, { quiet: true, board, filling: true });
   if (!shown.length) {
     const none = document.createElement("div");
