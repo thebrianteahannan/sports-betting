@@ -1,6 +1,25 @@
 #desk.tv-full #desk-glass-in { box-sizing: border-box; border-top: 5rem solid #000; }
 #desk.tv-full.has-back #desk-glass-in { padding-top: 0; }
 #desk.tv-full #desk-glass:has(.bet-load) :is(#chooser.built, .find-board, .ones-board) { top: 5rem; }
+#desk-nav { display: none; }
+#desk.tv-full #desk-nav:not([hidden]) {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px;
+  position: absolute; z-index: 15; top: 0; right: 4.2rem; height: 5rem; margin: 0; max-width: min(34rem, calc(100% - 18rem));
+}
+#desk-nav button {
+  display: inline-flex; align-items: center; gap: 0.4rem; width: auto; min-height: 0; margin: 0; padding: 0.28rem 0.75rem;
+  border: 1px solid #3dff6e; border-radius: 999px; background: #07140f; box-shadow: none;
+  color: #3dff6e; font-family: Outfit, system-ui, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: normal; text-transform: none; cursor: pointer;
+}
+#desk-nav button:hover { filter: none; background: rgba(61, 255, 110, 0.12); }
+#desk-nav b { min-width: 1.15rem; padding: 0 0.35rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-weight: 800; line-height: 1.35; text-align: center; }
+#desk.tv-full.has-nav #desk-where:not(:empty) { right: 26rem; }
+#desk.tv-full.has-nav .rec-board > h2 > :is(button.find-build-go, button.find-rec-go, button.find-mine-go, button.find-games-go) { display: none !important; }
+@media (max-width: 760px) {
+  #desk.tv-full.has-nav #desk-glass-in { border-top-width: 8.6rem; }
+  #desk.tv-full.has-nav #desk-nav:not([hidden]) { top: 4.7rem; left: 0.7rem; right: 0.7rem; height: auto; max-width: none; justify-content: flex-start; }
+  #desk.tv-full.has-nav #desk-where { visibility: hidden; }
+}
 #desk-where { display: none; }
 #desk.tv-full #desk-where:not(:empty) {
   display: flex; align-items: center; justify-content: center; position: absolute; z-index: 14; top: 0; left: 11.5rem; right: 4.2rem; height: 5rem;

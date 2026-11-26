@@ -89,9 +89,35 @@ function findUpPaint() {
   desk.classList.toggle("find-up", away);
 }
 
+const DESK_NAV = [["find", "Build a bet", "find"], ["manage", "My Bets", "manage"], ["rec", "Recommended", "rec"], ["live", "The Games", "live"]];
+const DESK_HERE = { "/build": "find", "/recommended": "rec", "/history": "history", "/movement": "moves", "/bets": "manage", "/strategies": "bets" };
+
+function deskNavPaint() {
+  const desk = document.getElementById("desk");
+  if (!desk) return;
+  const show = desk.classList.contains("tv-full") && !document.body.classList.contains("needs-member");
+  let nav = document.getElementById("desk-nav");
+  if (!show) { if (nav) nav.hidden = true; desk.classList.remove("has-nav"); return; }
+  if (!nav) {
+    nav = document.createElement("nav");
+    nav.id = "desk-nav";
+    nav.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-go]");
+      if (button && typeof birdMenu === "function") birdMenu(button.dataset.go);
+    });
+    desk.append(nav);
+  }
+  nav.hidden = false;
+  const here = DESK_HERE[location.pathname] || "";
+  const count = typeof saveList === "function" ? saveList().length : 0;
+  const html = DESK_NAV.filter((item) => item[0] !== here).map((item) => `<button type="button" data-go="${item[2]}">${item[1]}${item[0] === "manage" ? ` <b>${count}</b>` : ""}</button>`).join("");
+  if (nav.innerHTML !== html) nav.innerHTML = html;
+  desk.classList.add("has-nav");
+}
+
 (() => {
   let queued = false;
-  const queue = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; wherePaint(); findWipe(); findUpPaint(); if (typeof betShotMount === "function") betShotMount(); }); };
+  const queue = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; wherePaint(); findWipe(); findUpPaint(); deskNavPaint(); if (typeof betShotMount === "function") betShotMount(); }); };
   document.addEventListener("scroll", queue, { capture: true, passive: true });
   const start = () => {
     const desk = document.getElementById("desk");
