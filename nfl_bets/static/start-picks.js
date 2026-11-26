@@ -861,14 +861,15 @@ function startFilterFold(name, row, say) {
 }
 
 function startRecs(board, box, root) {
-  const history = board && board.dataset.page === "history";
+  const history = !!(board && board.dataset && board.dataset.page === "history");
   const tab = history ? startHistTab : startTab;
-  if (tab !== "rec") {
+  const homeGames = !!(box && box.id === "desk-games" && typeof homeGamesTab !== "undefined" && homeGamesTab === "games");
+  if (tab !== "rec" && !homeGames) {
     const pool = startRecPool(typeof leftGames === "function" ? leftGames() : []);
     return { recs: [], games: [], picks: pool.picks || [], all: pool.picks || [] };
   }
   const left = leftGames().filter((game) => startGameOk(game.match)), when = typeof startWhenSay === "function" ? startWhenSay() : "today";
-  const { recs, picks, all } = startRecFeed(board, box, root);
+  const feed = tab === "rec" ? startRecFeed(board, box, root) : { recs: [], picks: [], all: [] };
   const games = homeGameRows(left, box).filter((node) => !startFavOnly || !node.startGame || startFavGame(node.startGame.match)).map((node) => {
     if (!node.classList.contains("desk-game") || node.classList.contains("desk-game-live")) return node;
     const copy = node.cloneNode(true), game = node.startGame;
@@ -876,7 +877,11 @@ function startRecs(board, box, root) {
     return copy;
   });
   if (startFavOnly && !games.some((node) => node.startGame)) games.push(Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: `None of your teams play ${when}. Uncheck Only my teams for the rest.` }));
-  return { recs, games, picks, all };
+  if (tab !== "rec") {
+    const pool = startRecPool(typeof leftGames === "function" ? leftGames() : []);
+    return { recs: [], games, picks: pool.picks || [], all: pool.picks || [] };
+  }
+  return { recs: feed.recs, games, picks: feed.picks, all: feed.all };
 }
 
 function startUndoGo() {
