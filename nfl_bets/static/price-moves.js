@@ -4,6 +4,7 @@ let priceMoveBag = null;
 let priceMoveFocus = "";
 let priceMoveTab = "deez";
 let priceMoveLeague = "";
+let priceChartN = 0;
 
 function priceMovePay(points) {
   const n = Math.abs(Number(points) || 0).toFixed(1);
@@ -57,75 +58,170 @@ function priceMoveChart(series) {
   svg.setAttribute("class", "price-chart");
   const pts = (series || []).map((point) => ({ t: Number(point.at), y: priceMoveImplied(point.odds), odds: point.odds })).filter((point) => point.y);
   if (pts.length < 2) return svg;
+  const ns = "http://www.w3.org/2000/svg";
+  const el = (name) => document.createElementNS(ns, name);
   const t0 = pts[0].t;
   const t1 = Math.max(pts[pts.length - 1].t, t0 + 1);
-  const ys = pts.map((point) => point.y);
-  const lo = Math.min(...ys);
-  const hi = Math.max(...ys);
-  const min = lo - 0.012;
-  const max = hi + 0.012;
-  const xOf = (t) => 78 + ((t - t0) / (t1 - t0)) * 530;
-  const yOf = (y) => 36 + (1 - (y - min) / (max - min || 1)) * 150;
-  const floor = yOf(min);
-  const line = pts.map((point) => `${xOf(point.t)},${yOf(point.y)}`).join(" ");
-  const area = `${xOf(pts[0].t)},${floor} ${line} ${xOf(pts[pts.length - 1].t)},${floor}`;
-  const fill = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-  fill.setAttribute("points", area);
-  fill.setAttribute("class", "price-chart-area");
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-  path.setAttribute("points", line);
-  path.setAttribute("class", "price-chart-line");
-  svg.append(fill, path);
-  const unit = document.createElementNS("http://www.w3.org/2000/svg", "text");
-  unit.setAttribute("x", "8");
-  unit.setAttribute("y", "18");
-  unit.setAttribute("class", "price-chart-axis");
-  unit.textContent = "chance";
-  svg.append(unit);
-  [lo, hi].forEach((y) => {
-    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    label.setAttribute("x", "8");
-    label.setAttribute("y", String(yOf(y) + 4));
-    label.setAttribute("class", "price-chart-axis");
-    label.textContent = `${Math.round(y * 100)}%`;
-    svg.append(label);
-  });
-  const when = document.createElementNS("http://www.w3.org/2000/svg", "text");
-  when.setAttribute("y", "236");
-  when.setAttribute("class", "price-chart-axis");
-  when.setAttribute("visibility", "hidden");
-  svg.append(when);
+  const minSpan = Math.min(t1 - t0, Math.max(15 * 60 * 1000, (t1 - t0) / 80));
+  const clipId = `price-clip-${++priceChartN}`;
+  let viewA = t0, viewB = t1, xOf = (t) => t, when = null, drag = null, band = null;
+  const zoomed = () => viewA > t0 + 1 || viewB < t1 - 1;
+  const clamp = (a, b) => {
+    const span = Math.max(minSpan, Math.min(t1 - t0, b - a));
+    let left = a, right = left + span;
+    if (left < t0) { right += t0 - left; left = t0; }
+    if (right > t1) { left -= right - t1; right = t1; }
+    viewA = Math.max(t0, left);
+    viewB = Math.min(t1, right);
+  };
+  const paint = () => {
+    const vis = pts.filter((point) => point.t >= viewA - 1 && point.t <= viewB + 1);
+    const use = vis.length ? vis : pts;
+    const ys = use.map((point) => point.y);
+    let lo = Math.min(...ys), hi = Math.max(...ys);
+    if (hi - lo < 0.008) { const mid = (lo + hi) / 2; lo = mid - 0.004; hi = mid + 0.004; }
+    const pad = Math.max(0.004, (hi - lo) * 0.55);
+    const min = lo - pad * 0.35;
+    const max = hi + pad;
+    xOf = (t) => 78 + ((t - viewA) / (viewB - viewA || 1)) * 530;
+    const yOf = (y) => 36 + (1 - (y - min) / (max - min || 1)) * 150;
+    const floor = yOf(min);
+    const line = pts.map((point) => `${xOf(point.t)},${yOf(point.y)}`).join(" ");
+    svg.replaceChildren();
+    const clip = el("clipPath");
+    clip.id = clipId;
+    const frame = el("rect");
+    frame.setAttribute("x", "72");
+    frame.setAttribute("y", "20");
+    frame.setAttribute("width", "548");
+    frame.setAttribute("height", "180");
+    clip.append(frame);
+    const defs = el("defs");
+    defs.append(clip);
+    const plot = el("g");
+    plot.setAttribute("clip-path", `url(#${clipId})`);
+    const fill = el("polygon");
+    fill.setAttribute("points", `${xOf(pts[0].t)},${floor} ${line} ${xOf(pts[pts.length - 1].t)},${floor}`);
+    fill.setAttribute("class", "price-chart-area");
+    const path = el("polyline");
+    path.setAttribute("points", line);
+    path.setAttribute("class", "price-chart-line");
+    plot.append(fill, path);
+    const lanes = [-999, -999, -999];
+    const tags = [];
+    vis.forEach((point) => {
+      const x = xOf(point.t), y = yOf(point.y);
+      let lane = lanes.findIndex((at) => x - at >= 46);
+      if (lane < 0) lane = 2;
+      lanes[lane] = x;
+      const dot = el("circle");
+      dot.setAttribute("cx", String(x));
+      dot.setAttribute("cy", String(y));
+      dot.setAttribute("r", "5");
+      dot.setAttribute("class", "price-chart-dot");
+      const tag = el("text");
+      let ly = y - 14 - lane * 13;
+      if (ly < 28) ly = y + 16 + lane * 13;
+      tag.setAttribute("x", String(x));
+      tag.setAttribute("y", String(ly));
+      tag.setAttribute("text-anchor", x < 110 ? "start" : x > 560 ? "end" : "middle");
+      tag.setAttribute("class", "price-chart-odds");
+      tag.textContent = priceMovePrice(point.odds);
+      plot.append(dot);
+      tags.push(tag);
+    });
+    svg.append(defs, plot, ...tags);
+    const unit = el("text");
+    unit.setAttribute("x", "8");
+    unit.setAttribute("y", "18");
+    unit.setAttribute("class", "price-chart-axis");
+    unit.textContent = "chance";
+    svg.append(unit);
+    const pct = (y) => (hi - lo) < 0.02 ? `${(y * 100).toFixed(1)}%` : `${Math.round(y * 100)}%`;
+    [lo, hi].forEach((y) => {
+      const label = el("text");
+      label.setAttribute("x", "8");
+      label.setAttribute("y", String(yOf(y) + 4));
+      label.setAttribute("class", "price-chart-axis");
+      label.textContent = pct(y);
+      svg.append(label);
+    });
+    when = el("text");
+    when.setAttribute("y", "236");
+    when.setAttribute("class", "price-chart-axis");
+    when.setAttribute("visibility", "hidden");
+    svg.append(when);
+    const back = el("text");
+    back.setAttribute("x", "632");
+    back.setAttribute("y", "18");
+    back.setAttribute("text-anchor", "end");
+    back.setAttribute("class", "price-chart-zoom");
+    back.textContent = zoomed() ? "Full chart" : "Drag to zoom";
+    back.addEventListener("pointerdown", (event) => { event.stopPropagation(); event.preventDefault(); });
+    if (zoomed()) back.addEventListener("click", (event) => { event.stopPropagation(); viewA = t0; viewB = t1; paint(); });
+    svg.append(back);
+    svg.style.cursor = zoomed() ? "grab" : "crosshair";
+  };
+  const svgX = (event) => {
+    const rect = svg.getBoundingClientRect();
+    return rect.width ? ((event.clientX - rect.left) / rect.width) * 640 : 0;
+  };
+  const nearest = (x) => {
+    let best = null, dist = Infinity;
+    pts.forEach((point) => {
+      if (point.t < viewA || point.t > viewB) return;
+      const gap = Math.abs(xOf(point.t) - x);
+      if (gap < dist) { dist = gap; best = point; }
+    });
+    return best;
+  };
   const showWhen = (point) => {
+    if (!when || !point) return;
     const x = xOf(point.t);
     when.textContent = priceMoveClock(point.t);
     when.setAttribute("x", String(x < 150 ? 8 : x > 490 ? 632 : x));
     when.setAttribute("text-anchor", x < 150 ? "start" : x > 490 ? "end" : "middle");
     when.setAttribute("visibility", "visible");
   };
+  svg.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    drag = { x: svgX(event), pan: zoomed(), a: viewA, b: viewB };
+    try { svg.setPointerCapture(event.pointerId); } catch (error) {}
+    if (drag.pan) svg.style.cursor = "grabbing";
+  });
   svg.addEventListener("pointermove", (event) => {
-    const rect = svg.getBoundingClientRect();
-    if (!rect.width) return;
-    const x = ((event.clientX - rect.left) / rect.width) * 640;
-    let best = pts[0], dist = Infinity;
-    pts.forEach((point) => { const gap = Math.abs(xOf(point.t) - x); if (gap < dist) { dist = gap; best = point; } });
-    showWhen(best);
+    const x = svgX(event);
+    if (!drag) { showWhen(nearest(x)); return; }
+    if (drag.pan) { clamp(drag.a + ((drag.x - x) / 530) * (drag.b - drag.a), drag.b + ((drag.x - x) / 530) * (drag.b - drag.a)); paint(); svg.style.cursor = "grabbing"; return; }
+    const x0 = Math.max(78, Math.min(drag.x, x)), x1 = Math.min(608, Math.max(drag.x, x));
+    if (!band) { band = el("rect"); band.setAttribute("class", "price-chart-band"); band.setAttribute("y", "28"); band.setAttribute("height", "168"); svg.append(band); }
+    band.setAttribute("x", String(x0));
+    band.setAttribute("width", String(Math.max(0, x1 - x0)));
   });
-  svg.addEventListener("pointerleave", () => when.setAttribute("visibility", "hidden"));
-  pts.forEach((point, index) => {
-    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    dot.setAttribute("cx", String(xOf(point.t)));
-    dot.setAttribute("cy", String(yOf(point.y)));
-    dot.setAttribute("r", "5");
-    dot.setAttribute("class", "price-chart-dot");
-    const tag = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    const edge = index === 0 ? "start" : index === pts.length - 1 ? "end" : "middle";
-    tag.setAttribute("x", String(xOf(point.t)));
-    tag.setAttribute("y", String(yOf(point.y) - 12));
-    tag.setAttribute("text-anchor", edge);
-    tag.setAttribute("class", "price-chart-odds");
-    tag.textContent = priceMovePrice(point.odds);
-    svg.append(dot, tag);
-  });
+  const endDrag = (event) => {
+    if (!drag) return;
+    const x = svgX(event), wasPan = drag.pan, x0 = Math.min(drag.x, x), x1 = Math.max(drag.x, x);
+    drag = null;
+    if (band) { band.remove(); band = null; }
+    if (!wasPan && x1 - x0 >= 16) clamp(viewA + ((Math.max(78, x0) - 78) / 530) * (viewB - viewA), viewA + ((Math.min(608, x1) - 78) / 530) * (viewB - viewA));
+    if (!wasPan && x1 - x0 >= 16) paint();
+  };
+  svg.addEventListener("pointerup", endDrag);
+  svg.addEventListener("pointercancel", endDrag);
+  svg.addEventListener("pointerleave", () => { if (!drag && when) when.setAttribute("visibility", "hidden"); });
+  svg.addEventListener("dblclick", (event) => { event.preventDefault(); viewA = t0; viewB = t1; paint(); });
+  svg.addEventListener("wheel", (event) => {
+    event.preventDefault();
+    const x = svgX(event);
+    const frac = Math.min(1, Math.max(0, (x - 78) / 530));
+    const span = viewB - viewA;
+    const next = event.deltaY < 0 ? span * 0.72 : span / 0.72;
+    const focus = viewA + frac * span;
+    clamp(focus - frac * next, focus + (1 - frac) * next);
+    paint();
+    showWhen(nearest(x));
+  }, { passive: false });
+  paint();
   return svg;
 }
 
@@ -284,8 +380,8 @@ function priceMoveDraw(box, rows) {
     why.textContent = typeof edgeHow === "function" ? edgeHow(picked.read) : picked.read.how;
   }
   const books = priceMoveTab === "deez" ? document.createElement("p") : null;
-  const news = priceMoveTab === "deez" ? document.createElement("button") : null;
-  const bet = priceMoveTab === "deez" ? document.createElement("button") : null;
+  const news = document.createElement("button");
+  const bet = document.createElement("button");
   if (books) {
     books.className = "price-move-note";
     const read = picked.read;
