@@ -501,8 +501,6 @@ function manageOddsChart(host, legs) {
   box.addEventListener("click", (event) => event.stopPropagation());
   const note = document.createElement("p");
   note.className = "price-chart-unit";
-  note.textContent = "Reading the price.";
-  box.append(note);
   host.append(box);
   Promise.all((legs || []).map(manageOddsPull)).then((packs) => {
     if (!box.isConnected) return;

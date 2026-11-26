@@ -1014,6 +1014,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log("Parlay of the Day site on port " + PORT);
+  require("./price-log").prime();
   const warm = () => { board().then((now) => Promise.all([require("./live-recs").recWarm(now), require("./game-keep").keepWarm(now), require("./line-clock").lineTick(now), require("./price-log").tick(now)])).catch((error) => console.error("live recs warm failed:", error)); require("./live-grade").gradeTick().catch((error) => console.error("live recs grade failed:", error)); };
   const fair = () => require("./live-recs").fairTick().catch((error) => console.error("fair price failed:", error));
   setTimeout(warm, 30000); setInterval(warm, 10 * 60000);

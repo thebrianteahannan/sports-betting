@@ -7,6 +7,23 @@ const PROPS = 4000;
 
 const chains = new Map();
 const seeded = new Set();
+let books = [];
+
+function hold(rows) {
+  const next = [];
+  (rows || []).forEach((row) => {
+    const game = row && row.v ? row.v : row;
+    if (game && game.props) next.push(game);
+  });
+  if (next.length) books = next;
+}
+
+function holdOne(book) {
+  if (!book || !book.props) return;
+  const id = String(book.id || "");
+  books = books.filter((game) => String(game.id || "") !== id);
+  books.push(book);
+}
 
 function implied(odds) {
   const n = Number(odds);
@@ -190,6 +207,7 @@ async function write(game, rows, at) {
   const found = await kv(`?k=eq.${encodeURIComponent(KEY + id)}&select=v`);
   const saved = found && found[0] && found[0].v;
   const made = apply(saved, game, rows, now);
+  holdOne(made.book);
   if (!made.dirty) return;
   await kv("", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { k: KEY + id, v: made.book } });
 }
@@ -225,12 +243,14 @@ async function seed(board) {
 async function prune() {
   const { kv } = require("./live-recs");
   const rows = await kv(`?k=like.${encodeURIComponent(KEY)}*&select=k,v`);
+  hold(rows);
   const now = Date.now();
   for (const row of rows || []) {
     const kick = Date.parse(row && row.v && row.v.kickoff || "");
     const at = Number(row && row.v && row.v.at);
     const old = (Number.isFinite(kick) && now - kick > WEEK) || (!Number.isFinite(kick) && Number.isFinite(at) && now - at > WEEK);
     if (!old || !row.k) continue;
+    books = books.filter((game) => game !== row.v);
     await kv(`?k=eq.${encodeURIComponent(row.k)}`, { method: "DELETE", prefer: "return=minimal" }).catch(() => {});
   }
 }
@@ -239,6 +259,7 @@ async function movers() {
   const { kv, recsList } = require("./live-recs");
   const picks = await recsList().catch(() => []);
   const rows = await kv(`?k=like.${encodeURIComponent(KEY)}*&select=v`);
+  hold(rows);
   const now = Date.now();
   const bag = [];
   let tracked = 0;
@@ -300,11 +321,8 @@ async function history(want) {
   const match = historyFold(want && want.match);
   const line = historyLine(`${want && want.label || ""} ${want && want.market || ""}`);
   if (!who) return { series: [] };
-  const { kv } = require("./live-recs");
-  const rows = await kv(`?k=like.${encodeURIComponent(KEY)}*&select=v`);
   let best = null;
-  (rows || []).forEach((row) => {
-    const game = row && row.v;
+  books.forEach((game) => {
     if (!game || !game.props) return;
     const gameMatch = historyFold(game.match);
     if (match && gameMatch && match !== gameMatch && !gameMatch.includes(match) && !match.includes(gameMatch)) return;
@@ -322,4 +340,9 @@ async function history(want) {
   return { series: ((best && best.series) || []).map(([odds, at]) => ({ odds, at })) };
 }
 
-module.exports = { note, movers, tick, apply, moveOf, stepSay, history };
+function prime() {
+  const { kv } = require("./live-recs");
+  return kv(`?k=like.${encodeURIComponent(KEY)}*&select=v`).then((rows) => { hold(rows); }).catch(() => {});
+}
+
+module.exports = { note, movers, tick, apply, moveOf, stepSay, history, prime };
