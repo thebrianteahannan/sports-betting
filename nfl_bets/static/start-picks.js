@@ -527,7 +527,7 @@ function startRecCard(board, pick, index) {
   );
   card.append(actions);
   card.addEventListener("click", (event) => {
-    if (event.target.closest(".k-move")) { if (typeof priceMoveOpen === "function") priceMoveOpen(card.dataset.moveLabel, card.dataset.moveMatch); return; }
+    if (event.target.closest(".k-move, .px, .manage-odds, .manage-price-chart")) return;
     if (event.target.closest(".bet-kind, .desk-rec-golden-tag")) return;
     if (document.body.classList.contains("needs-member")) { const join = document.getElementById("gate-join"); if (join) join.click(); return; }
     const go = event.target.closest("[data-bet-go]");

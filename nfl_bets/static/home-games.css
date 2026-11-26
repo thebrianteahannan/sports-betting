@@ -58,6 +58,12 @@ body.home-games-on #who { top: var(--home-games-top); right: 16px; bottom: auto;
 :is(#desk-games, #rec-page, .find-start) .desk-rec:has(> .desk-rec-go) { grid-template-areas: "name bet" "pay pay" "how legs" "read read"; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec.desk-rec-tip-on { grid-template-areas: "name name" "pay pay" "how legs" "read read" "why why"; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec.desk-rec-tip-on:has(> .desk-rec-go) { grid-template-areas: "name bet" "pay pay" "how legs" "read read" "why why"; }
+:is(#desk-games, #rec-page, .find-start) .desk-rec:has(> .manage-price-chart) { grid-template-areas: "name name" "pay pay" "how legs" "read read" "chart chart"; }
+:is(#desk-games, #rec-page, .find-start) .desk-rec:has(> .desk-rec-go):has(> .manage-price-chart) { grid-template-areas: "name bet" "pay pay" "how legs" "read read" "chart chart"; }
+:is(#desk-games, #rec-page, .find-start) .desk-rec.desk-rec-tip-on:has(> .manage-price-chart) { grid-template-areas: "name name" "pay pay" "how legs" "read read" "why why" "chart chart"; }
+:is(#desk-games, #rec-page, .find-start) .desk-rec.desk-rec-tip-on:has(> .desk-rec-go):has(> .manage-price-chart) { grid-template-areas: "name bet" "pay pay" "how legs" "read read" "why why" "chart chart"; }
+:is(#desk-games, #rec-page, .find-start) .desk-rec > .manage-price-chart { grid-area: chart; min-width: 0; }
+:is(#desk-games, #rec-page, .find-start) .desk-rec-pay i.manage-odds { cursor: pointer; text-decoration: underline; text-underline-offset: 0.14em; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec-name { grid-area: name; overflow: visible; font-size: 16px; font-weight: 700; line-height: 1.35; text-overflow: unset; white-space: normal; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec-pay { grid-area: pay; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 0.7rem; font-size: 14px; font-weight: 700; line-height: 1.3; }
 :is(#desk-games, #rec-page, .find-start) .desk-rec-pay i { font-style: normal; }

@@ -429,6 +429,18 @@ function priceMoveMark() {
   });
 }
 
+function priceMoveInline(card) {
+  if (!card || typeof manageOddsChart !== "function") return;
+  const leg = {
+    label: card.dataset.moveLabel || "",
+    market: card.dataset.moveMarket || "",
+    match: card.dataset.moveMatch || "",
+    odds: Number(card.dataset.moveOdds) || 0,
+  };
+  if (!leg.label) return;
+  manageOddsChart(card, [leg]);
+}
+
 function priceMoveOpen(label, match) {
   const go = (rows) => {
     const row = (rows || []).find((item) => priceMoveSame(item, label, match));
@@ -533,5 +545,6 @@ function manageOddsBind(node, legs, host) {
 window.priceMovePage = priceMovePage;
 window.priceMoveMark = priceMoveMark;
 window.priceMoveOpen = priceMoveOpen;
+window.priceMoveInline = priceMoveInline;
 window.manageOddsBind = manageOddsBind;
 document.addEventListener("click", priceMoveShut);

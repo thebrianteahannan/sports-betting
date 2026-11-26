@@ -6,6 +6,9 @@
   display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px;
   position: absolute; z-index: 15; top: 0; right: 4.2rem; height: 5rem; margin: 0; max-width: min(34rem, calc(100% - 18rem));
 }
+@media (min-width: 761px) {
+  #desk.tv-full:has(#desk-find-go:not([hidden])) #desk-nav:not([hidden]) { right: calc(1.6rem + 86px); }
+}
 #desk-nav button {
   display: inline-flex; align-items: center; gap: 0.4rem; width: auto; min-height: 0; margin: 0; padding: 0.28rem 0.75rem;
   border: 1px solid #3dff6e; border-radius: 999px; background: #07140f; box-shadow: none;

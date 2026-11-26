@@ -326,7 +326,9 @@ function homeRecRow(pick, index, opts) {
   card.type = "button";
   card.className = "desk-game desk-rec";
   card.dataset.moveLabel = pick.label || "";
+  card.dataset.moveMarket = pick.market || "";
   card.dataset.moveMatch = pick.match || "";
+  card.dataset.moveOdds = String(Number(pick.odds) || "");
   const odds = Number(pick.odds), price = odds > 0 ? `+${odds}` : String(odds);
   const pct = typeof findPct === "function" ? findPct(odds) : String(pick.need || "");
   const cash = typeof findCash === "function" ? findCash(odds) : (Number.isFinite(odds) && odds ? `$${((odds > 0 ? (5 * odds) / 100 : (5 * 100) / Math.abs(odds))).toFixed(2)}` : "");
@@ -365,12 +367,18 @@ function homeRecRow(pick, index, opts) {
         : "";
   const tags = [ticketTag, edgeTag, typeof scriptKindTag === "function" ? scriptKindTag(pick) : "", typeof scriptRoleTag === "function" ? scriptRoleTag(pick) : "", typeof scriptCushionTag === "function" ? scriptCushionTag(pick) : ""].filter(Boolean).join("");
   card.innerHTML = `<span class="desk-rec-name">${logo ? `<img class="desk-team-logo desk-rec-logo" src="${esc(dark)}" alt="${esc(side)}" loading="lazy"${dark !== logo ? ` onerror="this.onerror=null;this.src='${esc(logo)}'"` : ""}>` : ""}${esc(homeRecTitle(pick))}</span><span class="desk-rec-pay">${pay}</span><span class="desk-rec-how">${lead}${tags}</span><span class="desk-rec-legs">${esc(when)}</span><span class="desk-rec-read">${esc(`${pick.match}. Hit in ${pick.hits} of his last ${pick.n}.`)}</span>`;
+  if (typeof manageOddsBind === "function") manageOddsBind(card.querySelector(".desk-rec-pay .px"), [{ label: pick.label || "", market: pick.market || "", match: pick.match || "", odds }], card);
   card.addEventListener("click", (event) => {
     const moving = event.target.closest(".k-move");
     if (moving && card.contains(moving)) {
       event.preventDefault();
-      event.stopPropagation();
-      if (typeof priceMoveOpen === "function") priceMoveOpen(card.dataset.moveLabel, card.dataset.moveMatch);
+      event.stopImmediatePropagation();
+      if (typeof priceMoveInline === "function") priceMoveInline(card);
+      return;
+    }
+    if (event.target.closest(".px, .manage-odds, .manage-price-chart")) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
       return;
     }
     const tag = event.target.closest(".bet-kind, .desk-rec-edge, .desk-rec-golden-tag, .desk-rec-silver-tag, .desk-rec-bronze-tag");

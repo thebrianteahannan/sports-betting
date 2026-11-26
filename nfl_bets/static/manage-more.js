@@ -357,7 +357,7 @@ window.manageLegNote = manageLegNote;
 
 window.manageSearchTake = manageSearchTake;
 
-function manageLegEdit(line, said, leg) {
+function manageLegEdit(line, said, leg, at, count) {
   const key = typeof parlayKey === "function" ? parlayKey(leg) : "";
   if (key) line.dataset.key = key;
   const propBtn = document.createElement("button");
@@ -372,6 +372,7 @@ function manageLegEdit(line, said, leg) {
   const prop = said.querySelector("i.prop");
   if (who) who.after(propBtn); else said.append(propBtn);
   if (prop) prop.after(valBtn); else said.append(valBtn);
+  if (typeof manageLegMoves === "function") manageLegMoves(said, key, at, count);
   const pickMode = (mode, event) => {
     event.preventDefault();
     event.stopPropagation();

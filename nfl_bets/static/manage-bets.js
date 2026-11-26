@@ -2,6 +2,11 @@
 
 let manageFilter = "all";
 let manageEditId = "";
+
+function manageEditSet(id) {
+  manageEditId = id || "";
+  window.manageEditing = manageEditId;
+}
 const MANAGE_ZOOM_MAX = 3;
 function manageZoomStart() {
   return 0;
@@ -258,8 +263,6 @@ function manageReadLine(bits, pay, mark) {
   return line;
 }
 
-const MANAGE_ROLE = { anchor: "Anchor", juice: "Pays", filler: "Filler", dead: "Dead weight" };
-
 function manageSlipGame(legs) {
   const games = typeof trayLive !== "undefined" && trayLive.games ? trayLive.games : [];
   return games.find((game) => typeof liveMine === "function" && liveMine(game, legs).length) || null;
@@ -300,9 +303,8 @@ function manageSpot(who) {
   return [pos, nick].filter(Boolean).join(" · ");
 }
 
-function manageLegLine(leg, legs, byKey) {
+function manageLegLine(leg, legs) {
   const bits = manageLegRead(leg);
-  const role = byKey && byKey.get(typeof parlayKey === "function" ? parlayKey(leg) : "");
   const pick = managePickOf(leg);
   const spot = manageSpot(bits.who);
   const line = document.createElement("div");
@@ -315,19 +317,18 @@ function manageLegLine(leg, legs, byKey) {
     bits.prop && `<i class="prop">${esc(bits.prop)}</i>`,
     bits.odds && `<i class="px">${esc(bits.odds)}</i>`,
     bits.pct && `<i class="pct">${esc(bits.pct)}</i>`,
-    role && MANAGE_ROLE[role.role] && !(legs.length < 2 && role.role === "anchor") && `<i class="leg-role r-${esc(role.role)}">${esc(MANAGE_ROLE[role.role])}</i>`,
     pick && ((typeof scriptGoldenTag === "function" && scriptGoldenTag(pick)) || (pick.tier !== "good" ? `<i class="manage-rec">Recommended</i>` : "")),
     manageSlipPace(leg),
   ].filter(Boolean).join("");
   line.append(said);
   if (typeof manageOddsBind === "function") manageOddsBind(said.querySelector(".px"), [leg], line);
-  if (typeof manageLegEdit === "function") manageLegEdit(line, said, leg);
+  if (typeof manageLegEdit === "function") manageLegEdit(line, said, leg, legs.indexOf(leg), legs.length);
   const note = typeof manageLegNote === "function" ? manageLegNote(leg) : null;
   if (note) line.append(note);
   return line;
 }
 
-function manageFold(legs, odds, pct, pay, byKey) {
+function manageFold(legs, odds, pct, pay) {
   const fold = document.createElement("div");
   fold.className = "manage-fold";
   const top = document.createElement("div");
@@ -339,7 +340,8 @@ function manageFold(legs, odds, pct, pay, byKey) {
   top.append(price);
   const legsLine = document.createElement("div");
   legsLine.className = "manage-fold-legs";
-  legs.forEach((leg) => legsLine.append(manageLegLine(leg, legs, byKey)));
+  legs.forEach((leg) => legsLine.append(manageLegLine(leg, legs)));
+  if (legs.length > 1 && typeof manageAddLeg === "function") manageAddLeg(legsLine);
   fold.append(top, legsLine);
   return fold;
 }
@@ -365,9 +367,8 @@ function manageSlip(row) {
     manageSlipRec(legs),
   ].filter(Boolean).join("");
   slip.append(head);
-  const roles = typeof legRoles === "function" ? legRoles(legs) : [];
-  const byKey = new Map(roles.map((item) => [typeof parlayKey === "function" ? parlayKey(item.bet) : "", item]));
-  legs.forEach((leg) => slip.append(manageLegLine(leg, legs, byKey)));
+  legs.forEach((leg) => slip.append(manageLegLine(leg, legs)));
+  if (legs.length > 1 && typeof manageAddLeg === "function") manageAddLeg(slip);
   return slip;
 }
 
@@ -392,11 +393,10 @@ function manageCard(row, n) {
     if (typeof manageOddsBind === "function") manageOddsBind(head.querySelector(".px"), legs, head);
     legsBox.append(head);
   }
-  const roles = typeof legRoles === "function" ? legRoles(legs) : [];
-  const byKey = new Map(roles.map((item) => [typeof parlayKey === "function" ? parlayKey(item.bet) : "", item]));
-  legs.forEach((leg) => legsBox.append(manageLegLine(leg, legs, byKey)));
+  legs.forEach((leg) => legsBox.append(manageLegLine(leg, legs)));
+  if (legs.length > 1 && typeof manageAddLeg === "function") manageAddLeg(legsBox);
   legsBox.append(manageTags(legs));
-  const fold = legs.length > 1 ? manageFold(legs, odds, pct, pay, byKey) : null;
+  const fold = legs.length > 1 ? manageFold(legs, odds, pct, pay) : null;
   const open = document.createElement("button");
   open.type = "button";
   open.className = "manage-open";
@@ -429,7 +429,7 @@ function manageCard(row, n) {
   if (typeof bankCard === "function") bankCard(card, row);
   const openBet = () => {
     if (manageEditId && manageEditId !== row.id) {
-      manageEditId = "";
+      manageEditSet("");
       if (typeof legSwapOpen !== "undefined") legSwapOpen.clear();
     }
     if (typeof saveOpen === "function" && row.id !== window.parlayOpenId) saveOpen(row.id);
@@ -440,18 +440,18 @@ function manageCard(row, n) {
   open.addEventListener("click", (event) => {
     event.stopPropagation();
     if (manageEditId === row.id) {
-      manageEditId = "";
+      manageEditSet("");
       if (typeof legSwapOpen !== "undefined") legSwapOpen.clear();
       manageRefresh();
       return;
     }
-    manageEditId = row.id;
+    manageEditSet(row.id);
     if (typeof legSwapOpen !== "undefined") legSwapOpen.clear();
     if (typeof saveOpen === "function" && row.id !== window.parlayOpenId) saveOpen(row.id);
     else manageRefresh();
   });
   card.addEventListener("click", (event) => {
-    if (event.target.closest("button, a, input, form, .find-tray-swap, .manage-card-zoom, .manage-odds, .manage-price-chart")) return;
+    if (event.target.closest("button, a, input, form, .find-tray-swap, .manage-card-zoom, .manage-odds, .manage-price-chart, .manage-add")) return;
     openBet();
   });
   card.addEventListener("keydown", (event) => {

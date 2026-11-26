@@ -446,6 +446,8 @@
 .manage-board .manage-change { display: none !important; }
 .manage-card.editing .manage-change { display: inline-flex !important; align-items: center; width: auto !important; min-height: 0 !important; height: auto !important; margin: 0 0.2rem !important; padding: 0.05rem 0.45rem !important; border: 1px solid #3dff6e !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #3dff6e !important; font-size: 11px !important; font-weight: 800 !important; letter-spacing: 0 !important; line-height: 1.3 !important; text-transform: none !important; cursor: pointer; }
 .manage-card.editing .manage-change.on { background: #3dff6e !important; color: #04140c !important; }
+.manage-board .manage-add { flex: 1 0 100%; min-width: 0; margin: 0.35rem 0 0.15rem; }
+.manage-board .manage-add-leg { align-self: flex-start; }
 .manage-board .find-tray-swap { width: 100%; }
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-more,
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-inline,
