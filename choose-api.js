@@ -127,6 +127,7 @@ async function eventPage(id, tab) {
       Accept: "application/json,text/plain,*/*",
       Referer: "https://sportsbook.fanduel.com/",
     },
+    signal: AbortSignal.timeout(8000),
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.json();

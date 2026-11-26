@@ -76,6 +76,7 @@ async function sb(pathname, options = {}) {
       Prefer: options.prefer || "return=representation",
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
+    signal: AbortSignal.timeout(15000),
   });
   const text = await response.text();
   if (!response.ok) throw new Error("Supabase " + response.status);
