@@ -319,9 +319,11 @@ function recDialApply(next, opts) {
 
 function recDialCharts() {
   if (recDialDrag) return;
-  const on = recDial >= 5;
+  const on = recDial >= REC_DIAL_MAX;
   document.querySelectorAll(".desk-rec").forEach((card) => {
-    const show = on && (card.dataset.recMetal === "1" || card.dataset.recClose === "1" || card.dataset.recHot === "1");
+    const input = card.querySelector(".desk-rec-range");
+    const last = input && Number(input.value) >= Number(input.max);
+    const show = on && last && (card.dataset.recMetal === "1" || card.dataset.recClose === "1" || card.dataset.recHot === "1");
     const mine = card.querySelector(":scope > .manage-price-chart.price-chart-dial");
     if (!show) {
       if (mine) mine.remove();
@@ -472,6 +474,7 @@ window.recDialSave = recDialSave;
 window.recDialSay = recDialSay;
 window.recDialCountOf = recDialCountOf;
 window.recDialCountPaint = recDialCountPaint;
+window.recDialCharts = recDialCharts;
 window.recDialVisit = recDialVisit;
 window.recDialArrive = recDialArrive;
 window.recDialShowingOf = recDialShowingOf;

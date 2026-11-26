@@ -111,7 +111,8 @@ function recMoreSet(board, pick, card, level) {
     input.setAttribute("aria-valuetext", REC_MORE_SAY[n]);
   }
   let more = card.querySelector(":scope > .desk-rec-more");
-  if (!n) { if (more) more.remove(); return; }
+  if (!n) { if (more) more.remove(); }
+  else {
   if (!more) {
     more = document.createElement("div");
     more.className = "desk-rec-more";
@@ -130,6 +131,8 @@ function recMoreSet(board, pick, card, level) {
     const mark = more.querySelector(".desk-rec-mark");
     if (hit && mark) paintCard(more, mark, hit.person);
   }
+  }
+  if (typeof recDialCharts === "function") recDialCharts();
 }
 
 function recMoreAttach(pick, box) {

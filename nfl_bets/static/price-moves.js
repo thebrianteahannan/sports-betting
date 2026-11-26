@@ -56,6 +56,7 @@ function priceMoveChart(series) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 640 248");
   svg.setAttribute("class", "price-chart");
+  svg.style.touchAction = "pan-y";
   const pts = (series || []).map((point) => ({ t: Number(point.at), y: priceMoveImplied(point.odds), odds: point.odds })).filter((point) => point.y);
   if (pts.length < 2) return svg;
   const ns = "http://www.w3.org/2000/svg";
@@ -64,7 +65,7 @@ function priceMoveChart(series) {
   const t1 = Math.max(pts[pts.length - 1].t, t0 + 1);
   const minSpan = Math.min(t1 - t0, Math.max(15 * 60 * 1000, (t1 - t0) / 80));
   const clipId = `price-clip-${++priceChartN}`;
-  let viewA = t0, viewB = t1, xOf = (t) => t, when = null, drag = null, band = null;
+  let viewA = t0, viewB = t1, xOf = (t) => t, when = null, drag = null, band = null, wheelOn = false;
   const zoomed = () => viewA > t0 + 1 || viewB < t1 - 1;
   const clamp = (a, b) => {
     const span = Math.max(minSpan, Math.min(t1 - t0, b - a));
@@ -185,6 +186,8 @@ function priceMoveChart(series) {
   };
   svg.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
+    wheelOn = true;
+    svg.style.touchAction = "none";
     drag = { x: svgX(event), pan: zoomed(), a: viewA, b: viewB };
     try { svg.setPointerCapture(event.pointerId); } catch (error) {}
     if (drag.pan) svg.style.cursor = "grabbing";
@@ -208,9 +211,15 @@ function priceMoveChart(series) {
   };
   svg.addEventListener("pointerup", endDrag);
   svg.addEventListener("pointercancel", endDrag);
-  svg.addEventListener("pointerleave", () => { if (!drag && when) when.setAttribute("visibility", "hidden"); });
+  svg.addEventListener("pointerleave", () => {
+    if (drag) return;
+    wheelOn = false;
+    svg.style.touchAction = "pan-y";
+    if (when) when.setAttribute("visibility", "hidden");
+  });
   svg.addEventListener("dblclick", (event) => { event.preventDefault(); viewA = t0; viewB = t1; paint(); });
   svg.addEventListener("wheel", (event) => {
+    if (!wheelOn) return;
     event.preventDefault();
     const x = svgX(event);
     const frac = Math.min(1, Math.max(0, (x - 78) / 530));
