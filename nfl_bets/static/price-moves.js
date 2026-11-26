@@ -48,7 +48,7 @@ function priceMoveImplied(odds) {
 function priceMoveClock(ms) {
   const date = new Date(ms);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }).replace(",", "");
+  return `${date.toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" })} ET`;
 }
 
 function priceMoveChart(series) {
@@ -90,23 +90,27 @@ function priceMoveChart(series) {
     label.textContent = `${Math.round(y * 100)}%`;
     svg.append(label);
   });
-  const marks = [pts[0]];
-  if (pts.length > 2) {
-    const mid = pts[Math.floor((pts.length - 1) / 2)];
-    const span = pts[pts.length - 1].t - pts[0].t;
-    if (mid.t - pts[0].t > span * 0.28 && pts[pts.length - 1].t - mid.t > span * 0.28) marks.push(mid);
-  }
-  marks.push(pts[pts.length - 1]);
-  marks.forEach((point, index) => {
-    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    const edge = index === 0 ? "start" : index === marks.length - 1 ? "end" : "middle";
-    label.setAttribute("x", String(xOf(point.t)));
-    label.setAttribute("y", "236");
-    label.setAttribute("text-anchor", edge);
-    label.setAttribute("class", "price-chart-axis");
-    label.textContent = `${priceMoveClock(point.t)} ET`;
-    svg.append(label);
+  const when = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  when.setAttribute("y", "236");
+  when.setAttribute("class", "price-chart-axis");
+  when.setAttribute("visibility", "hidden");
+  svg.append(when);
+  const showWhen = (point) => {
+    const x = xOf(point.t);
+    when.textContent = priceMoveClock(point.t);
+    when.setAttribute("x", String(x < 150 ? 8 : x > 490 ? 632 : x));
+    when.setAttribute("text-anchor", x < 150 ? "start" : x > 490 ? "end" : "middle");
+    when.setAttribute("visibility", "visible");
+  };
+  svg.addEventListener("pointermove", (event) => {
+    const rect = svg.getBoundingClientRect();
+    if (!rect.width) return;
+    const x = ((event.clientX - rect.left) / rect.width) * 640;
+    let best = pts[0], dist = Infinity;
+    pts.forEach((point) => { const gap = Math.abs(xOf(point.t) - x); if (gap < dist) { dist = gap; best = point; } });
+    showWhen(best);
   });
+  svg.addEventListener("pointerleave", () => when.setAttribute("visibility", "hidden"));
   pts.forEach((point, index) => {
     const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     dot.setAttribute("cx", String(xOf(point.t)));
