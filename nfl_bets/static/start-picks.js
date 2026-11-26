@@ -683,7 +683,7 @@ function startFilterBits(games) {
   } else bits.push("All games");
   if ((startTab === "rec" || startTab === "parlays") && typeof window.recDialSay === "function") {
     const level = Number(window.recDial);
-    if (level === 0 || level === 1 || level === 2 || level === 3 || level === 4) bits.push(window.recDialSay(level));
+    if (level >= 0 && level <= 5) bits.push(window.recDialSay(level));
   }
   if (startTab === "rec") {
     if (startKinds.size) {

@@ -1,7 +1,7 @@
-/** Recommended dial: Golden, then Silver, then Bronze, then the other edged bets, then other recommendations.
+/** Recommended dial: Golden, then Silver, then Bronze, then the other edged bets, then other recommendations, then the price history.
  * Same drag pattern as Live Less↔More: step any, pointer capture, no rebuild while the thumb moves. */
 
-const REC_DIAL_MAX = 4;
+const REC_DIAL_MAX = 5;
 const REC_DIAL_DEFAULT = 2;
 const REC_TICKET = [
   { name: "golden", min: -120, max: 120, rate: 0.6 },
@@ -15,13 +15,13 @@ let recDial = (() => {
     const stops = localStorage.getItem("rec-dial-stops");
     const saved = raw != null && raw !== "";
     let n = saved ? Math.round(Number(raw)) : REC_DIAL_DEFAULT;
-    if (saved && stops !== "5") {
+    if (saved && stops !== "5" && stops !== "6") {
       if (stops !== "4") n = n <= 0 ? 0 : n === 1 ? 2 : 3;
       n = n <= 0 ? 0 : n === 1 ? 2 : 3;
       localStorage.setItem("rec-dial", String(n));
     }
-    if (stops !== "5") localStorage.setItem("rec-dial-stops", "5");
-    if (n === 0 || n === 1 || n === 2 || n === 3 || n === 4) return n;
+    if (stops !== "6") localStorage.setItem("rec-dial-stops", "6");
+    if (n >= 0 && n <= REC_DIAL_MAX) return n;
   } catch (error) {}
   return REC_DIAL_DEFAULT;
 })();
@@ -34,7 +34,7 @@ function recDialInBand(odds) {
 }
 
 function recDialTone(level) {
-  return ["golden", "silver", "bronze", "edge", "hot"][Math.max(0, Math.min(REC_DIAL_MAX, Math.round(Number(level) || 0)))] || "golden";
+  return ["golden", "silver", "bronze", "edge", "hot", "history"][Math.max(0, Math.min(REC_DIAL_MAX, Math.round(Number(level) || 0)))] || "golden";
 }
 
 function recDialSay(level, showing) {
@@ -44,7 +44,8 @@ function recDialSay(level, showing) {
   if (level === 1) return `Silver Ticket${count}`;
   if (level === 2) return `Bronze Ticket${count}`;
   if (level === 3) return `Has an edge${count}`;
-  return `Other recommendations${count}`;
+  if (level === 4) return `Other recommendations${count}`;
+  return `Price history${count}`;
 }
 
 function recDialShowingOf(level, counts) {
@@ -57,7 +58,8 @@ function recDialShowingOf(level, counts) {
   if (level === 1) return golden + silver;
   if (level === 2) return metal;
   if (level === 3) return metal + close;
-  return hot;
+  if (level === 4) return hot;
+  return metal + close + hot;
 }
 
 function recDialSave(level) {
@@ -92,6 +94,7 @@ function recDialHot(pick) {
 function recDialOk(pick) {
   if (!pick) return false;
   const hot = recDialHot(pick);
+  if (recDial >= 5) return hot || !!pick.golden || !!pick.silver || !!pick.bronze || recDialClose(pick);
   if (recDial >= 4) return hot;
   if (hot) return false;
   if (pick.golden) return true;
@@ -162,7 +165,8 @@ function recDialEmptySay() {
   if (recDial === 1) return "There is no Silver Ticket bet available right now.";
   if (recDial === 2) return "There is no Bronze Ticket bet available right now.";
   if (recDial === 3) return "Nothing else with an edge right now.";
-  return "There are no other recommendations right now.";
+  if (recDial === 4) return "There are no other recommendations right now.";
+  return "There are no recommended bets right now.";
 }
 
 function recDialEmptyText(node) {
@@ -174,7 +178,8 @@ function recDialEmptyText(node) {
   if (recDial === 1) return `There is no ${word} Silver Ticket parlay right now.`;
   if (recDial === 2) return `There is no ${word} Bronze Ticket parlay right now.`;
   if (recDial === 3) return `There are no ${word} recommended parlays.`;
-  return "There are no other recommended parlays right now.";
+  if (recDial === 4) return "There are no other recommended parlays right now.";
+  return `There are no ${word} recommended parlays right now.`;
 }
 
 function recDialCardOn(card) {
@@ -268,7 +273,7 @@ function recDialApply(next, opts) {
     const host = node.closest(".find-start, #desk-games");
     if (!host) return;
     const seen = (kind) => [...host.querySelectorAll(`.desk-rec[${kind}], .rec-parlay-card[${kind}]`)].some(recDialCardOn);
-    const hit = recDial <= 0 ? seen("data-rec-golden") : recDial === 1 ? (seen("data-rec-golden") || seen("data-rec-silver")) : recDial === 2 ? seen("data-rec-metal") : recDial === 3 ? (seen("data-rec-metal") || seen("data-rec-close")) : seen("data-rec-hot");
+    const hit = recDial <= 0 ? seen("data-rec-golden") : recDial === 1 ? (seen("data-rec-golden") || seen("data-rec-silver")) : recDial === 2 ? seen("data-rec-metal") : recDial === 3 ? (seen("data-rec-metal") || seen("data-rec-close")) : recDial === 4 ? seen("data-rec-hot") : (seen("data-rec-metal") || seen("data-rec-close") || seen("data-rec-hot"));
     const show = !hit;
     node.hidden = !show;
     if (show) node.textContent = recDialEmptyText(node);
@@ -280,7 +285,26 @@ function recDialApply(next, opts) {
     node.hidden = recDial >= REC_DIAL_MAX;
     node.textContent = recDialNextSay(recDial);
   });
+  recDialCharts();
   if (!quiet && typeof opts?.onCommit === "function") opts.onCommit(recDial);
+}
+
+function recDialCharts() {
+  if (recDialDrag) return;
+  const on = recDial >= 5;
+  document.querySelectorAll(".desk-rec").forEach((card) => {
+    const show = on && (card.dataset.recMetal === "1" || card.dataset.recClose === "1" || card.dataset.recHot === "1");
+    const mine = card.querySelector(":scope > .manage-price-chart.price-chart-dial");
+    if (!show) {
+      if (mine) mine.remove();
+      return;
+    }
+    if (card.querySelector(":scope > .manage-price-chart")) return;
+    if (typeof priceMoveInline !== "function") return;
+    priceMoveInline(card);
+    const box = card.querySelector(":scope > .manage-price-chart");
+    if (box) box.classList.add("price-chart-dial");
+  });
 }
 
 function recDialNextSay(level) {
@@ -288,7 +312,8 @@ function recDialNextSay(level) {
   if (next <= 1) return "Show the silver ticket";
   if (next === 2) return "Show the bronze ticket";
   if (next === 3) return "More recommended bets ...";
-  return "Show other recommendations";
+  if (next === 4) return "Show other recommendations";
+  return "Show the price history";
 }
 
 function recDialNext() {

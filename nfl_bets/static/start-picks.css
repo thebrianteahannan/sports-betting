@@ -177,6 +177,8 @@
 :is(.rec-board, #choice-result) .find-start[data-rec-dial="2"] .rec-parlay-card:not([data-rec-metal]),
 :is(.rec-board, #choice-result) .find-start[data-rec-dial="3"] .rec-parlay-card:not([data-rec-metal]):not([data-rec-close]),
 :is(.rec-board, #choice-result) .find-start[data-rec-dial="4"] .rec-parlay-card:not([data-rec-hot]) { display: none !important; }
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="5"] button.desk-rec:not([data-rec-metal]):not([data-rec-close]):not([data-rec-hot]),
+:is(.rec-board, #choice-result) .find-start[data-rec-dial="5"] .rec-parlay-card:not([data-rec-metal]):not([data-rec-close]):not([data-rec-hot]) { display: none !important; }
 .find-start .find-start-recs { display: flex; flex-direction: column; gap: 0; }
 .find-start .find-start-recs-more { margin: 0.2rem 0 0.8rem; }
 :is(.rec-board, #choice-result, #desk-games) button.rec-dial-next { width: fit-content !important; min-height: 0 !important; margin: 0.35rem 0 0.9rem !important; padding: 0.35rem 0.95rem !important; border: 1px solid #3dff6e !important; border-radius: 999px !important; background: transparent !important; box-shadow: none !important; color: #3dff6e !important; font-size: 13px !important; font-weight: 800 !important; letter-spacing: normal !important; text-transform: none !important; cursor: pointer; }
@@ -288,6 +290,10 @@ button.rec-dial-next[hidden] { display: none !important; }
 .rec-dial[data-tone="hot"] .row-slide > b { background: #ff9a2e; }
 .rec-dial[data-tone="hot"] .row-slide > b { box-shadow: 0 0 14px rgba(255, 154, 46, 0.7); }
 .rec-dial[data-tone="hot"] .rec-dial-now { color: #ff9a2e; }
+.rec-dial[data-tone="history"] .row-slide > i,
+.rec-dial[data-tone="history"] .row-slide > b { background: #ff9a2e; }
+.rec-dial[data-tone="history"] .row-slide > b { box-shadow: 0 0 14px rgba(255, 154, 46, 0.7); }
+.rec-dial[data-tone="history"] .rec-dial-now { color: #ff9a2e; }
 .price-moves { display: grid; grid-template-columns: minmax(12rem, 18rem) 1fr; gap: 0.8rem; margin: 0.2rem 0 1rem; }
 .price-move-list { display: flex; flex-direction: column; gap: 0.35rem; max-height: 34rem; overflow: auto; }
 .price-move-pick { flex: none !important; width: 100%; height: auto !important; min-height: 0 !important; margin: 0; padding: 0.45rem 0.6rem !important; border: 1px solid rgba(255, 154, 46, 0.35); border-radius: 10px; background: transparent; box-shadow: none; color: #f4f7fb; font-family: Outfit, system-ui, sans-serif !important; font-size: 13px !important; font-weight: 700 !important; line-height: 1.3 !important; letter-spacing: 0 !important; text-align: left; text-transform: none !important; white-space: normal; cursor: pointer; }
