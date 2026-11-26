@@ -357,7 +357,9 @@ function priceMoveDraw(box, rows) {
     none.textContent = priceMoveTab === "deez"
       ? (sport ? `No ${sport} price has started toward our number without sitting down.` : "No price has started toward our number without sitting down.")
       : (sport ? `No ${sport} line is still walking the same way. The next pull shows which ones step again.` : "No line is still walking the same way. The next pull shows which ones step again.");
-    box.replaceChildren(lead, switcher, ...(leagueBar.childElementCount ? [leagueBar] : []), none);
+    const gone = box.querySelector(":scope > .price-trend");
+    box.replaceChildren(...(gone ? [gone] : []), lead, switcher, ...(leagueBar.childElementCount ? [leagueBar] : []), none);
+    if (!gone && typeof priceTrendPaint === "function") priceTrendPaint(box);
     return;
   }
   const pay = priceMovePay(picked.points);
@@ -440,6 +442,7 @@ function priceMoveDraw(box, rows) {
   card.append(head, where, ...(why ? [why] : []), ...(books ? [books] : []), ...(acts ? [acts] : []), priceMoveChart(picked.series), unit, steps);
   const trend = box.querySelector(":scope > .price-trend");
   box.replaceChildren(...(trend ? [trend] : []), lead, switcher, ...(leagueBar.childElementCount ? [leagueBar] : []), menu, card);
+  if (!trend && typeof priceTrendPaint === "function") priceTrendPaint(box);
   const on = box.querySelector(".price-move-pick.on");
   if (on) on.scrollIntoView({ block: "nearest" });
 }

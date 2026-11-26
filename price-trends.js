@@ -124,7 +124,12 @@ function stepsFrom(books) {
         const hours = (kick - at) / HOUR;
         if (!Number.isFinite(at) || !(hours > 0) || hours > 120) continue;
         const when = etParts(at);
-        steps.push({ sport, prop, side, gameId: id, label, market: parts[1] || "", match: game.match || "", kickoff: game.kickoff || "", odds: next[0], at, hours, points, weekday: when.weekday, hour: when.hour, day: when.day });
+        let close = next[0];
+        for (let j = i; j < series.length; j += 1) {
+          const left = (kick - Number(series[j][1])) / HOUR;
+          if (left > 0) close = series[j][0];
+        }
+        steps.push({ sport, prop, side, gameId: id, label, market: parts[1] || "", match: game.match || "", kickoff: game.kickoff || "", odds: next[0], before: prev[0], close, at, hours, points, weekday: when.weekday, hour: when.hour, day: when.day });
         used = true;
       }
     });
@@ -207,7 +212,7 @@ function trendsFrom(steps) {
     if (at < 0) tight.push(item);
     else if (item.span < tight[at].span) tight[at] = item;
   });
-  return tight.sort((a, b) => (b.agree / b.games) - (a.agree / a.games) || Math.abs(b.points) - Math.abs(a.points) || b.games - a.games).slice(0, 8);
+  return tight.sort((a, b) => (b.agree / b.games) - (a.agree / a.games) || Math.abs(b.points) - Math.abs(a.points) || b.games - a.games);
 }
 
 function nearFrom(steps) {
@@ -301,10 +306,10 @@ function earlyFrom(books, trends, now) {
         const clock = open ? "The window is open and this price has not moved." : "That clock has not hit yet.";
         const say = `Take ${label}${price ? ` now at ${price}` : " now"}. ${trend.sport} ${spoken(trend.prop, trend.side)} move shorter ${trend.when}, about ${Math.abs(trend.points)} points. ${clock}${when ? ` Kickoff is ${when} ET.` : ""}`;
         const have = out.find((row) => row.id === id);
-        if (have) { if (closerToEven(odds, have.odds)) Object.assign(have, { label, odds, say }); return; }
+        if (have) { if (closerToEven(odds, have.odds)) Object.assign(have, { label, odds, say, prop: trend.prop, side: trend.side, when: trend.when, points: Math.abs(trend.points) }); return; }
         if ((perTrend.get(trendKey) || 0) >= 2) return;
         perTrend.set(trendKey, (perTrend.get(trendKey) || 0) + 1);
-        out.push({ id, label, match: game.match || "", kickoff: game.kickoff || "", sport: game.sport, odds, wait, say });
+        out.push({ id, label, match: game.match || "", kickoff: game.kickoff || "", sport: game.sport, prop: trend.prop, side: trend.side, when: trend.when, points: Math.abs(trend.points), odds, wait, say });
       });
     });
   });
@@ -312,21 +317,47 @@ function earlyFrom(books, trends, now) {
   return out.slice(0, 8);
 }
 
+function tripsFrom(books) {
+  const trips = [];
+  (books || []).forEach((game) => {
+    if (!game || !game.props) return;
+    const kick = Date.parse(game.kickoff || "");
+    const sport = String(game.sport || "");
+    const id = String(game.id || `${game.match}|${game.kickoff}`);
+    if (!sport || !Number.isFinite(kick)) return;
+    Object.entries(game.props).forEach(([key, series]) => {
+      if (!series || series.length < 2) return;
+      const parts = String(key).split("\u0001");
+      const label = parts[0] || "";
+      const prop = familyOf(label, parts[1] || "");
+      if (!prop) return;
+      const pre = series.filter((point) => (kick - Number(point[1])) / HOUR > 0 && (kick - Number(point[1])) / HOUR <= 120);
+      if (pre.length < 2) return;
+      const points = pointsOf(pre[0][0], pre[pre.length - 1][0]);
+      trips.push({ sport, prop, side: sideOf(label), gameId: id, hours: (kick - Number(pre[0][1])) / HOUR, points });
+    });
+  });
+  return trips;
+}
+
 function digest(books, now) {
   const at = now || Date.now();
   const looked = stepsFrom(books);
-  const trends = trendsFrom(looked.steps);
+  const ranked = trendsFrom(looked.steps);
+  const trends = ranked.slice(0, 8);
   const early = earlyFrom(books, trends, at);
-  const near = trends.length ? null : nearFrom(looked.steps);
+  const near = nearFrom(looked.steps);
+  const counts = { games: looked.games, props: looked.props, steps: looked.steps.length };
+  const dive = require("./price-dive").build({ steps: looked.steps, trips: tripsFrom(books), trends: ranked, early, looked: counts, near: near && near.say || "", windows: WINDOWS });
   let say = "";
   if (!trends.length) {
-    say = !looked.steps.length
+    say = !counts.steps
       ? "The price log is still filling in. The next pass looks for a clock."
       : near
         ? near.say
-        : `${looked.steps.length} reprices across ${looked.games} games. Nothing has landed on the same clock yet.`;
+        : `${counts.steps} reprices across ${counts.games} games. Nothing has landed on the same clock yet.`;
   }
-  return { at, looked: { games: looked.games, props: looked.props, steps: looked.steps.length }, trends: trends.map(({ sport, prop, side, kind, when, way, games, agree, points, say: line }) => ({ sport, prop, side, kind, when, way, games, agree, points, say: line })), early, say };
+  return { at, looked: counts, trends: trends.map(({ sport, prop, side, kind, when, way, games, agree, points, say: line }) => ({ sport, prop, side, kind, when, way, games, agree, points, say: line })), early, say, brief: dive.brief, dive };
 }
 
 async function tick() {
@@ -335,7 +366,8 @@ async function tick() {
   try {
     const { logged } = require("./price-log");
     const next = digest(logged(), Date.now());
-    const same = cache && JSON.stringify({ trends: cache.trends, early: cache.early, say: cache.say }) === JSON.stringify({ trends: next.trends, early: next.early, say: next.say });
+    const pack = (row) => JSON.stringify({ trends: row.trends, early: row.early, say: row.say, brief: row.brief });
+    const same = cache && pack(cache) === pack(next);
     cache = next;
     if (!same) {
       const { kv } = require("./live-recs");
