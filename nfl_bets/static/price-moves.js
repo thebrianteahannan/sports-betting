@@ -448,39 +448,76 @@ function priceMoveOpen(label, match) {
   priceMoveLoad().then((data) => go((data && data.rows) || [])).catch(() => go([]));
 }
 
+function manageParlayPrice(oddsList) {
+  const dec = oddsList.reduce((prod, odds) => {
+    const n = Number(odds);
+    if (!Number.isFinite(n) || !n || !prod) return 0;
+    const b = n > 0 ? n / 100 : 100 / Math.abs(n);
+    return b > 0 ? prod * (1 + b) : 0;
+  }, 1);
+  if (!(dec > 1)) return 0;
+  return dec >= 2 ? Math.round((dec - 1) * 100) : Math.round(-100 / (dec - 1));
+}
+
+function manageParlaySeries(legs, packs) {
+  const tracks = (legs || []).map((leg, index) => {
+    const points = (((packs[index] && packs[index].series) || []))
+      .map((point) => ({ at: Number(point.at), odds: Number(point.odds) }))
+      .filter((point) => point.odds && point.at)
+      .sort((a, b) => a.at - b.at);
+    return { points, now: Number(leg.odds) || 0 };
+  });
+  const times = [...new Set(tracks.flatMap((track) => track.points.map((point) => point.at)))].sort((a, b) => a - b);
+  const series = [];
+  times.forEach((at) => {
+    const odds = tracks.map((track) => {
+      let held = null;
+      track.points.forEach((point) => { if (point.at <= at) held = point.odds; });
+      if (held != null) return held;
+      return track.points.length ? null : track.now;
+    });
+    if (odds.some((n) => !n)) return;
+    const price = manageParlayPrice(odds);
+    if (!price) return;
+    const last = series[series.length - 1];
+    if (last && last.odds === price) return;
+    series.push({ at, odds: price });
+  });
+  return series;
+}
+
+function manageOddsPull(leg) {
+  const q = new URLSearchParams({ label: leg.label || "", market: leg.market || "", match: leg.match || "" });
+  return fetch(`/api/price-history?${q}`, { credentials: "same-origin" }).then((res) => (res.ok ? res.json() : { series: [] })).catch(() => ({ series: [] }));
+}
+
 function manageOddsChart(host, legs) {
   if (!host) return;
   const had = host.querySelector(":scope > .manage-price-chart");
   host.querySelectorAll(":scope > .manage-price-chart").forEach((node) => node.remove());
   if (had) return;
-  (legs || []).forEach((leg) => {
-    const box = document.createElement("div");
-    box.className = "manage-price-chart";
-    box.addEventListener("click", (event) => event.stopPropagation());
-    const note = document.createElement("p");
-    note.className = "price-chart-unit";
-    note.textContent = "Reading the price.";
-    box.append(note);
-    host.append(box);
-    const q = new URLSearchParams({ label: leg.label || "", market: leg.market || "", match: leg.match || "" });
-    fetch(`/api/price-history?${q}`, { credentials: "same-origin" })
-      .then((res) => (res.ok ? res.json() : { series: [] }))
-      .then((data) => {
-        if (!box.isConnected) return;
-        const series = (data && data.series) || [];
-        box.replaceChildren();
-        if (series.length < 2) {
-          note.textContent = "The price has not moved.";
-          box.append(note);
-          return;
-        }
-        box.append(priceMoveChart(series));
-      })
-      .catch(() => {
-        if (!box.isConnected) return;
-        note.textContent = "The price did not come back.";
-        box.replaceChildren(note);
-      });
+  const box = document.createElement("div");
+  box.className = "manage-price-chart";
+  box.addEventListener("click", (event) => event.stopPropagation());
+  const note = document.createElement("p");
+  note.className = "price-chart-unit";
+  note.textContent = "Reading the price.";
+  box.append(note);
+  host.append(box);
+  Promise.all((legs || []).map(manageOddsPull)).then((packs) => {
+    if (!box.isConnected) return;
+    const series = (legs || []).length > 1 ? manageParlaySeries(legs, packs) : ((packs[0] && packs[0].series) || []);
+    box.replaceChildren();
+    if (series.length < 2) {
+      note.textContent = "The price has not moved.";
+      box.append(note);
+      return;
+    }
+    box.append(priceMoveChart(series));
+  }).catch(() => {
+    if (!box.isConnected) return;
+    note.textContent = "The price did not come back.";
+    box.replaceChildren(note);
   });
 }
 
