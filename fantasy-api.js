@@ -627,20 +627,42 @@ function etDay(ms) {
 
 function kickSoon(kick, now) {
   const at = Number(kick);
-  if (!Number.isFinite(at) || at <= now) return "";
-  if (at - now <= 60 * 60 * 1000) return "now";
-  return etDay(at) === etDay(now) ? "today" : "";
+  if (!Number.isFinite(at)) return "";
+  if (at > now) {
+    if (at - now <= 60 * 60 * 1000) return "now";
+    return etDay(at) === etDay(now) ? "today" : "";
+  }
+  if (now - at <= 4 * 60 * 60 * 1000 && etDay(at) === etDay(now)) return "now";
+  return "";
+}
+
+function gameName(row) {
+  const team = String((row && row.team) || "").toUpperCase();
+  const match = String((row && row.matchup) || "");
+  const hit = match.match(/^(vs|@)\s+([A-Z]{2,3})/);
+  if (!team || !hit) return "";
+  return hit[1] === "vs" ? `${hit[2]} @ ${team}` : `${team} @ ${hit[2]}`;
+}
+
+function playingGames(rows, when, now) {
+  return [...new Set((rows || []).filter((row) => kickSoon(row && row.kick, now) === when).map(gameName).filter(Boolean))];
 }
 
 function actionTags(result) {
   const tags = [];
+  const active = [...(result.start || []), ...(result.sit || [])].filter((row) => row && row.id && !row.empty && !row.bye && !row.ir && !row.out);
   const sits = (result.start || []).filter((row) => row && row.id && !row.empty && row.shouldStart === false && !(row.locked || row.gameLocked));
   const starts = (result.sit || []).filter((row) => row && row.id && row.shouldStart === true);
-  const soon = [...sits, ...starts].map((row) => kickSoon(row.kick, Date.now()));
+  const nowMs = Date.now();
+  const soon = [...sits, ...starts].map((row) => kickSoon(row.kick, nowMs));
   const nowCount = soon.filter((id) => id === "now").length;
   const todayCount = soon.filter((id) => id === "today").length;
+  const games = playingGames(active, "now", nowMs);
+  const later = playingGames(active, "today", nowMs);
   if (nowCount) tags.push({ id: "now", label: tagLabel("Right now", nowCount) });
+  else games.forEach((label) => tags.push({ id: "game", label }));
   if (todayCount) tags.push({ id: "today", label: tagLabel("Today", todayCount) });
+  else if (!games.length) later.forEach((label) => tags.push({ id: "later", label }));
   const pickupCount = (result.pickups || []).length;
   if (starts.length) tags.push({ id: "start", label: tagLabel("Start", starts.length) });
   if (sits.length) tags.push({ id: "sit", label: tagLabel("Sit", sits.length) });

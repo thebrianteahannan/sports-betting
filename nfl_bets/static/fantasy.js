@@ -280,14 +280,20 @@ function fantasyLeaguePicker(board) {
   }
   if (fantasyState.checks) {
     const rows = fantasyState.leagues.map((league) => fantasyState.checks[league.league_id]).filter(Boolean);
-    const need = rows.filter((row) => (row.tags || []).some((tag) => tag.id !== "miss")).length;
+    const moveTag = (tag) => tag && tag.id !== "miss" && tag.id !== "game" && tag.id !== "later";
+    const need = rows.filter((row) => (row.tags || []).some(moveTag)).length;
     const missed = rows.filter((row) => (row.tags || []).some((tag) => tag.id === "miss")).length;
     const say = document.createElement("p");
     say.className = "fantasy-lead";
     const nowLeagues = rows.filter((row) => (row.tags || []).some((tag) => tag.id === "now")).length;
     const todayLeagues = rows.filter((row) => (row.tags || []).some((tag) => tag.id === "today")).length;
+    const games = [...new Set(rows.flatMap((row) => (row.tags || []).filter((tag) => tag.id === "game").map((tag) => tag.label)))];
+    const later = [...new Set(rows.flatMap((row) => (row.tags || []).filter((tag) => tag.id === "later").map((tag) => tag.label)))];
+    const moveLine = need === 1 ? "1 league still needs a move for later." : `${need} leagues still need a move for later.`;
     if (nowLeagues) say.textContent = nowLeagues === 1 ? "One league has a start or sit due right now." : `${nowLeagues} leagues have a start or sit due right now.`;
     else if (todayLeagues) say.textContent = todayLeagues === 1 ? "One league has a start or sit playing today." : `${todayLeagues} leagues have a start or sit playing today.`;
+    else if (games.length) say.textContent = `You have players in ${games.join(" and ")}. Your lineups can stay.${need ? ` ${moveLine}` : ""}`;
+    else if (later.length) say.textContent = `You have players playing today.${need ? ` ${moveLine}` : " Your lineups can stay."}`;
     else if (need) say.textContent = `Nothing kicks off today. ${need} ${need === 1 ? "league still needs" : "leagues still need"} a move.`;
     else if (missed) say.textContent = "Could not check those leagues.";
     else say.textContent = "Every league is all set.";
@@ -300,13 +306,12 @@ function fantasyLeaguePicker(board) {
     btn.type = "button";
     const hit = fantasyState.checks && fantasyState.checks[league.league_id];
     const tags = hit && !hit.skip ? (hit.tags || []) : null;
-    const needs = !!(tags && tags.length);
+    const moves = tags ? tags.filter((tag) => tag.id !== "game" && tag.id !== "later") : null;
+    const needs = !!(moves && moves.length);
     btn.dataset.league = league.league_id;
     btn.className = `fantasy-league${fantasyState.leagueId === league.league_id ? " on" : ""}${needs ? " needs" : ""}${tags && !needs ? " ready" : ""}`;
     const tagHtml = tags
-      ? (needs
-        ? `<span class="league-tags">${tags.map((tag) => `<i class="league-tag ${fantasyEsc(tag.id)}">${fantasyEsc(tag.label)}</i>`).join("")}</span>`
-        : `<span class="league-tags"><i class="league-tag ok">All set</i></span>`)
+      ? `<span class="league-tags">${tags.map((tag) => `<i class="league-tag ${fantasyEsc(tag.id)}">${fantasyEsc(tag.label)}</i>`).join("") || `<i class="league-tag ok">All set</i>`}</span>`
       : "";
     btn.innerHTML = `<b>${fantasyEsc(league.name)}</b>${fantasyMatchLine(league.league_id)}${tagHtml}`;
     btn.addEventListener("click", () => fantasyRun(board, league.league_id));

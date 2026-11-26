@@ -316,7 +316,9 @@
   color: #1a1400;
 }
 
-.fantasy-board .league-tag.today {
+.fantasy-board .league-tag.today,
+.fantasy-board .league-tag.game,
+.fantasy-board .league-tag.later {
   border-color: rgba(231, 193, 90, 0.9);
   background: transparent;
   color: #e7c15a;
