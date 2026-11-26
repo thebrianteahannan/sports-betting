@@ -416,6 +416,12 @@ function manageCard(row, n) {
   num.className = "manage-n";
   num.textContent = String(n);
   card.append(num, legsBox, acts, manageSlip(row));
+  if (legs.length < 2) {
+    const indent = document.createElement("span");
+    indent.className = "manage-indent";
+    indent.setAttribute("aria-hidden", "true");
+    card.append(indent);
+  }
   if (fold) card.insertBefore(fold, acts);
   if (typeof bankCard === "function") bankCard(card, row);
   const openBet = () => {

@@ -339,6 +339,7 @@
 .manage-board .manage-tags { display: none; }
 #desk.tv-full #desk-glass .manage-board .manage-n,
 .manage-board .manage-n { grid-column: 1; grid-row: 1; align-self: center; min-width: 1.15rem; color: #8ea0b0; font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.manage-indent { display: none; }
 #desk.tv-full #desk-glass .manage-board .manage-card.parlay > .manage-n,
 .manage-board .manage-card.parlay > .manage-n { align-self: start; margin-top: 0.12rem; }
 #desk.tv-full #desk-glass .manage-board .manage-card > .manage-legs,
@@ -1083,6 +1084,7 @@ body > .manage-lock-pop:not(.grid-bg):not(.aurora):not(.scan) { position: fixed;
   .manage-board .manage-card:not(.parlay):not(.editing)::before { content: ""; order: 4; flex: 0 0 5.6rem; height: 1.7rem; margin-left: auto; align-self: start; }
   #desk.tv-full #desk-glass .manage-card:not(.parlay):not(.editing)::after,
   .manage-board .manage-card:not(.parlay):not(.editing)::after { content: ""; order: 5; flex: 1 0 100%; height: 0; }
+  .manage-board .manage-card:not(.parlay):not(.editing) > .manage-indent { display: block; order: 6; flex: 0 0 1.15rem; height: 0; }
   #desk.tv-full #desk-glass .manage-card:not(.parlay):not(.editing) > .manage-card-acts,
   .manage-board .manage-card:not(.parlay):not(.editing) > .manage-card-acts {
     position: absolute !important;

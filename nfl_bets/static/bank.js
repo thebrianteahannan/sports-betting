@@ -162,7 +162,7 @@ function bankHitSay(kelly) {
 
 function bankCall(kelly) {
   if (!kelly || !(kelly.records || []).length) return null;
-  return kelly.edge && kelly.bet > 0 ? { kind: "bet", text: "Bet it" } : { kind: "leave", text: "Leave it" };
+  return kelly.edge && kelly.bet > 0 ? { kind: "bet", text: "Lock in" } : { kind: "leave", text: "Don't lock" };
 }
 
 function bankLockedCall(row) {
