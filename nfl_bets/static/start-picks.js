@@ -1094,8 +1094,8 @@ function startPaint(again) {
   if (!spot || !board || typeof homeRecRows !== "function") return;
   const input = board.querySelector("label.find input");
   const history = board.dataset.page === "history";
-  const moves = board.dataset.page === "moves";
-  const panel = board.dataset.page === "rec" || history || moves;
+  const panel = board.dataset.page === "rec" || history;
+  if (window.startMoveTab && panel && !history) { startTab = "moves"; window.startMoveTab = false; }
   if (typeof startNeedsWeek === "function" && startNeedsWeek()) startWeekLoad();
   homeRecsLoad(typeof startNeedsWeek === "function" && startNeedsWeek() ? "week" : "auto"); homeLogosLoad(); homeLeagueSync();
   const box = document.createElement("div");
@@ -1107,11 +1107,6 @@ function startPaint(again) {
     spot.after(box);
     if (typeof betShotMount === "function") betShotMount();
     if (typeof quickAddPendingOpen === "function") quickAddPendingOpen();
-    return;
-  }
-  if (moves) {
-    box.append(typeof priceMovePage === "function" ? priceMovePage() : document.createElement("p"));
-    spot.after(box);
     return;
   }
   if (startTab === "shared" || startTab === "games" || startTab === "stats" || startTab === "golden" || startTab === "stacks") startTab = "rec";
@@ -1150,6 +1145,15 @@ function startPaint(again) {
     td.classList.add("desk-games-tab");
     tabs.append(td);
   }
+  if (!history) {
+    const moveTab = document.createElement("button");
+    moveTab.type = "button";
+    moveTab.className = `desk-games-tab${tabNow === "moves" ? " on" : ""}`;
+    moveTab.setAttribute("aria-pressed", String(tabNow === "moves"));
+    moveTab.textContent = "Price Movement";
+    moveTab.addEventListener("click", () => { startTab = "moves"; startPaint(1); });
+    tabs.append(moveTab);
+  }
   box.dataset.stacks = startStackKey();
   const row = document.createElement("div");
   row.className = "find-start-row";
@@ -1157,7 +1161,7 @@ function startPaint(again) {
   const leagues = typeof homeLeagues === "function" ? homeLeagues(box, gamesNow) : [];
   const gameBar = startGameBar(gamesNow);
   row.append(tabs);
-  if (!history && tabNow !== "td") {
+  if (!history && tabNow !== "td" && tabNow !== "moves") {
     row.append(startFilterSay(gamesNow, box), startFilterPack(box, leagues, gameBar, board, picks, tabNow));
   }
   const lineNote = !history && (tabNow === "rec" || tabNow === "parlays") ? startLineNote() : null;
@@ -1172,7 +1176,9 @@ function startPaint(again) {
           ? (typeof edgeProveBody === "function" ? edgeProveBody() : [])
           : tabNow === "td"
           ? [startTdInline(board)]
-          : startGoldenList();
+          : tabNow === "moves"
+            ? [typeof priceMovePage === "function" ? priceMovePage() : document.createElement("p")]
+            : startGoldenList();
   box.append(row, ...body);
   spot.after(box);
   if (tabNow === "rec" && typeof recDialCountPaint === "function") {
@@ -1185,7 +1191,7 @@ function startPaint(again) {
   if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 2, { quiet: true });
   if (tabNow === "rec" && typeof priceMoveMark === "function") priceMoveMark();
   const waiting = (typeof startNeedsWeek === "function" && startNeedsWeek() && startWeekLoading) || !homeRecs || homeRecs.loading;
-  const shown = box.querySelector("button.desk-rec, .rec-parlay-card, .rec-strategy, .find-start-td-page");
+  const shown = tabNow === "moves" || box.querySelector("button.desk-rec, .rec-parlay-card, .rec-strategy, .find-start-td-page");
   if (waiting && shown && typeof startWeekLoad === "function" && typeof startNeedsWeek === "function" && startNeedsWeek() && startWeekLoading) startWeekLoad(() => { if (box.isConnected) startPaint((again || 0) + 1); });
   else if (waiting && !shown && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
 }

@@ -1,9 +1,9 @@
 /** Recommended page: picks, games, and strategies — moved off Build a bet. */
 
 function paintRec(page) {
+  if (page === "moves") window.startMoveTab = true;
   const history = page === "history";
-  const moves = page === "moves";
-  if (typeof pageUrl === "function") pageUrl(moves ? "moves" : history ? "history" : "rec");
+  if (typeof pageUrl === "function") pageUrl(history ? "history" : "rec");
   window.asking = true;
   if (document.body.classList.contains("tv-zoom-on") && typeof tvZoomShut === "function") tvZoomShut();
   if (window.goFull) goFull();
@@ -27,9 +27,8 @@ function paintRec(page) {
   document.querySelectorAll(".rec-board").forEach((node) => node.remove());
   const board = document.createElement("div");
   board.className = "rec-board find-board find-rec-page";
-  board.dataset.page = moves ? "moves" : history ? "history" : "rec";
+  board.dataset.page = history ? "history" : "rec";
   if (history) board.classList.add("find-hist-page");
-  if (moves) board.classList.add("find-move-page");
   const saved = findParts.today && findParts.today.data && Date.now() - findParts.today.at < 30 * 60 * 1000;
   if (!saved) board.innerHTML = `<div class="bet-load"><span class="bet-bird"><img src="/scene/parrot-head.webp?v=1" alt=""></span><p>Looking up the board.</p></div>`;
   const hold = document.getElementById("desk-hold");
@@ -71,7 +70,11 @@ function paintHistory() {
 }
 
 function paintMoves() {
-  paintRec("moves");
+  window.startMoveTab = true;
+  const here = document.querySelector("#desk-glass-in .find-board");
+  if (here && here.dataset.page === "rec" && typeof startPaint === "function") startPaint(1);
+  else paintRec();
+  if (location.pathname === "/movement") history.replaceState({ page: "rec" }, "", "/recommended");
 }
 
 function recPageOpen() {

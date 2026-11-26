@@ -283,6 +283,9 @@
 #desk.tv-full #desk-glass .rec-board.find-move-page > h2 > button.find-rec-go { margin-left: auto; }
 .find-board.find-move-page > h2 > button.find-build-go,
 #desk.tv-full #desk-glass .rec-board.find-move-page > h2 > button.find-build-go { margin-left: 0; }
+@media (min-width: 761px) {
+  #desk.tv-full .rec-board.find-board:not(.find-rec-page) > h2 { display: none !important; }
+}
 .rec-board > h2 button.find-games-go.on-live, #desk.tv-full #desk-glass .rec-board > h2 button.find-games-go.on-live { display: inline-flex; align-items: center; gap: 0.4rem; border-color: #3dff6e; background: rgba(61, 255, 110, 0.12); }
 .rec-board > h2 button.find-games-go .find-games-live, #desk.tv-full #desk-glass .rec-board > h2 button.find-games-go .find-games-live { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.05rem 0.45rem 0.05rem 0.35rem; border-radius: 999px; background: #3dff6e; color: #04140c; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
 .rec-board > h2 button.find-games-go .find-games-pulse { flex: none; width: 0.45rem; height: 0.45rem; border-radius: 50%; background: #ff2d2d; box-shadow: 0 0 0 0 rgba(255, 45, 45, 0.75); animation: find-games-pulse 1.35s ease-out infinite; }

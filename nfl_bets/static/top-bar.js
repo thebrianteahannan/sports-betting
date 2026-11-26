@@ -9,8 +9,8 @@ function whereNick(team) {
   return all.filter((nick) => name === nick || name.endsWith(` ${nick}`)).sort((a, b) => b.length - a.length)[0] || name;
 }
 
-function whereFind(board) {
-  return "Search for a player, team, or game. Or build your own bet";
+function whereFind() {
+  return "Build a bet";
 }
 
 function whereText() {

@@ -450,10 +450,11 @@ function priceMoveOpen(label, match) {
       priceMoveLeague = row.sport || "";
     }
     try { sessionStorage.setItem("price-move", priceMoveFocus); } catch (error) {}
+    window.startMoveTab = true;
     const here = document.querySelector("#desk-glass-in .find-board");
-    if (here && here.dataset.page === "moves" && typeof startPaint === "function") { startPaint(1); return; }
+    if (here && here.dataset.page === "rec" && typeof startPaint === "function") { startPaint(1); return; }
     if (typeof paintMoves === "function") paintMoves();
-    else window.location.href = "/movement";
+    else window.location.href = "/recommended";
   };
   const ready = priceMoveBag && priceMoveBag.data && priceMoveBag.data.rows;
   if (ready) { go(ready); return; }
