@@ -238,6 +238,31 @@ async function readLocal(image, ask) {
   return parseSlip(text);
 }
 
+function slipCase(name) {
+  return String(name || "").toLowerCase().replace(/(^|[\s'’-])([a-z])/g, (_, lead, letter) => lead + letter.toUpperCase());
+}
+
+function slipPlayers(image, mime, read) {
+  if (!read || !image) return read;
+  let text = "";
+  try { text = ocrShot(image, mime); } catch (err) { return read; }
+  const lines = String(text || "").split(/\n/).map((line) => line.trim()).filter(Boolean);
+  const names = [];
+  lines.forEach((line, index) => {
+    if (!/any\s*time\s*td|anytime\s*td|any\s*time\s*touchdown/i.test(line)) return;
+    const next = lines[index + 1] || "";
+    if (!/^[A-Za-z][A-Za-z'’.\- ]{2,40}$/.test(next)) return;
+    names.push(slipCase(next));
+  });
+  if (!names.length) return read;
+  const known = (read.legs || []).map((leg) => String(leg.player || "").toLowerCase());
+  const hit = names.filter((name) => known.some((player) => player.endsWith(name.toLowerCase().split(" ").pop())));
+  if (hit.length === names.length) return read;
+  const match = String(((read.legs || []).find((leg) => leg.match) || {}).match || (text.match(/[A-Za-z][A-Za-z .']+\s@\s[A-Za-z][A-Za-z .']+/) || [""])[0]).trim();
+  read.legs = names.map((player) => ({ player, market: "anytime touchdown", side: "", line: null, odds: "", stake: read.stake || "", match, ticket: 1 }));
+  return read;
+}
+
 function today() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 }
@@ -342,4 +367,4 @@ async function countCards(image) {
   }
 }
 
-module.exports = { slipList, slipPost, readShot, countCards };
+module.exports = { slipList, slipPost, readShot, countCards, slipPlayers };

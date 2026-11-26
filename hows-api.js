@@ -1,13 +1,13 @@
 /** Read a pasted bet and say which strategy it is. */
 
-const { readShot, countCards } = require("./slip-api");
+const { readShot, countCards, slipPlayers } = require("./slip-api");
 
 const HOW = `Read every bet card in the screenshot, from top to bottom. Count the cards first. A card has its own wager. Two cards are two bets, even when they name the same player. A parlay is one card with several legs under one wager.
 Each card gets its own ticket number, starting at 1. Do not stop after the first card. Do not merge two wagers into one leg.
 A team to win: player is the team, market is "to win", side is "win", line is null.
 A spread: market is "spread", line is the points with the sign, side is "spread".
 A total: market is "total", side is over or under, line is the number.
-The line under the player name is the market. "ANY TIME TOUCHDOWN SCORER" is market "anytime touchdown", side is "", line is null. That is not a first touchdown, and it is not 2+ or 3+ touchdowns. "1ST TOUCHDOWN SCORER" is market "first touchdown", side is "", line is null. Do not swap those two.
+The line under the player name is the market. "ANY TIME TOUCHDOWN SCORER" or "Anytime TD" is market "anytime touchdown", side is "", line is null. The player name is the capital-letter line directly under that market. "Over 0.5, Over 0.5" under the parlay title is a summary, not the legs, and the teams in the game line are not those players. That is not a first touchdown, and it is not 2+ or 3+ touchdowns. "1ST TOUCHDOWN SCORER" is market "first touchdown", side is "", line is null. Do not swap those two.
 To score 2+ or 3+ touchdowns only when the slip says that many: market is "to score 2+ touchdowns" or "to score 3+ touchdowns", side is "over", line is 2 or 3.
 A player prop: player is the person, market is only the stat, side is over or under, line is the number. odds is that card's price. stake is that card's wager. Use "" when a number is not printed.
 kind is single when there is one card. kind is stack when there is more than one card.
@@ -416,6 +416,7 @@ async function howsPost(body) {
   const got = new Set((read.legs || []).map((leg) => Number(leg.ticket) || 1)).size;
   if (cards > 1 && got < cards) read = await readShot(image, mime, `${HOW}\nYou missed a card. There are ${cards} bet cards. Ticket 1 is the top card. Number every card after it. Return all ${cards}.`);
   if (read && Array.isArray(read.legs)) read.legs = read.legs.map(normTd);
+  read = slipPlayers(image, mime, read);
   const legs = read.legs || [];
   const sameStake = new Set(legs.map((leg) => dollars(leg.stake)).filter(Boolean)).size <= 1;
   const noLegOdds = legs.every((leg) => american(leg.odds) == null);

@@ -108,7 +108,8 @@ function manageCash(stake, legs) {
 
 function manageOddsSaid(row) {
   if (row.locked && row.lockedOdds) return row.lockedOdds;
-  return typeof savePrice === "function" ? savePrice(row.legs || []) : "";
+  const made = typeof savePrice === "function" ? savePrice(row.legs || []) : "";
+  return made || row.slipOdds || "";
 }
 
 function manageMoney(n) {

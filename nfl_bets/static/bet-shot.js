@@ -282,8 +282,9 @@ function shotTickets(data) {
   return [{ legs }];
 }
 
-function shotStakeOf(legs) {
-  for (const leg of legs || []) {
+function shotStakeOf(legs, fallback) {
+  const rows = [...(legs || []), { stake: fallback }];
+  for (const leg of rows) {
     const n = Number(String(leg.stake || "").replace(/[^0-9.]/g, ""));
     if (Number.isFinite(n) && n > 0) return Math.round(Math.min(n, 100000) * 100) / 100;
   }
@@ -296,10 +297,10 @@ function shotLoose(leg) {
   const side = String(leg.side || "").toLowerCase();
   const line = leg.line == null || leg.line === "" ? null : Number(leg.line);
   const odds = shotOdds(leg.odds);
-  if (!player || !market || !odds) return null;
+  if (!player || !market) return null;
   let prop = market;
-  if (line != null && Number.isFinite(line) && !/win|moneyline|spread/.test(market)) prop = `${side === "under" ? "Under" : "Over"} ${line} ${market}`;
-  const bet = { label: `${player} ${prop}`.replace(/\s+/g, " ").trim(), odds, market, match: String(leg.match || "").trim(), kickoff: "", sport: String(leg.sport || "").trim() };
+  if (line != null && Number.isFinite(line) && !/win|moneyline|spread|touchdown/.test(market)) prop = `${side === "under" ? "Under" : "Over"} ${line} ${market}`;
+  const bet = { label: `${player} ${prop}`.replace(/\s+/g, " ").trim(), odds: odds || "", market, match: String(leg.match || "").trim(), kickoff: "", sport: String(leg.sport || "").trim() };
   return bet.label ? bet : null;
 }
 
@@ -344,7 +345,7 @@ async function shotRead(board, file) {
     const tickets = shotTickets(data);
     const people = board.people || [];
     shotWant.clear();
-    const matched = tickets.map((bet) => ({ stake: shotStakeOf(bet.legs), ...shotMatch(people, bet.legs) })).filter((row) => row.found.length || row.drafts.length || (row.loose || []).length);
+    const matched = tickets.map((bet) => ({ stake: shotStakeOf(bet.legs, data.stake), ...shotMatch(people, bet.legs) })).filter((row) => row.found.length || row.drafts.length || (row.loose || []).length);
     if (!matched.length) { console.log("[bet-shot] no legs in reply", data); throw new Error("I read that screenshot but found no player or team legs on it."); }
     const legsTotal = matched.reduce((sum, row) => sum + row.found.length + row.drafts.length + (row.loose || []).length, 0);
     wait.step(matched.length > 1 ? `Found ${matched.length} bets. Saving them in My bets` : `Found ${legsTotal} ${legsTotal === 1 ? "leg" : "legs"}. Building your parlay`);
@@ -370,6 +371,8 @@ async function shotRead(board, file) {
         const list = saveList(), entry = list.find((one) => one.id === made.id);
         if (entry) {
           entry.stake = row.stake;
+          const ticket = shotOdds(data.odds);
+          if (ticket && !(entry.legs || []).some((leg) => Number(leg.odds))) entry.slipOdds = ticket > 0 ? `+${ticket}` : String(ticket);
           if (group) entry.group = group;
           saveStore(list);
         }
