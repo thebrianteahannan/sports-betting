@@ -310,7 +310,7 @@ function recDialApply(next, opts) {
     if (typeof wrap._recMoreSync === "function") wrap._recMoreSync();
   });
   document.querySelectorAll("button.rec-dial-next").forEach((node) => {
-    node.hidden = recDial >= REC_DIAL_MAX;
+    node.hidden = recDial >= REC_DIAL_MAX - 1;
     node.textContent = recDialNextSay(recDial);
   });
   recDialCharts();
@@ -350,9 +350,9 @@ function recDialNext() {
   go.type = "button";
   go.className = "rec-dial-next";
   go.textContent = recDialNextSay(recDial);
-  go.hidden = recDial >= REC_DIAL_MAX;
+  go.hidden = recDial >= REC_DIAL_MAX - 1;
   go.addEventListener("click", () => {
-    if (recDial >= REC_DIAL_MAX) return;
+    if (recDial >= REC_DIAL_MAX - 1) return;
     recDialArrived = true;
     recDialApply(recDial + 1);
   });
