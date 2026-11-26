@@ -1002,15 +1002,21 @@ body > .manage-lock-pop:not(.grid-bg):not(.aurora):not(.scan) { position: fixed;
 .manage-board .bank-line .bank-buck { color: #3dff6e; font-weight: 800; }
 .manage-board .bank-line .bank-of { margin-left: 0.35rem; color: #9fb3c8; font-weight: 700; white-space: nowrap; }
 .manage-board .bank-line input.bank-cash,
-.manage-board .bank-line input.bank-roll { height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; font: inherit !important; font-weight: 800 !important; box-shadow: none !important; }
-.manage-board .bank-line input.bank-cash { width: 3.2rem !important; color: #3dff6e !important; }
-.manage-board .bank-line input.bank-roll { width: 4rem !important; color: #c9d4dd !important; }
+.manage-board .bank-line input.bank-roll { height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 0.35rem !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; font: inherit !important; font-weight: 800 !important; box-shadow: none !important; field-sizing: content; width: auto !important; max-width: 8rem; -moz-appearance: textfield; appearance: textfield; }
+.manage-board .bank-line input.bank-cash::-webkit-outer-spin-button,
+.manage-board .bank-line input.bank-cash::-webkit-inner-spin-button,
+.manage-board .bank-line input.bank-roll::-webkit-outer-spin-button,
+.manage-board .bank-line input.bank-roll::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.manage-board .bank-line input.bank-cash { color: #3dff6e !important; }
+.manage-board .bank-line input.bank-roll { color: #c9d4dd !important; }
 .manage-board .bank-line .bank-note { flex: 1 0 100%; color: #ffb45a; }
 .manage-board .bank-kelly, .manage-board .bank-result, .manage-board .bank-marks { grid-column: 2; margin: 0; font-size: 13px; font-weight: 700; }
 .manage-board .bank-kelly { color: #3dff6e; font-style: normal; font-weight: 800; white-space: normal; }
 .manage-board .bank-call { flex: none; align-self: center; margin: 0 0.15rem 0 0; padding: 0 0.45rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.62rem; font-style: normal; font-weight: 800; letter-spacing: 0.04em; line-height: 1.5; text-transform: uppercase; }
 .manage-board .bank-call.c-bet { color: #04140c; background: #3dff6e; border-color: #3dff6e; }
-.manage-board .bank-call.c-leave { color: #ff6b6b; }
+.manage-board .bank-call.c-leave, .manage-board .bank-call.c-lost { color: #ff6b6b; }
+.manage-board .bank-call.c-won, .manage-board .bank-call.c-pace { color: #3dff6e; }
+.manage-board .bank-call.c-behind { color: #ffb35c; }
 .manage-board .bank-result.r-won { color: #3dff6e; }
 .manage-board .bank-result.r-lost { color: #ff6b6b; }
 .manage-board .bank-result.r-push { color: #9fb3c8; }

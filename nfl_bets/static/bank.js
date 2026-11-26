@@ -165,6 +165,22 @@ function bankCall(kelly) {
   return kelly.edge && kelly.bet > 0 ? { kind: "bet", text: "Bet it" } : { kind: "leave", text: "Leave it" };
 }
 
+function bankLockedCall(row) {
+  const legs = (row && row.legs) || [];
+  if (!legs.length || typeof liveLegState !== "function" || typeof liveLegRead !== "function" || typeof liveMine !== "function" || typeof trayLive === "undefined") return null;
+  const reads = legs.map((leg) => {
+    const game = (trayLive.games || []).find((one) => liveMine(one, [leg]).length);
+    return game ? liveLegState(game, liveLegRead(leg)) : null;
+  }).filter(Boolean);
+  if (!reads.length) return null;
+  if (reads.some((read) => read.state === "lost")) return { kind: "lost", text: "Lost" };
+  if (reads.every((read) => read.state === "hit")) return { kind: "won", text: "Won" };
+  const levels = reads.map((read) => read.level).filter(Boolean);
+  if (levels.some((level) => level === "behind" || level === "far")) return { kind: "behind", text: "Behind" };
+  if (levels.some((level) => level === "ahead" || level === "close") || reads.some((read) => read.state === "hit")) return { kind: "pace", text: "On pace" };
+  return null;
+}
+
 function bankSay(kelly, fallback) {
   if (!kelly || !(kelly.records || []).length) return "";
   const roll = bankMoney(kelly.roll != null ? kelly.roll : bankRoll() || 100);
@@ -428,12 +444,12 @@ function bankCard(card, row) {
   if (!kelly) bankWatchRecords();
   const stake = typeof saveRowStake === "function" ? saveRowStake(row) : (Number(row.stake) > 0 ? Number(row.stake) : 5);
   const said = bankSay(kelly, stake);
-  const call = bankCall(kelly);
+  const call = row.locked ? bankLockedCall(row) : bankCall(kelly);
   if (!row.locked && kelly && kelly.edge && kelly.bet > 0 && typeof findCash === "function") {
     const cash = findCash(kelly.odds, kelly.bet);
     if (cash) card.querySelectorAll(".pay").forEach((node) => { node.textContent = `$${bankMoney(kelly.bet)} profits ${cash}`; });
   }
-  if (said) {
+  if (said || call) {
     const fold = card.querySelector(".manage-fold-line");
     const price = card.querySelector(".manage-legs > .manage-bet-price");
     bankMark(fold, said, call);
