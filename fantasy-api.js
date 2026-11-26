@@ -610,10 +610,18 @@ async function loadLineupContext(season, week, board) {
     loadProjections(season, week).catch(() => ({})),
     loadWeekStats(season, week).catch(() => ({})),
     loadOwnership(season, week).catch(() => new Map()),
-    require("./choose-api").chooseBet({ list: "lookup", when: "open", sports: ["NFL"] }, board).catch(() => ({ people: [] })),
+    require("./choose-api").chooseBet({ list: "lookup", when: "slate", sports: ["NFL"] }, board).catch(() => ({ people: [] })),
     loadPlayers().catch(() => ({})),
   ]);
-  const people = ((peopleBook && peopleBook.people) || []).filter((person) => person.kind === "player");
+  const games = peopleBook && peopleBook.pack === 1 && Array.isArray(peopleBook.games) ? peopleBook.games : null;
+  const people = ((peopleBook && peopleBook.people) || []).filter((person) => person.kind === "player").map((person) => ({
+    ...person,
+    bets: (person.bets || []).map((bet) => {
+      if (!games || !Array.isArray(bet)) return bet;
+      const game = games[bet[2]] || ["", "", ""];
+      return { label: bet[0], odds: bet[1], match: game[0], sport: game[1], kickoff: game[2], market: bet[3] || "" };
+    }),
+  }));
   return { weekInfo, projections, weekStats, ownership, people, map };
 }
 

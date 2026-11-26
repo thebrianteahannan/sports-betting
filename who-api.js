@@ -160,6 +160,7 @@ function inSpan(game, span) {
   const kick = Date.parse(game.kickoff || "");
   const day = Number.isFinite(kick) ? etDay(kick) : "";
   const today = etDay(Date.now());
+  if (span === "slate") return Number.isFinite(kick) && kick > Date.now() - 18 * 60 * 60 * 1000 && day <= etDay(Date.now() + 8 * 24 * 60 * 60 * 1000);
   const recent = Number.isFinite(kick) && (day === today || kick > Date.now() - 18 * 60 * 60 * 1000);
   if (!Number.isFinite(kick) || (!recent && !game.kept && !(game.sport === "PGA" && kick > Date.now() - 5 * 24 * 60 * 60 * 1000))) return false;
   if (game.sport === "PGA" && kick > Date.now() - 5 * 24 * 60 * 60 * 1000) return true;

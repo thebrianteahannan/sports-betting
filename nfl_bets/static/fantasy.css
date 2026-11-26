@@ -824,7 +824,7 @@
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > button.fantasy-row {
   display: grid !important;
   grid-template-columns: 3.4rem minmax(0, 1fr) auto !important;
-  align-items: center !important;
+  align-items: start !important;
   gap: 0.1rem 0.45rem !important;
   width: 100% !important;
   min-width: 0 !important;
@@ -888,13 +888,20 @@
   -webkit-line-clamp: unset !important;
 }
 
-#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .stats,
 #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > em.meta,
 #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-proof,
-.fantasy-board[data-fantasy-zoom="0"] .fantasy-row .stats,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .who > em.meta,
 .fantasy-board[data-fantasy-zoom="0"] .fantasy-proof {
   display: none !important;
+}
+
+#desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-row .stats,
+.fantasy-board[data-fantasy-zoom="0"] .fantasy-row .stats {
+  display: flex !important;
+  grid-column: 2 / -1;
+  grid-row: 2;
+  align-self: start;
+  margin: 0.05rem 0 0;
 }
 
 #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > .fantasy-proof.open,
@@ -920,7 +927,7 @@
 @media (min-width: 721px) {
   #desk.tv-full #desk-glass .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > button.fantasy-row,
   .fantasy-board[data-fantasy-zoom="0"] .fantasy-pos-cards > button.fantasy-row {
-    grid-template-columns: 3.4rem minmax(0, max-content) max-content !important;
+    grid-template-columns: 3.4rem minmax(0, 1fr) auto !important;
     justify-content: start !important;
     column-gap: 0.85rem !important;
   }

@@ -431,8 +431,8 @@ async function fantasyRun(board, leagueId, opts) {
 }
 
 function fantasyStatLine(player) {
-  const rows = Array.isArray(player.stats) ? player.stats : [];
-  if (!rows.length) return `<span class="stats mute">No Vegas stats yet</span>`;
+  const rows = (Array.isArray(player.stats) ? player.stats : []).filter((row) => row && row.have && row.amount != null);
+  if (!rows.length) return `<span class="stats mute">No Vegas lines yet</span>`;
   return `<span class="stats">${rows.map((row) => {
     const val = row.have && row.amount != null ? fantasyPts(row.amount) : "—";
     const juice = row.have && row.odds != null ? fantasyOdds(row.odds) : "";
