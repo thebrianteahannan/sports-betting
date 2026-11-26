@@ -83,7 +83,7 @@ function liveRoot(game, picks, rec, show) {
     const href = `/?${new URLSearchParams({ game: pick.match, ...(pick.parlay ? { bet: pick.parlay } : {}), label: pick.label, market: pick.market, from: "live" })}`;
     const metal = !!(pick.golden || pick.silver || pick.bronze);
     const best = rec && !metal && pick.tier !== "good" && pick.role !== "thin";
-    return `<a class="live-mine-leg ${state}${rec || pick.locked ? "" : " live-open"}${best ? " live-rec-best" : ""}${rec && !metal && !best ? " live-rec-more" : ""}${!rec && !metal ? " live-plain" : ""}" href="${liveEsc(href)}" title="Open this bet in Build a bet">${inner}</a>`;
+    return `<a class="live-mine-leg ${state}${rec || pick.locked ? "" : " live-open"}${best ? " live-rec-best" : ""}${rec && !metal && !best ? " live-rec-more" : ""}${!rec && !metal ? " live-plain" : ""}" href="${liveEsc(href)}" title="${rec ? "Add to My Bets" : "Open this bet in Build a bet"}">${inner}</a>`;
   };
   const groups = [];
   picks.forEach((pick) => { const group = !rec && pick.parlay && groups.find((row) => row.id === pick.parlay); if (group) group.picks.push(pick); else groups.push({ id: pick.parlay, picks: [pick] }); });
@@ -482,7 +482,7 @@ function liveZoomLift(game) {
   const id = game && game.dataset.id;
   if (!id) return;
   if (liveCardZoom.has(id)) { liveCardZoom.delete(id); delete game.dataset.cardZoom; return; }
-  const level = Math.min(LIVE_ZOOM_MAX, liveZoom + 1);
+  const level = LIVE_ZOOM_MAX;
   if (level === liveZoom) return;
   liveCardZoom.set(id, level);
   game.dataset.cardZoom = String(level);
@@ -596,10 +596,46 @@ function liveWonCash(stake, odds) {
   return `Won $${cash}`;
 }
 
+let liveBook = [], liveBookReady = false;
+
 function liveLegsFrom(mine) {
+  liveBookReady = true;
+  liveBook = Array.isArray(mine.parlays) ? mine.parlays : [];
   livePurse.clear();
-  (mine.parlays || []).forEach((row) => { if (row && row.id) livePurse.set(row.id, { stake: Number(row.stake) || 0, odds: row.lockedOdds || "" }); });
-  liveLegs = (mine.parlays || []).flatMap((row) => (row.legs || []).map((leg) => ({ ...leg, parlay: row.id, parlaySize: (row.legs || []).length, locked: !!row.locked })));
+  liveBook.forEach((row) => { if (row && row.id) livePurse.set(row.id, { stake: Number(row.stake) || 0, odds: row.lockedOdds || "" }); });
+  liveLegs = liveBook.flatMap((row) => (row.legs || []).map((leg) => ({ ...leg, parlay: row.id, parlaySize: (row.legs || []).length, locked: !!row.locked })));
+}
+
+async function liveRecTake(anchor) {
+  if (!anchor || anchor.dataset.taking) return;
+  const url = new URL(anchor.href, location.origin);
+  const label = url.searchParams.get("label") || "", market = url.searchParams.get("market") || "", match = url.searchParams.get("game") || "";
+  const rec = liveRecs.find((row) => row.label === label && String(row.market || "") === market && row.match === match);
+  if (!rec) return;
+  anchor.dataset.taking = "1";
+  try {
+    if (!liveBookReady) {
+      const got = await fetch("/api/parlays", { credentials: "same-origin" }).then((res) => res.ok ? res.json() : null).catch(() => null);
+      if (!got) return;
+      liveLegsFrom(got);
+    }
+    const same = (leg) => leg && leg.label === rec.label && String(leg.market || "") === String(rec.market || "") && leg.match === rec.match;
+    if (liveBook.some((row) => (row.legs || []).some(same))) return;
+    const leg = { label: rec.label, odds: rec.odds, match: rec.match, kickoff: rec.kickoff || "", market: rec.market || "" };
+    const list = [{ id: `p${Date.now()}`, at: Date.now(), stake: 5, legs: [leg], picks: [] }, ...liveBook].slice(0, 20);
+    const res = await fetch("/api/parlays", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ parlays: list }) });
+    if (!res.ok) return;
+    const data = await res.json().catch(() => null);
+    const saved = data && Array.isArray(data.parlays) ? data.parlays : list;
+    liveLegsFrom({ parlays: saved });
+    try { localStorage.setItem("pod-saved-parlays", JSON.stringify(saved.slice(0, 20))); } catch (error) {}
+    liveBetN = saved.length;
+    const badge = document.querySelector(".live-nav b");
+    if (badge) badge.textContent = String(liveBetN);
+    if (liveLast) livePaint(liveLast, true);
+  } finally {
+    if (anchor.isConnected) delete anchor.dataset.taking;
+  }
 }
 
 async function liveLoad() {
@@ -700,6 +736,8 @@ document.getElementById("live").addEventListener("toggle", (event) => {
 }, true);
 
 document.getElementById("live").addEventListener("click", (event) => {
+  const recLeg = event.target.closest(".live-mine.live-rec a.live-mine-leg");
+  if (recLeg) { event.preventDefault(); liveRecTake(recLeg); return; }
   if (event.target.closest("[data-live-clear]")) { liveFiltersClear(); return; }
   if (event.target.closest(".live-card-zoom")) { event.preventDefault(); event.stopPropagation(); return; }
   const who = event.target.closest("button.live-name");
