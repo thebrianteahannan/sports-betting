@@ -72,7 +72,7 @@ function liveRecTwin(game, pick) {
 function liveRoot(game, picks, rec, show) {
   if (!picks.length) return "";
   const one = (pick) => {
-    const price = Number.isFinite(pick.odds) ? ` ${pick.odds > 0 ? `+${pick.odds}` : pick.odds}` : "";
+    const price = pick.odds ? ` ${pick.odds > 0 ? `+${pick.odds}` : pick.odds}` : "";
     const { state, say, level, tip } = liveLegState(game, pick);
     const twin = rec ? pick : liveRecTwin(game, pick);
     const tagged = twin && (twin.golden || twin.silver || twin.bronze) ? twin : { ...(twin || {}), ...pick, golden: !!(pick.golden || (twin && twin.golden)), silver: !!(pick.silver || (twin && twin.silver)), bronze: !!(pick.bronze || (twin && twin.bronze)) };

@@ -19,7 +19,7 @@ function liveFold(name) {
 
 function liveLegRead(leg) {
   const label = String(leg.label || ""), market = String(leg.market || "");
-  const who = label.split(/\s+(?=\d+\+|Over\b|Under\b)/)[0].replace(/\s+-$/, "").trim();
+  const who = label.split(/\s+(?=\d+\+|Over\b|Under\b|(?:any\s*time|anytime|first|last)\s+(?:touchdown|td)\b|to\s+score\b)/i)[0].replace(/\s+-$/, "").trim();
   const plus = market.match(/^(\d+)\+\s+(.+)$/), named = market.match(/\s-\s(?:Alt\s+)?(.+)$/), line = label.match(/\b(Over|Under)\s+(\d+(?:\.\d+)?)/i);
   const stat = ((plus && plus[2]) || (named && named[1]) || (label.match(/\b(?:Over|Under)\s+\d+(?:\.\d+)?\s+(.+)$/i) || [])[1] || "").toLowerCase();
   const text = plus ? `${plus[1]}+ ${stat}` : line ? `${line[1]} ${line[2]} ${stat}`.trim() : label.slice(who.length).trim() || market;
