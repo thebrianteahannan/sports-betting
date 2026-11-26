@@ -78,7 +78,8 @@ function liveRoot(game, picks, rec, show) {
     const tagged = twin && (twin.golden || twin.silver || twin.bronze) ? twin : { ...(twin || {}), ...pick, golden: !!(pick.golden || (twin && twin.golden)), silver: !!(pick.silver || (twin && twin.silver)), bronze: !!(pick.bronze || (twin && twin.bronze)) };
     const purse = !rec && pick.locked && pick.parlay ? livePurse.get(pick.parlay) : null;
     const won = purse && state === "hit" && !(pick.size > 1) ? liveWonCash(purse.stake, purse.odds || pick.odds) : "";
-    const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${liveTags(tagged)}${say ? `<i class="now${level ? ` pace-${level}` : ""}"${tip ? ` title="${liveEsc(tip)}"` : ""} data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}${won ? `<i class="won">${liveEsc(won)}</i>` : ""}`;
+    const bet = purse && !won && !(pick.size > 1) ? liveStakeCash(purse.stake) : "";
+    const inner = `<i class="who">${liveEsc(pick.who)}</i><i class="prop">${liveEsc(pick.text)}${liveEsc(price)}</i>${liveTags(tagged)}${say ? `<i class="now${level ? ` pace-${level}` : ""}"${tip ? ` title="${liveEsc(tip)}"` : ""} data-k="${liveEsc(`${game.id}|${rec ? "rec" : "mine"}|${pick.who}|${pick.text}`)}">${liveEsc(say)}</i>` : ""}${won ? `<i class="won">${liveEsc(won)}</i>` : bet ? `<i class="staked">${liveEsc(bet)}</i>` : ""}`;
     const href = `/?${new URLSearchParams({ game: pick.match, ...(pick.parlay ? { bet: pick.parlay } : {}), label: pick.label, market: pick.market, from: "live" })}`;
     const metal = !!(pick.golden || pick.silver || pick.bronze);
     const best = rec && !metal && pick.tier !== "good" && pick.role !== "thin";
@@ -93,7 +94,8 @@ function liveRoot(game, picks, rec, show) {
     const tally = !rec && liveParlays.get(group.id);
     const purse = tally && livePurse.get(group.id);
     const won = purse && group.picks[0].locked && tally.total > 1 && tally.hit === tally.total && !tally.lost ? liveWonCash(purse.stake, purse.odds) : "";
-    return `<span class="live-parlay${open ? " live-open" : ""}${head.level ? ` pace-${head.level}` : ""}"><em>${liveEsc(head.text)}</em>${won ? `<i class="won">${liveEsc(won)}</i>` : ""}${group.picks.map(one).join("")}</span>`;
+    const bet = purse && !won && group.picks[0].locked ? liveStakeCash(purse.stake) : "";
+    return `<span class="live-parlay${open ? " live-open" : ""}${head.level ? ` pace-${head.level}` : ""}"><em>${liveEsc(head.text)}</em>${won ? `<i class="won">${liveEsc(won)}</i>` : bet ? `<i class="staked">${liveEsc(bet)}</i>` : ""}${group.picks.map(one).join("")}</span>`;
   }).join("");
   return `<span class="live-mine${rec ? " live-rec" : ""}${show ? " live-rec-show" : ""}"><b>${rec ? "Recommended" : "My Bets"}</b>${body}</span>`;
 }
@@ -577,6 +579,13 @@ function liveFocus(data) {
 let liveLoading = null;
 
 const livePurse = new Map();
+
+function liveStakeCash(stake) {
+  const bet = Math.round(Number(stake) * 100) / 100;
+  if (!(bet > 0)) return "";
+  const cash = Math.abs(bet - Math.round(bet)) < 0.005 ? String(Math.round(bet)) : bet.toFixed(2);
+  return `Bet $${cash}`;
+}
 
 function liveWonCash(stake, odds) {
   const n = Number(String(odds || "").replace(/[−–]/g, "-").replace(/[+$,\s]/g, ""));
