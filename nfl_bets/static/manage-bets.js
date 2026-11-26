@@ -175,11 +175,19 @@ function manageAmerican(odds) {
   return n > 0 ? `+${n}` : String(n);
 }
 
+function manageName(text) {
+  const raw = String(text || "").trim();
+  if (!raw || raw !== raw.toUpperCase() || !/[A-Z]/.test(raw)) return raw;
+  return raw.toLowerCase().replace(/(^|[\s'’-])([a-z])/g, (_, lead, letter) => lead + letter.toUpperCase());
+}
+
 function manageLegRead(leg) {
   const raw = String(leg.label || "").split(/\s+—\s+/)[0].trim();
-  const who = String(leg.player || "").trim() || raw.split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "").trim();
-  let prop = raw;
-  if (who && prop.toLowerCase().startsWith(who.toLowerCase())) prop = prop.slice(who.length).trim();
+  const cut = raw.match(/^(.*?)\s+((?:any\s*time|anytime|first)\s+(?:touchdown|td)|over\b.*|under\b.*|\d+\+.*)$/i);
+  const whoRaw = String(leg.player || "").trim() || (cut ? cut[1] : raw.split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "")).trim();
+  let prop = cut ? cut[2].trim() : raw;
+  if (whoRaw && prop.toLowerCase().startsWith(whoRaw.toLowerCase())) prop = prop.slice(whoRaw.length).trim();
+  const who = manageName(whoRaw);
   if (prop.toLowerCase() === who.toLowerCase()) prop = "";
   if (!prop || /^(over|under)(\s+[\d.]+)?$/i.test(prop)) {
     const unit = String(leg.market || "").replace(who, "").replace(/^\s*-\s*/, "").replace(/^(alt(?:ernate)?|total|player)\s+/i, "").replace(/^\d+\+\s*/, "").trim().toLowerCase();

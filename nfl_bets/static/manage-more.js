@@ -82,10 +82,22 @@ function manageEtParts(when) {
   return { key: `${bag.year}-${bag.month}-${bag.day}`, weekday: bag.weekday };
 }
 
+function manageLegKick(leg) {
+  const own = leg && (leg.kickoff || leg.when);
+  if (Number.isFinite(Date.parse(own || ""))) return own;
+  const match = String((leg && leg.match) || "");
+  if (!match || typeof startGamesFor !== "function") return "";
+  for (const span of ["live", "done", "next", "tomorrow", "week"]) {
+    const game = (startGamesFor(span) || []).find((row) => typeof whenSame === "function" ? whenSame(row, { match }) : String(row.match || "") === match);
+    if (game && (game.kickoff || game.when)) return game.kickoff || game.when;
+  }
+  return "";
+}
+
 function manageWhenOk(row) {
   if (manageWhen === "all") return true;
   const now = manageEtParts();
-  const days = (row.legs || []).map((leg) => manageEtParts(leg.kickoff)).filter(Boolean).map((part) => part.key);
+  const days = (row.legs || []).map((leg) => manageEtParts(manageLegKick(leg))).filter(Boolean).map((part) => part.key);
   if (!now || !days.length) return false;
   if (manageWhen === "today") return days.includes(now.key);
   const left = { Sun: 0, Mon: 6, Tue: 5, Wed: 4, Thu: 3, Fri: 2, Sat: 1 }[now.weekday] || 0;

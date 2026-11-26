@@ -257,7 +257,10 @@ function slipPlayers(image, mime, read) {
   if (!names.length) return read;
   const known = (read.legs || []).map((leg) => String(leg.player || "").toLowerCase());
   const hit = names.filter((name) => known.some((player) => player.endsWith(name.toLowerCase().split(" ").pop())));
-  if (hit.length === names.length) return read;
+  if (hit.length === names.length) {
+    read.legs = (read.legs || []).map((leg) => ({ ...leg, player: slipCase(leg.player || "") }));
+    return read;
+  }
   const match = String(((read.legs || []).find((leg) => leg.match) || {}).match || (text.match(/[A-Za-z][A-Za-z .']+\s@\s[A-Za-z][A-Za-z .']+/) || [""])[0]).trim();
   read.legs = names.map((player) => ({ player, market: "anytime touchdown", side: "", line: null, odds: "", stake: read.stake || "", match, ticket: 1 }));
   return read;

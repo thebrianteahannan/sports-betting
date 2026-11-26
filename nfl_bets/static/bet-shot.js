@@ -298,9 +298,10 @@ function shotLoose(leg) {
   const line = leg.line == null || leg.line === "" ? null : Number(leg.line);
   const odds = shotOdds(leg.odds);
   if (!player || !market) return null;
-  let prop = market;
-  if (line != null && Number.isFinite(line) && !/win|moneyline|spread|touchdown/.test(market)) prop = `${side === "under" ? "Under" : "Over"} ${line} ${market}`;
-  const bet = { label: `${player} ${prop}`.replace(/\s+/g, " ").trim(), odds: odds || "", market, match: String(leg.match || "").trim(), kickoff: "", sport: String(leg.sport || "").trim() };
+  const named = player !== player.toUpperCase() || !/[A-Z]/.test(player) ? player : player.toLowerCase().replace(/(^|[\s'’-])([a-z])/g, (_, lead, letter) => lead + letter.toUpperCase());
+  let prop = /any\s*time\s*touchdown/i.test(market) ? "Anytime TD" : /first\s*touchdown/i.test(market) ? "First TD" : market;
+  if (line != null && Number.isFinite(line) && !/win|moneyline|spread|touchdown/i.test(market)) prop = `${side === "under" ? "Under" : "Over"} ${line} ${market}`;
+  const bet = { label: `${named} ${prop}`.replace(/\s+/g, " ").trim(), odds: odds || "", market, match: String(leg.match || "").trim(), kickoff: typeof manageLegKick === "function" ? manageLegKick(leg) : "", sport: String(leg.sport || "").trim() };
   return bet.label ? bet : null;
 }
 
