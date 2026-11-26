@@ -288,7 +288,7 @@ function fantasyLeaguePicker(board) {
     const todayLeagues = rows.filter((row) => (row.tags || []).some((tag) => tag.id === "today")).length;
     if (nowLeagues) say.textContent = nowLeagues === 1 ? "One league has a start or sit due right now." : `${nowLeagues} leagues have a start or sit due right now.`;
     else if (todayLeagues) say.textContent = todayLeagues === 1 ? "One league has a start or sit playing today." : `${todayLeagues} leagues have a start or sit playing today.`;
-    else if (need) say.textContent = `${need} ${need === 1 ? "league needs" : "leagues need"} a move.`;
+    else if (need) say.textContent = `Nothing kicks off today. ${need} ${need === 1 ? "league still needs" : "leagues still need"} a move.`;
     else if (missed) say.textContent = "Could not check those leagues.";
     else say.textContent = "Every league is all set.";
     box.append(say);
