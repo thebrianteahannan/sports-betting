@@ -392,20 +392,26 @@ body.live-recs-on .live-table tr.rec .live-name { color: #3dff6e; }
 @keyframes live-caret { 50% { opacity: 0; } }
 @keyframes live-look { 0%, 100% { transform: scale(1.04) rotate(-2deg); } 50% { transform: translateY(-8px) scale(1.08) rotate(2deg); } }
 @media (max-width: 700px) {
-  .live-mine.live-rec { align-items: stretch; }
-  .live-mine.live-rec > b { flex: 1 0 100%; }
-  .live-rec .live-parlay { display: flex; flex-direction: column; align-items: stretch; width: 100%; box-sizing: border-box; }
+  .live-mine { align-items: stretch; }
+  .live-mine > b { flex: 1 0 100%; }
+  .live-mine .live-parlay { display: flex; flex-direction: column; align-items: stretch; width: 100%; box-sizing: border-box; }
+  body.live-all-bets .live-mine:not(.live-rec) .live-mine-leg.live-open,
+  .live-game[data-card-zoom="3"] .live-mine:not(.live-rec) .live-mine-leg.live-open,
+  .live-game[data-card-zoom="4"] .live-mine:not(.live-rec) .live-mine-leg.live-open,
+  .live-game[data-card-zoom="5"] .live-mine:not(.live-rec) .live-mine-leg.live-open,
+  .live-game[data-card-zoom="6"] .live-mine:not(.live-rec) .live-mine-leg.live-open,
+  .live-game[data-card-zoom="7"] .live-mine:not(.live-rec) .live-mine-leg.live-open,
   body.live-recs-best .live-mine.live-rec .live-mine-leg.live-rec-best,
   body.live-recs-all .live-mine.live-rec .live-mine-leg.live-rec-more,
   .live-game[data-card-zoom="5"] .live-mine.live-rec .live-mine-leg.live-rec-best,
   .live-game[data-card-zoom="7"] .live-mine.live-rec .live-mine-leg.live-rec-best,
   .live-game[data-card-zoom="7"] .live-mine.live-rec .live-mine-leg.live-rec-more,
-  .live-rec .live-mine-leg {
+  .live-mine .live-mine-leg {
     display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px;
     width: 100%; max-width: 100%; box-sizing: border-box; border-radius: 12px;
   }
-  .live-rec .live-mine-leg .who { order: 1; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .live-rec .live-mine-leg .now { order: 2; flex: none; margin-left: auto; white-space: nowrap; }
-  .live-rec .live-mine-leg .prop { order: 3; flex: 1 0 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .live-rec .live-mine-leg .bet-kind { order: 4; }
+  .live-mine-leg .who { order: 1; flex: 1 1 auto; min-width: 0; white-space: nowrap; }
+  .live-mine-leg .now { order: 2; flex: none; margin-left: auto; white-space: nowrap; }
+  .live-mine-leg .prop { order: 3; flex: 1 0 100%; min-width: 0; white-space: normal; }
+  .live-mine-leg .bet-kind { order: 4; }
 }

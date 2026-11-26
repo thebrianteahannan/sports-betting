@@ -447,23 +447,7 @@ function bankCard(card, row) {
     mark.className = `bank-result r-${done.result}`;
     mark.textContent = done.result === "won" ? "Won" : done.result === "lost" ? "Lost" : "Push";
     card.append(mark);
-    return;
   }
-  if (!row.locked || !bankBook.out || !bankBook.out[row.id]) return;
-  const marks = document.createElement("span");
-  marks.className = "bank-marks";
-  [["won", "Won"], ["lost", "Lost"], ["push", "Push"]].forEach(([result, label]) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `bank-mark r-${result}`;
-    button.textContent = label;
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      bankSettle(row.id, result);
-    });
-    marks.append(button);
-  });
-  card.append(marks);
 }
 
 function bankPaint() {
