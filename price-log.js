@@ -315,29 +315,62 @@ function historyLine(text) {
   return hit ? Number(hit[0]) : null;
 }
 
+function historyNear(kind, market) {
+  const fold = (text) => historyFold(text).replace(/\banytime\b/g, "any time").replace(/\byds\b/g, "yards").replace(/\btds\b/g, "touchdowns").replace(/\btd\b/g, "touchdown");
+  const a = fold(kind);
+  const b = fold(market);
+  if (!b) return true;
+  if (!a) return false;
+  if (/\brushing attempts\b/.test(b) && /\b(carries|rush attempts|rushing attempts)\b/.test(a) && !/\byards\b/.test(a)) return true;
+  if (a !== b && !a.includes(b) && !b.includes(a)) return false;
+  if (/\breceiving yards\b/.test(b) && /\brush/.test(a)) return false;
+  if (/\brushing yards\b/.test(b) && /\b(receiv|pass)/.test(a)) return false;
+  if (/\bpassing yards\b/.test(b) && /\btouchdown/.test(a)) return false;
+  if ((b === "points" || b === "rebounds" || b === "assists") && /[+]/.test(a)) return false;
+  if (/\bany time touchdown\b/.test(b) && /\b(first|last)\b/.test(a)) return false;
+  return true;
+}
+
 async function history(want) {
   const who = historyWho(want && want.label);
   const market = historyFold(want && want.market);
   const match = historyFold(want && want.match);
   const line = historyLine(`${want && want.label || ""} ${want && want.market || ""}`);
+  const latest = !!(want && want.latest);
   if (!who) return { series: [] };
   let best = null;
+  const better = (row) => {
+    if (!best) return true;
+    if (!latest) return row.score > best.score;
+    for (let i = 0; i < row.rank.length; i++) if (row.rank[i] !== best.rank[i]) return row.rank[i] > best.rank[i];
+    return false;
+  };
   books.forEach((game) => {
     if (!game || !game.props) return;
     const gameMatch = historyFold(game.match);
-    if (match && gameMatch && match !== gameMatch && !gameMatch.includes(match) && !match.includes(gameMatch)) return;
+    const here = !!(match && gameMatch && (match === gameMatch || gameMatch.includes(match) || match.includes(gameMatch)));
+    if (!latest && match && gameMatch && !here) return;
     Object.entries(game.props).forEach(([key, series]) => {
       const parts = String(key).split("\u0001");
       if (historyWho(parts[0]) !== who) return;
       const kind = historyFold(parts[1] || "");
-      if (market && kind && kind !== market && !kind.includes(market) && !market.includes(kind)) return;
+      if (latest) {
+        if (!historyNear(kind, market)) return;
+      } else if (market && kind && kind !== market && !kind.includes(market) && !market.includes(kind)) return;
       const theirs = historyLine(parts[0]);
       if (line != null && theirs != null && Math.abs(line - theirs) > 1) return;
-      const score = (series || []).length + (market && kind ? 20 : 0) + (line != null && theirs != null ? 10 : 0);
-      if (!best || score > best.score) best = { score, series: series || [] };
+      const list = series || [];
+      const at = Number((list[list.length - 1] || [])[1]) || 0;
+      const plain = !/\b(alt|qtr|quarter|half|special|either|most|combine|each)\b|\b[1-4](?:st|nd|rd|th)\b/.test(kind);
+      const over = !/\bunder\b/.test(historyFold(parts[0]));
+      const score = list.length + (market && kind ? 20 : 0) + (line != null && theirs != null ? 10 : 0);
+      const row = { score, rank: [here ? 1 : 0, plain ? 1 : 0, over ? 1 : 0, list.length, at], series: list, said: parts[0] || "" };
+      if (better(row)) best = row;
     });
   });
-  return { series: ((best && best.series) || []).map(([odds, at]) => ({ odds, at })) };
+  const pick = best;
+  const series = ((pick && pick.series) || []).map(([odds, at]) => ({ odds, at }));
+  return latest ? { series, said: (pick && pick.said) || "" } : { series };
 }
 
 function prime() {

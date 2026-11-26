@@ -672,6 +672,36 @@ function quickAddLive(game) {
   return Number.isFinite(kick) && kick <= Date.now();
 }
 
+function quickAddLiveProps(person, sport) {
+  const ball = /NFL|NCAAF|FOOTBALL/i.test(sport || "") ? "NFL" : /NBA|NCAAB|BASKET/i.test(sport || "") ? "NBA" : /NHL|HOCKEY/i.test(sport || "") ? "NHL" : "NFL";
+  if (ball === "NBA") return [["Points", "points"], ["Rebounds", "rebounds"], ["Assists", "assists"], ["Threes", "threes"], ["Pts + Reb + Ast", "pts + reb + ast"]];
+  if (ball === "NHL") return [["Shots", "shots"], ["Goals", "goals"], ["Assists", "assists"], ["Points", "points"]];
+  const nfl = [["Anytime TD", "any time touchdown"], ["Rushing yards", "rushing yards"], ["Receptions", "receptions"], ["Receiving yards", "receiving yards"], ["Rushing attempts", "rushing attempts"], ["Passing yards", "passing yards"], ["Passing TDs", "passing td"]];
+  const pos = String(quickAddPersonPos(person) || "").toUpperCase();
+  const first = /QB/.test(pos) ? ["Passing yards", "Passing TDs", "Rushing yards", "Anytime TD"] : /RB|FB/.test(pos) ? ["Anytime TD", "Rushing yards", "Receptions", "Receiving yards", "Rushing attempts"] : /WR|TE/.test(pos) ? ["Anytime TD", "Receptions", "Receiving yards"] : [];
+  if (!first.length) return nfl;
+  const want = new Set(first);
+  const rank = new Map(first.map((name, index) => [name, index]));
+  return nfl.filter((row) => want.has(row[0])).sort((a, b) => rank.get(a[0]) - rank.get(b[0]));
+}
+
+function quickAddHistoryProp(name, said, fallback) {
+  const raw = String(said || "").trim();
+  if (!raw) return fallback;
+  const who = String(name || "").trim();
+  const rest = who && raw.toLowerCase().startsWith(who.toLowerCase()) ? raw.slice(who.length).replace(/^[\s:—-]+/, "").trim() : raw;
+  return rest || fallback;
+}
+
+function quickAddLastPrice(name, market, match) {
+  const q = new URLSearchParams({ label: name || "", market: market || "", match: match || "", latest: "1" });
+  return fetch(`/api/price-history?${q}`, { credentials: "same-origin" }).then((res) => (res.ok ? res.json() : { series: [] })).then((data) => {
+    const last = ((data && data.series) || []).slice(-1)[0];
+    const odds = Number(last && last.odds);
+    return { odds: Number.isFinite(odds) && odds ? odds : 0, said: (data && data.said) || "" };
+  }).catch(() => ({ odds: 0, said: "" }));
+}
+
 function quickAddLock(person, game, said, odds, fresh) {
   const name = person && person.name ? String(person.name).trim() : "";
   if (!name || !said || !Number.isFinite(odds) || !odds || typeof parlayLeg === "undefined" || typeof parlayKey !== "function") return false;
@@ -698,6 +728,8 @@ function quickAddLiveForm(person, game) {
   who.setAttribute("aria-label", "Player");
   if (person && person.name) who.value = person.name;
   const showWho = !person || person.past || !person.name;
+  const picks = document.createElement("div");
+  picks.className = "quick-add-picks";
   const prop = document.createElement("input");
   prop.name = "prop";
   prop.placeholder = "Prop you bet";
@@ -707,43 +739,60 @@ function quickAddLiveForm(person, game) {
   oddsBox.placeholder = "-360";
   oddsBox.setAttribute("aria-label", "The price you got");
   oddsBox.inputMode = "decimal";
-  const go = document.createElement("button");
-  go.type = "submit";
-  go.className = "quick-add-go";
-  go.textContent = "Lock it in";
-  form.append(...(showWho ? [who] : []), prop, oddsBox, go);
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const name = who.value.trim();
-    const said = prop.value.trim();
-    const odds = Number(String(oddsBox.value).trim().replace(/^\+/, ""));
-    const whoPerson = name ? { ...(person || {}), name, key: (person && person.key) || name.toLowerCase(), kind: "player", bets: (person && person.bets) || [] } : person;
-    if (!name || !said || !Number.isFinite(odds) || !odds) return;
-    const finish = (fresh) => {
-      if (!quickAddLock(whoPerson, game, said, odds, fresh)) return;
-      quickAddReset({ when: true, sport: true });
-      if (typeof legNewClose === "function") legNewClose();
-      if (typeof parlayOpenTray === "function") parlayOpenTray();
-    };
-    if (typeof parlayLeg !== "undefined" && parlayLeg.size) {
-      const acts = document.createElement("div");
-      acts.className = "quick-add-acts";
-      const current = document.createElement("button");
-      current.type = "button";
-      current.className = "quick-add-go";
-      current.textContent = "Add to Current Bet";
-      current.addEventListener("click", () => finish(false));
-      const fresh = document.createElement("button");
-      fresh.type = "button";
-      fresh.className = "quick-add-go new";
-      fresh.textContent = "Add to New Bet";
-      fresh.addEventListener("click", () => finish(true));
-      acts.append(current, fresh);
-      form.replaceChildren(acts);
-      return;
-    }
-    finish(false);
+  let pending = null;
+  let picked = "";
+  const sport = (game && game.sport) || (typeof quickAdd !== "undefined" && quickAdd.sport) || "";
+  quickAddLiveProps(person, sport).forEach(([label, market]) => {
+    const chip = quickAddChip(label, false, () => {
+      [...picks.children].forEach((node) => { node.classList.remove("on"); node.setAttribute("aria-pressed", "false"); });
+      chip.classList.add("on");
+      chip.setAttribute("aria-pressed", "true");
+      picked = label;
+      prop.value = label;
+      oddsBox.value = "";
+      oddsBox.placeholder = "Looking up the price.";
+      const name = (who.value || (person && person.name) || "").trim();
+      const ticket = quickAddLastPrice(name, market, game && game.match);
+      pending = ticket;
+      ticket.then((row) => {
+        if (pending !== ticket || picked !== label) return;
+        oddsBox.placeholder = "Price";
+        if (row.odds && !oddsBox.value.trim()) oddsBox.value = row.odds > 0 ? `+${row.odds}` : String(row.odds);
+        const next = quickAddHistoryProp(name, row.said, label);
+        if (next && prop.value === label) prop.value = next;
+      });
+    });
+    picks.append(chip);
   });
+  const acts = document.createElement("div");
+  acts.className = "quick-add-acts";
+  const add = (label, fresh, extra) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `quick-add-go${extra || ""}`;
+    button.textContent = label;
+    button.addEventListener("click", async () => {
+      if (form.dataset.busy === "1") return;
+      form.dataset.busy = "1";
+      try {
+        if (pending && !String(oddsBox.value).trim()) await pending;
+        const name = who.value.trim();
+        const said = prop.value.trim();
+        const odds = Number(String(oddsBox.value).trim().replace(/^\+/, ""));
+        const whoPerson = name ? { ...(person || {}), name, key: (person && person.key) || name.toLowerCase(), kind: "player", bets: (person && person.bets) || [] } : person;
+        if (!quickAddLock(whoPerson, game, said, odds, fresh)) return;
+        quickAddReset({ when: true, sport: true });
+        if (typeof legNewClose === "function") legNewClose();
+        if (typeof parlayOpenTray === "function") parlayOpenTray();
+      } finally {
+        delete form.dataset.busy;
+      }
+    });
+    return button;
+  };
+  acts.append(add("Add to New Bet", true, ""), add("Add to Current Bet", false, " new"));
+  form.append(...(showWho ? [who] : []), picks, prop, oddsBox, acts);
+  form.addEventListener("submit", (event) => event.preventDefault());
   return form;
 }
 
