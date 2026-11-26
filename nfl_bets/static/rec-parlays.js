@@ -1,4 +1,4 @@
-/** Parlays tab: 2 to 5 leg tickets built from the recommended picks, rated on the edge scale. */
+/** Parlays tab: 2 to 5 leg tickets built from the same players the Players tab counts. */
 
 let recParlaySize = 0;
 window.recParlayTeams = false;
@@ -44,11 +44,12 @@ function recParlayLegs(board) {
   const pool = startRecPool(typeof leftGames === "function" ? leftGames() : []);
   return (pool.picks || []).map((pick) => {
     const hits = Number(pick.hits), n = Number(pick.n), book = recParlayChance(pick.odds);
-    if (!(n >= 5) || !Number.isFinite(hits) || book == null) return null;
+    const hot = typeof recDialHot === "function" && recDialHot(pick);
+    const counted = !hot && (pick.golden || pick.silver || pick.bronze || (typeof recDialClose === "function" && recDialClose(pick)));
+    if (!counted || !(n >= 5) || !Number.isFinite(hits) || book == null) return null;
     const pull = typeof edgePull === "function" ? edgePull(hits, n) : null;
     const rate = pull ? pull.pulled : hits / n;
     const gap = (rate - book) * 100;
-    if (!(gap > 0)) return null;
     return { pick, rate, book, gap, who: recParlayWho(pick) };
   }).filter(Boolean).sort((a, b) => b.gap - a.gap);
 }
@@ -114,7 +115,7 @@ function recParlayWalk(pool, n) {
       const row = recParlayScore(chosen.slice());
       if (!row) return;
       if (!best || row.gap > best.gap) best = row;
-      if (row.score) out.push(row);
+      out.push(row);
       return;
     }
     for (let i = start; i < pool.length; i += 1) {
@@ -200,8 +201,8 @@ function recParlayStamp(rows) {
   const spots = ["golden", "silver", "bronze"];
   let ticket = 0;
   rows.forEach((row) => {
-    if (row.score) row.place = spots[ticket++] || "edge";
-    else row.place = row.known ? "known" : "edge";
+    if (row.score) row.place = spots[ticket++] || "close";
+    else row.place = row.known ? "known" : "close";
   });
   const known = rows.filter((row) => row.known && row.place === "known");
   const rest = rows.filter((row) => !known.includes(row));
@@ -237,11 +238,11 @@ function recParlayRanked(board) {
     let best = null;
     const seen = new Set();
     recParlayPools(all).forEach((pool) => {
-      const use = pool.length > 8 ? pool.slice(0, 8) : pool;
       [2, 3, 4, 5].forEach((n) => {
+        const use = n >= 4 && pool.length > 16 ? pool.slice(0, 16) : pool;
         if (use.length < n) return;
         const found = recParlayWalk(use, n);
-        found.rows.slice(0, 3).forEach((row) => {
+        found.rows.slice(0, n === 2 ? 80 : 12).forEach((row) => {
           const id = row.legs.map((leg) => String(leg.pick.label || "").toLowerCase()).sort().join("~");
           if (seen.has(id)) return;
           seen.add(id);
@@ -330,7 +331,7 @@ function recParlayCard(board, row) {
   if (row.place === "golden") card.dataset.recGolden = "1";
   if (row.place === "silver") card.dataset.recSilver = "1";
   if (row.place === "golden" || row.place === "silver" || row.place === "bronze") card.dataset.recMetal = "1";
-  if (row.place === "known") card.dataset.recClose = "1";
+  if (row.place === "known" || row.place === "close") card.dataset.recClose = "1";
   if (row.place === "edge") card.dataset.recHot = "1";
   const price = Number.isFinite(row.price) ? (row.price > 0 ? `+${row.price}` : String(row.price)) : "";
   const need = `${(row.need * 100).toFixed(1)}%`;
@@ -344,7 +345,7 @@ function recParlayCard(board, row) {
   head.className = "rec-parlay-head";
   const name = recParlayName(row.place);
   const strategy = row.strategy ? `${row.no ? `ST-${String(row.no).padStart(2, "0")} ` : ""}${row.strategy}` : "";
-  head.innerHTML = `<i class="rec-parlay-mark m-${row.place}">${row.place === "known" ? "Known edge" : `Edge ${row.score}`}</i>${name ? `<b>${name}</b>` : ""}${strategy ? `<b>${strategy}</b>` : ""}<span>${row.legs.length} legs</span>`;
+  head.innerHTML = `<i class="rec-parlay-mark m-${row.place}">${row.place === "known" ? "Known edge" : row.score ? `Edge ${row.score}` : "Parlay"}</i>${name ? `<b>${name}</b>` : ""}${strategy ? `<b>${strategy}</b>` : ""}<span>${row.legs.length} legs</span>`;
   if (game) head.append(Object.assign(document.createElement("b"), { textContent: game }));
   const pay = document.createElement("p");
   pay.className = "rec-parlay-pay";
@@ -353,7 +354,8 @@ function recParlayCard(board, row) {
   why.className = "rec-parlay-why";
   const knownSay = row.read || (typeof STACK_GRADE !== "undefined" && STACK_GRADE[row.strategy] && STACK_GRADE[row.strategy][1]) || "Known edge.";
   const where = game ? `${game}. ` : (same ? "Same game. " : "");
-  why.textContent = row.place === "known" ? `${where}${knownSay}` : `${where}${Number(row.gap) ? `${row.gap.toFixed(1)} points over FanDuel's ${need}.` : ""}`;
+  const gap = Number(row.gap), gapSay = gap ? `${Math.abs(gap).toFixed(1)} points ${gap > 0 ? "over" : "short of"} FanDuel's ${need}.` : "";
+  why.textContent = row.place === "known" ? `${where}${knownSay}` : `${where}${gapSay}`;
   const list = document.createElement("ul");
   list.className = "rec-parlay-legs";
   row.legs.forEach((leg) => {
@@ -403,7 +405,7 @@ function recParlayDialCounts(rows) {
   const golden = rows.filter((row) => row.place === "golden").length;
   const silver = rows.filter((row) => row.place === "silver").length;
   const metal = rows.filter((row) => row.place === "golden" || row.place === "silver" || row.place === "bronze").length;
-  const close = rows.filter((row) => row.place === "known").length;
+  const close = rows.filter((row) => row.place === "known" || row.place === "close").length;
   const hot = rows.filter((row) => row.place === "edge").length;
   return { golden, silver, metal, close, hot, all: metal + close };
 }
@@ -446,7 +448,7 @@ function recParlayPaint(board, box) {
   }
   const list = document.createElement("div");
   list.className = "rec-parlay-list";
-  made.rows.filter((row) => row.place === "golden" || row.place === "silver" || row.place === "bronze" || row.place === "known" || row.place === "edge").forEach((row) => list.append(recParlayCard(board, row)));
+  made.rows.filter((row) => row.place === "golden" || row.place === "silver" || row.place === "bronze" || row.place === "known" || row.place === "close" || row.place === "edge").forEach((row) => list.append(recParlayCard(board, row)));
   box.append(list);
   const next = box.querySelector("button.rec-dial-next") || (typeof recDialNext === "function" ? recDialNext() : null);
   if (next) box.append(next);
