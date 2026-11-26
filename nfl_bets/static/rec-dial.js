@@ -27,6 +27,34 @@ let recDial = (() => {
 })();
 
 let recDialDrag = false;
+let recDialArrived = false;
+
+function recDialBest(counts) {
+  const golden = Math.max(0, Number(counts && counts.golden) || 0);
+  const silver = Math.max(0, Number(counts && counts.silver) || 0);
+  const metal = Math.max(0, Number(counts && counts.metal) || 0);
+  const close = Math.max(0, Number(counts && counts.close) || 0);
+  const hot = Math.max(0, Number(counts && counts.hot) || 0);
+  if (golden) return 0;
+  if (silver) return 1;
+  if (metal > golden + silver) return 2;
+  if (close) return 3;
+  if (hot) return 4;
+  return null;
+}
+
+function recDialVisit() {
+  recDialArrived = false;
+}
+
+function recDialArrive(counts) {
+  if (recDialArrived || recDialDrag) return;
+  const best = recDialBest(counts);
+  if (best == null) return;
+  recDialArrived = true;
+  recDial = best;
+  window.recDial = recDial;
+}
 
 function recDialInBand(odds) {
   const o = Number(odds);
@@ -324,6 +352,7 @@ function recDialNext() {
   go.hidden = recDial >= REC_DIAL_MAX;
   go.addEventListener("click", () => {
     if (recDial >= REC_DIAL_MAX) return;
+    recDialArrived = true;
     recDialApply(recDial + 1);
   });
   return go;
@@ -403,12 +432,14 @@ function recDialBar(onCommit) {
   now.textContent = "0";
   now.setAttribute("aria-hidden", "true");
   const end = () => {
+    recDialArrived = true;
     recDialDrag = false;
     const snapped = Math.max(0, Math.min(REC_DIAL_MAX, Math.round(Number(input.value) || 0)));
     input.value = String(snapped);
     recDialApply(snapped, { onCommit });
   };
   input.addEventListener("pointerdown", (event) => {
+    recDialArrived = true;
     recDialDrag = true;
     try { input.setPointerCapture(event.pointerId); } catch (error) {}
   });
@@ -441,5 +472,7 @@ window.recDialSave = recDialSave;
 window.recDialSay = recDialSay;
 window.recDialCountOf = recDialCountOf;
 window.recDialCountPaint = recDialCountPaint;
+window.recDialVisit = recDialVisit;
+window.recDialArrive = recDialArrive;
 window.recDialShowingOf = recDialShowingOf;
 window.recDialShowingPaint = recDialShowingPaint;

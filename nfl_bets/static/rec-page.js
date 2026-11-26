@@ -1,6 +1,7 @@
 /** Recommended page: picks, games, and strategies — moved off Build a bet. */
 
 function paintRec(page) {
+  if (typeof recDialVisit === "function") recDialVisit();
   if (page === "moves") window.startMoveTab = true;
   const history = page === "history";
   if (typeof pageUrl === "function") pageUrl(history ? "history" : "rec");

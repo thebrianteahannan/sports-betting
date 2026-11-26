@@ -1085,6 +1085,85 @@ function startGoldenList() {
   return [box];
 }
 
+function startRecRecord() {
+  const box = document.createElement("div");
+  box.className = "rec-record";
+  const escHtml = (text) => (typeof esc === "function" ? esc(text) : String(text == null ? "" : text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])));
+  const price = (odds) => { const n = Number(odds); return Number.isFinite(n) && n ? (n > 0 ? `+${n}` : String(n)) : ""; };
+  const when = (ms) => { const at = new Date(ms); return Number.isNaN(at.getTime()) ? "" : at.toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
+  const tone = (hit, of) => (of > 0 ? (hit / of >= 0.55 ? "hit-hot" : hit / of >= 0.4 ? "hit-ok" : "hit-cold") : "hit-empty");
+  const chip = (name, hit, of, tail) => {
+    const pct = of > 0 ? `${Math.round((100 * hit) / of)}%` : "";
+    return `<span class="${tone(hit, of)}"><em>${escHtml(name)}</em><b>${of ? `${hit} of ${of}` : "—"}</b>${pct ? `<b>${escHtml(pct)}</b>` : ""}${tail ? `<i>${escHtml(tail)}</i>` : ""}</span>`;
+  };
+  const row = (ticket) => {
+    const result = ticket.result || "open";
+    const word = { won: "Won", lost: "Lost", void: "Void" }[result] || "Open";
+    const hits = Number(ticket.hits), n = Number(ticket.n);
+    const record = n > 0 && Number.isFinite(hits) ? `${Math.round((100 * hits) / n)}%` : "";
+    const made = startFive(ticket.odds, result);
+    const pay = made ? startMoney(made) : "";
+    const bits = [price(ticket.odds), record, pay, when(ticket.markedAt)].filter(Boolean);
+    const tip = [ticket.match, ticket.how].filter(Boolean).join(". ");
+    return `<li class="${escHtml(result)}"${tip ? ` title="${escHtml(tip)}"` : ""}><i>${escHtml(word)}</i><b>${escHtml(ticket.label || "")}</b><span>${escHtml(bits.join(" · "))}</span></li>`;
+  };
+  const metal = (name, bag, toneName) => {
+    const rows = (bag && bag.history) || [];
+    const won = Number(bag && bag.won) || rows.filter((ticket) => ticket.result === "won").length;
+    const lost = Number(bag && bag.lost) || rows.filter((ticket) => ticket.result === "lost").length;
+    const of = won + lost;
+    const cash = startGoldenCash(bag);
+    const cashTone = cash > 0 ? "up" : cash < 0 ? "down" : "";
+    const head = `${chip(name, won, of)}${of ? `<strong class="${cashTone}">${escHtml(startMoney(cash))}</strong><i>on $5</i>` : ""}`;
+    const list = rows.length ? `<ul>${rows.map(row).join("")}</ul>` : `<p class="quiet">None marked yet.</p>`;
+    return `<section class="rec-record-metal ${toneName}"><header>${head}</header>${list}</section>`;
+  };
+  const paint = (data) => {
+    if (!box.isConnected) return;
+    const tally = (data && data.tally) || data || {};
+    const today = tally.today || { won: 0, lost: 0 };
+    const ever = tally.all || { won: 0, lost: 0 };
+    const kinds = (tally.kinds || {}).all || {};
+    const safe = kinds.safe || { won: 0, lost: 0 };
+    const even = kinds.balanced || { won: 0, lost: 0 };
+    const live = data && data.live;
+    box.innerHTML = `<div class="rec-record-score">${[
+      live ? chip("Live", live.pace, live.all, "on pace") : "",
+      chip("Today", today.won, today.won + today.lost),
+      chip("All time", ever.won, ever.won + ever.lost),
+      chip("Safe", safe.won, safe.won + safe.lost),
+      chip("Balanced", even.won, even.won + even.lost),
+    ].join("")}</div>${metal("Golden", tally.golden, "golden")}${metal("Silver", tally.silver, "silver")}${metal("Bronze", tally.bronze, "bronze")}`;
+  };
+  if (startMetals) paint({ tally: { golden: startMetals.golden, silver: startMetals.silver, bronze: startMetals.bronze, today: {}, all: {}, kinds: {} } });
+  else box.innerHTML = `<p class="quiet">Looking up the record.</p>`;
+  fetch("/api/live?all=1", { credentials: "same-origin" }).then((res) => res.json()).then((data) => {
+    const tally = (data && data.tally) || {};
+    startGolden = tally.golden || startGolden || { won: 0, lost: 0, history: [] };
+    startMetals = { golden: startGolden, silver: tally.silver || { won: 0, lost: 0, history: [] }, bronze: tally.bronze || { won: 0, lost: 0, history: [] } };
+    let pace = 0, all = 0, won = 0, lost = 0;
+    (data.live || []).forEach((game) => {
+      if (typeof liveMine !== "function" || typeof liveLegState !== "function") return;
+      liveMine(game, data.recs || []).forEach((pick) => {
+        if (pick.tier === "good") return;
+        const state = liveLegState(game, pick);
+        all += 1;
+        if (state.state === "hit") won += 1;
+        else if (state.state === "lost") lost += 1;
+        if (state.state === "hit" || state.level === "ahead" || state.level === "close") pace += 1;
+      });
+    });
+    const today = tally.today || { won: 0, lost: 0 };
+    paint({
+      tally: { ...tally, today: { won: today.won + won, lost: today.lost + lost }, all: { won: (tally.all || {}).won + won, lost: (tally.all || {}).lost + lost } },
+      live: { pace, all },
+    });
+  }).catch(() => {
+    if (box.isConnected && !box.querySelector(".rec-record-metal")) box.innerHTML = `<p class="quiet">Could not load the record.</p>`;
+  });
+  return [box];
+}
+
 function startPaint(again) {
   const inlineTd = document.querySelector("#desk-glass-in .find-start .find-list.find-td-board");
   if (startTdOpen() && !inlineTd) return;
@@ -1120,6 +1199,12 @@ function startPaint(again) {
   const tabs = document.createElement("span");
   tabs.className = "desk-games-tabs";
   const { recs, games, picks, all } = startRecs(board, box);
+  if (board.dataset.page === "rec" && (tabNow === "rec" || tabNow === "parlays") && typeof recDialArrive === "function") {
+    const counts = tabNow === "parlays" && typeof recParlayDialCounts === "function" && typeof recParlayBuild === "function"
+      ? recParlayDialCounts(recParlayBuild(board).rows)
+      : (typeof recDialCountOf === "function" ? recDialCountOf(all) : null);
+    if (counts) recDialArrive(counts);
+  }
   const goldenN = startMetals ? ["golden", "silver", "bronze"].reduce((sum, key) => sum + (((startMetals[key] || {}).history || []).length), 0) : (startGolden && Array.isArray(startGolden.history) ? startGolden.history.length : null);
   const tabList = history
     ? [["stats", "Hit Rates", null], ["golden", "Golden", goldenN], ["close", "The close", null]]
@@ -1158,6 +1243,13 @@ function startPaint(again) {
     moveTab.textContent = "Price Movement";
     moveTab.addEventListener("click", () => { startTab = "moves"; startPaint(1); });
     tabs.append(moveTab);
+    const recordTab = document.createElement("button");
+    recordTab.type = "button";
+    recordTab.className = `desk-games-tab${tabNow === "record" ? " on" : ""}`;
+    recordTab.setAttribute("aria-pressed", String(tabNow === "record"));
+    recordTab.textContent = "History";
+    recordTab.addEventListener("click", () => { startTab = "record"; startPaint(1); });
+    tabs.append(recordTab);
   }
   box.dataset.stacks = startStackKey();
   const row = document.createElement("div");
@@ -1166,7 +1258,7 @@ function startPaint(again) {
   const leagues = typeof homeLeagues === "function" ? homeLeagues(box, gamesNow) : [];
   const gameBar = startGameBar(gamesNow);
   row.append(tabs);
-  if (!history && tabNow !== "td" && tabNow !== "moves") {
+  if (!history && tabNow !== "td" && tabNow !== "moves" && tabNow !== "record") {
     row.append(startFilterSay(gamesNow, box), startFilterPack(box, leagues, gameBar, board, picks, tabNow));
   }
   const lineNote = !history && (tabNow === "rec" || tabNow === "parlays") ? startLineNote() : null;
@@ -1183,9 +1275,17 @@ function startPaint(again) {
           ? [startTdInline(board)]
           : tabNow === "moves"
             ? [typeof priceMovePage === "function" ? priceMovePage() : document.createElement("p")]
-            : startGoldenList();
+            : tabNow === "record"
+              ? startRecRecord()
+              : startGoldenList();
   box.append(row, ...body);
   spot.after(box);
+  const shownTab = tabs.querySelector(".desk-games-tab.on");
+  if (shownTab) {
+    const placeTab = () => { tabs.scrollLeft = Math.max(0, shownTab.offsetLeft + shownTab.offsetWidth - tabs.clientWidth + 8); };
+    placeTab();
+    requestAnimationFrame(placeTab);
+  }
   if (tabNow === "rec" && typeof recDialCountPaint === "function") {
     const counts = typeof recDialCountOf === "function" ? recDialCountOf(all) : { golden: 0, all: all.length };
     recDialCountPaint(counts);
@@ -1196,7 +1296,7 @@ function startPaint(again) {
   if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 2, { quiet: true });
   if (tabNow === "rec" && typeof priceMoveMark === "function") priceMoveMark();
   const waiting = (typeof startNeedsWeek === "function" && startNeedsWeek() && startWeekLoading) || !homeRecs || homeRecs.loading;
-  const shown = tabNow === "moves" || box.querySelector("button.desk-rec, .rec-parlay-card, .rec-strategy, .find-start-td-page");
+  const shown = tabNow === "moves" || tabNow === "record" || box.querySelector("button.desk-rec, .rec-parlay-card, .rec-strategy, .find-start-td-page");
   if (waiting && shown && typeof startWeekLoad === "function" && typeof startNeedsWeek === "function" && startNeedsWeek() && startWeekLoading) startWeekLoad(() => { if (box.isConnected) startPaint((again || 0) + 1); });
   else if (waiting && !shown && (again || 0) < 20) setTimeout(() => { if (box.isConnected) startPaint((again || 0) + 1); }, 600);
 }

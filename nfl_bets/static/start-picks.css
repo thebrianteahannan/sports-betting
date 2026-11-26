@@ -88,7 +88,9 @@
 .find-board.find-rec-page > .find-start { margin-top: 0; }
 :is(.find-board .find-start, #profile-admin .admin-history) .find-start-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.1rem 0.9rem; margin: 0 0 0.2rem; position: sticky; top: 0.4rem; z-index: 6; background: #000; box-shadow: 0 0 0 8px #000, 0 14px 12px -2px rgba(0, 0, 0, 0.85); }
 #desk-glass .find-board[data-page="history"] .find-start-row { position: static; margin: 0 0 0.85rem; box-shadow: none; }
-:is(.find-board .find-start, #profile-admin .admin-history) .desk-games-tabs { display: flex; width: fit-content; margin: 0; }
+:is(.find-board .find-start, #profile-admin .admin-history) .desk-games-tabs { display: flex; flex: 0 1 auto; width: auto; max-width: 100%; min-width: 0; margin: 0; overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+:is(.find-board .find-start, #profile-admin .admin-history) .desk-games-tabs::-webkit-scrollbar { display: none; }
+:is(.find-board .find-start, #profile-admin .admin-history) .desk-games-tab { flex: none; }
 :is(.find-board .find-start, #profile-admin .admin-history) .find-start-span { flex: 1 0 100%; }
 .find-start-random { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
 .find-start-random:empty { display: none; }
@@ -167,6 +169,34 @@
 :is(.find-board .find-start, #profile-admin .admin-history) .golden-card-pay span.lost { color: #ff8f8f; }
 :is(.find-board .find-start, #profile-admin .admin-history) .golden-card-meta, :is(.find-board .find-start, #profile-admin .admin-history) .golden-card-when { margin: 0; color: #9fb3c8; font-size: 13px; }
 :is(.find-board .find-start, #profile-admin .admin-history) .golden-card-how { margin: 0.15rem 0 0; color: #d5deea; font-size: 13px; line-height: 1.4; }
+.find-board .rec-record { display: grid; gap: 0.85rem; margin: 0.45rem 0 1rem; max-width: 46rem; }
+.find-board .rec-record-score { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; }
+.find-board .rec-record-score span { display: inline-flex; align-items: baseline; gap: 0.35rem; margin: 0; padding: 0.28rem 0.6rem; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 999px; color: #9fb3c8; font-size: 11px; font-weight: 800; letter-spacing: 0; text-transform: none; }
+.find-board .rec-record-score em { font-style: normal; letter-spacing: 0.04em; text-transform: uppercase; }
+.find-board .rec-record-score b { color: #f4f7fb; font-size: 13px; font-weight: 800; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+.find-board .rec-record-score i { font-style: normal; letter-spacing: 0; text-transform: none; font-weight: 700; }
+.find-board .rec-record-score .hit-hot b { color: #3dff6e; }
+.find-board .rec-record-score .hit-ok b { color: #e7c15a; }
+.find-board .rec-record-score .hit-cold b { color: #ff8f8f; }
+.find-board .rec-record-metal { margin: 0; }
+.find-board .rec-record-metal header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.7rem; margin: 0 0 0.15rem; }
+.find-board .rec-record-metal header > span { display: inline-flex; align-items: baseline; gap: 0.4rem; color: #e7c15a; font-size: 12px; font-weight: 800; letter-spacing: 0; text-transform: none; }
+.find-board .rec-record-metal header > span em { letter-spacing: 0.04em; text-transform: uppercase; }
+.find-board .rec-record-metal.silver header > span { color: #d5deea; }
+.find-board .rec-record-metal.bronze header > span { color: #d0894f; }
+.find-board .rec-record-metal header b { color: #f4f7fb; font-size: 14px; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+.find-board .rec-record-metal header strong { font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.find-board .rec-record-metal header strong.up { color: #3dff6e; }
+.find-board .rec-record-metal header strong.down { color: #ff8f8f; }
+.find-board .rec-record-metal header > i { color: #9fb3c8; font-size: 12px; font-style: normal; font-weight: 700; }
+.find-board .rec-record-metal ul { list-style: none; margin: 0; padding: 0; }
+.find-board .rec-record-metal li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.7rem; padding: 0.28rem 0; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 13px; }
+.find-board .rec-record-metal li i { flex: none; width: 2.6rem; font-style: normal; font-weight: 800; color: #9fb3c8; }
+.find-board .rec-record-metal li.won i { color: #3dff6e; }
+.find-board .rec-record-metal li.lost i { color: #ff8f8f; }
+.find-board .rec-record-metal li b { flex: 1 1 14rem; min-width: 0; color: #f4f7fb; font-weight: 700; }
+.find-board .rec-record-metal li span { color: #9fb3c8; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.find-board .rec-record-metal .quiet { margin: 0.15rem 0 0.4rem; }
 :is(.rec-board, #choice-result) .find-start button.desk-game { display: grid !important; width: 100% !important; min-height: 0 !important; margin: 0 0 10px !important; padding: 12px 14px !important; border: 1px solid rgba(61, 255, 110, 0.35) !important; border-radius: 12px !important; background: #041018 !important; box-shadow: none !important; color: #f4f7fb !important; font: inherit !important; text-align: left !important; text-transform: none !important; letter-spacing: normal !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-game:hover { border-color: #3dff6e !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-rec { margin: 0 0 12px !important; }
