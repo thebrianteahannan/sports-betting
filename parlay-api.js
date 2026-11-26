@@ -77,7 +77,7 @@ function bankRead(data) {
   });
   return {
     start: Number.isFinite(start) && start >= 0 ? start : 100,
-    cash: Number.isFinite(cash) && cash >= 0 ? Math.round(cash * 100) / 100 : 100,
+    cash: Number.isFinite(cash) ? Math.round(cash * 100) / 100 : 100,
     out,
     settled,
     at: Number(row.at) || 0,
@@ -119,7 +119,6 @@ function bankApply(book, body) {
     const stake = Math.round(Number(body.stake) * 100) / 100;
     const odds = Number(body.odds);
     if (!(stake > 0) || !Number.isFinite(odds) || !odds) throw new Error("That stake does not look right.");
-    if (stake > next.cash + 0.001) throw new Error(`That stake is more than the $${bankMoney(next.cash)} still free.`);
     next.cash = Math.round((next.cash - stake) * 100) / 100;
     next.out[id] = { stake, odds };
     next.at = Date.now();

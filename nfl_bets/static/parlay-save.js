@@ -254,7 +254,6 @@ function saveLock(id) {
   const list = saveList();
   const row = list.find((item) => item.id === id);
   if (!row || !(row.legs || []).length) return null;
-  if (typeof bankCanLock === "function" && !bankCanLock(saveRowStake(row), id)) return null;
   row.locked = true;
   row.lockedAt = Date.now();
   if (!row.lockedOdds) row.lockedOdds = savePrice(row.legs) || "";

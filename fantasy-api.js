@@ -621,13 +621,29 @@ function tagLabel(word, count) {
   return count > 1 ? `${word} ${count}` : word;
 }
 
+function etDay(ms) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(ms);
+}
+
+function kickSoon(kick, now) {
+  const at = Number(kick);
+  if (!Number.isFinite(at) || at <= now) return "";
+  if (at - now <= 60 * 60 * 1000) return "now";
+  return etDay(at) === etDay(now) ? "today" : "";
+}
+
 function actionTags(result) {
   const tags = [];
-  const sitCount = (result.start || []).filter((row) => row && row.id && !row.empty && row.shouldStart === false && !(row.locked || row.gameLocked)).length;
-  const startCount = (result.sit || []).filter((row) => row && row.id && row.shouldStart === true).length;
+  const sits = (result.start || []).filter((row) => row && row.id && !row.empty && row.shouldStart === false && !(row.locked || row.gameLocked));
+  const starts = (result.sit || []).filter((row) => row && row.id && row.shouldStart === true);
+  const soon = [...sits, ...starts].map((row) => kickSoon(row.kick, Date.now()));
+  const nowCount = soon.filter((id) => id === "now").length;
+  const todayCount = soon.filter((id) => id === "today").length;
+  if (nowCount) tags.push({ id: "now", label: tagLabel("Right now", nowCount) });
+  if (todayCount) tags.push({ id: "today", label: tagLabel("Today", todayCount) });
   const pickupCount = (result.pickups || []).length;
-  if (startCount) tags.push({ id: "start", label: tagLabel("Start", startCount) });
-  if (sitCount) tags.push({ id: "sit", label: tagLabel("Sit", sitCount) });
+  if (starts.length) tags.push({ id: "start", label: tagLabel("Start", starts.length) });
+  if (sits.length) tags.push({ id: "sit", label: tagLabel("Sit", sits.length) });
   if (pickupCount) tags.push({ id: "pickup", label: tagLabel("Pickup", pickupCount) });
   return tags;
 }

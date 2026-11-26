@@ -189,7 +189,7 @@ function bankReadLocal() {
 function bankApplyLocal(body) {
   const next = {
     start: Number(bankBook.start) >= 0 ? Number(bankBook.start) : 100,
-    cash: Number(bankBook.cash) >= 0 ? Number(bankBook.cash) : 100,
+    cash: Number.isFinite(Number(bankBook.cash)) ? Number(bankBook.cash) : 100,
     out: { ...(bankBook.out || {}) },
     settled: { ...(bankBook.settled || {}) },
     at: Date.now(),
@@ -207,7 +207,6 @@ function bankApplyLocal(body) {
     const stake = Math.round(Number(body.stake) * 100) / 100;
     const odds = bankOddsNum(body.odds);
     if (!(stake > 0) || !odds) throw new Error("That stake does not look right.");
-    if (stake > next.cash + 0.001) throw new Error(`That stake is more than the $${bankMoney(next.cash)} still free.`);
     next.cash = Math.round((next.cash - stake) * 100) / 100;
     next.out[id] = { stake, odds };
     return next;

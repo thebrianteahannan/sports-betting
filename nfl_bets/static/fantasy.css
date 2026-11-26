@@ -310,6 +310,18 @@
   color: #e7c15a;
 }
 
+.fantasy-board .league-tag.now {
+  border-color: #e7c15a;
+  background: #e7c15a;
+  color: #1a1400;
+}
+
+.fantasy-board .league-tag.today {
+  border-color: rgba(231, 193, 90, 0.9);
+  background: transparent;
+  color: #e7c15a;
+}
+
 .fantasy-board .fantasy-actions {
   display: flex;
   flex-wrap: wrap;
@@ -710,6 +722,18 @@
   border-color: rgba(255, 90, 90, 0.7);
   background: rgba(255, 70, 70, 0.2);
   color: #ff6b6b;
+}
+
+.fantasy-board .fantasy-row .who > b > .role-tag.now {
+  border-color: #e7c15a;
+  background: #e7c15a;
+  color: #1a1400;
+}
+
+.fantasy-board .fantasy-row .who > b > .role-tag.today {
+  border-color: rgba(231, 193, 90, 0.9);
+  background: transparent;
+  color: #e7c15a;
 }
 
 .fantasy-board .fantasy-row .who > b > .role-tag.out,

@@ -284,7 +284,11 @@ function fantasyLeaguePicker(board) {
     const missed = rows.filter((row) => (row.tags || []).some((tag) => tag.id === "miss")).length;
     const say = document.createElement("p");
     say.className = "fantasy-lead";
-    if (need) say.textContent = `${need} ${need === 1 ? "league needs" : "leagues need"} a move.`;
+    const nowLeagues = rows.filter((row) => (row.tags || []).some((tag) => tag.id === "now")).length;
+    const todayLeagues = rows.filter((row) => (row.tags || []).some((tag) => tag.id === "today")).length;
+    if (nowLeagues) say.textContent = nowLeagues === 1 ? "One league has a start or sit due right now." : `${nowLeagues} leagues have a start or sit due right now.`;
+    else if (todayLeagues) say.textContent = todayLeagues === 1 ? "One league has a start or sit playing today." : `${todayLeagues} leagues have a start or sit playing today.`;
+    else if (need) say.textContent = `${need} ${need === 1 ? "league needs" : "leagues need"} a move.`;
     else if (missed) say.textContent = "Could not check those leagues.";
     else say.textContent = "Every league is all set.";
     box.append(say);
@@ -479,6 +483,15 @@ function fantasyRoleTag(kind, player) {
   return null;
 }
 
+function fantasySoon(player) {
+  const kick = Number(player && player.kick);
+  const now = Date.now();
+  if (!Number.isFinite(kick) || kick <= now) return "";
+  if (kick - now <= 60 * 60 * 1000) return "now";
+  const day = (ms) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(ms);
+  return day(kick) === day(now) ? "today" : "";
+}
+
 function fantasyHole(player, pickups) {
   if (!player) return null;
   const slot = String(player.slot || "").toUpperCase();
@@ -534,7 +547,9 @@ function fantasyRow(player, kind, hole) {
   const slot = `<i class="slot">${fantasyEsc(slotLabel)}</i>`;
   const match = fantasyMatchBits(player).join(" · ");
   const meta = fantasyMetaBits(player).join(" · ");
-  const roleHtml = role ? ` <i class="role-tag ${role.cls}">${fantasyEsc(role.label)}</i>` : "";
+  const soon = mismatch ? fantasySoon(player) : "";
+  const soonHtml = soon === "now" ? ` <i class="role-tag now">Right now</i>` : soon === "today" ? ` <i class="role-tag today">Today</i>` : "";
+  const roleHtml = role ? ` <i class="role-tag ${role.cls}">${fantasyEsc(role.label)}</i>${soonHtml}` : "";
   row.innerHTML = `
     ${slot}
     <span class="who">

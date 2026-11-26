@@ -453,7 +453,6 @@ function manageLockAsk(row) {
     if (!form.book.value) { note.textContent = "Pick the sportsbook."; return; }
     if (!odds) { note.textContent = "Those odds do not look right."; return; }
     if (!(stake > 0)) { note.textContent = "That amount does not look right."; return; }
-    if (typeof bankCanLock === "function" && !bankCanLock(stake, row.id)) { note.textContent = typeof bankNote === "string" ? bankNote : ""; return; }
     const check = manageLockBonus(odds, board);
     if (typeof savePatch === "function") savePatch(row.id, { stake, stakeTyped: true, lockedOdds: odds, lockedBook: form.book.value, lockedBonus: check.bonus });
     if (typeof saveLock === "function") saveLock(row.id);
