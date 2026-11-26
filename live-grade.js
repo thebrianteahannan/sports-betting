@@ -68,7 +68,7 @@ function grade(teams, pick) {
 }
 
 function statName(stat) {
-  return String(stat || "").toLowerCase().replace(/\byds\b/g, "yards").replace(/\brec\b/g, "receptions").replace(/\s+/g, " ").trim();
+  return String(stat || "").toLowerCase().replace(/\byds\b/g, "yards").replace(/\brec\b/g, "receptions").replace(/\btds\b/g, "touchdowns").replace(/\btd\b/g, "touchdowns").replace(/\s+/g, " ").trim();
 }
 
 async function graded() {

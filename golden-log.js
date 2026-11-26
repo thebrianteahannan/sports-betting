@@ -171,7 +171,7 @@ async function choose(ranked) {
 
 async function settle() {
   const have = await load(true);
-  const due = [...have.values()].filter((row) => !row.result && Date.now() - Date.parse(row.kickoff) > 2 * 3600000).slice(0, 6);
+  const due = [...have.values()].filter((row) => Date.now() - Date.parse(row.kickoff) > 2 * 3600000 && (!row.result || (row.result === "void" && row.got == null && !row.voidKept))).slice(0, 6);
   if (!due.length) return;
   const { gradeSaved } = require("./live-grade");
   for (const row of due) {
@@ -179,6 +179,7 @@ async function settle() {
     if (!out || !out.result) continue;
     row.result = out.result;
     if (out.got != null) row.got = out.got;
+    if (row.result === "void") row.voidKept = true;
     row.gradedAt = Date.now();
     await save(row);
   }
