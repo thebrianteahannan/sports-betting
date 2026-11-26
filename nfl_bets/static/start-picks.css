@@ -197,6 +197,17 @@
 .find-board .rec-record-metal li b { flex: 1 1 14rem; min-width: 0; color: #f4f7fb; font-weight: 700; }
 .find-board .rec-record-metal li span { color: #9fb3c8; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .find-board .rec-record-metal .quiet { margin: 0.15rem 0 0.4rem; }
+.find-board .rec-record-metal li[hidden] { display: none !important; }
+.find-board .rec-record-metal .rec-record-more { -webkit-appearance: none; appearance: none; flex: none; width: 64px; height: 16px; margin: 0 0 0 auto; background: transparent; outline: none; cursor: pointer; touch-action: none; }
+.find-board .rec-record-metal .rec-record-more[hidden] { display: none !important; }
+.find-board .rec-record-metal .rec-record-more::-webkit-slider-runnable-track { height: 3px; border-radius: 999px; background: #1c2a36; }
+.find-board .rec-record-metal .rec-record-more::-moz-range-track { height: 3px; border-radius: 999px; background: #1c2a36; border: 0; }
+.find-board .rec-record-metal .rec-record-more::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; margin-top: -4.5px; border: 2px solid #04140c; border-radius: 50%; background: #e7c15a; cursor: grab; }
+.find-board .rec-record-metal.silver .rec-record-more::-webkit-slider-thumb { background: #d5deea; }
+.find-board .rec-record-metal.bronze .rec-record-more::-webkit-slider-thumb { background: #d0894f; }
+.find-board .rec-record-metal .rec-record-more::-moz-range-thumb { width: 12px; height: 12px; border: 2px solid #04140c; border-radius: 50%; background: #e7c15a; cursor: grab; }
+.find-board .rec-record-metal.silver .rec-record-more::-moz-range-thumb { background: #d5deea; }
+.find-board .rec-record-metal.bronze .rec-record-more::-moz-range-thumb { background: #d0894f; }
 :is(.rec-board, #choice-result) .find-start button.desk-game { display: grid !important; width: 100% !important; min-height: 0 !important; margin: 0 0 10px !important; padding: 12px 14px !important; border: 1px solid rgba(61, 255, 110, 0.35) !important; border-radius: 12px !important; background: #041018 !important; box-shadow: none !important; color: #f4f7fb !important; font: inherit !important; text-align: left !important; text-transform: none !important; letter-spacing: normal !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-game:hover { border-color: #3dff6e !important; }
 :is(.rec-board, #choice-result) .find-start button.desk-rec { margin: 0 0 12px !important; }

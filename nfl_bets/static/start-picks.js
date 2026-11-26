@@ -1085,6 +1085,24 @@ function startGoldenList() {
   return [box];
 }
 
+let startRecRecordWatch = false;
+function startRecRecordFit() {
+  const page = window.matchMedia("(max-width: 700px)").matches ? 3 : 5;
+  document.querySelectorAll(".find-board .rec-record-metal").forEach((section) => {
+    const items = [...section.querySelectorAll("ul > li")];
+    const more = section.querySelector(".rec-record-more");
+    const max = Math.max(0, items.length - page);
+    let from = 0;
+    if (more) {
+      more.max = String(max);
+      more.hidden = max === 0;
+      if (Number(more.value) > max) more.value = String(max);
+      from = Number(more.value) || 0;
+    }
+    items.forEach((li, i) => { li.hidden = i < from || i >= from + page; });
+  });
+}
+
 function startRecRecord() {
   const box = document.createElement("div");
   box.className = "rec-record";
@@ -1114,7 +1132,8 @@ function startRecRecord() {
     const of = won + lost;
     const cash = startGoldenCash(bag);
     const cashTone = cash > 0 ? "up" : cash < 0 ? "down" : "";
-    const head = `${chip(name, won, of)}${of ? `<strong class="${cashTone}">${escHtml(startMoney(cash))}</strong><i>on $5</i>` : ""}`;
+    const more = rows.length > 3 ? `<input class="rec-record-more" type="range" min="0" max="${rows.length - 3}" value="0" data-metal="${toneName}" aria-label="More ${escHtml(name)} tickets">` : "";
+    const head = `${chip(name, won, of)}${of ? `<strong class="${cashTone}">${escHtml(startMoney(cash))}</strong><i>on $5</i>` : ""}${more}`;
     const list = rows.length ? `<ul>${rows.map(row).join("")}</ul>` : `<p class="quiet">None marked yet.</p>`;
     return `<section class="rec-record-metal ${toneName}"><header>${head}</header>${list}</section>`;
   };
@@ -1127,6 +1146,8 @@ function startRecRecord() {
     const safe = kinds.safe || { won: 0, lost: 0 };
     const even = kinds.balanced || { won: 0, lost: 0 };
     const live = data && data.live;
+    const kept = {};
+    box.querySelectorAll(".rec-record-more").forEach((input) => { kept[input.dataset.metal] = input.value; });
     box.innerHTML = `<div class="rec-record-score">${[
       live ? chip("Live", live.pace, live.all, "on pace") : "",
       chip("Today", today.won, today.won + today.lost),
@@ -1134,7 +1155,15 @@ function startRecRecord() {
       chip("Safe", safe.won, safe.won + safe.lost),
       chip("Balanced", even.won, even.won + even.lost),
     ].join("")}</div>${metal("Golden", tally.golden, "golden")}${metal("Silver", tally.silver, "silver")}${metal("Bronze", tally.bronze, "bronze")}`;
+    box.querySelectorAll(".rec-record-more").forEach((input) => { if (kept[input.dataset.metal] != null) input.value = kept[input.dataset.metal]; });
+    startRecRecordFit();
   };
+  box.addEventListener("input", (event) => { if (event.target.classList && event.target.classList.contains("rec-record-more")) startRecRecordFit(); });
+  if (!startRecRecordWatch) {
+    startRecRecordWatch = true;
+    const media = window.matchMedia("(max-width: 700px)");
+    if (media.addEventListener) media.addEventListener("change", startRecRecordFit);
+  }
   if (startMetals) paint({ tally: { golden: startMetals.golden, silver: startMetals.silver, bronze: startMetals.bronze, today: {}, all: {}, kinds: {} } });
   else box.innerHTML = `<p class="quiet">Looking up the record.</p>`;
   fetch("/api/live?all=1", { credentials: "same-origin" }).then((res) => res.json()).then((data) => {
