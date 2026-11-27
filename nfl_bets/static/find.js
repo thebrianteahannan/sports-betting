@@ -1189,6 +1189,34 @@ function loadGame(holder, game, open) {
   fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "game", match: game.match, sport: game.sport, kickoff: game.kickoff, espnId: game.espnId || "" }) }).then((res) => res.json()).then((data) => { if (paint(data)) box.dataset.server = "1"; else if (!box.querySelector("b") && wait.isConnected) wait.textContent = "The game notes did not load."; }).catch(() => { if (!box.querySelector("b") && wait.isConnected) wait.textContent = "The game notes did not load."; });
 }
 
+function findPlayerTeam(person) {
+  const fold = (text) => typeof plainName === "function" ? plainName(text) : String(text || "").toLowerCase();
+  if (person && person.team) return fold(person.team);
+  const bare = fold(person && person.name).replace(/ (jr|sr|ii|iii|iv|v)$/, "");
+  if (typeof clubOf !== "undefined" && clubOf.get(bare)) return fold(clubOf.get(bare));
+  return "";
+}
+
+function findShowPlayers(holder, person) {
+  const match = holder && [...holder.querySelectorAll(".find-match")].find((node) => !node.classList.contains("find-pga"));
+  if (!match) return;
+  match.classList.remove("find-game-shut");
+  const foldBtn = match.querySelector(":scope > .find-when .find-game-fold");
+  if (foldBtn) foldBtn.textContent = "Hide ▴";
+  const want = findPlayerTeam(person);
+  const go = want && [...match.querySelectorAll(":scope > .find-side-go")].find((btn) => {
+    const text = typeof plainName === "function" ? plainName(String(btn.textContent || "").split(",")[0]) : "";
+    const last = want.split(" ").pop();
+    return text === want || text.endsWith(` ${want}`) || text.startsWith(`${want} `) || (last && last.length > 3 && (text.endsWith(` ${last}`) || text === last));
+  });
+  if (go && !go.classList.contains("on")) go.click();
+  const players = match.querySelector(":scope > .find-everyone");
+  const target = players || match;
+  target.style.scrollMarginTop = "5.5rem";
+  if (typeof gameScrollTo === "function") gameScrollTo(target);
+  else target.scrollIntoView({ block: "start" });
+}
+
 function showFind(list, hits, person, roster, people, keep, kind, tip) {
   if (person.kind !== "player" || (person.bets || []).some((bet) => bet.sport === "PGA")) closePlayerPop();
   const games = list.parentElement && list.parentElement.querySelector(".find-games");
@@ -1197,10 +1225,14 @@ function showFind(list, hits, person, roster, people, keep, kind, tip) {
   if (roster && !keep) fillRoster(roster, person, list, hits, people);
   const bets = (person.bets || []).slice().sort((a, b) => findRank(b.odds) - findRank(a.odds));
   const golf = bets.some((bet) => bet.sport === "PGA");
-  const holder = list.parentElement && list.parentElement.querySelector(".find-teams"); if (holder) { holder.replaceChildren(); holder.dataset.who = person.kind === "player" ? person.name : ""; const span = list.parentElement.querySelector(".find-span"); if (span) { span.classList.add("find-picked"); const go = span.querySelector(".find-games-go"); if (go) go.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); } const seen = new Set(); bets.forEach((bet) => { const key = `${bet.match}|${bet.kickoff}`; if (!bet.match || seen.has(key)) return; seen.add(key); paintMatch(holder, bet, people, list, hits, "shut"); }); }
+  const holder = list.parentElement && list.parentElement.querySelector(".find-teams"); if (holder) { holder.replaceChildren(); holder.dataset.who = person.kind === "player" ? person.name : ""; const span = list.parentElement.querySelector(".find-span"); if (span) { span.classList.add("find-picked"); const go = span.querySelector(".find-games-go"); if (go) go.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); } const seen = new Set(); bets.forEach((bet) => { const key = `${bet.match}|${bet.kickoff}`; if (!bet.match || seen.has(key)) return; seen.add(key); paintMatch(holder, bet, people, list, hits, person.kind === "player" ? true : "shut"); }); }
   const board = list && list.closest(".find-board"); if (board) board.classList.remove("find-td-on");
   list.replaceChildren(); list.classList.remove("find-only-on", "find-td-board");
   if (person.kind === "player" && !golf) {
+    if (holder && holder.querySelector(".find-match")) {
+      findShowPlayers(holder, person);
+      return;
+    }
     const profile = openPlayerPop(person, list, bets, profileTdBet(person, kind, tip));
     if (profile && typeof manageSearchTake === "function") manageSearchTake(profile);
     return;
