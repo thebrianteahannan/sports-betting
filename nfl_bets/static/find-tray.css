@@ -382,7 +382,9 @@
     row-gap: 0.35rem;
   }
   .find-saved > p.find-say > .find-saved-title { grid-column: 1; grid-row: 1; min-width: 0; }
-  .find-saved > p.find-say > .find-saved-acts { grid-column: 2; grid-row: 1; margin-left: 0; align-self: start; }
+  .find-saved > p.find-say > .find-saved-acts { grid-column: 2; grid-row: 1; margin-left: 0; align-self: start; flex-wrap: wrap; justify-content: flex-end; max-width: 100%; }
+  .rec-board .find-saved button.manage-turn .manage-turn-long { display: none; }
+  .rec-board .find-saved button.manage-turn .manage-turn-short { display: inline; }
   .find-saved > p.find-say > .find-saved-pay { grid-column: 1 / -1; grid-row: 2; flex: none; white-space: normal; }
   .find-saved > p.find-say > .find-saved-new { grid-column: 1 / -1; grid-row: 3; justify-self: start; }
   /* Slim has no title — keep Show my bets on the left, not in the empty right column. */
@@ -400,6 +402,7 @@
 .rec-board .find-saved.find-saved-slim > p.find-say { gap: 0.45rem; }
 .rec-board .find-saved.find-saved-slim > p.find-say > .find-saved-acts { margin-left: 0; gap: 0.45rem; }
 .rec-board .find-saved.find-saved-slim > p.find-say > .find-saved-acts > .find-fold { margin: 0 !important; }
+.manage-turn-short { display: none; }
 #desk.tv-full #desk-glass .rec-board .find-saved button.find-saved-manage,
 .rec-board .find-saved button.find-saved-manage,
 #desk.tv-full #desk-glass .rec-board .find-saved button.find-saved-quick,

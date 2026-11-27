@@ -450,6 +450,10 @@ function livePaint(data, quiet) {
   const live = liveOnlyId ? just(liveAll) : (mineBoard ? liveAll.filter(liveHasMine) : liveOnly(liveAll));
   const pgaLive = liveOnlyId ? just(pgaAll) : (mineBoard ? pgaAll.filter(liveHasMine) : liveOnly(pgaAll));
   const liveCount = live.length + pgaLive.length;
+  if (!liveOnlyId && liveSpan === "live" && !(liveAll.length + pgaAll.length)) {
+    const fall = upcoming.length ? "next" : tomorrow.length ? "tomorrow" : later.length ? "week" : "";
+    if (fall) liveSpan = fall;
+  }
   const bar = liveLeagueBar(data, { done: endedAll.length, live: liveAll.length + pgaAll.length, next: (data.week || []).length ? soonAll.length : nextAll.length, tomorrow: tomorrowAll.length, week: laterAll.length });
   const filters = liveFilters();
   const recap = liveOnlyMine ? "" : `<div class="live-today-recap">${liveHistory(hist.filter((row) => liveDayKey(row.kickoff) === today), true)}</div>`;

@@ -618,13 +618,15 @@ function manageOddsPull(leg) {
   return fetch(`/api/price-history?${q}`, { credentials: "same-origin" }).then((res) => (res.ok ? res.json() : { series: [] })).catch(() => ({ series: [] }));
 }
 
-function manageOddsChart(host, legs) {
+function manageOddsChart(host, legs, keep) {
   if (!host) return;
   const had = host.querySelector(":scope > .manage-price-chart");
+  if (keep && had) return;
   host.querySelectorAll(":scope > .manage-price-chart").forEach((node) => node.remove());
   if (had) return;
   const box = document.createElement("div");
   box.className = "manage-price-chart";
+  if (keep) box.dataset.zoom = "1";
   box.addEventListener("click", (event) => event.stopPropagation());
   const note = document.createElement("p");
   note.className = "price-chart-unit";

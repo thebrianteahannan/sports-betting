@@ -168,7 +168,14 @@ function manageTurnMount() {
     const go = document.createElement("button");
     go.type = "button";
     go.className = "find-saved-quick manage-turn";
-    go.textContent = "Turn my bets into a parlay";
+    go.setAttribute("aria-label", "Turn my bets into a parlay");
+    const long = document.createElement("span");
+    long.className = "manage-turn-long";
+    long.textContent = "Turn my bets into a parlay";
+    const short = document.createElement("span");
+    short.className = "manage-turn-short";
+    short.textContent = "Make a parlay";
+    go.append(long, short);
     go.addEventListener("click", () => manageTurnMake());
     const quick = [...acts.querySelectorAll(".find-saved-quick")].find((button) => !button.classList.contains("find-saved-hide"));
     if (quick) quick.before(go);

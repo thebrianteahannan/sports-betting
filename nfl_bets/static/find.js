@@ -334,6 +334,7 @@ function fillFind(board, data) {
     const q = input.value.trim().toLowerCase();
     const stamp = ++clubStamp;
     hits.replaceChildren();
+    document.querySelectorAll(".manage-search-keep[data-from=\"search\"]").forEach((host) => { const name = host.querySelector(".find-profile-who b"); if (q.length < 2 || !name || !plainName(name.textContent).includes(plainName(q))) host.replaceChildren(); });
     if (q.length < 2) { list.replaceChildren(); list.classList.remove("find-only-on"); teams.replaceChildren(); roster.stamp = (roster.stamp || 0) + 1; roster.hidden = true; roster.replaceChildren(); const picked = board.querySelector(".find-span"); if (picked) picked.classList.remove("find-picked"); today.open = today.classList.contains("find-on"); week.open = !today.open; return; } teams.replaceChildren();
     board.querySelectorAll(".find-games").forEach((node) => { node.open = false; });
     const words = q.split(" ").filter(Boolean);
@@ -341,13 +342,14 @@ function fillFind(board, data) {
     const slate = todayOn ? todayGames : weekGames, keys = new Set(slate.map((game) => `${game.match}|${game.kickoff}`));
     const plays = (person, set) => (person.bets || []).some((bet) => set.has(`${bet.match}|${bet.kickoff}`));
     const want = plainName(q), named = (person) => plainName(person.name).includes(want);
-    people.filter((person) => named(person) && plays(person, keys) && !(person.kind === "team" && slate.some((game) => String(game.match || "").includes(person.name) && words.every((word) => String(game.match || "").toLowerCase().includes(word))))).slice(0, 8).forEach((person) => { const button = document.createElement("button"); button.type = "button"; button.textContent = person.name; button.addEventListener("click", () => showFind(list, hits, person, roster, people)); hits.append(button); });
+    people.filter((person) => named(person) && plays(person, keys) && !(person.kind === "team" && slate.some((game) => String(game.match || "").includes(person.name) && words.every((word) => String(game.match || "").toLowerCase().includes(word))))).slice(0, 8).forEach((person) => { const button = document.createElement("button"); button.type = "button"; button.dataset.player = "1"; button.textContent = person.name; button.addEventListener("click", () => showFind(list, hits, person, roster, people)); hits.append(button); });
     slate.filter((game) => words.every((word) => String(game.match || "").toLowerCase().includes(word))).slice(0, 8).forEach((game) => { const button = document.createElement("button"); button.type = "button"; button.textContent = [game.match, game.kickoff && window.when ? `${window.when(game.kickoff)} ET` : ""].filter(Boolean).join(", "); button.addEventListener("click", () => { hits.replaceChildren(); teams.replaceChildren(); list.replaceChildren(); list.classList.remove("find-only-on"); span.classList.add("find-picked"); games.hidden = false; today.open = false; week.open = false; paintMatch(teams, game, people, list, hits, true); }); hits.append(button); });
     const hitNames = new Set([...hits.querySelectorAll("button:not([data-week])")].map((node) => plainName(node.textContent.split(",")[0])));
     people.filter((person) => person.kind === "player" && named(person) && !hitNames.has(plainName(person.name))).slice(0, 6).forEach((person) => {
       hitNames.add(plainName(person.name));
       const button = document.createElement("button");
       button.type = "button";
+      button.dataset.player = "1";
       button.textContent = person.name;
       button.addEventListener("click", () => showFind(list, hits, person, roster, people));
       hits.append(button);
@@ -359,6 +361,11 @@ function fillFind(board, data) {
     else if (otherHit) { const none = document.createElement("p"), who = otherPeople.length === 1 ? otherPeople[0].name : input.value.trim(); none.className = "quiet"; none.style.cssText = "flex:1 0 100%;text-align:center;margin:0"; none.textContent = todayOn ? `No games today for ${who}.` : `No games later this week for ${who}.`; hits.append(none); const ask = document.createElement("button"); ask.type = "button"; ask.dataset.week = "1"; ask.textContent = todayOn ? "Search this week?" : "Search today?"; ask.style.cssText = "flex:1 0 100%;background:transparent;color:#e7c15a"; ask.addEventListener("click", () => { pickSpan(todayOn ? "week" : "today"); input.dispatchEvent(new Event("input")); (todayOn ? week : today).open = true; }); hits.append(ask); }
     const missed = !hits.querySelector("button:not([data-week])") && !list.querySelector("h3") && q.split(" ").length >= 2 && !otherHit;
     if (missed) { const note = document.createElement("p"); note.className = "quiet"; note.textContent = "Nobody on the board matches that. Player props for that name are not posted yet."; hits.append(note); }
+    const picked = [...hits.querySelectorAll("button[data-player]")];
+    const shown = document.querySelector('.manage-search-keep[data-from="search"] .find-profile-who b');
+    const same = shown && picked.length === 1 && plainName(shown.textContent) === plainName(picked[0].textContent.split(",")[0]);
+    if (picked.length > 1) document.querySelectorAll('.manage-search-keep[data-from="search"]').forEach((host) => host.replaceChildren());
+    else if (picked.length === 1 && !same && q.length < 3) picked[0].click();
     if (q.length < 3) return;
     fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ list: "club", name: q }) }).then((res) => res.json()).then((data) => {
       if (stamp !== clubStamp || !hits.isConnected) return; data.out = (data.out || []).filter((row) => plainName(row.player) === plainName(q));
@@ -374,6 +381,7 @@ function fillFind(board, data) {
           const card = document.createElement("button");
           card.type = "button";
           card.dataset.club = "1";
+          card.dataset.player = "1";
           card.textContent = [row.player, row.pos, row.nick || row.teamName].filter(Boolean).join(", ");
           card.addEventListener("click", () => showFind(list, hits, { kind: "player", key: `club:${plainName(row.player)}`, name: row.player, pos: row.pos, team: row.nick || row.teamName, sport: row.sport, bets: [] }, roster, people));
           hits.append(card);
@@ -386,8 +394,8 @@ function fillFind(board, data) {
           hits.append(button);
         });
       }
-      const only = [...hits.querySelectorAll("button:not([data-week])")]; const found = people.filter((item) => item.kind === "player" && item.team && only.some((node) => plainName(node.textContent.split(",")[0]) === plainName(item.name))); if (found.length && found.every((item) => item.team === found[0].team) && typeof clubTheme === "function") clubTheme(list, found[0]); if (only.length === 1 && !list.querySelector("h3") && !(data.out || []).length) only[0].click();
-    }).catch(() => { if (stamp !== clubStamp || !hits.isConnected) return; const only = [...hits.querySelectorAll("button:not([data-week])")]; if (only.length === 1 && !list.querySelector("h3")) only[0].click(); });
+      const only = [...hits.querySelectorAll("button[data-player]")]; const found = people.filter((item) => item.kind === "player" && item.team && only.some((node) => plainName(node.textContent.split(",")[0]) === plainName(item.name))); if (found.length && found.every((item) => item.team === found[0].team) && typeof clubTheme === "function") clubTheme(list, found[0]); if (only.length === 1 && !list.querySelector("h3") && !(data.out || []).length) { const who = document.querySelector('.manage-search-keep[data-from="search"] .find-profile-who b'); if (!who || plainName(who.textContent) !== plainName(only[0].textContent.split(",")[0])) only[0].click(); } else if (only.length !== 1) document.querySelectorAll('.manage-search-keep[data-from="search"]').forEach((host) => host.replaceChildren());
+    }).catch(() => { if (stamp !== clubStamp || !hits.isConnected) return; const only = [...hits.querySelectorAll("button[data-player]")]; if (only.length === 1 && !list.querySelector("h3")) only[0].click(); else if (only.length !== 1) document.querySelectorAll('.manage-search-keep[data-from="search"]').forEach((host) => host.replaceChildren()); });
   });
 }
 
@@ -1217,26 +1225,77 @@ function findShowPlayers(holder, person) {
   else target.scrollIntoView({ block: "start" });
 }
 
+function searchPlayerGame(person, people) {
+  const own = (person.bets || []).find((bet) => bet.match && bet.sport !== "PGA");
+  if (own) return own;
+  const team = findPlayerTeam(person);
+  if (!team || !people) return null;
+  const games = [...loadedGames(people, "today"), ...loadedGames(people, "week")];
+  const last = team.split(" ").pop();
+  return games.find((game) => { const text = plainName(game.match); return text.includes(team) || (last && last.length > 3 && text.includes(last)); }) || null;
+}
+
+function searchGameGo(profile, person, people, list, hits) {
+  const game = searchPlayerGame(person, people);
+  if (!profile || !game || profile.querySelector(".find-search-game")) return;
+  let acts = profile.querySelector(".find-profile-acts");
+  if (!acts) {
+    acts = document.createElement("span");
+    acts.className = "find-profile-acts";
+    const meta = profile.querySelector(".find-profile-meta");
+    (meta || profile.querySelector("h3")).after(acts);
+  }
+  const go = document.createElement("button");
+  go.type = "button";
+  go.className = "find-game-script-go find-search-game";
+  const short = typeof gameShort === "function" ? gameShort(game.match) : "";
+  go.textContent = short ? `The game, ${short}` : "The game";
+  go.addEventListener("click", () => {
+    const board = list && list.closest(".find-board");
+    const holder = board && board.querySelector(":scope > .find-teams");
+    if (!holder) return;
+    holder.replaceChildren();
+    holder.dataset.who = person.name || "";
+    const span = board.querySelector(":scope > .find-span");
+    if (span) { span.classList.add("find-picked"); const more = span.querySelector(".find-games-go"); if (more) more.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); }
+    paintMatch(holder, game, people, list, hits, true);
+    findShowPlayers(holder, person);
+  });
+  acts.append(go);
+}
+
+function searchShowCard(list, hits, person, people, kind, tip) {
+  const glass = document.getElementById("desk-glass-in");
+  const held = glass ? glass.scrollTop : 0;
+  hits.replaceChildren();
+  if (typeof clubTheme === "function") clubTheme(list, person);
+  const holder = list.parentElement && list.parentElement.querySelector(".find-teams");
+  if (holder) holder.replaceChildren();
+  const board = list && list.closest(".find-board");
+  if (board) board.classList.remove("find-td-on");
+  list.replaceChildren();
+  list.classList.remove("find-only-on", "find-td-board");
+  const bets = (person.bets || []).slice().sort((a, b) => findRank(b.odds) - findRank(a.odds));
+  const profile = openPlayerPop(person, list, bets, profileTdBet(person, kind, tip));
+  if (profile && typeof manageSearchTake === "function") manageSearchTake(profile);
+  if (profile) searchGameGo(profile, person, people, list, hits);
+  const keep = () => { if (glass && glass.scrollTop !== held) glass.scrollTop = held; };
+  keep();
+  requestAnimationFrame(keep);
+}
+
 function showFind(list, hits, person, roster, people, keep, kind, tip) {
   if (person.kind !== "player" || (person.bets || []).some((bet) => bet.sport === "PGA")) closePlayerPop();
   const games = list.parentElement && list.parentElement.querySelector(".find-games");
   if (games) games.open = false;
-  hits.replaceChildren(); if (typeof clubTheme === "function") clubTheme(list, person);
-  if (roster && !keep) fillRoster(roster, person, list, hits, people);
   const bets = (person.bets || []).slice().sort((a, b) => findRank(b.odds) - findRank(a.odds));
   const golf = bets.some((bet) => bet.sport === "PGA");
+  if (person.kind === "player" && !golf) { searchShowCard(list, hits, person, people, kind, tip); return; }
+  hits.replaceChildren(); if (typeof clubTheme === "function") clubTheme(list, person);
+  if (roster && !keep) fillRoster(roster, person, list, hits, people);
   const holder = list.parentElement && list.parentElement.querySelector(".find-teams"); if (holder) { holder.replaceChildren(); holder.dataset.who = person.kind === "player" ? person.name : ""; const span = list.parentElement.querySelector(".find-span"); if (span) { span.classList.add("find-picked"); const go = span.querySelector(".find-games-go"); if (go) go.hidden = false; span.querySelectorAll(".find-games").forEach((node) => { node.open = false; }); } const seen = new Set(); bets.forEach((bet) => { const key = `${bet.match}|${bet.kickoff}`; if (!bet.match || seen.has(key)) return; seen.add(key); paintMatch(holder, bet, people, list, hits, person.kind === "player" ? true : "shut"); }); }
   const board = list && list.closest(".find-board"); if (board) board.classList.remove("find-td-on");
   list.replaceChildren(); list.classList.remove("find-only-on", "find-td-board");
-  if (person.kind === "player" && !golf) {
-    if (holder && holder.querySelector(".find-match")) {
-      findShowPlayers(holder, person);
-      return;
-    }
-    const profile = openPlayerPop(person, list, bets, profileTdBet(person, kind, tip));
-    if (profile && typeof manageSearchTake === "function") manageSearchTake(profile);
-    return;
-  }
   // Team / game search: THE GAME above already has team bets and player bets.
   if (person.kind !== "player") {
     if (!bets.length) {

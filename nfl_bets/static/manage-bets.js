@@ -7,7 +7,7 @@ function manageEditSet(id) {
   manageEditId = id || "";
   window.manageEditing = manageEditId;
 }
-const MANAGE_ZOOM_MAX = 3;
+const MANAGE_ZOOM_MAX = 4;
 function manageZoomStart() {
   return 0;
 }
@@ -37,7 +37,25 @@ function manageZoomApply(next, opts) {
     });
   }
   try { localStorage.setItem("manageZoom", String(manageZoom)); } catch (error) {}
-  if (!(opts && opts.filling)) manageZoomExtras();
+  if (!(opts && opts.filling)) { manageZoomExtras(); manageZoomPrices(); }
+}
+
+function manageZoomPrice(card) {
+  if (!card || typeof manageOddsChart !== "function") return;
+  const on = Number(card.dataset.manageZoom) >= MANAGE_ZOOM_MAX;
+  if (!on) {
+    card.querySelectorAll(".manage-price-chart[data-zoom='1']").forEach((node) => node.remove());
+    return;
+  }
+  if (card.querySelector(".manage-price-chart")) return;
+  const host = card.querySelector(":scope > .manage-legs");
+  const row = (typeof saveList === "function" ? saveList() : []).find((item) => String(item.id) === String(card.dataset.id));
+  if (!host || !row || !(row.legs || []).length) return;
+  manageOddsChart(host, row.legs, true);
+}
+
+function manageZoomPrices() {
+  document.querySelectorAll(".manage-card").forEach(manageZoomPrice);
 }
 
 function manageCardLevel(id) {
@@ -72,6 +90,7 @@ function manageZoomBar(card) {
     else {
       manageCardZoom.set(card.dataset.id, snapped);
       card.dataset.manageZoom = String(snapped);
+      manageZoomPrice(card);
     }
   };
   bar.addEventListener("pointerdown", (event) => event.stopPropagation());
@@ -91,6 +110,7 @@ function manageZoomBar(card) {
     else {
       manageCardZoom.set(card.dataset.id, next);
       card.dataset.manageZoom = String(next);
+      manageZoomPrice(card);
     }
   });
   input.addEventListener("change", end);
@@ -479,7 +499,7 @@ function manageCard(row, n) {
 function manageFill(board) {
   const page = board.closest(".find-board");
   const kept = page && page.querySelector(".manage-search-keep");
-  if (kept) page.append(kept);
+  if (kept) { const hits = page.querySelector(":scope > .find-hits:not(.find-tray)"); if (kept.dataset.from === "search" && hits) hits.after(kept); else page.append(kept); }
   const list = typeof saveList === "function" ? saveList() : [];
   if (typeof manageClubs === "function") manageClubs(list);
   const shown = list.filter((item) => typeof manageShown === "function" ? manageShown(item) : true);
@@ -519,5 +539,6 @@ function manageFill(board) {
   if (typeof trayLive !== "undefined" && trayLive.at) board.dataset.liveAt = String(trayLive.at);
   if (typeof trayLiveLoad === "function") trayLiveLoad();
   manageZoomExtra(board);
+  manageZoomPrices();
 }
 

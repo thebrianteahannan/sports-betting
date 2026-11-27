@@ -24,7 +24,9 @@ function manageSearchTake(profile) {
     closePlayerPop.onKey = null;
   }
   host.dataset.from = "search";
-  if (typeof manageZoomApply === "function") manageZoomApply(typeof MANAGE_ZOOM_MAX === "number" ? MANAGE_ZOOM_MAX : 3);
+  const hits = page.querySelector(":scope > .find-hits:not(.find-tray)");
+  if (hits) hits.after(host);
+  if (typeof manageZoomApply === "function") manageZoomApply(3);
 }
 
 function manageProfileNames() {
@@ -255,7 +257,7 @@ function manageZoomExtras() {
     const board = page.querySelector(".find-saved .manage-board");
     const host = page.querySelector(".manage-search-keep");
     if (board) board.querySelectorAll(":scope > .manage-history").forEach((node) => node.remove());
-    if (host) page.append(host);
+    if (host) { const hits = page.querySelector(":scope > .find-hits:not(.find-tray)"); if (host.dataset.from === "search" && hits) hits.after(host); else page.append(host); }
   });
 }
 
