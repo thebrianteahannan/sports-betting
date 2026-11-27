@@ -47,11 +47,16 @@ function manageZoomPrice(card) {
     card.querySelectorAll(".manage-price-chart[data-zoom='1']").forEach((node) => node.remove());
     return;
   }
-  if (card.querySelector(".manage-price-chart")) return;
   const host = card.querySelector(":scope > .manage-legs");
   const row = (typeof saveList === "function" ? saveList() : []).find((item) => String(item.id) === String(card.dataset.id));
-  if (!host || !row || !(row.legs || []).length) return;
-  manageOddsChart(host, row.legs, true);
+  const legs = (row && row.legs) || [];
+  const lines = card.classList.contains("parlay") ? [...card.querySelectorAll(":scope > .manage-legs > .find-chose")] : [];
+  if (lines.length > 1 && lines.length === legs.length) {
+    lines.forEach((line, i) => { if (!line.querySelector(":scope > .manage-price-chart")) manageOddsChart(line, [legs[i]], true); });
+    return;
+  }
+  if (!host || !legs.length || host.querySelector(":scope > .manage-price-chart")) return;
+  manageOddsChart(host, legs, true);
 }
 
 function manageZoomPrices() {
@@ -334,7 +339,7 @@ function manageSpot(who) {
   return [pos, nick].filter(Boolean).join(" · ");
 }
 
-function manageLegLine(leg, legs) {
+function manageLegLine(leg, legs, own) {
   const bits = manageLegRead(leg);
   const pick = managePickOf(leg);
   const spot = manageSpot(bits.who);
@@ -356,6 +361,7 @@ function manageLegLine(leg, legs) {
   if (typeof manageLegEdit === "function") manageLegEdit(line, said, leg, legs.indexOf(leg), legs.length);
   const note = typeof manageLegNote === "function" ? manageLegNote(leg) : null;
   if (note) line.append(note);
+  if (own) { const tags = manageTags([leg]); if (!tags.hidden) line.append(tags); }
   return line;
 }
 
@@ -424,9 +430,9 @@ function manageCard(row, n) {
     if (typeof manageOddsBind === "function") manageOddsBind(head.querySelector(".px"), legs, head);
     legsBox.append(head);
   }
-  legs.forEach((leg) => legsBox.append(manageLegLine(leg, legs)));
+  legs.forEach((leg) => legsBox.append(manageLegLine(leg, legs, legs.length > 1)));
   if (typeof manageAddLeg === "function") manageAddLeg(legsBox);
-  legsBox.append(manageTags(legs));
+  if (legs.length < 2) legsBox.append(manageTags(legs));
   const fold = legs.length > 1 ? manageFold(legs, odds, pct, pay) : null;
   const open = document.createElement("button");
   open.type = "button";

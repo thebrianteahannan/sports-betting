@@ -361,15 +361,17 @@
 .manage-board .manage-bet-price .pay { color: #3dff6e; }
 .manage-board .find-chose { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; min-width: 0; padding: 0.2rem 0; }
 .manage-board .manage-leg-note { display: none; flex: 1 0 100%; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.45rem; margin: 0.1rem 0 0.35rem; min-width: 0; }
+.manage-board .find-chose > .manage-tags,
+.manage-board .find-chose > .manage-price-chart { flex: 1 0 100%; width: 100%; min-width: 0; }
 .manage-card[data-manage-zoom="3"] .manage-leg-note,
 .manage-card[data-manage-zoom="4"] .manage-leg-note,
 .manage-card[data-manage-zoom="5"] .manage-leg-note { display: flex; }
 .manage-board .find-chose > span { display: flex; flex: 1; align-items: baseline; flex-wrap: wrap; gap: 0.1rem 0.5rem; min-width: 0; font-weight: 600; }
 .manage-board .find-chose i { font-style: normal; }
-.manage-board .find-chose i.who { color: #f4f7fb; font-weight: 700; white-space: nowrap; }
+.manage-board .find-chose i.who { order: 1; color: #f4f7fb; font-weight: 700; white-space: nowrap; }
 .manage-board .find-chose i.spot { margin-left: -0.15rem; color: #7f8c99; font-size: 0.72em; font-weight: 500; white-space: nowrap; }
 .manage-board .find-chose i.game { color: #9fb3c8; font-size: 0.72em; font-weight: 700; white-space: nowrap; }
-.manage-board .find-chose i.prop { flex: 0 1 auto; min-width: 0; color: #e7c15a; font-weight: 700; }
+.manage-board .find-chose i.prop { order: 2; flex: 0 1 auto; min-width: 0; color: #e7c15a; font-weight: 700; }
 @media (max-width: 800px) {
   #desk.tv-full #desk-glass .manage-card[data-manage-zoom],
   .manage-card[data-manage-zoom] { position: relative; grid-template-columns: auto minmax(0, 1fr) auto !important; }
@@ -402,9 +404,16 @@
   .manage-board .manage-legs:has(.manage-bet-price) > .manage-tags,
   .manage-board .manage-fold-legs { margin-left: 0; padding-left: 0.45rem; }
 }
-.manage-board .find-chose i.px { order: -2; min-width: 3.4em; color: #3dff6e; font-weight: 700; }
-.manage-board .find-chose i.pct { order: -1; min-width: 3.4em; color: #c9d4dd; font-size: 0.88em; }
-.manage-board .find-chose i.leg-role { order: -1; flex: none; align-self: center; margin: 0; padding: 0 0.42rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.03em; line-height: 1.5; text-transform: uppercase; }
+.manage-board .find-chose i.px { order: 3; min-width: 3.4em; color: #3dff6e; font-weight: 700; }
+.manage-board .find-chose i.pct { order: 4; min-width: 3.4em; color: #c9d4dd; font-size: 0.88em; }
+.manage-board .find-chose > span > i.manage-rec,
+.manage-board .find-chose > span > i.spot,
+.manage-board .find-chose > span > i.game,
+.manage-board .find-chose > span > i.find-rec-pill,
+.manage-board .find-chose > span > :is(.desk-rec-golden-tag, .desk-rec-silver-tag, .desk-rec-bronze-tag, .desk-rec-edge),
+.manage-board .find-chose > span > a.manage-pace,
+.manage-board .find-chose > span > .manage-change { order: 5; }
+.manage-board .find-chose i.leg-role { order: 5; flex: none; align-self: center; margin: 0; padding: 0 0.42rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.03em; line-height: 1.5; text-transform: uppercase; }
 .manage-board .find-chose i.leg-role.r-anchor { color: #3dff6e; }
 .manage-board .find-chose i.leg-role.r-juice { color: #ff9a2e; }
 .manage-board .find-chose i.leg-role.r-filler { color: #9aa6b2; }
@@ -437,6 +446,12 @@
 .manage-card[data-manage-zoom="0"] .find-chose i.game,
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill,
 .manage-card[data-manage-zoom="0"] .find-chose i.find-rec-pill,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose > span > i.manage-rec,
+.manage-card[data-manage-zoom="0"] .find-chose > span > i.manage-rec,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="1"] .find-chose > span > i.manage-rec,
+.manage-card[data-manage-zoom="1"] .find-chose > span > i.manage-rec,
+#desk.tv-full #desk-glass .manage-card[data-manage-zoom="1"] .find-chose i.find-rec-pill,
+.manage-card[data-manage-zoom="1"] .find-chose i.find-rec-pill,
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .find-chose i.leg-role,
 .manage-card[data-manage-zoom="0"] .find-chose i.leg-role,
 #desk.tv-full #desk-glass .manage-card[data-manage-zoom="0"] .bank-kelly,
@@ -1077,17 +1092,18 @@ body > .manage-lock-pop:not(.grid-bg):not(.aurora):not(.scan) { position: fixed;
 .manage-board button.bank-mark.r-push { color: #9fb3c8 !important; }
 
 @media (max-width: 800px) {
-  .manage-board .find-chose i.who { order: 1; }
-  .manage-board .find-chose i.prop,
-  .manage-board .find-chose i.spot,
-  .manage-board .find-chose i.game,
-  .manage-board .find-chose .manage-change { order: 2; }
-  .manage-board .find-chose i.leg-role,
-  .manage-board .find-chose i.find-rec-pill,
-  .manage-board .find-chose :is(.desk-rec-golden-tag, .desk-rec-silver-tag, .desk-rec-bronze-tag, .desk-rec-edge) { order: 3; }
-  .manage-board .find-chose a.manage-pace { order: 4; }
-  .manage-board .find-chose i.px { order: 6; }
-  .manage-board .find-chose i.pct { order: 7; }
+  .manage-board .find-chose > span > i.who { order: 1; }
+  .manage-board .find-chose > span > i.prop { order: 2; }
+  .manage-board .find-chose > span > i.px { order: 3; }
+  .manage-board .find-chose > span > i.pct { order: 4; }
+  .manage-board .find-chose > span > i.spot,
+  .manage-board .find-chose > span > i.game,
+  .manage-board .find-chose > span > .manage-change,
+  .manage-board .find-chose > span > i.leg-role,
+  .manage-board .find-chose > span > i.find-rec-pill,
+  .manage-board .find-chose > span > i.manage-rec,
+  .manage-board .find-chose > span > :is(.desk-rec-golden-tag, .desk-rec-silver-tag, .desk-rec-bronze-tag, .desk-rec-edge),
+  .manage-board .find-chose > span > a.manage-pace { order: 5; }
   #desk.tv-full #desk-glass .manage-board .manage-n,
   .manage-board .manage-n { align-self: start; margin-top: 0.22rem; }
   .manage-card.parlay > .manage-legs > .manage-bet-price,

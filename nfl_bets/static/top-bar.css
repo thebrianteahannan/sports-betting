@@ -22,6 +22,8 @@
   #desk.tv-full.has-nav #desk-glass-in { border-top-width: 8.6rem; }
   #desk.tv-full.has-nav #desk-nav:not([hidden]) { top: 4.7rem; left: 0.7rem; right: 0.7rem; height: auto; max-width: none; justify-content: flex-start; }
   #desk.tv-full.has-nav #desk-where { visibility: hidden; }
+  #desk.tv-full.has-nav:has(.find-board.find-rec-page) #desk-where { visibility: visible; height: 4.7rem; }
+  #desk.tv-full.has-nav .find-board.find-rec-page > h2 { display: none !important; }
 }
 #desk-where { display: none; }
 #desk.tv-full #desk-where:not(:empty) {

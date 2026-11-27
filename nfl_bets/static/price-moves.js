@@ -2,6 +2,7 @@
 
 let priceMoveBag = null;
 let priceMoveFocus = "";
+let priceMovePinned = false;
 let priceMoveTab = "deez";
 let priceMoveLeague = "";
 let priceChartN = 0;
@@ -287,16 +288,27 @@ function priceMoveDeez(row) {
 
 function priceMoveDraw(box, rows) {
   const order = ["NFL", "NBA", "NHL", "MLB", "WNBA", "PGA"];
-  const leagues = [...new Set(rows.map((row) => row.sport).filter(Boolean))].sort((a, b) => ((order.indexOf(a) + 1) || 99) - ((order.indexOf(b) + 1) || 99) || a.localeCompare(b));
+  const clocks = box.priceClocks || [];
+  const leagues = [...new Set(rows.concat(clocks).map((row) => row.sport).filter(Boolean))].sort((a, b) => ((order.indexOf(a) + 1) || 99) - ((order.indexOf(b) + 1) || 99) || a.localeCompare(b));
   if (priceMoveLeague && !leagues.includes(priceMoveLeague)) priceMoveLeague = "";
   const pool = priceMoveLeague ? rows.filter((row) => row.sport === priceMoveLeague) : rows;
-  const shown = priceMoveTab === "all" ? pool.slice() : pool.filter(priceMoveTab === "deez" ? priceMoveDeez : priceMoveLive);
-  if (priceMoveTab === "deez") shown.sort((a, b) => priceMoveEdge(b) - priceMoveEdge(a) || priceMoveRoom(b) - priceMoveRoom(a));
+  const walkers = priceMoveTab === "all" ? pool.slice() : pool.filter(priceMoveTab === "deez" ? priceMoveDeez : priceMoveLive);
+  if (priceMoveTab === "deez") walkers.sort((a, b) => priceMoveEdge(b) - priceMoveEdge(a) || priceMoveRoom(b) - priceMoveRoom(a));
+  const ahead = priceMoveTab === "deez" ? clocks.filter((row) => (!priceMoveLeague || row.sport === priceMoveLeague) && !walkers.some((item) => priceMoveSame(item, row.label, row.match))) : [];
+  const shown = ahead.concat(walkers);
+  if (ahead.length && !priceMovePinned && !ahead.some((row) => priceMoveKey(row) === priceMoveFocus)) priceMoveFocus = priceMoveKey(ahead[0]);
   const picked = shown.find((row) => priceMoveKey(row) === priceMoveFocus) || shown[0];
   if (picked) priceMoveFocus = priceMoveKey(picked);
   const lead = document.createElement("p");
   lead.className = "price-move-lead";
-  lead.textContent = priceMoveTab === "deez" ? "The price has started toward our number and has not sat down. Get on before it gets there." : priceMoveTab === "live" ? "These lines stepped again the same way. The price has not sat down." : "FanDuel prices that moved this week. The big moves are the ones to look at.";
+  const clockN = shown.filter((row) => row.clock).length;
+  lead.textContent = priceMoveTab === "deez"
+    ? (clockN && clockN === shown.length
+      ? "These are still the early price. Bet them before the clock moves them."
+      : clockN
+        ? "The clock still has these at the early price. The rest have started toward our number and have not sat down."
+        : "The price has started toward our number and has not sat down. Get on before it gets there.")
+    : priceMoveTab === "live" ? "These lines stepped again the same way. The price has not sat down." : "FanDuel prices that moved this week. The big moves are the ones to look at.";
   const switcher = document.createElement("div");
   switcher.className = "price-move-switch";
   [["deez", "Bet Deez"], ["live", "Still moving"], ["all", "All"]].forEach(([id, label]) => {
@@ -341,9 +353,9 @@ function priceMoveDraw(box, rows) {
     name.textContent = priceMoveName(row);
     const move = document.createElement("span");
     const record = priceMoveTab === "deez" && row.read && row.read.n ? `${row.read.hits} of ${row.read.n}. ` : "";
-    move.textContent = `${record}${pay.charAt(0).toUpperCase()}${pay.slice(1)}`;
+    move.textContent = row.clock ? `Still ${priceMovePrice(row.last)}` : `${record}${pay.charAt(0).toUpperCase()}${pay.slice(1)}`;
     button.append(name, move);
-    button.addEventListener("click", () => { priceMoveFocus = priceMoveKey(row); priceMoveDraw(box, rows); });
+    button.addEventListener("click", () => { priceMovePinned = true; priceMoveFocus = priceMoveKey(row); priceMoveDraw(box, rows); });
     list.append(button);
   });
   opener.addEventListener("click", () => menu.classList.toggle("open"));
@@ -367,14 +379,14 @@ function priceMoveDraw(box, rows) {
   const openName = document.createElement("b");
   openName.textContent = priceMoveName(picked);
   const openMove = document.createElement("span");
-  openMove.textContent = `${pay.charAt(0).toUpperCase()}${pay.slice(1)}`;
+  openMove.textContent = picked.clock ? `Still ${priceMovePrice(picked.last)}` : `${pay.charAt(0).toUpperCase()}${pay.slice(1)}`;
   openCopy.append(openName, openMove);
   opener.append(openCopy);
   const head = document.createElement("h3");
   head.textContent = priceMoveName(picked);
   const where = document.createElement("p");
   where.className = "price-move-where";
-  where.textContent = `${picked.match || ""}. ${priceMovePrice(picked.first)} to ${priceMovePrice(picked.last)}. It ${pay}.`;
+  where.textContent = picked.clock ? `${picked.match || ""}${picked.match ? ". " : ""}${picked.clockLine}` : `${picked.match || ""}. ${priceMovePrice(picked.first)} to ${priceMovePrice(picked.last)}. It ${pay}.`;
   const steps = document.createElement("div");
   steps.className = "price-move-steps";
   (picked.steps || []).forEach((step) => {
@@ -385,13 +397,13 @@ function priceMoveDraw(box, rows) {
   const unit = document.createElement("p");
   unit.className = "price-chart-unit";
   unit.textContent = "Implied chance on the left. FanDuel's price on the line. Pull time on the bottom.";
-  const why = priceMoveTab === "deez" && picked.read && picked.read.how ? document.createElement("p") : null;
+  const why = priceMoveTab === "deez" && !picked.clock && picked.read && picked.read.how ? document.createElement("p") : null;
   if (why) {
     why.className = "price-move-why";
     why.textContent = typeof edgeHow === "function" ? edgeHow(picked.read) : picked.read.how;
   }
-  const books = priceMoveTab === "deez" ? document.createElement("p") : null;
-  const news = document.createElement("button");
+  const books = priceMoveTab === "deez" && !picked.clock ? document.createElement("p") : null;
+  const news = picked.clock ? null : document.createElement("button");
   const bet = document.createElement("button");
   if (books) {
     books.className = "price-move-note";
@@ -439,7 +451,7 @@ function priceMoveDraw(box, rows) {
     if (bet) acts.append(bet);
     if (news) acts.append(news);
   }
-  card.append(head, where, ...(why ? [why] : []), ...(books ? [books] : []), ...(acts ? [acts] : []), priceMoveChart(picked.series), unit, steps);
+  card.append(head, where, ...(why ? [why] : []), ...(books ? [books] : []), ...(acts ? [acts] : []), ...(picked.clock ? [] : [priceMoveChart(picked.series), unit, steps]));
   const trend = box.querySelector(":scope > .price-trend");
   box.replaceChildren(...(trend ? [trend] : []), lead, switcher, ...(leagueBar.childElementCount ? [leagueBar] : []), menu, card);
   if (!trend && typeof priceTrendPaint === "function") priceTrendPaint(box);
@@ -507,11 +519,15 @@ function priceMovePage() {
   note.textContent = "Looking up the FanDuel prices.";
   box.append(note);
   if (typeof priceTrendPaint === "function") priceTrendPaint(box);
-  try { priceMoveFocus = priceMoveFocus || sessionStorage.getItem("price-move") || ""; } catch (error) {}
+  try {
+    const saved = sessionStorage.getItem("price-move") || "";
+    if (!priceMoveFocus && saved) { priceMoveFocus = saved; priceMovePinned = true; }
+  } catch (error) {}
   priceMoveLoad().then((data) => {
     if (!box.isConnected) return;
     const rows = (data && data.rows) || [];
-    if (!rows.length) {
+    box.priceRows = rows;
+    if (!rows.length && !(box.priceClocks && box.priceClocks.length)) {
       note.textContent = data && data.tracked ? "The first prices are in. The next pull shows which ones moved." : "The first FanDuel prices are being written down. The next pull shows which ones moved.";
       return;
     }
