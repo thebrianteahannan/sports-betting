@@ -70,6 +70,32 @@ function rosterGroup(roster, names, lined, rows, team) {
 
 const clubOf = new Map();
 
+function rosterBareBet(row, person) {
+  const legs = (row && row.legs) || [];
+  if (legs.length !== 1 || row.locked) return false;
+  const leg = legs[0];
+  if (Number(leg.odds) || String(leg.market || "").trim()) return false;
+  const name = String(person && person.name || "");
+  return !!name && (String(leg.label || "") === name || String(leg.player || "") === name);
+}
+
+function rosterSavePlayer(person) {
+  if (typeof saveList !== "function" || typeof saveStore !== "function" || !person || !person.name) return;
+  const list = saveList();
+  if (list.some((row) => rosterBareBet(row, person))) return;
+  const sample = ((person.bets || [])[0]) || {};
+  const leg = { label: person.name, player: person.name, odds: "", market: "", match: sample.match || "", kickoff: sample.kickoff || "", sport: sample.sport || person.sport || "" };
+  const entry = { id: `p${Date.now()}`, at: Date.now(), stake: 5, legs: [leg], picks: [{ key: person.key, name: person.name, kind: "player" }] };
+  saveStore([entry, ...list].slice(0, 20));
+}
+
+function rosterDropPlayer(person) {
+  if (typeof saveList !== "function" || typeof saveStore !== "function" || !person) return;
+  const list = saveList();
+  const next = list.filter((row) => !rosterBareBet(row, person));
+  if (next.length !== list.length) saveStore(next);
+}
+
 function rosterPlus(button, person) {
   if (!button || !person || !button.parentElement) return;
   const chip = document.createElement("span");
@@ -97,12 +123,14 @@ function rosterPlus(button, person) {
     if (parlayPick.has(person.key)) {
       parlayPick.delete(person.key);
       [...parlayLeg.entries()].forEach(([key, bet]) => { if (String(bet.label || "").startsWith(person.name)) parlayLeg.delete(key); });
+      rosterDropPlayer(person);
       if (typeof trayRoster === "function") trayRoster();
       paintParlay();
       return;
     }
     if (parlayPick.size >= 8) return;
     parlayPick.set(person.key, person);
+    rosterSavePlayer(person);
     if (typeof trayRoster === "function") trayRoster();
     paintParlay();
     if (typeof parlayOpenTray === "function") parlayOpenTray();

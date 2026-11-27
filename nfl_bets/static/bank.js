@@ -430,6 +430,8 @@ function bankMark(parent, text, call) {
 let bankRecWait = 0;
 function bankWatchRecords() {
   if (bankRecWait) return;
+  // Records already on the page will not appear on another paint. Waiting again just rebuilds My Bets.
+  if (typeof scriptRecAll !== "undefined" && scriptRecAll.size) return;
   let tries = 0;
   bankRecWait = setInterval(() => {
     const ready = typeof scriptRecAll !== "undefined" && scriptRecAll.size;

@@ -17,6 +17,7 @@ function legSwapChance(odds) {
 function legSwapWhat(person, bet) {
   const rest = String(bet.label || "").replace(person.name, "").split(/\s+—\s+/)[0].trim();
   const market = String(bet.market || "").replace(person.name, "").replace(/^\s*-\s*/, "").trim();
+  if (/^moneyline$/i.test(market)) return "to win";
   const part = (market.match(/^(1st|2nd|3rd|4th)\s+(qtr|half)\b/i) || [""])[0];
   if (part && rest && !rest.toLowerCase().includes(part.toLowerCase())) return `${part} ${rest}`;
   if ((/^most\s/i.test(market) && !/\d/.test(rest)) || /\b(in the first \d+ minutes|in each quarter)\b/i.test(market)) return market;
@@ -69,8 +70,37 @@ function legLineFind(key) {
 }
 
 function legGameWhat(bet) {
-  const rest = String(bet.label || "").split(/\s+—\s+/)[0].replace(/^[^:]*:\s*/, "");
-  return /^(over|under)(\s+[\d.]+)?$/i.test(rest) ? `${rest} ${String(bet.market || "").replace(/^alternate\s+/i, "").toLowerCase()}`.trim() : rest;
+  const market = String(bet.market || "");
+  const rest = String(bet.label || "").split(/\s+—\s+/)[0].replace(/^[^:]*:\s*/, "").trim();
+  if (/^moneyline$/i.test(market)) return `${rest} to win`.trim();
+  return /^(over|under)(\s+[\d.]+)?$/i.test(rest) ? `${rest} ${market.replace(/^alternate\s+/i, "").toLowerCase()}`.trim() : rest;
+}
+
+function legGameChoices(key) {
+  const old = parlayLeg.get(key);
+  const board = legSwapBoard();
+  if (!old || !board) return [];
+  const kindOf = (bet) => {
+    const market = String(bet.market || "");
+    if (/quarter|half|1st|2nd|3rd|4th|alternate|special/i.test(market)) return "";
+    if (/^moneyline$/i.test(market)) return "money";
+    if (/^spread$/i.test(market)) return "spread";
+    if (/^total$/i.test(market)) return "total";
+    return "";
+  };
+  const seen = new Set(), rows = [];
+  (board.people || []).filter((one) => one.kind === "team").forEach((team) => (team.bets || []).forEach((bet) => {
+    const kind = kindOf(bet);
+    if (!kind || bet.match !== old.match || (old.kickoff && bet.kickoff && bet.kickoff !== old.kickoff) || !Number(bet.odds)) return;
+    const id = kind === "spread" ? `spread|${String(bet.label || "").replace(/\s+spread.*/i, "").trim()}` : kind === "money" ? `money|${String(bet.label || "").trim()}` : `${bet.label}|${bet.market}`;
+    if (seen.has(id)) return;
+    const same = bet.label === old.label && bet.market === old.market;
+    if (!same && parlayLeg.has(parlayKey(bet))) return;
+    seen.add(id);
+    rows.push({ person: null, bet, now: same, kind });
+  }));
+  const order = { money: 0, spread: 1, total: 2 };
+  return rows.sort((a, b) => Number(b.now) - Number(a.now) || order[a.kind] - order[b.kind] || /\bunder\b/i.test(a.bet.label || "") - /\bunder\b/i.test(b.bet.label || "") || String(a.bet.label).localeCompare(String(b.bet.label)));
 }
 
 function legGameFind(key) {
@@ -343,6 +373,10 @@ function legSwapBox(key, mode) {
   else if (usedRec) { rows = recRows; listMode = "line"; }
   else if (cats) { rows = legCatFind(key, mode); listMode = "cat"; }
   else rows = mode === "line" ? legLineFind(key) : legSwapFind(key);
+  if ((mode === "kind" || mode === "line") && !legSwapPerson(key, mode) && !rows.some((row) => !row.now)) {
+    const game = legGameChoices(key);
+    if (game.some((row) => !row.now)) { rows = game; listMode = "line"; }
+  }
   if (typeof trayLockEdit === "function" && (mode === "line" || mode === "kind")) trayLockEdit(box, key);
   if (!rows.length || (mode === "swap" && !rows.some((row) => !row.now))) {
     const none = document.createElement("p");

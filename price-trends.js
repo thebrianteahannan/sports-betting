@@ -1,6 +1,7 @@
 /** Looks through saved FanDuel reprices for a clock that repeats, then lists props still on the early price. */
 
 const KEY = "bets/price-trends";
+const LOG = "bets/price-trends-log";
 const HOUR = 3600000;
 const WINDOWS = [
   [0, 1, "in the last hour"],
@@ -348,7 +349,7 @@ function tripsFrom(books) {
   return trips;
 }
 
-function digest(books, now) {
+function digest(books, now, past) {
   const at = now || Date.now();
   const looked = stepsFrom(books);
   const ranked = trendsFrom(looked.steps);
@@ -356,7 +357,7 @@ function digest(books, now) {
   const early = earlyFrom(books, trends, at);
   const near = nearFrom(looked.steps);
   const counts = { games: looked.games, props: looked.props, steps: looked.steps.length };
-  const dive = require("./price-dive").build({ steps: looked.steps, trips: tripsFrom(books), trends: ranked, early, looked: counts, near: near && near.say || "", windows: WINDOWS });
+  const dive = require("./price-dive").build({ steps: looked.steps, trips: tripsFrom(books), trends: ranked, early, looked: counts, near: near && near.say || "", windows: WINDOWS, past: past || [] });
   let say = "";
   if (!trends.length) {
     say = !counts.steps
@@ -368,12 +369,49 @@ function digest(books, now) {
   return { at, looked: counts, trends: trends.map(({ sport, prop, side, kind, when, way, games, agree, points, say: line }) => ({ sport, prop, side, kind, when, way, games, agree, points, say: line })), early, say, brief: dive.brief, dive };
 }
 
+function logClocks(clocks) {
+  return (clocks || []).map((row) => ({ sport: row.sport, prop: row.prop, side: row.side, when: row.when || "", way: row.way, held: !!row.held, faded: !!row.faded }))
+    .sort((a, b) => `${a.sport}|${a.prop}|${a.side}|${a.when}|${a.way}`.localeCompare(`${b.sport}|${b.prop}|${b.side}|${b.when}|${b.way}`));
+}
+
+function foldLog(log, at, clocks) {
+  const slim = logClocks(clocks);
+  const mark = slim.map((row) => `${row.sport}|${row.prop}|${row.side}|${row.when}|${row.way}|${row.held ? 1 : 0}|${row.faded ? 1 : 0}`).join("~");
+  const next = (log || []).slice();
+  const last = next[next.length - 1];
+  if (last && last.mark === mark) {
+    next[next.length - 1] = { ...last, to: at, n: (last.n || 1) + 1 };
+    return next;
+  }
+  next.push({ from: at, to: at, n: 1, mark, clocks: slim });
+  return next.slice(-400);
+}
+
+async function readLog() {
+  try {
+    const { kv } = require("./live-recs");
+    const rows = await kv(`?k=eq.${encodeURIComponent(LOG)}&select=v`);
+    const saved = rows && rows[0] && rows[0].v;
+    return Array.isArray(saved) ? saved : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+async function writeLog(log) {
+  const { kv } = require("./live-recs");
+  await kv("", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { k: LOG, v: log } });
+}
+
 async function tick() {
   if (ticking) return cache;
   ticking = true;
   try {
     const { logged } = require("./price-log");
-    const next = digest(logged(), Date.now());
+    const past = await readLog();
+    const next = digest(logged(), Date.now(), past);
+    const log = foldLog(past, next.at, next.dive && next.dive.clocks);
+    if (JSON.stringify(log) !== JSON.stringify(past)) await writeLog(log);
     const pack = (row) => JSON.stringify({ trends: row.trends, early: row.early, say: row.say, brief: row.brief });
     const same = cache && pack(cache) === pack(next);
     cache = next;

@@ -194,6 +194,7 @@ function manageLegRead(leg) {
     if (unit && unit !== who.toLowerCase() && !prop.toLowerCase().includes(unit)) prop = [prop, unit].filter(Boolean).join(" ");
   }
   if (/any\s*time\s*touchdown/i.test(prop)) prop = "Anytime TD";
+  if (/^moneyline$/i.test(leg.market) || /^moneyline$/i.test(prop)) prop = "to win";
   const game = typeof gameShort === "function" && leg.match ? gameShort(leg.match) : String(leg.match || "");
   const when = leg.kickoff && typeof window.when === "function" ? `${window.when(leg.kickoff)} ET` : "";
   return {
@@ -296,6 +297,7 @@ function manageSlipPace(leg) {
 function manageSlipRec(legs) {
   const pick = (legs || []).map(managePickOf).find(Boolean);
   if (!pick) return "";
+  if (typeof recDialHot === "function" && recDialHot(pick)) return pick.tier === "good" ? "" : `<i class="rc">Recommended</i>`;
   if (pick.golden) return `<i class="rc">Golden Ticket</i>`;
   if (pick.silver) return `<i class="rc">Silver Ticket</i>`;
   if (pick.bronze) return `<i class="rc">Bronze Ticket</i>`;

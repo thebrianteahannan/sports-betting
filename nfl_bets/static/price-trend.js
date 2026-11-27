@@ -58,6 +58,10 @@ function priceTrendPdf(data) {
   write(`${when} ET`, 10, 16, 80, "F1", "0.35 0.38 0.42");
   heading("Do this");
   priceTrendBrief(data).forEach((line) => write(line, 12, 16, 78, "F2", "0.1 0.12 0.16"));
+  if (dive && dive.record && dive.record.length) {
+    heading("Across earlier passes");
+    dive.record.forEach((line) => write(line, 11, 15, 86));
+  }
   y -= 4;
   if (dive && dive.now && dive.now.length > 1) dive.now.forEach((line) => write(line, 11, 15, 86));
   (dive && dive.waits || []).forEach((line) => write(line, 11, 15, 86));

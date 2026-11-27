@@ -146,6 +146,7 @@ function scriptMetalOf(pick, game, spot) {
 }
 
 function scriptGoldenTag(pick, game) {
+  if (typeof recDialHot === "function" && recDialHot(pick)) return "";
   const metal = scriptGoldenOf(pick, game) ? "golden" : scriptMetalOf(pick, game, "silver") ? "silver" : scriptMetalOf(pick, game, "bronze") ? "bronze" : "";
   if (!metal) return "";
   const say = { golden: ["Golden Ticket", "Golden Ticket: −120 to +120, and it has hit 60% or more.", "desk-rec-golden-tag"], silver: ["Silver Ticket", "Silver Ticket: −150 to +150, and it has hit 55% or more.", "desk-rec-silver-tag"], bronze: ["Bronze Ticket", "Bronze Ticket: −200 to +200, and it has hit 50% or more.", "desk-rec-bronze-tag"] }[metal];

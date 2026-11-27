@@ -184,6 +184,7 @@ function clockOf(trend, steps, trips, windows) {
     sport: trend.sport,
     prop: trend.prop,
     side: trend.side,
+    when: trend.when,
   };
 }
 
@@ -199,7 +200,58 @@ function names(list) {
   return `${seen.slice(0, 3).join(", ")}, and ${seen.length - 3} more`;
 }
 
-function briefOf(looked, clocks, now) {
+function clockKey(row) {
+  return `${row.sport}|${row.prop}|${row.side}|${row.when || ""}|${row.way}`;
+}
+
+function sinceSay(at) {
+  const time = Number(at);
+  if (!Number.isFinite(time)) return "";
+  return new Date(time).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+}
+
+function recordOf(past, clocks) {
+  const spans = Array.isArray(past) ? past : [];
+  const seen = new Map();
+  spans.forEach((span) => {
+    (span.clocks || []).forEach((row) => {
+      const id = clockKey(row);
+      const have = seen.get(id) || { n: 0, spans: 0, from: span.from };
+      have.n += span.n || 1;
+      have.spans += 1;
+      if (span.from < have.from) have.from = span.from;
+      seen.set(id, have);
+    });
+  });
+  const lasted = [];
+  const fresh = [];
+  (clocks || []).forEach((row) => {
+    const have = seen.get(clockKey(row));
+    if (have) lasted.push({ row, have });
+    else fresh.push(row);
+  });
+  return { lasted, fresh };
+}
+
+function recordSay(past, clocks) {
+  const spans = Array.isArray(past) ? past : [];
+  if (!spans.length) return ["This pass starts the record. A read becomes an edge when it comes back the same way on a later pass."];
+  const passes = spans.reduce((sum, span) => sum + (span.n || 1), 0);
+  const from = Math.min(...spans.map((span) => span.from));
+  const { lasted, fresh } = recordOf(spans, clocks);
+  const lines = [`${passes} ${passes === 1 ? "pass" : "passes"} on the record since ${sinceSay(from)} ET.`];
+  lasted.forEach(({ row, have }) => {
+    const stay = have.spans > 1
+      ? `It has come back ${have.spans} times since ${sinceSay(have.from)} ET, across ${have.n} passes.`
+      : `It has stayed through ${have.n} ${have.n === 1 ? "pass" : "passes"} since ${sinceSay(have.from)} ET.`;
+    lines.push(`${row.title}. ${stay}`);
+  });
+  if (!lasted.length) lines.push("No earlier read is still here. These lines are new this pass.");
+  else if (fresh.length) lines.push(`${fresh.length} ${fresh.length === 1 ? "line is" : "lines are"} new this pass.`);
+  return lines;
+}
+
+function briefOf(looked, clocks, now, past) {
   const count = (n) => Number(n || 0).toLocaleString("en-US");
   const live = clocks.filter((row) => !row.faded);
   const proven = live.filter((row) => row.held);
@@ -210,8 +262,12 @@ function briefOf(looked, clocks, now) {
   const first = span
     ? `${count(looked.steps)} reprices across ${count(looked.games)} games. The clocks that ${proven.length ? "hold" : "repeat"} move the price ${span}.`
     : `${count(looked.steps)} reprices across ${count(looked.games)} games. Nothing has landed on the same clock yet.`;
-  const bet = takes.filter((row) => row.held);
-  const named = bet.length ? bet : takes;
+  const spans = Array.isArray(past) ? past : [];
+  const record = recordOf(spans, clocks);
+  const lasting = record.lasted.map((item) => item.row).filter((row) => !row.faded);
+  const bet = (spans.length ? lasting : takes).filter((row) => row.way === "shorter" && row.held);
+  const named = bet.length ? bet : (spans.length ? lasting.filter((row) => row.way === "shorter") : takes);
+  const waitRows = spans.length ? lasting.filter((row) => row.way === "longer") : waits;
   const grouped = (list, lead) => {
     const bag = new Map();
     list.forEach((row) => {
@@ -223,8 +279,11 @@ function briefOf(looked, clocks, now) {
     return [...bag.entries()].map(([bit, rows]) => `${lead} ${names(rows)}. ${bit}`).join(" ");
   };
   let second = "No clock is strong enough to bet ahead of.";
-  if (named.length || waits.length) second = [named.length ? grouped(named, "Bet") : "", waits.length ? grouped(waits, "Wait on") : ""].filter(Boolean).join(" ");
-  else if (clocks.length) second = "Those windows move and the close gives them back.";
+  if (!spans.length) second = "This pass starts the record. A read becomes an edge when it comes back the same way on a later pass.";
+  else if (named.length || waitRows.length) {
+    const sinceAt = Math.min(...record.lasted.filter((item) => !item.row.faded).map((item) => item.have.from));
+    second = `${[named.length ? grouped(named, "Bet") : "", waitRows.length ? grouped(waitRows, "Wait on") : ""].filter(Boolean).join(" ")} That read has stayed since ${sinceSay(sinceAt)} ET.`;
+  } else if (clocks.length) second = "No earlier read is still here. These lines are new this pass.";
   let third = "No open price is still ahead of its clock.";
   if (now.length > 1) third = `${now.length} prices are still ahead of the clock. ${now[0]}`;
   else if (now[0]) third = now[0];
@@ -238,7 +297,7 @@ function kickSay(kickoff) {
   return new Date(at).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
 }
 
-function build({ steps, trips, trends, early, looked, near, windows }) {
+function build({ steps, trips, trends, early, looked, near, windows, past }) {
   const boards = windows || [];
   const empty = ["The price log is still filling in.", "The next pass looks for a clock.", "No open price is still ahead of its clock."];
   if (!steps || !steps.length) return { brief: empty, now: [], waits: [], leaves: [], sports: [], clocks: [], miss: near || "", read: "" };
@@ -253,7 +312,23 @@ function build({ steps, trips, trends, early, looked, near, windows }) {
     lean = `${who} ${list.length === 1 ? "does" : "do"} not lean one way from the first price to the close. The edge is in the single props.`;
     sports.forEach((row) => { row.line = ""; });
   }
-  const liveKey = new Set(clocks.filter((row) => !row.faded && row.way === "shorter").map((row) => row.title.split(",")[0]));
+  const spans = Array.isArray(past) ? past : [];
+  const record = recordOf(spans, clocks);
+  const lastedKeys = new Set(record.lasted.map((item) => clockKey(item.row)));
+  if (spans.length) {
+    clocks.forEach((row) => {
+      const hit = record.lasted.find((item) => clockKey(item.row) === clockKey(row));
+      if (!hit) {
+        row.action = "New this pass. This read has to come back before it is an edge.";
+        return;
+      }
+      const stay = hit.have.spans > 1
+        ? `This read has come back ${hit.have.spans} times since ${sinceSay(hit.have.from)} ET.`
+        : `This read has stayed through ${hit.have.n} ${hit.have.n === 1 ? "pass" : "passes"} since ${sinceSay(hit.have.from)} ET.`;
+      row.action = `${row.action} ${stay}`;
+    });
+  }
+  const liveKey = new Set(clocks.filter((row) => !row.faded && row.way === "shorter" && (!spans.length || lastedKeys.has(clockKey(row)))).map((row) => row.title.split(",")[0]));
   const now = [];
   (early || []).forEach((row) => {
     const name = `${row.sport} ${spoken(row.prop, row.side, row.sport)}`;
@@ -265,15 +340,16 @@ function build({ steps, trips, trends, early, looked, near, windows }) {
   const waits = clocks.filter((row) => !row.faded && row.way === "longer").map((row) => row.action);
   const leaves = clocks.filter((row) => row.faded).map((row) => row.action);
   return {
-    brief: briefOf(looked || {}, clocks, now),
+    brief: briefOf(looked || {}, clocks, now, spans),
     now: now.slice(0, 8),
     waits,
     leaves,
     sports,
     lean,
+    record: recordSay(spans, clocks),
     clocks,
     miss: near || "",
-    read: "A reprice counts at 1 point or more, before kickoff. A clock needs 4 games, 75 percent the same way, and two different dates when it is a weekday. The line says whether FanDuel treats the player as more or less likely to reach the prop. Gray means the close gave that read back. A point is one percentage point of the price.",
+    read: "A pass runs about every 10 minutes. The top line uses reads that have stayed or come back on a later pass. A reprice counts at 1 point or more, before kickoff. A clock needs 4 games, 75 percent the same way, and two different dates when it is a weekday. The line says whether FanDuel treats the player as more or less likely to reach the prop. Gray means the close gave that read back. A point is one percentage point of the price.",
   };
 }
 
