@@ -24,7 +24,7 @@ function legLoose(bet) {
   const cut = raw.match(/^(.*?)\s+(\d+\+.*|(?:over|under)\b.*|anytime\b.*|first\b.*|to\s+(?:win|score|record)\b.*)$/i);
   const name = cut ? cut[1].trim() : "";
   const words = name.split(/\s+/).filter(Boolean);
-  if (name && words.length >= 2 && words.length <= 4) return { who: name, prop: cut[2].trim() };
+  if (name && words.length <= 4 && (words.length >= 2 || /^to\s+win$/i.test(cut[2]))) return { who: name, prop: cut[2].trim() };
   const plain = raw.split(/\s+/).filter(Boolean);
   if (plain.length >= 2 && plain.length <= 3 && !/\d/.test(raw) && !/\b(over|under|moneyline|spread|total)\b/i.test(raw)) return { who: raw, prop: market };
   return { who: game, prop: raw };

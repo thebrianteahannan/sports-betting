@@ -630,7 +630,7 @@ function quickAddStep(title, nodes, key) {
 }
 
 function quickAddReveal(box) {
-  if (!box || !box.isConnected) return;
+  if (!box || !box.isConnected || box.querySelector(".find-shot-keep, .find-shot-wait, .find-shot-odds")) return;
   const tip = box.querySelector(quickAdd.value ? ".quick-add-acts" : quickAdd.prop ? "[data-quick='value']" : quickAdd.player ? "[data-quick='prop']" : quickAdd.sport ? "[data-quick='who']" : "[data-quick='league']") || box;
   const glass = document.getElementById("desk-glass-in");
   const go = () => {
@@ -830,13 +830,13 @@ function quickAddBox(board) {
     const live = box.isConnected ? box : null;
     if (!live || !live.parentNode) return;
     const shot = live.querySelector(":scope > .find-shot-row");
+    const shotLive = live.querySelector(":scope > .find-shot-live");
     const leg = live.classList.contains("quick-add-leg");
     live.replaceWith(next);
     if (leg) next.classList.add("quick-add-leg");
-    if (shot) {
-      const shotHead = next.querySelector(".quick-add-head");
-      if (shotHead) shotHead.after(shot);
-    }
+    const shotHead = next.querySelector(".quick-add-head");
+    if (shotHead && shotLive) shotHead.after(shotLive);
+    if (shotHead && shot) (shotLive && shotLive.isConnected ? shotLive : shotHead).after(shot);
     if (typeof betShotMount === "function") betShotMount();
     if (keep != null) {
       const field = next.querySelector(".quick-add-search");

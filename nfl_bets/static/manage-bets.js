@@ -187,14 +187,14 @@ function manageLegRead(leg) {
   const whoRaw = String(leg.player || "").trim() || (cut ? cut[1] : raw.split(/\d/)[0].replace(/\s+(over|under)\b.*$/i, "")).trim();
   let prop = cut ? cut[2].trim() : raw;
   if (whoRaw && prop.toLowerCase().startsWith(whoRaw.toLowerCase())) prop = prop.slice(whoRaw.length).trim();
-  const who = manageName(whoRaw);
+  let who = manageName(whoRaw);
   if (prop.toLowerCase() === who.toLowerCase()) prop = "";
   if (!prop || /^(over|under)(\s+[\d.]+)?$/i.test(prop)) {
     const unit = String(leg.market || "").replace(who, "").replace(/^\s*-\s*/, "").replace(/^(alt(?:ernate)?|total|player)\s+/i, "").replace(/^\d+\+\s*/, "").trim().toLowerCase();
     if (unit && unit !== who.toLowerCase() && !prop.toLowerCase().includes(unit)) prop = [prop, unit].filter(Boolean).join(" ");
   }
   if (/any\s*time\s*touchdown/i.test(prop)) prop = "Anytime TD";
-  if (/^moneyline$/i.test(leg.market) || /^moneyline$/i.test(prop)) prop = "to win";
+  if (/^(moneyline|to win)$/i.test(leg.market) || /^(moneyline|to win)$/i.test(prop)) { prop = "to win"; who = who.replace(/\s+to win$/i, ""); }
   const game = typeof gameShort === "function" && leg.match ? gameShort(leg.match) : String(leg.match || "");
   const when = leg.kickoff && typeof window.when === "function" ? `${window.when(leg.kickoff)} ET` : "";
   return {

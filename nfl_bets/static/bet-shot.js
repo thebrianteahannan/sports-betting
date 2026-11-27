@@ -155,9 +155,7 @@ function shotGame(people, leg, found) {
   }
   return (found[0] && found[0].bet.match) || "";
 }
-
 const shotWant = new Map();
-
 function shotWho(people, leg) {
   return shotPerson(people, leg.player, leg) || shotTeamOf(people, leg);
 }
@@ -202,50 +200,58 @@ function shotNear(people, leg, game) {
     .sort((a, b) => score(a) - score(b)).slice(0, 3)
     .sort((a, b) => (shotLine(a.bet) ?? 0) - (shotLine(b.bet) ?? 0));
 }
-
+function shotHold(board) {
+  const glass = document.getElementById("desk-glass-in"), head = board.querySelector(".quick-add > .quick-add-head");
+  if (glass && !glass.dataset.shotPin) { glass.dataset.shotPin = String(glass.scrollTop); glass.style.overflowAnchor = "none"; requestAnimationFrame(() => { const top = Number(glass.dataset.shotPin); delete glass.dataset.shotPin; glass.style.overflowAnchor = ""; if (Number.isFinite(top) && glass.scrollTop !== top) glass.scrollTop = top; }); }
+  if (!head) return board;
+  if (!(head.nextElementSibling && head.nextElementSibling.classList.contains("find-shot-live"))) head.after(Object.assign(document.createElement("div"), { className: "find-shot-live" }));
+  return head.nextElementSibling;
+}
 function shotNearPaint(board, misses) {
-  board.querySelectorAll(":scope > .find-shot-near").forEach((node) => node.remove());
-  let at = board.querySelector(":scope > .find-shot-note");
+  const hold = shotHold(board);
+  hold.querySelectorAll(":scope > .find-shot-near").forEach((node) => node.remove());
+  let at = hold.querySelector(":scope > .find-shot-note");
   if (!at) return;
-  misses.forEach(({ text, near }) => {
-    if (!near.length) return;
+  misses.forEach(({ text, near, leg }) => {
+    const mine = shotLoose(leg);
+    if (!mine && !(near || []).length) return;
     const box = document.createElement("div");
     box.className = "find-shot-near";
-    const head = document.createElement("p");
-    head.textContent = `Closest to ${text}:`;
+    if (mine) {
+      const keep = Object.assign(document.createElement("button"), { type: "button", className: "find-shot-keep", textContent: `Keep ${mine.label}` });
+      keep.addEventListener("click", () => { trayStackDo(`Kept ${mine.label}.`, () => { if (typeof betFromSay === "function") betFromSay("Pasted bet"); const id = parlayKey(mine); parlayLeg.set(id, mine); const who = typeof legLoose === "function" ? legLoose(mine).who : ""; if (who && typeof legOwner !== "undefined") legOwner.set(id, who); if (typeof trayLockKeep === "function") trayLockKeep(); }); box.remove(); });
+      const skip = Object.assign(document.createElement("button"), { type: "button", className: "find-shot-skip", textContent: "Leave it off" });
+      skip.addEventListener("click", () => { const id = parlayKey(mine); const named = typeof parlayPick !== "undefined" && [...parlayPick.values()].some((person) => person && mine.label.startsWith(person.name) && ![...parlayLeg.values()].some((bet) => String(bet.label || "").startsWith(person.name))); const drop = () => { parlayLeg.delete(id); if (typeof legOwner !== "undefined") legOwner.delete(id); if (typeof parlayPick !== "undefined") [...parlayPick.entries()].forEach(([key, person]) => { if (person && mine.label.startsWith(person.name) && ![...parlayLeg.values()].some((bet) => String(bet.label || "").startsWith(person.name))) parlayPick.delete(key); }); }; if (parlayLeg.has(id) || named) trayStackDo(`Left off ${mine.label}.`, drop); box.remove(); });
+      box.append(keep, skip);
+    }
+    if (!(near || []).length) { at.after(box); at = box; return; }
+    const head = Object.assign(document.createElement("p"), { textContent: mine ? "Or a FanDuel line:" : `Closest to ${text}:` });
     box.append(head);
     near.forEach(({ person, bet }) => {
-      const pick = document.createElement("button");
-      pick.type = "button";
-      pick.innerHTML = `<span>${esc(bet.label)}</span><b>${esc(american(bet.odds))}</b>`;
-      pick.addEventListener("click", () => {
-        trayStackDo(`Added ${bet.label}.`, () => { if (typeof betFromSay === "function") betFromSay("Pasted bet"); if (person) parlayPick.set(person.key, person); parlayLeg.set(parlayKey(bet), bet); });
-        box.remove();
-      });
+      const pick = Object.assign(document.createElement("button"), { type: "button", innerHTML: `<span>${esc(bet.label)}</span><b>${esc(american(bet.odds))}</b>` });
+      pick.addEventListener("click", () => { trayStackDo(`Added ${bet.label}.`, () => { if (typeof betFromSay === "function") betFromSay("Pasted bet"); if (person) parlayPick.set(person.key, person); parlayLeg.set(parlayKey(bet), bet); }); box.remove(); });
       box.append(pick);
     });
     at.after(box);
     at = box;
   });
 }
-
 function shotAskOdds(board, id, gotRaw, boardPrice) {
-  board.querySelectorAll(":scope > .find-shot-odds").forEach((node) => node.remove());
+  const hold = shotHold(board);
+  hold.querySelectorAll(":scope > .find-shot-odds").forEach((node) => node.remove());
   const got = shotOdds(gotRaw), have = shotOdds(boardPrice);
   if (!id || got == null || have == null || got === have) return;
   const mine = got > 0 ? `+${got}` : String(got), theirs = have > 0 ? `+${have}` : String(have), box = Object.assign(document.createElement("div"), { className: "find-shot-odds" });
   box.innerHTML = `<p>You got ${mine}. FanDuel has this at ${theirs}.</p><button type="button">Keep ${mine} and lock it in</button><button type="button">Add at FanDuel's ${theirs}</button>`;
   const [keep, use] = [...box.querySelectorAll("button")];
   keep.addEventListener("click", () => { if (typeof savePatch === "function") savePatch(id, { lockedOdds: mine, stakeTyped: true }); if (typeof saveLock === "function") saveLock(id); if (typeof paintParlay === "function") paintParlay(); box.remove(); }); use.addEventListener("click", () => box.remove());
-  (board.querySelector(":scope > .find-shot-note") || { after(node) { board.append(node); } }).after(box);
+  (hold.querySelector(":scope > .find-shot-note") || { after(node) { hold.append(node); } }).after(box);
 }
 function shotNote(board, text) {
-  let note = board.querySelector(":scope > .find-shot-note");
-  if (!note) { note = document.createElement("p"); note.className = "find-why find-shot-note"; const tray = board.querySelector(":scope > .find-tray"); if (tray) tray.before(note); else board.append(note); }
-  note.textContent = text;
-  note.hidden = !text;
+  const hold = shotHold(board);
+  const note = hold.querySelector(":scope > .find-shot-note") || hold.appendChild(Object.assign(document.createElement("p"), { className: "find-why find-shot-note" }));
+  note.textContent = text; note.hidden = !text;
 }
-
 function shotWait(board, file, go) {
   const card = document.createElement("div");
   card.className = "find-shot-wait";
@@ -256,8 +262,7 @@ function shotWait(board, file, go) {
   const stop = new AbortController();
   card.querySelector(".find-shot-stop").addEventListener("click", () => { stop.abort(); card.hidden = true; });
   const text = card.querySelector("b span"), time = card.querySelector("small"), bar = card.querySelector(".find-shot-bar i");
-  const head = board.querySelector(":scope > .find-shot-row:not([hidden])") || board.querySelector(":scope > h2");
-  if (head) head.after(card); else board.prepend(card);
+  shotHold(board).prepend(card);
   const label = go && go.querySelector("span");
   if (label) label.textContent = "Reading…";
   const steps = [[0, "Looking at your screenshot"], [3, "Reading each leg and price"], [9, "Long slips take a few more seconds"], [18, "Almost there"]];
@@ -270,15 +275,12 @@ function shotWait(board, file, go) {
   };
   tick();
   const timer = setInterval(tick, 500);
-  const rect = card.getBoundingClientRect();
-  if (rect.top < 80 || rect.bottom > window.innerHeight) card.scrollIntoView({ behavior: "smooth", block: "center" });
   return {
     signal: stop.signal,
     step(say) { clearInterval(timer); text.textContent = say; bar.style.width = "100%"; },
     done() { clearInterval(timer); URL.revokeObjectURL(url); card.remove(); if (label) label.textContent = "Paste a bet"; },
   };
 }
-
 function shotTickets(data) {
   if (Array.isArray(data.bets) && data.bets.length > 1) return data.bets.map((bet) => ({ legs: bet.legs || [] }));
   const legs = (data && data.legs) || [];
@@ -308,9 +310,9 @@ function shotLoose(leg) {
   const line = leg.line == null || leg.line === "" ? null : Number(leg.line);
   const odds = shotOdds(leg.odds);
   if (!player || !market) return null;
-  const named = player !== player.toUpperCase() || !/[A-Z]/.test(player) ? player : player.toLowerCase().replace(/(^|[\s'’-])([a-z])/g, (_, lead, letter) => lead + letter.toUpperCase());
-  let prop = /any\s*time\s*touchdown/i.test(market) ? "Anytime TD" : /first\s*touchdown/i.test(market) ? "First TD" : market;
-  if (line != null && Number.isFinite(line) && !/win|moneyline|spread|touchdown/i.test(market)) prop = `${side === "under" ? "Under" : "Over"} ${line} ${market}`;
+  const named = (player !== player.toUpperCase() || !/[A-Z]/.test(player) ? player : player.toLowerCase().replace(/(^|[\s'’-])([a-z])/g, (_, lead, letter) => lead + letter.toUpperCase())).replace(/\bIi+\b/g, (word) => word.toUpperCase());
+  let prop = /any\s*time\s*touchdown/i.test(market) ? "Anytime TD" : /first\s*touchdown/i.test(market) ? "First TD" : (market === market.toUpperCase() && /[A-Z]/.test(market) ? market.toLowerCase() : market);
+  if (line != null && Number.isFinite(line) && !/win|moneyline|spread|touchdown/i.test(market)) prop = `${side === "under" ? "Under" : "Over"} ${line} ${prop}`;
   const bet = { label: `${named} ${prop}`.replace(/\s+/g, " ").trim(), odds: odds || "", market, match: String(leg.match || "").trim(), kickoff: typeof manageLegKick === "function" ? manageLegKick(leg) : "", sport: String(leg.sport || "").trim() };
   return bet.label ? bet : null;
 }
@@ -397,14 +399,12 @@ async function shotRead(board, file) {
     const drafts = matched.flatMap((row) => row.drafts);
     const missed = matched.flatMap((row) => row.missed);
     const found = matched.flatMap((row) => row.found);
-    const lost = missed.filter((leg) => !drafts.some((one) => one.leg === leg) && !(matched.flatMap((row) => row.loose || []).some((bet) => String(bet.label || "").startsWith(String(leg.player || "")))));
+    const lost = missed.filter((leg) => !drafts.some((one) => one.leg === leg) && !(matched.flatMap((row) => row.loose || []).some((bet) => String(bet.label || "").toLowerCase().startsWith(String(leg.player || "").toLowerCase()))));
     const more = matched.length > 1 ? ` Saved ${matched.length} bets from that screenshot${group ? " in My stacks" : ""}.` : "";
-    const told = [drafts.length && `FanDuel doesn't have ${drafts.map(({ leg }) => say(leg)).join(", ")} at that number. ${drafts.length === 1 ? "It's" : "They're"} in your bet. Pick the line.`, lost.length && `Not on the board right now: ${lost.map(say).join(", ")}.`].filter(Boolean).join(" ");
-    shotNote(board, `${told}${more}`.trim());
+    const told = [drafts.length && `FanDuel doesn't have ${drafts.map(({ leg }) => say(leg)).join(", ")} at that number. Keep the screenshot line, pick one of theirs, or leave it off.`, lost.length && `Not on FanDuel: ${lost.map(say).join(", ")}. Keep that line, or leave it off.`].filter(Boolean).join(" ");
+    shotNote(board, `${told}${more}`.trim() || (missed.length ? "Keep the screenshot line, or leave it off." : ""));
     if (matched.length === 1 && first) shotAskOdds(board, first, data.odds, typeof savePrice === "function" ? savePrice(((typeof saveList === "function" && saveList().find((one) => one.id === first)) || {}).legs || []) : "");
-    shotNearPaint(board, (matched.length > 1 ? openMissed : missed).map((leg) => ({ text: say(leg), near: shotNear(people, leg, shotGame(people, leg, matched.length > 1 ? openFound : found)) })));
-    const tray = board.querySelector(":scope > .find-tray");
-    if (tray && !tray.hidden) tray.scrollIntoView({ behavior: "smooth", block: "start" });
+    shotNearPaint(board, (matched.length > 1 ? openMissed : missed).map((leg) => ({ text: say(leg), leg, near: shotNear(people, leg, shotGame(people, leg, matched.length > 1 ? openFound : found)) })));
   } catch (error) {
     if (!wait.signal.aborted) shotNote(board, error.message || "I could not read a bet on that screenshot.");
   } finally {

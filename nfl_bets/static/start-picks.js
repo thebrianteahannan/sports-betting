@@ -1202,6 +1202,7 @@ function startPaint(again) {
     });
   }
   if (typeof startHomeStrip === "function") startHomeStrip();
+  const shotLive = document.querySelector("#desk-glass-in .find-shot-live");
   document.querySelectorAll(".find-start").forEach((node) => node.remove());
   const spot = startSpot(), board = spot && spot.closest(".find-board");
   if (!spot || !board || typeof homeRecRows !== "function") return;
@@ -1216,6 +1217,8 @@ function startPaint(again) {
   if (!panel) {
     const quick = typeof quickAddBox === "function" ? quickAddBox(board) : null;
     if (quick) box.append(quick);
+    const shotHead = quick && quick.querySelector(".quick-add-head");
+    if (shotHead && shotLive) shotHead.after(shotLive);
     box.hidden = Boolean(input && input.value.trim());
     spot.after(box);
     if (typeof betShotMount === "function") betShotMount();
