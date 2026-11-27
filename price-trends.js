@@ -414,13 +414,13 @@ async function tick() {
     if (JSON.stringify(log) !== JSON.stringify(past)) await writeLog(log);
     const pack = (row) => JSON.stringify({ trends: row.trends, early: row.early, say: row.say, brief: row.brief });
     const same = cache && pack(cache) === pack(next);
-    if (same && cache.voice) next.voice = cache.voice;
+    if (same && cache.voice && cache.voice.v === 2) next.voice = cache.voice;
     cache = next;
     if (!same) {
       const { kv } = require("./live-recs");
       await kv("", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { k: KEY, v: next } });
     }
-    if (!next.voice && next.dive) speak(next);
+    if (!(next.voice && next.voice.v === 2) && next.dive) speak(next);
     const line = next.trends[0] ? next.trends[0].say : next.say;
     console.log(`[price-trends] ${next.looked.steps} reprices, ${next.trends.length} clocks, ${next.early.length} early. ${line}`);
     return next;

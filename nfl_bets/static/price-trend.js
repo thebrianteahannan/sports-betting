@@ -36,14 +36,13 @@ function priceTrendBet(clock) {
 
 function priceTrendWhy(clock) {
   if (!clock) return "";
-  const when = priceTrendWhen(clock);
-  const at = when ? (when.startsWith("in ") ? when : `in the ${when}`) : "";
+  const where = priceTrendWhere(clock);
   const lead = `In ${clock.agree} of ${clock.games} games, ${priceTrendBet(clock)}`;
   const size = priceTrendPoint(clock.points);
-  if (clock.faded) return `${lead} move about ${size} ${at}. Then the price goes back.`;
-  if (clock.way === "longer") return `${lead} get about ${size} cheaper ${at}. Wait for that number.`;
-  const stay = clock.held ? ", and the new price stays" : "";
-  return `${lead} cost about ${size} more ${at}${stay}. This one is still the early price.`;
+  const at = where ? ` ${where}` : "";
+  if (clock.faded) return `${lead} move about ${size}${at}, then the price comes back.`;
+  if (clock.way === "longer") return `${lead} get about ${size} cheaper${at}. Wait.`;
+  return `${lead} cost about ${size} more${at}.${clock.held ? " That price stays." : ""}`;
 }
 
 function priceTrendTag(clock) {
@@ -77,7 +76,7 @@ function priceTrendTakes(data) {
       steps: [],
       clock: true,
       clockLine: text,
-      clockWhy: (data.voice && data.voice.now && data.voice.now[row.label]) || priceTrendWhy(clock),
+      clockWhy: priceTrendWhy(clock),
       clockTag: priceTrendTag(clock),
     });
   });
@@ -119,11 +118,51 @@ function priceTrendWhen(clock) {
   return `${text.replace(/ out$/, "")} before ${word}`;
 }
 
-function priceTrendClockLine(clock, skip) {
-  const hit = `${clock.agree} of ${clock.games}`;
-  const where = [priceTrendName(clock), priceTrendWhen(clock)].filter(Boolean).join(", ");
-  if (skip) return `${where}. ${hit}.`;
-  return `${where}. ${hit}, about ${priceTrendPoint(clock.points)}.`;
+function priceTrendWhere(clock) {
+  const text = priceTrendWhen(clock);
+  if (!text || /^(in |early )/i.test(text)) return text;
+  return `in the ${text}`;
+}
+
+function priceTrendKey(clock) {
+  return [clock.sport, clock.prop, clock.side, clock.when].join("|");
+}
+
+function priceTrendOpenRows(data) {
+  const early = (data && data.early) || [];
+  const now = (data && data.dive && data.dive.now) || [];
+  const clocks = (data && data.dive && data.dive.clocks) || [];
+  const rows = [];
+  now.forEach((line) => {
+    const text = String(line || "");
+    const row = early.find((item) => item && item.label && text.startsWith(`Take ${item.label}`));
+    if (!row || rows.some((have) => have.row.label === row.label && have.row.match === row.match)) return;
+    rows.push({ row, clock: priceTrendHit(row, clocks), ticket: priceTrendOpenLine(text, early).replace(/\s+$/, "") });
+  });
+  return rows;
+}
+
+function priceTrendNames(label) {
+  return String(label || "").split(/\s+/).filter((word) => /^[A-Z][a-z]{2,}/.test(word));
+}
+
+function priceTrendBets(data) {
+  const groups = new Map();
+  priceTrendOpenRows(data).forEach((item) => {
+    const key = item.clock ? priceTrendKey(item.clock) : item.row.label;
+    const bag = groups.get(key) || { clock: item.clock, key, tickets: [], names: [] };
+    bag.tickets.push(item.ticket);
+    priceTrendNames(item.row.label).forEach((name) => { if (!bag.names.includes(name)) bag.names.push(name); });
+    groups.set(key, bag);
+  });
+  const voice = data && data.voice;
+  return [...groups.values()].map((bag) => {
+    const why = bag.clock ? priceTrendWhy(bag.clock) : "";
+    const line = `${bag.tickets.join(" ")} ${why}`.trim();
+    const said = voice && voice.v === 2 && voice.bets && voice.bets[bag.key];
+    if (!said || bag.names.some((name) => !said.includes(name)) || (bag.clock && !said.includes(`${bag.clock.agree} of ${bag.clock.games}`))) return line;
+    return said;
+  });
 }
 
 function priceTrendOpenLine(line, early) {
@@ -134,13 +173,6 @@ function priceTrendOpenLine(line, early) {
   const price = Number(row.odds);
   const shown = Number.isFinite(price) && price ? (price > 0 ? `+${price}` : `−${Math.abs(price)}`) : "";
   return `${row.label}${shown ? ` at ${shown}` : ""}.${kick ? ` ${kick}.` : ""}`;
-}
-
-function priceTrendLead(clocks) {
-  const sizes = (clocks || []).filter((row) => row.held && !row.faded).map((row) => Math.abs(Number(row.points))).filter((n) => n).sort((a, b) => a - b);
-  if (!sizes.length) return "";
-  const span = sizes[0] === sizes[sizes.length - 1] ? `about ${priceTrendPoint(sizes[0])}` : `about ${sizes[0]} to ${priceTrendPoint(sizes[sizes.length - 1])}`;
-  return `These move ${span} before the game.`;
 }
 
 function priceTrendFill(host, data) {
@@ -164,28 +196,20 @@ function priceTrendFill(host, data) {
     return;
   }
   const clocks = dive.clocks || [];
-  const voice = data.voice || {};
-  const byMove = (rows) => rows.slice().sort((a, b) => Math.abs(b.points) - Math.abs(a.points));
-  const clockLine = (row, skip) => (voice.clocks && voice.clocks[[row.sport, row.prop, row.side, row.when].join("|")]) || priceTrendClockLine(row, skip);
-  const said = voice.lead || priceTrendLead(clocks);
-  if (said) {
-    const lead = document.createElement("p");
-    lead.className = "price-trend-bet";
-    lead.textContent = said;
-    host.append(lead);
-  }
-  const openLine = (line) => {
-    const text = String(line || "");
-    const row = ((data && data.early) || []).find((item) => item && item.label && text.startsWith(`Take ${item.label}`));
-    const saidNow = row && voice.now && voice.now[row.label];
-    return saidNow || priceTrendOpenLine(line, data && data.early);
+  const voice = data.voice && data.voice.v === 2 ? data.voice : {};
+  const used = new Set(priceTrendOpenRows(data).map((item) => item.clock && priceTrendKey(item.clock)).filter(Boolean));
+  const lineFor = (row, group) => {
+    const said = voice[group] && voice[group][priceTrendKey(row)];
+    const own = priceTrendWhy(row);
+    if (!said || !said.includes(`${row.agree} of ${row.games}`)) return own;
+    return said;
   };
-  const head = (group, fallback) => (voice.heads && voice.heads[group]) || fallback;
-  priceTrendSection(host, head("now", "On the board now"), (dive.now || []).map(openLine));
-  priceTrendSection(host, head("bet", "Bet these early. The price drops and stays there."), byMove(clocks.filter((row) => !row.faded && row.way === "shorter" && row.held)).map((row) => clockLine(row)));
-  priceTrendSection(host, head("fresh", "Same bets. We have not seen one finish yet."), byMove(clocks.filter((row) => !row.faded && row.way === "shorter" && !row.held)).map((row) => clockLine(row)));
-  priceTrendSection(host, head("wait", "Wait. You get a better number."), byMove(clocks.filter((row) => !row.faded && row.way === "longer")).map((row) => clockLine(row)));
-  priceTrendSection(host, head("skip", "Skip these. The price moves, then it comes back."), byMove(clocks.filter((row) => row.faded)).map((row) => clockLine(row, true)), "price-trend-skip");
+  const byMove = (rows) => rows.slice().sort((a, b) => Math.abs(b.points) - Math.abs(a.points));
+  priceTrendSection(host, "Bet these", priceTrendBets(data));
+  priceTrendSection(host, "Wait", byMove(clocks.filter((row) => !row.faded && row.way === "longer")).map((row) => lineFor(row, "wait")));
+  priceTrendSection(host, "These prices stay", byMove(clocks.filter((row) => !row.faded && row.way === "shorter" && row.held && !used.has(priceTrendKey(row)))).map((row) => lineFor(row, "stay")));
+  priceTrendSection(host, "So far", byMove(clocks.filter((row) => !row.faded && row.way === "shorter" && !row.held && !used.has(priceTrendKey(row)))).map((row) => lineFor(row, "soon")));
+  priceTrendSection(host, "Skip", byMove(clocks.filter((row) => row.faded)).map((row) => lineFor(row, "skip")), "price-trend-skip");
 }
 
 function priceTrendPaint(box) {

@@ -40,15 +40,16 @@ function groupOf(clock) {
 
 function at(when) {
   if (!when) return "";
-  return when.startsWith("in ") ? ` ${when}` : ` in the ${when}`;
+  if (/^(in |early )/i.test(when)) return ` ${when}`;
+  return ` in the ${when}`;
 }
 
-function sentence(row) {
+function trendLine(row) {
   const where = at(row.when);
-  if (row.group === "skip") return `In ${row.hit} games, ${row.bet} move about ${row.size} points${where}. Then the price goes back.`;
-  if (row.group === "wait") return `In ${row.hit} games, ${row.bet} get about ${row.size} points cheaper${where}. Wait for that number.`;
-  const stay = row.group === "bet" ? ", and the new price stays" : "";
-  return `In ${row.hit} games, ${row.bet} cost about ${row.size} points more${where}${stay}. This one is still the early price.`;
+  if (row.group === "skip") return `In ${row.hit} games, ${row.bet} move about ${row.size} points${where}, then the price comes back.`;
+  if (row.group === "wait") return `In ${row.hit} games, ${row.bet} get about ${row.size} points cheaper${where}. Wait.`;
+  const stay = row.group === "bet" ? " That price stays." : "";
+  return `In ${row.hit} games, ${row.bet} cost about ${row.size} points more${where}.${stay}`;
 }
 
 function sheet(data) {
@@ -66,36 +67,35 @@ function sheet(data) {
     games: Number(clock.games),
     size: pointSize(clock.points),
   }));
-  rows.forEach((row) => { row.line = sentence(row); });
-  const now = [];
+  rows.forEach((row) => { row.line = trendLine(row); });
+  const bets = new Map();
   (dive.now || []).forEach((line) => {
     const text = String(line || "");
     const row = early.find((item) => item && item.label && text.startsWith(`Take ${item.label}`));
     if (!row) return;
     const clock = rows.find((item) => item.key === clockKey(row));
-    if (!clock || now.some((item) => item.label === row.label)) return;
-    now.push({
-      id: `n${now.length}`,
-      label: row.label,
-      line: clock.line,
-      hit: clock.hit,
-      agree: clock.agree,
-      games: clock.games,
-      size: clock.size,
-      names: String(row.label).split(/\s+/).filter((word) => /^[A-Z][a-z]{2,}/.test(word)),
+    if (!clock) return;
+    const bag = bets.get(clock.key) || { id: `b${bets.size}`, clock, tickets: [], names: [] };
+    const price = Number(row.odds);
+    const shown = Number.isFinite(price) && price ? (price > 0 ? `+${price}` : `−${Math.abs(price)}`) : "";
+    const kick = text.match(/Kickoff is ([^.]+)/);
+    const ticket = `${row.label}${shown ? ` at ${shown}` : ""}.${kick ? ` ${kick[1]}.` : ""}`;
+    if (!bag.tickets.includes(ticket)) bag.tickets.push(ticket);
+    String(row.label).split(/\s+/).filter((word) => /^[A-Z][a-z]{2,}/.test(word)).forEach((name) => {
+      if (!bag.names.includes(name)) bag.names.push(name);
     });
+    bets.set(clock.key, bag);
   });
-  const sizes = rows.filter((row) => row.group === "bet").map((row) => Number(row.size)).filter((n) => n).sort((a, b) => a - b);
-  const lead = !sizes.length ? "" : sizes[0] === sizes[sizes.length - 1]
-    ? `These move about ${sizes[0]} points before the game.`
-    : `These move about ${sizes[0]} to ${sizes[sizes.length - 1]} points before the game.`;
+  const used = new Set(bets.keys());
   const slots = [
-    lead && { id: "LEAD", line: lead },
-    ...now.map((row) => ({ id: `NOW ${row.id}`, line: row.line })),
-    ...rows.map((row) => ({ id: `CLOCK ${row.id}`, line: row.line })),
-  ].filter(Boolean);
+    ...[...bets.values()].map((bag) => ({ id: `BET ${bag.id}`, key: bag.clock.key, group: "bets", line: `${bag.tickets.join(" ")} ${bag.clock.line}`, names: bag.names, agree: bag.clock.agree, games: bag.clock.games, size: bag.clock.size })),
+    ...rows.filter((row) => row.group === "wait").map((row) => ({ id: `WAIT ${row.id}`, key: row.key, group: "wait", line: row.line, agree: row.agree, games: row.games, size: row.size })),
+    ...rows.filter((row) => row.group === "bet" && !used.has(row.key)).map((row) => ({ id: `STAY ${row.id}`, key: row.key, group: "stay", line: row.line, agree: row.agree, games: row.games, size: row.size })),
+    ...rows.filter((row) => row.group === "fresh" && !used.has(row.key)).map((row) => ({ id: `SOON ${row.id}`, key: row.key, group: "soon", line: row.line, agree: row.agree, games: row.games, size: row.size })),
+    ...rows.filter((row) => row.group === "skip").map((row) => ({ id: `SKIP ${row.id}`, key: row.key, group: "skip", line: row.line, agree: row.agree, games: row.games, size: row.size })),
+  ];
   const mark = crypto.createHash("sha1").update(slots.map((slot) => `${slot.id}: ${slot.line}`).join("\n")).digest("hex").slice(0, 12);
-  return { mark, rows, now, lead, slots };
+  return { mark, rows, slots };
 }
 
 function clean(text) {
@@ -128,17 +128,17 @@ function readLines(text) {
   const found = {};
   String(text || "").split(/\n/).forEach((raw) => {
     const line = raw.replace(/^[-*]\s*/, "").trim();
-    const match = line.match(/^(LEAD):\s*(.+)$/i) || line.match(/^(NOW|CLOCK)\s+(\S+):\s*(.+)$/i);
+    const match = line.match(/^(BET|WAIT|SKIP|STAY|SOON)\s+(\S+):\s*(.+)$/i);
     if (!match) return;
-    const key = match[1].toUpperCase() === "LEAD" ? "LEAD" : `${match[1].toUpperCase()} ${String(match[2]).toLowerCase()}`;
-    const sentence = clean(match[1].toUpperCase() === "LEAD" ? match[2] : match[3]).replace(/^["']|["']$/g, "");
+    const key = `${match[1].toUpperCase()} ${String(match[2]).toLowerCase()}`;
+    const sentence = clean(match[3]).replace(/^["']|["']$/g, "");
     if (!sentence || bad(sentence) || sentence.length > 280) return;
     found[key] = /[.!?]$/.test(sentence) ? sentence : `${sentence}.`;
   });
   return found;
 }
 
-const SYSTEM = "Rewrite each line the way you would say it out loud to a friend who bets. Keep every number exactly. Do not add a number. Do not name a player. Do not say a bet will win. Do not add a warning. One sentence. Reply with the same labels.";
+const SYSTEM = "Rewrite each line the way you would tell a friend what to bet, what to wait on, and what to skip. Keep every name, price, count, and point size. Do not add a number. Do not drop a player's name. Do not say a bet will win. Do not say a result has not finished. One or two sentences. Reply with the same labels.";
 
 async function askLocal(text) {
   const response = await fetch(`${OLLAMA}/api/chat`, {
@@ -183,6 +183,8 @@ async function ask(text) {
 
 function keep(source, sentence, row) {
   if (!sentence || !source || !sameNumbers(source, sentence)) return "";
+  if (/finish yet|same bets|have not seen/i.test(sentence)) return "";
+  if (row && row.names && row.names.some((name) => !sentence.includes(name))) return "";
   if (row && (!hasHit(sentence, row.agree, row.games) || !hasSize(sentence, row.size))) return "";
   return sentence;
 }
@@ -194,19 +196,13 @@ async function rewrite(pack) {
     const text = await ask(`Rewrite these lines.\n${chunk.map((slot) => `${slot.id}: ${slot.line}`).join("\n")}`);
     Object.assign(found, readLines(text));
   }
-  const voice = { lead: "", heads: {}, now: {}, clocks: {} };
-  voice.lead = keep(pack.lead, found.LEAD) || "";
-  pack.rows.forEach((row) => {
-    const sentence = keep(row.line, found[`CLOCK ${row.id}`], row);
-    if (sentence) voice.clocks[row.key] = sentence;
+  const voice = { v: 2, bets: {}, wait: {}, skip: {}, stay: {}, soon: {} };
+  pack.slots.forEach((slot) => {
+    const sentence = keep(slot.line, found[slot.id], slot);
+    if (sentence && voice[slot.group]) voice[slot.group][slot.key] = sentence;
   });
-  pack.now.forEach((row) => {
-    const sentence = keep(row.line, found[`NOW ${row.id}`], row);
-    if (!sentence || row.names.some((name) => sentence.includes(name))) return;
-    voice.now[row.label] = sentence;
-  });
-  if (!voice.lead && !Object.keys(voice.clocks).length && !Object.keys(voice.now).length) return null;
-  return voice;
+  const n = Object.values(voice).filter((bag) => bag && typeof bag === "object").reduce((sum, bag) => sum + Object.keys(bag).length, 0);
+  return n ? voice : null;
 }
 
 async function say(data) {
