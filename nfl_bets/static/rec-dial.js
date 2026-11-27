@@ -56,6 +56,15 @@ function recDialArrive(counts) {
   window.recDial = recDial;
 }
 
+function recDialSeat(counts) {
+  if (recDialDrag) return recDial;
+  const best = recDialBest(counts);
+  if (best == null) return recDial;
+  recDialArrived = true;
+  if (best !== recDial) recDialApply(best);
+  return recDial;
+}
+
 function recDialInBand(odds) {
   const o = Number(odds);
   return Number.isFinite(o) && o >= -250 && o <= 100;
@@ -243,7 +252,7 @@ function recDialMark(card, pick) {
 }
 
 function recDialHosts() {
-  return document.querySelectorAll(".find-start, #desk-games");
+  return [...document.querySelectorAll(".find-start, #desk-games")].filter((box) => !box.hidden);
 }
 
 function recDialSyncInputs(level, quiet) {
@@ -297,12 +306,12 @@ function recDialApply(next, opts) {
   recDialSave(level);
   recDialHosts().forEach((box) => { box.dataset.recDial = String(recDial); });
   recDialSyncInputs(recDial, quiet);
+  const showing = recDialShowingPaint(recDial);
   document.querySelectorAll(".rec-dial-empty").forEach((node) => {
     const host = node.closest(".find-start, #desk-games");
-    if (!host) return;
-    const seen = (kind) => [...host.querySelectorAll(`.desk-rec[${kind}], .rec-parlay-card[${kind}]`)].some(recDialCardOn);
-    const hit = recDial <= 0 ? seen("data-rec-golden") : recDial === 1 ? (seen("data-rec-golden") || seen("data-rec-silver")) : recDial === 2 ? seen("data-rec-metal") : recDial === 3 ? (seen("data-rec-metal") || seen("data-rec-close")) : recDial === 4 ? seen("data-rec-hot") : (seen("data-rec-metal") || seen("data-rec-close") || seen("data-rec-hot"));
-    const show = !hit;
+    if (host && host.hidden) return;
+    const show = !(showing > 0);
+    if (node.hidden === !show && !show) return;
     node.hidden = !show;
     if (show) node.textContent = recDialEmptyText(node);
   });
@@ -319,7 +328,7 @@ function recDialApply(next, opts) {
 
 function recDialCharts() {
   if (recDialDrag) return;
-  document.querySelectorAll(".desk-rec").forEach((card) => {
+  recDialHosts().forEach((host) => host.querySelectorAll(".desk-rec").forEach((card) => {
     const input = card.querySelector(".desk-rec-range");
     const last = input && Number(input.value) >= Number(input.max);
     const show = last && (card.dataset.recMetal === "1" || card.dataset.recClose === "1" || card.dataset.recHot === "1");
@@ -333,7 +342,7 @@ function recDialCharts() {
     priceMoveInline(card);
     const box = card.querySelector(":scope > .manage-price-chart");
     if (box) box.classList.add("price-chart-dial");
-  });
+  }));
 }
 
 function recDialNextSay(level) {
@@ -476,5 +485,6 @@ window.recDialCountPaint = recDialCountPaint;
 window.recDialCharts = recDialCharts;
 window.recDialVisit = recDialVisit;
 window.recDialArrive = recDialArrive;
+window.recDialSeat = recDialSeat;
 window.recDialShowingOf = recDialShowingOf;
 window.recDialShowingPaint = recDialShowingPaint;

@@ -131,9 +131,27 @@ function rosterPlus(button, person) {
     if (parlayPick.size >= 8) return;
     parlayPick.set(person.key, person);
     rosterSavePlayer(person);
-    if (typeof trayRoster === "function") trayRoster();
-    paintParlay();
-    if (typeof parlayOpenTray === "function") parlayOpenTray();
+    const row = (typeof saveList === "function" ? saveList() : []).find((item) => rosterBareBet(item, person));
+    if (row && typeof manageEditSet === "function") {
+      manageEditSet(row.id);
+      window.manageEditLevel = { id: row.id, level: 1 };
+      if (typeof manageShown === "function" && !manageShown(row)) {
+        if (typeof manageFilter !== "undefined" && manageFilter === "locked") manageFilter = "all";
+        if (typeof manageWhen !== "undefined") manageWhen = "all";
+      }
+    }
+    window.saveGone = false;
+    window.saveShut = false;
+    if (typeof birdMenu === "function") birdMenu("manage");
+    const id = row && row.id;
+    if (!id) return;
+    let tries = 0;
+    const look = () => {
+      const card = document.querySelector(`.manage-card[data-id="${window.CSS && CSS.escape ? CSS.escape(id) : id}"]`);
+      if (card) { card.scrollIntoView({ block: "center" }); return; }
+      if (++tries < 30) setTimeout(look, 100);
+    };
+    look();
   });
   button.replaceWith(chip);
   chip.append(button, info, plus);

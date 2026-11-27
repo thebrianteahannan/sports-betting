@@ -5,7 +5,12 @@ let priceMoveFocus = "";
 let priceMovePinned = false;
 let priceMoveTab = "deez";
 let priceMoveLeague = "";
+let priceMoveListShut = false;
 let priceChartN = 0;
+
+function priceMoveNarrow() {
+  return window.matchMedia("(max-width: 800px)").matches;
+}
 
 function priceMovePay(points) {
   const n = Math.abs(Number(points) || 0).toFixed(1);
@@ -59,6 +64,7 @@ function priceMoveChart(series) {
   svg.setAttribute("class", "price-chart");
   svg.style.touchAction = "pan-y";
   const pts = (series || []).map((point) => ({ t: Number(point.at), y: priceMoveImplied(point.odds), odds: point.odds })).filter((point) => point.y);
+  if (pts.length === 1) pts.push({ t: Math.max(pts[0].t + 60000, Date.now()), y: pts[0].y, odds: pts[0].odds });
   if (pts.length < 2) return svg;
   const ns = "http://www.w3.org/2000/svg";
   const el = (name) => document.createElementNS(ns, name);
@@ -318,6 +324,7 @@ function priceMoveDraw(box, rows) {
     button.textContent = label;
     button.addEventListener("click", () => {
       priceMoveTab = id;
+      priceMoveListShut = false;
       priceMoveDraw(box, rows);
     });
     switcher.append(button);
@@ -332,6 +339,7 @@ function priceMoveDraw(box, rows) {
       button.textContent = label;
       button.addEventListener("click", () => {
         priceMoveLeague = id;
+        priceMoveListShut = false;
         priceMoveDraw(box, rows);
       });
       leagueBar.append(button);
@@ -355,10 +363,29 @@ function priceMoveDraw(box, rows) {
     const record = priceMoveTab === "deez" && row.read && row.read.n ? `${row.read.hits} of ${row.read.n}. ` : "";
     move.textContent = row.clock ? `${row.clockTag || "Price clock"}. Still ${priceMovePrice(row.last)}` : `${record}${pay.charAt(0).toUpperCase()}${pay.slice(1)}`;
     button.append(name, move);
-    button.addEventListener("click", () => { priceMovePinned = true; priceMoveFocus = priceMoveKey(row); priceMoveDraw(box, rows); });
+    button.addEventListener("click", () => {
+      priceMovePinned = true;
+      priceMoveFocus = priceMoveKey(row);
+      if (!priceMoveNarrow()) { priceMoveDraw(box, rows); return; }
+      priceMoveListShut = false;
+      priceMoveDraw(box, rows);
+      requestAnimationFrame(() => {
+        priceMoveListShut = true;
+        if (!box.isConnected) return;
+        box.classList.add("list-shut");
+        const menu = box.querySelector(".price-move-menu");
+        let settled = false;
+        const finish = () => {
+          if (settled || !priceMoveListShut || !box.isConnected) return;
+          settled = true;
+          box.classList.add("list-settled");
+        };
+        if (menu) menu.addEventListener("transitionend", (event) => { if (event.propertyName === "transform") finish(); }, { once: true });
+        setTimeout(finish, 450);
+      });
+    });
     list.append(button);
   });
-  opener.addEventListener("click", () => menu.classList.toggle("open"));
   menu.append(opener, list);
   const card = document.createElement("article");
   card.className = "price-move-card";
@@ -452,12 +479,26 @@ function priceMoveDraw(box, rows) {
     if (bet) acts.append(bet);
     if (news) acts.append(news);
   }
-  card.append(head, where, ...(why ? [why] : []), ...(books ? [books] : []), ...(acts ? [acts] : []), ...(picked.clock ? [] : [priceMoveChart(picked.series), unit, steps]));
+  const back = document.createElement("button");
+  back.type = "button";
+  back.className = "price-move-back";
+  back.textContent = "The list";
+  back.addEventListener("click", () => {
+    priceMoveListShut = false;
+    box.classList.remove("list-settled");
+    requestAnimationFrame(() => { if (box.isConnected) box.classList.remove("list-shut"); });
+  });
+  card.append(back, head, where, ...(why ? [why] : []), ...(books ? [books] : []), ...(acts ? [acts] : []), priceMoveChart(picked.series), unit, steps);
+  const stage = document.createElement("div");
+  stage.className = "price-move-stage";
+  stage.append(menu, card);
   const trend = box.querySelector(":scope > .price-trend");
-  box.replaceChildren(...(trend ? [trend] : []), lead, switcher, ...(leagueBar.childElementCount ? [leagueBar] : []), menu, card);
+  box.replaceChildren(...(trend ? [trend] : []), lead, switcher, ...(leagueBar.childElementCount ? [leagueBar] : []), stage);
+  box.classList.toggle("list-shut", priceMoveListShut);
+  box.classList.toggle("list-settled", priceMoveListShut);
   if (!trend && typeof priceTrendPaint === "function") priceTrendPaint(box);
   const on = box.querySelector(".price-move-pick.on");
-  if (on) on.scrollIntoView({ block: "nearest" });
+  if (on && !priceMoveListShut) on.scrollIntoView({ block: "nearest" });
 }
 
 function priceMoveShow(board, card) {

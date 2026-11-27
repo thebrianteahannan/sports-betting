@@ -91,8 +91,11 @@ function manageZoomBar(card) {
     const snapped = Math.max(0, Math.min(MANAGE_ZOOM_MAX, Math.round(Number(input.value) || 0)));
     input.value = String(snapped);
     input.setAttribute("aria-valuenow", String(snapped));
-    if (!card) manageZoomApply(snapped);
-    else {
+    if (!card) {
+      window.manageEditLevel = null;
+      manageZoomApply(snapped);
+    } else {
+      if (window.manageEditLevel && window.manageEditLevel.id === card.dataset.id) window.manageEditLevel = null;
       manageCardZoom.set(card.dataset.id, snapped);
       card.dataset.manageZoom = String(snapped);
       manageZoomPrice(card);
@@ -339,6 +342,22 @@ function manageSpot(who) {
   return [pos, nick].filter(Boolean).join(" · ");
 }
 
+function managePriceCall(leg) {
+  const line = document.createElement("p");
+  line.className = "manage-price-call";
+  line.hidden = true;
+  if (typeof priceTrendCall !== "function" || typeof priceTrendLoad !== "function") return line;
+  priceTrendLoad().then((data) => {
+    if (!line.isConnected) return;
+    const call = priceTrendCall(leg, data);
+    if (!call) return;
+    line.hidden = false;
+    line.dataset.call = call.kind;
+    line.textContent = call.say;
+  });
+  return line;
+}
+
 function manageLegLine(leg, legs, own) {
   const bits = manageLegRead(leg);
   const pick = managePickOf(leg);
@@ -356,7 +375,7 @@ function manageLegLine(leg, legs, own) {
     pick && ((typeof scriptGoldenTag === "function" && scriptGoldenTag(pick)) || (pick.tier !== "good" ? `<i class="manage-rec">Recommended</i>` : "")),
     manageSlipPace(leg),
   ].filter(Boolean).join("");
-  line.append(said);
+  line.append(said, managePriceCall(leg));
   if (typeof manageOddsBind === "function") manageOddsBind(said.querySelector(".px"), [leg], line);
   if (typeof manageLegEdit === "function") manageLegEdit(line, said, leg, legs.indexOf(leg), legs.length);
   const note = typeof manageLegNote === "function" ? manageLegNote(leg) : null;
@@ -410,6 +429,8 @@ function manageSlip(row) {
 }
 
 function manageCard(row, n) {
+  const want = window.manageEditLevel;
+  if (want && want.id === row.id) manageCardZoom.set(row.id, want.level);
   const card = document.createElement("article");
   card.className = `manage-card${(row.legs || []).length > 1 ? " parlay" : ""}${row.locked ? " locked" : ""}${row.id === window.parlayOpenId ? " on" : ""}${manageEditId === row.id ? " editing" : ""}`;
   card.dataset.id = row.id;

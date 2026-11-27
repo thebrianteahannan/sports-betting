@@ -116,6 +116,7 @@ async function gradeTick() {
   }
   await gradeFill().catch((error) => console.error("live recs fill failed:", error));
   await require("./golden-log").settle().catch((error) => console.error("golden grade failed:", error));
+  await require("./parlay-log").settle().catch((error) => console.error("parlay grade failed:", error));
 }
 
 async function gradeFill() {
@@ -156,8 +157,10 @@ async function gradeTally() {
   };
   const history = rows.slice().sort((a, b) => Date.parse(b.kickoff) - Date.parse(a.kickoff)).map((row) => ({ id: row.id, match: row.match, kickoff: row.kickoff, picks: row.picks || [], review: row.review || null }));
   const mine = rows.filter((row) => row.day === today);
-  const metals = await require("./golden-log").metals().catch(() => ({ golden: { won: 0, lost: 0, history: [] }, silver: { won: 0, lost: 0, history: [] }, bronze: { won: 0, lost: 0, history: [] } }));
-  return { today: count(mine), all: count(rows), kinds: { today: kinds(mine), all: kinds(rows) }, history, golden: metals.golden, silver: metals.silver, bronze: metals.bronze };
+  const empty = { won: 0, lost: 0, history: [] };
+  const metals = await require("./golden-log").metals().catch(() => ({ golden: empty, silver: empty, bronze: empty }));
+  const parlays = await require("./parlay-log").metals().catch(() => ({ golden: empty, silver: empty, bronze: empty }));
+  return { today: count(mine), all: count(rows), kinds: { today: kinds(mine), all: kinds(rows) }, history, golden: metals.golden, silver: metals.silver, bronze: metals.bronze, parlayGolden: parlays.golden, parlaySilver: parlays.silver, parlayBronze: parlays.bronze };
 }
 
 module.exports = { gradeTick, gradeTally, gradeSaved };

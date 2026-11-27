@@ -72,8 +72,8 @@ function priceTrendTakes(data) {
       first: row.odds,
       last: row.odds,
       points: 0,
-      series: [],
-      steps: [],
+      series: Array.isArray(row.series) ? row.series : [],
+      steps: Array.isArray(row.steps) ? row.steps : [],
       clock: true,
       clockLine: text,
       clockWhy: priceTrendWhy(clock),
@@ -212,12 +212,116 @@ function priceTrendFill(host, data) {
   priceTrendSection(host, "Skip", byMove(clocks.filter((row) => row.faded)).map((row) => lineFor(row, "skip")), "price-trend-skip");
 }
 
+let priceTrendHold = null;
+
+function priceTrendLoad() {
+  if (priceTrendHold && priceTrendHold.data && Date.now() - priceTrendHold.at < 60000) return Promise.resolve(priceTrendHold.data);
+  if (priceTrendHold && priceTrendHold.run) return priceTrendHold.run;
+  const run = fetch("/api/price-trends", { credentials: "same-origin" }).then((response) => (response.ok ? response.json() : null)).catch(() => null).then((data) => {
+    priceTrendHold = { at: Date.now(), data, run: null };
+    return data;
+  });
+  priceTrendHold = { at: Date.now(), data: null, run };
+  return run;
+}
+
+function priceTrendFold(text) {
+  return String(text || "").toLowerCase().replace(/[–—−]/g, "-").replace(/\s+/g, " ").trim();
+}
+
+function priceTrendGame(text) {
+  return priceTrendFold(text).replace(/\s*@\s*/g, "@");
+}
+
+function priceTrendNum(text) {
+  const hit = String(text || "").match(/\d+(?:\.\d+)?/);
+  return hit ? hit[0] : "";
+}
+
+function priceTrendFamily(leg) {
+  const text = `${(leg && leg.market) || ""} ${(leg && leg.label) || ""}`.toLowerCase().replace(/\byds\b/g, "yards").replace(/\btds\b/g, "touchdowns");
+  if (/\b(alt|qtr|quarter|half|first|last|either|most|combine|each)\b/.test(text)) return "";
+  if (/\bspread\b|\bhandicap\b|\bmoneyline\b|\bmoney line\b/.test(text)) return "";
+  if (/\bteam total\b/.test(text)) return "Team total";
+  if (/\btotal points\b/.test(text)) return "Game total";
+  if (/any ?time touchdown|to score/.test(text)) return "Anytime TD";
+  if (/passing yards/.test(text)) return "Passing yards";
+  if (/rushing yards/.test(text)) return "Rushing yards";
+  if (/receiving yards/.test(text)) return "Receiving yards";
+  if (/receptions/.test(text)) return "Receptions";
+  if (/passing touchdowns/.test(text)) return "Passing TDs";
+  if (/rushing attempts|\bcarries\b/.test(text)) return "Carries";
+  if (/threes|3-pointers|\b3pt/.test(text)) return "Threes";
+  if (/\brebounds\b/.test(text) && !/\bpoints\b/.test(text)) return "Rebounds";
+  if (/\bassists\b/.test(text) && !/\bpoints\b/.test(text)) return "Assists";
+  if (/\bpoints\b/.test(text) && !/[+]/.test(text)) return "Points";
+  if (/\bshots\b/.test(text)) return "Shots";
+  if (/\bgoals\b/.test(text)) return "Goals";
+  if (/\bsaves\b/.test(text)) return "Saves";
+  return "";
+}
+
+function priceTrendSide(leg) {
+  const text = `${(leg && leg.label) || ""} ${(leg && leg.market) || ""}`;
+  if (/\bunder\b/i.test(text)) return "Under";
+  if (/\bover\b/i.test(text)) return "Over";
+  return "";
+}
+
+function priceTrendLegIs(leg, row) {
+  if (!leg || !row || !row.label) return false;
+  const game = priceTrendGame(leg.match);
+  const theirs = priceTrendGame(row.match);
+  if (game && theirs && game !== theirs) return false;
+  if (leg.sport && row.sport && String(leg.sport).toUpperCase() !== String(row.sport).toUpperCase()) return false;
+  const label = priceTrendFold(`${leg.label || ""} ${leg.market || ""}`);
+  const name = priceTrendFold(row.label);
+  if (!name) return false;
+  const mine = priceTrendNum(label);
+  const line = priceTrendNum(name);
+  if (mine && line && mine !== line) return false;
+  const prop = priceTrendFamily(leg);
+  const side = priceTrendSide(leg);
+  const rowProp = row.prop || "";
+  const rowSide = String(row.side || "");
+  if (prop && rowProp && prop !== rowProp) return false;
+  if (side && rowSide && side !== rowSide) return false;
+  if (label === name || label.includes(name)) return true;
+  const who = priceTrendFold(leg.player || "");
+  if (!who || !name.includes(who)) return false;
+  return !!prop && prop === rowProp && side === rowSide;
+}
+
+function priceTrendClockIs(leg, clock) {
+  if (!leg || !clock) return false;
+  const sport = String(leg.sport || "").toUpperCase();
+  if (!sport || sport !== String(clock.sport || "").toUpperCase()) return false;
+  const prop = priceTrendFamily(leg);
+  if (!prop || prop !== clock.prop) return false;
+  return priceTrendSide(leg) === String(clock.side || "");
+}
+
+function priceTrendCall(leg, data) {
+  if (!leg || !data) return null;
+  const open = priceTrendOpenRows(data).find((item) => priceTrendLegIs(leg, item.row));
+  if (open) {
+    const where = open.clock ? priceTrendWhere(open.clock) : "";
+    if (Number(open.row.wait) > 0) return { kind: "wait", say: where ? `Wait to lock it in. The window opens ${where}.` : "Wait to lock it in. The window has not opened." };
+    const why = open.clock ? priceTrendWhy(open.clock).replace(/\s*That price stays\.$/, "") : "";
+    return { kind: "now", say: why ? `Lock it in now. ${why}` : "Lock it in now. This price has not moved." };
+  }
+  const clocks = (data.dive && data.dive.clocks) || [];
+  const wait = clocks.filter((row) => !row.faded && row.way === "longer" && priceTrendClockIs(leg, row)).sort((a, b) => Math.abs(b.points) - Math.abs(a.points))[0];
+  if (!wait) return null;
+  return { kind: "wait", say: `Wait to lock it in. ${priceTrendWhy(wait).replace(/\s*Wait\.$/, "")}` };
+}
+
 function priceTrendPaint(box) {
   if (!box || box.querySelector(".price-trend")) return;
   const go = () => {
     if (!(window.memberAdmin || (window.state && window.state.admin))) return false;
     if (box.querySelector(".price-trend")) return true;
-    fetch("/api/price-trends", { credentials: "same-origin" }).then((response) => (response.ok ? response.json() : null)).then((data) => {
+    priceTrendLoad().then((data) => {
       if (!box.isConnected || box.querySelector(".price-trend")) return;
       const dive = data && data.dive;
       if (!(dive && dive.clocks && dive.clocks.length) && !((data && data.trends) || []).length) return;
@@ -229,7 +333,7 @@ function priceTrendPaint(box) {
       if (!moves) return;
       moves.priceClocks = priceTrendTakes(data);
       if (moves.priceRows && typeof priceMoveDraw === "function") priceMoveDraw(moves, moves.priceRows);
-    }).catch(() => {});
+    });
     return true;
   };
   if (!go()) setTimeout(() => { if (box.isConnected && !box.querySelector(".price-trend")) go(); }, 1500);
@@ -237,3 +341,5 @@ function priceTrendPaint(box) {
 
 window.priceTrendPaint = priceTrendPaint;
 window.priceTrendTakes = priceTrendTakes;
+window.priceTrendLoad = priceTrendLoad;
+window.priceTrendCall = priceTrendCall;

@@ -382,4 +382,4 @@ function logged() {
   return books;
 }
 
-module.exports = { note, movers, tick, apply, moveOf, stepSay, history, prime, logged };
+module.exports = { note, movers, tick, apply, moveOf, stepSay, stepsOf, history, prime, logged };

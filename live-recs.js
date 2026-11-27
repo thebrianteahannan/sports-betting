@@ -309,6 +309,7 @@ async function stampMetals(marked) {
   if (golden) note(golden).catch((error) => console.error("golden note failed:", error));
   if (silver) note(silver, "silver").catch((error) => console.error("silver note failed:", error));
   if (bronze) note(bronze, "bronze").catch((error) => console.error("bronze note failed:", error));
+  require("./parlay-log").note(marked && marked.picks).catch((error) => console.error("parlay note failed:", error));
   return { golden, silver, bronze };
 }
 
@@ -417,4 +418,4 @@ async function fillModel(rows) {
 
 pull();
 
-module.exports = { recRecord, recWarm, recsList, recRanked, recStory, recSample, recTop, recLazy, fairTick, kv };
+module.exports = { recRecord, recWarm, recsList, recRanked, recStory, recSample, recTop, recLazy, fairTick, kv, sportMap };

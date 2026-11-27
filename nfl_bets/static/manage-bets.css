@@ -362,7 +362,10 @@
 .manage-board .find-chose { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; min-width: 0; padding: 0.2rem 0; }
 .manage-board .manage-leg-note { display: none; flex: 1 0 100%; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.45rem; margin: 0.1rem 0 0.35rem; min-width: 0; }
 .manage-board .find-chose > .manage-tags,
-.manage-board .find-chose > .manage-price-chart { flex: 1 0 100%; width: 100%; min-width: 0; }
+.manage-board .find-chose > .manage-price-chart,
+.manage-board .find-chose > .manage-price-call { flex: 1 0 100%; width: 100%; min-width: 0; }
+.manage-board .manage-price-call { margin: 0.05rem 0 0.2rem; color: #ffc56b; font-size: 13px; font-weight: 700; line-height: 1.35; }
+.manage-board .manage-price-call[data-call="wait"] { color: #d7e2ee; }
 .manage-card[data-manage-zoom="3"] .manage-leg-note,
 .manage-card[data-manage-zoom="4"] .manage-leg-note,
 .manage-card[data-manage-zoom="5"] .manage-leg-note { display: flex; }

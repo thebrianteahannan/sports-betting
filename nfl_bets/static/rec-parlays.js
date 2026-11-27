@@ -233,7 +233,7 @@ function recParlayJoin(rows) {
 function recParlayRanked(board) {
   const all = recParlayLegs(board);
   const key = all.map((leg) => `${leg.pick.label}|${leg.pick.odds}|${leg.pick.hits}|${leg.pick.match}`).join("~");
-  if (recParlayMade.key !== key) {
+  if (recParlayMade.key !== key || !recParlayMade.pool) {
     let raw = [];
     let best = null;
     const seen = new Set();
@@ -414,21 +414,20 @@ function recParlayTune(box) {
   if (!box) return;
   box.dataset.legs = String(recParlaySize || 0);
   box.dataset.teams = window.recParlayTeams ? "1" : "";
-  const shown = [...box.querySelectorAll(".rec-parlay-card")].filter((card) => (!recParlaySize || card.dataset.legs === String(recParlaySize)) && (window.recParlayTeams || card.dataset.team !== "1"));
+  const list = box.querySelector(".rec-parlay-list");
+  const cards = list ? (list._cards || [...list.children]) : [];
+  if (list) list._cards = cards;
+  const shown = cards.filter((card) => (!recParlaySize || card.dataset.legs === String(recParlaySize)) && (window.recParlayTeams || card.dataset.team !== "1"));
+  if (list && (list.childElementCount !== shown.length || shown.some((card, i) => list.children[i] !== card))) list.replaceChildren(...shown);
   const counts = recParlayDialCounts(shown.map((card) => ({ place: card.dataset.place })));
   const tab = document.querySelector(".desk-games-tab.on .desk-tab-n");
   if (tab && tab.parentElement && tab.parentElement.textContent.startsWith("Parlays")) tab.textContent = String(counts.all);
   if (typeof recDialCountPaint === "function") recDialCountPaint(counts);
   if (typeof startFilterRefresh === "function") startFilterRefresh();
   const empty = box.querySelector(":scope > .rec-parlay-empty");
-  if (empty) empty.remove();
-  if (!shown.length && !box.querySelector(":scope > .rec-dial-empty")) {
-    const note = document.createElement("p");
-    note.className = "desk-games-note rec-parlay-empty";
-    note.textContent = recParlaySize ? `There are no ${recParlaySize}-leg recommended parlays.` : "No parlays at this leg count.";
-    box.append(note);
-  }
-  if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 0, { quiet: true });
+  if (shown.length) { if (empty) empty.remove(); }
+  else if (!empty && !box.querySelector(":scope > .rec-dial-empty")) box.append(Object.assign(document.createElement("p"), { className: "desk-games-note rec-parlay-empty", textContent: recParlaySize ? `There are no ${recParlaySize}-leg recommended parlays.` : "No parlays at this leg count." }));
+  if (typeof recDialSeat === "function") recDialSeat(counts);
 }
 
 function recParlayPaint(board, box) {
@@ -442,7 +441,7 @@ function recParlayPaint(board, box) {
   const tab = document.querySelector(".desk-games-tab.on .desk-tab-n");
   if (tab && tab.parentElement && tab.parentElement.textContent.startsWith("Parlays")) tab.textContent = String(counts.all);
   if (!made.rows.length) {
-    const say = made.pool.length ? "None of these parlays clear a ticket, and no strategy on the board is a known edge or a good pick that beats the price." : "A parlay needs two recommended picks that beat FanDuel, or a strategy that is already a known edge.";
+    const say = (made.pool || []).length ? "None of these parlays clear a ticket, and no strategy on the board is a known edge or a good pick that beats the price." : "A parlay needs two recommended picks that beat FanDuel, or a strategy that is already a known edge.";
     box.append(Object.assign(document.createElement("p"), { className: "desk-games-note", textContent: say }));
     return;
   }
@@ -452,7 +451,7 @@ function recParlayPaint(board, box) {
   box.append(list);
   const next = box.querySelector("button.rec-dial-next") || (typeof recDialNext === "function" ? recDialNext() : null);
   if (next) box.append(next);
-  if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 2, { quiet: true });
+  recParlayTune(box);
 }
 
 function recParlayBody(board) {

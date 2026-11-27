@@ -974,11 +974,12 @@ function startRecStats(opts) {
     const silver = tally.silver || { won: 0, lost: 0, history: [] };
     const bronze = tally.bronze || { won: 0, lost: 0, history: [] };
     startGolden = golden;
-    startMetals = { golden, silver, bronze };
+    startMetals = startMetalBag(tally);
     const score = document.createElement("div");
     score.className = "find-start-stats-score";
     score.innerHTML = [
       `<i>How the picks are hitting</i>`,
+      `<h2 class="hist-split">Single bets</h2>`,
       row("Live", pace, all, "Recommended bets in games on now that have hit or are on pace to hit", " on pace"),
       row("Today", today.won + won, today.won + today.lost + won + lost, "Recommended bets won today, out of the ones already decided"),
       row("All time", ever.won + won, ever.won + ever.lost + won + lost, "Every recommended bet that has finished"),
@@ -986,6 +987,10 @@ function startRecStats(opts) {
       row("Silver Ticket", silver.won, silver.won + silver.lost, "Saved Silver Tickets.", ` · ${startMoney(startGoldenCash(silver))}`, !stay),
       row("Bronze Ticket", bronze.won, bronze.won + bronze.lost, "Saved Bronze Tickets.", ` · ${startMoney(startGoldenCash(bronze))}`, !stay),
       kinds((tally.kinds || {}).all || {}),
+      `<h2 class="hist-split">Parlays</h2>`,
+      row("Golden parlay", (tally.parlayGolden || {}).won || 0, ((tally.parlayGolden || {}).won || 0) + ((tally.parlayGolden || {}).lost || 0), "Saved Golden parlays.", ` · ${startMoney(startGoldenCash(tally.parlayGolden))}`, !stay),
+      row("Silver parlay", (tally.parlaySilver || {}).won || 0, ((tally.parlaySilver || {}).won || 0) + ((tally.parlaySilver || {}).lost || 0), "Saved Silver parlays.", ` · ${startMoney(startGoldenCash(tally.parlaySilver))}`, !stay),
+      row("Bronze parlay", (tally.parlayBronze || {}).won || 0, ((tally.parlayBronze || {}).won || 0) + ((tally.parlayBronze || {}).lost || 0), "Saved Bronze parlays.", ` · ${startMoney(startGoldenCash(tally.parlayBronze))}`, !stay),
     ].join("");
     box.replaceChildren(score);
   }).catch(() => {
@@ -1018,6 +1023,25 @@ function startGoldenCash(golden) {
   }, 0);
 }
 
+function startMetalBag(tally) {
+  const empty = () => ({ won: 0, lost: 0, history: [] });
+  return {
+    golden: (tally && tally.golden) || empty(),
+    silver: (tally && tally.silver) || empty(),
+    bronze: (tally && tally.bronze) || empty(),
+    parlayGolden: (tally && tally.parlayGolden) || empty(),
+    parlaySilver: (tally && tally.parlaySilver) || empty(),
+    parlayBronze: (tally && tally.parlayBronze) || empty(),
+  };
+}
+
+function startTicketPct(ticket) {
+  const together = Number(ticket && ticket.ours);
+  if (together > 0 && together < 1) return Math.round(together * 1000) / 10;
+  const hits = Number(ticket && ticket.hits), n = Number(ticket && ticket.n);
+  return n > 0 && Number.isFinite(hits) ? Math.round((100 * hits) / n) : null;
+}
+
 function startGoldenList() {
   const box = document.createElement("div");
   box.className = "find-start-stats golden-tab";
@@ -1039,7 +1063,7 @@ function startGoldenList() {
     const cards = rows.map((ticket) => {
       const result = ticket.result || "open";
       const hits = Number(ticket.hits), n = Number(ticket.n);
-      const recordShown = n > 0 && Number.isFinite(hits) ? Math.round((100 * hits) / n) : null;
+      const recordShown = startTicketPct(ticket);
       const record = recordShown == null ? "" : `${recordShown}%`;
       const made = startFive(ticket.odds, result);
       const pay = made == null
@@ -1047,7 +1071,7 @@ function startGoldenList() {
         : result === "won" ? `$5 won ${startMoney(made)}` : result === "lost" ? `$5 lost ${startMoney(made)}` : `$5 ${startMoney(made)}`;
       const need = typeof findPct === "function" ? findPct(ticket.odds) : "";
       const needN = parseFloat(need);
-      const pull = typeof edgePull === "function" ? edgePull(hits, n) : null;
+      const pull = Number(ticket.ours) > 0 ? null : (typeof edgePull === "function" ? edgePull(hits, n) : null);
       const pulledShown = pull ? Math.round(pull.pulled * 1000) / 10 : recordShown;
       const clear = pulledShown != null && Number.isFinite(needN) ? Math.round((pulledShown - needN) * 10) / 10 : null;
       const clearText = clear == null ? "" : `${clear > 0 ? "+" : ""}${clear.toFixed(1)}%`;
@@ -1055,7 +1079,11 @@ function startGoldenList() {
       const postedN = Number(ticket.postedOdds), closeN = Number(ticket.closeOdds);
       const implied = (odds) => odds < 0 ? Math.abs(odds) / (Math.abs(odds) + 100) : 100 / (odds + 100);
       const closeSay = Number.isFinite(postedN) && Number.isFinite(closeN) ? `Posted ${price(postedN)}. Close ${price(closeN)}.${implied(closeN) > implied(postedN) + 0.005 ? " Beat the close." : ""}` : "";
-      return `<article class="golden-card"><div class="golden-card-top"><b>${escHtml(ticket.label || "")}</b><i class="${escHtml(result)}">${escHtml(word[result] || "Open")}</i></div><p class="golden-card-pay"><span class="golden-card-edge"><b>${escHtml(record)}</b>${clearText ? `<i class="${clear > 0 ? "up" : clear < 0 ? "down" : ""}">${escHtml(clearText)}</i>` : ""}</span><span class="${escHtml(result)}">${escHtml(pay)}</span></p>${meta ? `<p class="golden-card-meta">${escHtml(meta)}</p>` : ""}${closeSay ? `<p class="golden-card-meta">${escHtml(closeSay)}</p>` : ""}${ticket.markedAt ? `<p class="golden-card-when">Marked ${escHtml(when(ticket.markedAt))}</p>` : ""}${ticket.how ? `<p class="golden-card-how">${escHtml(typeof edgeHow === "function" ? edgeHow(ticket) : ticket.how)}</p>` : ""}</article>`;
+      const legs = Array.isArray(ticket.legs) && ticket.legs.length > 1 ? ticket.legs : [];
+      const opened = legs.length
+        ? `<ol class="golden-legs" hidden>${legs.map((leg) => `<li hidden><b>${escHtml(leg.label || "")}</b><i>${escHtml(price(leg.odds))}</i></li>`).join("")}</ol><label class="golden-leg-slide"><input type="range" class="golden-leg-range" min="0" max="${legs.length}" value="0" step="1" aria-label="Show each leg"></label>`
+        : "";
+      return `<article class="golden-card"><div class="golden-card-top"><b data-joined="${escHtml(ticket.label || "")}">${escHtml(ticket.label || "")}</b><i class="${escHtml(result)}">${escHtml(word[result] || "Open")}</i></div>${opened}<p class="golden-card-pay"><span class="golden-card-edge"><b>${escHtml(record)}</b>${clearText ? `<i class="${clear > 0 ? "up" : clear < 0 ? "down" : ""}">${escHtml(clearText)}</i>` : ""}</span><span class="${escHtml(result)}">${escHtml(pay)}</span></p>${meta ? `<p class="golden-card-meta">${escHtml(meta)}</p>` : ""}${closeSay ? `<p class="golden-card-meta">${escHtml(closeSay)}</p>` : ""}${ticket.markedAt ? `<p class="golden-card-when">Marked ${escHtml(when(ticket.markedAt))}</p>` : ""}${ticket.how ? `<p class="golden-card-how">${escHtml(typeof edgeHow === "function" ? edgeHow(ticket) : ticket.how)}</p>` : ""}</article>`;
     }).join("");
     return `<h3 class="golden-place">${escHtml(name)}</h3><div class="golden-sum"><div><b>${escHtml(pct)}</b><span>${of ? `${won} of ${of}` : "0 settled"}</span></div><div><strong class="${tone}">${escHtml(startMoney(cash))}</strong><span>$5 on each settled ticket</span></div></div>${cards || `<p class="quiet">No ${escHtml(name)} has been marked yet.</p>`}`;
   };
@@ -1064,19 +1092,39 @@ function startGoldenList() {
     const list = document.createElement("div");
     list.className = "golden-list";
     list.innerHTML = [
+      `<h2 class="hist-split">Single bets</h2>`,
       block("Golden Ticket", bag.golden || startGolden),
       block("Silver Ticket", bag.silver),
       block("Bronze Ticket", bag.bronze),
+      `<h2 class="hist-split">Parlays</h2>`,
+      block("Golden parlay", bag.parlayGolden),
+      block("Silver parlay", bag.parlaySilver),
+      block("Bronze parlay", bag.parlayBronze),
     ].join("");
     box.replaceChildren(list);
+    list.querySelectorAll(".golden-leg-range").forEach((input) => {
+      const card = input.closest(".golden-card");
+      const title = card && card.querySelector(".golden-card-top b");
+      const fit = () => {
+        const n = Number(input.value) || 0;
+        const items = card ? [...card.querySelectorAll(".golden-legs li")] : [];
+        items.forEach((li, i) => { li.hidden = i >= n; });
+        const lines = card && card.querySelector(".golden-legs");
+        if (lines) lines.hidden = n < 1;
+        if (title) title.textContent = n > 0 ? `${items.length} legs` : (title.dataset.joined || title.textContent);
+      };
+      input.addEventListener("input", fit);
+      if (typeof rowSlide === "function") rowSlide(input);
+      fit();
+    });
   };
   if (startMetals || startGolden) paint(startMetals || { golden: startGolden });
   else box.innerHTML = `<p class="find-start-stats-load quiet">Looking up Golden Tickets.</p>`;
   if (!startMetals) {
     fetch("/api/live?all=1", { credentials: "same-origin" }).then((res) => res.json()).then((data) => {
       const tally = (data && data.tally) || {};
-      startGolden = tally.golden || { won: 0, lost: 0, history: [] };
-      startMetals = { golden: startGolden, silver: tally.silver || { won: 0, lost: 0, history: [] }, bronze: tally.bronze || { won: 0, lost: 0, history: [] } };
+      startMetals = startMetalBag(tally);
+      startGolden = startMetals.golden;
       if (box.isConnected) paint(startMetals);
     }).catch(() => {
       if (box.isConnected) box.innerHTML = `<p class="quiet">Could not load Golden Tickets.</p>`;
@@ -1128,15 +1176,15 @@ function startRecRecord() {
   const row = (ticket) => {
     const result = ticket.result || "open";
     const word = { won: "Won", lost: "Lost", void: "Void" }[result] || "Open";
-    const hits = Number(ticket.hits), n = Number(ticket.n);
-    const record = n > 0 && Number.isFinite(hits) ? `${Math.round((100 * hits) / n)}%` : "";
+    const shown = startTicketPct(ticket);
+    const record = shown == null ? "" : `${shown}%`;
     const made = startFive(ticket.odds, result);
     const pay = made ? startMoney(made) : "";
     const bits = [price(ticket.odds), record, pay, when(ticket.markedAt)].filter(Boolean);
     const tip = [ticket.match, ticket.how].filter(Boolean).join(". ");
     return `<li class="${escHtml(result)}"${tip ? ` title="${escHtml(tip)}"` : ""}><i>${escHtml(word)}</i><b>${escHtml(ticket.label || "")}</b><span>${escHtml(bits.join(" · "))}</span></li>`;
   };
-  const metal = (name, bag, toneName) => {
+  const metal = (name, bag, toneName, key) => {
     const rows = (bag && bag.history) || [];
     const won = Number(bag && bag.won) || rows.filter((ticket) => ticket.result === "won").length;
     const lost = Number(bag && bag.lost) || rows.filter((ticket) => ticket.result === "lost").length;
@@ -1144,7 +1192,7 @@ function startRecRecord() {
     const cash = startGoldenCash(bag);
     const cashTone = cash > 0 ? "up" : cash < 0 ? "down" : "";
     const steps = startRecRecordSteps(rows.length);
-    const more = rows.length ? `<span class="rec-record-slide"><input class="rec-record-more" type="range" min="0" max="${Math.max(0, steps.length - 1)}" value="0" data-metal="${toneName}" aria-label="${escHtml(name)}s"><i class="rec-record-n"></i></span>` : "";
+    const more = rows.length ? `<span class="rec-record-slide"><input class="rec-record-more" type="range" min="0" max="${Math.max(0, steps.length - 1)}" value="0" data-metal="${escHtml(key || toneName)}" aria-label="${escHtml(name)}s"><i class="rec-record-n"></i></span>` : "";
     const head = `${chip(name, won, of)}${of ? `<strong class="${cashTone}">${escHtml(startMoney(cash))}</strong><i>on $5</i>` : ""}${more}`;
     const list = rows.length ? `<ul>${rows.map(row).join("")}</ul>` : `<p class="quiet">None marked yet.</p>`;
     return `<section class="rec-record-metal ${toneName}"><header>${head}</header>${list}</section>`;
@@ -1166,7 +1214,7 @@ function startRecRecord() {
       chip("All time", ever.won, ever.won + ever.lost),
       chip("Safe", safe.won, safe.won + safe.lost),
       chip("Balanced", even.won, even.won + even.lost),
-    ].join("")}</div>${metal("Golden Ticket", tally.golden, "golden")}${metal("Silver Ticket", tally.silver, "silver")}${metal("Bronze Ticket", tally.bronze, "bronze")}`;
+    ].join("")}</div>${metal("Golden Ticket", tally.golden, "golden")}${metal("Silver Ticket", tally.silver, "silver")}${metal("Bronze Ticket", tally.bronze, "bronze")}${metal("Golden parlay", tally.parlayGolden, "golden", "parlay-golden")}${metal("Silver parlay", tally.parlaySilver, "silver", "parlay-silver")}${metal("Bronze parlay", tally.parlayBronze, "bronze", "parlay-bronze")}`;
     box.querySelectorAll(".rec-record-more").forEach((input) => { if (kept[input.dataset.metal] != null) input.value = kept[input.dataset.metal]; });
     startRecRecordFit();
     box.querySelectorAll(".rec-record-more").forEach((input) => { if (typeof rowSlide === "function") rowSlide(input); });
@@ -1177,12 +1225,12 @@ function startRecRecord() {
     const media = window.matchMedia("(max-width: 700px)");
     if (media.addEventListener) media.addEventListener("change", startRecRecordFit);
   }
-  if (startMetals) paint({ tally: { golden: startMetals.golden, silver: startMetals.silver, bronze: startMetals.bronze, today: {}, all: {}, kinds: {} } });
+  if (startMetals) paint({ tally: { ...startMetals, today: {}, all: {}, kinds: {} } });
   else box.innerHTML = `<p class="quiet">Looking up the record.</p>`;
   fetch("/api/live?all=1", { credentials: "same-origin" }).then((res) => res.json()).then((data) => {
     const tally = (data && data.tally) || {};
-    startGolden = tally.golden || startGolden || { won: 0, lost: 0, history: [] };
-    startMetals = { golden: startGolden, silver: tally.silver || { won: 0, lost: 0, history: [] }, bronze: tally.bronze || { won: 0, lost: 0, history: [] } };
+    startMetals = startMetalBag(tally);
+    startGolden = startMetals.golden || startGolden;
     let pace = 0, all = 0, won = 0, lost = 0;
     (data.live || []).forEach((game) => {
       if (typeof liveMine !== "function" || typeof liveLegState !== "function") return;
@@ -1246,13 +1294,14 @@ function startPaint(again) {
   const tabs = document.createElement("span");
   tabs.className = "desk-games-tabs";
   const { recs, games, picks, all } = startRecs(board, box);
-  if (board.dataset.page === "rec" && (tabNow === "rec" || tabNow === "parlays") && typeof recDialArrive === "function") {
-    const counts = tabNow === "parlays" && typeof recParlayDialCounts === "function" && typeof recParlayBuild === "function"
-      ? recParlayDialCounts(recParlayBuild(board).rows)
-      : (typeof recDialCountOf === "function" ? recDialCountOf(all) : null);
+  if (board.dataset.page === "rec" && tabNow === "parlays" && typeof recDialSeat === "function" && typeof recParlayBuild === "function" && typeof recParlayDialCounts === "function") {
+    const rows = (recParlayBuild(board).rows || []).filter((row) => typeof recParlayFit !== "function" || recParlayFit(row));
+    recDialSeat(recParlayDialCounts(rows));
+  } else if (board.dataset.page === "rec" && tabNow === "rec" && typeof recDialArrive === "function") {
+    const counts = typeof recDialCountOf === "function" ? recDialCountOf(all) : null;
     if (counts) recDialArrive(counts);
   }
-  const goldenN = startMetals ? ["golden", "silver", "bronze"].reduce((sum, key) => sum + (((startMetals[key] || {}).history || []).length), 0) : (startGolden && Array.isArray(startGolden.history) ? startGolden.history.length : null);
+  const goldenN = startMetals ? ["golden", "silver", "bronze", "parlayGolden", "parlaySilver", "parlayBronze"].reduce((sum, key) => sum + (((startMetals[key] || {}).history || []).length), 0) : (startGolden && Array.isArray(startGolden.history) ? startGolden.history.length : null);
   const tabList = history
     ? [["stats", "Hit Rates", null], ["golden", "Golden", goldenN], ["close", "The close", null]]
     : [
@@ -1340,7 +1389,8 @@ function startPaint(again) {
     recDialCountPaint(counts);
   }
   if (tabNow === "parlays" && typeof recDialCountPaint === "function" && typeof recParlayBuild === "function" && typeof recParlayDialCounts === "function") {
-    recDialCountPaint(recParlayDialCounts(recParlayBuild(board).rows));
+    const rows = (recParlayBuild(board).rows || []).filter((row) => typeof recParlayFit !== "function" || recParlayFit(row));
+    recDialCountPaint(recParlayDialCounts(rows));
   }
   if (typeof recDialApply === "function") recDialApply(typeof recDial === "number" ? recDial : 2, { quiet: true });
   if (tabNow === "rec" && typeof priceMoveMark === "function") priceMoveMark();

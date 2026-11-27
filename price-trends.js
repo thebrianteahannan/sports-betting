@@ -315,10 +315,11 @@ function earlyFrom(books, trends, now) {
         const who = /total/i.test(trend.prop) ? "the total" : "the player";
         const say = `Take ${label}${price ? ` now at ${price}` : " now"}. They treat ${who} as ${bit} ${trend.when}. ${clock}${when ? ` Kickoff is ${when} ET.` : ""}`;
         const have = out.find((row) => row.id === id);
-        if (have) { if (closerToEven(odds, have.odds)) Object.assign(have, { label, odds, say, prop: trend.prop, side: trend.side, when: trend.when, points: Math.abs(trend.points) }); return; }
+        const logged = series.map(([book, at]) => ({ odds: book, at }));
+        if (have) { if (closerToEven(odds, have.odds)) Object.assign(have, { label, odds, say, prop: trend.prop, side: trend.side, when: trend.when, points: Math.abs(trend.points), series: logged }); return; }
         if ((perTrend.get(trendKey) || 0) >= 2) return;
         perTrend.set(trendKey, (perTrend.get(trendKey) || 0) + 1);
-        out.push({ id, label, match: game.match || "", kickoff: game.kickoff || "", sport: game.sport, prop: trend.prop, side: trend.side, when: trend.when, points: Math.abs(trend.points), odds, wait, say });
+        out.push({ id, label, match: game.match || "", kickoff: game.kickoff || "", sport: game.sport, prop: trend.prop, side: trend.side, when: trend.when, points: Math.abs(trend.points), odds, wait, say, series: logged });
       });
     });
   });
@@ -407,9 +408,14 @@ async function tick() {
   if (ticking) return cache;
   ticking = true;
   try {
+    await loadTrends();
     const { logged } = require("./price-log");
     const past = await readLog();
     const next = digest(logged(), Date.now(), past);
+    if (cache && (cache.looked.steps || 0) > (next.looked.steps || 0) && (cache.trends || []).length > (next.trends || []).length) {
+      console.log(`[price-trends] kept ${cache.trends.length} clocks. This pass saw ${next.looked.games} games.`);
+      return cache;
+    }
     const log = foldLog(past, next.at, next.dive && next.dive.clocks);
     if (JSON.stringify(log) !== JSON.stringify(past)) await writeLog(log);
     const pack = (row) => JSON.stringify({ trends: row.trends, early: row.early, say: row.say, brief: row.brief });
@@ -450,17 +456,22 @@ function speak(data) {
   speaking = run;
 }
 
-async function view() {
+async function loadTrends() {
   if (cache) return cache;
   try {
     const { kv } = require("./live-recs");
     const rows = await kv(`?k=eq.${encodeURIComponent(KEY)}&select=v`);
     const saved = rows && rows[0] && rows[0].v;
-    if (saved && saved.looked) { cache = saved; return cache; }
+    if (saved && saved.looked) cache = saved;
   } catch (error) {
     console.error("price trends load failed:", error);
   }
-  return { looked: { games: 0, props: 0, steps: 0 }, trends: [], early: [], say: "" };
+  return cache;
+}
+
+async function view() {
+  const data = await loadTrends();
+  return data || { looked: { games: 0, props: 0, steps: 0 }, trends: [], early: [], say: "" };
 }
 
 module.exports = { digest, tick, view };
