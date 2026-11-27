@@ -192,17 +192,15 @@ function priceTrendPaint(box) {
   if (!box || box.querySelector(".price-trend")) return;
   const go = () => {
     if (!(window.memberAdmin || (window.state && window.state.admin))) return false;
-    const host = document.createElement("details");
-    host.className = "price-trend";
-    const head = document.createElement("summary");
-    head.textContent = "Price clocks";
-    const wait = document.createElement("p");
-    wait.className = "price-trend-clock";
-    wait.textContent = "Looking through the price log.";
-    host.append(head, wait);
-    box.prepend(host);
+    if (box.querySelector(".price-trend")) return true;
     fetch("/api/price-trends", { credentials: "same-origin" }).then((response) => (response.ok ? response.json() : null)).then((data) => {
-      if (host.isConnected) priceTrendFill(host, data);
+      if (!box.isConnected || box.querySelector(".price-trend")) return;
+      const dive = data && data.dive;
+      if (!(dive && dive.clocks && dive.clocks.length) && !((data && data.trends) || []).length) return;
+      const host = document.createElement("details");
+      host.className = "price-trend";
+      box.prepend(host);
+      priceTrendFill(host, data);
       const moves = host.closest(".price-moves");
       if (!moves) return;
       moves.priceClocks = priceTrendTakes(data);

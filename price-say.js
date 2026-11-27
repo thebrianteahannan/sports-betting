@@ -212,10 +212,11 @@ async function rewrite(pack) {
 async function say(data) {
   const pack = sheet(data);
   if (!pack.rows.length) return null;
-  if (held.mark === pack.mark) return held.voice;
+  if (held.mark === pack.mark && held.voice) return held.voice;
   if (!pending || pending.mark !== pack.mark) pending = { mark: pack.mark, run: rewrite(pack).catch(() => null) };
   const voice = await pending.run;
-  held = { mark: pack.mark, voice };
+  if (pending && pending.mark === pack.mark) pending = null;
+  if (voice) held = { mark: pack.mark, voice };
   return voice;
 }
 

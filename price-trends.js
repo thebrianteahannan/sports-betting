@@ -414,11 +414,13 @@ async function tick() {
     if (JSON.stringify(log) !== JSON.stringify(past)) await writeLog(log);
     const pack = (row) => JSON.stringify({ trends: row.trends, early: row.early, say: row.say, brief: row.brief });
     const same = cache && pack(cache) === pack(next);
+    if (same && cache.voice) next.voice = cache.voice;
     cache = next;
     if (!same) {
       const { kv } = require("./live-recs");
       await kv("", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { k: KEY, v: next } });
     }
+    if (!next.voice && next.dive) speak(next);
     const line = next.trends[0] ? next.trends[0].say : next.say;
     console.log(`[price-trends] ${next.looked.steps} reprices, ${next.trends.length} clocks, ${next.early.length} early. ${line}`);
     return next;
@@ -430,12 +432,26 @@ async function tick() {
   }
 }
 
-async function stored() {
+let speaking = null;
+
+function speak(data) {
+  if (!data || !data.dive || speaking) return;
+  const run = require("./price-say").say(data).then((voice) => {
+    if (!voice || cache !== data) return null;
+    data.voice = voice;
+    const { kv } = require("./live-recs");
+    return kv("", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { k: KEY, v: data } });
+  }).catch((error) => {
+    console.error("price say failed:", error && error.message);
+  }).finally(() => {
+    if (speaking === run) speaking = null;
+    if (cache && cache !== data && cache.dive && !cache.voice) speak(cache);
+  });
+  speaking = run;
+}
+
+async function view() {
   if (cache) return cache;
-  if (ticking) {
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    if (cache) return cache;
-  }
   try {
     const { kv } = require("./live-recs");
     const rows = await kv(`?k=eq.${encodeURIComponent(KEY)}&select=v`);
@@ -444,19 +460,7 @@ async function stored() {
   } catch (error) {
     console.error("price trends load failed:", error);
   }
-  return tick();
-}
-
-async function view() {
-  const data = await stored();
-  if (!data || !data.dive) return data;
-  try {
-    const voice = await require("./price-say").say(data);
-    if (voice) data.voice = voice;
-  } catch (error) {
-    console.error("price say failed:", error && error.message);
-  }
-  return data;
+  return { looked: { games: 0, props: 0, steps: 0 }, trends: [], early: [], say: "" };
 }
 
 module.exports = { digest, tick, view };
