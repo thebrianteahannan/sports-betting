@@ -430,7 +430,7 @@ async function tick() {
   }
 }
 
-async function view() {
+async function stored() {
   if (cache) return cache;
   if (ticking) {
     await new Promise((resolve) => setTimeout(resolve, 800));
@@ -445,6 +445,18 @@ async function view() {
     console.error("price trends load failed:", error);
   }
   return tick();
+}
+
+async function view() {
+  const data = await stored();
+  if (!data || !data.dive) return data;
+  try {
+    const voice = await require("./price-say").say(data);
+    if (voice) data.voice = voice;
+  } catch (error) {
+    console.error("price say failed:", error && error.message);
+  }
+  return data;
 }
 
 module.exports = { digest, tick, view };

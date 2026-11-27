@@ -304,9 +304,9 @@ function priceMoveDraw(box, rows) {
   const clockN = shown.filter((row) => row.clock).length;
   lead.textContent = priceMoveTab === "deez"
     ? (clockN && clockN === shown.length
-      ? "These are still the early price. Bet them before the clock moves them."
+      ? "These are from the price clocks."
       : clockN
-        ? "The clock still has these at the early price. The rest have started toward our number and have not sat down."
+        ? "The ones on top are from the price clocks. The rest have started toward our number and have not sat down."
         : "The price has started toward our number and has not sat down. Get on before it gets there.")
     : priceMoveTab === "live" ? "These lines stepped again the same way. The price has not sat down." : "FanDuel prices that moved this week. The big moves are the ones to look at.";
   const switcher = document.createElement("div");
@@ -353,7 +353,7 @@ function priceMoveDraw(box, rows) {
     name.textContent = priceMoveName(row);
     const move = document.createElement("span");
     const record = priceMoveTab === "deez" && row.read && row.read.n ? `${row.read.hits} of ${row.read.n}. ` : "";
-    move.textContent = row.clock ? `Still ${priceMovePrice(row.last)}` : `${record}${pay.charAt(0).toUpperCase()}${pay.slice(1)}`;
+    move.textContent = row.clock ? `${row.clockTag || "Price clock"}. Still ${priceMovePrice(row.last)}` : `${record}${pay.charAt(0).toUpperCase()}${pay.slice(1)}`;
     button.append(name, move);
     button.addEventListener("click", () => { priceMovePinned = true; priceMoveFocus = priceMoveKey(row); priceMoveDraw(box, rows); });
     list.append(button);
@@ -379,14 +379,15 @@ function priceMoveDraw(box, rows) {
   const openName = document.createElement("b");
   openName.textContent = priceMoveName(picked);
   const openMove = document.createElement("span");
-  openMove.textContent = picked.clock ? `Still ${priceMovePrice(picked.last)}` : `${pay.charAt(0).toUpperCase()}${pay.slice(1)}`;
+  openMove.textContent = picked.clock ? `${picked.clockTag || "Price clock"}. Still ${priceMovePrice(picked.last)}` : `${pay.charAt(0).toUpperCase()}${pay.slice(1)}`;
   openCopy.append(openName, openMove);
   opener.append(openCopy);
   const head = document.createElement("h3");
   head.textContent = priceMoveName(picked);
   const where = document.createElement("p");
   where.className = "price-move-where";
-  where.textContent = picked.clock ? `${picked.match || ""}${picked.match ? ". " : ""}${picked.clockLine}` : `${picked.match || ""}. ${priceMovePrice(picked.first)} to ${priceMovePrice(picked.last)}. It ${pay}.`;
+  const kick = picked.clock ? ((String(picked.clockLine || "").match(/Kickoff is [^.]+/) || [])[0] || "") : "";
+  where.textContent = picked.clock ? [picked.match && `${picked.match}.`, picked.clockWhy || picked.clockLine, kick].filter(Boolean).join(" ") : `${picked.match || ""}. ${priceMovePrice(picked.first)} to ${priceMovePrice(picked.last)}. It ${pay}.`;
   const steps = document.createElement("div");
   steps.className = "price-move-steps";
   (picked.steps || []).forEach((step) => {

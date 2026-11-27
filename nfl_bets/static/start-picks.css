@@ -198,7 +198,8 @@
 .find-board .rec-record-metal li span { color: #9fb3c8; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .find-board .rec-record-metal .quiet { margin: 0.15rem 0 0.4rem; }
 .find-board .rec-record-metal li[hidden] { display: none !important; }
-.find-board .rec-record-metal .rec-record-more { -webkit-appearance: none; appearance: none; flex: none; width: 64px; height: 16px; margin: 0 0 0 auto; background: transparent; outline: none; cursor: pointer; touch-action: none; }
+.find-board .rec-record-metal .rec-record-n { flex: none; min-width: 1.6rem; color: #9fb3c8; font-size: 12px; font-style: normal; font-weight: 800; text-align: right; }
+.find-board .rec-record-metal .rec-record-more { -webkit-appearance: none; appearance: none; flex: none; width: 7.5rem; height: 16px; margin: 0 0 0 auto; background: transparent; outline: none; cursor: pointer; touch-action: none; }
 .find-board .rec-record-metal .rec-record-more[hidden] { display: none !important; }
 .find-board .rec-record-metal .rec-record-more::-webkit-slider-runnable-track { height: 3px; border-radius: 999px; background: #1c2a36; }
 .find-board .rec-record-metal .rec-record-more::-moz-range-track { height: 3px; border-radius: 999px; background: #1c2a36; border: 0; }

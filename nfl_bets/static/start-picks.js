@@ -1086,20 +1086,31 @@ function startGoldenList() {
 }
 
 let startRecRecordWatch = false;
+function startRecRecordSteps(count) {
+  const steps = [3, 5, 10, 25, 50, 100].filter((n) => n < count);
+  if (!steps.length || steps[steps.length - 1] !== count) steps.push(count || 0);
+  return steps;
+}
+
 function startRecRecordFit() {
-  const page = window.matchMedia("(max-width: 700px)").matches ? 3 : 5;
   document.querySelectorAll(".find-board .rec-record-metal").forEach((section) => {
     const items = [...section.querySelectorAll("ul > li")];
     const more = section.querySelector(".rec-record-more");
-    const max = Math.max(0, items.length - page);
-    let from = 0;
+    const note = section.querySelector(".rec-record-n");
+    const steps = startRecRecordSteps(items.length);
+    const max = Math.max(0, steps.length - 1);
+    let level = 0;
     if (more) {
       more.max = String(max);
       more.hidden = max === 0;
       if (Number(more.value) > max) more.value = String(max);
-      from = Number(more.value) || 0;
+      level = Number(more.value) || 0;
     }
-    items.forEach((li, i) => { li.hidden = i < from || i >= from + page; });
+    const show = steps[Math.min(level, max)] || 0;
+    items.forEach((li, i) => { li.hidden = i >= show; });
+    const list = section.querySelector("ul");
+    if (list) list.hidden = !show;
+    if (note) note.textContent = !show ? "" : show >= items.length ? "All" : String(show);
   });
 }
 
@@ -1132,7 +1143,8 @@ function startRecRecord() {
     const of = won + lost;
     const cash = startGoldenCash(bag);
     const cashTone = cash > 0 ? "up" : cash < 0 ? "down" : "";
-    const more = rows.length > 3 ? `<input class="rec-record-more" type="range" min="0" max="${rows.length - 3}" value="0" data-metal="${toneName}" aria-label="More ${escHtml(name)} tickets">` : "";
+    const steps = startRecRecordSteps(rows.length);
+    const more = rows.length ? `<input class="rec-record-more" type="range" min="0" max="${Math.max(0, steps.length - 1)}" value="0" data-metal="${toneName}" aria-label="How many ${escHtml(name)} tickets"><i class="rec-record-n"></i>` : "";
     const head = `${chip(name, won, of)}${of ? `<strong class="${cashTone}">${escHtml(startMoney(cash))}</strong><i>on $5</i>` : ""}${more}`;
     const list = rows.length ? `<ul>${rows.map(row).join("")}</ul>` : `<p class="quiet">None marked yet.</p>`;
     return `<section class="rec-record-metal ${toneName}"><header>${head}</header>${list}</section>`;

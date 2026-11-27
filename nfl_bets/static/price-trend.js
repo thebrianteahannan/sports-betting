@@ -26,14 +26,44 @@ function priceTrendBrief(data) {
   return lines;
 }
 
+function priceTrendHit(row, clocks) {
+  return (clocks || []).find((item) => item.sport === row.sport && item.prop === row.prop && String(item.side || "") === String(row.side || "") && item.when === row.when);
+}
+
+function priceTrendBet(clock) {
+  return priceTrendName(clock).replace(/\bover\b/, "overs on").replace(/\bunder\b/, "unders on");
+}
+
+function priceTrendWhy(clock) {
+  if (!clock) return "";
+  const when = priceTrendWhen(clock);
+  const at = when ? (when.startsWith("in ") ? when : `in the ${when}`) : "";
+  const lead = `In ${clock.agree} of ${clock.games} games, ${priceTrendBet(clock)}`;
+  const size = priceTrendPoint(clock.points);
+  if (clock.faded) return `${lead} move about ${size} ${at}. Then the price goes back.`;
+  if (clock.way === "longer") return `${lead} get about ${size} cheaper ${at}. Wait for that number.`;
+  const stay = clock.held ? ", and the new price stays" : "";
+  return `${lead} cost about ${size} more ${at}${stay}. This one is still the early price.`;
+}
+
+function priceTrendTag(clock) {
+  if (!clock) return "Price clock";
+  let prop = String(clock.prop || "");
+  if (prop === "Anytime TD") prop = clock.sport === "NHL" ? "Anytime goals" : "Anytime TDs";
+  else if (prop === "Game total") prop = "Game total";
+  return `${prop} clock`;
+}
+
 function priceTrendTakes(data) {
   const early = (data && data.early) || [];
   const now = (data && data.dive && data.dive.now) || [];
+  const clocks = (data && data.dive && data.dive.clocks) || [];
   const rows = [];
   now.forEach((line) => {
     const text = String(line || "").trim();
     const row = early.find((item) => item && item.label && text.startsWith(`Take ${item.label}`));
     if (!row || rows.some((have) => have.label === row.label && have.match === row.match)) return;
+    const clock = priceTrendHit(row, clocks);
     rows.push({
       label: row.label,
       market: "",
@@ -47,6 +77,8 @@ function priceTrendTakes(data) {
       steps: [],
       clock: true,
       clockLine: text,
+      clockWhy: (data.voice && data.voice.now && data.voice.now[row.label]) || priceTrendWhy(clock),
+      clockTag: priceTrendTag(clock),
     });
   });
   return rows;
@@ -72,30 +104,43 @@ function priceTrendSection(host, title, lines, kind) {
   });
 }
 
-function priceTrendClockLine(clock) {
+function priceTrendName(clock) {
+  let prop = String(clock.prop || "");
+  if (prop === "Anytime TD") prop = clock.sport === "NHL" ? "anytime goals" : "anytime TDs";
+  else if (prop === "Game total") prop = "the game total";
+  else prop = prop.toLowerCase().replace(/\btds\b/g, "TDs");
+  return [clock.sport, String(clock.side || "").toLowerCase(), prop].filter(Boolean).join(" ");
+}
+
+function priceTrendWhen(clock) {
+  const text = String(clock.when || "");
+  if (!/ out$/.test(text)) return text;
+  const word = clock.sport === "NFL" ? "kickoff" : "the game";
+  return `${text.replace(/ out$/, "")} before ${word}`;
+}
+
+function priceTrendClockLine(clock, skip) {
   const hit = `${clock.agree} of ${clock.games}`;
-  const size = `about ${priceTrendPoint(clock.points)} ${clock.way === "longer" ? "longer" : "shorter"}`;
-  if (clock.faded) return `${clock.title}. ${hit} in the window, and the close gives it back.`;
-  if (clock.held) return `${clock.title}. ${hit}, ${size}, and the close still had it.`;
-  return `${clock.title}. ${hit}, ${size}. The close has not checked it.`;
+  const where = [priceTrendName(clock), priceTrendWhen(clock)].filter(Boolean).join(", ");
+  if (skip) return `${where}. ${hit}.`;
+  return `${where}. ${hit}, about ${priceTrendPoint(clock.points)}.`;
 }
 
 function priceTrendOpenLine(line, early) {
   const text = String(line || "").trim();
   const row = (early || []).find((item) => item && item.label && text.startsWith(`Take ${item.label}`));
-  if (!row) return text.replace(/^Take /, "");
+  const kick = (text.match(/Kickoff is ([^.]+)/) || [])[1] || "";
+  if (!row) return text.replace(/^Take /, "").replace(/ Kickoff is /, " ");
   const price = Number(row.odds);
   const shown = Number.isFinite(price) && price ? (price > 0 ? `+${price}` : `−${Math.abs(price)}`) : "";
-  const clock = [row.sport, String(row.side || "").toLowerCase(), String(row.prop || "").toLowerCase()].filter(Boolean).join(" ");
-  const kick = (text.match(/Kickoff is ([^.]+)/) || [])[1] || "";
-  return [`${row.label}${shown ? ` at ${shown}` : ""}.`, clock && row.when ? `${clock}, ${row.when}.` : "", kick ? `Kickoff ${kick}.` : ""].filter(Boolean).join(" ");
+  return `${row.label}${shown ? ` at ${shown}` : ""}.${kick ? ` ${kick}.` : ""}`;
 }
 
 function priceTrendLead(clocks) {
   const sizes = (clocks || []).filter((row) => row.held && !row.faded).map((row) => Math.abs(Number(row.points))).filter((n) => n).sort((a, b) => a - b);
-  if (!sizes.length) return "A clock is a window where the same prop moves the same way.";
+  if (!sizes.length) return "";
   const span = sizes[0] === sizes[sizes.length - 1] ? `about ${priceTrendPoint(sizes[0])}` : `about ${sizes[0]} to ${priceTrendPoint(sizes[sizes.length - 1])}`;
-  return `The reads that have held move the price ${span}.`;
+  return `These move ${span} before the game.`;
 }
 
 function priceTrendFill(host, data) {
@@ -119,16 +164,28 @@ function priceTrendFill(host, data) {
     return;
   }
   const clocks = dive.clocks || [];
+  const voice = data.voice || {};
   const byMove = (rows) => rows.slice().sort((a, b) => Math.abs(b.points) - Math.abs(a.points));
-  const lead = document.createElement("p");
-  lead.className = "price-trend-bet";
-  lead.textContent = priceTrendLead(clocks);
-  host.append(lead);
-  priceTrendSection(host, "Still the early price", (dive.now || []).map((line) => priceTrendOpenLine(line, data && data.early)));
-  priceTrendSection(host, "Bet these before the window", byMove(clocks.filter((row) => !row.faded && row.way === "shorter" && row.held)).map(priceTrendClockLine));
-  priceTrendSection(host, "Bet these too. The close has not checked them.", byMove(clocks.filter((row) => !row.faded && row.way === "shorter" && !row.held)).map(priceTrendClockLine));
-  priceTrendSection(host, "Wait. The price gets better.", byMove(clocks.filter((row) => !row.faded && row.way === "longer")).map(priceTrendClockLine));
-  priceTrendSection(host, "Leave these. The close gives them back.", byMove(clocks.filter((row) => row.faded)).map(priceTrendClockLine), "price-trend-skip");
+  const clockLine = (row, skip) => (voice.clocks && voice.clocks[[row.sport, row.prop, row.side, row.when].join("|")]) || priceTrendClockLine(row, skip);
+  const said = voice.lead || priceTrendLead(clocks);
+  if (said) {
+    const lead = document.createElement("p");
+    lead.className = "price-trend-bet";
+    lead.textContent = said;
+    host.append(lead);
+  }
+  const openLine = (line) => {
+    const text = String(line || "");
+    const row = ((data && data.early) || []).find((item) => item && item.label && text.startsWith(`Take ${item.label}`));
+    const saidNow = row && voice.now && voice.now[row.label];
+    return saidNow || priceTrendOpenLine(line, data && data.early);
+  };
+  const head = (group, fallback) => (voice.heads && voice.heads[group]) || fallback;
+  priceTrendSection(host, head("now", "On the board now"), (dive.now || []).map(openLine));
+  priceTrendSection(host, head("bet", "Bet these early. The price drops and stays there."), byMove(clocks.filter((row) => !row.faded && row.way === "shorter" && row.held)).map((row) => clockLine(row)));
+  priceTrendSection(host, head("fresh", "Same bets. We have not seen one finish yet."), byMove(clocks.filter((row) => !row.faded && row.way === "shorter" && !row.held)).map((row) => clockLine(row)));
+  priceTrendSection(host, head("wait", "Wait. You get a better number."), byMove(clocks.filter((row) => !row.faded && row.way === "longer")).map((row) => clockLine(row)));
+  priceTrendSection(host, head("skip", "Skip these. The price moves, then it comes back."), byMove(clocks.filter((row) => row.faded)).map((row) => clockLine(row, true)), "price-trend-skip");
 }
 
 function priceTrendPaint(box) {
