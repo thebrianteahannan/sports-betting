@@ -181,7 +181,7 @@ function priceTrendFill(host, data) {
   const lines = priceTrendBrief(data);
   if (!lines[0] && !(dive && dive.clocks && dive.clocks.length)) { host.remove(); return; }
   const summary = document.createElement("summary");
-  summary.textContent = "Price clocks";
+  summary.textContent = "Price Movement Recommendations";
   host.append(summary);
   if (!dive) {
     lines.forEach((line) => {

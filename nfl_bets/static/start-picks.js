@@ -1144,7 +1144,7 @@ function startRecRecord() {
     const cash = startGoldenCash(bag);
     const cashTone = cash > 0 ? "up" : cash < 0 ? "down" : "";
     const steps = startRecRecordSteps(rows.length);
-    const more = rows.length ? `<input class="rec-record-more" type="range" min="0" max="${Math.max(0, steps.length - 1)}" value="0" data-metal="${toneName}" aria-label="How many ${escHtml(name)} tickets"><i class="rec-record-n"></i>` : "";
+    const more = rows.length ? `<span class="rec-record-slide"><input class="rec-record-more" type="range" min="0" max="${Math.max(0, steps.length - 1)}" value="0" data-metal="${toneName}" aria-label="${escHtml(name)}s"><i class="rec-record-n"></i></span>` : "";
     const head = `${chip(name, won, of)}${of ? `<strong class="${cashTone}">${escHtml(startMoney(cash))}</strong><i>on $5</i>` : ""}${more}`;
     const list = rows.length ? `<ul>${rows.map(row).join("")}</ul>` : `<p class="quiet">None marked yet.</p>`;
     return `<section class="rec-record-metal ${toneName}"><header>${head}</header>${list}</section>`;
@@ -1166,9 +1166,10 @@ function startRecRecord() {
       chip("All time", ever.won, ever.won + ever.lost),
       chip("Safe", safe.won, safe.won + safe.lost),
       chip("Balanced", even.won, even.won + even.lost),
-    ].join("")}</div>${metal("Golden", tally.golden, "golden")}${metal("Silver", tally.silver, "silver")}${metal("Bronze", tally.bronze, "bronze")}`;
+    ].join("")}</div>${metal("Golden Ticket", tally.golden, "golden")}${metal("Silver Ticket", tally.silver, "silver")}${metal("Bronze Ticket", tally.bronze, "bronze")}`;
     box.querySelectorAll(".rec-record-more").forEach((input) => { if (kept[input.dataset.metal] != null) input.value = kept[input.dataset.metal]; });
     startRecRecordFit();
+    box.querySelectorAll(".rec-record-more").forEach((input) => { if (typeof rowSlide === "function") rowSlide(input); });
   };
   box.addEventListener("input", (event) => { if (event.target.classList && event.target.classList.contains("rec-record-more")) startRecRecordFit(); });
   if (!startRecRecordWatch) {
