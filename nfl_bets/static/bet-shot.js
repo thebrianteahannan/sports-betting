@@ -229,6 +229,16 @@ function shotNearPaint(board, misses) {
   });
 }
 
+function shotAskOdds(board, id, gotRaw, boardPrice) {
+  board.querySelectorAll(":scope > .find-shot-odds").forEach((node) => node.remove());
+  const got = shotOdds(gotRaw), have = shotOdds(boardPrice);
+  if (!id || got == null || have == null || got === have) return;
+  const mine = got > 0 ? `+${got}` : String(got), theirs = have > 0 ? `+${have}` : String(have), box = Object.assign(document.createElement("div"), { className: "find-shot-odds" });
+  box.innerHTML = `<p>You got ${mine}. FanDuel has this at ${theirs}.</p><button type="button">Keep ${mine} and lock it in</button><button type="button">Add at FanDuel's ${theirs}</button>`;
+  const [keep, use] = [...box.querySelectorAll("button")];
+  keep.addEventListener("click", () => { if (typeof savePatch === "function") savePatch(id, { lockedOdds: mine, stakeTyped: true }); if (typeof saveLock === "function") saveLock(id); if (typeof paintParlay === "function") paintParlay(); box.remove(); }); use.addEventListener("click", () => box.remove());
+  (board.querySelector(":scope > .find-shot-note") || { after(node) { board.append(node); } }).after(box);
+}
 function shotNote(board, text) {
   let note = board.querySelector(":scope > .find-shot-note");
   if (!note) { note = document.createElement("p"); note.className = "find-why find-shot-note"; const tray = board.querySelector(":scope > .find-tray"); if (tray) tray.before(note); else board.append(note); }
@@ -328,6 +338,7 @@ function shotLoad(found, drafts, label, loose) {
   found.forEach(({ person, bet }) => { if (person) parlayPick.set(person.key, person); parlayLeg.set(parlayKey(bet), bet); });
   drafts.forEach(({ person }) => parlayPick.set(person.key, person));
   (loose || []).forEach((bet) => { parlayLeg.set(parlayKey(bet), bet); const who = typeof legLoose === "function" ? legLoose(bet).who : ""; if (who && typeof legOwner !== "undefined") legOwner.set(parlayKey(bet), who); });
+  if (typeof trayLockKeep === "function") trayLockKeep();
 }
 
 async function shotRead(board, file) {
@@ -390,6 +401,7 @@ async function shotRead(board, file) {
     const more = matched.length > 1 ? ` Saved ${matched.length} bets from that screenshot${group ? " in My stacks" : ""}.` : "";
     const told = [drafts.length && `FanDuel doesn't have ${drafts.map(({ leg }) => say(leg)).join(", ")} at that number. ${drafts.length === 1 ? "It's" : "They're"} in your bet. Pick the line.`, lost.length && `Not on the board right now: ${lost.map(say).join(", ")}.`].filter(Boolean).join(" ");
     shotNote(board, `${told}${more}`.trim());
+    if (matched.length === 1 && first) shotAskOdds(board, first, data.odds, typeof savePrice === "function" ? savePrice(((typeof saveList === "function" && saveList().find((one) => one.id === first)) || {}).legs || []) : "");
     shotNearPaint(board, (matched.length > 1 ? openMissed : missed).map((leg) => ({ text: say(leg), near: shotNear(people, leg, shotGame(people, leg, matched.length > 1 ? openFound : found)) })));
     const tray = board.querySelector(":scope > .find-tray");
     if (tray && !tray.hidden) tray.scrollIntoView({ behavior: "smooth", block: "start" });

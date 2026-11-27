@@ -124,7 +124,7 @@ function trayLockPaint() {
     });
   });
   if (locked && typeof legSwapOpen !== "undefined") [...legSwapOpen.entries()].forEach(([key, mode]) => { if (mode !== "line" && mode !== "kind") legSwapOpen.delete(key); });
-  document.querySelectorAll(".find-chose[data-key]").forEach((line) => {
+  document.querySelectorAll(".find-tray .find-chose[data-key]").forEach((line) => {
     if (!trayLockAsk.has(line.dataset.key) || line.querySelector(".find-lock-edit")) return;
     trayLockPrice(line, line.dataset.key);
   });
@@ -132,6 +132,16 @@ function trayLockPaint() {
 
 function trayLockHold(id) {
   if (trayLockWas && id) trayLockWas.add(id);
+}
+
+function trayLockKeep() {
+  if (typeof parlayLeg === "undefined") return;
+  if (!trayLockWas) trayLockWas = new Set();
+  parlayLeg.forEach((bet, key) => {
+    if (!Number(bet && bet.odds)) return;
+    trayLockWas.add(key);
+    trayLockAsk.delete(key);
+  });
 }
 
 function trayLockPast(match, game) {

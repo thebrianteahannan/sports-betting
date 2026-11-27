@@ -324,6 +324,11 @@
 .find-shot-near button b { color: #3dff6e; }
 .find-shot-near button::before { content: "+"; color: #3dff6e; font-weight: 800; }
 .rec-board > .find-shot-near button:hover { background: #0c2418; }
+.rec-board > .find-shot-odds { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; margin: 0 0 0.7rem; }
+.rec-board > .find-shot-odds p { flex-basis: 100%; margin: 0; color: #f4f7fb; font-size: 14px; font-weight: 700; }
+.rec-board > .find-shot-odds button, #desk.tv-full #desk-glass .rec-board > .find-shot-odds button { width: auto; min-height: 0; margin: 0; padding: 0.4rem 0.8rem; border-radius: 999px; box-shadow: none; font-family: Outfit, system-ui, sans-serif; font-size: 13px; font-weight: 800; text-transform: none; letter-spacing: normal; cursor: pointer; }
+.rec-board > .find-shot-odds button:first-of-type, #desk.tv-full #desk-glass .rec-board > .find-shot-odds button:first-of-type { border: 1px solid #3dff6e; background: #3dff6e; color: #04140c; }
+.rec-board > .find-shot-odds button:last-of-type, #desk.tv-full #desk-glass .rec-board > .find-shot-odds button:last-of-type { border: 1px solid rgba(61, 255, 110, 0.55); background: #07140f; color: #f4f7fb; }
 .rec-board .find-tray i.gm { font-style: normal; color: #f4f7fb; border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 999px; padding: 0.05rem 0.5rem; font-size: 11px; font-weight: 700; letter-spacing: 0.03em; }
 .rec-board .find-tray i.gm[data-game] { cursor: pointer; }
 .rec-board .find-tray .find-ticket > b i.sg { color: #f4f7fb !important; background: transparent !important; border: 1px solid rgba(255, 255, 255, 0.28); text-shadow: none; }
